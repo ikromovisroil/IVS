@@ -190,7 +190,7 @@
                                     {% for dc in d.deedconsent_set.all %}
                                         {% if dc.employee.user == user and dc.status == 'viewed' %}
                                         <div>
-                                              Siz tizimga E-imzo orqali kirgansiz. Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
+                                            Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
                                         </div><hr>
                                         <form method="post" action="{% url 'deedconsent_action' dc.id %}">
                                             {% csrf_token %}
