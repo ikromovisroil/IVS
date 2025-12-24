@@ -159,6 +159,7 @@ class Employee(AutoSlugMixin, models.Model):
     STATUS = (('client', 'Mijoz'), ('worker', 'IVS xodimi'))
     status = models.CharField(max_length=20, choices=STATUS, default='client')
     phone = models.CharField(max_length=50,null=True,blank=True)
+    pinfil = models.CharField(max_length=20,null=True,blank=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
