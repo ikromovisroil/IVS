@@ -1,15 +1,13 @@
 from datetime import timedelta
-from pathlib import Path
 from dotenv import load_dotenv
+from pathlib import Path
 import os
-
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
-
 # SECURITY
-SECRET_KEY = 'django-insecure-8^f&pe24#mu!=yqq*^r7k0w%z2$v43(q7cqa+*3$=u*k@e(uj9'
-DEBUG = True
+SECRET_KEY = os.getenv("SECRET_KEY")
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 
 ALLOWED_HOSTS = ["*"]
@@ -190,8 +188,8 @@ LOGIN_REDIRECT_URL = 'profil'
 LOGOUT_REDIRECT_URL = "/sso/login/"
 
 # ===== MF SSO CONFIG =====
-SSO_CLIENT_ID = 'report-imv'
-SSO_CLIENT_SECRET = '6CKJjPDY94XzkDyBLjnXw4'
+SSO_CLIENT_ID = os.getenv("SSO_CLIENT_ID")
+SSO_CLIENT_SECRET = os.getenv("SSO_CLIENT_SECRET")
 
-SSO_AUTH_URL = 'https://sso.mf.uz/oauth2/login'
-SSO_TOKEN_URL = 'https://sso.mf.uz/oauth2/token'
+SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
+SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
