@@ -1,0 +1,500 @@
+<!DOCTYPE html>{% load static %}
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+  {% block title %}
+  {% endblock title %}
+
+  <meta content="" name="description">
+  <meta content="" name="keywords">
+
+  <!-- Favicons -->
+  <link href="{% static 'img/favicon.png' %}" rel="icon">
+  <link href="{% static 'img/apple-touch-icon.png' %}" rel="apple-touch-icon">
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.gstatic.com" rel="preconnect">
+  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
+
+  <!-- Vendor CSS Files -->
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/boxicons/css/boxicons.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/quill/quill.snow.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/quill/quill.bubble.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/remixicon/remixicon.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/simple-datatables/style.css' %}" rel="stylesheet">
+
+  <!-- Template Main CSS File -->
+  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- ======= Header ======= -->
+  <header id="header" class="header fixed-top d-flex align-items-center">
+
+    <div class="d-flex align-items-center justify-content-between">
+      <a href="{% url 'index' %}" class="logo d-flex align-items-center">
+        <img src="{% static 'img/logo.png' %}" alt="">
+        <span class="d-none d-lg-block">IMV</span>
+      </a>
+      <i class="bi bi-list toggle-sidebar-btn"></i>
+    </div><!-- End Logo -->
+
+    <nav class="header-nav ms-auto">
+      <ul class="d-flex align-items-center">
+
+        <!-- ======================= ZAYAVKA XABARLARI ======================= -->
+        <li class="nav-item dropdown">
+
+          <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown" id="order-bell">
+            <i class="bi bi-chat-left-text"></i>
+            {% if order_notification_count > 0 %}
+              <span class="badge bg-primary badge-number">{{ order_notification_count }}</span>
+            {% endif %}
+          </a>
+
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" style="width: 360px;">
+
+            <li class="dropdown-header d-flex justify-content-between align-items-center px-3">
+              <span class="fw-bold">Zayavka xabarlari</span>
+              <span class="badge bg-primary">{{ order_notification_count }}</span>
+            </li>
+
+            <li><hr class="dropdown-divider"></li>
+
+            {% for o in order_notifications %}
+
+            <li class="notification-item">
+
+              {# LINK — sender bo‘lsa order_sender, aks holda order_receiver #}
+              {% if o.sender.user.id == request.user.id %}
+                <a href="{% url 'order_sender' %}" class="d-flex align-items-start text-decoration-none">
+              {% else %}
+                <a href="{% url 'order_receiver' %}" class="d-flex align-items-start text-decoration-none">
+              {% endif %}
+
+                <!-- ================= ICON TANLASH ================= -->
+                {% if o.status == 'viewed' and o.receiver.user.id == request.user.id %}
+                  <!-- QABUL QILUVCHI UCHUN YANGI ZAYAVKA -->
+                  <i class="bi bi-exclamation-circle text-warning"></i>
+
+                {% elif o.status == 'viewed' and request.user.employee.rank.id == 1 and o.sender.region.id == request.user.employee.region.id %}
+                  <!-- BOSS UCHUN YANGI ZAYAVKA -->
+                  <i class="bi bi-exclamation-circle text-warning"></i>
+
+                {% elif o.status == 'accepted' and o.receiver.user.id == request.user.id %}
+                  <i class="bi bi-info-circle text-primary"></i>
+
+                {% elif o.status == 'finished' and o.sender.user.id == request.user.id %}
+                  <i class="bi bi-check-circle text-info"></i>
+
+                {% elif o.status == 'approved' and o.receiver.user.id == request.user.id %}
+                  <i class="bi bi-check-circle text-success"></i>
+
+                {% elif o.status == 'rejected' and o.receiver.user.id == request.user.id %}
+                  <i class="bi bi-x-circle text-danger"></i>
+
+                {% else %}
+                  <i class="bi bi-info-circle text-secondary"></i>
+                {% endif %}
+
+                <div class="ms-2">
+
+                  <!-- ================= ISM KIM KO‘RINADI ================= -->
+                  {% if request.user.id == o.sender.user.id %}
+                    <h4 class="mb-1">{{ o.receiver.user.get_full_name }}</h4>
+                  {% else %}
+                    <h4 class="mb-1">{{ o.sender.user.get_full_name }}</h4>
+                  {% endif %}
+
+                  <!-- ================= STATUSGA QARAB MATN ================= -->
+
+                  {% if o.status == 'viewed'%}
+                    <p class="text-warning mb-1">Yangi zayavka keldi</p>
+                    <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
+
+                  {% elif o.status == 'viewed'%}
+                    <p class="text-warning mb-1">Yangi zayavka keldi</p>
+                    <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
+
+                  {% elif o.status == 'accepted'%}
+                    <p class="text-primary mb-1">Sizga yangi zayavka biriktirildi</p>
+                    <p class="small text-muted mb-0">{{ o.date_accepted|timesince }} oldin</p>
+
+                  {% elif o.status == 'finished'%}
+                    <p class="text-info mb-1">Sizning zayavkangiz yakunlandi</p>
+                    <p class="small text-muted mb-0">{{ o.date_finished|timesince }} oldin</p>
+
+                  {% elif o.status == 'approved'%}
+                    <p class="text-success mb-1">Bajargan zayavkangiz tasdiqlandi</p>
+                    <p class="small text-muted mb-0">{{ o.date_approved|timesince }} oldin</p>
+
+                  {% elif o.status == 'rejected' %}
+                    <p class="text-danger mb-1">Bajargan zayavkangiz rad etildi</p>
+                    <p class="small text-muted mb-0">{{ o.date_rejected|timesince }} oldin</p>
+
+                  {% else %}
+                    <p class="mb-1">Zayavka holati yangilandi</p>
+                    <p class="small text-muted mb-0">{{ o.date_edit|timesince }} oldin</p>
+                  {% endif %}
+
+                </div>
+
+              </a>
+            </li>
+
+            <li><hr class="dropdown-divider"></li>
+
+            {% endfor %}
+
+          </ul>
+
+        </li>
+
+        <!-- ======================= D A L O L A T N O M A ======================= -->
+        <li class="nav-item dropdown">
+
+            <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown" id="deed-bell">
+                <i class="bi bi-bell"></i>
+                {% if deed_notification_count > 0 %}
+                    <span class="badge bg-primary badge-number">{{ deed_notification_count }}</span>
+                {% endif %}
+            </a>
+
+            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications p-0" style="width: 360px;">
+
+                <!-- HEADER -->
+                <li class="px-3 py-2 border-bottom bg-light d-flex justify-content-between">
+                    <span class="fw-bold">Dalolatnoma xabarlari</span>
+                    <span class="badge bg-primary">{{ deed_notification_count }}</span>
+                </li>
+
+                {% for d in deed_notifications %}
+
+                {# ================= RECEIVER ================= #}
+                {% if request.user == d.receiver.user %}
+
+                    <a href="{% url 'contact' %}?employee={{ d.sender.slug }}"
+                       class="text-decoration-none notification-card d-block px-3 py-3">
+
+                        <div class="fw-bold text-dark">
+                            {{ d.sender.full_name }}
+                        </div>
+
+                        <div class="small text-warning mt-1">
+                            Yangi dalolatnoma keldi
+                        </div>
+
+                        <div class="small text-muted mt-1">
+                            {{ d.date_creat|timesince }} oldin
+                        </div>
+
+                    </a>
+
+                {# ================= SENDER ================= #}
+                {% elif request.user == d.sender.user %}
+
+                    <a href="{% url 'contact' %}?employee={{ d.receiver.slug }}"
+                       class="text-decoration-none notification-card d-block px-3 py-3">
+
+                        <div class="fw-bold text-dark">
+                             {{ d.sender.full_name }}
+                        </div>
+
+                        {% if d.status == 'approved' %}
+                            <div class="small text-success mt-1">
+                                Yuborgan dalolatnomangiz tasdiqlandi
+                            </div>
+                        {% elif d.status == 'rejected' %}
+                            <div class="small text-danger mt-1">
+                                Yuborgan dalolatnomangiz rad etildi
+                            </div>
+                        {% else %}
+                            <div class="small text-secondary mt-1">
+                                Dalolatnoma ko‘rib chiqilmoqda
+                            </div>
+                        {% endif %}
+
+                        <div class="small text-muted mt-1">
+                            {{ d.date_edit|timesince }} oldin
+                        </div>
+
+                    </a>
+
+                {# ================= KUZATUVCHI ================= #}
+                {% else %}
+
+                    <a href="{% url 'contact' %}?employee={{ d.sender.slug }}"
+                       class="text-decoration-none notification-card d-block px-3 py-3">
+
+                        <div class="fw-bold text-dark">
+                             {{ d.sender.full_name }}
+                            <span class="text-muted">→</span>
+                             {{ d.receiver.full_name }}
+                        </div>
+
+                        <div class="small text-info mt-1">
+                            <i class="bi bi-eye"></i> Kelishuv uchun dalolatnoma
+                        </div>
+
+                        <div class="small text-muted mt-1">
+                            {{ d.date_creat|timesince }} oldin
+                        </div>
+
+                    </a>
+
+                {% endif %}
+
+                <li><hr class="dropdown-divider my-0"></li>
+
+                {% empty %}
+                    <li class="px-3 py-3 text-center text-muted">
+                        Dalolatnoma xabarlari yo‘q
+                    </li>
+                {% endfor %}
+
+            </ul>
+
+        </li>
+
+
+        <li class="nav-item dropdown pe-3">
+
+          <div class="nav-link nav-profile d-flex align-items-center pe-0" data-bs-toggle="dropdown">
+            <img src="{% static 'img/profil.jpg' %}" alt="Profile" class="rounded-circle">
+            <span class="d-none d-md-block dropdown-toggle ps-2">{{ user.get_full_name }}</span>
+          </div><!-- End Profile Iamge Icon -->
+
+          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow profile">
+
+
+            <li class="dropdown-header">
+              <h6>{{ user.get_full_name }}</h6>
+              <span>{{ user.user.rank.name }}</span>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="https://t.me/Isroil_0309">
+                <i class="bi bi-question-circle"></i>
+                <span>Yordam</span>
+              </a>
+            </li>
+            <li>
+              <hr class="dropdown-divider">
+            </li>
+
+            <li>
+              <a class="dropdown-item d-flex align-items-center" href="{% url 'logout' %}">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>Chiqish</span>
+              </a>
+            </li>
+
+          </ul><!-- End Profile Dropdown Items -->
+        </li><!-- End Profile Nav -->
+
+      </ul>
+    </nav><!-- End Icons Navigation -->
+
+  </header><!-- End Header -->
+
+  <!-- ======= Sidebar ======= -->
+  <aside id="sidebar" class="sidebar">
+
+    <ul class="sidebar-nav" id="sidebar-nav">
+
+       <li class="nav-item">
+        <a class="nav-link" href="{% url 'profil' %}">
+          <i class="bi bi-person"></i>
+          <span>Profile</span>
+        </a>
+      </li><!-- End Profile Page Nav -->
+
+      {% if request.user.employee.status == "worker" %}
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'index' %}">
+          <i class="bi bi-grid"></i>
+          <span>Dashboard</span>
+        </a>
+      </li><!-- End Dashboard Nav -->
+      {% endif %}
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'contact' %}">
+          <i class="bi bi-envelope"></i>
+          <span>Arizalar</span>
+        </a>
+      </li><!-- End Profile Page Nav -->
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'barn' %}">
+          <i class="bi bi-question-circle"></i>
+          <span>Sklad</span>
+        </a>
+      </li><!-- End F.A.Q Page Nav -->
+
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-journal-text"></i><span>Zayafka</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="forms-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+          <li>
+            <a href="{% url 'order_sender' %}">
+              <i class="bi bi-circle"></i><span>Yuborilgan</span>
+            </a>
+          </li>
+          <li>
+            <a href="{% url 'order_receiver' %}">
+              <i class="bi bi-circle"></i><span>Kelgan</span>
+            </a>
+          </li>
+        </ul>
+      </li><!-- End Forms Nav -->
+      {% if request.user.employee.status == "worker" %}
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-menu-button-wide"></i><span>Texnikalar ro'yxati</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="components-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+          {% for i in global_categorys %}
+          <li>
+            <a href="{% url 'technics' i.slug %}">
+              <i class="bi bi-circle"></i><span>{{ i.name }}</span>
+            </a>
+          </li>
+          {% endfor %}
+          <li>
+            <a href="{% url 'technics' %}">
+              <i class="bi bi-circle"></i><span>Hammasi</span>
+            </a>
+          </li>
+        </ul>
+      </li><!-- End Components Nav -->
+      <li class="nav-item">
+        <a class="nav-link collapsed" data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
+          <i class="bi bi-layout-text-window-reverse"></i><span>Tashkilotlar ro'yxati</span><i class="bi bi-chevron-down ms-auto"></i>
+        </a>
+        <ul id="tables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
+          {% for i in global_organizations %}
+          <li>
+            <a href="{% url 'organization' i.slug %}">
+              <i class="bi bi-circle"></i><span>{{ i.name }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </li><!-- End Forms Nav -->
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'document_get' %}">
+          <i class="bi bi-file-earmark"></i>
+              <span>Dalolatnoma</span>
+        </a>
+      </li><!-- End F.A.Q Page Nav -->
+
+      {% endif %}
+      <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'logout' %}">
+          <i class="bi bi-box-arrow-in-right"></i>
+          <span>chiqish</span>
+        </a>
+      </li><!-- End Login Page Nav -->
+    </ul>
+
+  </aside><!-- End Sidebar-->
+
+  {% block content %}
+
+  {% endblock content %}
+
+  <div class="container">
+      {% if messages %}
+        <div style="z-index: 312;" class="shadow-sm position-fixed end-0 bottom-0 mt-4">
+          {% for message in messages  %}
+            <div style="width: 20rem; opacity:0.9 " class="alert alert-{{message.tags}} alert-dismissible fade show" role="alert">
+               {{message}}
+            </div>
+            {% endfor %}
+        </div>
+      {% endif %}
+  </div>
+
+  <!-- GLOBAL PAGE LOADER -->
+    <div id="page-loader"
+         style="
+            display:none;
+            position:fixed;
+            inset:0;
+            background:rgba(255,255,255,0.8);
+            z-index:99999;
+            align-items:center;
+            justify-content:center;">
+        <div class="text-center">
+            <div class="spinner-border text-primary"></div>
+            <div class="mt-2">Yuklanmoqda...</div>
+        </div>
+    </div>
+
+
+  <!-- ======= Footer ======= -->
+
+  <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Vendor JS Files -->
+  <script src="{% static 'vendor/apexcharts/apexcharts.min.js' %}"></script>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'vendor/chart.js/chart.umd.js' %}"></script>
+  <script src="{% static 'vendor/echarts/echarts.min.js' %}"></script>
+  <script src="{% static 'vendor/quill/quill.min.js' %}"></script>
+  <script src="{% static 'vendor/simple-datatables/simple-datatables.js' %}"></script>
+  <script src="{% static 'vendor/tinymce/tinymce.min.js' %}"></script>
+  <script src="{% static 'vendor/php-email-form/validate.js' %}"></script>
+  <!-- jQuery -->
+
+<!-- FOOTER SCRIPTS (har doim body pastida) -->
+
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Select2 -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+{% block js %}{% endblock %}
+
+
+  <!-- Template Main JS File -->
+  <script src="{% static 'js/loader.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/document.js' %}"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    // 🟦 ORDER BELL
+    const orderBell = document.getElementById("order-bell");
+    if (orderBell) {
+        orderBell.addEventListener("shown.bs.dropdown", function () {
+            fetch("{% url 'order_mark_seen' %}");
+        });
+    }
+
+    // 🟨 DEED BELL
+    const deedBell = document.getElementById("deed-bell");
+    if (deedBell) {
+        deedBell.addEventListener("shown.bs.dropdown", function () {
+            fetch("{% url 'deed_mark_seen' %}");
+        });
+    }
+
+});
+</script>
+</body>
+
+</html>

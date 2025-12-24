@@ -1,0 +1,190 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    <title>document</title>
+{% endblock title %}
+
+{% block css %}
+    <link
+      rel="stylesheet"
+      href="/charts/vanilla/pie-series/examples/simple-pie/ag-example-styles.css"/>
+{% endblock css %}
+
+{% block content %}
+  <main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Dashboard</h1>
+    </div><!-- End Page Title -->
+
+    <section class="section dashboard">
+      <div class="row">
+
+        <!-- Left side columns -->
+        <div class="col-lg-8">
+          <div class="row">
+            {% for i in organizations1 %}
+            <!-- Customers Card -->
+            <div class="col-xxl-4 col-xl-12">
+
+              <div class="card info-card customers-card">
+
+                <div class="card-body">
+                  <h5 class="card-title">{{i.name}}</h5>
+
+                  <div class="d-flex align-items-center">
+                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                      <i class="bi bi-people"></i>
+                    </div>
+                    <div class="ps-3">
+                      <h6>{{i.technics_count }} ta texnika</h6>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div><!-- End Customers Card -->
+            {% endfor %}
+            <!-- Reports -->
+            <div class="col-12">
+              <div class="card">
+
+                <div id="chartArea"></div>
+
+              </div>
+            </div><!-- End Reports -->
+
+          </div>
+        </div><!-- End Left side columns -->
+
+        <!-- Right side columns -->
+        <div class="col-lg-4">
+
+          <!-- Recent Activity -->
+          <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Oxirgi harakatlar</h5>
+
+                <div class="activity">
+                    {% for i in logs %}
+                    <div class="activity-item d-flex">
+                        <!-- TIME AGO -->
+                        <div class="activite-label">
+                            {{ i.action_time|timesince }} oldin
+                        </div>
+
+                        <!-- BADGE (rang action_flag bo‘yicha) -->
+                        <i class="bi bi-circle-fill activity-badge
+                            {% if i.action_flag == 1 %} text-primary
+                            {% elif i.action_flag == 2 %} text-success
+                            {% elif i.action_flag == 3 %} text-danger
+                            {% else %} text-muted
+                            {% endif %}
+                            align-self-start">
+                        </i>
+
+                        <!-- CONTENT -->
+                        <div class="activity-content">
+                            <!-- Title -->
+                            <strong>{{ i.object_repr }}</strong>
+                            <!-- Description -->
+                            {% if i.action_flag == 1 %}
+                               qo'shildi
+                            {% elif i.action_flag == 2 %}
+                               taxrirlandi
+                            {% elif i.action_flag == 3 %}
+                               o'chirildi
+                            {% endif %}
+                        </div>
+                    </div><!-- End activity item-->
+                    {% endfor %}
+                </div>
+              </div>
+            </div><!-- End Recent Activity -->
+
+
+          <!-- Website Traffic -->
+          <div class="card">
+           <div id="chartPie"></div>
+          </div><!-- End Website Traffic -->
+
+        </div><!-- End Right side columns -->
+
+      </div>
+    </section>
+
+  </main><!-- End #main -->
+<script src="https://cdn.jsdelivr.net/npm/ag-charts-community@12.3.1/dist/umd/ag-charts-community.js"></script>
+
+<script>
+const { AgCharts } = agCharts;
+
+/* =============================
+   1) AREA CHART — kategoriya bo‘yicha texnika soni
+   ============================= */
+const areaOptions = {
+    container: document.getElementById("chartArea"),
+    title: {
+        text: "Kategoriyalar bo‘yicha texnika soni",
+    },
+    data: JSON.parse('{{ chart_data|escapejs }}'),
+    series: [
+        {% for org in organizations %}
+        {
+            type: "area",
+            xKey: "category",
+            yKey: "org_{{ org.id }}",
+            yName: "{{ org.name|escapejs }}",
+            stacked: true,
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    axes: [
+        { type: "category", position: "bottom", title: { text: "Kategoriyalar" }},
+        { type: "number", position: "left", title: { text: "Soni" }},
+    ],
+    legend: { position: "top" },
+};
+
+AgCharts.create(areaOptions);
+
+
+/* =============================
+   2) PIE CHART — tashkilotlar bo‘yicha ulush
+   ============================= */
+
+// Masalan: har bir tashkilotning umumiy texnika soni (viewda hisoblab yuborasiz)
+const pieData = JSON.parse('{{ pie_data|escapejs }}');
+
+const pieOptions = {
+    container: document.getElementById("chartPie"),
+    title: {
+        text: "Tashkilotlar ulushi",
+    },
+    data: pieData,   // [{ name: "IMV", count: 60 }, ...]
+    series: [
+        {
+            type: "pie",
+            angleKey: "count",
+            labelKey: "name",
+            innerRadiusRatio: 0.4,
+            calloutLabelKey: "name",
+            sectorLabelKey: "count",
+            sectorLabel: {
+                renderer: ({ datum }) => `${datum.count}`
+            }
+        }
+    ],
+    legend: { position: "bottom" }
+};
+
+AgCharts.create(pieOptions);
+</script>
+
+
+{% endblock content %}
+
+{% block js %}
+{% endblock js %}

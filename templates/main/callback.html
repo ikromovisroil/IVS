@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+<body>
+<script>
+const code = new URLSearchParams(location.search).get("code");
+const verifier = localStorage.getItem("pkce_verifier");
+
+fetch("/sso/exchange/", {
+  method: "POST",
+  headers: {"Content-Type": "application/json"},
+  body: JSON.stringify({
+    code: code,
+    codeVerifier: verifier,
+    redirectUri: "{{ redirect_uri }}"
+  })
+})
+.then(r => r.json())
+.then(data => {
+  if (data.status === "ok") {
+    window.location.href = data.redirect;
+  } else {
+    alert("SSO xatolik");
+    window.location.href = "/";
+  }
+});
+</script>
+</body>
+</html>

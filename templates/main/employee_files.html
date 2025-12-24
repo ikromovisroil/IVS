@@ -1,0 +1,232 @@
+{% if deeds %}
+<table class="table table-bordered align-middle">
+    <thead>
+        <tr>
+            <th>Sana</th>
+            <th>Fayllar</th>
+            <th>Xolati</th>
+            <th>Tasdiqlash</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for d in deeds %}
+        <tr>
+            <!-- Sana -->
+            <td>{{ d.date_creat|date:"d-m-Y H:i" }}</td>
+
+            <!-- Fayl -->
+            <td>
+                {% if d.file %}
+                    <a href="{{ d.file.url }}" target="_blank">📄 Ko‘rish</a>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <!-- Holat -->
+            <td>
+                {% if d.status == 'viewed' %}
+                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                        Kutulmoqda
+                    </span>
+                {% elif d.status == 'approved' %}
+                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                        Tasdiqlandi
+                    </span>
+                {% elif d.status == 'rejected' %}
+                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                        Rad etildi
+                    </span>
+                {% endif %}
+
+                <!-- Ikonka -->
+                {% if d.sender.user == user %}
+                    <i class="bi bi-arrow-up"></i>
+                {% elif d.receiver.user == user %}
+                    <i class="bi bi-arrow-down"></i>
+                {% else %}
+                    <i class="bi bi-arrow-left-right"></i>
+                {% endif %}
+
+                <!-- MODAL -->
+                <div class="modal fade" id="modalcondition{{ d.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered modal-xl">
+                        <div class="modal-content">
+                            <!-- ================= HEADER ================= -->
+                            <div class="modal-header">
+                                <h5 class="modal-title">Dalolatnoma holati</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <!-- ================= BODY ================= -->
+                            <div class="modal-body">
+
+                                <!-- ================= SENDER ================= -->
+                                <div class="mb-4 p-3 border rounded bg-light">
+                                    <h5 class="fw-bold mb-2">Yuboruvchi</h5><hr>
+                                    <div class="row">
+                                        <div class="col-6"><strong>Ismi:</strong> {{ d.sender.full_name }}</div>
+                                        <div class="col-3">
+                                            <strong>Holati:</strong>
+                                            <span class="badge bg-success">Tasdiqlandi</span>
+                                        </div>
+                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
+                                    </div>
+                                    {% if d.message_sender %}
+                                        <div class="mt-2">
+                                            <strong>Izoh:</strong>
+                                            <span class="text-muted">{{ d.message_sender }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- ================= RECEIVER ================= -->
+                                <div class="mb-4 p-3 border rounded bg-light">
+                                    <h5 class="fw-bold mb-2">Qabul qiluvchi</h5><hr>
+                                    <div class="row">
+                                        <div class="col-6"><strong>Ismi:</strong> {{ d.receiver.full_name }}</div>
+                                        <div class="col-3">
+                                            <strong>Holati:</strong>
+                                            {% if d.status == 'viewed' %}
+                                                <span class="badge bg-warning">Kutulmoqda</span>
+                                            {% elif d.status == 'approved' %}
+                                                <span class="badge bg-success">Tasdiqlandi</span>
+                                            {% elif d.status == 'rejected' %}
+                                                <span class="badge bg-danger">Rad etildi</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_edit|date:"d.m.Y H:i" }}</div>
+                                    </div>
+                                    {% if d.message_receiver %}
+                                        <div class="mt-2">
+                                            <strong>Izoh:</strong>
+                                            <span class="text-muted">{{ d.message_receiver }}</span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- ================= KELISHUVCHILAR ================= -->
+
+                                {% if d.deedconsent_set.all %}
+                                    <div class="mb-4 p-3 border rounded bg-light">
+                                        <h5 class="fw-bold mb-2">Kelishuvchilar</h5><hr>
+                                        {% for dc in d.deedconsent_set.all %}
+                                            <div class="row">
+                                                <div class="col-6"><strong>Ismi:</strong> {{ dc.employee.full_name }}</div>
+                                                <div class="col-3">
+                                                    <strong>Holati:</strong>
+                                                    {% if dc.status == 'viewed' %}
+                                                        <span class="badge bg-warning">Kutulmoqda</span>
+                                                    {% elif dc.status == 'approved' %}
+                                                        <span class="badge bg-success">Tasdiqlandi</span>
+                                                    {% elif dc.status == 'rejected' %}
+                                                        <span class="badge bg-danger">Rad etildi</span>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="col-3"><strong>Sana:</strong> {{ dc.date_edit|date:"d.m.Y H:i" }}</div>
+                                            </div>
+                                            {% if dc.message %}
+                                                <div class="mt-2">
+                                                    <strong>Izoh:</strong>
+                                                    <span class="text-muted">{{ dc.message }}</span>
+                                                </div>
+                                            {% endif %}<hr>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <p class="text-muted">Kelishuvchilar yo‘q</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+            <!-- Holat -->
+            <td>
+                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ d.id }}">
+                    Tasdiqlash
+                </button>
+
+                <!-- MODAL -->
+                {% if d.sender.user != user %}
+                <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
+                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                        <div class="modal-content">
+
+                            <div class="modal-header">
+                                <h5 class="modal-title">Tasdiqlash</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+
+                            <div class="modal-body">
+
+                                {# ================= RECEIVER ================= #}
+                                {% if d.receiver.user == user and d.status == 'viewed' %}
+                                <div>
+                                    Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
+                                </div><hr>
+                                <form method="post" action="{% url 'deed_action' d.id %}">
+                                    {% csrf_token %}
+
+                                    <div class="mb-3">
+                                        <textarea
+                                            name="message_receiver"
+                                            class="form-control"
+                                            style="height: 100px"
+                                            placeholder="Izoh yozing..."></textarea>
+                                    </div>
+
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button name="action" value="reject" class="btn btn-danger">
+                                            Rad etish
+                                        </button>
+                                        <button name="action" value="approve" class="btn btn-primary">
+                                            Tasdiqlash
+                                        </button>
+                                    </div>
+                                </form>
+
+
+                                {# ================= KELISHUVCHI ================= #}
+                                {% else %}
+                                    {% for dc in d.deedconsent_set.all %}
+                                        {% if dc.employee.user == user and dc.status == 'viewed' %}
+                                        <div>
+                                              Siz tizimga E-imzo orqali kirgansiz. Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
+                                        </div><hr>
+                                        <form method="post" action="{% url 'deedconsent_action' dc.id %}">
+                                            {% csrf_token %}
+                                             <div class="mb-3">
+                                                <textarea
+                                                    name="message"
+                                                    class="form-control"
+                                                    style="height: 100px"
+                                                    placeholder="Izoh yozing..."></textarea>
+                                            </div>
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <div class="d-flex justify-content-center gap-2">
+                                                    <button name="action" value="reject" class="btn btn-danger">Rad etish</button>
+                                                    <button name="action" value="approve" class="btn btn-primary">Tasdiqlash</button>
+                                                </div>
+
+                                            </div>
+                                        </form>
+                                        {% endif %}
+                                    {% empty %}
+                                        <p class="text-muted text-center mb-0">
+                                            Siz uchun tasdiqlash mavjud emas
+                                        </p>
+                                    {% endfor %}
+                                {% endif %}
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<p class="text-muted">Arizalar mavjud emas.</p>
+{% endif %}

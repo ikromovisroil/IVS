@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<title>Tashkilot texnikalari</title>
+{% endblock title %}
+
+{% block content %}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Texnika va materiallar</h1>
+    </div>
+
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Texnikalar</h5>
+              <!-- Table with stripped rows -->
+              <table class="table datatable">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Nomi</th>
+                    <th scope="col">I/N</th>
+                    <th scope="col">S/N</th>
+                    <th scope="col">Soni</th>
+                    <th scope="col">Yili</th>
+                    <th scope="col">Sana</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {% for tex in technics %}
+                  <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>({{tex.category.name|default:"-"}}) {{tex.name|default:"-"}}</td>
+                    <td>{{tex.inventory|default:"-"}}</td>
+                    <td>{{tex.serial|default:"-"}}</td>
+                    <td>{{tex.number|default:"-"}}</td>
+                    <td>{{tex.year|default:"-"}}</td>
+                    <td>{{tex.date_creat}}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+              <!-- End Table with stripped rows -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Materiallar</h5>
+              <!-- Table with stripped rows -->
+              <table class="table datatable">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Texnika Nomi</th>
+                    <th scope="col">Material Nomi</th>
+                    <th scope="col">I/N</th>
+                    <th scope="col">Soni</th>
+                    <th scope="col">Qiymati</th>
+                    <th scope="col">Sana</th>
+                  </tr>
+                </thead>
+                {% for mat in material %}
+                  <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>{{mat.technics.name|default:"-"}}</td>
+                    <td>{{mat.name|default:"-"}}</td>
+                    <td>{{mat.inventory|default:"-"}}</td>
+                    <td>{{mat.number|default:"-"}}</td>
+                    <td>{{mat.unit|default:"-"}}</td>
+                    <td>{{mat.date_creat}}</td>
+                  </tr>
+                {% endfor %}
+              </table>
+              <!-- End Table with stripped rows -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+</main>
+
+{% endblock content %}

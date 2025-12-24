@@ -1,0 +1,274 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<title>Arizalar</title>
+{% endblock %}
+
+{% block css %}
+
+{% endblock css %}
+
+{% block content %}
+<main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Arizalar</h1>
+    </div>
+
+    <section class="section profile">
+      <div class="row">
+
+        <!-- LEFT: XODIMLAR RO‘YXATI -->
+        <div class="col-xl-4">
+          <div class="card">
+            <div class="alert fade show" role="alert">
+              <input type="text" id="searchEmployee" class="form-control" placeholder="Xodim qidirish...">
+            </div>
+            <div class="card-body" style="overflow: auto; height: 800px;">
+                <div class="list-group employee-scroll" id="employeeList">
+                    {% for emp in employee %}
+                        <div id="employee_{{ emp.id }}"
+                             class="employee-item alert alert-secondary alert-dismissible fade show"
+                             data-id="{{emp.id}}"
+                             data-name="{{ emp.user.get_full_name }}"
+                             data-slug="{{ emp.slug }}">
+                             {{ emp.rank }} — {{ emp.user.get_full_name }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: TAB CONTENT -->
+        <div class="col-xl-8">
+          <div class="card">
+            <div class="card-body pt-3">
+
+              <ul class="nav nav-tabs nav-tabs-bordered">
+                <li class="nav-item">
+                  <button class="nav-link active" data-bs-toggle="tab"
+                          data-bs-target="#profile-overview">Arizalar</button>
+                </li>
+                <li class="nav-item">
+                  <button class="nav-link" data-bs-toggle="tab"
+                          data-bs-target="#profile-send">Yuborish</button>
+                </li>
+              </ul>
+
+              <div class="tab-content pt-2">
+
+                <!-- TAB 1 -->
+                <div class="tab-pane fade show active pt-3" id="profile-overview">
+                    <div id="result-block">
+                        <p class="text-muted">Xodimni tanlang...</p>
+                    </div>
+                </div>
+
+                <!-- TAB 2 -->
+                <div class="tab-pane fade pt-3" id="profile-send">
+
+                  <form action="{% url 'deed_post' %}" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row mb-3">
+                      <label class="col-md-4 col-lg-3 col-form-label">File</label>
+                      <div class="col-md-8 col-lg-9">
+                        <input class="form-control" type="file" name="file" required>
+                      </div>
+                    </div>
+
+                    <div class="row mb-3">
+                      <label class="col-md-4 col-lg-3 col-form-label">Comment</label>
+                      <div class="col-md-8 col-lg-9">
+                        <input name="message" type="text" class="form-control">
+                      </div>
+                    </div>
+
+                    <div class="row mb-3">
+                      <label class="col-md-4 col-lg-3 col-form-label">Qabul qiluvchi</label>
+                      <div class="col-md-8 col-lg-9">
+                        <input type="text" id="receiver" class="form-control" disabled>
+                        <input type="hidden" id="receiver_id" name="receiver_id" required>
+                      </div>
+                    </div>
+
+                    <div class="row mb-3">
+                      <label class="col-sm-4 col-lg-3 col-form-label">Kelishuvchilar</label>
+                      <div class="col-md-8 col-lg-9">
+                        <select id="kelishuvchilar" name="agreements" class="form-select" multiple>
+                            {% for emp in employee %}
+                            <option value="{{emp.id}}">{{emp.rank}} - {{emp.full_name}}</option>
+                            {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+
+
+                    <div class="text-center">
+                      <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">Yuborish</button>
+
+                      <div class="modal fade" id="modalcondition{{ d.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content">
+                                <!-- ================= HEADER ================= -->
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Dalolatnoma Yuborish</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                   Siz tizimga E-imzo orqali kirgansiz. Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
+                                </div>
+                                <div class="modal-footer d-flex justify-content-center gap-2">
+                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                                  <button type="submit" class="btn btn-primary">Yuborish</button>
+                                </div>
+                            </div>
+                        </div>
+                      </div>
+                    </div>
+                  </form>
+
+                </div>
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+</main>
+
+<!-- JAVASCRIPT -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const searchInput = document.getElementById("searchEmployee");
+    const employees = document.querySelectorAll(".employee-item");
+    const receiverInput = document.getElementById("receiver");
+    const receiverIdInput = document.getElementById("receiver_id");
+    const resultBlock = document.getElementById("result-block");
+
+    // ===========================
+    // 1) QIDIRUV
+    // ===========================
+    if (searchInput) {
+        searchInput.addEventListener("keyup", function () {
+            let value = this.value.toLowerCase().trim();
+
+            employees.forEach(item => {
+                let name = item.dataset.name.toLowerCase();
+                item.style.display = name.includes(value) ? "block" : "none";
+            });
+        });
+    }
+
+    // ===========================
+    // 2) SAHIFA YUKLANGANDA ACTIVE SLUG
+    // ===========================
+    const params = new URLSearchParams(window.location.search);
+    const activeSlug = params.get("employee");
+
+    if (activeSlug) {
+        employees.forEach(item => {
+            let itemSlug = item.dataset.slug;
+            if (itemSlug === activeSlug) {
+                employees.forEach(i => {
+                    i.classList.remove("alert-primary");
+                    i.classList.add("alert-secondary");
+                });
+
+                item.classList.remove("alert-secondary");
+                item.classList.add("alert-primary");
+
+                receiverInput.value = item.dataset.name;
+                receiverIdInput.value = item.dataset.id;
+
+                // Fayllarni yuklash
+                fetch("{% url 'get_employee_files' %}?employee_id=" + item.dataset.id)
+                    .then(r => r.json())
+                    .then(data => resultBlock.innerHTML = data.html);
+
+                // 🔥 Kelishuvchilarni yuklash
+                loadDepartmentEmployees(item.dataset.id);
+            }
+        });
+    }
+
+    // ===========================
+    // 3) BOSILGANDA SLUGNI O'RNATISH + KELISHUVCHILAR
+    // ===========================
+    employees.forEach(item => {
+        item.addEventListener("click", function () {
+
+            employees.forEach(i => {
+                i.classList.remove("alert-primary");
+                i.classList.add("alert-secondary");
+            });
+
+            this.classList.remove("alert-secondary");
+            this.classList.add("alert-primary");
+
+            let empId = this.dataset.id;
+            let empName = this.dataset.name;
+            let slug = this.dataset.slug;
+
+            receiverInput.value = empName;
+            receiverIdInput.value = empId;
+
+            // URLga slug yozish
+            const params = new URLSearchParams(window.location.search);
+            params.set("employee", slug);
+            history.replaceState({}, "", "?" + params.toString());
+
+            // Fayllarni yuklash
+            fetch("{% url 'get_employee_files' %}?employee_id=" + empId)
+                .then(r => r.json())
+                .then(data => {
+                    resultBlock.innerHTML = data.html;
+                });
+
+            // 🔥 KELISHUVCHILAR — Department bo‘yicha yuklash
+            loadDepartmentEmployees(empId);
+        });
+    });
+
+    // ===========================
+    // 4) DEPARTMENT XODIMLARINI YUKLASH FUNKSIYASI
+    // ===========================
+    function loadDepartmentEmployees(empId) {
+        $.ajax({
+            url: "{% url 'get_dep_employees' %}",
+            data: { employee_id: empId },
+            success: function (data) {
+
+                let select = $("#kelishuvchilar");
+                select.empty();
+
+                data.employees.forEach(emp => {
+                    select.append(`<option value="${emp.id}">${emp.name}</option>`);
+                });
+
+                select.trigger('change');
+            }
+        });
+    }
+
+    // ===========================
+    // 5) SELECT2 INIT
+    // ===========================
+    $('#kelishuvchilar').select2({
+        placeholder: "Kelishuvchilarni tanlang",
+        allowClear: true,
+        width: "100%"
+    });
+
+});
+</script>
+
+{% endblock content %}

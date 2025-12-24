@@ -1,0 +1,309 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    <title>index</title>
+{% endblock title %}
+
+{% block css %}
+{% endblock css %}
+
+{% block content %}
+
+  <main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Texnikalar ro'yxati</h1>
+    </div><!-- End Page Title -->
+
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+                <form class="row g-2 mt-1" method="get">
+                    <div class="col-md-3">
+                        <label for="organization" class="form-label">Tashkilot</label>
+                        <select id="organization" name="organization" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for org in organizations %}
+                                <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="department" class="form-label">Department</label>
+                        <select id="department" name="department" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for dep in departments %}
+                                <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="directorate" class="form-label">Boshqarma</label>
+                        <select id="directorate" name="directorate" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for dir in directorate %}
+                                <option value="{{ dir.id }}" {% if selected_dir == dir.id|stringformat:"s" %}selected{% endif %}>{{ dir.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="division" class="form-label">Bo‘lim</label>
+                        <select id="division" name="division" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for div in division %}
+                                <option value="{{ div.id }}" {% if selected_div == div.id|stringformat:"s" %}selected{% endif %}>{{ div.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                    </div>
+
+                </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dashboard">
+      <div class="row">
+        <div class="col-lg-12">
+
+          <div class="card recent-sales overflow-auto">
+            <div class="card-body">
+            <h5 class="card-title">
+              {% if category %}
+                  {{ category.name }} — <span class="text-muted">{{ total_count }} ta texnika</span>
+              {% else %}
+                  Hammasi — <span class="text-muted">{{ total_count }} ta texnika</span>
+              {% endif %}
+            </h5>
+              <!-- Table with stripped rows -->
+              <table class="table borderless datatable">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Lavozim</th>
+                      <th>F.I.O</th>
+                      <th>Texnika nomi</th>
+                      <th>I/N</th>
+                      <th>S/N</th>
+                      <th>IP</th>
+                      <th>MAC</th>
+                      <th>YIL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for emp, techs in grouped_technics %}
+                    <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ emp.rank }}</td>
+                        <td>
+                            {% if emp.user %}
+                                {{ emp.user.get_full_name }}
+                            {% else %}
+                                <span class="text-muted">— Ro‘yxatdan o‘tmagan —</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- TEXNIKA NOMI -->
+                        <td>
+                            {% for t in techs %}
+                                {{ t.category|default:"" }} ({{ t.name|default:"-" }})
+                                {% if not forloop.last %}
+                                    <hr class="my-1">
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+
+                        <!-- INVENTAR RAQAM -->
+                        <td>
+                            {% for t in techs %}
+                                {{ t.inventory|default:"-" }}
+                                {% if not forloop.last %}
+                                    <hr class="my-1">
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+
+                        <!-- SERIAL -->
+                        <td>
+                            {% for t in techs %}
+                                {{ t.serial|default:"-" }}
+                                {% if not forloop.last %}
+                                    <hr class="my-1">
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+
+                        <!-- IP -->
+                        <td>
+                            {% for t in techs %}
+                                {{ t.ip|default:"-" }}
+                                {% if not forloop.last %}
+                                    <hr class="my-1">
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+
+                        <!-- MAC -->
+                        <td>
+                            {% for t in techs %}
+                                {{ t.moc|default:"-" }}
+                                {% if not forloop.last %}
+                                    <hr class="my-1">
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+
+                        <!-- YEAR -->
+                        <td>
+                            {% for t in techs %}
+                                {{ t.year|default:"-" }}
+                                {% if not forloop.last %}
+                                    <hr class="my-1">
+                                {% endif %}
+                            {% endfor %}
+                        </td>
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center text-muted">Hech qanday texnika topilmadi.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+              </table>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main><!-- End #main -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+
+    // 1. DEPARTAMENTLARNI YUKLASH
+    function loadDepartments(orgId, selectedDepId = null) {
+        $('#department').html('<option value="">Yuklanmoqda...</option>');
+        $('#directorate').html('<option value="">Tanlang...</option>');
+        $('#division').html('<option value="">Tanlang...</option>');
+
+        if (orgId) {
+            $.ajax({
+                url: "{% url 'ajax_load_departments' %}",
+                data: { 'organization': orgId },
+                success: function (data) {
+                    let options = '<option value="">Tanlang...</option>';
+                    $.each(data, function (i, dep) {
+                        let selected = (selectedDepId == dep.id) ? 'selected' : '';
+                        options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
+                    });
+                    $('#department').html(options);
+                }
+            });
+        } else {
+            $('#department').html('<option value="">Tanlang...</option>');
+        }
+    }
+
+    // 2. DIRECTORATE YUKLASH
+    function loadDirectorate(depId, selectedDirId = null) {
+        $('#directorate').html('<option value="">Yuklanmoqda...</option>');
+        $('#division').html('<option value="">Tanlang...</option>');
+
+        if (depId) {
+            $.ajax({
+                url: "{% url 'ajax_load_directorate' %}",
+                data: { 'department': depId },
+                success: function (data) {
+                    let options = '<option value="">Tanlang...</option>';
+                    $.each(data, function (i, dir) {
+                        let selected = (selectedDirId == dir.id) ? 'selected' : '';
+                        options += `<option value="${dir.id}" ${selected}>${dir.name}</option>`;
+                    });
+                    $('#directorate').html(options);
+                }
+            });
+        } else {
+            $('#directorate').html('<option value="">Tanlang...</option>');
+        }
+    }
+
+    // 3. DIVISION YUKLASH
+    function loadDivision(dirId, selectedDivId = null) {
+        $('#division').html('<option value="">Yuklanmoqda...</option>');
+
+        if (dirId) {
+            $.ajax({
+                url: "{% url 'ajax_load_division' %}",
+                data: { 'directorate': dirId },
+                success: function (data) {
+                    let options = '<option value="">Tanlang...</option>';
+                    $.each(data, function (i, div) {
+                        let selected = (selectedDivId == div.id) ? 'selected' : '';
+                        options += `<option value="${div.id}" ${selected}>${div.name}</option>`;
+                    });
+                    $('#division').html(options);
+                }
+            });
+        } else {
+            $('#division').html('<option value="">Tanlang...</option>');
+        }
+    }
+
+
+    // === EVENTLAR ===
+
+    $('#organization').change(function () {
+        loadDepartments($(this).val());
+    });
+
+    $('#department').change(function () {
+        loadDirectorate($(this).val());
+    });
+
+    $('#directorate').change(function () {
+        loadDivision($(this).val());
+    });
+
+
+    // === OLDINGI TANLANGAN QIYMATLARNI QAYTA TIKLASH ===
+
+    let initialOrg = '{{ selected_org }}';
+    let initialDep = '{{ selected_dep }}';
+    let initialDir = '{{ selected_dir }}';
+    let initialDiv = '{{ selected_div }}';
+
+    if (initialOrg) {
+        $('#organization').val(initialOrg);
+        loadDepartments(initialOrg, initialDep);
+
+        if (initialDep) {
+            loadDirectorate(initialDep, initialDir);
+
+            if (initialDir) {
+                loadDivision(initialDir, initialDiv);
+            }
+        }
+    }
+
+});
+
+</script>
+
+{% endblock content %}
+
+{% block js %}
+
+{% endblock js %}

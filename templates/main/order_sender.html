@@ -1,0 +1,423 @@
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+<title>index</title>
+{% endblock title %}
+
+{% block css %}
+{% endblock css %}
+
+
+{% block content %}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <div class="card-title d-flex justify-content-between align-items-center">
+             <h1>Yangi qo'shish</h1>
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">zayafka qo'shish</button>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
+          <div class="modal-content">
+            <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title">#Yangi zayafka</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="m-5">
+                    <!-- Mavzu -->
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">Mavzu:</label>
+                        <div class="col-sm-10">
+                            <select class="form-select" name="topic" id="topic-select" required>
+                                <option value="">tanlang</option>
+                                {% for t in topic %}
+                                    <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Maqsad -->
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">Maqsad:</label>
+                        <div class="col-sm-10">
+                            <select class="form-select" name="goal" id="goal-select" required>
+                                <option value="">mavzu tanlang...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Texnika -->
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">Texnika:</label>
+                        <div class="col-sm-10">
+                            <select class="form-select" name="technics">
+                                <option value="">tanlang</option>
+                                {% for tec in technics %}
+                                    <option value="{{ tec.id }}">{{ tec.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Izoh -->
+                    <div class="row mb-3">
+                        <label class="col-sm-2 col-form-label">Izoh:</label>
+                        <div class="col-sm-10">
+                            <textarea class="form-control" name="body" style="height: 100px"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Masofa -->
+                    <fieldset class="row mb-3">
+                        <legend class="col-form-label col-sm-2 pt-0">Masofa</legend>
+                        <div class="col-sm-10">
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="type_of_work"
+                                       id="gridRadios1"
+                                       value="online"
+                                       checked>
+                                <label class="form-check-label" for="gridRadios1">
+                                    Online
+                                </label>
+                            </div>
+
+                            <div class="form-check">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="type_of_work"
+                                       id="gridRadios2"
+                                       value="offline">
+                                <label class="form-check-label" for="gridRadios2">
+                                    Offline
+                                </label>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="modal-footer d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                        <button type="submit" class="btn btn-primary">Yuborish</button>
+                </div>
+            </div>
+            </form>
+          </div>
+        </div>
+    </div>
+
+    <section class="section faq">
+        <div class="row">
+
+            {% for or in order %}
+            <div class="col-xxl-4 col-md-6">
+              <div class="card info-card sales-card">
+
+                <div class="card-body">
+
+                  <!-- HEADER -->
+                  <div class="card-title d-flex justify-content-between align-items-center">
+
+                    <!-- MODAL OPEN -->
+                    <div type="button" data-bs-toggle="modal" data-bs-target="#modal-{{ or.id }}">
+                        #{{ or.id }}
+                    </div>
+
+                    <!-- STATUS BADGE -->
+                    <div type="button"
+                       {% if or.status != "approved" and or.status != "rejected" %}
+                         data-bs-toggle="modal" data-bs-target="#approved-modal-{{ or.id }}"
+                       {% endif %}>
+                        {% if or.status == "viewed" %}
+                            <span class="badge bg-warning text-white">Kutulmoqda</span>
+                        {% elif or.status == "accepted" %}
+                            <span class="badge bg-primary text-white">Qabul qilindi</span>
+                        {% elif or.status == "finished" %}
+                            <span class="badge bg-info text-white">Yakunlandi</span>
+                        {% elif or.status == "approved" %}
+                            <span class="badge bg-success text-white">Tasdiqlandi</span>
+                        {% elif or.status == "rejected" %}
+                            <span class="badge bg-danger text-white">Rad etildi</span>
+                        {% endif %}
+                    </div>
+
+                    {% if or.materials_all.exists and user.employee.status == "worker" %}
+                      <a href="{% url 'order_deed' or.pk %}">📄 Fayl</a>
+                    {% endif %}
+                  </div>
+
+                  <!-- INFO -->
+                  <div class="d-flex align-items-center">
+                    <div class="ps-3">
+                      <h5>{{ or.body }}</h5>
+                    </div>
+                  </div>
+
+                  <div class="card-title d-flex justify-content-between align-items-center">
+                    <h5>{{ or.date_creat|date:"d.m.Y, H:i" }}</h5>
+                    <div>
+                        {% if or.rating %}
+                           {% for i in ""|center:or.rating %} ⭐ {% endfor %}
+                        {% endif %}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+             <div class="modal fade" id="approved-modal-{{ or.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered">
+                  <form class="modal-content" method="POST" action="{% url 'order_approved' %}">{% csrf_token %}
+                    <div class="modal-header">
+                      <h5 class="modal-title">Zayafkani Yakunlash</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <input type="hidden" name="order_id" value="{{ or.id }}">
+                    {% if or.status == "finished" %}
+                    <div class="modal-body">
+                        <div class="rating text-center">
+                            <input type="radio" name="rating" id="star5-{{ or.id }}" value="5" required>
+                            <label for="star5-{{ or.id }}">5⭐</label>
+
+                            <input type="radio" name="rating" id="star4-{{ or.id }}" value="4">
+                            <label for="star4-{{ or.id }}">4⭐</label>
+
+                            <input type="radio" name="rating" id="star3-{{ or.id }}" value="3">
+                            <label for="star3-{{ or.id }}">3⭐</label>
+
+                            <input type="radio" name="rating" id="star2-{{ or.id }}" value="2">
+                            <label for="star2-{{ or.id }}">2⭐</label>
+
+                            <input type="radio" name="rating" id="star1-{{ or.id }}" value="1">
+                            <label for="star1-{{ or.id }}">1⭐</label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="modal-footer d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-danger btn-rejected" data-id="{{ or.id }}">
+                            Bekor qilish
+                        </button>
+                        {% if or.status == "finished" %}
+                        <button type="submit" class="btn btn-primary" data-id="{{ or.id }}">
+                            Yakunlash
+                        </button>
+                        {% endif %}
+                    </div>
+                  </form>
+                </div>
+              </div><!-- End Vertically centered Modal-->
+            <!-- ================= MODAL ================= -->
+            <div class="modal fade" id="modal-{{ or.id }}" tabindex="-1">
+                <div class="modal-dialog modal-dialog-scrollable modal-xl">
+                  <div class="modal-content">
+
+                    <div class="modal-header">
+                      <h5 class="modal-title">#{{ or.id }}</h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <div class="modal-body">
+
+                        <h4 class="mb-3">Ariza tafsilotlari</h4>
+
+                        <div class="row g-3">
+
+                            <div class="col-6 text-muted">Holati</div>
+                            <div class="col-6">
+                                <i class="bi bi-check-square-fill"></i> {{ or.get_status_display }}
+                            </div>
+
+                            <div class="col-6 text-muted">Kiritilgan sana</div>
+                            <div class="col-6">{{ or.date_creat|date:"d.m.Y, H:i" }}</div>
+
+                            <div class="col-6 text-muted">Muallif</div>
+                            <div class="col-6">{{ or.sender.full_name }}</div>
+
+                            <div class="col-6 text-muted">Bajaruvchi</div>
+                            <div class="col-6">{{ or.receiver.full_name }}</div>
+
+                            <div class="col-6 text-muted">Ish turi</div>
+                            <div class="col-6">{{ or.get_type_of_work_display }}</div>
+
+                            <div class="col-6 text-muted">Texnika</div>
+                            <div class="col-6">{{ or.technics.name }}</div>
+
+                            <div class="col-6 text-muted">Mavzu</div>
+                            <div class="col-6">{{ or.goal.topic.name }}</div>
+
+                            <div class="col-6 text-muted">Maqsad</div>
+                            <div class="col-6">{{ or.goal.name }}</div>
+
+                            <div class="col-6 text-muted">Izoh</div>
+                            <div class="col-6">{{ or.body }}</div>
+
+                        </div>
+
+                        <br><hr>
+                        <!-- MATERIALS -->
+                        <div class="card-title d-flex justify-content-between align-items-center">
+                            <h4>Materiallar</h4>
+                        </div>
+                        {# Mavjud materiallar ro‘yxati #}
+                        {% if or.materials_all.exists %}
+                         <table class="table">
+                            <thead>
+                              <tr>
+                                <th scope="col">#</th>
+                                <th scope="col">Name</th>
+                                <th scope="col">Soni</th>
+                                <th scope="col">Narxi</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                            {% for m in or.materials_all %}
+                              <tr>
+                                <th scope="row">1</th>
+                                <td>{{m.material.name}}</td>
+                                <td>{{m.number|intcomma}}</td>
+                                <td>{{m.material.price|intcomma}}</td>
+                              </tr>
+                            {% endfor %}
+                            </tbody>
+                          </table>
+                        {% endif %}
+                        <br><hr>
+
+                        <!-- PROGRESS -->
+                        <h4 class="mb-3">Jarayon</h4>
+
+                        <div class="container">
+
+                            <ul class="list-group list-group-flush">
+
+                                <li class="list-group-item d-flex align-items-start">
+                                    <div class="me-3 text-warning">
+                                        <i class="bi bi-clock fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Kutish jarayonida</div>
+                                        <div class="text-muted small">{{ or.date_creat|date:"d.m.Y, H:i:s" }}</div>
+                                    </div>
+                                </li>
+
+                                {% if or.date_accepted %}
+                                <li class="list-group-item d-flex align-items-start">
+                                    <div class="me-3 text-primary">
+                                        <i class="bi bi-check2-circle fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Qabul qilindi</div>
+                                        <div class="text-muted small">{{ or.date_accepted|date:"d.m.Y, H:i:s" }}</div>
+                                    </div>
+                                </li>
+                                {% endif %}
+
+                                {% if or.date_finished %}
+                                <li class="list-group-item d-flex align-items-start">
+                                    <div class="me-3 text-info">
+                                        <i class="bi bi-truck fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Yakunlandi</div>
+                                        <div class="text-muted small">{{ or.date_finished|date:"d.m.Y, H:i:s" }}</div>
+                                    </div>
+                                </li>
+                                {% endif %}
+
+                                {% if or.date_approved %}
+                                <li class="list-group-item d-flex align-items-start">
+                                    <div class="me-3 text-success">
+                                        <i class="bi bi-briefcase fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Tasdiqlandi</div>
+                                        <div class="text-muted small">{{ or.date_approved|date:"d.m.Y, H:i:s" }}</div>
+                                    </div>
+                                </li>
+                                {% endif %}
+
+                                {% if or.date_rejected %}
+                                <li class="list-group-item d-flex align-items-start">
+                                    <div class="me-3 text-danger">
+                                        <i class="bi bi-x-circle fs-3"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Rad etildi</div>
+                                        <div class="text-muted small">{{ or.date_rejected|date:"d.m.Y, H:i:s" }}</div>
+                                    </div>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+
+                        </div>
+                    </div>
+                  </div>
+                </div>
+            </div>
+
+            {% endfor %}
+        </div>
+    </section>
+</main>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const topicSelect = document.getElementById("topic-select");
+    const goalSelect = document.getElementById("goal-select");
+
+    topicSelect.addEventListener("change", function () {
+        const topicId = this.value;
+
+        goalSelect.innerHTML = '<option value="">Yuklanmoqda...</option>';
+
+        if (!topicId) {
+            goalSelect.innerHTML = '<option value="">Avval mavzuni tanlang</option>';
+            return;
+        }
+
+        fetch(`/get_goals/${topicId}/`)
+            .then(response => response.json())
+            .then(data => {
+                goalSelect.innerHTML = '<option value="">tanlang</option>';
+
+                data.goals.forEach(goal => {
+                    const opt = document.createElement("option");
+                    opt.value = goal.id;
+                    opt.textContent = goal.name;
+                    goalSelect.appendChild(opt);
+                });
+            })
+            .catch(error => {
+                goalSelect.innerHTML = '<option value="">Xatolik yuz berdi!</option>';
+                console.error(error);
+            });
+    });
+});
+
+$(document).on("click", ".btn-rejected", function () {
+    let id = $(this).data("id");
+
+    $.ajax({
+        url: "/order/rejected/" + id + "/",
+        method: "GET",
+        success: function (response) {
+            if (response.status === "ok") {
+                location.reload();
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
+
