@@ -283,8 +283,8 @@ def sso_callback_page(request):
 
 
 @csrf_exempt
-@login_required
 @never_cache
+@login_required
 def sso_exchange_and_finish(request):
     try:
         body = json.loads(request.body or "{}")
@@ -295,6 +295,7 @@ def sso_exchange_and_finish(request):
             body.get("codeVerifier"),
             body.get("redirectUri"),
         )
+
         user_data = decode_jwt(token_data["id_token"])
 
         pending = request.session.get("PENDING_DEED_APPROVE")
@@ -305,51 +306,50 @@ def sso_exchange_and_finish(request):
         message_receiver = pending.get("message_receiver", "")
         redirect_url = pending.get("redirect_url", "/")
 
+        # ❌ Begona foydalanuvchi bosolmaydi
         if deed.receiver.user != request.user:
             raise PermissionDenied("Ruxsat yo‘q")
 
-        employee_pinfl = request.user.employee.pinfil
+        # 2️⃣ PINFL tekshiruv
+        employee_pinfl = getattr(request.user.employee, "pinfl", None)
         sso_pinfl = user_data.get("pinfl")
 
-        if employee_pinfl != sso_pinfl:
-            messages.info(
+        if not employee_pinfl or employee_pinfl != sso_pinfl:
+            messages.error(
                 request,
-                "User bilan kluch egasi mos kelmayapti ."
+                "SSO kalit egasi va foydalanuvchi mos kelmadi!"
             )
             return JsonResponse({
                 "status": "forbidden",
                 "redirect": redirect_url
             }, status=403)
 
+        # 3️⃣ Qayta imzolamaslik
         if deed.status == "approved":
-            return JsonResponse({"status": "ok", "redirect": redirect_url})
+            return JsonResponse({
+                "status": "ok",
+                "redirect": redirect_url
+            })
 
-        signed_rel = sign_pdf(
+        # 4️⃣ PDF ni imzolash (nomi o‘zgarmaydi)
+        ok = sign_pdf(
             pdf_path=deed.file.path,
             request=request,
             approver_name=request.user.employee.full_name,
         )
 
-        if not signed_rel:
+        if not ok:
             raise Exception("Imzo xatosi")
 
-        signed_abs = os.path.join(settings.MEDIA_ROOT, signed_rel)
-
-        with open(signed_abs, "rb") as f:
-            deed.file.save(os.path.basename(signed_abs), File(f), save=False)
-
+        # 5️⃣ Statusni yangilash
         deed.status = "approved"
         deed.message_receiver = message_receiver
         deed.save()
 
-        messages.success(request, "✅ Dalolatnoma tasdiqlandi")
-
+        # 6️⃣ Session tozalash
         request.session.pop("PENDING_DEED_APPROVE", None)
 
-        try:
-            os.remove(signed_abs)
-        except:
-            pass
+        messages.success(request, "✅ Dalolatnoma tasdiqlandi")
 
         return JsonResponse({
             "status": "ok",
@@ -358,7 +358,11 @@ def sso_exchange_and_finish(request):
 
     except Exception as e:
         print("SSO ERROR:", e)
-        return JsonResponse({"status": "error", "message": "SSO xatolik"}, status=500)
+        return JsonResponse({
+            "status": "error",
+            "message": "SSO xatolik"
+        }, status=500)
+
 
 
 def exchange_code_for_token(code, code_verifier, redirect_uri):

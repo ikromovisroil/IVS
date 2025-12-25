@@ -131,34 +131,29 @@ def merge_pdf(original: str, overlay: str, output: str) -> None:
 # =========================================================
 # 4) Asosiy FUNKSIYA: DOCX → PDF → Overlay → Signed PDF
 # ==========================================================
-def sign_pdf(pdf_path: str, request,approver_name: str) -> str | None:
+import shutil
+
+def sign_pdf(pdf_path: str, request, approver_name: str) -> bool:
 
     if not os.path.exists(pdf_path):
         print("❌ PDF topilmadi:", pdf_path)
-        return None
+        return False
 
     pdf_path = os.path.abspath(pdf_path)
 
-    # =============================
-    # Imzo matni
-    # =============================
     text = (
         f"Ushbu hujjat {approver_name} tomonidan "
         f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
     )
 
-    # =============================
-    # QR link
-    # =============================
     media_root = os.path.abspath(settings.MEDIA_ROOT)
     rel_pdf = os.path.relpath(pdf_path, media_root).replace(os.sep, "/")
+
+    # QR doim shu faylni ochadi (fayl nomi o‘zgarmaydi)
     qr_link = request.build_absolute_uri(settings.MEDIA_URL + rel_pdf)
 
-    # =============================
-    # Fayl yo‘llari
-    # =============================
     overlay_path = pdf_path.replace(".pdf", "_overlay.pdf")
-    final_path = pdf_path.replace(".pdf", "_signed.pdf")
+    merged_tmp = pdf_path.replace(".pdf", "_merged_tmp.pdf")
 
     create_overlay_pdf(
         original_pdf_path=pdf_path,
@@ -170,13 +165,18 @@ def sign_pdf(pdf_path: str, request,approver_name: str) -> str | None:
     merge_pdf(
         original=pdf_path,
         overlay=overlay_path,
-        output=final_path
+        output=merged_tmp
     )
+
+    # 🔥 ASOSIY NUQTA
+    # Imzolangan hujjat — eski faylning o‘ziga yoziladi
+    shutil.move(merged_tmp, pdf_path)
 
     if os.path.exists(overlay_path):
         os.remove(overlay_path)
 
-    return os.path.relpath(final_path, media_root).replace(os.sep, "/")
+    return True
+
 
 
 
