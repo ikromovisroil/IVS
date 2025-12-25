@@ -1,4 +1,4 @@
-from django.shortcuts import render,redirect,HttpResponseRedirect
+from django.shortcuts import render,redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
@@ -16,6 +16,8 @@ import os
 from PyPDF2 import PdfReader
 from django.views.decorators.cache import never_cache
 from .services import *
+from django.views.decorators.csrf import csrf_exempt
+
 
 def global_data(request):
     return {
@@ -100,6 +102,7 @@ def index(request):
     }
     return render(request, "main/index.html", context)
 
+
 @never_cache
 @login_required
 def contact(request):
@@ -107,6 +110,7 @@ def contact(request):
         'employee': Employee.objects.exclude(user=request.user),
     }
     return render(request, 'main/contact.html', context)
+
 
 @never_cache
 @login_required
@@ -197,7 +201,6 @@ def deed_post(request):
     messages.success(request, "✅ Dalolatnoma yuborildi")
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
-from django.views.decorators.csrf import csrf_exempt
 
 @never_cache
 @login_required
@@ -257,6 +260,7 @@ def deed_action(request, pk):
     messages.error(request, "Noto‘g‘ri amal")
     return redirect("/")
 
+
 @login_required
 @never_cache
 def sso_start_page(request):
@@ -270,12 +274,14 @@ def sso_start_page(request):
         "redirect_uri": get_sso_redirect_uri(request),
     })
 
+
 @login_required
 @never_cache
 def sso_callback_page(request):
     return render(request, "main/callback.html", {
         "redirect_uri": get_sso_redirect_uri(request),
     })
+
 
 @csrf_exempt
 @login_required
@@ -347,6 +353,7 @@ def sso_exchange_and_finish(request):
         print("SSO ERROR:", e)
         return JsonResponse({"status": "error", "message": "SSO xatolik"}, status=500)
 
+
 def exchange_code_for_token(code, code_verifier, redirect_uri):
     auth = base64.b64encode(
         f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
@@ -373,7 +380,6 @@ def exchange_code_for_token(code, code_verifier, redirect_uri):
         raise PermissionDenied("SSO token olinmadi")
 
     return response.json()
-
 
 
 @never_cache
@@ -553,6 +559,7 @@ def organization(request, slug):
     }
     return render(request, 'main/organization.html', context)
 
+
 @never_cache
 @login_required
 def document_get(request):
@@ -570,6 +577,7 @@ def document_get(request):
         'organizations': Organization.objects.all(),
     }
     return render(request, 'main/document.html', context)
+
 
 @never_cache
 @login_required
@@ -748,6 +756,7 @@ def document_post(request):
     doc.save(response)
     return response
 
+
 @never_cache
 @login_required
 def order_sender(request):
@@ -760,6 +769,7 @@ def order_sender(request):
         "technics": Technics.objects.filter(employee=request.user.employee),
     }
     return render(request, 'main/order_sender.html', context)
+
 
 @never_cache
 @login_required
@@ -789,6 +799,7 @@ def order_post(request):
         type_of_work=type_of_work,
     )
     return redirect("order_sender")
+
 
 @never_cache
 @login_required
@@ -845,6 +856,7 @@ def order_receiver(request):
     }
     return render(request, 'main/order_receiver.html', context)
 
+
 @never_cache
 @login_required
 def order_approved(request):
@@ -862,6 +874,7 @@ def order_approved(request):
 
     messages.success(request, "Zayafka tasdiqlandi!")
     return redirect(request.META.get("HTTP_REFERER", "/"))
+
 
 @never_cache
 @login_required
@@ -937,6 +950,7 @@ def ordermaterial_post(request):
             original.save()
 
     return redirect("order_receiver")
+
 
 @never_cache
 @login_required
