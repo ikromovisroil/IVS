@@ -296,12 +296,7 @@ def sso_exchange_and_finish(request):
             body.get("codeVerifier"),
             body.get("redirectUri"),
         )
-
         user_data = decode_jwt(token_data["id_token"])
-
-        print("===== SSO USER =====")
-        print("PINFL:", user_data.get("pinfl"))
-        print("====================")
 
         pending = request.session.get("PENDING_DEED_APPROVE")
         if not pending:
@@ -314,10 +309,22 @@ def sso_exchange_and_finish(request):
         if deed.receiver.user != request.user:
             raise PermissionDenied("Ruxsat yo‘q")
 
+        employee_pinfl = request.user.employee.pinfil
+        sso_pinfl = user_data.get("pinfl")
+
+        if employee_pinfl != sso_pinfl:
+            messages.info(
+                request,
+                "User bilan kluch egasi mos kelmayapti ."
+            )
+            return JsonResponse({
+                "status": "forbidden",
+                "redirect": redirect_url
+            }, status=403)
+
         if deed.status == "approved":
             return JsonResponse({"status": "ok", "redirect": redirect_url})
 
-        # 2️⃣ Imzolash
         signed_rel = sign_pdf(
             pdf_path=deed.file.path,
             request=request,
@@ -335,7 +342,8 @@ def sso_exchange_and_finish(request):
         deed.status = "approved"
         deed.message_receiver = message_receiver
         deed.save()
-        messages.success(request, "Dalolatnoma tasdiqlandi")
+
+        messages.success(request, "✅ Dalolatnoma tasdiqlandi")
 
         request.session.pop("PENDING_DEED_APPROVE", None)
 
@@ -377,8 +385,7 @@ def exchange_code_for_token(code, code_verifier, redirect_uri):
     )
 
     if response.status_code != 200:
-        raise PermissionDenied("SSO token olinmadi")
-
+        raise PermissionDenied(f"SSO token olinmadi: {response.text}")
     return response.json()
 
 

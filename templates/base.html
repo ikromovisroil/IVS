@@ -310,37 +310,27 @@
   <aside id="sidebar" class="sidebar">
 
     <ul class="sidebar-nav" id="sidebar-nav">
-
-       <li class="nav-item">
+      <li class="nav-item">
         <a class="nav-link" href="{% url 'profil' %}">
           <i class="bi bi-person"></i>
           <span>Profile</span>
         </a>
       </li><!-- End Profile Page Nav -->
-
-      {% if request.user.employee.status == "worker" %}
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'index' %}">
-          <i class="bi bi-grid"></i>
-          <span>Dashboard</span>
-        </a>
-      </li><!-- End Dashboard Nav -->
-      {% endif %}
-
       <li class="nav-item">
         <a class="nav-link collapsed" href="{% url 'contact' %}">
           <i class="bi bi-envelope"></i>
           <span>Arizalar</span>
         </a>
-      </li><!-- End Profile Page Nav -->
-
+      </li><!-- End Arizalar Page Nav -->
+      {% if request.user.employee.status == "client" %}
       <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'barn' %}">
-          <i class="bi bi-question-circle"></i>
-          <span>Sklad</span>
+        <a class="nav-link collapsed" href="{% url 'order_sender' %}">
+         <i class="bi bi-journal-text"></i>
+          <span>Zayafka Yuborish</span>
         </a>
-      </li><!-- End F.A.Q Page Nav -->
-
+      </li><!-- End Zayafkalar Page Nav -->
+      {% endif %}
+      {% if request.user.employee.status == "worker" %}
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-journal-text"></i><span>Zayafkalar</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -357,8 +347,7 @@
             </a>
           </li>
         </ul>
-      </li><!-- End Forms Nav -->
-      {% if request.user.employee.status == "worker" %}
+      </li><!-- End Zayafkalar Nav -->
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-menu-button-wide"></i><span>Texnikalar ro'yxati</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -377,7 +366,7 @@
             </a>
           </li>
         </ul>
-      </li><!-- End Components Nav -->
+      </li><!-- End Texnikalar Nav -->
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-layout-text-window-reverse"></i><span>Tashkilotlar ro'yxati</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -391,21 +380,32 @@
           </li>
           {% endfor %}
         </ul>
-      </li><!-- End Forms Nav -->
+      </li><!-- End Tashkilotlar Nav -->
       <li class="nav-item">
         <a class="nav-link collapsed" href="{% url 'document_get' %}">
           <i class="bi bi-file-earmark"></i>
               <span>Dalolatnoma</span>
         </a>
-      </li><!-- End F.A.Q Page Nav -->
-
-      {% endif %}
+      </li><!-- End Dalolatnom  Page Nav -->
       <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'logout' %}">
-          <i class="bi bi-box-arrow-in-right"></i>
-          <span>chiqish</span>
+        <a class="nav-link collapsed" href="{% url 'index' %}">
+          <i class="bi bi-grid"></i>
+          <span>Dashboard</span>
         </a>
-      </li><!-- End Login Page Nav -->
+      </li><!-- End Dashboard Nav -->
+      {% endif %}
+       <li class="nav-item">
+        <a class="nav-link collapsed" href="{% url 'barn' %}">
+          <i class="bi bi-question-circle"></i>
+          <span>Sklad</span>
+        </a>
+      </li><!-- End Sklad Page Nav -->
+       <li class="nav-item">
+            <a class="nav-link collapsed" href="{% url 'logout' %}">
+              <i class="bi bi-box-arrow-in-right"></i>
+              <span>chiqish</span>
+            </a>
+        </li><!-- End logout Page Nav -->
     </ul>
 
   </aside><!-- End Sidebar-->

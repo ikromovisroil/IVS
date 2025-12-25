@@ -16,8 +16,8 @@
 
     <div class="pagetitle">
         <div class="card-title d-flex justify-content-between align-items-center">
-             <h1>Yangi qo'shish</h1>
-            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">zayafka qo'shish</button>
+             <h1>Zayafkalar</h1>
+            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">Zayafka Yuborish</button>
         </div>
     </div>
 
@@ -26,14 +26,14 @@
           <div class="modal-content">
             <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
             <div class="modal-header">
-              <h5 class="modal-title">#Yangi zayafka</h5>
+              <h5 class="modal-title">#Zayafka Yuborish</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="m-5">
                     <!-- Mavzu -->
                     <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Mavzu:</label>
+                        <label class="col-sm-2 col-form-label">Zayafka Turi:</label>
                         <div class="col-sm-10">
                             <select class="form-select" name="topic" id="topic-select" required>
                                 <option value="">tanlang</option>
@@ -46,7 +46,7 @@
 
                     <!-- Maqsad -->
                     <div class="row mb-3">
-                        <label class="col-sm-2 col-form-label">Maqsad:</label>
+                        <label class="col-sm-2 col-form-label">Zayafka maqsadi:</label>
                         <div class="col-sm-10">
                             <select class="form-select" name="goal" id="goal-select" required>
                                 <option value="">mavzu tanlang...</option>
