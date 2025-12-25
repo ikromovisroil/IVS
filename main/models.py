@@ -150,6 +150,9 @@ class Region(models.Model):
 # Xodim.
 class Employee(AutoSlugMixin, models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee')
+    last_name = models.CharField(max_length=100, null=True, blank=True)
+    first_name = models.CharField(max_length=100, null=True, blank=True)
+    father_name = models.CharField(max_length=100, null=True, blank=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
     division = models.ForeignKey(Division, on_delete=models.SET_NULL, null=True, blank=True)
     directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL, null=True, blank=True)
@@ -159,7 +162,7 @@ class Employee(AutoSlugMixin, models.Model):
     STATUS = (('client', 'Mijoz'), ('worker', 'IVS xodimi'))
     status = models.CharField(max_length=20, choices=STATUS, default='client')
     phone = models.CharField(max_length=50,null=True,blank=True)
-    pinfil = models.CharField(max_length=20,null=True,blank=True)
+    pinfl = models.CharField(max_length=20, null=True, blank=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
@@ -179,15 +182,13 @@ class Employee(AutoSlugMixin, models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        if self.user:
-            return self.user.get_full_name() or self.user.username
-        return "Employee"
+        parts = [self.last_name, self.first_name, self.father_name]
+        return " ".join(p for p in parts if p) or f"Xodim #{self.pk}"
 
     @property
     def full_name(self):
-        if self.user:
-            return self.user.get_full_name() or self.user.username
-        return ""
+        parts = [self.last_name, self.first_name]
+        return " ".join(p for p in parts if p)
 
     class Meta:
         db_table = 'employee'
