@@ -31,9 +31,9 @@
                         <div id="employee_{{ emp.id }}"
                              class="employee-item alert alert-secondary alert-dismissible fade show"
                              data-id="{{emp.id}}"
-                             data-name="{{ emp.user.get_full_name }}"
+                             data-name="{{ emp.full_name }}"
                              data-slug="{{ emp.slug }}">
-                             {{ emp.rank }} — {{ emp.user.get_full_name }}
+                             {{ emp.rank|default:"" }} — {{ emp.full_name }}
                         </div>
                     {% endfor %}
                 </div>
