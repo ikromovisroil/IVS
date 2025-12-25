@@ -85,7 +85,6 @@ def index(request):
             "count": total
         })
     organizations1 = Organization.objects.filter(org_type__in=['IMV', 'PENSIYA', 'GAZNA']
-
                                                  ).annotate(
         technics_count=Count('employee__technics', distinct=True)
     )
