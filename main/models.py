@@ -167,17 +167,51 @@ class Employee(AutoSlugMixin, models.Model):
     date_edit = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        # Agar division tanlangan bo‘lsa → directorate avtomatik to‘lsin
-        if self.division and self.division.directorate:
-            self.directorate = self.division.directorate
 
-        # Agar directorate tanlangan bo‘lsa → department avtomatik to‘lsin
-        if self.directorate and self.directorate.department:
-            self.department = self.directorate.department
+        # ---------------------------
+        # 1️⃣ Agar DIVISION tanlangan bo‘lsa
+        # ---------------------------
+        if self.division:
 
-        # Agar department tanlangan bo‘lsa → organization avtomatik to‘lsin
-        if self.department and self.department.organization:
-            self.organization = self.department.organization
+            # Directorateni divisiondan olamiz
+            if self.division.directorate:
+                self.directorate = self.division.directorate
+
+            # Departamentni directoratedan olamiz
+            if self.directorate and self.directorate.department:
+                self.department = self.directorate.department
+
+            # Organizationni departmentdan olamiz
+            if self.department and self.department.organization:
+                self.organization = self.department.organization
+
+
+        # ---------------------------
+        # 2️⃣ Agar DIRECTORATE tanlangan bo‘lsa
+        # ---------------------------
+        elif self.directorate:
+
+            # Departamentni directoratedan olamiz
+            if self.directorate.department:
+                self.department = self.directorate.department
+
+            # Organizationni departmentdan olamiz
+            if self.department and self.department.organization:
+                self.organization = self.department.organization
+
+
+        # ---------------------------
+        # 3️⃣ Agar DEPARTMENT tanlangan bo‘lsa
+        # ---------------------------
+        elif self.department:
+
+            # Organizationni departmentdan olamiz
+            if self.department.organization:
+                self.organization = self.department.organization
+
+        # ---------------------------
+        # 4️⃣ Aks holda → hech narsa o‘zgartirmaymiz
+        # ---------------------------
 
         super().save(*args, **kwargs)
 
