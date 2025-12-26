@@ -1,6 +1,7 @@
 import openpyxl
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
+from django.db import transaction, IntegrityError
 
 from main.models import (
     Employee,
@@ -27,7 +28,7 @@ class Command(BaseCommand):
         updated = 0
         skipped = 0
 
-        # ⚙️ Default Region (agar yo‘q bo‘lsa yaratiladi)
+        # ⚙️ Default Region
         region, _ = Region.objects.get_or_create(name="Toshkent")
 
         for row in ws.iter_rows(min_row=2, values_only=True):
@@ -40,7 +41,9 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            # 1️⃣ F.I.Sh ni ajratamiz
+            # -----------------------------
+            # 1️⃣ FIO ajratish
+            # -----------------------------
             parts = (full_name or "").split()
 
             last_name = parts[0].lower() if len(parts) > 0 else ""
@@ -53,14 +56,15 @@ class Command(BaseCommand):
                 father_name
             ] if p)
 
-            # 2️⃣ Tuzilmani aniqlaymiz
+            # -----------------------------
+            # 2️⃣ Tuzilma aniqlash
+            # -----------------------------
             division = None
             directorate = None
             department = None
 
             if dep_name:
 
-                # — Division —
                 division = Division.objects.filter(name__iexact=dep_name).first()
 
                 if division:
@@ -68,14 +72,12 @@ class Command(BaseCommand):
                     department = directorate.department if directorate else None
 
                 else:
-                    # — Directorate —
                     directorate = Directorate.objects.filter(name__iexact=dep_name).first()
 
                     if directorate:
                         department = directorate.department
 
                     else:
-                        # — Department —
                         department = Department.objects.filter(name__iexact=dep_name).first()
 
             if not (division or directorate or department):
@@ -85,107 +87,107 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            # 3️⃣ Lavozim (bor bo‘lsa ulaymiz)
+            # -----------------------------
+            # 3️⃣ Lavozim (mavjud bo‘lsa)
+            # -----------------------------
             rank = None
             if position:
                 rank = Rank.objects.filter(name__iexact=position).first()
 
+            # -----------------------------
             # 4️⃣ Username generatsiya
+            # -----------------------------
             base_username = f"{last_name}.{first_name}".replace(" ", "")
-            username = base_username or last_name
+            base_username = base_username or last_name
 
-            u = username
+            username = base_username
             i = 1
-            while User.objects.filter(username=u).exists():
-                u = f"{username}{i}"
+
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{i}"
                 i += 1
 
-            username = u
-
+            # -----------------------------
             # 5️⃣ USER mavjudligini tekshiramiz
+            # -----------------------------
             user = User.objects.filter(username=username).first()
 
-            employee = None
+            # -----------------------------
+            # 6️⃣ EMPLOYEE bilan ishlaymiz
+            # -----------------------------
+            try:
+                with transaction.atomic():
 
-            # 6️⃣ Agar user bor bo‘lsa — unga bog‘langan employee ni olamiz
-            if user:
-                employee = Employee.objects.filter(user=user).first()
+                    employee, created_emp = Employee.objects.get_or_create(
+                        user=user if user else None,
+                        defaults={
+                            "last_name": last_name.title(),
+                            "first_name": first_name.title(),
+                            "father_name": father_name,
 
-            # 7️⃣ Agar employee topilmasa — FIO bo‘yicha qidiramiz
-            if not employee:
-                employee = Employee.objects.filter(
-                    last_name__iexact=last_name,
-                    first_name__iexact=first_name,
-                    father_name__iexact=father_name,
-                ).first()
+                            "division": division,
+                            "directorate": directorate,
+                            "department": department,
 
-            # =========================
-            # 8️⃣ XODIM BOR → FAQAT YANGILAYMIZ
-            # =========================
-            if employee:
+                            "region": region,
+                            "rank": rank,
+                            "status": "worker",
+                        }
+                    )
 
-                old_dep = (
-                    employee.department.name
-                    if employee.department else
-                    employee.directorate.name if employee.directorate else
-                    employee.division.name if employee.division else "-"
-                )
+                    # 🟡 Agar eski employee topilgan bo‘lsa — yangilaymiz
+                    if not created_emp:
 
-                employee.division = division
-                employee.directorate = directorate
-                employee.department = department
+                        old_dep = (
+                            employee.department.name
+                            if employee.department else
+                            employee.directorate.name if employee.directorate else
+                            employee.division.name if employee.division else "-"
+                        )
 
-                employee.region = region
-                employee.rank = rank
-                employee.status = "worker"
+                        employee.division = division
+                        employee.directorate = directorate
+                        employee.department = department
+                        employee.region = region
+                        employee.rank = rank
+                        employee.status = "worker"
 
-                employee.save()   # ⬅️ organization avtomatik to‘ldiriladi
+                        employee.save()
 
-                self.stdout.write(self.style.SUCCESS(
-                    f"♻ Yangilandi: {full_name_print} | {old_dep} → {dep_name}"
+                        self.stdout.write(self.style.SUCCESS(
+                            f"♻ Yangilandi: {full_name_print} | {old_dep} → {dep_name}"
+                        ))
+
+                        updated += 1
+                        continue
+
+                    # 🟢 Agar user yo‘q bo‘lsa — hozir yaratamiz
+                    if not user:
+                        user = User.objects.create_user(
+                            username=username,
+                            password="Password100"
+                        )
+                        employee.user = user
+                        employee.save()
+
+                    self.stdout.write(self.style.SUCCESS(
+                        f"➕ Yaratildi: {full_name_print} | User: {username}"
+                    ))
+
+                    created += 1
+
+            except IntegrityError:
+
+                self.stdout.write(self.style.ERROR(
+                    f"⚠ User uchun employee allaqachon mavjud → username={username}"
                 ))
 
-                updated += 1
+                skipped += 1
                 continue
 
-            # =========================
-            # 9️⃣ USER YO‘Q → YANGI USER YARATAMIZ
-            # =========================
-            if not user:
-                user = User.objects.create_user(
-                    username=username,
-                    password="Password100"
-                )
-
-            # =========================
-            # 🔟 YANGI EMPLOYEE YARATAMIZ
-            # =========================
-            employee = Employee.objects.create(
-                user=user,
-                last_name=last_name.title(),
-                first_name=first_name.title(),
-                father_name=father_name,
-
-                division=division,
-                directorate=directorate,
-                department=department,
-
-                region=region,
-                rank=rank,
-                status="worker",
-            )
-
-            employee.save()   # ⬅️ Employee.save() zanjiri ishlaydi
-
-            self.stdout.write(self.style.SUCCESS(
-                f"➕ Yaratildi: {full_name_print} | Dep: {dep_name}"
-            ))
-
-            created += 1
-
-        # =========================
-        # 🔚 Yakuniy hisobot
-        # =========================
+        # -----------------------------
+        # 🔚 Yakuniy natija
+        # -----------------------------
         self.stdout.write(self.style.SUCCESS(
             f"\nYaratildi: {created} | Yangilandi: {updated} | SKIP: {skipped}"
         ))
