@@ -1,23 +1,15 @@
 import openpyxl
 from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from django.utils.text import slugify
 
 from main.models import (
     Employee,
-    Organization,
     Department,
     Directorate,
     Division,
     Rank,
     Region,
 )
-
-
-def make_slug(last_name, first_name, father_name):
-    parts = [last_name, first_name, father_name]
-    slug_text = "_".join([p for p in parts if p]).strip("_")
-    return slugify(slug_text).replace("-", "_")
 
 
 class Command(BaseCommand):
@@ -35,7 +27,7 @@ class Command(BaseCommand):
         updated = 0
         skipped = 0
 
-        # ⚙️ Default region = Toshkent
+        # ⚙️ Default Region (agar yo‘q bo‘lsa yaratiladi)
         region, _ = Region.objects.get_or_create(name="Toshkent")
 
         for row in ws.iter_rows(min_row=2, values_only=True):
@@ -48,45 +40,43 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            # 1️⃣ FIO ajratamiz
+            # 1️⃣ F.I.Sh ni ajratamiz
             parts = (full_name or "").split()
 
             last_name = parts[0].lower() if len(parts) > 0 else ""
             first_name = parts[1].lower() if len(parts) > 1 else ""
             father_name = " ".join(parts[2:]) if len(parts) > 2 else ""
 
-            full_name_print = f"{last_name.title()} {first_name.title()} {father_name}".strip()
+            full_name_print = " ".join(p for p in [
+                last_name.title(),
+                first_name.title(),
+                father_name
+            ] if p)
 
             # 2️⃣ Tuzilmani aniqlaymiz
             division = None
             directorate = None
             department = None
-            organization = None
 
             if dep_name:
 
-                # 1 — Division bo‘yicha
+                # — Division —
                 division = Division.objects.filter(name__iexact=dep_name).first()
 
                 if division:
                     directorate = division.directorate
                     department = directorate.department if directorate else None
-                    organization = department.organization if department else None
 
                 else:
-                    # 2 — Directorate
+                    # — Directorate —
                     directorate = Directorate.objects.filter(name__iexact=dep_name).first()
 
                     if directorate:
                         department = directorate.department
-                        organization = department.organization if department else None
 
                     else:
-                        # 3 — Department
+                        # — Department —
                         department = Department.objects.filter(name__iexact=dep_name).first()
-
-                        if department:
-                            organization = department.organization
 
             if not (division or directorate or department):
                 self.stdout.write(self.style.ERROR(
@@ -95,36 +85,61 @@ class Command(BaseCommand):
                 skipped += 1
                 continue
 
-            # 3️⃣ Lavozim mavjud bo‘lsa — bog‘laymiz
+            # 3️⃣ Lavozim (bor bo‘lsa ulaymiz)
             rank = None
             if position:
                 rank = Rank.objects.filter(name__iexact=position).first()
 
-            # 4️⃣ Avval mavjud xodimni FIO bo‘yicha tekshiramiz
-            employee = Employee.objects.filter(
-                last_name__iexact=last_name,
-                first_name__iexact=first_name,
-                father_name__iexact=father_name,
-            ).first()
+            # 4️⃣ Username generatsiya
+            base_username = f"{last_name}.{first_name}".replace(" ", "")
+            username = base_username or last_name
+
+            u = username
+            i = 1
+            while User.objects.filter(username=u).exists():
+                u = f"{username}{i}"
+                i += 1
+
+            username = u
+
+            # 5️⃣ USER mavjudligini tekshiramiz
+            user = User.objects.filter(username=username).first()
+
+            employee = None
+
+            # 6️⃣ Agar user bor bo‘lsa — unga bog‘langan employee ni olamiz
+            if user:
+                employee = Employee.objects.filter(user=user).first()
+
+            # 7️⃣ Agar employee topilmasa — FIO bo‘yicha qidiramiz
+            if not employee:
+                employee = Employee.objects.filter(
+                    last_name__iexact=last_name,
+                    first_name__iexact=first_name,
+                    father_name__iexact=father_name,
+                ).first()
 
             # =========================
-            # 5️⃣ XODIM BOR — TAHRIRLAYMIZ
+            # 8️⃣ XODIM BOR → FAQAT YANGILAYMIZ
             # =========================
             if employee:
 
-                old_dep = employee.department.name if employee.department else "-"
+                old_dep = (
+                    employee.department.name
+                    if employee.department else
+                    employee.directorate.name if employee.directorate else
+                    employee.division.name if employee.division else "-"
+                )
 
-                employee.organization = organization
-                employee.department = department
-                employee.directorate = directorate
                 employee.division = division
+                employee.directorate = directorate
+                employee.department = department
+
                 employee.region = region
                 employee.rank = rank
                 employee.status = "worker"
 
-                employee.slug = make_slug(last_name, first_name, father_name)
-
-                employee.save()
+                employee.save()   # ⬅️ organization avtomatik to‘ldiriladi
 
                 self.stdout.write(self.style.SUCCESS(
                     f"♻ Yangilandi: {full_name_print} | {old_dep} → {dep_name}"
@@ -134,24 +149,16 @@ class Command(BaseCommand):
                 continue
 
             # =========================
-            # 6️⃣ XODIM YO‘Q — USER YARATAMIZ
+            # 9️⃣ USER YO‘Q → YANGI USER YARATAMIZ
             # =========================
-
-            base_username = f"{last_name}.{first_name}".lower().replace(" ", "")
-            username = base_username
-
-            i = 1
-            while User.objects.filter(username=username).exists():
-                username = f"{base_username}{i}"
-                i += 1
-
-            user = User.objects.create_user(
-                username=username,
-                password="Password100"
-            )
+            if not user:
+                user = User.objects.create_user(
+                    username=username,
+                    password="Password100"
+                )
 
             # =========================
-            # 7️⃣ YANGI EMPLOYEE YARATAMIZ
+            # 🔟 YANGI EMPLOYEE YARATAMIZ
             # =========================
             employee = Employee.objects.create(
                 user=user,
@@ -159,17 +166,16 @@ class Command(BaseCommand):
                 first_name=first_name.title(),
                 father_name=father_name,
 
-                organization=organization,
-                department=department,
-                directorate=directorate,
                 division=division,
+                directorate=directorate,
+                department=department,
 
                 region=region,
                 rank=rank,
                 status="worker",
-
-                slug=make_slug(last_name, first_name, father_name),
             )
+
+            employee.save()   # ⬅️ Employee.save() zanjiri ishlaydi
 
             self.stdout.write(self.style.SUCCESS(
                 f"➕ Yaratildi: {full_name_print} | Dep: {dep_name}"
@@ -178,7 +184,7 @@ class Command(BaseCommand):
             created += 1
 
         # =========================
-        # 8️⃣ Yakuniy natija
+        # 🔚 Yakuniy hisobot
         # =========================
         self.stdout.write(self.style.SUCCESS(
             f"\nYaratildi: {created} | Yangilandi: {updated} | SKIP: {skipped}"
