@@ -10,7 +10,13 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "report.imv.uz",
+    "www.report.imv.uz",
+    "localhost",
+    "127.0.0.1",
+]
+
 
 # APPLICATIONS
 INSTALLED_APPS = [
@@ -135,23 +141,23 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
 # DATABASES = {
 #     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'ivs_servis',
-#         'USER': 'ivs_user',
-#         'PASSWORD': 'Password100',
-#         'HOST': 'localhost',
-#         'PORT': '5432',
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
 #     }
 # }
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'ivs_servis',
+        'USER': 'ivs_user',
+        'PASSWORD': 'Password100',
+        'HOST': 'localhost',
+        'PORT': '5432',
+    }
+}
 
 
 # PASSWORD VALIDATION
