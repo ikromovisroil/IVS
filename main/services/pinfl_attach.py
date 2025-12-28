@@ -13,29 +13,6 @@ APOSTROPHES = [
 ]
 
 
-def normalize_fio(text: str) -> str:
-    """
-    FIO ni yagona formatga keltiramiz:
-    - turli apostroflarni `'` ga almashtiramiz
-    - ortiqcha probellarni olib tashlaymiz
-    """
-
-    if not text:
-        return ""
-
-    text = text.strip()
-
-    # Apostroflarni standart `'` bilan almashtiramiz
-    for a in APOSTROPHES:
-        text = text.replace(a, "'")
-
-    # 2 ta probel → 1 probel
-    text = re.sub(r"\s+", " ", text)
-
-    return text
-
-
-
 @transaction.atomic
 def attach_pinfl_if_employee_exists(api_emp):
     """
@@ -55,12 +32,9 @@ def attach_pinfl_if_employee_exists(api_emp):
         return "⚠️ FIO yoki PINFL yo‘q — tashlab ketildi"
 
 
-    # 1️⃣ Normalizatsiya
-    fio_norm = normalize_fio(full_name)
-
-
     # 2️⃣ FIO ni (last, first, father) ga ajratamiz
-    last, first, father = split_fio(fio_norm)
+    last, first, father = split_fio(full_name)
+    print(last, first, father)
 
     fio_display = f"{last} {first} {father}".strip()
 
