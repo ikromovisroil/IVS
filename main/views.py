@@ -11,6 +11,7 @@ from io import BytesIO
 from .docx_tables import *
 from .ajax_views import *
 import os
+import requests
 from PyPDF2 import PdfReader
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Prefetch
