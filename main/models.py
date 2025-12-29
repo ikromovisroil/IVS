@@ -242,7 +242,7 @@ class Technics(models.Model):
         verbose_name_plural = "Texnikalar"
 
 
-class Manitor(models.Model):
+class ExtraManitor(models.Model):
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('active', 'Aktiv'),
@@ -263,9 +263,9 @@ class Manitor(models.Model):
         return self.name
 
     class Meta:
-        db_table = 'manitor'
-        verbose_name = "Manitor"
-        verbose_name_plural = "Manitorlar"
+        db_table = 'extratanitor'
+        verbose_name = "Qo'shimcha texnika"
+        verbose_name_plural = "Qo'shimcha texnikalar"
 
 # material.
 class Material(models.Model):
