@@ -1,7 +1,5 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.db.models import Count
 from docx import Document
 from django.http import HttpResponse
 from collections import defaultdict
@@ -14,10 +12,11 @@ from .docx_tables import *
 from .ajax_views import *
 import os
 from PyPDF2 import PdfReader
-from django.views.decorators.cache import never_cache
-from .services import *
 from django.views.decorators.csrf import csrf_exempt
-
+from django.db.models import Count, Prefetch
+from django.core.exceptions import PermissionDenied
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
 
 def global_data(request):
     return {
@@ -105,9 +104,8 @@ def index(request):
 @never_cache
 @login_required
 def contact(request):
-    ranks = [11, 12, 13, 14, 9, 38, 25, 26, 42, 43, 48, 66, 68, 63]
     context = {
-        'employee': Employee.objects.filter(rank_id__in=ranks)
+        'employee': Employee.objects.filter(is_boss=True)
         .exclude(user=request.user)
         .select_related("rank","organization","department","directorate","division")
     }
@@ -518,56 +516,76 @@ def technics(request, slug=None):
 @never_cache
 @login_required
 def organization(request, slug):
-    # 🔒 Employee tekshiruvi
-    if not hasattr(request.user, "employee"):
-        raise PermissionDenied
 
-    if request.user.employee.status != "worker":
+    # 🔒 Foydalanuvchi Worker bo‘lishi shart
+    emp = getattr(request.user, "employee", None)
+    if not emp or emp.status != "worker":
         raise PermissionDenied
-
-    organizations = (
+    # ⚡ Technics ni oldindan yuklab qo‘yamiz
+    tech_prefetch = Prefetch(
+        "technics_set",
+        queryset=Technics.objects.select_related("category"),
+        to_attr="tech_list"
+    )
+    # 🟢 ORGANIZATION (asosiy obyekt)
+    organization = (
         Organization.objects
         .annotate(
-            technics_count=Count('employee__technics', distinct=True)
+            technics_count=Count("employee__technics", distinct=True)
         )
         .prefetch_related(
-            'employee_set__technics_set'
+            Prefetch("employee_set", queryset=Employee.objects.prefetch_related(tech_prefetch))
         )
         .get(slug=slug)
     )
-
-    # Department — Organization bilan bog‘liq
+    # 🟡 DEPARTMENTS
     departments = (
         Department.objects
-        .filter(organization__slug=slug)
+        .filter(organization=organization)
+        .select_related("organization")
         .annotate(
-            technics_count=Count('employee__technics', distinct=True)
+            technics_count=Count("employee__technics", distinct=True)
         )
-        .prefetch_related('employee_set__technics_set')
+        .prefetch_related(
+            Prefetch("employee_set",
+                     queryset=Employee.objects
+                     .select_related("rank", "user")
+                     .prefetch_related(tech_prefetch))
+        )
     )
-
-    # Directorate — Department orqali Organization bilan bog‘liq
+    # 🔵 DIRECTORATES
     directorates = (
         Directorate.objects
-        .filter(department__organization__slug=slug)
+        .filter(department__organization=organization)
+        .select_related("department")
         .annotate(
-            technics_count=Count('employee__technics', distinct=True)
+            technics_count=Count("employee__technics", distinct=True)
         )
-        .prefetch_related('employee_set__technics_set')
+        .prefetch_related(
+            Prefetch("employee_set",
+                     queryset=Employee.objects
+                     .select_related("rank", "user")
+                     .prefetch_related(tech_prefetch))
+        )
     )
-
-    # Division — Directorate → Department → Organization orqali bog‘liq
+    # 🟣 DIVISIONS
     divisions = (
         Division.objects
-        .filter(directorate__department__organization__slug=slug)
+        .filter(directorate__department__organization=organization)
+        .select_related("directorate")
         .annotate(
-            technics_count=Count('employee__technics', distinct=True)
+            technics_count=Count("employee__technics", distinct=True)
         )
-        .prefetch_related('employee_set__technics_set')
+        .prefetch_related(
+            Prefetch("employee_set",
+                     queryset=Employee.objects
+                     .select_related("rank", "user")
+                     .prefetch_related(tech_prefetch))
+        )
     )
 
     context = {
-        'organizations': organizations,
+        'organizations': organization,
         'departments': departments,
         'directorates': directorates,
         'divisions': divisions,

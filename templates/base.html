@@ -306,109 +306,179 @@
 
   </header><!-- End Header -->
 
-  <!-- ======= Sidebar ======= -->
-  <aside id="sidebar" class="sidebar">
+  {% with url_name=request.resolver_match.url_name %}
 
-    <ul class="sidebar-nav" id="sidebar-nav">
-      <li class="nav-item">
-        <a class="nav-link" href="{% url 'profil' %}">
-          <i class="bi bi-person"></i>
-          <span>Profile</span>
-        </a>
-      </li><!-- End Profile Page Nav -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'contact' %}">
-          <i class="bi bi-envelope"></i>
-          <span>Arizalar</span>
-        </a>
-      </li><!-- End Arizalar Page Nav -->
-      {% if request.user.employee.status == "client" %}
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'order_sender' %}">
-         <i class="bi bi-journal-text"></i>
-          <span>Zayafka Yuborish</span>
-        </a>
-      </li><!-- End Zayafkalar Page Nav -->
-      {% endif %}
-      {% if request.user.employee.status == "worker" %}
-      <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-journal-text"></i><span>Zayafkalar</span><i class="bi bi-chevron-down ms-auto"></i>
-        </a>
-        <ul id="forms-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-          <li>
-            <a href="{% url 'order_sender' %}">
-              <i class="bi bi-circle"></i><span>Zayafka Yuborish</span>
-            </a>
-          </li>
-          <li>
-            <a href="{% url 'order_receiver' %}">
-              <i class="bi bi-circle"></i><span>Zayafka Bajarish</span>
-            </a>
-          </li>
-        </ul>
-      </li><!-- End Zayafkalar Nav -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-menu-button-wide"></i><span>Texnikalar ro'yxati</span><i class="bi bi-chevron-down ms-auto"></i>
-        </a>
-        <ul id="components-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-          {% for i in global_categorys %}
-          <li>
-            <a href="{% url 'technics' i.slug %}">
-              <i class="bi bi-circle"></i><span>{{ i.name }}</span>
-            </a>
-          </li>
-          {% endfor %}
-          <li>
-            <a href="{% url 'technics' %}">
-              <i class="bi bi-circle"></i><span>Hammasi</span>
-            </a>
-          </li>
-        </ul>
-      </li><!-- End Texnikalar Nav -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-layout-text-window-reverse"></i><span>Tashkilotlar ro'yxati</span><i class="bi bi-chevron-down ms-auto"></i>
-        </a>
-        <ul id="tables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-          {% for i in global_organizations %}
-          <li>
-            <a href="{% url 'organization' i.slug %}">
-              <i class="bi bi-circle"></i><span>{{ i.name }}</span>
-            </a>
-          </li>
-          {% endfor %}
-        </ul>
-      </li><!-- End Tashkilotlar Nav -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'document_get' %}">
-          <i class="bi bi-file-earmark"></i>
-              <span>Dalolatnoma</span>
-        </a>
-      </li><!-- End Dalolatnom  Page Nav -->
-      <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'index' %}">
-          <i class="bi bi-grid"></i>
-          <span>Dashboard</span>
-        </a>
-      </li><!-- End Dashboard Nav -->
-      {% endif %}
-       <li class="nav-item">
-        <a class="nav-link collapsed" href="{% url 'barn' %}">
-          <i class="bi bi-question-circle"></i>
-          <span>Sklad</span>
-        </a>
-      </li><!-- End Sklad Page Nav -->
-       <li class="nav-item">
-            <a class="nav-link collapsed" href="{% url 'logout' %}">
-              <i class="bi bi-box-arrow-in-right"></i>
-              <span>chiqish</span>
-            </a>
-        </li><!-- End logout Page Nav -->
-    </ul>
+    <!-- ======= Sidebar ======= -->
+    <aside id="sidebar" class="sidebar">
 
-  </aside><!-- End Sidebar-->
+      <ul class="sidebar-nav" id="sidebar-nav">
+
+        <!-- PROFILE -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'profil' %}collapsed{% endif %}"
+             href="{% url 'profil' %}">
+            <i class="bi bi-person"></i>
+            <span>Profile</span>
+          </a>
+        </li>
+
+
+        <!-- ARIZALAR -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'contact' %}collapsed{% endif %}"
+             href="{% url 'contact' %}">
+            <i class="bi bi-envelope"></i>
+            <span>Arizalar</span>
+          </a>
+        </li>
+
+
+        {% if request.user.employee.status == "client" %}
+        <!-- CLIENT — ZAYAFKA YUBORISH -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'order_sender' %}collapsed{% endif %}"
+             href="{% url 'order_sender' %}">
+            <i class="bi bi-journal-text"></i>
+            <span>Zayafka Yuborish</span>
+          </a>
+        </li>
+        {% endif %}
+
+
+        {% if request.user.employee.status == "worker" %}
+
+        <!-- WORKER — ZAYAFKALAR -->
+        <li class="nav-item">
+
+          <a class="nav-link {% if url_name not in 'order_sender order_receiver' %}collapsed{% endif %}"
+             data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-journal-text"></i>
+            <span>Zayafkalar</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </a>
+
+          <ul id="forms-nav"
+              class="nav-content collapse {% if url_name in 'order_sender order_receiver' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+
+            <li>
+              <a class="{% if url_name == 'order_sender' %}active{% endif %}"
+                 href="{% url 'order_sender' %}">
+                <i class="bi bi-circle"></i><span>Zayafka Yuborish</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="{% if url_name == 'order_receiver' %}active{% endif %}"
+                 href="{% url 'order_receiver' %}">
+                <i class="bi bi-circle"></i><span>Zayafka Bajarish</span>
+              </a>
+            </li>
+
+          </ul>
+        </li>
+
+        <!-- TEXNIKALAR -->
+        <li class="nav-item">
+
+          <a class="nav-link {% if url_name != 'technics' %}collapsed{% endif %}"
+             data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-menu-button-wide"></i>
+            <span>Texnikalar ro'yxati</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </a>
+
+          <ul id="components-nav"
+              class="nav-content collapse {% if url_name == 'technics' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+
+            {% for i in global_categorys %}
+            <li>
+              <a class="{% if request.path == i.get_absolute_url %}active{% endif %}"
+                 href="{% url 'technics' i.slug %}">
+                <i class="bi bi-circle"></i><span>{{ i.name }}</span>
+              </a>
+            </li>
+            {% endfor %}
+
+            <li>
+              <a class="{% if request.path == '/technics/' %}active{% endif %}"
+                 href="{% url 'technics' %}">
+                <i class="bi bi-circle"></i><span>Hammasi</span>
+              </a>
+            </li>
+
+          </ul>
+        </li>
+
+        <!-- TASHKILOTLAR -->
+        <li class="nav-item">
+
+          <a class="nav-link {% if url_name != 'organization' %}collapsed{% endif %}"
+             data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-layout-text-window-reverse"></i>
+            <span>Tashkilotlar ro'yxati</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </a>
+
+          <ul id="tables-nav"
+              class="nav-content collapse {% if url_name == 'organization' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+
+            {% for i in global_organizations %}
+            <li>
+              <a class="{% if request.path == i.get_absolute_url %}active{% endif %}"
+                 href="{% url 'organization' i.slug %}">
+                <i class="bi bi-circle"></i><span>{{ i.name }}</span>
+              </a>
+            </li>
+            {% endfor %}
+
+          </ul>
+        </li>
+
+        <!-- DALOLATNOMA -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'document_get' %}collapsed{% endif %}"
+             href="{% url 'document_get' %}">
+            <i class="bi bi-file-earmark"></i>
+            <span>Dalolatnoma</span>
+          </a>
+        </li>
+
+        <!-- DASHBOARD -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'index' %}collapsed{% endif %}"
+             href="{% url 'index' %}">
+            <i class="bi bi-grid"></i>
+            <span>Dashboard</span>
+          </a>
+        </li>
+
+        {% endif %}
+
+        <!-- SKLAD -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'barn' %}collapsed{% endif %}"
+             href="{% url 'barn' %}">
+            <i class="bi bi-question-circle"></i>
+            <span>Sklad</span>
+          </a>
+        </li>
+        <!-- LOGOUT -->
+        <li class="nav-item">
+          <a class="nav-link collapsed" href="{% url 'logout' %}">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Chiqish</span>
+          </a>
+        </li>
+
+      </ul>
+
+    </aside>
+
+  {% endwith %}
+
 
   {% block content %}
 
