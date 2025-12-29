@@ -65,12 +65,33 @@
                       </td>
                     {% endif %}
 
-                    <td>{{ tech.category }} ({{ tech.name }})</td>
-                    <td>{{ tech.inventory|default:"-" }}</td>
-                    <td>{{ tech.serial|default:"-" }}</td>
-                    <td>{{ tech.ip|default:"-" }}</td>
-                    <td>{{ tech.moc|default:"-" }}</td>
-                    <td>{{ tech.year|default:"-" }}</td>
+                    <td>{{ tech.category }} ({{ tech.name }})
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.name}}
+                        {% endfor %}
+                    </td>
+                    <td>{{ tech.inventory|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.inventory|default:"-"}}
+                        {% endfor %}
+                    </td>
+                    <td>{{ tech.serial|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.serial|default:"-"}}
+                        {% endfor %}
+                    </td>
+                    <td>{{ tech.ip|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.ip|default:"-"}}
+                        {% endfor %}</td>
+                    <td>{{ tech.moc|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.moc|default:"-"}}
+                        {% endfor %}</td>
+                    <td>{{ tech.year|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.year|default:"-"}}
+                        {% endfor %}</td>
                   </tr>
                   {% endfor %}
 
@@ -145,13 +166,34 @@
                         </td>
                       {% endif %}
 
-                      <td>{{ tech.category }} ({{ tech.name }})</td>
-                      <td>{{ tech.inventory|default:"-" }}</td>
-                      <td>{{ tech.serial|default:"-" }}</td>
-                      <td>{{ tech.ip|default:"-" }}</td>
-                      <td>{{ tech.moc|default:"-" }}</td>
-                      <td>{{ tech.year|default:"-" }}</td>
-                    </tr>
+                      <td>{{ tech.category }} ({{ tech.name }})
+                            {% for et in tech.extratechnics_set.all %}
+                                <br>{{et.name}}
+                            {% endfor %}
+                        </td>
+                        <td>{{ tech.inventory|default:"-" }}
+                            {% for et in tech.extratechnics_set.all %}
+                                <br>{{et.inventory|default:"-"}}
+                            {% endfor %}
+                        </td>
+                        <td>{{ tech.serial|default:"-" }}
+                            {% for et in tech.extratechnics_set.all %}
+                                <br>{{et.serial|default:"-"}}
+                            {% endfor %}
+                        </td>
+                        <td>{{ tech.ip|default:"-" }}
+                            {% for et in tech.extratechnics_set.all %}
+                                <br>{{et.ip|default:"-"}}
+                            {% endfor %}</td>
+                        <td>{{ tech.moc|default:"-" }}
+                            {% for et in tech.extratechnics_set.all %}
+                                <br>{{et.moc|default:"-"}}
+                            {% endfor %}</td>
+                        <td>{{ tech.year|default:"-" }}
+                            {% for et in tech.extratechnics_set.all %}
+                                <br>{{et.year|default:"-"}}
+                            {% endfor %}</td>
+                      </tr>
                     {% endfor %}
 
                   {% else %}
@@ -227,12 +269,33 @@
                       </td>
                     {% endif %}
 
-                    <td>{{ tech.category }} ({{ tech.name }})</td>
-                    <td>{{ tech.inventory|default:"-" }}</td>
-                    <td>{{ tech.serial|default:"-" }}</td>
-                    <td>{{ tech.ip|default:"-" }}</td>
-                    <td>{{ tech.moc|default:"-" }}</td>
-                    <td>{{ tech.year|default:"-" }}</td>
+                    <td>{{ tech.category }} ({{ tech.name }})
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.name}}
+                        {% endfor %}
+                    </td>
+                    <td>{{ tech.inventory|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.inventory|default:"-"}}
+                        {% endfor %}
+                    </td>
+                    <td>{{ tech.serial|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.serial|default:"-"}}
+                        {% endfor %}
+                    </td>
+                    <td>{{ tech.ip|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.ip|default:"-"}}
+                        {% endfor %}</td>
+                    <td>{{ tech.moc|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.moc|default:"-"}}
+                        {% endfor %}</td>
+                    <td>{{ tech.year|default:"-" }}
+                        {% for et in tech.extratechnics_set.all %}
+                            <br>{{et.year|default:"-"}}
+                        {% endfor %}</td>
                   </tr>
                   {% endfor %}
 

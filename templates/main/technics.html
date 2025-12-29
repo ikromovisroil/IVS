@@ -119,9 +119,9 @@
                                 {% else %}
                                     {{ t.name }}
                                 {% endif %}
-                               {% for et in t.extratechnics_set.all %}
+                                {% for et in t.extratechnics_set.all %}
                                     <br>{{et.name}}
-                               {% endfor %}
+                                {% endfor %}
                                 {% if not forloop.last %}
                                     <hr class="my-1">
                                 {% endif %}
