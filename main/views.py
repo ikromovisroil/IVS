@@ -105,7 +105,7 @@ def index(request):
 @login_required
 def contact(request):
     context = {
-        'employee': Employee.objects.filter(is_boss=True)
+        'employee': Employee.objects.select_related('user')
         .exclude(user=request.user)
         .select_related("rank","organization","department","directorate","division")
     }
