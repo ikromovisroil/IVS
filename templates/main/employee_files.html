@@ -142,10 +142,7 @@
             <!-- Holat -->
             <td>
                 <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ d.id }}">
-                    Tasdiqlash{{d.sender.user}}
-                </button>
-                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal_edit{{ d.id }}">
-                    Taxrirlash
+                    Tasdiqlash
                 </button>
 
                 <!-- MODAL -->
@@ -225,80 +222,6 @@
                     </div>
                 </div>
                 {% endif %}
-                <div class="modal fade" id="modal_edit{{ d.id }}" tabindex="-1">
-                    <div class="modal-dialog modal-dialog-centered modal-lg">
-                        <div class="modal-content">
-
-                            <div class="modal-header">
-                                <h5 class="modal-title">Tasdiqlash</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-
-                            <div class="modal-body">
-
-                                {# ================= RECEIVER ================= #}
-                                {% if d.receiver.user == user and d.status == 'viewed' %}
-                                <div>
-                                    Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
-                                </div><hr>
-                                <form method="post" action="{% url 'deed_action' d.id %}">
-                                    {% csrf_token %}
-
-                                    <div class="mb-3">
-                                        <textarea
-                                            name="message_receiver"
-                                            class="form-control"
-                                            style="height: 100px"
-                                            placeholder="Izoh yozing..."></textarea>
-                                    </div>
-
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <button name="action" value="reject" class="btn btn-danger">
-                                            Rad etish
-                                        </button>
-                                        <button name="action" value="approve" class="btn btn-primary">
-                                            Tasdiqlash
-                                        </button>
-                                    </div>
-                                </form>
-
-
-                                {# ================= KELISHUVCHI ================= #}
-                                {% else %}
-                                    {% for dc in d.deedconsent_set.all %}
-                                        {% if dc.employee.user == user and dc.status == 'viewed' %}
-                                        <div>
-                                            Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
-                                        </div><hr>
-                                        <form method="post" action="{% url 'deedconsent_action' dc.id %}">
-                                            {% csrf_token %}
-                                             <div class="mb-3">
-                                                <textarea
-                                                    name="message"
-                                                    class="form-control"
-                                                    style="height: 100px"
-                                                    placeholder="Izoh yozing..."></textarea>
-                                            </div>
-                                            <div class="d-flex justify-content-center gap-2">
-                                                <div class="d-flex justify-content-center gap-2">
-                                                    <button name="action" value="reject" class="btn btn-danger">Rad etish</button>
-                                                    <button name="action" value="approve" class="btn btn-primary">Tasdiqlash</button>
-                                                </div>
-
-                                            </div>
-                                        </form>
-                                        {% endif %}
-                                    {% empty %}
-                                        <p class="text-muted text-center mb-0">
-                                            Siz uchun tasdiqlash mavjud emas
-                                        </p>
-                                    {% endfor %}
-                                {% endif %}
-
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </td>
         </tr>
     {% endfor %}
