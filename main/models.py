@@ -242,6 +242,31 @@ class Technics(models.Model):
         verbose_name_plural = "Texnikalar"
 
 
+class Manitor(models.Model):
+    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    status = models.CharField(max_length=20, choices=[
+        ('active', 'Aktiv'),
+        ('free', "Bo'sh"),
+        ('repair', 'Ta’mirda'),
+        ('defect', 'Brak')
+    ], default='free', db_index=True)
+    name = models.CharField(max_length=100)
+    serial = models.CharField(max_length=50,null=True,blank=True)
+    inventory = models.CharField(max_length=50,null=True,blank=True)
+    year = models.CharField(max_length=50,null=True,blank=True)
+    number = models.PositiveIntegerField(default=1)
+    price = models.PositiveIntegerField(null=True, blank=True)
+    date_creat = models.DateTimeField(auto_now_add=True)
+    date_edit = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'manitor'
+        verbose_name = "Manitor"
+        verbose_name_plural = "Manitorlar"
+
 # material.
 class Material(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)

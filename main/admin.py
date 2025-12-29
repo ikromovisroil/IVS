@@ -24,6 +24,9 @@ class EmployeeInline(admin.StackedInline):
     verbose_name = "Xodim"
     verbose_name_plural = "Xodim ma'lumotlari"
     fields = [
+        "last_name",
+        "first_name",
+        "father_name",
         "region",
         "division",
         "directorate",
@@ -178,8 +181,29 @@ class CategoryAdmin(admin.ModelAdmin):
 
 
 # ============================
-# TECHNICS ADMIN
+# Manitor ADMIN
 # ============================
+@admin.register(Manitor)
+class ManitorAdmin(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "technics",
+        "name",
+        "inventory",
+        "serial",
+        "year",
+        "number",
+        "price",
+        "date_creat",
+    )
+    list_filter = ("technics", "year")
+    search_fields = (
+        "name",
+        "serial",
+        "inventory",
+        "technics__name",  # FK bo‘lgani uchun __name ishlatamiz
+    )
+
 
 @admin.register(Technics)
 class TechnicsAdmin(admin.ModelAdmin):
