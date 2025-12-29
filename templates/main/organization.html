@@ -46,7 +46,7 @@
                                 {% for tech in techs %}
                                 <tr>
                                     {% if forloop.first %}
-                                        <td rowspan="{{ techs.count }}">{{ forloop.parentloop.counter }}</td>
+                                        <td rowspan="{{ techs.count }}">{{ forloop.counter }}</td>
                                         <td rowspan="{{ techs.count }}">{{ emp.rank|default:"" }}</td>
                                         <td rowspan="{{ techs.count }}">
                                             {% if emp.user %}
@@ -110,7 +110,7 @@
                                             {% for tech in techs %}
                                             <tr>
                                                 {% if forloop.first %}
-                                                    <td rowspan="{{ techs.count }}">{{ forloop.parentloop.counter }}</td>
+                                                    <td rowspan="{{ techs.count }}">{{ forloop.counter }}</td>
                                                     <td rowspan="{{ techs.count }}">{{ emp.rank|default:"" }}</td>
                                                     <td rowspan="{{ techs.count }}">
                                                         {% if emp.user %}
@@ -175,7 +175,7 @@
                                                     {% for tech in techs %}
                                                     <tr>
                                                         {% if forloop.first %}
-                                                            <td rowspan="{{ techs.count }}">{{ forloop.parentloop.counter }}</td>
+                                                            <td rowspan="{{ techs.count }}">{{ forloop.counter }}</td>
                                                             <td rowspan="{{ techs.count }}">{{ emp.rank|default:"" }}</td>
                                                             <td rowspan="{{ techs.count }}">
                                                                 {% if emp.user %}

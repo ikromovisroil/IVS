@@ -105,8 +105,11 @@ def index(request):
 @never_cache
 @login_required
 def contact(request):
+    ranks = [11, 12, 13, 14, 9, 38, 25, 26, 42, 43, 48, 66, 68, 63]
     context = {
-        'employee': Employee.objects.exclude(user=request.user),
+        'employee': Employee.objects.filter(rank_id__in=ranks)
+        .exclude(user=request.user)
+        .select_related("rank","organization","department","directorate","division")
     }
     return render(request, 'main/contact.html', context)
 
@@ -188,14 +191,16 @@ def deed_post(request):
     # =============================
     # 4️⃣ KELISHUVCHILAR
     # =============================
+    objs = []
     for emp_id in agreements:
         emp = Employee.objects.filter(id=emp_id).first()
         if emp:
-            Deedconsent.objects.create(
+            objs.append(Deedconsent(
                 deed=deed,
                 employee=emp,
                 status="viewed"
-            )
+            ))
+    Deedconsent.objects.bulk_create(objs)
 
     messages.success(request, "✅ Dalolatnoma yuborildi")
     return redirect(request.META.get("HTTP_REFERER", "/"))
@@ -496,9 +501,9 @@ def technics(request, slug=None):
 
         # Filter selectlar uchun
         'organizations': Organization.objects.all(),
-        'departments': Department.objects.all(),
-        'directorate': Directorate.objects.all(),
-        'division': Division.objects.all(),
+        'departments': Department.objects.select_related('organization'),
+        'directorate': Directorate.objects.select_related('department'),
+        'division': Division.objects.select_related('directorate'),
 
         # Selected qiymatlar
         'selected_org': org_id,
@@ -581,10 +586,10 @@ def document_get(request):
         raise PermissionDenied
     """GET so‘rovi uchun sahifani ko‘rsatish"""
     context = {
-        'divisions': Division.objects.all(),
-        'directorates': Directorate.objects.all(),
-        'departments': Department.objects.all(),
         'organizations': Organization.objects.all(),
+        'departments': Department.objects.select_related('organization'),
+        'directorate': Directorate.objects.select_related('department'),
+        'division': Division.objects.select_related('directorate'),
     }
     return render(request, 'main/document.html', context)
 
@@ -773,9 +778,8 @@ def order_sender(request):
 
     context = {
         "order": Order.objects.filter(sender=request.user.employee).order_by('-id'),
-        "material": Material.objects.all(),
         "topic": Topic.objects.all(),
-        "goal": Goal.objects.all(),
+        "goal": Goal.objects.select_related('topic'),
         "technics": Technics.objects.filter(employee=request.user.employee),
     }
     return render(request, 'main/order_sender.html', context)
@@ -821,7 +825,7 @@ def order_receiver(request):
     # 🔥 1) RAHBARni aniqlash
     # ===============================================
     # 1,2,3 — boshliqlar (super mansab)
-    if employee_id in [5, 4]:
+    if employee.is_boss:
         boss = employee
     else:
         boss = Employee.objects.filter(
@@ -840,7 +844,7 @@ def order_receiver(request):
     # ===============================================
     # 🔥 2) ORDERlarni olish
     # ===============================================
-    if employee_id in [5, 4]:
+    if employee.is_boss:
         # Rahbar: hudud buyurtmalari
         order = Order.objects.filter(
             sender__region=employee.region
@@ -862,7 +866,7 @@ def order_receiver(request):
         "order": order,
         "material": material,
         "topic": Topic.objects.all(),
-        "goal": Goal.objects.all(),
+        "goal": Goal.objects.select_related('topic'),
     }
     return render(request, 'main/order_receiver.html', context)
 

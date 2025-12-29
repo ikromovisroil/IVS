@@ -64,7 +64,7 @@ class Organization(AutoSlugMixin, models.Model):
         ('GAZNA', "G'azna"),
         ('IVS', 'IVS'),
     )
-    org_type = models.CharField(max_length=10, choices=ORG_TYPES)
+    org_type = models.CharField(max_length=10, choices=ORG_TYPES, db_index=True)
     name = models.CharField(max_length=200)
     is_active = models.BooleanField(default=True)
 
@@ -80,7 +80,7 @@ class Organization(AutoSlugMixin, models.Model):
 
 # Departament.
 class Department(AutoSlugMixin, models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True)
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -94,7 +94,7 @@ class Department(AutoSlugMixin, models.Model):
 
 # Boshqarma.
 class Directorate(AutoSlugMixin, models.Model):
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True,blank=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -108,7 +108,7 @@ class Directorate(AutoSlugMixin, models.Model):
 
 # Bo'lim.
 class Division(AutoSlugMixin, models.Model):
-    directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL,null=True,blank=True)
+    directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -149,20 +149,21 @@ class Region(models.Model):
 
 # Xodim.
 class Employee(AutoSlugMixin, models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee')
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee',db_index=True)
     last_name = models.CharField(max_length=100, null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True, blank=True)
     father_name = models.CharField(max_length=100, null=True, blank=True)
-    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True)
-    division = models.ForeignKey(Division, on_delete=models.SET_NULL, null=True, blank=True)
-    directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL, null=True, blank=True)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True)
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True)
-    rank = models.ForeignKey(Rank, on_delete=models.SET_NULL, null=True, blank=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    division = models.ForeignKey(Division, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    rank = models.ForeignKey(Rank, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     STATUS = (('client', 'Mijoz'), ('worker', 'IVS xodimi'))
-    status = models.CharField(max_length=20, choices=STATUS, default='client')
+    status = models.CharField(max_length=20, choices=STATUS, default='client',db_index=True)
     phone = models.CharField(max_length=50,null=True,blank=True)
-    pinfl = models.CharField(max_length=20, null=True, blank=True)
+    pinfl = models.CharField(max_length=20, null=True, blank=True,db_index=True)
+    is_boss = models.BooleanField(default=False, db_index=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
@@ -211,14 +212,14 @@ class Category(AutoSlugMixin, models.Model):
 
 # texnika.
 class Technics(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL,null=True,blank=True)
-    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('active', 'Aktiv'),
         ('free', "Bo'sh"),
         ('repair', 'Ta’mirda'),
         ('defect', 'Brak')
-    ], default='free')
+    ], default='free',db_index=True)
     name = models.CharField(max_length=50)
     parametr = models.CharField(max_length=100,null=True,blank=True)
     inventory = models.CharField(max_length=50,null=True,blank=True)
@@ -243,14 +244,14 @@ class Technics(models.Model):
 
 # material.
 class Material(models.Model):
-    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True)
-    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True)
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('active', 'Aktiv'),
         ('free', "Bo'sh"),
         ('repair', 'Ta’mirda'),
         ('defect', 'Brak')
-    ], default='free')
+    ], default='free',db_index=True)
     name = models.CharField(max_length=50)
     inventory = models.CharField(max_length=50,null=True,blank=True)
     year = models.CharField(max_length=50, null=True, blank=True)
@@ -287,7 +288,7 @@ class Topic(models.Model):
 # maqsad.
 class Goal(models.Model):
     name = models.CharField(max_length=200)
-    topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True)
+    topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
 
     def __str__(self):
         return self.name
@@ -300,11 +301,11 @@ class Goal(models.Model):
 
 # zayafka.
 class Order(models.Model):
-    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_sent')
-    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True)
-    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_received',null=True, blank=True)
+    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_sent',db_index=True)
+    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_received',null=True, blank=True,db_index=True)
     body = models.TextField(null=True, blank=True)
-    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True)
+    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     rating = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
@@ -312,13 +313,13 @@ class Order(models.Model):
         ('finished', 'Yakunlandi'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
-    ], default='viewed')
+    ], default='viewed',db_index=True)
     type_of_work = models.CharField(max_length=20, choices=[
         ('online', 'onlayin'),
         ('offline', 'oflayin'),
-    ], default='online')
+    ], default='online',db_index=True)
     receiver_seen = models.BooleanField(default=False)
-    user = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_user', null=True, blank=True)
+    user = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_user', null=True, blank=True,db_index=True)
     # --- Sana maydonlari ---
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
@@ -363,8 +364,8 @@ class Order(models.Model):
 
 # zayafkadan soralgan materiali.
 class OrderMaterial(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="materials")
-    material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True, blank=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="materials",db_index=True)
+    material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     number = models.PositiveIntegerField(default=1)
 
     def __str__(self):
@@ -377,17 +378,17 @@ class OrderMaterial(models.Model):
 
 
 class Deed(models.Model):
-    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_sent')
+    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_sent',db_index=True)
     message_sender = models.TextField(null=True, blank=True)
 
-    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_received')
+    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_received',db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
 
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
-    ], default='viewed')
+    ], default='viewed',db_index=True)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
     sender_seen = models.BooleanField(default=False)
     date_creat = models.DateTimeField(auto_now_add=True)
@@ -403,14 +404,14 @@ class Deed(models.Model):
 
 
 class Deedconsent(models.Model):
-    deed = models.ForeignKey(Deed, on_delete=models.CASCADE)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE)
+    deed = models.ForeignKey(Deed, on_delete=models.CASCADE,db_index=True)
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE,db_index=True)
     message = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
-    ], default='viewed')
+    ], default='viewed',db_index=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
