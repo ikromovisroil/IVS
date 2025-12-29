@@ -183,7 +183,7 @@ class CategoryAdmin(admin.ModelAdmin):
 # ============================
 # Manitor ADMIN
 # ============================
-@admin.register(ExtraManitor)
+@admin.register(ExtraTechnics)
 class ExtraManitorAdmin(admin.ModelAdmin):
     list_display = (
         "id",

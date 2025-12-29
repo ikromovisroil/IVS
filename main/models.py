@@ -242,7 +242,7 @@ class Technics(models.Model):
         verbose_name_plural = "Texnikalar"
 
 
-class ExtraManitor(models.Model):
+class ExtraTechnics(models.Model):
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('active', 'Aktiv'),
