@@ -281,7 +281,7 @@ class Material(models.Model):
         ('repair', 'Ta’mirda'),
         ('defect', 'Brak')
     ], default='free',db_index=True)
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=200)
     inventory = models.CharField(max_length=50,null=True,blank=True)
     year = models.CharField(max_length=50, null=True, blank=True)
     body = models.CharField(max_length=200, null=True, blank=True)

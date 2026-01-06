@@ -1,153 +1,201 @@
 import openpyxl
 from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
+from django.db import transaction
+from django.utils.text import slugify
 
-from main.models import Employee, Department, Directorate, Division
-
-
-# ==========================
-# 🔧 NOM NORMALIZATOR
-# ==========================
-def normalize_name(v: str):
-    return (
-        str(v)
-        .strip()
-        .lower()
-        .replace("’", "'")
-        .replace("`", "'")
-        .replace("ʻ", "'")
-        .replace("‘", "'")
-        .replace("o'", "o‘")
-        .replace("g'", "g‘")
-        .replace("ў", "o‘")
-        .replace("ғ", "g‘")
-    )
+from main.models import (
+    Employee,
+    Organization,
+    Department,
+    Region,
+    Rank,
+)
+from main.services.fio_split import split_fio  # sendagi funksiya
 
 
 class Command(BaseCommand):
-    help = "Exceldan xodimlarni FIO bo‘yicha topib bo‘limga biriktirish"
+    help = (
+        "Shtat jadvalidan xodimlarni import qilish: "
+        "avval Employee bor-yo'qligini FIO bo'yicha tekshiradi, "
+        "bo'lsa faqat o'shani yangilaydi, "
+        "bo'lmasa yangi User + Employee (yoki signaldan kelgan Employee) ni to'ldiradi."
+    )
 
     def add_arguments(self, parser):
-        parser.add_argument("file_path", type=str)
+        parser.add_argument(
+            "file_path",
+            type=str,
+            help="Excel fayl yo'li, masalan: import/Shtat.xlsx",
+        )
+        parser.add_argument(
+            "--sheet",
+            type=str,
+            default="01.05.2025",  # kerak bo'lsa o'zgartirasan
+            help="Varaq nomi (default: 01.05.2025)",
+        )
 
+    @transaction.atomic
     def handle(self, *args, **options):
+        file_path = options["file_path"]
+        sheet_name = options["sheet"]
 
-        wb = openpyxl.load_workbook(options["file_path"])
-        ws = wb.active
+        # 1) Tashkilot (IVS)
+        try:
+            org = Organization.objects.get(org_type="IVS")
+        except Organization.DoesNotExist:
+            self.stderr.write(self.style.ERROR("❌ org_type='IVS' bo'lgan Organization topilmadi"))
+            return
 
+        # 2) Region – hozircha 'Toshkent'
+        region, _ = Region.objects.get_or_create(name="Toshkent")
+
+        # 3) Excelni ochish
+        wb = openpyxl.load_workbook(file_path)
+        if sheet_name not in wb.sheetnames:
+            self.stderr.write(
+                self.style.ERROR(
+                    f"❌ '{sheet_name}' varaq topilmadi. Mavjud varaqalar: {wb.sheetnames}"
+                )
+            )
+            return
+
+        ws = wb[sheet_name]
+
+        created = 0
         updated = 0
-        not_found = 0
-        not_matched = 0
+        skipped = 0
 
+        # 1-qator — sarlavha
         for row in ws.iter_rows(min_row=2, values_only=True):
+            # ⚠️ Shtat.xlsx: LAVOZIM | F.I.O | DEP | ...
+            lavozim = (row[0] or "").strip() if row[0] else ""
+            fio_raw = (row[1] or "").strip() if row[1] else ""
+            dep_name = (row[2] or "").strip() if len(row) > 2 and row[2] else ""
 
-            position = row[0]   # foydali bo‘lishi mumkin
-            full_name = row[1]  # xodim
-            structure_name = row[2]  # bo‘lim
-
-            if not full_name or not structure_name:
+            if not fio_raw:
+                skipped += 1
                 continue
 
-            # ==========================
-            # 👤 FIO → last / first / father
-            # ==========================
-            fio = str(full_name).split()
+            # FIO ni bo'lamiz
+            last_name, first_name, father_name = split_fio(fio_raw)
 
-            last = fio[0].title() if len(fio) > 0 else ""
-            first = fio[1].title() if len(fio) > 1 else ""
-            father = fio[2].title() if len(fio) > 2 else ""
-
-            norm_struct = normalize_name(structure_name)
-
-            # ==========================
-            # 🔎 Xodimni topamiz
-            # ==========================
-            employee = Employee.objects.filter(
-                last_name__iexact=last,
-                first_name__iexact=first,
-            ).first()
-
-            if not employee and father:
-                employee = Employee.objects.filter(
-                    last_name__iexact=last,
-                    first_name__iexact=first,
-                    father_name__iexact=father,
-                ).first()
-
-            if not employee:
-                self.stdout.write(self.style.WARNING(
-                    f"🟥 Xodim topilmadi → {full_name}"
-                ))
-                not_found += 1
+            if not last_name or not first_name:
+                skipped += 1
                 continue
 
-            # ==========================
-            # 🟡 MOSLASHUVCHAN BO‘LIM QIDIRUV
-            # ==========================
-            dept = direc = div = None
+            # Department
+            department = None
+            if dep_name:
+                department, _ = Department.objects.get_or_create(
+                    organization=org,
+                    name=dep_name,
+                )
 
-            # 1️⃣ Department — aniq moslik
-            for d in Department.objects.all():
-                if normalize_name(d.name) == norm_struct:
-                    dept = d
-                    break
+            # Rank (lavozim)
+            rank = None
+            if lavozim:
+                rank, _ = Rank.objects.get_or_create(name=lavozim)
 
-            # 2️⃣ Directorate
-            if not dept:
-                for d in Directorate.objects.all():
-                    if normalize_name(d.name) == norm_struct:
-                        direc = d
-                        break
+            # 4) AVVAL FIO + IVS bo'yicha Employee izlaymiz
+            emp = (
+                Employee.objects.filter(
+                    organization=org,
+                    last_name__iexact=last_name,
+                    first_name__iexact=first_name,
+                    father_name__iexact=father_name,
+                )
+                .select_related("user")
+                .first()
+            )
 
-            # 3️⃣ Division
-            if not dept and not direc:
-                for d in Division.objects.all():
-                    if normalize_name(d.name) == norm_struct:
-                        div = d
-                        break
-
-            # 4️⃣ Qisman moslik (fallback)
-            if not dept and not direc and not div:
-                dept = Department.objects.filter(name__icontains=structure_name[:6]).first()
-
-            if not dept and not direc and not div:
-                self.stdout.write(self.style.WARNING(
-                    f"⚠ Bo‘lim topilmadi → '{structure_name}'"
-                ))
-                not_matched += 1
+            # -------------------------------
+            #  A) EMPLOYEE MAVJUD
+            # -------------------------------
+            if emp:
+                self._update_employee(
+                    emp=emp,
+                    org=org,
+                    region=region,
+                    department=department,
+                    rank=rank,
+                )
+                updated += 1
                 continue
 
-            # ==========================
-            # 🔗 ZANJIR BILAN BIRIKTIRAMIZ
-            # ==========================
-            if div:
-                employee.division = div
-                employee.directorate = div.directorate
-                employee.department = div.directorate.department
-                employee.organization = div.directorate.department.organization
-                result = f"Division → {div.name}"
+            # -------------------------------
+            #  B) EMPLOYEE YO'Q → YANGI USER
+            # -------------------------------
+            base_username = slugify(f"{last_name}.{first_name}") or "user"
+            username = base_username
+            i = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{i}"
+                i += 1
 
-            elif direc:
-                employee.directorate = direc
-                employee.department = direc.department
-                employee.organization = direc.department.organization
-                result = f"Directorate → {direc.name}"
+            user = User.objects.create_user(
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                password="Password100",
+            )
 
-            elif dept:
-                employee.department = dept
-                employee.organization = dept.organization
-                result = f"Department → {dept.name}"
+            # ❗ MUHIM JOY: SIGNALLAR NATIJASIDA ALREADY Employee YARATILGAN-BO'LMAGANINI TEKSHIRAMIZ
+            emp_for_user = None
+            try:
+                emp_for_user = user.employee  # agar OneToOne signal ishlagan bo'lsa, bu bor bo'ladi
+            except Employee.DoesNotExist:
+                emp_for_user = None
+            except AttributeError:
+                emp_for_user = None
 
-            employee.save()
-            updated += 1
+            if emp_for_user:
+                # Signal orqali yaratilgan Employee ni to'ldiramiz
+                emp_obj = emp_for_user
+                emp_obj.organization = org
+                emp_obj.region = region
+                emp_obj.last_name = last_name
+                emp_obj.first_name = first_name
+                emp_obj.father_name = father_name
+                emp_obj.department = department
+                emp_obj.rank = rank
+                emp_obj.status = "worker"
+                emp_obj.save()
+                updated += 1
+            else:
+                # Signal Employee yaratmagan bo'lsa, endi o'zimiz yaratamiz
+                Employee.objects.create(
+                    user=user,
+                    organization=org,
+                    region=region,
+                    department=department,
+                    rank=rank,
+                    last_name=last_name,
+                    first_name=first_name,
+                    father_name=father_name,
+                    status="worker",
+                )
+                created += 1
 
-            self.stdout.write(self.style.SUCCESS(
-                f"🟢 {last} {first}  ⇒  {result}"
-            ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"✅ Import yakunlandi: Yaratildi: {created} | Yangilandi: {updated} | O'tkazib yuborildi: {skipped}"
+            )
+        )
 
-        # ==========================
-        # 📊 NATIJA
-        # ==========================
-        self.stdout.write("\n=========== NATIJA ===========")
-        self.stdout.write(self.style.SUCCESS(f"✔ Yangilandi: {updated}"))
-        self.stdout.write(self.style.WARNING(f"🟥 Xodim topilmadi: {not_found}"))
-        self.stdout.write(self.style.WARNING(f"⚠ Bo‘lim mos kelmadi: {not_matched}"))
+    def _update_employee(self, emp, org, region, department, rank):
+        """
+        Mavjud Employee obyektini yangilash.
+        """
+        emp.organization = org
+        emp.region = emp.region or region
+
+        if department:
+            emp.department = department  # save() ichida organization ham to'ladi
+        if rank:
+            emp.rank = rank
+
+        if not emp.status or emp.status == "client":
+            emp.status = "worker"
+
+        emp.save()
