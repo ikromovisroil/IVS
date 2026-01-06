@@ -438,7 +438,7 @@ def deedconsent_action(request, pk):
 @login_required
 def barn(request):
     employees = Employee.objects.filter(
-        organization__org_type='IMV',
+        organization__org_type='IVS',
         organization__is_active=True
     ).order_by("last_name", "first_name")
 
