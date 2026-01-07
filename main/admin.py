@@ -217,7 +217,15 @@ class TechnicsAdmin(admin.ModelAdmin):
         "serial",
     )
     list_filter = ("category", "status")
-    search_fields = ("name", "inventory", "serial")
+    search_fields = search_fields = (
+        "name",
+        "inventory",
+        "serial",
+        "employee__last_name",
+        "employee__first_name",
+        "employee__father_name",
+        "employee__pinfl",
+    )
 
 
 # ============================
