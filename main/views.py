@@ -607,7 +607,6 @@ def organization(request, slug):
         .annotate(
             technics_count=Count("employee__technics", distinct=True)
         )
-        .order_by("name")
     )
 
     # 🔵 DIRECTORATES
@@ -618,7 +617,6 @@ def organization(request, slug):
         .annotate(
             technics_count=Count("employee__technics", distinct=True)
         )
-        .order_by("department__name", "name")
     )
 
     # 🟣 DIVISIONS
@@ -629,7 +627,6 @@ def organization(request, slug):
         .annotate(
             technics_count=Count("employee__technics", distinct=True)
         )
-        .order_by("directorate__department__name", "directorate__name", "name")
     )
 
     context = {
