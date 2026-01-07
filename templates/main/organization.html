@@ -42,87 +42,17 @@
               </tr>
             </thead>
 
-            <tbody>
-
-            {# Faqat shu departament darajasidagi xodimlar #}
-            {% for emp in dep.employee_set.all %}
-              {% if emp.department and not emp.directorate and not emp.division %}
-
-                {% with techs=emp.tech_list emp_counter=forloop.counter %}
-
-                  {% if techs %}
-                    {% for tech in techs %}
-                    <tr>
-                      {% if forloop.first %}
-                        <td rowspan="{{ techs|length }}">{{ emp_counter }}</td>
-                        <td rowspan="{{ techs|length }}">{{ emp.rank|default:"" }}</td>
-                        <td rowspan="{{ techs|length }}">
-                          {% if emp.user %}
-                            {{ emp.full_name }}
-                          {% else %}
-                            <span class="text-muted">— Ro‘yxatdan o‘tmagan —</span>
-                          {% endif %}
-                        </td>
-                      {% endif %}
-
-                      <td>
-                        {{ tech.category }} ({{ tech.name }})
-                        {% for et in tech.extratechnics_set.all %}
-                          <br>{{ et.name }}
-                        {% endfor %}
-                      </td>
-
-                      <td>
-                        {{ tech.inventory|default:"-" }}
-                        {% for et in tech.extratechnics_set.all %}
-                          <br>{{ et.inventory|default:"-" }}
-                        {% endfor %}
-                      </td>
-
-                      <td>
-                        {{ tech.serial|default:"-" }}
-                        {% for et in tech.extratechnics_set.all %}
-                          <br>{{ et.serial|default:"-" }}
-                        {% endfor %}
-                      </td>
-
-                      <td>
-                        {{ tech.ip|default:"-" }}
-                        {% for et in tech.extratechnics_set.all %}
-                          <br>{{ et.ip|default:"-" }}
-                        {% endfor %}
-                      </td>
-
-                      <td>
-                        {{ tech.moc|default:"-" }}
-                        {% for et in tech.extratechnics_set.all %}
-                          <br>{{ et.moc|default:"-" }}
-                        {% endfor %}
-                      </td>
-
-                      <td>
-                        {{ tech.year|default:"-" }}
-                        {% for et in tech.extratechnics_set.all %}
-                          <br>{{ et.year|default:"-" }}
-                        {% endfor %}
-                      </td>
-                    </tr>
-                    {% endfor %}
-
-                  {% else %}
-                    <tr>
-                      <td>{{ emp_counter }}</td>
-                      <td>{{ emp.rank }}</td>
-                      <td>{{ emp.full_name }}</td>
-                      <td colspan="6" class="text-center">— Texnika yo‘q —</td>
-                    </tr>
-                  {% endif %}
-
-                {% endwith %}
-
-              {% endif %}
-            {% endfor %}
-
+            {# ❗ Endi bu tbody AJAX bilan to‘ladi #}
+            <tbody
+              class="js-org-block"
+              data-level="department"
+              data-id="{{ dep.id }}"
+            >
+              <tr>
+                <td colspan="9" class="text-center text-muted">
+                  Yuklanmoqda...
+                </td>
+              </tr>
             </tbody>
           </table>
 
@@ -157,86 +87,16 @@
                 </tr>
               </thead>
 
-              <tbody>
-
-              {% for emp in dir.employee_set.all %}
-                {% if emp.directorate and not emp.division %}
-
-                  {% with techs=emp.tech_list emp_counter=forloop.counter %}
-
-                    {% if techs %}
-                      {% for tech in techs %}
-                      <tr>
-                        {% if forloop.first %}
-                          <td rowspan="{{ techs|length }}">{{ emp_counter }}</td>
-                          <td rowspan="{{ techs|length }}">{{ emp.rank|default:"" }}</td>
-                          <td rowspan="{{ techs|length }}">
-                            {% if emp.user %}
-                              {{ emp.full_name }}
-                            {% else %}
-                              <span class="text-muted">— Ro‘yxatdan o‘tmagan —</span>
-                            {% endif %}
-                          </td>
-                        {% endif %}
-
-                        <td>
-                          {{ tech.category }} ({{ tech.name }})
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.name }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.inventory|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.inventory|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.serial|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.serial|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.ip|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.ip|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.moc|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.moc|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.year|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.year|default:"-" }}
-                          {% endfor %}
-                        </td>
-                      </tr>
-                      {% endfor %}
-
-                    {% else %}
-                      <tr>
-                        <td>{{ emp_counter }}</td>
-                        <td>{{ emp.rank }}</td>
-                        <td>{{ emp.full_name }}</td>
-                        <td colspan="6" class="text-center">— Texnika yo‘q —</td>
-                      </tr>
-                    {% endif %}
-
-                  {% endwith %}
-
-                {% endif %}
-              {% endfor %}
-
+              <tbody
+                class="js-org-block"
+                data-level="directorate"
+                data-id="{{ dir.id }}"
+              >
+                <tr>
+                  <td colspan="9" class="text-center text-muted">
+                    Yuklanmoqda...
+                  </td>
+                </tr>
               </tbody>
             </table>
 
@@ -246,7 +106,7 @@
 
         {# ================== DIVISION LEVEL (faqat shu DIRECTORATE ichida) ================== #}
         {% for div in divisions %}
-          {% if div.directorate_id == dir.id %}  {# ESKI XATO: dep.id bo‘yicha tekshirayotgandik #}
+          {% if div.directorate_id == dir.id %}
 
           <div class="card recent-sales overflow-auto mb-3">
 
@@ -271,84 +131,16 @@
                   </tr>
                 </thead>
 
-                <tbody>
-
-                {% for emp in div.employee_set.all %}
-
-                  {% with techs=emp.tech_list emp_counter=forloop.counter %}
-
-                    {% if techs %}
-                      {% for tech in techs %}
-                      <tr>
-                        {% if forloop.first %}
-                          <td rowspan="{{ techs|length }}">{{ emp_counter }}</td>
-                          <td rowspan="{{ techs|length }}">{{ emp.rank|default:"" }}</td>
-                          <td rowspan="{{ techs|length }}">
-                            {% if emp.user %}
-                              {{ emp.full_name }}
-                            {% else %}
-                              <span class="text-muted">— Ro‘yxatdan o‘tmagan —</span>
-                            {% endif %}
-                          </td>
-                        {% endif %}
-
-                        <td>
-                          {{ tech.category }} ({{ tech.name }})
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.name }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.inventory|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.inventory|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.serial|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.serial|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.ip|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.ip|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.moc|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.moc|default:"-" }}
-                          {% endfor %}
-                        </td>
-
-                        <td>
-                          {{ tech.year|default:"-" }}
-                          {% for et in tech.extratechnics_set.all %}
-                            <br>{{ et.year|default:"-" }}
-                          {% endfor %}
-                        </td>
-                      </tr>
-                      {% endfor %}
-
-                    {% else %}
-                      <tr>
-                        <td>{{ emp_counter }}</td>
-                        <td>{{ emp.rank }}</td>
-                        <td>{{ emp.full_name }}</td>
-                        <td colspan="6" class="text-center">— Texnika yo‘q —</td>
-                      </tr>
-                    {% endif %}
-
-                  {% endwith %}
-
-                {% endfor %}
-
+                <tbody
+                  class="js-org-block"
+                  data-level="division"
+                  data-id="{{ div.id }}"
+                >
+                  <tr>
+                    <td colspan="9" class="text-center text-muted">
+                      Yuklanmoqda...
+                    </td>
+                  </tr>
                 </tbody>
               </table>
 
@@ -368,5 +160,28 @@
   </section>
 
 </main>
+
+{# =========== AJAX SCRIPT =========== #}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+  $(function () {
+    $(".js-org-block").each(function () {
+      const $tbody = $(this);
+      const level = $tbody.data("level");
+      const id = $tbody.data("id");
+
+      $.get("{% url 'organization_block' organizations.slug %}", {
+        level: level,
+        id: id
+      }).done(function (html) {
+        $tbody.html(html);   // serverdan kelgan <tr> larni joylaymiz
+      }).fail(function () {
+        $tbody.html(
+          '<tr><td colspan="9" class="text-center text-danger">Yuklashda xatolik</td></tr>'
+        );
+      });
+    });
+  });
+</script>
 
 {% endblock content %}

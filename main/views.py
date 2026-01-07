@@ -579,32 +579,26 @@ def technics(request, slug=None):
     return render(request, "main/technics.html", context)
 
 
+def _check_worker(request):
+    emp = getattr(request.user, "employee", None)
+    if not emp or emp.status != "worker":
+        raise PermissionDenied
+    return emp
 
 @never_cache
 @login_required
 def organization(request, slug):
+    _check_worker(request)
 
-    # 🔒 Foydalanuvchi Worker bo‘lishi shart
-    emp = getattr(request.user, "employee", None)
-    if not emp or emp.status != "worker":
-        raise PermissionDenied
-    # ⚡ Technics ni oldindan yuklab qo‘yamiz
-    tech_prefetch = Prefetch(
-        "technics_set",
-        queryset=Technics.objects.select_related("category"),
-        to_attr="tech_list"
-    )
-    # 🟢 ORGANIZATION (asosiy obyekt)
+    # 🟢 ORGANIZATION (faqat umumiy son)
     organization = (
         Organization.objects
         .annotate(
             technics_count=Count("employee__technics", distinct=True)
         )
-        .prefetch_related(
-            Prefetch("employee_set", queryset=Employee.objects.prefetch_related(tech_prefetch))
-        )
         .get(slug=slug)
     )
+
     # 🟡 DEPARTMENTS
     departments = (
         Department.objects
@@ -613,13 +607,9 @@ def organization(request, slug):
         .annotate(
             technics_count=Count("employee__technics", distinct=True)
         )
-        .prefetch_related(
-            Prefetch("employee_set",
-                     queryset=Employee.objects
-                     .select_related("rank", "user")
-                     .prefetch_related(tech_prefetch))
-        )
+        .order_by("name")
     )
+
     # 🔵 DIRECTORATES
     directorates = (
         Directorate.objects
@@ -628,13 +618,9 @@ def organization(request, slug):
         .annotate(
             technics_count=Count("employee__technics", distinct=True)
         )
-        .prefetch_related(
-            Prefetch("employee_set",
-                     queryset=Employee.objects
-                     .select_related("rank", "user")
-                     .prefetch_related(tech_prefetch))
-        )
+        .order_by("department__name", "name")
     )
+
     # 🟣 DIVISIONS
     divisions = (
         Division.objects
@@ -643,21 +629,92 @@ def organization(request, slug):
         .annotate(
             technics_count=Count("employee__technics", distinct=True)
         )
-        .prefetch_related(
-            Prefetch("employee_set",
-                     queryset=Employee.objects
-                     .select_related("rank", "user")
-                     .prefetch_related(tech_prefetch))
-        )
+        .order_by("directorate__department__name", "directorate__name", "name")
     )
 
     context = {
-        'organizations': organization,
-        'departments': departments,
-        'directorates': directorates,
-        'divisions': divisions,
+        "organizations": organization,
+        "departments": departments,
+        "directorates": directorates,
+        "divisions": divisions,
     }
-    return render(request, 'main/organization.html', context)
+    return render(request, "main/organization.html", context)
+
+@never_cache
+@login_required
+def organization_block(request, slug):
+    _check_worker(request)
+
+    if request.method != "GET":
+        raise PermissionDenied
+
+    org = get_object_or_404(Organization, slug=slug)
+
+    level = request.GET.get("level")      # 'department' | 'directorate' | 'division'
+    obj_id = request.GET.get("id")
+
+    if level not in ("department", "directorate", "division") or not obj_id:
+        raise PermissionDenied
+
+    # ⚡ Technics + ExtraTechnics’ni oldindan yuklash
+    tech_prefetch = Prefetch(
+        "technics_set",
+        queryset=Technics.objects
+            .select_related("category")
+            .prefetch_related("extratechnics_set"),
+        to_attr="tech_list",
+    )
+
+    if level == "department":
+        dep = get_object_or_404(Department, id=obj_id, organization=org)
+        employees = (
+            Employee.objects
+            .filter(
+                department=dep,
+                directorate__isnull=True,
+                division__isnull=True,
+            )
+            .select_related("rank", "user")
+            .prefetch_related(tech_prefetch)
+            .order_by("last_name", "first_name")
+        )
+
+    elif level == "directorate":
+        directorate = get_object_or_404(
+            Directorate.objects.select_related("department"),
+            id=obj_id,
+            department__organization=org,
+        )
+        employees = (
+            Employee.objects
+            .filter(
+                directorate=directorate,
+                division__isnull=True,
+            )
+            .select_related("rank", "user")
+            .prefetch_related(tech_prefetch)
+            .order_by("last_name", "first_name")
+        )
+
+    else:  # level == "division"
+        division = get_object_or_404(
+            Division.objects.select_related("directorate", "directorate__department"),
+            id=obj_id,
+            directorate__department__organization=org,
+        )
+        employees = (
+            Employee.objects
+            .filter(division=division)
+            .select_related("rank", "user")
+            .prefetch_related(tech_prefetch)
+            .order_by("last_name", "first_name")
+        )
+
+    context = {
+        "employees": employees,
+    }
+    return render(request, "main/organization_block.html", context)
+
 
 
 @never_cache

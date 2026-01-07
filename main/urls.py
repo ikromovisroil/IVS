@@ -34,6 +34,7 @@ urlpatterns = [
 
     # ORGANIZATION
     path('organization/<slug:slug>/', organization, name='organization'),
+    path("organization/<slug:slug>/block/", organization_block, name="organization_block",),
 
     # DOCUMENT
     path('document/', document_get, name='document_get'),

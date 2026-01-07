@@ -1,0 +1,78 @@
+{# main/organization.html #}
+
+{% for emp in employees %}
+  {% with techs=emp.tech_list emp_counter=forloop.counter %}
+    {% if techs %}
+      {% for tech in techs %}
+        <tr>
+          {% if forloop.first %}
+            <td rowspan="{{ techs|length }}">{{ emp_counter }}</td>
+            <td rowspan="{{ techs|length }}">{{ emp.rank|default:"" }}</td>
+            <td rowspan="{{ techs|length }}">
+              {% if emp.user %}
+                {{ emp.full_name }}
+              {% else %}
+                <span class="text-muted">— Ro‘yxatdan o‘tmagan —</span>
+              {% endif %}
+            </td>
+          {% endif %}
+
+          <td>
+            {{ tech.category }} ({{ tech.name }})
+            {% for et in tech.extratechnics_set.all %}
+              <br>{{ et.name }}
+            {% endfor %}
+          </td>
+
+          <td>
+            {{ tech.inventory|default:"-" }}
+            {% for et in tech.extratechnics_set.all %}
+              <br>{{ et.inventory|default:"-" }}
+            {% endfor %}
+          </td>
+
+          <td>
+            {{ tech.serial|default:"-" }}
+            {% for et in tech.extratechnics_set.all %}
+              <br>{{ et.serial|default:"-" }}
+            {% endfor %}
+          </td>
+
+          <td>
+            {{ tech.ip|default:"-" }}
+            {% for et in tech.extratechnics_set.all %}
+              <br>{{ et.ip|default:"-" }}
+            {% endfor %}
+          </td>
+
+          <td>
+            {{ tech.moc|default:"-" }}
+            {% for et in tech.extratechnics_set.all %}
+              <br>{{ et.moc|default:"-" }}
+            {% endfor %}
+          </td>
+
+          <td>
+            {{ tech.year|default:"-" }}
+            {% for et in tech.extratechnics_set.all %}
+              <br>{{ et.year|default:"-" }}
+            {% endfor %}
+          </td>
+        </tr>
+      {% endfor %}
+    {% else %}
+      <tr>
+        <td>{{ emp_counter }}</td>
+        <td>{{ emp.rank }}</td>
+        <td>{{ emp.full_name }}</td>
+        <td colspan="6" class="text-center">— Texnika yo‘q —</td>
+      </tr>
+    {% endif %}
+  {% endwith %}
+{% empty %}
+  <tr>
+    <td colspan="9" class="text-center text-muted">
+      Xodim topilmadi
+    </td>
+  </tr>
+{% endfor %}
