@@ -41,9 +41,16 @@ class EmployeeInline(admin.StackedInline):
 
 class UserAdmin(BaseUserAdmin):
     inlines = (EmployeeInline,)
-    list_display = ("username", "is_active", "is_staff")
+    list_display = ("username","employee_id_display", "is_active", "is_staff")
     list_filter = ("is_staff", "is_active")
 
+    def employee_id_display(self, obj):
+        if hasattr(obj, "employee") and obj.employee:
+            return obj.employee.id
+        return "-"
+
+    employee_id_display.short_description = "Employee ID"
+    employee_id_display.admin_order_field = "employee__id"
 
 admin.site.unregister(User)
 admin.site.register(User, UserAdmin)
