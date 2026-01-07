@@ -199,7 +199,6 @@ class ExtraManitorAdmin(admin.ModelAdmin):
         "inventory",
         "serial",
         "year",
-        "number",
         "price",
         "date_creat",
     )
@@ -224,7 +223,7 @@ class TechnicsAdmin(admin.ModelAdmin):
         "serial",
     )
     list_filter = ("category", "status")
-    search_fields = search_fields = (
+    search_fields = (
         "name",
         "inventory",
         "serial",
@@ -241,9 +240,9 @@ class TechnicsAdmin(admin.ModelAdmin):
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "employee", "technics", "status", "inventory")
+    list_display = ("id", "name", "employee", "technics", "status",)
     list_filter = ("status",)
-    search_fields = ("name", "inventory")
+    search_fields = ("name",'code',)
 
 
 # ============================
