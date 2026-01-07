@@ -283,7 +283,7 @@ class Material(models.Model):
     year = models.CharField(max_length=50, null=True, blank=True)
     body = models.CharField(max_length=200, null=True, blank=True)
     number = models.PositiveIntegerField(default=1)
-    code = models.PositiveIntegerField(default=0)
+    code = models.CharField(max_length=10, null=True, blank=True)
     unit = models.CharField(max_length=50, null=True, blank=True)
     price = models.PositiveIntegerField(null=True, blank=True)
     date_creat = models.DateTimeField(auto_now_add=True)
