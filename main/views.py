@@ -673,7 +673,6 @@ def organization_block(request, slug):
             )
             .select_related("rank", "user")
             .prefetch_related(tech_prefetch)
-            .order_by("last_name", "first_name")
         )
 
     elif level == "directorate":
@@ -690,7 +689,6 @@ def organization_block(request, slug):
             )
             .select_related("rank", "user")
             .prefetch_related(tech_prefetch)
-            .order_by("last_name", "first_name")
         )
 
     else:  # level == "division"
@@ -704,7 +702,6 @@ def organization_block(request, slug):
             .filter(division=division)
             .select_related("rank", "user")
             .prefetch_related(tech_prefetch)
-            .order_by("last_name", "first_name")
         )
 
     context = {
