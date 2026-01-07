@@ -109,7 +109,6 @@ def contact(request):
         'employee': Employee.objects.select_related('user')
         .exclude(user=request.user)
         .select_related("rank","organization","department","directorate","division")
-        .order_by("rank__name")
     }
     return render(request, 'main/contact.html', context)
 
