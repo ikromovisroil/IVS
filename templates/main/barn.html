@@ -64,10 +64,10 @@
                 <thead>
                   <tr>
                     <th scope="col">#</th>
-                    <th scope="col">Texnika Nomi</th>
                     <th scope="col">Material Nomi</th>
-                    <th scope="col">I/N</th>
+                    <th scope="col">1c code</th>
                     <th scope="col">Soni</th>
+                    <th scope="col">Narxi</th>
                     <th scope="col">Qiymati</th>
                     <th scope="col">Sana</th>
                   </tr>
@@ -75,10 +75,10 @@
                 {% for mat in material %}
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
-                    <td>{{mat.technics.name|default:"-"}}</td>
                     <td>{{mat.name|default:"-"}}</td>
-                    <td>{{mat.inventory|default:"-"}}</td>
+                    <td>{{mat.code|default:"-"}}</td>
                     <td>{{mat.number|default:"-"}}</td>
+                    <td>{{mat.price|default:"-"}}</td>
                     <td>{{mat.unit|default:"-"}}</td>
                     <td>{{mat.date_creat}}</td>
                   </tr>
