@@ -12,34 +12,6 @@
     <div class="pagetitle">
         <h1>Texnika va materiallar</h1>
     </div>
-     <section class="section">
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="card">
-            <div class="card-body">
-                <form class="row g-2 mt-1" method="get">
-                    <div class="col-md-3">
-                        <label for="employee" class="form-label">Xodim</label>
-                        <select id="employee" name="employee" class="form-select">
-                            <option value="">Tanlang...</option>
-                            {% for emp in employee %}
-                                <option value="{{ emp.id }}"
-                                    {% if emp.id == selected_emp_id %}selected{% endif %}>
-                                    {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Qidirish</button>
-                    </div>
-
-                </form>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
 
     <section class="section">
       <div class="row">
@@ -120,20 +92,4 @@
     </section>
 
 </main>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-    $(function () {
-        $('#employee').select2({
-            placeholder: "Xodimni tanlang",
-            allowClear: true,
-            width: "100%"
-        });
-
-        // Xodim tanlanganda formani avtomatik yuborish
-        $('#employee').on('change', function () {
-            this.form.submit();
-        });
-    });
-</script>
-
 {% endblock content %}

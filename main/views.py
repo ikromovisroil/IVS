@@ -437,43 +437,10 @@ def deedconsent_action(request, pk):
 @never_cache
 @login_required
 def barn(request):
-    employees = Employee.objects.filter(
-        organization__org_type='IVS',
-        organization__is_active=True
-    ).order_by("last_name", "first_name")
-
-    # GET'dan kelgan xodim ID (select2 dan)
-    emp_id = request.GET.get("employee", "").strip()
-
-    selected_emp = None
-
-    if emp_id:
-        # Agar formadan xodim tanlangan bo‘lsa – o‘sha xodim
-        try:
-            selected_emp = Employee.objects.get(pk=emp_id)
-        except Employee.DoesNotExist:
-            selected_emp = None
-    else:
-        # Aks holda – current user'ning employeesi
-        if hasattr(request.user, "employee"):
-            selected_emp = request.user.employee
-
-    # Texnika va materiallarni tayyorlash
-    technics_qs = Technics.objects.all().select_related("employee", "category")
-    material_qs = Material.objects.all().select_related("technics", "technics__employee")
-
-    if selected_emp:
-        technics_qs = technics_qs.filter(employee=selected_emp)
-        material_qs = material_qs.filter(technics__employee=selected_emp)
-
     context = {
-        "employee": employees,  # select uchun
-        "technics": technics_qs,  # jadval
-        "material": material_qs,  # jadval
-        "selected_emp_id": selected_emp.id if selected_emp else "",
-        "selected_emp": selected_emp,
+        "technics": Technics.objects.filter(employee__user=request.user),
+        "material": Material.objects.filter(employee__user=request.user),
     }
-
     return render(request, 'main/barn.html', context)
 
 
