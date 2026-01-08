@@ -59,7 +59,7 @@ def order_notifications(request):
     )
 
     # 2) Bosslar uchun
-    if employee.rank and employee.rank.id == 3:
+    if employee.is_boss:
         boss_notes = Order.objects.filter(
             status='viewed',
             sender__region=employee.region,

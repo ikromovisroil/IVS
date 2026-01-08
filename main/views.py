@@ -907,11 +907,6 @@ def order_approved(request):
 
 
 from django.db import transaction
-from django.shortcuts import redirect, get_object_or_404
-from django.contrib import messages
-from django.views.decorators.cache import never_cache
-from django.contrib.auth.decorators import login_required
-
 @never_cache
 @login_required
 @transaction.atomic
