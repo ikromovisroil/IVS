@@ -75,7 +75,7 @@
                 {% for mat in material %}
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
-                    <td>{{mat.name|default:"-"}}</td>
+                    <td>{{mat.name|default:"-"|truncatechars:30}}</td>
                     <td>{{mat.code|default:"-"}}</td>
                     <td>{{mat.number|default:"-"}}</td>
                     <td>{{mat.price|default:"-"}}</td>
