@@ -878,7 +878,7 @@ def order_receiver(request):
         orders = Order.objects.filter(receiver=employee).order_by('-id')
 
     context = {
-        "employee": employee.objects.filter(organization.org_type == "IVS"),
+        "employee": Employee.objects.filter(organization__org_type="IVS"),
         "order": orders,
         "topic": Topic.objects.all(),
         "goal": Goal.objects.select_related('topic'),
