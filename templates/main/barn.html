@@ -29,7 +29,6 @@
                     <th scope="col">S/N</th>
                     <th scope="col">Soni</th>
                     <th scope="col">Yili</th>
-                    <th scope="col">Sana</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -41,7 +40,6 @@
                     <td>{{tex.serial|default:"-"}}</td>
                     <td>{{tex.number|default:"-"}}</td>
                     <td>{{tex.year|default:"-"}}</td>
-                    <td>{{tex.date_creat}}</td>
                   </tr>
                 {% endfor %}
                 </tbody>
@@ -69,7 +67,6 @@
                     <th scope="col">Soni</th>
                     <th scope="col">Narxi</th>
                     <th scope="col">Qiymati</th>
-                    <th scope="col">Sana</th>
                   </tr>
                 </thead>
                 {% for mat in material %}
@@ -80,7 +77,6 @@
                     <td>{{mat.number|default:"-"}}</td>
                     <td>{{mat.price|default:"-"}}</td>
                     <td>{{mat.unit|default:"-"}}</td>
-                    <td>{{mat.date_creat}}</td>
                   </tr>
                 {% endfor %}
               </table>
