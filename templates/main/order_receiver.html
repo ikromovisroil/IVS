@@ -322,7 +322,7 @@ document.addEventListener("DOMContentLoaded", function() {
                 <div class="col-6">
                     <select class="form-select js-material-select" name="material_id[]">
                         <option value="">— Tanlang —</option>
-                        {% for m in material %}
+                        {% for m in or.user.material_set.all %}
                         <option value="{{ m.id }}">{{ m.code }} {{ m.name }}</option>
                         {% endfor %}
                     </select>

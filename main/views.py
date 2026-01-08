@@ -871,56 +871,19 @@ def order_post(request):
 @login_required
 def order_receiver(request):
     employee = request.user.employee
-    employee_id = employee.id  # 🔥 employee_id ni shu yerda olamiz
 
-    # ===============================================
-    # 🔥 1) RAHBARni aniqlash
-    # ===============================================
-    # 1,2,3 — boshliqlar (super mansab)
     if employee.is_boss:
-        boss = employee
+        orders = Order.objects.filter(sender__region=employee.region).order_by('-id')
     else:
-        boss = Employee.objects.filter(
-            organization=employee.organization,
-            department=employee.department,
-            directorate=employee.directorate,
-            division=employee.division,
-            region=employee.region,
-            id__in=[5, 4]  # employee_id emas, id bo‘ladi!
-        ).first()
-
-    # Agar rahbar topilmasa (himoya)
-    if not boss:
-        boss = employee
-
-    # ===============================================
-    # 🔥 2) ORDERlarni olish
-    # ===============================================
-    if employee.is_boss:
-        # Rahbar: hudud buyurtmalari
-        order = Order.objects.filter(
-            sender__region=employee.region
-        ).order_by('-id')
-    else:
-        # Xodim: faqat o‘ziga kelgan buyurtmalar
-        order = Order.objects.filter(
-            receiver=employee,
-            sender__region=employee.region
-        ).order_by('-id')
-
-    # ===============================================
-    # 🔥 3) MATERIALLAR — HAR DOIM RAHBARNING
-    # ===============================================
-    material = Material.objects.filter(employee=boss)
+        orders = Order.objects.filter(receiver=employee).order_by('-id')
 
     context = {
-        "employee": Employee.objects.filter(status="worker", region=employee.region),
-        "order": order,
-        "material": material,
+        "order": orders,
         "topic": Topic.objects.all(),
         "goal": Goal.objects.select_related('topic'),
     }
     return render(request, 'main/order_receiver.html', context)
+
 
 
 @never_cache
