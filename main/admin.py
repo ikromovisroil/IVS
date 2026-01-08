@@ -240,9 +240,9 @@ class TechnicsAdmin(admin.ModelAdmin):
 
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "employee", "technics", "status",)
-    list_filter = ("status",)
-    search_fields = ("name",'code',)
+    list_display = ("id","employee", "name", "number",'price','code','unit', "status",)
+    list_filter = ("status",'unit',)
+    search_fields = ("name",'code',"employee",)
 
 
 # ============================
