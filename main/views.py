@@ -945,7 +945,6 @@ def ordermaterial_post(request):
         material = Material.objects.select_for_update().filter(id=m_id).first()
         if not material:
             messages.error(request, "Material topilmadi!")
-            return redirect(request.META.get("HTTP_REFERER", "/"))
 
         try:
             number = int(num) if num else 1
@@ -955,7 +954,6 @@ def ordermaterial_post(request):
 
         if number <= 0:
             messages.error(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
-            return redirect(request.META.get("HTTP_REFERER", "/"))
 
         if material.number < number:
             messages.error(request, f"{material.name} yetarli emas! Omborda {material.number} dona bor.")
