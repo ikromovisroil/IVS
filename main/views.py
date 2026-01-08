@@ -906,12 +906,18 @@ def order_approved(request):
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
+from django.db import transaction
+from django.shortcuts import redirect, get_object_or_404
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+
 @never_cache
 @login_required
 def ordermaterial_post(request):
 
-    if request.method != 'POST':
-        return redirect('order_sender')
+    if request.method != "POST":
+        return redirect("order_sender")
 
     employee_id = request.POST.get("employee_id")
     order_id = request.POST.get("order_id")
@@ -919,67 +925,58 @@ def ordermaterial_post(request):
     material_ids = request.POST.getlist("material_id[]")
     numbers = request.POST.getlist("number[]")
 
-    order = Order.objects.filter(id=order_id).first()
-    if not order:
-        return redirect("order_receiver")
+    order = get_object_or_404(Order, id=order_id)
 
-    # TEXNIKA TANLANDI
+    # TEXNIKA TANLASH
     if technics_id:
         order.technics_id = technics_id
 
-    # BAJARUVCHI TANLANDI
+    # BAJARUVCHI TANLASH
     if employee_id:
         order.receiver_id = employee_id
-        order.user = request.user.employee   # 🔥 bu bo‘lim boshlig‘i bo‘ladi
-        order.status = 'accepted'
+        order.user = request.user.employee   # bo‘lim boshlig‘i
+        order.status = "accepted"
 
     order.save()
 
-    # MATERIAL KLON QILISH
     for m_id, num in zip(material_ids, numbers):
-        if m_id:
 
-            original = Material.objects.get(id=m_id)
-            number = int(num) if num else 1
+        if not m_id:
+            continue
 
-            # ❗ 1) 0 yoki manfiy bo‘lsa xato
-            if number <= 0:
-                messages.info(request, "Material soni 0 yoki manfiy bo'lishi mumkin emas!")
-                return redirect("order_receiver")
+        try:
+            material = get_object_or_404(material, id=m_id)
+        except Material.DoesNotExist:
+            messages.error(request, "Material topilmadi!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
-            # ❗ 2) Omborda yetarli bo‘lmasa xato
-            if original.number < number:
-                messages.info(request,
-                               f"{original.name} materiali yetarli emas! Omborda {original.number} dona mavjud.")
-                return redirect("order_receiver")
+        number = int(num) if num else 1
 
-            # 1) MATERIALDAN KLON YARATAMIZ
-            cloned = Material.objects.create(
-                employee=order.sender,         # 🔥 KLON boshliqqa biriktiriladi
-                technics=order.technics,
-                status=original.status,
-                name=original.name,
-                inventory=original.inventory,
-                year=original.year,
-                body=original.body,
-                number=number,
-                code=original.code,
-                unit=original.unit,
-                price=original.price,
+        if number <= 0:
+            messages.info(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        if material.number < number:
+            messages.info(
+                request,
+                f"{material.name} materiali yetarli emas! Omborda {material.number} dona mavjud."
             )
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
-            # 2) ORDER MATERIAL (KLON)
-            OrderMaterial.objects.create(
-                order=order,
-                material=cloned,
-                number=number
-            )
+        # OrderMaterial yaratamiz
+        OrderMaterial.objects.create(
+            order=order,
+            material=material,
+            number=number
+        )
 
-            # 3) ORIGINAL MATERIAL SONINI KAMAYTIRAMIZ
-            original.number -= number
-            original.save()
+        # Ombordan kamaytiramiz
+        material.number -= number
+        material.save()
 
+    messages.success(request, "Zayavka muvaffaqiyatli qabul qilindi")
     return redirect("order_receiver")
+
 
 
 @never_cache
