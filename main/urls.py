@@ -26,6 +26,7 @@ urlpatterns = [
     # TECHNICS
     path('technics/', technics, name='technics'),
     path('technics/<slug:slug>/', technics, name='technics'),
+    path('warehouse/', warehouse, name='warehouse'),
 
     # FILTER AJAX
     path('ajax/load-departments/', ajax_load_departments, name='ajax_load_departments'),
