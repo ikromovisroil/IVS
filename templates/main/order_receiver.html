@@ -164,7 +164,7 @@
                         <!-- ✅ MATERIAL OPTIONS TEMPLATE (MUHIM QISM) -->
                         <template id="material-options-{{ or.id }}">
                             <option value="">— Tanlang —</option>
-                            {% for m in request.user.employee.material_set.all %}
+                            {% for m in or.user.material_set.all %}
                                 <option value="{{ m.id }}">{{ m.code }} {{ m.name }}</option>
                             {% endfor %}
                         </template>
