@@ -944,19 +944,19 @@ def ordermaterial_post(request):
 
         material = Material.objects.select_for_update().filter(id=m_id).first()
         if not material:
-            messages.error(request, "Material topilmadi!")
+            messages.info(request, "Material topilmadi!")
 
         try:
             number = int(num) if num else 1
         except ValueError:
-            messages.error(request, "Material soni noto‘g‘ri kiritilgan!")
+            messages.info(request, "Material soni noto‘g‘ri kiritilgan!")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
         if number <= 0:
-            messages.error(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
+            messages.info(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
 
         if material.number < number:
-            messages.error(request, f"{material.name} yetarli emas! Omborda {material.number} dona bor.")
+            messages.info(request, f"{material.name} yetarli emas! Omborda {material.number} dona bor.")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
         OrderMaterial.objects.create(order=order, material=material, number=number)
