@@ -446,10 +446,17 @@
           </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'document_get' %}collapsed{% endif %}"
-             href="{% url 'document_get' %}">
+          <a class="nav-link {% if url_name != 'svod_get' %}collapsed{% endif %}"
+             href="{% url 'svod_get' %}">
             <i class="bi bi-file-earmark"></i>
-            <span>Dalolatnoma</span>
+            <span>Svod</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'akt_get' %}collapsed{% endif %}"
+             href="{% url 'akt_get' %}">
+            <i class="bi bi-file-earmark"></i>
+            <span>Akt</span>
           </a>
         </li>
 

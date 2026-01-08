@@ -40,10 +40,15 @@ urlpatterns = [
     path('document/document_post/', document_post, name='document_post'),
     path('document/technics_count/', get_technics_count, name='get_technics_count'),
 
+    # AKT
+    path('akt/', akt_get, name='akt_get'),
+    path('akt/akt_post/', akt_post, name='akt_post'),
+
+    # SENDER
+    path('svod/', svod_get, name='svod_get'),
 
     # ZAYAVKA
     path('order_sender/', order_sender, name='order_sender'),
-    path('order_sender/deed/<int:pk>/', order_deed, name='order_deed'),
     path('order_receiver/', order_receiver, name='order_receiver'),
     path('order_post/', order_post, name='order_post'),
     path('ordermaterial_post/', ordermaterial_post, name='ordermaterial_post'),

@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    <title>document</title>
+{% endblock title %}
+
+{% block css %}
+{% endblock css %}
+
+{% block content %}
+
+ <main id="main" class="main">
+
+    <div class="pagetitle">
+      <h1>Svodnik</h1>
+    </div><!-- End Page Title -->
+
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-4">
+
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Vertical Form</h5>
+
+              <!-- Vertical Form -->
+              <form class="row g-3" action="{% url 'document_post' %}" method="post" data-download="true">{% csrf_token %}
+                <div class="col-12">
+                  <label for="organization" class="form-label">Tashkilot :</label>
+                    <select id="organization" name="organization" class="form-select" required>
+                        <option value="">Tanlang...</option>
+                        {% for org in organizations %}
+                            <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="department" class="form-label">Departament :</label>
+                    <select id="department" name="department" class="form-select">
+                        <option value="">Tanlang...</option>
+                        {% for dep in departments %}
+                            <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="directorate" class="form-label">Boshqarma :</label>
+                    <select id="directorate" name="directorate" class="form-select">
+                        <option value="">Tanlang...</option>
+                        {% for dir in directorates %}
+                            <option value="{{ dir.id }}" {% if selected_dir == dir.id|stringformat:"s" %}selected{% endif %}>{{ dir.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="division" class="form-label">bo'lim :</label>
+                    <select id="division" name="division" class="form-select">
+                        <option value="">Tanlang...</option>
+                        {% for div in divisions %}
+                            <option value="{{ div.id }}" {% if selected_div == div.id|stringformat:"s" %}selected{% endif %}>{{ div
+                        .name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-12">
+                  <label for="post_id" class="form-label">Lavozim :</label>
+                  <input type="text" name="post_id" id="post_id" class="form-control" required  placeholder="direktori">
+                </div>
+                <div class="col-md-12">
+                  <label for="fio_id" class="form-label">F.I.O :</label>
+                  <input type="text" name="fio_id" id="fio_id" class="form-control" required  placeholder="Sh.Muxamedov">
+                </div>
+                <div class="col-md-12">
+                  <label for="date_id" class="col-sm-2 col-form-label">Sana :</label>
+                  <input type="date" name="date_id" id="date_id" required class="form-control">
+                </div>
+                <div class="col-md-12">
+                  <label for="namber_id" class="form-label">Shartnoma raqami :</label>
+                  <input type="text" name="namber_id" class="form-control" required id="namber_id" placeholder="1">
+                </div>
+                <div class="col-md-12">
+                    <label for="rim_id" class="form-label">Chorak:</label>
+                    <select id="rim_id" name="rim_id" class="form-select" required>
+                      <option value="">Tanlang...</option>
+                      <option value="I">I</option>
+                      <option value="II">II</option>
+                      <option value="III">III</option>
+                      <option value="IV">IV</option>
+                    </select>
+                </div>
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                </div>
+              </form><!-- Vertical Form -->
+
+            </div>
+          </div>
+
+        </div>
+
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body m-5">
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <h5 class="text-center"><b>DALOLATNOMA</b></h5>
+                    </div>
+                    <div class="text-end">
+                        "_____"_______________2025 yil
+                    </div>
+                    <div class="mt-5">
+                        Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+                        <span id="selekt_id_text">Davlat byudjeti siyosati departamenti</span>
+                        <span id="post_id_text">direktori</span>
+                        <b id="fio_id_text">Sh.Muxamedov</b>,
+                        va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari
+                        markazi direktori vazifasini vaqtincha bajaruvchi <b>O.Eshchanov:</b> O‘zbekiston Respublikasi Iqtisodiyot
+                        va moliya vazirligi hamda O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot
+                        texnologiyalari markazlari tomonidan  <b><span id="date_id_text">2025 yil 4 - martda</span>
+                        tuzilgan <span id="namber_id_text">1</span> – sonli</b>  shartnomaga asosan
+                        <span id="selekt_id_text">Davlat byudjeti siyosati departamenti</span>
+                        bo‘yicha 2025 yil <span id="rim_id_text">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
+                        Ishlarni texnologik xaritaga muvofiq amalga oshirildi.
+                    </div>
+                    <div class="mt-5">
+                        <b> 1.	Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
+                    </div>
+                    <div class="mt-5">
+                       <b>1.1.</b> Biriktirilgan kompyuterlarga (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar)  xizmat ko‘rsatish – <b id="techkomp">52</b>
+                    </div>
+                    <div class="mt-5">
+                        <b>1.4.</b> A3 formatli printerlarga (tarmoq va tarmoqsiz lazer, purkovchi (струйный) va ko‘p funksiyali printerlar ) xizmat ko‘rsatish – <b id="techpr">2 dona.</b>
+                    </div>
+                    <div class="row mt-5">
+                        <div class="col-6 text-center p-5"><b>
+                            O‘zbekiston Respublikasi
+                            Iqtisodiyot va moliya vazirligi
+                            <span id="selekt_id_text">Davlat byudjeti siyosati departamenti</span> <br> <br> <br> <br>
+                                ________________ <span id="fio_id_text">Sh.Muxamedov</span></b>
+                        </div>
+                        <div class="col-6 text-center p-5"><b>
+                            O‘zbekiston Respublikasi
+                            Iqtisodiyot va moliya vazirligi
+                            huzuridagi ATM direktori v.v.b. <br> <br> <br> <br>
+                                __________________ O.Eshchanov</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- End #main -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function () {
+
+    // 1. DEPARTAMENTLARNI YUKLASH
+    function loadDepartments(orgId, selectedDepId = null) {
+        $('#department').html('<option value="">Yuklanmoqda...</option>');
+        $('#directorate').html('<option value="">Tanlang...</option>');
+        $('#division').html('<option value="">Tanlang...</option>');
+
+        if (orgId) {
+            $.ajax({
+                url: "{% url 'ajax_load_departments' %}",
+                data: { 'organization': orgId },
+                success: function (data) {
+                    let options = '<option value="">Tanlang...</option>';
+                    $.each(data, function (i, dep) {
+                        let selected = (selectedDepId == dep.id) ? 'selected' : '';
+                        options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
+                    });
+                    $('#department').html(options);
+                }
+            });
+        } else {
+            $('#department').html('<option value="">Tanlang...</option>');
+        }
+    }
+
+    // 2. DIRECTORATE YUKLASH
+    function loadDirectorate(depId, selectedDirId = null) {
+        $('#directorate').html('<option value="">Yuklanmoqda...</option>');
+        $('#division').html('<option value="">Tanlang...</option>');
+
+        if (depId) {
+            $.ajax({
+                url: "{% url 'ajax_load_directorate' %}",
+                data: { 'department': depId },
+                success: function (data) {
+                    let options = '<option value="">Tanlang...</option>';
+                    $.each(data, function (i, dir) {
+                        let selected = (selectedDirId == dir.id) ? 'selected' : '';
+                        options += `<option value="${dir.id}" ${selected}>${dir.name}</option>`;
+                    });
+                    $('#directorate').html(options);
+                }
+            });
+        } else {
+            $('#directorate').html('<option value="">Tanlang...</option>');
+        }
+    }
+
+    // 3. DIVISION YUKLASH
+    function loadDivision(dirId, selectedDivId = null) {
+        $('#division').html('<option value="">Yuklanmoqda...</option>');
+
+        if (dirId) {
+            $.ajax({
+                url: "{% url 'ajax_load_division' %}",
+                data: { 'directorate': dirId },
+                success: function (data) {
+                    let options = '<option value="">Tanlang...</option>';
+                    $.each(data, function (i, div) {
+                        let selected = (selectedDivId == div.id) ? 'selected' : '';
+                        options += `<option value="${div.id}" ${selected}>${div.name}</option>`;
+                    });
+                    $('#division').html(options);
+                }
+            });
+        } else {
+            $('#division').html('<option value="">Tanlang...</option>');
+        }
+    }
+
+
+    // === EVENTLAR ===
+
+    $('#organization').change(function () {
+        loadDepartments($(this).val());
+    });
+
+    $('#department').change(function () {
+        loadDirectorate($(this).val());
+    });
+
+    $('#directorate').change(function () {
+        loadDivision($(this).val());
+    });
+
+
+    // === OLDINGI TANLANGAN QIYMATLARNI QAYTA TIKLASH ===
+
+    let initialOrg = '{{ selected_org }}';
+    let initialDep = '{{ selected_dep }}';
+    let initialDir = '{{ selected_dir }}';
+    let initialDiv = '{{ selected_div }}';
+
+    if (initialOrg) {
+        $('#organization').val(initialOrg);
+        loadDepartments(initialOrg, initialDep);
+
+        if (initialDep) {
+            loadDirectorate(initialDep, initialDir);
+
+            if (initialDir) {
+                loadDivision(initialDir, initialDiv);
+            }
+        }
+    }
+
+});
+
+$(document).ready(function(){
+
+    function updateTechnicCount(){
+        const orgId = $('#organization').val();
+        const depId = $('#department').val();
+        const dirId = $('#directorate').val();
+        const divId = $('#division').val();
+
+        $.ajax({
+            url: "{% url 'get_technics_count' %}",
+            data: {
+                'org_id': orgId,
+                'dep_id': depId,
+                'dir_id': dirId,
+                'div_id': divId
+            },
+            success: function(data){
+
+                // Kompyuterlar soni
+                $('#techkomp').text(data.kompyuterlar + ' dona');
+
+                // Printerlar soni
+                $('#techpr').text(data.printerlar + ' dona');
+            },
+            error: function(err){
+                console.error("AJAX xato:", err);
+            }
+        });
+    }
+
+    // Har qanday select o‘zgarganda
+    $('#organization, #department, #directorate, #division').on('change', function(){
+        updateTechnicCount();
+    });
+
+    // Sahifa yangi yuklanganda ham hisoblasin
+    updateTechnicCount();
+});
+</script>
+
+{% endblock content %}
+
+{% block js %}
+{% endblock js %}

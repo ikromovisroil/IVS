@@ -114,7 +114,7 @@ def replace_text(doc, replacements: dict):
 
 def create_table_10cols(doc, title, data, headers):
 
-    widths = [1, 4, 3, 3, 2, 2, 5, 4, 3]
+    widths = [1, 4, 3, 5, 2, 2, 4, 4, 3]
 
     h = doc.add_paragraph()
     r = h.add_run(title)

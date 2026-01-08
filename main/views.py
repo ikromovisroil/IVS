@@ -368,7 +368,6 @@ def sso_exchange_and_finish(request):
         }, status=500)
 
 
-
 def exchange_code_for_token(code, code_verifier, redirect_uri):
     auth = base64.b64encode(
         f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
@@ -965,24 +964,59 @@ def ordermaterial_post(request):
 
 @never_cache
 @login_required
-def order_deed(request, pk):
-    order = get_object_or_404(Order, pk=pk)
+def akt_get(request):
 
-    sender = order.sender
-    dep = (
-        sender.division.name if sender.division else
-        sender.directorate.name if sender.directorate else
-        sender.department.name if sender.department else
-        sender.organization.name if sender.organization else ""
+    if not hasattr(request.user, "employee"):
+        raise PermissionDenied
+
+    if request.user.employee.status != "worker":
+        raise PermissionDenied
+
+    context = {
+        'employees': Employee.objects.all(),
+        'organizations': Organization.objects.all(),
+        'departments': Department.objects.select_related('organization'),
+        'directorate': Directorate.objects.select_related('department'),
+        'division': Division.objects.select_related('directorate'),
+    }
+    return render(request, 'main/akt.html', context)
+
+from datetime import datetime, timedelta
+@never_cache
+@login_required
+def akt_post(request):
+
+    if request.method != "POST":
+        return redirect("document_get")
+
+    dep_id = request.POST.get("department")
+    employee_id = request.POST.get("employee")
+
+    date_id1 = request.POST.get("date1")
+    date_id2 = request.POST.get("date2")
+
+    date1_naive = datetime.strptime(date_id1, "%Y-%m-%d")
+    date2_naive = datetime.strptime(date_id2, "%Y-%m-%d")+ timedelta(days=1)
+
+    date1 = timezone.make_aware(date1_naive)
+    date2 = timezone.make_aware(date2_naive)
+    print(date1, date2)
+
+    qs = OrderMaterial.objects.filter(
+        order__date_creat__gte=date1,
+        order__date_creat__lt=date2
     )
 
+    print(qs)
+    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
+    emp = Employee.objects.filter(id=employee_id).first() if employee_id else None
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
 
     replace_text(doc, {
-        "ID": str(order.id),
-        "RECEIVER": order.receiver.full_name or "",
-        "SENDER": order.sender.full_name or "",
-        "DEPARTMENT": dep,
+        "ID": str(12),
+        "RECEIVER": request.user.employee.full_name or "",
+        "SENDER": emp.full_name or "",
+        "DEPARTMENT": dep.name if dep else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -997,16 +1031,16 @@ def order_deed(request, pk):
     ]
 
     rows = []
-    for om in order.materials.all():
+    for q in qs:
         rows.append([
-            order.technics.name if order.technics else "",
-            order.technics.serial if order.technics else "",
-            om.material.name,
-            om.number,
-            om.material.unit or "dona",
-            sender.full_name,
-            sender.rank.name if sender.rank else "",
-            f"{om.material.price:,}".replace(",", " ") if om.material.price else ""
+            q.order.technics.name if q.order.technics else "",
+            q.order.technics.serial if q.order.technics else "",
+            q.material.name,
+            q.number,
+            q.material.unit or "dona",
+            q.order.sender.full_name,
+            q.order.sender.rank.name if q.order.sender.rank else "",
+            f"{q.material.price:,}".replace(",", " ") if q.material.price else ""
         ])
 
     h, table = create_table_10cols(
@@ -1027,9 +1061,26 @@ def order_deed(request, pk):
         buffer.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    response["Content-Disposition"] = f'attachment; filename="order_{order.id}.docx"'
+    response["Content-Disposition"] = f'attachment; filename="order.docx"'
     return response
 
 
+@never_cache
+@login_required
+def svod_get(request):
+
+    if not hasattr(request.user, "employee"):
+        raise PermissionDenied
+
+    if request.user.employee.status != "worker":
+        raise PermissionDenied
+
+    context = {
+        'organizations': Organization.objects.all(),
+        'departments': Department.objects.select_related('organization'),
+        'directorate': Directorate.objects.select_related('department'),
+        'division': Division.objects.select_related('directorate'),
+    }
+    return render(request, 'main/svod.html', context)
 
 
