@@ -1030,3 +1030,6 @@ def order_deed(request, pk):
     response["Content-Disposition"] = f'attachment; filename="order_{order.id}.docx"'
     return response
 
+
+
+
