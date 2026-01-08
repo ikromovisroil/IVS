@@ -1085,10 +1085,3 @@ def order_deed(request, pk):
     response["Content-Disposition"] = f'attachment; filename="order_{order.id}.docx"'
     return response
 
-@never_cache
-@login_required
-def warehouse(request):
-    context = {
-        'employee': Employee.objects.select_related('user')
-    }
-    return render(request, 'main/warehouse.html', context)
