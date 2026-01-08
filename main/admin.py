@@ -242,7 +242,7 @@ class TechnicsAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = ("id","employee", "name", "number",'price','code','unit', "status",)
     list_filter = ("status",'unit',)
-    search_fields = ("name",'code',"employee",)
+    search_fields = ("name", "code",)
 
 
 # ============================
