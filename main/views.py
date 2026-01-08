@@ -908,12 +908,13 @@ def order_approved(request):
 
 from django.db import transaction
 from django.shortcuts import redirect, get_object_or_404
+from django.contrib import messages
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 
 @never_cache
 @login_required
+@transaction.atomic
 def ordermaterial_post(request):
 
     if request.method != "POST":
@@ -927,56 +928,46 @@ def ordermaterial_post(request):
 
     order = get_object_or_404(Order, id=order_id)
 
-    # TEXNIKA TANLASH
     if technics_id:
         order.technics_id = technics_id
 
-    # BAJARUVCHI TANLASH
     if employee_id:
         order.receiver_id = employee_id
-        order.user = request.user.employee   # bo‘lim boshlig‘i
+        order.user = request.user.employee
         order.status = "accepted"
 
     order.save()
 
     for m_id, num in zip(material_ids, numbers):
-
         if not m_id:
             continue
 
-        try:
-            material = get_object_or_404(material, id=m_id)
-        except Material.DoesNotExist:
+        material = Material.objects.select_for_update().filter(id=m_id).first()
+        if not material:
             messages.error(request, "Material topilmadi!")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        number = int(num) if num else 1
+        try:
+            number = int(num) if num else 1
+        except ValueError:
+            messages.error(request, "Material soni noto‘g‘ri kiritilgan!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
         if number <= 0:
-            messages.info(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
+            messages.error(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
         if material.number < number:
-            messages.info(
-                request,
-                f"{material.name} materiali yetarli emas! Omborda {material.number} dona mavjud."
-            )
+            messages.error(request, f"{material.name} yetarli emas! Omborda {material.number} dona bor.")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        # OrderMaterial yaratamiz
-        OrderMaterial.objects.create(
-            order=order,
-            material=material,
-            number=number
-        )
+        OrderMaterial.objects.create(order=order, material=material, number=number)
 
-        # Ombordan kamaytiramiz
         material.number -= number
         material.save()
 
     messages.success(request, "Zayavka muvaffaqiyatli qabul qilindi")
     return redirect("order_receiver")
-
 
 
 @never_cache
