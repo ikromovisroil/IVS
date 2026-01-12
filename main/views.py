@@ -1145,7 +1145,7 @@ def svod_post(request):
             getattr(q.material, "code", "") if q.material else ""        # Kod 1C
         ])
 
-    table = create_table_cols_svod(doc, rows, headers)
+    table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
 
     # ✅ bo‘sh paragraphsiz jadvalni TABLE joyiga qo‘yamiz
     target._p.addnext(table._tbl)
