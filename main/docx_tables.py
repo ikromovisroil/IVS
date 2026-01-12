@@ -227,7 +227,7 @@ def create_table(doc, title, data, headers):
 #Svod
 
 def create_table_cols_svod(doc, data, headers):
-    widths = [1, 7, 2, 2, 4, 4, 6, 2]
+    widths = [1, 7.5, 2, 2, 4, 4, 5.5, 2]
 
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER

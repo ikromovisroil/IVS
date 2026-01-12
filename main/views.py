@@ -1139,7 +1139,7 @@ def svod_post(request):
             qty,                                                   # Miqdori
             f"{unit_price:,}".replace(",", " ") if unit_price else "",  # Birlik narxi
             f"{total:,}".replace(",", " ") if total else "",            # Umumiy qiymati
-            f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y,",  # Eslatma
+            f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')} y,",  # Eslatma
             getattr(q.material, "code", "") if q.material else ""        # Kod 1C
         ])
 
