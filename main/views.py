@@ -1240,20 +1240,19 @@ def reestr_post(request):
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
 
+    # Sana parse
     date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
     qs = (
         OrderMaterial.objects
         .select_related("material", "order", "order__sender", "order__receiver", "order__technics")
-        .filter(order__date_creat__gte=date1, order__date_creat__lt=date2)  # ✅ SANA FILTER
+        .filter(order__date_creat__gte=date1, order__date_creat__lt=date2)
         .order_by("order__technics_id", "material_id", "order_id", "id")
     )
 
-    if org_id:
-        qs = qs.filter(order__sender__organization_id=org_id)
-
-
+    # if org_id:
+    #     qs = qs.filter(order__sender__organization_id=org_id)
 
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx"))
     replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
@@ -1262,6 +1261,7 @@ def reestr_post(request):
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
 
+    # TABLE paragrafini tozalaymiz
     target.text = ""
     target.paragraph_format.space_before = Pt(0)
     target.paragraph_format.space_after = Pt(0)
@@ -1271,11 +1271,10 @@ def reestr_post(request):
         "№", "Qurilma nomi", "Seriya №", "Sarf materiallari nomi",
         "Soni", "Birlikdagi narxi", "Materiallarning umumiy qiymati", "F.I.Sh.",
         "Lavozimi", "Tashkilot, bo'lim nomi", "Kim tomonidan o'rnatilgan", "O'rnatish sanasi",
-        "So'rovnoma №", "So'rovnoma sanasi", " 1C kodi"
+        "So'rovnoma №", "So'rovnoma sanasi", "1C kodi"
     ]
 
     rows_map = OrderedDict()
-    grand_total = 0
 
     for q in qs:
         if not q.material or not q.order or not q.order.technics:
@@ -1284,6 +1283,7 @@ def reestr_post(request):
         technics = q.order.technics
         material_obj = q.material
 
+        # Texnika/material
         name = technics.name or ""
         serial = technics.serial or ""
         material_name = material_obj.name or ""
@@ -1293,18 +1293,20 @@ def reestr_post(request):
         unit_price = int(material_obj.price or 0)
         total = unit_price * qty
 
+        # Kimlar
         sender = q.order.sender.full_name if getattr(q.order, "sender", None) else ""
         rank = getattr(q.order.sender, "rank", "") if getattr(q.order, "sender", None) else ""
         department = getattr(q.order.sender, "department", "") if getattr(q.order, "sender", None) else ""
         receiver = q.order.receiver.full_name if getattr(q.order, "receiver", None) else ""
-        date_finished = q.order.date_finished.strftime('%d.%m.%Y') if q.order.date_finished else ""
+
+        # Sana format: 25.11.2025
+        date_finished = q.order.date_finished.strftime("%d.%m.%Y") if q.order.date_finished else ""
+        date_creat = q.order.date_creat.strftime("%d.%m.%Y") if q.order.date_creat else ""
+
         order_id = q.order.id or ""
-        date_creat = q.order.date_creat.strftime('%d.%m.%Y') if q.order.date_creat else ""
         code = material_obj.code or ""
 
-        grand_total += total
-
-        # ✅ ASOSIY GURUHLASH: 1 texnika + 1 material
+        # ✅ 1 texnika + 1 material bo‘yicha guruhlash
         key = (technics.id, material_obj.id)
 
         if key not in rows_map:
@@ -1314,7 +1316,7 @@ def reestr_post(request):
                 "material": material_name,
                 "unit": unit,
                 "qty": 0,
-                "unit_price": unit_price,
+                "unit_price": unit_price,  # material narxi bir xil
                 "total": 0,
                 "sender": sender,
                 "rank": rank,
@@ -1326,10 +1328,14 @@ def reestr_post(request):
                 "code": code,
             }
 
-        # ✅ YIG‘INDI (Soni)
+        # ✅ YIG‘INDI (Soni + total)
         rows_map[key]["qty"] += qty
         rows_map[key]["total"] += total
 
+    # ✅ grand_total — faqat grouped natijalardan
+    grand_total = sum(v["total"] for v in rows_map.values())
+
+    # Jadval rows: headersdagi tartibga mos
     rows = []
     for _, v in rows_map.items():
         rows.append([
@@ -1362,4 +1368,3 @@ def reestr_post(request):
     )
     response["Content-Disposition"] = 'attachment; filename="reestr.docx"'
     return response
-
