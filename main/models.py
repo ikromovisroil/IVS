@@ -257,7 +257,7 @@ class ExtraTechnics(models.Model):
     ip = models.CharField(max_length=50, null=True, blank=True)
     year = models.CharField(max_length=50, null=True, blank=True)
     body = models.CharField(max_length=200, null=True, blank=True)
-    price = models.PositiveIntegerField(null=True, blank=True)
+    price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
@@ -272,7 +272,6 @@ class ExtraTechnics(models.Model):
 # material.
 class Material(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
-    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('active', 'Aktiv'),
         ('free', "Bo'sh"),
@@ -285,7 +284,7 @@ class Material(models.Model):
     number = models.PositiveIntegerField(default=1)
     code = models.CharField(max_length=10, null=True, blank=True)
     unit = models.CharField(max_length=50, null=True, blank=True)
-    price = models.PositiveIntegerField(null=True, blank=True)
+    price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 

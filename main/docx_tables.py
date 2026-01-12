@@ -223,3 +223,36 @@ def create_table(doc, title, data, headers):
             set_col_width(cell, widths[i])
 
     return h, table
+
+#Svod
+
+def create_table_cols_svod(doc, title, data, headers):
+
+    widths = [1, 7, 2, 2, 4, 4, 6, 2]
+
+    h = doc.add_paragraph()
+    r = h.add_run(title)
+    r.bold = True
+    r.font.name = "Times New Roman"
+    r.font.size = Pt(12)
+
+    table = doc.add_table(rows=1, cols=len(headers))
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    fix_table_layout(table)
+    set_table_borders(table)
+    force_tbl_grid(table, widths)
+
+    hdr = table.rows[0].cells
+    for i, text in enumerate(headers):
+        set_cell_text(hdr[i], text, bold=True, center=True)
+        set_col_width(hdr[i], widths[i])
+
+    for idx, row in enumerate(data, start=1):
+        cells = table.add_row().cells
+        full = [idx] + row
+        for i, val in enumerate(full):
+            set_cell_text(cells[i], val, center=True)
+            set_col_width(cells[i], widths[i])
+
+    return h, table

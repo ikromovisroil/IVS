@@ -1002,8 +1002,7 @@ def akt_post(request):
     if request.method != "POST":
         return redirect("document_get")
 
-    dep_id = request.POST.get("department")
-    employee_id = request.POST.get("employee")
+    org_id = request.POST.get("organizator")
 
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
@@ -1013,23 +1012,18 @@ def akt_post(request):
 
     date1 = timezone.make_aware(date1_naive)
     date2 = timezone.make_aware(date2_naive)
-    print(date1, date2)
 
     qs = OrderMaterial.objects.filter(
+        order__sender__organization_id=org_id,
         order__date_creat__gte=date1,
         order__date_creat__lt=date2
     )
-
     print(qs)
-    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    emp = Employee.objects.filter(id=employee_id).first() if employee_id else None
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
     replace_text(doc, {
-        "ID": str(12),
         "RECEIVER": request.user.employee.full_name or "",
-        "SENDER": emp.full_name or "",
-        "DEPARTMENT": dep.name if dep else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -1039,8 +1033,8 @@ def akt_post(request):
     target.text = ""
 
     headers = [
-        "№", "Qurilma Nomi", "Seriya", "Material",
-        "Soni", "Birligi", "F.I.Sh.", "Lavozimi", "Narxi"
+        "№", "Materialning nomi", "O'lchov birligi", "Miqdori",
+        "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"
     ]
 
     rows = []
@@ -1056,9 +1050,9 @@ def akt_post(request):
             f"{q.material.price:,}".replace(",", " ") if q.material.price else ""
         ])
 
-    h, table = create_table_10cols(
+    h, table = create_table_cols_svod(
         doc,
-        "Biriktirilgan texnika bo‘yicha dalolatnoma",
+        "",
         rows,
         headers
     )
