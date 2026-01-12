@@ -91,6 +91,7 @@
                     <th scope="col">Material Nomi</th>
                     <th scope="col">I/N</th>
                     <th scope="col">Soni</th>
+                    <th scope="col">Narxi</th>
                     <th scope="col">Qiymati</th>
                   </tr>
                 </thead>
@@ -101,6 +102,7 @@
                     <td>{{mat.name|default:"-"|truncatechars:50}}</td>
                     <td>{{mat.inventory|default:"-"}}</td>
                     <td>{{mat.number|default:"-"}}</td>
+                    <td>{{mat.price|default:"-"}}</td>
                     <td>{{mat.unit|default:"-"}}</td>
                   </tr>
                 {% endfor %}
