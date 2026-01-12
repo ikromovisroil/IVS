@@ -436,10 +436,23 @@ def deedconsent_action(request, pk):
 @never_cache
 @login_required
 def barn(request):
+    employees_boss = Employee.objects.filter(organization__org_type='IVS',is_boss=True)
+
+    # GET'dan kelgan xodim ID (select2 dan)
+    emp_id = request.GET.get("employee", "").strip()
+    if emp_id:
+        technics_qs = Technics.objects.filter(employee__id=emp_id)
+        material_qs = Material.objects.filter(employee__id=emp_id)
+    else:
+        technics_qs = Technics.objects.filter(employee__organization__org_type='IVS', status='free')
+        material_qs = Material.objects.filter(employee__organization__org_type='IVS', status='free')
+
     context = {
-        "technics": Technics.objects.filter(employee__user=request.user),
-        "material": Material.objects.filter(employee__user=request.user),
+        "employees_boss": employees_boss,  # select uchun
+        "technics": technics_qs,  # jadval
+        "material": material_qs,  # jadval
     }
+
     return render(request, 'main/barn.html', context)
 
 

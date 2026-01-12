@@ -12,6 +12,32 @@
     <div class="pagetitle">
         <h1>Texnika va materiallar</h1>
     </div>
+     <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+                <form class="row g-2 mt-1" method="get">
+                    <div class="col-md-3">
+                        <label for="employee" class="form-label">Xodim</label>
+                        <select id="employee" name="employee" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for emp in employees_boss %}
+                                <option value="{{ emp.id }}">
+                                    {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                    </div>
+                </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <section class="section">
       <div class="row">
@@ -31,7 +57,7 @@
                     <th scope="col">Yili</th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody id="technicsBody">
                 {% for tex in technics %}
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
@@ -50,7 +76,7 @@
         </div>
       </div>
     </section>
-    {% if request.user.employee.organization.org_type == "IVS" %}
+
     <section class="section">
       <div class="row">
         <div class="col-lg-12">
@@ -63,22 +89,22 @@
                   <tr>
                     <th scope="col">#</th>
                     <th scope="col">Material Nomi</th>
-                    <th scope="col">1c code</th>
+                    <th scope="col">I/N</th>
                     <th scope="col">Soni</th>
-                    <th scope="col">Narxi</th>
                     <th scope="col">Qiymati</th>
                   </tr>
                 </thead>
+                <tbody id="materialBody">
                 {% for mat in material %}
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
-                    <td>{{mat.name|default:"-"|truncatechars:50}}</td>
-                    <td>{{mat.code|default:"-"}}</td>
+                    <td>{{mat.name|default:"-"}}</td>
+                    <td>{{mat.inventory|default:"-"}}</td>
                     <td>{{mat.number|default:"-"}}</td>
-                    <td>{{mat.price|default:"-"}}</td>
                     <td>{{mat.unit|default:"-"}}</td>
                   </tr>
                 {% endfor %}
+                </tbody>
               </table>
               <!-- End Table with stripped rows -->
             </div>
@@ -86,7 +112,22 @@
         </div>
       </div>
     </section>
-    {% endif %}
 
 </main>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(function () {
+        $('#employee').select2({
+            placeholder: "Xodimni tanlang",
+            allowClear: true,
+            width: "100%"
+        });
+
+        // Xodim tanlanganda formani avtomatik yuborish
+        $('#employee').on('change', function () {
+            this.form.submit();
+        });
+    });
+</script>
+
 {% endblock content %}

@@ -83,7 +83,7 @@ def force_tbl_grid(table, widths_cm):
     # ❗ tblGrid HAR DOIM tblPr DAN KEYIN turishi shart
     tbl.insert(1, tblGrid)
 
-
+##############################################################
 
 def replace_text(doc, replacements: dict):
     """
