@@ -1333,7 +1333,7 @@ def reestr_post(request):
         rows_map[key]["total"] += total
 
     # ✅ grand_total — faqat grouped natijalardan
-    grand_total = sum(v["total"] for v in rows_map.values())
+    grand_total = sum(int(v.get("total") or 0) for v in rows_map.values())
 
     # Jadval rows: headersdagi tartibga mos
     rows = []
