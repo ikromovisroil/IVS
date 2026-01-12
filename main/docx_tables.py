@@ -245,18 +245,13 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
     # Data
     for idx, row in enumerate(data, start=1):
         cells = table.add_row().cells
-        full = [idx] + list(row)  # 8 ta bo'lishi kerak
+        full = [idx] + list(row)
 
-        # xavfsizlik: kam bo'lsa to'ldirib qo'yamiz
         while len(full) < len(headers):
             full.append("")
 
         for i, val in enumerate(full[:len(headers)]):
-            center = True
-            # Material nomi (1) va Eslatma (6) chapda chiroyli
-            if i in (1, 6):
-                center = False
-            set_cell_text(cells[i], val, center=center)
+            set_cell_text(cells[i], val, center=True)
             set_col_width(cells[i], widths[i])
 
     # ✅ 1 ta JAMI qator (0..5 merge, summa 5-ustunda)
