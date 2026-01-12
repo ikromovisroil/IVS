@@ -1116,8 +1116,8 @@ def svod_post(request):
     )
 
     # org bo‘yicha filter kerak bo‘lsa
-    if org_id:
-        qs = qs.filter(order__sender__organization_id=org_id)
+    # if org_id:
+    #     qs = qs.filter(order__sender__organization_id=org_id)
 
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
