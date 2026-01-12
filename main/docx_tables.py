@@ -225,7 +225,6 @@ def create_table(doc, title, data, headers):
     return h, table
 
 #Svod
-
 def create_table_cols_svod(doc, data, headers, grand_total=0):
     widths = [1, 7.5, 2, 2, 4, 4, 5.5, 2]
 
@@ -273,4 +272,50 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
 
     return table
 
+#Reestr
+def create_table_cols_Reestr(doc, data, headers, grand_total=0):
+    widths = [1, 7.5, 2, 2, 4, 4, 5.5, 2]
 
+    table = doc.add_table(rows=1, cols=len(headers))
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    fix_table_layout(table)
+    set_table_borders(table)
+    force_tbl_grid(table, widths)
+
+    # Header
+    hdr = table.rows[0].cells
+    for i, text in enumerate(headers):
+        set_cell_text(hdr[i], text, bold=True, center=True)
+        set_col_width(hdr[i], widths[i])
+
+    # Data
+    for idx, row in enumerate(data, start=1):
+        cells = table.add_row().cells
+        full = [idx] + list(row)
+
+        while len(full) < len(headers):
+            full.append("")
+
+        for i, val in enumerate(full[:len(headers)]):
+            set_cell_text(cells[i], val, center=True)
+            set_col_width(cells[i], widths[i])
+
+    # ✅ 1 ta JAMI qator (0..5 merge, summa 5-ustunda)
+    sum_value = f"{grand_total:,}".replace(",", " ")
+
+    r = table.add_row().cells
+
+    # 0..4 merge qilsak, 5-ustun (Umumiy qiymati) alohida qoladi
+    m = r[0]
+    for j in range(1, 5):   # 0..4 merge
+        m = m.merge(r[j])
+
+    set_cell_text(r[0], "J A M I:", bold=True, center=True)
+    set_cell_text(r[5], sum_value, bold=True, center=True)
+
+    # qolgan ustunlar bo'sh qoladi
+    set_cell_text(r[6], "", center=False)  # Eslatma
+    set_cell_text(r[7], "", center=True)   # Kod 1C
+
+    return table

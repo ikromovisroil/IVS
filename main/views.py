@@ -1108,7 +1108,10 @@ def svod_post(request):
     qs = (
         OrderMaterial.objects
         .select_related("material", "order", "order__sender")
-        .all()
+        .filter(
+            order__date_creat__gte=date1,
+            order__date_creat__lt=date2
+        )
         .order_by("material_id", "order_id", "id")
     )
 
@@ -1208,7 +1211,6 @@ def svod_post(request):
     return response
 
 
-
 @never_cache
 @login_required
 def reestr_get(request):
@@ -1230,73 +1232,106 @@ def reestr_get(request):
 @never_cache
 @login_required
 def reestr_post(request):
-
     if request.method != "POST":
         return redirect("document_get")
 
-    dep_id = request.POST.get("department")
-    employee_id = request.POST.get("employee")
-
+    org_id = request.POST.get("organizator")
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
 
-    date1_naive = datetime.strptime(date_id1, "%Y-%m-%d")
-    date2_naive = datetime.strptime(date_id2, "%Y-%m-%d")+ timedelta(days=1)
+    date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
+    date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
-    date1 = timezone.make_aware(date1_naive)
-    date2 = timezone.make_aware(date2_naive)
-    print(date1, date2)
-
-    qs = OrderMaterial.objects.filter(
-        order__date_creat__gte=date1,
-        order__date_creat__lt=date2
+    qs = (
+        OrderMaterial.objects
+        .select_related("material", "order", "order__sender")
+        .all()
+        .order_by("material_id", "order_id", "id")
     )
 
-    print(qs)
-    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    emp = Employee.objects.filter(id=employee_id).first() if employee_id else None
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+    # org bo‘yicha filter kerak bo‘lsa
+    if org_id:
+        qs = qs.filter(order__sender__organization_id=org_id)
 
-    replace_text(doc, {
-        "ID": str(12),
-        "RECEIVER": request.user.employee.full_name or "",
-        "SENDER": emp.full_name or "",
-        "DEPARTMENT": dep.name if dep else "",
-    })
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
+
+    replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
 
+    # TABLE paragrafini tozalaymiz
     target.text = ""
+    target.paragraph_format.space_before = Pt(0)
+    target.paragraph_format.space_after = Pt(0)
+    target.paragraph_format.line_spacing = 1
 
     headers = [
-        "№", "Qurilma Nomi", "Seriya", "Material",
-        "Soni", "Birligi", "F.I.Sh.", "Lavozimi", "Narxi"
+        "№", "Materialning nomi", "O'lchov birligi", "Miqdori",
+        "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"
     ]
 
-    rows = []
+    rows_map = OrderedDict()
+    grand_total = 0
+
     for q in qs:
+        if not q.material:
+            continue
+
+        unit_price = q.material.price or 0
+        qty = q.number or 0
+        total = unit_price * qty
+        grand_total += total
+
+        code = getattr(q.material, "code", "") or ""
+        unit = (q.material.unit or "dona")
+        name = q.material.name or ""
+
+        # Guruhlash kaliti: bitta material
+        key = (q.material.id, name, unit, code)
+
+        # Eslatma: Akt №ID ga DD.MM.YYYYy,
+        eslatma_one = ""
+        if q.order and q.order.date_creat:
+            eslatma_one = f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')} y,\n"
+
+        if key not in rows_map:
+            rows_map[key] = {
+                "name": name,
+                "unit": unit,
+                "qty": 0,
+                "unit_price": unit_price,  # material narxi (doim bir xil deb oldik)
+                "total": 0,
+                "notes": [],
+                "code": code,
+                "order_seen": set(),  # bitta order qayta yozilib qolmasin
+            }
+
+        rows_map[key]["qty"] += qty
+        rows_map[key]["total"] += total
+
+        # Eslatmada order id lar unik bo‘lsin
+        if q.order_id and q.order_id not in rows_map[key]["order_seen"] and eslatma_one:
+            rows_map[key]["notes"].append(eslatma_one)
+            rows_map[key]["order_seen"].add(q.order_id)
+
+    rows = []
+    for _, v in rows_map.items():
+        note_text = " ".join(v["notes"])  # uzun bo‘lsa: "\n".join(v["notes"]) qiling
+
         rows.append([
-            q.order.technics.name if q.order.technics else "",
-            q.order.technics.serial if q.order.technics else "",
-            q.material.name,
-            q.number,
-            q.material.unit or "dona",
-            q.order.sender.full_name,
-            q.order.sender.rank.name if q.order.sender.rank else "",
-            f"{q.material.price:,}".replace(",", " ") if q.material.price else ""
+            v["name"],
+            v["unit"],
+            v["qty"],  # yig‘indi
+            f"{v['unit_price']:,}".replace(",", " "),
+            f"{v['total']:,}".replace(",", " "),
+            note_text,
+            v["code"],
         ])
 
-    h, table = create_table_10cols(
-        doc,
-        "Biriktirilgan texnika bo‘yicha dalolatnoma",
-        rows,
-        headers
-    )
-
-    target._p.addnext(h._p)
-    h._p.addnext(table._tbl)
+    table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
+    target._p.addnext(table._tbl)
 
     buffer = BytesIO()
     doc.save(buffer)
@@ -1306,6 +1341,5 @@ def reestr_post(request):
         buffer.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    response["Content-Disposition"] = f'attachment; filename="order.docx"'
+    response["Content-Disposition"] = 'attachment; filename="svod.docx"'
     return response
-
