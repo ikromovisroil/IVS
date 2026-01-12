@@ -413,7 +413,6 @@
 
         <!-- TASHKILOTLAR -->
         <li class="nav-item">
-
           <a class="nav-link {% if url_name != 'organization' %}collapsed{% endif %}"
              data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
             <i class="bi bi-layout-text-window-reverse"></i>
@@ -437,28 +436,46 @@
           </ul>
         </li>
 
-        <!-- DALOLATNOMA -->
+        <!-- Hisobotlar -->
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'document_get' %}collapsed{% endif %}"
-             href="{% url 'document_get' %}">
-            <i class="bi bi-file-earmark"></i>
-            <span>Dalolatnoma</span>
+          <a class="nav-link
+             {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' %}
+               collapsed
+             {% endif %}"
+             data-bs-target="#charts-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-file-earmark"></i> <span>Hisobotlar</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
           </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'svod_get' %}collapsed{% endif %}"
-             href="{% url 'svod_get' %}">
-            <i class="bi bi-file-earmark"></i>
-            <span>Svod</span>
-          </a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'akt_get' %}collapsed{% endif %}"
-             href="{% url 'akt_get' %}">
-            <i class="bi bi-file-earmark"></i>
-            <span>Akt</span>
-          </a>
-        </li>
+
+          <ul id="charts-nav"
+              class="nav-content collapse
+              {% if url_name == 'document_get' or url_name == 'svod_get' or url_name == 'reestr_get' or url_name == 'akt_get' %}
+                show
+              {% endif %}"
+              data-bs-parent="#sidebar-nav">
+              <li>
+                <a class="{% if url_name == 'document_get' %}active{% endif %}" href="{% url 'document_get' %}">
+                  <i class="bi bi-circle"></i><span>Dalolatnoma</span>
+                </a>
+              </li>
+              <li>
+                <a class="{% if url_name == 'svod_get' %}active{% endif %}" href="{% url 'svod_get' %}">
+                  <i class="bi bi-circle"></i><span>Svod</span>
+                </a>
+              </li>
+              <li>
+                <a class="{% if url_name == 'reestr_get' %}active{% endif %}" href="{% url 'reestr_get' %}">
+                  <i class="bi bi-circle"></i><span>Reestr</span>
+                </a>
+              </li>
+              <li>
+                <a class="{% if url_name == 'akt_get' %}active{% endif %}" href="{% url 'akt_get' %}">
+                  <i class="bi bi-circle"></i><span>Akt</span>
+                </a>
+              </li>
+            </ul>
+        </li><!-- End Charts Nav -->
+
 
         <!-- DASHBOARD -->
         <li class="nav-item">
@@ -469,9 +486,7 @@
           </a>
         </li>
 
-        {% endif %}
-
-        <!-- Texnikalar -->
+        <!-- Sklad -->
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'barn' %}collapsed{% endif %}"
              href="{% url 'barn' %}">
@@ -479,6 +494,8 @@
             <span>Sklad</span>
           </a>
         </li>
+        {% endif %}
+
         <!-- LOGOUT -->
         <li class="nav-item">
           <a class="nav-link collapsed" href="{% url 'logout' %}">

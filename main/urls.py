@@ -46,6 +46,11 @@ urlpatterns = [
 
     # SENDER
     path('svod/', svod_get, name='svod_get'),
+    path('svod/akt_post/', svod_post, name='svod_post'),
+
+    # Reestr
+    path('reestr/', reestr_get, name='reestr_get'),
+    path('reestr/reestr_post/', reestr_post, name='reestr_post'),
 
     # ZAYAVKA
     path('order_sender/', order_sender, name='order_sender'),
