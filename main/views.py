@@ -1249,7 +1249,6 @@ def reestr_post(request):
         .filter(order__date_creat__gte=date1, order__date_creat__lt=date2)  # ✅ SANA FILTER
         .order_by("order__technics_id", "material_id", "order_id", "id")
     )
-    print(qs)
 
     if org_id:
         qs = qs.filter(order__sender__organization_id=org_id)
@@ -1298,9 +1297,9 @@ def reestr_post(request):
         rank = getattr(q.order.sender, "rank", "") if getattr(q.order, "sender", None) else ""
         department = getattr(q.order.sender, "department", "") if getattr(q.order, "sender", None) else ""
         receiver = q.order.receiver.full_name if getattr(q.order, "receiver", None) else ""
-        date_finished = q.order.date_finished or ""
+        date_finished = q.order.date_finished.strftime('%d.%m.%Y') if q.order.date_finished else ""
         order_id = q.order.id or ""
-        date_creat = q.order.date_creat or ""
+        date_creat = q.order.date_creat.strftime('%d.%m.%Y') if q.order.date_creat else ""
         code = material_obj.code or ""
 
         grand_total += total
