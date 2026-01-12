@@ -1332,16 +1332,26 @@ def reestr_post(request):
         rows_map[key]["total"] += total
 
     rows = []
+    i = 1
     for _, v in rows_map.items():
         rows.append([
-            v["name"],
-            v["unit"],
-            v["qty"],  # ✅ YIG‘INDI SONI
-            f"{v['unit_price']:,}".replace(",", " "),
-            f"{v['total']:,}".replace(",", " "),
-            "",  # note/izoh bo‘lsa shu yerga
-            v["code"],
+            i,  # №
+            v["name"],  # Qurilma nomi
+            v["serial"],  # Seriya №
+            v["material"],  # Sarf material nomi
+            v["qty"],  # Soni (yig‘indi)
+            f"{v['unit_price']:,}".replace(",", " "),  # Birlik narxi
+            f"{v['total']:,}".replace(",", " "),  # Umumiy qiymat
+            v["sender"],  # F.I.Sh.
+            v["rank"],  # Lavozimi
+            v["department"],  # Tashkilot / bo‘lim
+            v["receiver"],  # Kim tomonidan o‘rnatilgan
+            v["date_finished"],  # O‘rnatish sanasi
+            v["order_id"],  # So‘rovnoma №
+            v["date_creat"],  # So‘rovnoma sanasi
+            v["code"],  # 1C kodi
         ])
+        i += 1
 
     table = create_table_cols_reestr(doc, rows, headers, grand_total=grand_total)
     target._p.addnext(table._tbl)
