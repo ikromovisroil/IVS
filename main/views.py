@@ -1104,21 +1104,24 @@ def svod_post(request):
     date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
-    qs = OrderMaterial.objects.filter(
-        # order__sender__organization_id=org_id,
-        order__date_creat__gte=date1,
-        order__date_creat__lt=date2
-    )
-    print(qs)
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
+    qs = (OrderMaterial.objects
+          .select_related("order", "material")
+          .filter(
+              order__date_creat__gte=date1,
+              order__date_creat__lt=date2
+          ))
 
+    # agar org filter kerak bo'lsa ochasiz:
+    if org_id:
+        qs = qs.filter(order__sender__organization_id=org_id)
+
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
     replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
 
-    # ✅ TABLE paragrafini tozalaymiz va spacingni 0 qilamiz
     target.text = ""
     target.paragraph_format.space_before = Pt(0)
     target.paragraph_format.space_after = Pt(0)
@@ -1128,24 +1131,29 @@ def svod_post(request):
                "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"]
 
     rows = []
+    grand_total = 0
+
     for q in qs:
         unit_price = q.material.price if (q.material and q.material.price) else 0
         qty = q.number or 0
         total = unit_price * qty
+        grand_total += total
+
+        eslatma = ""
+        if q.order and q.order.date_creat:
+            eslatma = f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y,"
 
         rows.append([
-            q.material.name if q.material else "",                 # Material nomi
-            q.material.unit or "dona" if q.material else "dona",   # O'lchov birligi
-            qty,                                                   # Miqdori
-            f"{unit_price:,}".replace(",", " ") if unit_price else "",  # Birlik narxi
-            f"{total:,}".replace(",", " ") if total else "",            # Umumiy qiymati
-            f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')} y,",  # Eslatma
-            getattr(q.material, "code", "") if q.material else ""        # Kod 1C
+            q.material.name if q.material else "",
+            (q.material.unit or "dona") if q.material else "dona",
+            f"{qty:.2f}".replace(".", ","),  # 2,00 ko‘rinish
+            f"{unit_price:,}".replace(",", " ") + ",00" if unit_price else "",
+            f"{total:,}".replace(",", " ") + ",00" if total else "",
+            eslatma,
+            getattr(q.material, "code", "") if q.material else ""
         ])
 
-    table = create_table_cols_svod(doc, rows, headers)
-
-    # ✅ bo‘sh paragraphsiz jadvalni TABLE joyiga qo‘yamiz
+    table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
     target._p.addnext(table._tbl)
 
     buffer = BytesIO()
@@ -1158,6 +1166,7 @@ def svod_post(request):
     )
     response["Content-Disposition"] = 'attachment; filename="svod.docx"'
     return response
+
 
 
 @never_cache

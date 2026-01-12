@@ -226,7 +226,7 @@ def create_table(doc, title, data, headers):
 
 #Svod
 
-def create_table_cols_svod(doc, data, headers):
+def create_table_cols_svod(doc, data, headers, grand_total=0, org_title=""):
     widths = [1, 7.5, 2, 2, 4, 4, 5.5, 2]
 
     table = doc.add_table(rows=1, cols=len(headers))
@@ -236,18 +236,40 @@ def create_table_cols_svod(doc, data, headers):
     set_table_borders(table)
     force_tbl_grid(table, widths)
 
+    # Header
     hdr = table.rows[0].cells
     for i, text in enumerate(headers):
         set_cell_text(hdr[i], text, bold=True, center=True)
         set_col_width(hdr[i], widths[i])
 
+    # Data
     for idx, row in enumerate(data, start=1):
         cells = table.add_row().cells
-        full = [idx] + list(row)   # row 7 ta -> full 8 ta bo‘ladi
+        full = [idx] + list(row)
 
-        for i, val in enumerate(full):
-            set_cell_text(cells[i], val, center=True)
+        while len(full) < len(headers):
+            full.append("")
+
+        for i, val in enumerate(full[:len(headers)]):
+            center = True
+            if i in (1, 5):  # Material nomi va Eslatma chaproqda
+                center = False
+            set_cell_text(cells[i], val, center=center)
             set_col_width(cells[i], widths[i])
 
+    # ✅ FAQAT 1 TA "JAMI" QATOR
+    sum_value = f"{grand_total:,}".replace(",", " ") + ",00" if grand_total else "0,00"
+    sum_text = f"J A M I: {org_title}".strip() if org_title else "J A M I:"
+
+    r = table.add_row().cells
+    m = r[0]
+    for j in range(1, 5):   # 0..5 ni merge qilamiz
+        m = m.merge(r[j])
+
+    set_cell_text(r[0], sum_text, bold=True, center=True)
+    set_cell_text(r[5], sum_value, bold=True, center=True)
+
     return table
+
+
 
