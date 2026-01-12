@@ -1129,8 +1129,6 @@ def svod_post(request):
 
     rows = []
     for q in qs:
-        # ⚠️ Sizning header 8 ta, funksiyada idx qo‘shiladi.
-        # Shuning uchun row 7 ta bo‘lishi kerak!
         unit_price = q.material.price if (q.material and q.material.price) else 0
         qty = q.number or 0
         total = unit_price * qty
@@ -1141,7 +1139,7 @@ def svod_post(request):
             qty,                                                   # Miqdori
             f"{unit_price:,}".replace(",", " ") if unit_price else "",  # Birlik narxi
             f"{total:,}".replace(",", " ") if total else "",            # Umumiy qiymati
-            q.order.sender.full_name if q.order and q.order.sender else "",  # Eslatma
+            f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y,",  # Eslatma
             getattr(q.material, "code", "") if q.material else ""        # Kod 1C
         ])
 
