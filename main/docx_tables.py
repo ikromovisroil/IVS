@@ -249,11 +249,10 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
 
         while len(full) < len(headers):
             full.append("")
-        hdr = table.rows[0].cells
+
         for i, val in enumerate(full[:len(headers)]):
             set_cell_text(cells[i], val, center=True)
             set_col_width(cells[i], widths[i])
-            set_col_width(hdr[i])  # 👈 vertikal markaz
 
     # ✅ 1 ta JAMI qator (0..5 merge, summa 5-ustunda)
     sum_value = f"{grand_total:,}".replace(",", " ")
