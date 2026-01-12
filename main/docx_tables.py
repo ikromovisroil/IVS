@@ -273,8 +273,24 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
     return table
 
 #Reestr
-def create_table_cols_Reestr(doc, data, headers, grand_total=0):
-    widths = [1, 7.5, 2, 2, 4, 4, 5.5, 2]
+def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=8):
+    cell.text = ""
+    p = cell.paragraphs[0]
+    run = p.add_run("" if text is None else str(text))
+    run.font.name = "Times New Roman"
+    run.font.size = Pt(font_size)
+    run.bold = bold
+
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+    p.paragraph_format.line_spacing = 1
+
+    if center:
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+
+def create_table_cols_reestr(doc, data, headers, grand_total=0):
+    widths = [0.7, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2]
 
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -286,7 +302,7 @@ def create_table_cols_Reestr(doc, data, headers, grand_total=0):
     # Header
     hdr = table.rows[0].cells
     for i, text in enumerate(headers):
-        set_cell_text(hdr[i], text, bold=True, center=True)
+        set_cell_text_reestr(hdr[i], text, bold=True, center=True, font_size=8)
         set_col_width(hdr[i], widths[i])
 
     # Data
@@ -298,7 +314,7 @@ def create_table_cols_Reestr(doc, data, headers, grand_total=0):
             full.append("")
 
         for i, val in enumerate(full[:len(headers)]):
-            set_cell_text(cells[i], val, center=True)
+            set_cell_text_reestr(cells[i], val, center=True, font_size=8)
             set_col_width(cells[i], widths[i])
 
     # ✅ 1 ta JAMI qator (0..5 merge, summa 5-ustunda)
@@ -308,14 +324,14 @@ def create_table_cols_Reestr(doc, data, headers, grand_total=0):
 
     # 0..4 merge qilsak, 5-ustun (Umumiy qiymati) alohida qoladi
     m = r[0]
-    for j in range(1, 5):   # 0..4 merge
+    for j in range(1, 6):   # 0..4 merge
         m = m.merge(r[j])
 
-    set_cell_text(r[0], "J A M I:", bold=True, center=True)
-    set_cell_text(r[5], sum_value, bold=True, center=True)
+    set_cell_text_reestr(r[0], "J A M I:", bold=True, center=True)
+    set_cell_text_reestr(r[5], sum_value, bold=True, center=True)
 
     # qolgan ustunlar bo'sh qoladi
-    set_cell_text(r[6], "", center=False)  # Eslatma
-    set_cell_text(r[7], "", center=True)   # Kod 1C
+    set_cell_text_reestr(r[6], "", center=False, font_size=8)  # Eslatma
+    set_cell_text_reestr(r[7], "", center=True, font_size=8)   # Kod 1C
 
     return table

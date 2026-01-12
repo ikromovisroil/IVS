@@ -1227,7 +1227,8 @@ def reestr_get(request):
         'directorate': Directorate.objects.select_related('department'),
         'division': Division.objects.select_related('directorate'),
     }
-    return render(request, 'main/svod.html', context)
+    return render(request, 'main/reestr.html', context)
+
 
 @never_cache
 @login_required
@@ -1244,93 +1245,105 @@ def reestr_post(request):
 
     qs = (
         OrderMaterial.objects
-        .select_related("material", "order", "order__sender")
-        .all()
-        .order_by("material_id", "order_id", "id")
+        .select_related("material", "order", "order__sender", "order__receiver", "order__technics")
+        .filter(order__date_creat__gte=date1, order__date_creat__lt=date2)  # ✅ SANA FILTER
+        .order_by("order__technics_id", "material_id", "order_id", "id")
     )
+    print(qs)
 
-    # org bo‘yicha filter kerak bo‘lsa
     if org_id:
         qs = qs.filter(order__sender__organization_id=org_id)
 
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
+
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx"))
     replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
 
-    # TABLE paragrafini tozalaymiz
     target.text = ""
     target.paragraph_format.space_before = Pt(0)
     target.paragraph_format.space_after = Pt(0)
     target.paragraph_format.line_spacing = 1
 
     headers = [
-        "№", "Materialning nomi", "O'lchov birligi", "Miqdori",
-        "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"
+        "№", "Qurilma nomi", "Seriya №", "Sarf materiallari nomi",
+        "Soni", "Birlikdagi narxi", "Materiallarning umumiy qiymati", "F.I.Sh.",
+        "Lavozimi", "Tashkilot, bo'lim nomi", "Kim tomonidan o'rnatilgan", "O'rnatish sanasi",
+        "So'rovnoma №", "So'rovnoma sanasi", " 1C kodi"
     ]
 
     rows_map = OrderedDict()
     grand_total = 0
 
     for q in qs:
-        if not q.material:
+        if not q.material or not q.order or not q.order.technics:
             continue
 
-        unit_price = q.material.price or 0
-        qty = q.number or 0
+        technics = q.order.technics
+        material_obj = q.material
+
+        name = technics.name or ""
+        serial = technics.serial or ""
+        material_name = material_obj.name or ""
+        unit = material_obj.unit or "dona"
+
+        qty = int(q.number or 0)
+        unit_price = int(material_obj.price or 0)
         total = unit_price * qty
+
+        sender = q.order.sender.full_name if getattr(q.order, "sender", None) else ""
+        rank = getattr(q.order.sender, "rank", "") if getattr(q.order, "sender", None) else ""
+        department = getattr(q.order.sender, "department", "") if getattr(q.order, "sender", None) else ""
+        receiver = q.order.receiver.full_name if getattr(q.order, "receiver", None) else ""
+        date_finished = q.order.date_finished or ""
+        order_id = q.order.id or ""
+        date_creat = q.order.date_creat or ""
+        code = material_obj.code or ""
+
         grand_total += total
 
-        code = getattr(q.material, "code", "") or ""
-        unit = (q.material.unit or "dona")
-        name = q.material.name or ""
-
-        # Guruhlash kaliti: bitta material
-        key = (q.material.id, name, unit, code)
-
-        # Eslatma: Akt №ID ga DD.MM.YYYYy,
-        eslatma_one = ""
-        if q.order and q.order.date_creat:
-            eslatma_one = f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')} y,\n"
+        # ✅ ASOSIY GURUHLASH: 1 texnika + 1 material
+        key = (technics.id, material_obj.id)
 
         if key not in rows_map:
             rows_map[key] = {
                 "name": name,
+                "serial": serial,
+                "material": material_name,
                 "unit": unit,
                 "qty": 0,
-                "unit_price": unit_price,  # material narxi (doim bir xil deb oldik)
+                "unit_price": unit_price,
                 "total": 0,
-                "notes": [],
+                "sender": sender,
+                "rank": rank,
+                "department": department,
+                "receiver": receiver,
+                "date_finished": date_finished,
+                "order_id": order_id,
+                "date_creat": date_creat,
                 "code": code,
-                "order_seen": set(),  # bitta order qayta yozilib qolmasin
             }
 
+        # ✅ YIG‘INDI (Soni)
         rows_map[key]["qty"] += qty
         rows_map[key]["total"] += total
 
-        # Eslatmada order id lar unik bo‘lsin
-        if q.order_id and q.order_id not in rows_map[key]["order_seen"] and eslatma_one:
-            rows_map[key]["notes"].append(eslatma_one)
-            rows_map[key]["order_seen"].add(q.order_id)
-
     rows = []
     for _, v in rows_map.items():
-        note_text = " ".join(v["notes"])  # uzun bo‘lsa: "\n".join(v["notes"]) qiling
-
         rows.append([
             v["name"],
             v["unit"],
-            v["qty"],  # yig‘indi
+            v["qty"],  # ✅ YIG‘INDI SONI
             f"{v['unit_price']:,}".replace(",", " "),
             f"{v['total']:,}".replace(",", " "),
-            note_text,
+            "",  # note/izoh bo‘lsa shu yerga
             v["code"],
         ])
 
-    table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
+    table = create_table_cols_reestr(doc, rows, headers, grand_total=grand_total)
     target._p.addnext(table._tbl)
 
     buffer = BytesIO()
@@ -1341,5 +1354,6 @@ def reestr_post(request):
         buffer.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    response["Content-Disposition"] = 'attachment; filename="svod.docx"'
+    response["Content-Disposition"] = 'attachment; filename="reestr.docx"'
     return response
+
