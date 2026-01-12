@@ -1333,20 +1333,20 @@ def reestr_post(request):
     rows = []
     for _, v in rows_map.items():
         rows.append([
-            v["name"],                                  # Qurilma
-            v["serial"],                                # Seriya №
-            v["material"],                              # Sarf materiallari nomi
-            v["qty"],                                   # Soni
-            f"{int(v['unit_price'] or 0):,}".replace(",", " "),  # Birlikdagi narxi
-            f"{int(v['total'] or 0):,}".replace(",", " "),       # Umumiy qiymat
-            v["fio"],                                   # F.I.Sh.
-            v["lavozim"],                               # Lavozimi
-            v["tashkilot"],                             # Tashkilot, bo‘lim nomi
-            v["ornatgan"],                              # Kim tomonidan o‘rnatilgan
-            v["ornatish_sana"],                          # O‘rnatish sanasi
-            v["sorov_no"],                              # So‘rovnoma №
-            v["sorov_sana"],                            # So‘rovnoma sanasi
-            v["code"],                                  # 1C kodi
+            v["name"],
+            v["serial"],
+            v["material"],
+            v["qty"],
+            f"{int(v['unit_price'] or 0):,}".replace(",", " "),
+            f"{int(v['total'] or 0):,}".replace(",", " "),
+            v["fio"],
+            v["lavozim"],
+            v["tashkilot"],
+            v["ornatgan"],
+            v["ornatish_sana"],
+            v["sorov_no"],
+            v["sorov_sana"],
+            v["code"],
         ])
 
     # ✅ 2 qatorli headerli jadval yaratish

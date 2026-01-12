@@ -293,16 +293,16 @@ from docx.enum.table import WD_TABLE_ALIGNMENT
 
 def create_table_cols_reestr(doc, data, grand_total=0):
     """
-    data: har bir qator 15 ta qiymat bo‘ladi (№ funksiyada qo‘shiladi)
-      [Qurilma, Model, Seriya, Material, Soni, Birlik narx, Umumiy,
-       FIO, Lavozim, Tashkilot, Kim o‘rnatgan, Sana, Sorov №, Sorov sana, 1C]
+    data: har bir qator 14 ta qiymat (№ bu funksiyada qo‘shiladi)
+    [Qurilma, Seriya, Material, Soni, Birlik narx, Umumiy,
+     FIO, Lavozim, Tashkilot, Kim o‘rnatgan, Sana, Sorov №, Sorov sana, 1C]
     """
 
-    # 16 ta ustun uchun width
-    widths = [0.7, 2, 2, 3, 1, 1.7, 1.7, 2.8, 2, 3, 2.8, 1.7, 1, 1.7, 1.5]
+    # 15 ta ustun uchun width ham 15 ta bo‘lsin
+    widths = [0.7, 2.2, 1.8, 3.0, 1.0, 1.7, 1.9, 2.8, 2.0, 3.0, 2.8, 1.7, 1.4, 1.7, 1.5]
 
-    # ✅ 2 qatorli header (rows=2)
-    table = doc.add_table(rows=2, cols=16)
+    # ✅ 2 qatorli header, 15 ustun
+    table = doc.add_table(rows=2, cols=15)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
     fix_table_layout(table)
@@ -312,71 +312,69 @@ def create_table_cols_reestr(doc, data, grand_total=0):
     h1 = table.rows[0].cells
     h2 = table.rows[1].cells
 
-    # 1-qator: bitta ustunli sarlavhalar (pastga merge qilinadi)
+    # Bitta ustunli sarlavhalar (yuqoridan pastga merge)
     single = {
-        1: "№",
-        2: "Qurilma nomi",
-        3: "Seriya №",
-        4: "Sarf materiallari nomi",
-        5: "Soni",
-        6: "Birlikdagi narxi",
-        7: "Materiallarning\numumiy qiymati",
-        10: "Tashkilot, bo'lim nomi",
-        11: "Kim tomonidan\no'rnatilgan",
-        12: "O'rnatish\nsanasi",
-        13: "So'rovnoma №",
-        14: "So'rovnoma\nsanasi",
-        15: "1C\nkodi",
+        0: "№",
+        1: "Qurilma nomi",
+        2: "Seriya №",
+        3: "Sarf materiallari nomi",
+        4: "Soni",
+        5: "Birlikdagi narxi",
+        6: "Materiallarning\numumiy qiymati",
+        9: "Tashkilot, bo'lim nomi",
+        10: "Kim tomonidan\no'rnatilgan",
+        11: "O'rnatish\nsanasi",
+        12: "So'rovnoma №",
+        13: "So'rovnoma\nsanasi",
+        14: "1C\nkodi",
     }
 
     for col_idx, text in single.items():
-        cell = h1[col_idx].merge(h2[col_idx])  # yuqoridan pastga merge
+        cell = h1[col_idx].merge(h2[col_idx])
         set_cell_text_reestr(cell, text, bold=True, center=True, font_size=8)
         set_col_width(cell, widths[col_idx])
 
-    # Guruhlangan header: "Qurilmadan foydalanuvchi" (8 va 9 ustun)
-    grp = h1[8].merge(h1[9])
+    # Guruhlangan header: Qurilmadan foydalanuvchi (7,8)
+    grp = h1[7].merge(h1[8])
     set_cell_text_reestr(grp, "Qurilmadan foydalanuvchi", bold=True, center=True, font_size=8)
-    set_cell_text_reestr(h2[8], "F.I.Sh.", bold=True, center=True, font_size=8)
-    set_cell_text_reestr(h2[9], "Lavozimi", bold=True, center=True, font_size=8)
 
+    set_cell_text_reestr(h2[7], "F.I.Sh.", bold=True, center=True, font_size=8)
+    set_cell_text_reestr(h2[8], "Lavozimi", bold=True, center=True, font_size=8)
+
+    set_col_width(h2[7], widths[7])
     set_col_width(h2[8], widths[8])
-    set_col_width(h2[9], widths[9])
 
-    # ✅ Data qatorlari (endi table 2 qator headerdan keyin davom etadi)
+    # ✅ Data qatorlari
     for idx, row in enumerate(data, start=1):
         cells = table.add_row().cells
 
-        # row: 15 qiymat bo‘lishi kerak
+        # row: 14 ta bo‘lishi kerak, № boshiga qo‘shiladi => 15
         full = [idx] + list(row)
 
-        # yetmay qolsa bo‘sh bilan to‘ldiramiz
-        while len(full) < 16:
+        while len(full) < 15:
             full.append("")
 
-        for i, val in enumerate(full[:16]):
+        for i, val in enumerate(full[:15]):
             set_cell_text_reestr(cells[i], val, center=True, font_size=8)
             set_col_width(cells[i], widths[i])
 
-    # ✅ JAMI qatori (summani 7-ustunga qo‘yamiz: "Materiallarning umumiy qiymati")
+    # ✅ JAMI qatori: summa 6-ustunda (Umumiy qiymat)
     sum_value = f"{int(grand_total or 0):,}".replace(",", " ")
-
     r = table.add_row().cells
 
-    # 0..6 merge (№ dan Birlik narxigacha) — "J A M I:"
-    m = r[0]
-    for j in range(1, 7):  # 1..6
-        m = m.merge(r[j])
+    # 0..5 merge (№ dan Birlik narxigacha)
+    merged = r[0]
+    for j in range(1, 6):   # 1..5
+        merged = merged.merge(r[j])
 
     set_cell_text_reestr(r[0], "J A M I:", bold=True, center=True, font_size=8)
-
-    # summa — 7-ustunda
-    set_cell_text_reestr(r[7], sum_value, bold=True, center=True, font_size=8)
+    set_cell_text_reestr(r[6], sum_value, bold=True, center=True, font_size=8)
 
     # qolgan ustunlar bo‘sh
-    for k in range(8, 16):
+    for k in range(7, 15):
         set_cell_text_reestr(r[k], "", center=True, font_size=8)
 
     return table
+
 
 
