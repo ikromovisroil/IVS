@@ -1275,7 +1275,7 @@ def reestr_post(request):
     ]
 
     rows_map = OrderedDict()
-
+    grand_total = 0
     for q in qs:
         if not q.material or not q.order or not q.order.technics:
             continue
@@ -1292,6 +1292,7 @@ def reestr_post(request):
         qty = int(q.number or 0)
         unit_price = int(material_obj.price or 0)
         total = unit_price * qty
+        grand_total += total
 
         # Kimlar
         sender = q.order.sender.full_name if getattr(q.order, "sender", None) else ""
@@ -1332,8 +1333,6 @@ def reestr_post(request):
         rows_map[key]["qty"] += qty
         rows_map[key]["total"] += total
 
-    # ✅ grand_total — faqat grouped natijalardan
-    grand_total = sum(int(v.get("total") or 0) for v in rows_map.values())
 
     # Jadval rows: headersdagi tartibga mos
     rows = []
