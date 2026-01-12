@@ -299,7 +299,7 @@ def create_table_cols_reestr(doc, data, grand_total=0):
     """
 
     # 16 ta ustun uchun width
-    widths = [0.7, 2, 2, 2, 2.2, 1.2, 1.6, 1.9, 2.4, 1.6, 2.4, 2.2, 1.8, 1.5, 1.6, 1.4]
+    widths = [0.7, 2, 2, 3, 1, 1.7, 1.7, 2.8, 2, 3, 2.8, 1.7, 1, 1.7, 1.5]
 
     # ✅ 2 qatorli header (rows=2)
     table = doc.add_table(rows=2, cols=16)
@@ -314,9 +314,8 @@ def create_table_cols_reestr(doc, data, grand_total=0):
 
     # 1-qator: bitta ustunli sarlavhalar (pastga merge qilinadi)
     single = {
-        0: "№",
-        1: "Qurilma",
-        2: "Qurilma modeli",
+        1: "№",
+        2: "Qurilma nomi",
         3: "Seriya №",
         4: "Sarf materiallari nomi",
         5: "Soni",
@@ -379,4 +378,5 @@ def create_table_cols_reestr(doc, data, grand_total=0):
         set_cell_text_reestr(r[k], "", center=True, font_size=8)
 
     return table
+
 
