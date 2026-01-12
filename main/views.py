@@ -1105,11 +1105,11 @@ def svod_post(request):
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
     qs = OrderMaterial.objects.filter(
-        order__sender__organization_id=org_id,
+        # order__sender__organization_id=org_id,
         order__date_creat__gte=date1,
         order__date_creat__lt=date2
     )
-
+    print(qs)
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
     replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
