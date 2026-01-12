@@ -290,7 +290,7 @@ def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=8):
 
 
 def create_table_cols_reestr(doc, data, headers, grand_total=0):
-    widths = [0.7, 2, 2, 3, 1, 1.7, 1.7, 3, 2, 3, 3, 1.5, 1, 1.5, 1.5]
+    widths = [0.7, 2, 2, 3, 1, 1.7, 1.7, 2.8, 2, 3, 2.8, 1.7, 1, 1.7, 1.5]
 
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
