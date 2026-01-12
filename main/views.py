@@ -1091,6 +1091,7 @@ def svod_get(request):
     return render(request, 'main/svod.html', context)
 
 
+from collections import OrderedDict
 @never_cache
 @login_required
 def svod_post(request):
@@ -1104,12 +1105,20 @@ def svod_post(request):
     date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
-    qs = OrderMaterial.objects.filter(
-        # order__sender__organization_id=org_id,
-        order__date_creat__gte=date1,
-        order__date_creat__lt=date2
+    qs = (
+        OrderMaterial.objects
+        .select_related("material", "order", "order__sender")
+        .filter(
+            order__date_creat__gte=date1,
+            order__date_creat__lt=date2
+        )
+        .order_by("material_id", "order_id", "id")
     )
-    print(qs)
+
+    # org bo‘yicha filter kerak bo‘lsa
+    if org_id:
+        qs = qs.filter(order__sender__organization_id=org_id)
+
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
     replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
@@ -1118,36 +1127,76 @@ def svod_post(request):
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
 
-    # ✅ TABLE paragrafini tozalaymiz va spacingni 0 qilamiz
+    # TABLE paragrafini tozalaymiz
     target.text = ""
     target.paragraph_format.space_before = Pt(0)
     target.paragraph_format.space_after = Pt(0)
     target.paragraph_format.line_spacing = 1
 
-    headers = ["№", "Materialning nomi", "O'lchov birligi", "Miqdori",
-               "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"]
+    headers = [
+        "№", "Materialning nomi", "O'lchov birligi", "Miqdori",
+        "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"
+    ]
 
-    rows = []
+    rows_map = OrderedDict()
     grand_total = 0
+
     for q in qs:
-        unit_price = q.material.price if (q.material and q.material.price) else 0
+        if not q.material:
+            continue
+
+        unit_price = q.material.price or 0
         qty = q.number or 0
         total = unit_price * qty
         grand_total += total
 
+        code = getattr(q.material, "code", "") or ""
+        unit = (q.material.unit or "dona")
+        name = q.material.name or ""
+
+        # Guruhlash kaliti: bitta material
+        key = (q.material.id, name, unit, code)
+
+        # Eslatma: Akt №ID ga DD.MM.YYYYy,
+        eslatma_one = ""
+        if q.order and q.order.date_creat:
+            eslatma_one = f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y,"
+
+        if key not in rows_map:
+            rows_map[key] = {
+                "name": name,
+                "unit": unit,
+                "qty": 0,
+                "unit_price": unit_price,  # material narxi (doim bir xil deb oldik)
+                "total": 0,
+                "notes": [],
+                "code": code,
+                "order_seen": set(),  # bitta order qayta yozilib qolmasin
+            }
+
+        rows_map[key]["qty"] += qty
+        rows_map[key]["total"] += total
+
+        # Eslatmada order id lar unik bo‘lsin
+        if q.order_id and q.order_id not in rows_map[key]["order_seen"] and eslatma_one:
+            rows_map[key]["notes"].append(eslatma_one)
+            rows_map[key]["order_seen"].add(q.order_id)
+
+    rows = []
+    for _, v in rows_map.items():
+        note_text = " ".join(v["notes"])  # uzun bo‘lsa: "\n".join(v["notes"]) qiling
+
         rows.append([
-            q.material.name if q.material else "",
-            (q.material.unit or "dona") if q.material else "dona",
-            qty,
-            f"{unit_price:,}".replace(",", " "),
-            f"{total:,}".replace(",", " "),
-            f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y,",
-            getattr(q.material, "code", "") if q.material else ""
+            v["name"],
+            v["unit"],
+            v["qty"],  # yig‘indi
+            f"{v['unit_price']:,}".replace(",", " "),
+            f"{v['total']:,}".replace(",", " "),
+            note_text,
+            v["code"],
         ])
 
     table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
-
-    # ✅ bo‘sh paragraphsiz jadvalni TABLE joyiga qo‘yamiz
     target._p.addnext(table._tbl)
 
     buffer = BytesIO()
@@ -1160,6 +1209,7 @@ def svod_post(request):
     )
     response["Content-Disposition"] = 'attachment; filename="svod.docx"'
     return response
+
 
 
 @never_cache
