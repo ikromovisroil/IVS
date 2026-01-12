@@ -1251,9 +1251,11 @@ def reestr_post(request):
         .order_by("order__technics_id", "material_id", "order_id", "id")
     )
 
-    # if org_id:
-    #     qs = qs.filter(order__sender__organization_id=org_id)
+    # Tashkilot bo‘yicha filter kerak bo‘lsa yoqing
+    if org_id:
+        qs = qs.filter(order__sender__organization_id=org_id)
 
+    # Word shablon
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx"))
     replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
 
@@ -1261,21 +1263,14 @@ def reestr_post(request):
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
 
-    # TABLE paragrafini tozalaymiz
+    # TABLE paragrafini tozalash
     target.text = ""
     target.paragraph_format.space_before = Pt(0)
     target.paragraph_format.space_after = Pt(0)
     target.paragraph_format.line_spacing = 1
 
-    headers = [
-        "№", "Qurilma nomi", "Seriya №", "Sarf materiallari nomi",
-        "Soni", "Birlikdagi narxi", "Materiallarning umumiy qiymati", "F.I.Sh.",
-        "Lavozimi", "Tashkilot, bo'lim nomi", "Kim tomonidan o'rnatilgan", "O'rnatish sanasi",
-        "So'rovnoma №", "So'rovnoma sanasi", "1C kodi"
-    ]
-
     rows_map = OrderedDict()
-    grand_total = 0
+
     for q in qs:
         if not q.material or not q.order or not q.order.technics:
             continue
@@ -1283,17 +1278,20 @@ def reestr_post(request):
         technics = q.order.technics
         material_obj = q.material
 
-        # Texnika/material
+        # Texnika
         name = technics.name or ""
-        serial = technics.serial or ""
-        material_name = material_obj.name or ""
-        unit = material_obj.unit or "dona"
+        serial = getattr(technics, "serial", "") or ""
 
+        # Qurilma modeli (sizda qaysi field bo‘lsa shuni qo‘yib yuboradi)
+        # masalan: technics.model yoki technics.inventory
+        model = getattr(technics, "model", "") or getattr(technics, "inventory", "") or ""
+
+        # Material
+        material_name = material_obj.name or ""
         qty = int(q.number or 0)
         unit_price = int(material_obj.price or 0)
         total = unit_price * qty
-        grand_total += total
-
+        code = getattr(material_obj, "code", "") or ""
 
         # Kimlar
         sender = q.order.sender.full_name if getattr(q.order, "sender", None) else ""
@@ -1302,62 +1300,66 @@ def reestr_post(request):
         receiver = q.order.receiver.full_name if getattr(q.order, "receiver", None) else ""
 
         # Sana format: 25.11.2025
-        date_finished = q.order.date_finished.strftime("%d.%m.%Y") if q.order.date_finished else ""
-        date_creat = q.order.date_creat.strftime("%d.%m.%Y") if q.order.date_creat else ""
+        date_finished = q.order.date_finished.strftime("%d.%m.%Y") if getattr(q.order, "date_finished", None) else ""
+        date_creat = q.order.date_creat.strftime("%d.%m.%Y") if getattr(q.order, "date_creat", None) else ""
 
         order_id = q.order.id or ""
-        code = material_obj.code or ""
 
-        # ✅ 1 texnika + 1 material bo‘yicha guruhlash
+        # ✅ Guruhlash: 1 texnika + 1 material
         key = (technics.id, material_obj.id)
 
         if key not in rows_map:
             rows_map[key] = {
                 "name": name,
+                "model": model,
                 "serial": serial,
                 "material": material_name,
-                "unit": unit,
                 "qty": 0,
-                "unit_price": unit_price,  # material narxi bir xil
+                "unit_price": unit_price,
                 "total": 0,
-                "sender": sender,
-                "rank": rank,
-                "department": department,
-                "receiver": receiver,
-                "date_finished": date_finished,
-                "order_id": order_id,
-                "date_creat": date_creat,
+                "fio": sender,          # Qurilmadan foydalanuvchi FIO
+                "lavozim": rank,        # Qurilmadan foydalanuvchi lavozim
+                "tashkilot": department,# Tashkilot/bo‘lim
+                "ornatgan": receiver,   # Kim tomonidan o‘rnatilgan
+                "ornatish_sana": date_finished,
+                "sorov_no": order_id,
+                "sorov_sana": date_creat,
                 "code": code,
             }
 
-        # ✅ YIG‘INDI (Soni + total)
+        # ✅ Yig‘indi
         rows_map[key]["qty"] += qty
         rows_map[key]["total"] += total
 
+    # ✅ grand_total — faqat grouped natijalardan
+    grand_total = sum(int(v.get("total") or 0) for v in rows_map.values())
 
-    # Jadval rows: headersdagi tartibga mos
+    # ✅ Jadval data (№ ni create_table_cols_reestr o‘zi qo‘shadi)
     rows = []
     for _, v in rows_map.items():
         rows.append([
-            v["name"],  # Qurilma nomi
-            v["serial"],  # Seriya №
-            v["material"],  # Sarf material nomi
-            v["qty"],  # Soni (yig‘indi)
-            f"{v['unit_price']:,}".replace(",", " "),  # Birlik narxi
-            f"{v['total']:,}".replace(",", " "),  # Umumiy qiymat
-            v["sender"],  # F.I.Sh.
-            v["rank"],  # Lavozimi
-            v["department"],  # Tashkilot / bo‘lim
-            v["receiver"],  # Kim tomonidan o‘rnatilgan
-            v["date_finished"],  # O‘rnatish sanasi
-            v["order_id"],  # So‘rovnoma №
-            v["date_creat"],  # So‘rovnoma sanasi
-            v["code"],  # 1C kodi
+            v["name"],                                  # Qurilma
+            v["model"],                                 # Qurilma modeli
+            v["serial"],                                # Seriya №
+            v["material"],                              # Sarf materiallari nomi
+            v["qty"],                                   # Soni
+            f"{int(v['unit_price'] or 0):,}".replace(",", " "),  # Birlikdagi narxi
+            f"{int(v['total'] or 0):,}".replace(",", " "),       # Umumiy qiymat
+            v["fio"],                                   # F.I.Sh.
+            v["lavozim"],                               # Lavozimi
+            v["tashkilot"],                             # Tashkilot, bo‘lim nomi
+            v["ornatgan"],                              # Kim tomonidan o‘rnatilgan
+            v["ornatish_sana"],                          # O‘rnatish sanasi
+            v["sorov_no"],                              # So‘rovnoma №
+            v["sorov_sana"],                            # So‘rovnoma sanasi
+            v["code"],                                  # 1C kodi
         ])
 
-    table = create_table_cols_reestr(doc, rows, headers, grand_total=grand_total)
+    # ✅ 2 qatorli headerli jadval yaratish
+    table = create_table_cols_reestr(doc, rows, grand_total=grand_total)
     target._p.addnext(table._tbl)
 
+    # Faylni qaytarish
     buffer = BytesIO()
     doc.save(buffer)
     buffer.seek(0)
