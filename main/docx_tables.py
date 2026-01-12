@@ -226,15 +226,8 @@ def create_table(doc, title, data, headers):
 
 #Svod
 
-def create_table_cols_svod(doc, title, data, headers):
-
+def create_table_cols_svod(doc, data, headers):
     widths = [1, 7, 2, 2, 4, 4, 6, 2]
-
-    h = doc.add_paragraph()
-    r = h.add_run(title)
-    r.bold = True
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(12)
 
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -250,9 +243,11 @@ def create_table_cols_svod(doc, title, data, headers):
 
     for idx, row in enumerate(data, start=1):
         cells = table.add_row().cells
-        full = [idx] + row
+        full = [idx] + list(row)   # row 7 ta -> full 8 ta bo‘ladi
+
         for i, val in enumerate(full):
             set_cell_text(cells[i], val, center=True)
             set_col_width(cells[i], widths[i])
 
-    return h, table
+    return table
+

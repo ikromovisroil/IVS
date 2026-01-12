@@ -1090,76 +1090,65 @@ def svod_get(request):
     }
     return render(request, 'main/svod.html', context)
 
+
 @never_cache
 @login_required
 def svod_post(request):
-
     if request.method != "POST":
         return redirect("document_get")
 
-    dep_id = request.POST.get("department")
-    employee_id = request.POST.get("employee")
-
+    org_id = request.POST.get("organizator")
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
 
-    date1_naive = datetime.strptime(date_id1, "%Y-%m-%d")
-    date2_naive = datetime.strptime(date_id2, "%Y-%m-%d")+ timedelta(days=1)
-
-    date1 = timezone.make_aware(date1_naive)
-    date2 = timezone.make_aware(date2_naive)
-    print(date1, date2)
+    date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
+    date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
     qs = OrderMaterial.objects.filter(
+        order__sender__organization_id=org_id,
         order__date_creat__gte=date1,
         order__date_creat__lt=date2
     )
 
-    print(qs)
-    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    emp = Employee.objects.filter(id=employee_id).first() if employee_id else None
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
-    replace_text(doc, {
-        "ID": str(12),
-        "RECEIVER": request.user.employee.full_name or "",
-        "SENDER": emp.full_name or "",
-        "DEPARTMENT": dep.name if dep else "",
-    })
+    replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
 
+    # ✅ TABLE paragrafini tozalaymiz va spacingni 0 qilamiz
     target.text = ""
+    target.paragraph_format.space_before = Pt(0)
+    target.paragraph_format.space_after = Pt(0)
+    target.paragraph_format.line_spacing = 1
 
-    headers = [
-        "№", "Qurilma Nomi", "Seriya", "Material",
-        "Soni", "Birligi", "F.I.Sh.", "Lavozimi", "Narxi"
-    ]
+    headers = ["№", "Materialning nomi", "O'lchov birligi", "Miqdori",
+               "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"]
 
     rows = []
     for q in qs:
+        # ⚠️ Sizning header 8 ta, funksiyada idx qo‘shiladi.
+        # Shuning uchun row 7 ta bo‘lishi kerak!
+        unit_price = q.material.price if (q.material and q.material.price) else 0
+        qty = q.number or 0
+        total = unit_price * qty
+
         rows.append([
-            q.order.technics.name if q.order.technics else "",
-            q.order.technics.serial if q.order.technics else "",
-            q.material.name,
-            q.number,
-            q.material.unit or "dona",
-            q.order.sender.full_name,
-            q.order.sender.rank.name if q.order.sender.rank else "",
-            f"{q.material.price:,}".replace(",", " ") if q.material.price else ""
+            q.material.name if q.material else "",                 # Material nomi
+            q.material.unit or "dona" if q.material else "dona",   # O'lchov birligi
+            qty,                                                   # Miqdori
+            f"{unit_price:,}".replace(",", " ") if unit_price else "",  # Birlik narxi
+            f"{total:,}".replace(",", " ") if total else "",            # Umumiy qiymati
+            q.order.sender.full_name if q.order and q.order.sender else "",  # Eslatma
+            getattr(q.material, "code", "") if q.material else ""        # Kod 1C
         ])
 
-    h, table = create_table_10cols(
-        doc,
-        "Biriktirilgan texnika bo‘yicha dalolatnoma",
-        rows,
-        headers
-    )
+    table = create_table_cols_svod(doc, rows, headers)
 
-    target._p.addnext(h._p)
-    h._p.addnext(table._tbl)
+    # ✅ bo‘sh paragraphsiz jadvalni TABLE joyiga qo‘yamiz
+    target._p.addnext(table._tbl)
 
     buffer = BytesIO()
     doc.save(buffer)
@@ -1169,7 +1158,7 @@ def svod_post(request):
         buffer.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    response["Content-Disposition"] = f'attachment; filename="order.docx"'
+    response["Content-Disposition"] = 'attachment; filename="svod.docx"'
     return response
 
 
