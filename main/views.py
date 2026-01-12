@@ -1332,10 +1332,8 @@ def reestr_post(request):
         rows_map[key]["total"] += total
 
     rows = []
-    i = 1
     for _, v in rows_map.items():
         rows.append([
-            i,  # №
             v["name"],  # Qurilma nomi
             v["serial"],  # Seriya №
             v["material"],  # Sarf material nomi
@@ -1351,7 +1349,6 @@ def reestr_post(request):
             v["date_creat"],  # So‘rovnoma sanasi
             v["code"],  # 1C kodi
         ])
-        i += 1
 
     table = create_table_cols_reestr(doc, rows, headers, grand_total=grand_total)
     target._p.addnext(table._tbl)
