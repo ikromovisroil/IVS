@@ -1282,10 +1282,6 @@ def reestr_post(request):
         name = technics.name or ""
         serial = getattr(technics, "serial", "") or ""
 
-        # Qurilma modeli (sizda qaysi field bo‘lsa shuni qo‘yib yuboradi)
-        # masalan: technics.model yoki technics.inventory
-        model = getattr(technics, "model", "") or getattr(technics, "inventory", "") or ""
-
         # Material
         material_name = material_obj.name or ""
         qty = int(q.number or 0)
@@ -1311,7 +1307,6 @@ def reestr_post(request):
         if key not in rows_map:
             rows_map[key] = {
                 "name": name,
-                "model": model,
                 "serial": serial,
                 "material": material_name,
                 "qty": 0,
@@ -1339,7 +1334,6 @@ def reestr_post(request):
     for _, v in rows_map.items():
         rows.append([
             v["name"],                                  # Qurilma
-            v["model"],                                 # Qurilma modeli
             v["serial"],                                # Seriya №
             v["material"],                              # Sarf materiallari nomi
             v["qty"],                                   # Soni
