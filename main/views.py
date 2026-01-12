@@ -1157,7 +1157,7 @@ def svod_post(request):
         # Eslatma: Akt №ID ga DD.MM.YYYYy,
         eslatma_one = ""
         if q.order and q.order.date_creat:
-            eslatma_one = f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y\n,"
+            eslatma_one = f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y,\n"
 
         if key not in rows_map:
             rows_map[key] = {
