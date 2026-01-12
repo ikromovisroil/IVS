@@ -1108,10 +1108,7 @@ def svod_post(request):
     qs = (
         OrderMaterial.objects
         .select_related("material", "order", "order__sender")
-        .filter(
-            order__date_creat__gte=date1,
-            order__date_creat__lt=date2
-        )
+        .all()
         .order_by("material_id", "order_id", "id")
     )
 
