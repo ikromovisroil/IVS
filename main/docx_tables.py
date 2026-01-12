@@ -236,34 +236,46 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
     set_table_borders(table)
     force_tbl_grid(table, widths)
 
+    # Header
     hdr = table.rows[0].cells
     for i, text in enumerate(headers):
         set_cell_text(hdr[i], text, bold=True, center=True)
         set_col_width(hdr[i], widths[i])
 
-    # data
+    # Data
     for idx, row in enumerate(data, start=1):
         cells = table.add_row().cells
-        full = [idx] + list(row)  # row=7
+        full = [idx] + list(row)  # 8 ta bo'lishi kerak
 
-        for i, val in enumerate(full):
+        # xavfsizlik: kam bo'lsa to'ldirib qo'yamiz
+        while len(full) < len(headers):
+            full.append("")
+
+        for i, val in enumerate(full[:len(headers)]):
             center = True
-            if i in (1, 5):  # Material nomi va Eslatma chapda chiroyli
+            # Material nomi (1) va Eslatma (6) chapda chiroyli
+            if i in (1, 6):
                 center = False
             set_cell_text(cells[i], val, center=center)
             set_col_width(cells[i], widths[i])
 
-    # ✅ 1 ta JAMI qator
+    # ✅ 1 ta JAMI qator (0..5 merge, summa 5-ustunda)
     sum_value = f"{grand_total:,}".replace(",", " ")
+
     r = table.add_row().cells
 
-
+    # 0..4 merge qilsak, 5-ustun (Umumiy qiymati) alohida qoladi
     m = r[0]
-    for j in range(1, 5):
+    for j in range(1, 5):   # 0..4 merge
         m = m.merge(r[j])
 
     set_cell_text(r[0], "J A M I:", bold=True, center=True)
     set_cell_text(r[5], sum_value, bold=True, center=True)
 
+    # qolgan ustunlar bo'sh qoladi
+    set_cell_text(r[6], "", center=False)  # Eslatma
+    set_cell_text(r[7], "", center=True)   # Kod 1C
+
     return table
+
 
