@@ -1136,13 +1136,13 @@ def svod_post(request):
         grand_total += total
 
         rows.append([
-            q.material.name if q.material else "",                 # Material nomi
-            q.material.unit or "dona" if q.material else "dona",   # O'lchov birligi
-            qty,                                                   # Miqdori
-            unit_price,  # Birlik narxi
-            total,            # Umumiy qiymati
-            f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')} y,",  # Eslatma
-            getattr(q.material, "code", "") if q.material else ""        # Kod 1C
+            q.material.name if q.material else "",
+            (q.material.unit or "dona") if q.material else "dona",
+            qty,
+            f"{unit_price:,}".replace(",", " "),
+            f"{total:,}".replace(",", " "),
+            f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')}y,",
+            getattr(q.material, "code", "") if q.material else ""
         ])
 
     table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
