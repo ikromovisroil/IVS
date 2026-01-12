@@ -1139,7 +1139,6 @@ def svod_post(request):
     ]
 
     rows_map = OrderedDict()
-    grand_total = 0
 
     for q in qs:
         if not q.material:
@@ -1148,7 +1147,6 @@ def svod_post(request):
         unit_price = q.material.price or 0
         qty = q.number or 0
         total = unit_price * qty
-        grand_total += total
 
         code = getattr(q.material, "code", "") or ""
         unit = (q.material.unit or "dona")
@@ -1181,6 +1179,8 @@ def svod_post(request):
         if q.order_id and q.order_id not in rows_map[key]["order_seen"] and eslatma_one:
             rows_map[key]["notes"].append(eslatma_one)
             rows_map[key]["order_seen"].add(q.order_id)
+
+    grand_total = sum(int(v.get("total") or 0) for v in rows_map.values())
 
     rows = []
     for _, v in rows_map.items():
@@ -1293,6 +1293,7 @@ def reestr_post(request):
         unit_price = int(material_obj.price or 0)
         total = unit_price * qty
         grand_total += total
+
 
         # Kimlar
         sender = q.order.sender.full_name if getattr(q.order, "sender", None) else ""

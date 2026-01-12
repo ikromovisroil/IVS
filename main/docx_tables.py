@@ -308,7 +308,7 @@ def create_table_cols_reestr(doc, data, headers, grand_total=0):
     # Data
     for idx, row in enumerate(data, start=1):
         cells = table.add_row().cells
-        full = [idx] + list(row)
+        full = [idx] + list(row)  # ✅ 1-ustun № avtomatik qo‘shiladi
 
         while len(full) < len(headers):
             full.append("")
@@ -317,21 +317,23 @@ def create_table_cols_reestr(doc, data, headers, grand_total=0):
             set_cell_text_reestr(cells[i], val, center=True, font_size=8)
             set_col_width(cells[i], widths[i])
 
-    # ✅ 1 ta JAMI qator (0..5 merge, summa 5-ustunda)
-    sum_value = f"{grand_total:,}".replace(",", " ")
+    # ✅ JAMI qator
+    sum_value = f"{int(grand_total):,}".replace(",", " ")
 
     r = table.add_row().cells
 
-    # 0..4 merge qilsak, 5-ustun (Umumiy qiymati) alohida qoladi
-    m = r[0]
-    for j in range(1, 6):   # 0..4 merge
-        m = m.merge(r[j])
+    # 0..5 (№..Birlik narxi) merge qilamiz
+    merged = r[0]
+    for j in range(1, 6):  # 1,2,3,4,5
+        merged = merged.merge(r[j])
 
     set_cell_text_reestr(r[0], "J A M I:", bold=True, center=True)
-    set_cell_text_reestr(r[5], sum_value, bold=True, center=True)
 
-    # qolgan ustunlar bo'sh qoladi
-    set_cell_text_reestr(r[6], "", center=False, font_size=8)  # Eslatma
-    set_cell_text_reestr(r[7], "", center=True, font_size=8)   # Kod 1C
+    # ✅ Umumiy qiymat ustuni index=6
+    set_cell_text_reestr(r[6], sum_value, bold=True, center=True)
+
+    # Qolgan ustunlar bo‘sh qoladi
+    for k in range(7, len(headers)):
+        set_cell_text_reestr(r[k], "", center=True, font_size=8)
 
     return table
