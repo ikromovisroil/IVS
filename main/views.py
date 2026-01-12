@@ -444,8 +444,8 @@ def barn(request):
         technics_qs = Technics.objects.filter(employee__id=emp_id)
         material_qs = Material.objects.filter(employee__id=emp_id)
     else:
-        technics_qs = Technics.objects.filter(employee__organization__org_type='IVS', status='free')
-        material_qs = Material.objects.filter(employee__organization__org_type='IVS', status='free')
+        technics_qs = Technics.objects.filter(status='free')
+        material_qs = Material.objects.filter(status='free')
 
     context = {
         "employees_boss": employees_boss,  # select uchun
