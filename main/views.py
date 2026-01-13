@@ -1043,7 +1043,7 @@ def akt_post(request):
     seen = set()
 
     for q in qs:
-        emp = q.order.sender if q.order and q.order.sender else None
+        emp = q.order.receiver if q.order and q.order.receiver else None
         if emp and emp.id not in seen:
             seen.add(emp.id)
             rank = emp.rank.name if emp.rank else ""
