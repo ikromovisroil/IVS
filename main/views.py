@@ -1077,7 +1077,7 @@ def akt_post(request):
             (q.material.unit if q.material and q.material.unit else "dona"),
             q.order.sender.full_name if q.order and q.order.sender else "",
             (q.order.sender.rank.name if q.order and q.order.sender and q.order.sender.rank else ""),
-            "",  # ✅ Eslatma* ustuni uchun (xohlasangiz shu yerga qiymat qo'yasiz)
+            f"{q.material.price:,}".replace(",", " ") if q.material and q.material.price else "",
         ])
 
     h, table = create_table_akt(
