@@ -1038,6 +1038,20 @@ def akt_post(request):
         "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
     }
     org_name = ORG_TEXT.get(org.org_type, "")
+
+    employees = []
+    seen = set()
+
+    for q in qs:
+        emp = q.order.sender if q.order and q.order.sender else None
+        if emp and emp.id not in seen:
+            seen.add(emp.id)
+            rank = emp.rank.name if emp.rank else ""
+            text = f"{emp.full_name} ({rank})" if rank else emp.full_name
+            employees.append(text)
+
+    receiver_text = ", ".join(employees)
+
     replace_text(doc, {
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
