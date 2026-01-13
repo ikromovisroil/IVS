@@ -330,12 +330,12 @@ def create_table_cols_reestr(doc, data, grand_total=0):
 
     for col_idx, text in single.items():
         cell = h1[col_idx].merge(h2[col_idx])
-        set_cell_text_reestr(cell, text, bold=True, center=True, font_size=8)
+        set_cell_text_reestr(cell, text, bold=True, center=True, font_size=7)
         set_col_width(cell, widths[col_idx])
 
     # Guruhlangan header: Qurilmadan foydalanuvchi (7,8)
     grp = h1[7].merge(h1[8])
-    set_cell_text_reestr(grp, "Qurilmadan foydalanuvchi", bold=True, center=True, font_size=8)
+    set_cell_text_reestr(grp, "Qurilmadan foydalanuvchi", bold=True, center=True, font_size=7)
 
     set_cell_text_reestr(h2[7], "F.I.Sh.", bold=True, center=True, font_size=8)
     set_cell_text_reestr(h2[8], "Lavozimi", bold=True, center=True, font_size=8)
