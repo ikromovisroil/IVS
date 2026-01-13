@@ -901,12 +901,23 @@ def order_deed(request, pk):
         sender.organization.name if sender.organization else ""
     )
 
+
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+    ORG_TEXT = {
+        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
+        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
+        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
+        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
+    }
+    org_type = getattr(getattr(sender, "organization", None), "org_type", None)
+    org_name = ORG_TEXT.get(org_type, "")
 
     replace_text(doc, {
-        "ID": str(order.id),
+        "ID": f"№ {order.id}",
+        "ORGANIZATION": org_name,
         "RECEIVER": order.receiver.full_name or "",
         "SENDER": order.sender.full_name or "",
+        "SANA": date.today().strftime("%d.%m.%Y"),
         "DEPARTMENT": dep,
     })
 
@@ -1120,6 +1131,7 @@ def akt_post(request):
     receiver_text = ", ".join(employees)
 
     replace_text(doc, {
+        "ID": f" ",
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
         "RECEIVER": receiver_text,
