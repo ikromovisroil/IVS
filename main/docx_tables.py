@@ -274,7 +274,7 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
     return table
 
 #Reestr text
-def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=8):
+def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=7):
     cell.text = ""
     p = cell.paragraphs[0]
     run = p.add_run("" if text is None else str(text))
@@ -298,7 +298,7 @@ def create_table_cols_reestr(doc, data, grand_total=0):
     """
 
     # 15 ta ustun uchun width ham 15 ta bo‘lsin
-    widths = [0.7, 2.2, 1.8, 3.0, 1.0, 1.7, 1.9, 2.8, 2.0, 3.0, 2.8, 1.7, 1.4, 1.7, 1.5]
+    widths = [0.7, 2.2, 2, 3.0, 0.9, 1.7, 1.9, 2.7, 2.0, 3.0, 2.7, 1.7, 1.4, 1.7, 1.4]
 
     # ✅ 2 qatorli header, 15 ustun
     table = doc.add_table(rows=2, cols=15)
