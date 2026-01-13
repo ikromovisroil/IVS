@@ -31,6 +31,8 @@ urlpatterns = [
     path('ajax/load-departments/', ajax_load_departments, name='ajax_load_departments'),
     path('ajax/load-directorate/', ajax_load_directorate, name='ajax_load_directorate'),
     path('ajax/load-division/', ajax_load_division, name='ajax_load_division'),
+    path("ajax/employees/", ajax_load_employees, name="ajax_load_employees"),
+
 
     # ORGANIZATION
     path('organization/<slug:slug>/', organization, name='organization'),

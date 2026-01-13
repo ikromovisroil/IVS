@@ -86,91 +86,80 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function () {
+$(function () {
 
-    // 1. DEPARTAMENTLARNI YUKLASH
-    function loadDepartments(orgId, selectedDepId = null) {
-        $('#department').html('<option value="">Yuklanmoqda...</option>');
-        $('#directorate').html('<option value="">Tanlang...</option>');
-        $('#division').html('<option value="">Tanlang...</option>');
+  function loadDepartments(orgId, selectedDepId=null) {
+    $('#department').html('<option value="">Yuklanmoqda...</option>');
+    $('#employee').html('<option value="">Tanlang...</option>');
 
-        if (orgId) {
-            $.ajax({
-                url: "{% url 'ajax_load_departments' %}",
-                data: { 'organization': orgId },
-                success: function (data) {
-                    let options = '<option value="">Tanlang...</option>';
-                    $.each(data, function (i, dep) {
-                        let selected = (selectedDepId == dep.id) ? 'selected' : '';
-                        options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
-                    });
-                    $('#department').html(options);
-                }
-            });
-        } else {
-            $('#department').html('<option value="">Tanlang...</option>');
-        }
+    if (!orgId) {
+      $('#department').html('<option value="">Tanlang...</option>');
+      return;
     }
 
-
-    // === EVENTLAR ===
-
-    $('#organization').change(function () {
-        loadDepartments($(this).val());
-    });
-
-    $('#department').change(function () {
-        loadDirectorate($(this).val());
-    });
-
-    // === OLDINGI TANLANGAN QIYMATLARNI QAYTA TIKLASH ===
-
-    let initialOrg = '{{ selected_org }}';
-    let initialDep = '{{ selected_dep }}';
-
-    if (initialOrg) {
-        $('#organization').val(initialOrg);
-        loadDepartments(initialOrg, initialDep);
-
-        if (initialDep) {
-            loadDirectorate(initialDep, initialDir);
-        }
-    }
-
-});
-
-$(document).ready(function(){
-
-    function updateTechnicCount(){
-        const orgId = $('#organization').val();
-        const depId = $('#department').val();
-        $.ajax({
-            url: "{% url 'get_technics_count' %}",
-            data: {
-                'org_id': orgId,
-                'dep_id': depId,
-            },
-            success: function(data){
-
-                // Kompyuterlar soni
-                $('#techkomp').text(data.kompyuterlar + ' dona');
-
-                // Printerlar soni
-                $('#techpr').text(data.printerlar + ' dona');
-            },
-            error: function(err){
-                console.error("AJAX xato:", err);
-            }
+    $.ajax({
+      url: "{% url 'ajax_load_departments' %}",
+      data: { organization: orgId },
+      success: function (data) {
+        let options = '<option value="">Tanlang...</option>';
+        data.forEach(function(dep){
+          const selected = (selectedDepId == dep.id) ? 'selected' : '';
+          options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
         });
+        $('#department').html(options);
+      }
+    });
+  }
+
+  function loadEmployees(depId, selectedEmpId=null) {
+    $('#employee').html('<option value="">Yuklanmoqda...</option>');
+
+    if (!depId) {
+      $('#employee').html('<option value="">Tanlang...</option>');
+      return;
     }
 
-    // Har qanday select o‘zgarganda
-    $('#organization, #department,').on('change', function(){
-        updateTechnicCount();
+    $.ajax({
+      url: "{% url 'ajax_load_employees' %}",
+      data: { department: depId },
+      success: function (data) {
+        let options = '<option value="">Tanlang...</option>';
+        data.forEach(function(emp){
+          const selected = (selectedEmpId == emp.id) ? 'selected' : '';
+          options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+        });
+        $('#employee').html(options);
+      }
     });
+  }
 
-    // Sahifa yangi yuklanganda ham hisoblasin
-    updateTechnicCount();
+  // EVENTS
+  $('#organization').on('change', function(){
+    loadDepartments($(this).val());
+  });
+
+  $('#department').on('change', function(){
+    loadEmployees($(this).val());
+  });
+
+  // OLDINGI TANLANGANLARNI QAYTA TIKLASH (ixtiyoriy)
+  const initialOrg = '{{ selected_org|default:"" }}';
+  const initialDep = '{{ selected_dep|default:"" }}';
+  const initialEmp = '{{ selected_emp|default:"" }}';
+
+  if (initialOrg) {
+    $('#organization').val(initialOrg);
+    loadDepartments(initialOrg, initialDep);
+
+    if (initialDep) {
+      // dep yuklanishi async, shuning uchun kichik delay
+      setTimeout(function(){
+        $('#department').val(initialDep);
+        loadEmployees(initialDep, initialEmp);
+      }, 200);
+    }
+  }
+
 });
 </script>
 

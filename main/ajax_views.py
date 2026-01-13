@@ -173,3 +173,22 @@ def order_rejected(request, pk):
     order.status = "rejected"
     order.save()
     return JsonResponse({"status": "ok"})
+
+
+from django.http import JsonResponse
+def ajax_load_employees(request):
+    dep_id = request.GET.get("department")
+
+    if not dep_id:
+        return JsonResponse([], safe=False)
+
+    qs = (
+        Employee.objects
+        .filter(department_id=dep_id)
+        .select_related("rank")
+        .order_by("last_name", "first_name", "father_name")
+    )
+
+    data = [{"id": e.id, "full_name": e.full_name} for e in qs]
+    return JsonResponse(data, safe=False)
+
