@@ -1270,7 +1270,7 @@ def reestr_post(request):
     if request.method != "POST":
         return redirect("document_get")
 
-    org_id = request.POST.get("organizator")
+    org_id = request.POST.get("organization")
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
 
@@ -1297,7 +1297,7 @@ def reestr_post(request):
     org_name = ORG_TEXT.get(getattr(org, "org_type", None), "")
     replace_text(doc, {
         "ORGANIZATION":org_name,
-        "XUDUD": request.user.employee.region.name or "",
+        "XUDUD": request.user.employee.region.name if request.user.employee.region else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
