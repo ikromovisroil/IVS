@@ -37,7 +37,7 @@
                 </div>
                 <div class="col-12">
                   <label for="department" class="form-label">Departament :</label>
-                    <select id="department" name="department" class="form-select">
+                    <select id="department" name="department" class="form-select" required>
                         <option value="">Tanlang...</option>
                         {% for dep in departments %}
                             <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
@@ -112,51 +112,6 @@ $(document).ready(function () {
         }
     }
 
-    // 2. DIRECTORATE YUKLASH
-    function loadDirectorate(depId, selectedDirId = null) {
-        $('#directorate').html('<option value="">Yuklanmoqda...</option>');
-        $('#division').html('<option value="">Tanlang...</option>');
-
-        if (depId) {
-            $.ajax({
-                url: "{% url 'ajax_load_directorate' %}",
-                data: { 'department': depId },
-                success: function (data) {
-                    let options = '<option value="">Tanlang...</option>';
-                    $.each(data, function (i, dir) {
-                        let selected = (selectedDirId == dir.id) ? 'selected' : '';
-                        options += `<option value="${dir.id}" ${selected}>${dir.name}</option>`;
-                    });
-                    $('#directorate').html(options);
-                }
-            });
-        } else {
-            $('#directorate').html('<option value="">Tanlang...</option>');
-        }
-    }
-
-    // 3. DIVISION YUKLASH
-    function loadDivision(dirId, selectedDivId = null) {
-        $('#division').html('<option value="">Yuklanmoqda...</option>');
-
-        if (dirId) {
-            $.ajax({
-                url: "{% url 'ajax_load_division' %}",
-                data: { 'directorate': dirId },
-                success: function (data) {
-                    let options = '<option value="">Tanlang...</option>';
-                    $.each(data, function (i, div) {
-                        let selected = (selectedDivId == div.id) ? 'selected' : '';
-                        options += `<option value="${div.id}" ${selected}>${div.name}</option>`;
-                    });
-                    $('#division').html(options);
-                }
-            });
-        } else {
-            $('#division').html('<option value="">Tanlang...</option>');
-        }
-    }
-
 
     // === EVENTLAR ===
 
@@ -168,17 +123,10 @@ $(document).ready(function () {
         loadDirectorate($(this).val());
     });
 
-    $('#directorate').change(function () {
-        loadDivision($(this).val());
-    });
-
-
     // === OLDINGI TANLANGAN QIYMATLARNI QAYTA TIKLASH ===
 
     let initialOrg = '{{ selected_org }}';
     let initialDep = '{{ selected_dep }}';
-    let initialDir = '{{ selected_dir }}';
-    let initialDiv = '{{ selected_div }}';
 
     if (initialOrg) {
         $('#organization').val(initialOrg);
@@ -186,10 +134,6 @@ $(document).ready(function () {
 
         if (initialDep) {
             loadDirectorate(initialDep, initialDir);
-
-            if (initialDir) {
-                loadDivision(initialDir, initialDiv);
-            }
         }
     }
 
@@ -200,16 +144,11 @@ $(document).ready(function(){
     function updateTechnicCount(){
         const orgId = $('#organization').val();
         const depId = $('#department').val();
-        const dirId = $('#directorate').val();
-        const divId = $('#division').val();
-
         $.ajax({
             url: "{% url 'get_technics_count' %}",
             data: {
                 'org_id': orgId,
                 'dep_id': depId,
-                'dir_id': dirId,
-                'div_id': divId
             },
             success: function(data){
 
@@ -226,7 +165,7 @@ $(document).ready(function(){
     }
 
     // Har qanday select o‘zgarganda
-    $('#organization, #department, #directorate, #division').on('change', function(){
+    $('#organization, #department,').on('change', function(){
         updateTechnicCount();
     });
 

@@ -18,6 +18,8 @@ from django.db.models import Count, Prefetch
 from django.core.exceptions import PermissionDenied
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
+from datetime import datetime, timedelta
+from django.db import transaction
 
 def global_data(request):
     return {
@@ -918,7 +920,7 @@ def order_approved(request):
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
-from django.db import transaction
+
 @never_cache
 @login_required
 @transaction.atomic
@@ -994,36 +996,54 @@ def akt_get(request):
     }
     return render(request, 'main/akt.html', context)
 
-from datetime import datetime, timedelta
+from datetime import date
 @never_cache
 @login_required
 def akt_post(request):
-
     if request.method != "POST":
-        return redirect("document_get")
+        return redirect("akt_get")
 
-    org_id = request.POST.get("organizator")
+    org_id = request.POST.get("organization") or None
+    dep_id = request.POST.get("department") or None
+    employee_id = request.POST.get("employee") or None
 
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
 
-    date1_naive = datetime.strptime(date_id1, "%Y-%m-%d")
-    date2_naive = datetime.strptime(date_id2, "%Y-%m-%d")+ timedelta(days=1)
-
-    date1 = timezone.make_aware(date1_naive)
-    date2 = timezone.make_aware(date2_naive)
+    # Sana parse
+    date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
+    date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
     qs = OrderMaterial.objects.filter(
-        order__sender__organization_id=org_id,
         order__date_creat__gte=date1,
-        order__date_creat__lt=date2
+        order__date_creat__lt=date2,
+        order__sender__department_id=dep_id,
+        order__receiver__region=request.user.employee.region,
     )
-    print(qs)
 
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
+    org = Organization.objects.filter(id=org_id).first() if org_id else None
+    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
+    emp = Employee.objects.filter(id=employee_id).first() if employee_id else None
 
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+
+    employee = request.user.employee
+    rank_name = employee.rank.name if employee.rank else ""
+    receiver_text = f"{employee.full_name} ({rank_name})" if rank_name else (employee.full_name or "")
+
+    ORG_TEXT = {
+        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
+        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
+        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
+        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
+    }
+    org_name = ORG_TEXT.get(org.org_type, "")
     replace_text(doc, {
-        "RECEIVER": request.user.employee.full_name or "",
+        "ORGANIZATION": org_name,
+        "SANA": date.today().strftime("%d.%m.%Y"),
+        "RECEIVER": receiver_text,
+        "SENDER": emp.full_name if emp else "",
+        "DEPARTMENT": dep.name if dep else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -1031,10 +1051,20 @@ def akt_post(request):
         return HttpResponse("TABLE topilmadi", status=500)
 
     target.text = ""
+    target.paragraph_format.space_before = Pt(0)
+    target.paragraph_format.space_after = Pt(0)
+    target.paragraph_format.line_spacing = 1
 
     headers = [
-        "№", "Materialning nomi", "O'lchov birligi", "Miqdori",
-        "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"
+        "№",
+        "Ish bajarilgan qurilma nomi",
+        "Qurilma seriya raqami",
+        "Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi",
+        "Soni",
+        "O'lchov birligi",
+        "F.I.Sh.",
+        "Lavozimi",
+        "Eslatma*",
     ]
 
     rows = []
@@ -1042,17 +1072,17 @@ def akt_post(request):
         rows.append([
             q.order.technics.name if q.order.technics else "",
             q.order.technics.serial if q.order.technics else "",
-            q.material.name,
-            q.number,
-            q.material.unit or "dona",
-            q.order.sender.full_name,
-            q.order.sender.rank.name if q.order.sender.rank else "",
-            f"{q.material.price:,}".replace(",", " ") if q.material.price else ""
+            q.material.name if q.material else "",
+            q.number or "",
+            (q.material.unit if q.material and q.material.unit else "dona"),
+            q.order.sender.full_name if q.order and q.order.sender else "",
+            (q.order.sender.rank.name if q.order and q.order.sender and q.order.sender.rank else ""),
+            "",  # ✅ Eslatma* ustuni uchun (xohlasangiz shu yerga qiymat qo'yasiz)
         ])
 
-    h, table = create_table_cols_svod(
+    h, table = create_table_akt(
         doc,
-        "",
+        "Biriktirilgan texnika bo‘yicha dalolatnoma",
         rows,
         headers
     )
@@ -1068,7 +1098,7 @@ def akt_post(request):
         buffer.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    response["Content-Disposition"] = f'attachment; filename="order.docx"'
+    response["Content-Disposition"] = 'attachment; filename="order.docx"'
     return response
 
 
@@ -1110,14 +1140,12 @@ def svod_post(request):
         .select_related("material", "order", "order__sender")
         .filter(
             order__date_creat__gte=date1,
-            order__date_creat__lt=date2
+            order__date_creat__lt=date2,
+            order__sender__organization_id=org_id,
+            order__receiver__region=request.user.employee.region,
         )
         .order_by("material_id", "order_id", "id")
     )
-
-    # org bo‘yicha filter kerak bo‘lsa
-    # if org_id:
-    #     qs = qs.filter(order__sender__organization_id=org_id)
 
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
@@ -1247,13 +1275,14 @@ def reestr_post(request):
     qs = (
         OrderMaterial.objects
         .select_related("material", "order", "order__sender", "order__receiver", "order__technics")
-        .filter(order__date_creat__gte=date1, order__date_creat__lt=date2)
+        .filter(
+            order__date_creat__gte=date1,
+            order__date_creat__lt=date2,
+            order__sender__organization_id=org_id,
+            order__receiver__region=request.user.employee.region,
+        )
         .order_by("order__technics_id", "material_id", "order_id", "id")
     )
-
-    # Tashkilot bo‘yicha filter kerak bo‘lsa yoqing
-    if org_id:
-        qs = qs.filter(order__sender__organization_id=org_id)
 
     # Word shablon
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx"))

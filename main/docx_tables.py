@@ -1,9 +1,10 @@
 from docx.shared import Pt,Cm
-from docx.enum.table import  WD_TABLE_ALIGNMENT
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
+#Akt
 def fix_table_layout(table):
     table.autofit = False
     tbl = table._tbl
@@ -16,7 +17,7 @@ def fix_table_layout(table):
     layout.set(qn("w:type"), "fixed")
     tblPr.append(layout)
 
-
+#Akt width
 def set_col_width(cell, cm):
     twips = int(cm * 567)
     tc = cell._tc
@@ -30,13 +31,13 @@ def set_col_width(cell, cm):
     tcW.set(qn("w:type"), "dxa")
     tcPr.append(tcW)
 
-
+#Akt text
 def set_cell_text(cell, text, bold=False, center=False):
     cell.text = ""
     p = cell.paragraphs[0]
     run = p.add_run("" if text is None else str(text))
     run.font.name = "Times New Roman"
-    run.font.size = Pt(11)
+    run.font.size = Pt(8)
     run.bold = bold
 
     p.paragraph_format.space_before = Pt(0)
@@ -45,8 +46,9 @@ def set_cell_text(cell, text, bold=False, center=False):
 
     if center:
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
 
-
+#Akt
 def set_table_borders(table):
     tbl = table._tbl
     tblPr = tbl.tblPr
@@ -65,7 +67,7 @@ def set_table_borders(table):
 
     tblPr.append(borders)
 
-
+#Akt
 def force_tbl_grid(table, widths_cm):
     tbl = table._tbl
 
@@ -83,7 +85,6 @@ def force_tbl_grid(table, widths_cm):
     # ❗ tblGrid HAR DOIM tblPr DAN KEYIN turishi shart
     tbl.insert(1, tblGrid)
 
-##############################################################
 
 def replace_text(doc, replacements: dict):
     """
@@ -111,8 +112,8 @@ def replace_text(doc, replacements: dict):
                                 run.font.name = "Times New Roman"
                                 run.font.size = Pt(12)
 
-
-def create_table_10cols(doc, title, data, headers):
+#Akt table all
+def create_table_akt(doc, title, data, headers):
 
     widths = [1, 4, 3, 5, 2, 2, 4, 4, 3]
 
@@ -120,7 +121,7 @@ def create_table_10cols(doc, title, data, headers):
     r = h.add_run(title)
     r.bold = True
     r.font.name = "Times New Roman"
-    r.font.size = Pt(12)
+    r.font.size = Pt(10)
 
     table = doc.add_table(rows=1, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
@@ -172,7 +173,7 @@ def style_cell_paragraph(cell, bold=False, center=True, font_size=11):
             r.font.size = Pt(font_size)
             r.bold = bold
 
-
+#Dallatnoma table
 def create_table(doc, title, data, headers):
     if not data:
         return None, None
@@ -224,7 +225,7 @@ def create_table(doc, title, data, headers):
 
     return h, table
 
-#Svod
+#Svod table
 def create_table_cols_svod(doc, data, headers, grand_total=0):
     widths = [1, 7.5, 2, 2, 4, 4, 5.5, 2]
 
@@ -272,7 +273,7 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
 
     return table
 
-#Reestr
+#Reestr text
 def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=8):
     cell.text = ""
     p = cell.paragraphs[0]
@@ -288,9 +289,7 @@ def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=8):
     if center:
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
-
-from docx.enum.table import WD_TABLE_ALIGNMENT
-
+#Reestr table
 def create_table_cols_reestr(doc, data, grand_total=0):
     """
     data: har bir qator 14 ta qiymat (№ bu funksiyada qo‘shiladi)
