@@ -1023,13 +1023,9 @@ def akt_post(request):
 
     org = Organization.objects.filter(id=org_id).first() if org_id else None
     dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    emp = Employee.objects.filter(id=employee_id).first() if employee_id else None
+    sender = Employee.objects.filter(id=employee_id).first() if employee_id else None
 
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
-
-    employee = request.user.employee
-    rank_name = employee.rank.name if employee.rank else ""
-    receiver_text = f"{employee.full_name} ({rank_name})" if rank_name else (employee.full_name or "")
 
     ORG_TEXT = {
         "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
@@ -1056,7 +1052,7 @@ def akt_post(request):
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
         "RECEIVER": receiver_text,
-        "SENDER": emp.full_name if emp else "",
+        "SENDER": sender.full_name if sender else "",
         "DEPARTMENT": dep.name if dep else "",
     })
 
