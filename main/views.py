@@ -1278,21 +1278,28 @@ def reestr_post(request):
     date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
-    qs = (
-        OrderMaterial.objects
-        .select_related("material", "order", "order__sender", "order__receiver", "order__technics")
-        .filter(
-            order__date_creat__gte=date1,
-            order__date_creat__lt=date2,
-            order__sender__organization_id=org_id,
-            order__receiver__region=request.user.employee.region,
-        )
-        .order_by("order__technics_id", "material_id", "order_id", "id")
+    qs = OrderMaterial.objects.filter(
+        order__date_creat__gte=date1,
+        order__date_creat__lt=date2,
+        order__sender__organization_id=org_id,
+        order__receiver__region=request.user.employee.region,
     )
 
-    # Word shablon
+    org = Organization.objects.filter(id=org_id).first() if org_id else None
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx"))
-    replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
+
+    ORG_TEXT = {
+        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazini",
+        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
+        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
+        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
+    }
+    org_name = ORG_TEXT.get(org.org_type, "")
+
+    replace_text(doc, {
+        "ORGANIZATION":org_name,
+        "XUDUD": request.user.employee.region.name or "",
+    })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
