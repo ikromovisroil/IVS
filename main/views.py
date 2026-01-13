@@ -988,7 +988,6 @@ def akt_get(request):
         raise PermissionDenied
 
     context = {
-        'employees': Employee.objects.all(),
         'organizations': Organization.objects.all(),
         'departments': Department.objects.select_related('organization'),
         'directorate': Directorate.objects.select_related('department'),
