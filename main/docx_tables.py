@@ -274,7 +274,7 @@ def create_table_cols_svod(doc, data, headers, grand_total=0):
     return table
 
 #Reestr text
-def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=7):
+def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=6):
     cell.text = ""
     p = cell.paragraphs[0]
     run = p.add_run("" if text is None else str(text))
@@ -330,15 +330,15 @@ def create_table_cols_reestr(doc, data, grand_total=0):
 
     for col_idx, text in single.items():
         cell = h1[col_idx].merge(h2[col_idx])
-        set_cell_text_reestr(cell, text, bold=True, center=True, font_size=7)
+        set_cell_text_reestr(cell, text, bold=True, center=True, font_size=6)
         set_col_width(cell, widths[col_idx])
 
     # Guruhlangan header: Qurilmadan foydalanuvchi (7,8)
     grp = h1[7].merge(h1[8])
-    set_cell_text_reestr(grp, "Qurilmadan foydalanuvchi", bold=True, center=True, font_size=7)
+    set_cell_text_reestr(grp, "Qurilmadan foydalanuvchi", bold=True, center=True, font_size=6)
 
-    set_cell_text_reestr(h2[7], "F.I.Sh.", bold=True, center=True, font_size=8)
-    set_cell_text_reestr(h2[8], "Lavozimi", bold=True, center=True, font_size=8)
+    set_cell_text_reestr(h2[7], "F.I.Sh.", bold=True, center=True, font_size=6)
+    set_cell_text_reestr(h2[8], "Lavozimi", bold=True, center=True, font_size=6)
 
     set_col_width(h2[7], widths[7])
     set_col_width(h2[8], widths[8])
@@ -354,7 +354,7 @@ def create_table_cols_reestr(doc, data, grand_total=0):
             full.append("")
 
         for i, val in enumerate(full[:15]):
-            set_cell_text_reestr(cells[i], val, center=True, font_size=8)
+            set_cell_text_reestr(cells[i], val, center=True, font_size=6)
             set_col_width(cells[i], widths[i])
 
     # ✅ JAMI qatori: summa 6-ustunda (Umumiy qiymat)
@@ -366,12 +366,12 @@ def create_table_cols_reestr(doc, data, grand_total=0):
     for j in range(1, 6):   # 1..5
         merged = merged.merge(r[j])
 
-    set_cell_text_reestr(r[0], "J A M I:", bold=True, center=True, font_size=8)
-    set_cell_text_reestr(r[6], sum_value, bold=True, center=True, font_size=8)
+    set_cell_text_reestr(r[0], "J A M I:", bold=True, center=True, font_size=7)
+    set_cell_text_reestr(r[6], sum_value, bold=True, center=True, font_size=7)
 
     # qolgan ustunlar bo‘sh
     for k in range(7, 15):
-        set_cell_text_reestr(r[k], "", center=True, font_size=8)
+        set_cell_text_reestr(r[k], "", center=True, font_size=7)
 
     return table
 
