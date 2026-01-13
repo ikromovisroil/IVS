@@ -1294,8 +1294,7 @@ def reestr_post(request):
         "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
         "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
     }
-    org_name = ORG_TEXT.get(org.org_type, "")
-
+    org_name = ORG_TEXT.get(getattr(org, "org_type", None), "")
     replace_text(doc, {
         "ORGANIZATION":org_name,
         "XUDUD": request.user.employee.region.name or "",
