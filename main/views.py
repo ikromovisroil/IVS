@@ -890,6 +890,74 @@ def order_post(request):
 
 @never_cache
 @login_required
+def order_deed(request, pk):
+    order = get_object_or_404(Order, pk=pk)
+
+    sender = order.sender
+    dep = (
+        sender.division.name if sender.division else
+        sender.directorate.name if sender.directorate else
+        sender.department.name if sender.department else
+        sender.organization.name if sender.organization else ""
+    )
+
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+
+    replace_text(doc, {
+        "ID": str(order.id),
+        "RECEIVER": order.receiver.full_name or "",
+        "SENDER": order.sender.full_name or "",
+        "DEPARTMENT": dep,
+    })
+
+    target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
+    if not target:
+        return HttpResponse("TABLE topilmadi", status=500)
+
+    target.text = ""
+
+    headers = [
+        "№", "Qurilma Nomi", "Seriya", "Material",
+        "Soni", "Birligi", "F.I.Sh.", "Lavozimi", "Narxi"
+    ]
+
+    rows = []
+    for om in order.materials.all():
+        rows.append([
+            order.technics.name if order.technics else "",
+            order.technics.serial if order.technics else "",
+            om.material.name,
+            om.number,
+            om.material.unit or "dona",
+            sender.full_name,
+            sender.rank.name if sender.rank else "",
+            f"{om.material.price:,}".replace(",", " ") if om.material.price else ""
+        ])
+
+    h, table = create_table_akt(
+        doc,
+        "Biriktirilgan texnika bo‘yicha dalolatnoma",
+        rows,
+        headers
+    )
+
+    target._p.addnext(h._p)
+    h._p.addnext(table._tbl)
+
+    buffer = BytesIO()
+    doc.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    )
+    response["Content-Disposition"] = f'attachment; filename="order_{order.id}.docx"'
+    return response
+
+
+@never_cache
+@login_required
 def order_receiver(request):
     employee = request.user.employee
 

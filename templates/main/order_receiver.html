@@ -46,6 +46,11 @@
                             <span class="badge bg-danger text-white">Rad etildi</span>
                         {% endif %}
                     </div>
+                    {% if or.materials_all.exists and user.employee.status == "worker" %}
+                      {% if or.sender and or.receiver %}
+                         <a href="{% url 'order_deed' or.pk %}" data-download="true">📄 Fayl</a>
+                      {% endif %}
+                   {% endif %}
                   </div>
 
                   <div class="d-flex align-items-center">

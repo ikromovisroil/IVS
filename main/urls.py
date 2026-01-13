@@ -20,8 +20,9 @@ urlpatterns = [
     path("get-dep-employees/", get_department_employees, name="get_dep_employees"),
 
 
-    # DEED
+    # DEEDorder_deed
     path('deed_post/', deed_post, name='deed_post'),
+
 
     # TECHNICS
     path('technics/', technics, name='technics'),
@@ -58,6 +59,7 @@ urlpatterns = [
     path('order_sender/', order_sender, name='order_sender'),
     path('order_receiver/', order_receiver, name='order_receiver'),
     path('order_post/', order_post, name='order_post'),
+    path('order_deed/<int:pk>/', order_deed, name='order_deed'),
     path('ordermaterial_post/', ordermaterial_post, name='ordermaterial_post'),
     path('order/finish/<int:pk>/', order_finish, name='order_finish'),
     path('order/rejected/<int:pk>/', order_rejected, name='order_rejected'),
