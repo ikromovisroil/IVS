@@ -28,7 +28,6 @@
                           <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
                         </select>
                     </div>
-
                     <div class="col-md-3">
                         <label for="employee" class="form-label">Xodim</label>
                         <select id="employee" name="employee" class="form-select">
@@ -65,7 +64,6 @@
                     <th scope="col">Nomi</th>
                     <th scope="col">I/N</th>
                     <th scope="col">S/N</th>
-                    <th scope="col">Soni</th>
                     <th scope="col">Yili</th>
                   </tr>
                 </thead>
@@ -76,7 +74,6 @@
                     <td>({{tex.category.name|default:"-"}}) {{tex.name|default:"-"}}</td>
                     <td>{{tex.inventory|default:"-"}}</td>
                     <td>{{tex.serial|default:"-"}}</td>
-                    <td>{{tex.number|default:"-"}}</td>
                     <td>{{tex.year|default:"-"}}</td>
                   </tr>
                 {% endfor %}
