@@ -438,24 +438,23 @@ def deedconsent_action(request, pk):
 @never_cache
 @login_required
 def barn(request):
-    employees_boss = Employee.objects.filter(organization__org_type='IVS',is_boss=True)
+    emp_id = (request.GET.get("employee") or "").strip()
+    status = (request.GET.get("status") or "").strip() or "free"
 
-    # GET'dan kelgan xodim ID (select2 dan)
-    emp_id = request.GET.get("employee", "").strip()
+    technics_qs = Technics.objects.filter(status=status)
+    material_qs = Material.objects.filter(status=status)
+
     if emp_id:
-        technics_qs = Technics.objects.filter(employee__id=emp_id)
-        material_qs = Material.objects.filter(employee__id=emp_id)
-    else:
-        technics_qs = Technics.objects.filter(status='free')
-        material_qs = Material.objects.filter(status='free')
+        technics_qs = technics_qs.filter(employee_id=emp_id)
+        material_qs = material_qs.filter(employee_id=emp_id)
 
     context = {
-        "employees_boss": employees_boss,  # select uchun
-        "technics": technics_qs,  # jadval
-        "material": material_qs,  # jadval
+        "employees_boss": Employee.objects.filter(organization__org_type='IVS',is_boss=True),
+        "technics": technics_qs,
+        "material": material_qs,
     }
-
     return render(request, 'main/barn.html', context)
+
 
 
 @never_cache
@@ -1275,6 +1274,7 @@ def reestr_get(request):
 def reestr_post(request):
     if request.method != "POST":
         return redirect("document_get")
+    user = request.user.employee
 
     org_id = request.POST.get("organization")
     date_id1 = request.POST.get("date1")

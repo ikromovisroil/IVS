@@ -19,6 +19,16 @@
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
                     <div class="col-md-3">
+                        <label for="status" class="form-label">Xolati</label>
+                        <select id="status" name="status" class="form-select">
+                             <option value="">Tanlang...</option>
+                             <option value="active">Aktiv</option>
+                             <option value="free">Bo'sh</option>
+                             <option value="repair">Ta’mirda</option>
+                             <option value="defect">Brak</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
                         <label for="employee" class="form-label">Xodim</label>
                         <select id="employee" name="employee" class="form-select">
                             <option value="">Tanlang...</option>
@@ -89,10 +99,10 @@
                   <tr>
                     <th scope="col">#</th>
                     <th scope="col">Material Nomi</th>
-                    <th scope="col">I/N</th>
                     <th scope="col">Soni</th>
                     <th scope="col">Narxi</th>
                     <th scope="col">Qiymati</th>
+                    <th scope="col">1C code</th>
                   </tr>
                 </thead>
                 <tbody id="materialBody">
@@ -100,10 +110,10 @@
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
                     <td>{{mat.name|default:"-"|truncatechars:50}}</td>
-                    <td>{{mat.inventory|default:"-"}}</td>
                     <td>{{mat.number|default:"-"}}</td>
                     <td>{{mat.price|default:"-"}}</td>
                     <td>{{mat.unit|default:"-"}}</td>
+                    <td>{{mat.code|default:"-"}}</td>
                   </tr>
                 {% endfor %}
                 </tbody>
