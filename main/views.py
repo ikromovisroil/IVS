@@ -934,7 +934,10 @@ def order_deed(request, pk):
     replace_text(doc, {
         "ID": f"№ {order.id}",
         "ORGANIZATION": org_name,
-        "RECEIVER": order.receiver.full_name if order.receiver else "",
+        "RECEIVER": (f"{order.receiver.full_name} ({order.receiver.rank.name})"
+                        if order.receiver and order.receiver.rank
+                        else (order.receiver.full_name if order.receiver else "")
+                    ),
         "SENDER": sender_text,
         "SANA": date.today().strftime("%d.%m.%Y"),
         "DEPARTMENT": dep,
