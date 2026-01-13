@@ -894,29 +894,48 @@ def order_deed(request, pk):
     order = get_object_or_404(Order, pk=pk)
 
     sender = order.sender
+
     dep = (
-        sender.division.name if sender.division else
-        sender.directorate.name if sender.directorate else
-        sender.department.name if sender.department else
-        sender.organization.name if sender.organization else ""
+        sender.division.name if sender and sender.division else
+        sender.directorate.name if sender and sender.directorate else
+        sender.department.name if sender and sender.department else
+        sender.organization.name if sender and sender.organization else ""
     )
 
+    emp_sen = (
+        Employee.objects.filter(
+            Q(organization=sender.organization) |
+            Q(department=sender.department) |
+            Q(directorate=sender.directorate) |
+            Q(division=sender.division),
+            is_boss=True
+        )
+        .select_related("rank")
+        .first()
+    )
+
+    sender_text = ""
+    if emp_sen:
+        rank = emp_sen.rank.name if emp_sen.rank else ""
+        sender_text = f"{emp_sen.full_name} ({rank})" if rank else emp_sen.full_name
 
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+
     ORG_TEXT = {
         "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
         "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
         "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
         "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
     }
+
     org_type = getattr(getattr(sender, "organization", None), "org_type", None)
     org_name = ORG_TEXT.get(org_type, "")
 
     replace_text(doc, {
         "ID": f"№ {order.id}",
         "ORGANIZATION": org_name,
-        "RECEIVER": order.receiver.full_name or "",
-        "SENDER": order.sender.full_name or "",
+        "RECEIVER": order.receiver.full_name if order.receiver else "",
+        "SENDER": sender_text,
         "SANA": date.today().strftime("%d.%m.%Y"),
         "DEPARTMENT": dep,
     })
@@ -924,33 +943,24 @@ def order_deed(request, pk):
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
         return HttpResponse("TABLE topilmadi", status=500)
-
     target.text = ""
 
-    headers = [
-        "№", "Qurilma Nomi", "Seriya", "Material",
-        "Soni", "Birligi", "F.I.Sh.", "Lavozimi", "Narxi"
-    ]
+    headers = ["№", "Qurilma Nomi", "Seriya", "Material", "Soni", "Birligi", "F.I.Sh.", "Lavozimi", "Narxi"]
 
     rows = []
     for om in order.materials.all():
         rows.append([
             order.technics.name if order.technics else "",
             order.technics.serial if order.technics else "",
-            om.material.name,
-            om.number,
-            om.material.unit or "dona",
-            sender.full_name,
-            sender.rank.name if sender.rank else "",
-            f"{om.material.price:,}".replace(",", " ") if om.material.price else ""
+            om.material.name if om.material else "",
+            om.number or "",
+            (om.material.unit if om.material and om.material.unit else "dona"),
+            sender.full_name if sender else "",
+            (sender.rank.name if sender and sender.rank else ""),
+            (f"{om.material.price:,}".replace(",", " ") if om.material and om.material.price else ""),
         ])
 
-    h, table = create_table_akt(
-        doc,
-        "Biriktirilgan texnika bo‘yicha dalolatnoma",
-        rows,
-        headers
-    )
+    h, table = create_table_akt(doc, "Biriktirilgan texnika bo‘yicha dalolatnoma", rows, headers)
 
     target._p.addnext(h._p)
     h._p.addnext(table._tbl)
