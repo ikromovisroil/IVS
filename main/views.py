@@ -904,9 +904,9 @@ def order_deed(request, pk):
 
     emp_sen = (
         Employee.objects.filter(
-            Q(organization=sender.organization) |
-            Q(department=sender.department) |
-            Q(directorate=sender.directorate) |
+            Q(organization=sender.organization) &
+            Q(department=sender.department) &
+            Q(directorate=sender.directorate) &
             Q(division=sender.division),
             is_boss=True
         )
