@@ -90,15 +90,15 @@ def create_overlay_pdf(original_pdf_path: str,text: str,qr_link: str,overlay_pat
 
     # Imzo matni (yuqori chap)
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(20, height - 30, text)
+    c.drawString(10, height - 20, text)
 
     # QR (pastki markaz)
-    qr_size = 80
+    qr_size = 70
     x_center = (width - qr_size) / 2
     c.drawImage(
         qr_png,
         x_center,
-        20,
+        0,
         width=qr_size,
         height=qr_size,
         mask="auto"
