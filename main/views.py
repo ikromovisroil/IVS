@@ -1134,28 +1134,34 @@ def svod_post(request):
     if request.method != "POST":
         return redirect("document_get")
 
-    org_id = request.POST.get("organizator")
+    org_id = request.POST.get("organization")
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
 
     date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
-    qs = (
-        OrderMaterial.objects
-        .select_related("material", "order", "order__sender")
-        .filter(
-            order__date_creat__gte=date1,
-            order__date_creat__lt=date2,
-            order__sender__organization_id=org_id,
-            order__receiver__region=request.user.employee.region,
-        )
-        .order_by("material_id", "order_id", "id")
+    qs = OrderMaterial.objects.filter(
+        order__date_creat__gte=date1,
+        order__date_creat__lt=date2,
+        order__sender__organization_id=org_id,
+        order__receiver__region=request.user.employee.region,
     )
 
+    org = Organization.objects.filter(id=org_id).first() if org_id else None
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
-    replace_text(doc, {"RECEIVER": request.user.employee.full_name or ""})
+    ORG_TEXT = {
+        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazini",
+        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
+        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
+        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
+    }
+    org_name = ORG_TEXT.get(getattr(org, "org_type", None), "")
+    replace_text(doc, {
+        "ORGANIZATION": org_name,
+        "SANA": date.today().strftime("%d.%m.%Y"),
+    })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
