@@ -439,14 +439,22 @@ def deedconsent_action(request, pk):
 @login_required
 def barn(request):
     emp_id = (request.GET.get("employee") or "").strip()
-    status = (request.GET.get("status") or "").strip() or "free"
+    status = (request.GET.get("status") or "").strip()
 
-    technics_qs = Technics.objects.filter(status=status)
-    material_qs = Material.objects.filter(status=status)
+    technics_qs = Technics.objects.none()
+    material_qs = Material.objects.none()
 
-    if emp_id:
-        technics_qs = technics_qs.filter(employee_id=emp_id)
-        material_qs = material_qs.filter(employee_id=emp_id)
+    if emp_id or status:
+        technics_qs = Technics.objects.all()
+        material_qs = Material.objects.all()
+
+        if status:
+            technics_qs = technics_qs.filter(status=status)
+            material_qs = material_qs.filter(status=status)
+
+        if emp_id:
+            technics_qs = technics_qs.filter(employee_id=emp_id)
+            material_qs = material_qs.filter(employee_id=emp_id)
 
     context = {
         "employees_boss": Employee.objects.filter(organization__org_type='IVS',is_boss=True),
