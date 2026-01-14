@@ -13,7 +13,7 @@
 <main id="main" class="main">
 
     <div class="pagetitle">
-      <h1>Zayafkalar</h1>
+      <h1>Arizalar</h1>
     </div>
 
     <section class="section faq">
@@ -47,7 +47,7 @@
                         {% endif %}
                     </div>
                     {% if or.materials_all.exists and user.employee.status == "worker" %}
-                      {% if or.sender and or.receiver %}
+                      {% if or.receiver %}
                          <a href="{% url 'order_deed' or.pk %}" data-download="true">📄 Fayl</a>
                       {% endif %}
                    {% endif %}
@@ -108,6 +108,9 @@
                             <div class="col-6 text-muted">Muallif</div>
                             <div class="col-6">{{ or.sender.full_name }}</div>
 
+                            <div class="col-6 text-muted">Muallif nomeri</div>
+                            <div class="col-6">{{ or.sender.phone }}</div>
+
                             <div class="col-6 text-muted">Bajaruvchi</div>
                             <div class="col-6">
                                 {% if or.receiver %}
@@ -132,7 +135,7 @@
                                 {% if or.technics %}
                                     {{ or.technics.name }}
                                 {% else %}
-                                    {% if or.status != 'rejected' %}
+                                    {% if or.receiver == request.user.employee and or.status in "viewed,accepted,finished" %}
                                     <select class="form-select" name="technics_id">
                                         <option value="">— Tanlang —</option>
                                         {% for te in or.sender.technics_set.all %}
@@ -143,10 +146,10 @@
                                 {% endif %}
                             </div>
 
-                            <div class="col-6 text-muted">Mavzu</div>
+                            <div class="col-6 text-muted">Ariza turi</div>
                             <div class="col-6">{{ or.goal.topic.name }}</div>
 
-                            <div class="col-6 text-muted">Maqsad</div>
+                            <div class="col-6 text-muted">Ariza Maqsadi</div>
                             <div class="col-6">{{ or.goal.name }}</div>
 
                             <div class="col-6 text-muted">Izoh</div>
@@ -166,7 +169,7 @@
                         <!-- MATERIALS -->
                         <div class="card-title d-flex justify-content-between align-items-center">
                             <h4>Materiallar</h4>
-                            {% if or.status != 'rejected' %}
+                            {% if or.receiver == request.user.employee and or.status in "viewed,accepted,finished" %}
                             <button type="button" class="btn btn-success" onclick="addMaterialRow({{ or.id }})">
                                 + Material qo‘shish
                             </button>
@@ -268,12 +271,12 @@
                         </div>
 
                     </div>
-
+                    {% if or.status in "viewed,accepted,finished" %}
                     <div class="modal-footer d-flex justify-content-center gap-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
                         <button type="submit" class="btn btn-primary">Saqlash</button>
                     </div>
-
+                    {% endif %}
                   </form>
                 </div>
             </div>
