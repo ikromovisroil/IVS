@@ -20,7 +20,7 @@
         <div class="row">
 
             {% for or in order %}
-            <div class="col-xxl-4 col-md-6">
+            <div class="col-xxl-3 col-md-3">
               <div class="card info-card sales-card">
                 <div class="card-body">
 
@@ -46,7 +46,7 @@
                             <span class="badge bg-danger text-white">Rad etildi</span>
                         {% endif %}
                     </div>
-                    {% if or.materials_all.exists and user.employee.status == "worker" %}
+                    {% if or.materials_all.exists and user.employee.organization.org_type == "IVS" %}
                       {% if or.sender and or.receiver %}
                          <a href="{% url 'order_deed' or.pk %}" data-download="true">📄 Fayl</a>
                       {% endif %}
@@ -59,9 +59,9 @@
                     </div>
                   </div>
 
-                  <div class="card-title d-flex justify-content-between align-items-center">
-                    <h5>{{ or.date_creat|date:"d.m.Y, H:i" }}</h5>
-                    <div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">{{ or.date_creat|date:"d.m.Y, H:i" }}</h6>
+                    <div class="mb-0">
                         {% if or.rating %}
                            {% for i in ""|center:or.rating %} ⭐ {% endfor %}
                         {% endif %}
@@ -90,7 +90,7 @@
 
             <!-- MAIN MODAL -->
             <div class="modal fade" id="modal-{{ or.id }}" tabindex="-1">
-                <div class="modal-dialog modal-dialog-scrollable modal-xl">
+                <div class="modal-dialog modal-dialog-scrollable modal-lg">
 
                   <form class="modal-content" action="{% url 'ordermaterial_post' %}" method="post">
                     {% csrf_token %}
@@ -138,7 +138,7 @@
                                 {% if or.technics %}
                                     {{ or.technics.name }}
                                 {% else %}
-                                    {% if or.status != 'rejected' %}
+                                    {% if or.status == 'viewed' or or.status == 'accepted' %}
                                     <select class="form-select" name="technics_id">
                                         <option value="">— Tanlang —</option>
                                         {% for te in or.sender.technics_set.all %}
@@ -172,7 +172,7 @@
                         <!-- MATERIALS -->
                         <div class="card-title d-flex justify-content-between align-items-center">
                             <h4>Materiallar</h4>
-                            {% if or.status != 'rejected' %}
+                            {% if or.status == 'viewed' or or.status == 'accepted' %}
                             <button type="button" class="btn btn-success" onclick="addMaterialRow({{ or.id }})">
                                 + Material qo‘shish
                             </button>
@@ -274,12 +274,12 @@
                         </div>
 
                     </div>
-
+                    {% if or.status == 'viewed' or or.status == 'accepted' %}
                     <div class="modal-footer d-flex justify-content-center gap-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
                         <button type="submit" class="btn btn-primary">Saqlash</button>
                     </div>
-
+                    {% endif %}
                   </form>
                 </div>
             </div>

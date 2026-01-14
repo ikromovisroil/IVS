@@ -118,7 +118,7 @@
         <div class="row">
 
             {% for or in order %}
-            <div class="col-xxl-4 col-md-6">
+            <div class="col-xxl-3 col-md-4">
               <div class="card info-card sales-card">
 
                 <div class="card-body">
@@ -148,10 +148,6 @@
                             <span class="badge bg-danger text-white">Rad etildi</span>
                         {% endif %}
                     </div>
-
-                    {% if or.materials_all.exists and user.employee.status == "worker" %}
-                      <a href="#">📄 Fayl</a>
-                    {% endif %}
                   </div>
 
                   <!-- INFO -->
@@ -161,9 +157,9 @@
                     </div>
                   </div>
 
-                  <div class="card-title d-flex justify-content-between align-items-center">
-                    <h5>{{ or.date_creat|date:"d.m.Y, H:i" }}</h5>
-                    <div>
+                  <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">{{ or.date_creat|date:"d.m.Y, H:i" }}</h6>
+                    <div class="mb-0">
                         {% if or.rating %}
                            {% for i in ""|center:or.rating %} ⭐ {% endfor %}
                         {% endif %}
@@ -217,7 +213,7 @@
               </div><!-- End Vertically centered Modal-->
             <!-- ================= MODAL ================= -->
             <div class="modal fade" id="modal-{{ or.id }}" tabindex="-1">
-                <div class="modal-dialog modal-dialog-scrollable modal-xl">
+                <div class="modal-dialog modal-dialog-scrollable modal-lg">
                   <div class="modal-content">
 
                     <div class="modal-header">
