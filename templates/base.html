@@ -333,7 +333,7 @@
         </li>
 
 
-        {% if request.user.employee.organization.org_type == "IMV" %}
+        {% if request.user.employee.status == "client" %}
         <!-- CLIENT — ZAYAFKA YUBORISH -->
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'order_sender' %}collapsed{% endif %}"
@@ -345,7 +345,7 @@
         {% endif %}
 
 
-        {% if request.user.employee.organization.org_type == "IVS" %}
+        {% if request.user.employee.status == "worker" %}
 
         <!-- WORKER — ZAYAFKALAR -->
         <li class="nav-item">
