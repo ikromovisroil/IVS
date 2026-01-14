@@ -20,7 +20,7 @@
         <div class="row">
 
             {% for or in order %}
-            <div class="col-xxl-3 col-md-3">
+            <div class="col-xxl-3 col-md-4">
               <div class="card info-card sales-card">
                 <div class="card-body">
 
@@ -46,7 +46,7 @@
                             <span class="badge bg-danger text-white">Rad etildi</span>
                         {% endif %}
                     </div>
-                    {% if or.materials_all.exists and user.employee.organization.org_type == "IVS" %}
+                    {% if or.materials_all.exists and user.employee.status == "worker" %}
                       {% if or.sender and or.receiver %}
                          <a href="{% url 'order_deed' or.pk %}" data-download="true">📄 Fayl</a>
                       {% endif %}
@@ -132,7 +132,7 @@
                                 {% if or.technics %}
                                     {{ or.technics.name }}
                                 {% else %}
-                                    {% if or.status == 'viewed' or or.status == 'accepted' %}
+                                    {% if or.status != 'rejected' %}
                                     <select class="form-select" name="technics_id">
                                         <option value="">— Tanlang —</option>
                                         {% for te in or.sender.technics_set.all %}
@@ -166,7 +166,7 @@
                         <!-- MATERIALS -->
                         <div class="card-title d-flex justify-content-between align-items-center">
                             <h4>Materiallar</h4>
-                            {% if or.status == 'viewed' or or.status == 'accepted' %}
+                            {% if or.status != 'rejected' %}
                             <button type="button" class="btn btn-success" onclick="addMaterialRow({{ or.id }})">
                                 + Material qo‘shish
                             </button>
@@ -268,12 +268,12 @@
                         </div>
 
                     </div>
-                    {% if or.status == 'viewed' or or.status == 'accepted' %}
+
                     <div class="modal-footer d-flex justify-content-center gap-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
                         <button type="submit" class="btn btn-primary">Saqlash</button>
                     </div>
-                    {% endif %}
+
                   </form>
                 </div>
             </div>
