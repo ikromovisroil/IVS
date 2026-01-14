@@ -20,6 +20,9 @@ from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
 from django.db import transaction
+from .forms import *
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
 
 def global_data(request):
     return {
@@ -36,13 +39,49 @@ def home(request):
 @never_cache
 @login_required
 def profil(request):
-    if request.user.is_authenticated:
-        context = {
-            'employee': request.user.employee,
-        }
-        return render(request, 'main/profil.html', context)
-    else:
-        raise PermissionDenied
+    employee = request.user.employee
+    user = request.user
+
+    emp_form = EmployeeProfileForm(instance=employee)
+    email_form = UserEmailForm(instance=user)
+    pwd_form = StyledPasswordChangeForm(user=user)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "edit_profile":
+            emp_form = EmployeeProfileForm(request.POST, instance=employee)
+            email_form = UserEmailForm(request.POST, instance=user)
+
+            if emp_form.is_valid() and email_form.is_valid():
+                emp_form.save()
+                email_form.save()
+                messages.success(request, "Profil muvaffaqiyatli yangilandi")
+                return redirect("profil")
+            else:
+                messages.info(request, "Maydonlarda xatolik bor. Qayta tekshiring")
+        elif action == "change_password":
+            pwd_form = StyledPasswordChangeForm(user=user, data=request.POST)
+
+            if pwd_form.is_valid():
+                pwd_form.save()
+                # foydalanuvchi sessiyasi saqlanib qolsin
+                update_session_auth_hash(request, pwd_form.user)
+
+                messages.success(request, "Parol muvaffaqiyatli o‘zgartirildi")
+                return redirect("profil")
+            else:
+                messages.info(request, "Parolni o‘zgartirishda xatolik")
+
+        else:
+            messages.info(request, "Noto‘g‘ri so‘rov")
+            return redirect("profil")
+    context = {
+        "employee": employee,
+        "emp_form": emp_form,
+        "email_form": email_form,
+        "pwd_form": pwd_form,
+    }
+    return render(request, "main/profil.html", context)
 
 
 @never_cache
