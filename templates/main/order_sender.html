@@ -15,9 +15,9 @@
 <main id="main" class="main">
 
     <div class="pagetitle">
-        <div class="card-title d-flex justify-content-between align-items-center">
+        <div class="d-flex justify-content-between align-items-center">
              <h1>Zayafkalar</h1>
-            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">Zayafka Yuborish</button>
+             <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">Zayafka Yuborish</button>
         </div>
     </div>
 
@@ -150,13 +150,6 @@
                     </div>
                   </div>
 
-                  <!-- INFO -->
-                  <div class="d-flex align-items-center">
-                    <div class="ps-3">
-                      <h5>{{ or.body }}</h5>
-                    </div>
-                  </div>
-
                   <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0">{{ or.date_creat|date:"d.m.Y, H:i" }}</h6>
                     <div class="mb-0">
@@ -213,7 +206,7 @@
               </div><!-- End Vertically centered Modal-->
             <!-- ================= MODAL ================= -->
             <div class="modal fade" id="modal-{{ or.id }}" tabindex="-1">
-                <div class="modal-dialog modal-dialog-scrollable modal-lg">
+                <div class="modal-dialog modal-dialog-scrollable modal-xl">
                   <div class="modal-content">
 
                     <div class="modal-header">
