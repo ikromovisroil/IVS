@@ -525,7 +525,6 @@ def technics(request, slug=None):
     if not emp or emp.status != "worker":
         raise PermissionDenied
 
-
     # 1️⃣ CATEGORY FILTER
     category = None
     if slug:
@@ -533,7 +532,22 @@ def technics(request, slug=None):
 
     technics_qs = (
         Technics.objects
-        .select_related("category", "employee", "employee__user", "employee__rank")
+        .select_related(
+            "category", "employee", "employee__user", "employee__rank",
+            "employee__organization", "employee__department",
+            "employee__directorate", "employee__division"
+        )
+        .only(
+            "id", "name",
+            "category__id", "category__name",
+            "employee__id", "employee__first_name", "employee__last_name",
+            "employee__user__id",
+            "employee__rank__id", "employee__rank__name",
+            "employee__organization__id", "employee__organization__name",
+            "employee__department__id", "employee__department__name",
+            "employee__directorate__id", "employee__directorate__name",
+            "employee__division__id", "employee__division__name",
+        )
     )
 
     if category:
@@ -560,10 +574,8 @@ def technics(request, slug=None):
     if div_id:
         technics_qs = technics_qs.filter(employee__division_id=div_id)
 
-
     # 4️⃣ TEXNIKALAR SONI
     total_count = technics_qs.count()
-
 
     # 5️⃣ XODIM BO‘YICHA GURUHLASH (⚡ juda tez)
     grouped = defaultdict(list)
@@ -579,7 +591,6 @@ def technics(request, slug=None):
         else:
             grouped[None].append(t)  # “biriktirilmagan texnika” guruhi
 
-
     # 6️⃣ FILTER SELECTLAR — OPTIMALLASHTIRILGAN
     organizations = Organization.objects.only("id", "name")
 
@@ -594,7 +605,6 @@ def technics(request, slug=None):
     divisions = Division.objects.select_related("directorate").only(
         "id", "name", "directorate_id"
     )
-
 
     # 7️⃣ CONTEXT
     context = {
@@ -614,7 +624,6 @@ def technics(request, slug=None):
         "selected_dir": dir_id,
         "selected_div": div_id,
     }
-
     return render(request, "main/technics.html", context)
 
 
