@@ -146,7 +146,7 @@
                 </button>
 
                 <!-- MODAL -->
-                {% if d.sender.user != user and d.status == 'viewed' %}
+                {% if d.status == 'viewed' %}
                     {% if d.receiver.user == user and d.status == 'viewed' %}
                     <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
