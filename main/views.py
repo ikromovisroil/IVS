@@ -109,7 +109,6 @@ def index(request):
 def contact(request):
     context = {
         'employee': Employee.objects.select_related('user')
-        .exclude(user=request.user)
         .select_related("rank","organization","department","directorate","division")
     }
     return render(request, 'main/contact.html', context)
