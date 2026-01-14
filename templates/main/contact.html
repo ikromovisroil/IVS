@@ -33,7 +33,7 @@
                              data-id="{{emp.id}}"
                              data-name="{{ emp.full_name }}"
                              data-slug="{{ emp.slug }}">
-                             {{ emp.rank|default:"" }} — {{ emp.full_name }}
+                             <b>{{ emp.full_name }}</b><br><i class="small text-muted">{{emp.rank}}</i>
                         </div>
                     {% endfor %}
                 </div>
