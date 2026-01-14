@@ -508,9 +508,12 @@ def barn(request):
             material_qs = material_qs.filter(employee_id=emp_id)
 
     context = {
+        "organization": Organization.objects.all(),
         "employees_boss": Employee.objects.filter(organization__org_type='IVS',is_boss=True),
         "technics": technics_qs,
         "material": material_qs,
+        "technics_form": TechnicsForm(),
+        "material_form": MaterialForm(),
     }
     return render(request, 'main/barn.html', context)
 
@@ -625,6 +628,25 @@ def technics(request, slug=None):
         "selected_div": div_id,
     }
     return render(request, "main/technics.html", context)
+
+
+@login_required
+def technics_create(request):
+    form = TechnicsForm(request.POST)
+
+    if form.is_valid():
+        form.save()
+
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+@login_required
+def material_create(request):
+    form = MaterialForm(request.POST)
+
+    if form.is_valid():
+        form.save()
+
+    return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
 @never_cache

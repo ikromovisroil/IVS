@@ -55,7 +55,12 @@
         <div class="col-lg-12">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Texnikalar</h5>
+              <div class="d-flex justify-content-between align-items-center">
+                 <h5 class="card-title">Texnikalar</h5>
+                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
+                 Texnika qo'shish
+                 </button>
+              </div>
               <!-- Table with stripped rows -->
               <table class="table datatable">
                 <thead>
@@ -85,13 +90,109 @@
         </div>
       </div>
     </section>
+    <div class="modal fade" id="verticalycentered" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form class="modal-content" method="post" action="{% url 'technics_create' %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Texnika qo‘shish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.category }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.organization }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Xodim</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.employee }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Xolati</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.status }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.name }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.parametr }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Inventar</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.inventory }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.serial }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Mac</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.mac }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Ip</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.ip }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.year }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.price }}
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
 
     <section class="section">
       <div class="row">
         <div class="col-lg-12">
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Materiallar</h5>
+              <div class="d-flex justify-content-between align-items-center">
+                 <h5 class="card-title">Material</h5>
+                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#vertical">
+                     Material qo'shish
+                 </button>
+              </div>
               <!-- Table with stripped rows -->
               <table class="table datatable">
                 <thead>
@@ -123,6 +224,72 @@
         </div>
       </div>
     </section>
+    <div class="modal fade" id="vertical" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form class="modal-content" method="post" action="{% url 'material_create' %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Material qo‘shish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Xodim</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.employee }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Xolati</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.status }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.name }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">1C code</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.code }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Soni</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.number }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.unit }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.price }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.year }}
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
 </main>
 

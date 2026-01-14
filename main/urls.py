@@ -7,6 +7,8 @@ urlpatterns = [
     path('profil/', profil, name='profil'),
     path('index/', index, name='index'),
     path('barn/', barn, name='barn'),
+    path("barn/technics_create/", technics_create, name="technics_create"),
+    path("barn/material_create/", material_create, name="material_create"),
 
     # NOTIFIKATSIYA
     path('deed/seen/', deed_mark_seen, name="deed_mark_seen"),
@@ -27,6 +29,7 @@ urlpatterns = [
     # TECHNICS
     path('technics/', technics, name='technics'),
     path('technics/<slug:slug>/', technics, name='technics'),
+
 
     # FILTER AJAX
     path('ajax/load-departments/', ajax_load_departments, name='ajax_load_departments'),

@@ -220,7 +220,7 @@ class Technics(models.Model):
         ('free', "Bo'sh"),
         ('repair', 'Ta’mirda'),
         ('defect', 'Brak')
-    ], default='active',db_index=True)
+    ], default='free',db_index=True)
     name = models.CharField(max_length=100)
     parametr = models.CharField(max_length=100,null=True,blank=True)
     inventory = models.CharField(max_length=50,null=True,blank=True)

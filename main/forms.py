@@ -1,7 +1,6 @@
 from django import forms
-from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
-from .models import Employee
+from .models import *
 
 
 class EmployeeProfileForm(forms.ModelForm):
@@ -42,3 +41,49 @@ class StyledPasswordChangeForm(PasswordChangeForm):
             "class": "form-control",
             "placeholder": "Yangi parolni qayta kiriting",
         })
+
+
+class TechnicsForm(forms.ModelForm):
+    class Meta:
+        model = Technics
+        fields = [
+            "category", "organization", "employee", "status",
+            "name", "parametr", "inventory", "serial",
+            "mac", "ip", "year", "price"
+        ]
+        widgets = {
+            "category": forms.Select(attrs={"class": "form-select", "required": True}),
+            "organization": forms.Select(attrs={"class": "form-select", "required": True}),
+            "employee": forms.Select(attrs={"class": "form-select"}),
+            "status": forms.Select(attrs={"class": "form-select", "required": True}),
+
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
+            "parametr": forms.TextInput(attrs={"class": "form-control", "placeholder": "parametr"}),
+            "inventory": forms.TextInput(attrs={"class": "form-control", "placeholder": "inventory"}),
+            "serial": forms.TextInput(attrs={"class": "form-control", "placeholder": "serial"}),
+            "mac": forms.TextInput(attrs={"class": "form-control", "placeholder": "mac"}),
+            "ip": forms.TextInput(attrs={"class": "form-control", "placeholder": "ip"}),
+            "year": forms.TextInput(attrs={"class": "form-control", "placeholder": "yili"}),
+            "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "narxi"}),
+        }
+
+
+class MaterialForm(forms.ModelForm):
+    class Meta:
+        model = Material
+        fields = [
+            "employee", "status",
+            "name", "code", "number", "unit",
+            "price", "year"
+        ]
+        widgets = {
+            "employee": forms.Select(attrs={"class": "form-select"}),
+            "status": forms.Select(attrs={"class": "form-select", "required": True}),
+
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
+            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "code"}),
+            "number": forms.NumberInput(attrs={"class": "form-control", "placeholder": "number", "required": True}),
+            "unit": forms.TextInput(attrs={"class": "form-control", "placeholder": "unit", "required": True}),
+            "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "price", "required": True}),
+            "year": forms.TextInput(attrs={"class": "form-control", "placeholder": "year"}),
+        }
