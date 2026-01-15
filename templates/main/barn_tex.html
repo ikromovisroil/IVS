@@ -84,7 +84,7 @@
               </div>
 
               <!-- ✅ datatable class olib tashlandi -->
-              <table class="table datatable">
+              <table class="table">
                 <thead>
                   <tr>
                     <th scope="col">#</th>
@@ -136,6 +136,10 @@
                           </ul>
                         </div>
                       </td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="6" class="text-center py-4">Texnika topilmadi</td>
                     </tr>
                   {% endfor %}
                 </tbody>
