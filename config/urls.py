@@ -22,8 +22,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    # ADMIN PANEL
-    path('admin/', admin.site.urls),
+    # ADMIN PAN
+    path('ivc_service_admin_panel/', admin.site.urls),
 
     # MAIN SITE
     path("", include("main.urls")),
