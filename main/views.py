@@ -485,39 +485,58 @@ def deedconsent_action(request, pk):
     messages.error(request, "Noto‘g‘ri amal")
     return redirect(redirect_url)
 
-
+from django.core.paginator import Paginator
 @never_cache
 @login_required
 def barn_tex(request):
     status = (request.GET.get("status") or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
     category_id = (request.GET.get("category") or "").strip()
+    page_number = request.GET.get("page", 1)
 
-    technics_qs = Technics.objects.none()
+    # Bazaviy QS (tezroq)
+    qs = (
+        Technics.objects
+        .select_related("organization", "category", "employee")
+        .order_by("-id")
+    )
 
-    if status or organization_id or category_id:
-        technics_qs = (
-            Technics.objects
-            .select_related("organization", "category")
-            .order_by("-id")
-        )
+    # Filterlar
+    if organization_id:
+        qs = qs.filter(organization_id=organization_id)
 
-        # ✅ FK larni *_id bilan filter qil
-        if organization_id:
-            technics_qs = technics_qs.filter(organization_id=organization_id)
+    if status:
+        qs = qs.filter(status=status)
 
-        if status:
-            technics_qs = technics_qs.filter(status=status)
+    if category_id:
+        qs = qs.filter(category_id=category_id)
 
-        if category_id:
-            technics_qs = technics_qs.filter(category_id=category_id)
+    # Agar filter tanlanmasa — bo‘sh ko‘rsat (siz oldin shunaqa qilgansiz)
+    if not (status or organization_id or category_id):
+        qs = Technics.objects.none()
+
+    # ✅ 100 tadan pagination
+    paginator = Paginator(qs, 100)
+    page_obj = paginator.get_page(page_number)
+
+    # pagination linklarda filterlar yo‘qolib ketmasligi uchun (page ni olib tashlab)
+    params = request.GET.copy()
+    params.pop("page", None)
+    qs_params = params.urlencode()
 
     context = {
         "organizations": Organization.objects.all(),
-        "employees": Employee.objects.all(),
-        "technics": technics_qs,
-        "technics_form": TechnicsForm(),
         "categories": Category.objects.all(),
+
+        "technics_form": TechnicsForm(),
+
+        # jadval
+        "page_obj": page_obj,
+        "technics": page_obj.object_list,
+
+        # linklar uchun
+        "qs_params": qs_params,
+        "row_start": page_obj.start_index() if qs.exists() else 0,
     }
     return render(request, "main/barn_tex.html", context)
 
