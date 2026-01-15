@@ -476,6 +476,35 @@
             </ul>
         </li><!-- End Charts Nav -->
 
+          <!-- Sklad -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name not in 'barn_tex barn_mat' %}collapsed{% endif %}"
+             data-bs-target="#forms-navs" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-question-circle"></i>
+            <span>Sklad</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </a>
+
+          <ul id="forms-navs"
+              class="nav-content collapse {% if url_name in 'barn_tex barn_mat' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+
+            <li>
+              <a class="{% if url_name == 'barn_tex' %}active{% endif %}"
+                 href="{% url 'barn_tex' %}">
+                <i class="bi bi-circle"></i><span>Texnikalar</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="{% if url_name == 'barn_mat' %}active{% endif %}"
+                 href="{% url 'barn_mat' %}">
+                <i class="bi bi-circle"></i><span>Materiallar</span>
+              </a>
+            </li>
+
+          </ul>
+        </li>
 
         <!-- DASHBOARD -->
         <li class="nav-item">
@@ -483,15 +512,6 @@
              href="{% url 'index' %}">
             <i class="bi bi-grid"></i>
             <span>Dashboard</span>
-          </a>
-        </li>
-
-        <!-- Sklad -->
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'barn' %}collapsed{% endif %}"
-             href="{% url 'barn' %}">
-            <i class="bi bi-question-circle"></i>
-            <span>Sklad</span>
           </a>
         </li>
         {% endif %}

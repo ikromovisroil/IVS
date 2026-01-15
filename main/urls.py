@@ -6,12 +6,18 @@ urlpatterns = [
     path("", home, name="home"),
     path('profil/', profil, name='profil'),
     path('index/', index, name='index'),
-    path('barn/', barn, name='barn'),
-    path("barn/technics_create/", technics_create, name="technics_create"),
-    path("barn/material_create/", material_create, name="material_create"),
-    path("material/update/<int:pk>/", material_update, name="material_update"),
-    path("material/attach/", material_attach, name="material_attach"),
-    path("material/delete/", material_delete, name="material_delete"),
+
+    path('barn_tex/', barn_tex, name='barn_tex'),
+    path("barn_tex/technics_create/", technics_create, name="technics_create"),
+    path("barn_tex/delete/", technics_delete, name="technics_delete"),
+    path("barn_tex/attach/", technics_attach, name="technics_attach"),
+    path("barn_tex/<int:pk>/update/", technics_update, name="technics_update"),
+
+    path('barn_mat/', barn_mat, name='barn_mat'),
+    path("barn_mat/material_create/", material_create, name="material_create"),
+    path("barn_mat/update/<int:pk>/", material_update, name="material_update"),
+    path("barn_mat/attach/", material_attach, name="material_attach"),
+    path("barn_mat/delete/", material_delete, name="material_delete"),
 
 
 

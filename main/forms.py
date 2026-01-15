@@ -47,15 +47,13 @@ class TechnicsForm(forms.ModelForm):
     class Meta:
         model = Technics
         fields = [
-            "category", "organization", "employee", "status",
-            "name", "parametr", "inventory", "serial",
+            "category", "organization", "name",
+            "parametr", "inventory", "serial",
             "mac", "ip", "year", "price"
         ]
         widgets = {
             "category": forms.Select(attrs={"class": "form-select", "required": True}),
             "organization": forms.Select(attrs={"class": "form-select", "required": True}),
-            "employee": forms.Select(attrs={"class": "form-select"}),
-            "status": forms.Select(attrs={"class": "form-select", "required": True}),
 
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
             "parametr": forms.TextInput(attrs={"class": "form-control", "placeholder": "parametr"}),
@@ -77,7 +75,7 @@ class MaterialForm(forms.ModelForm):
         ]
         widgets = {
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
-            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "code"}),
+            "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "code", "required": True}),
             "number": forms.NumberInput(attrs={"class": "form-control", "placeholder": "number", "required": True}),
             "unit": forms.TextInput(attrs={"class": "form-control", "placeholder": "unit", "required": True}),
             "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "price", "required": True}),

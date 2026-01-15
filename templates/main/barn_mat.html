@@ -10,7 +10,7 @@
 <main id="main" class="main">
 
     <div class="pagetitle">
-        <h1>Texnika va materiallar</h1>
+        <h1> materiallar </h1>
     </div>
 
     <section class="section">
@@ -52,151 +52,6 @@
         </div>
       </div>
     </section>
-
-    <!-- TEXNIKALAR -->
-    <section class="section">
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                 <h5 class="card-title">Texnikalar</h5>
-                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
-                   Texnika qo'shish
-                 </button>
-              </div>
-
-              <table class="table datatable">
-                <thead>
-                  <tr>
-                    <th scope="col">#</th>
-                    <th scope="col">Nomi</th>
-                    <th scope="col">I/N</th>
-                    <th scope="col">S/N</th>
-                    <th scope="col">Yili</th>
-                  </tr>
-                </thead>
-                <tbody id="technicsBody">
-                {% for tex in technics %}
-                  <tr>
-                    <th scope="row">{{ forloop.counter }}</th>
-                    <td>({{tex.category.name|default:"-"}}) {{tex.name|default:"-"}}</td>
-                    <td>{{tex.inventory|default:"-"}}</td>
-                    <td>{{tex.serial|default:"-"}}</td>
-                    <td>{{tex.year|default:"-"}}</td>
-                  </tr>
-                {% endfor %}
-                </tbody>
-              </table>
-
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TEXNIKA CREATE MODAL -->
-    <div class="modal fade" id="verticalycentered" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form class="modal-content" method="post" action="{% url 'technics_create' %}">
-          {% csrf_token %}
-          <div class="modal-header">
-            <h5 class="modal-title">Texnika qo‘shish</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.category }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.organization }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Xodim</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.employee }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Xolati</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.status }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.name }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.parametr }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Inventar</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.inventory }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.serial }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Mac</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.mac }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Ip</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.ip }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.year }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.price }}
-              </div>
-            </div>
-
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary">Saqlash</button>
-          </div>
-        </form>
-      </div>
-    </div>
 
     <!-- MATERIAL -->
     <section class="section">
@@ -337,7 +192,7 @@
     <!-- ✅ MATERIAL EDIT MODALS (JADVALDAN TASHQARIDA!) -->
     {% for mat in material %}
     <div class="modal fade" id="matdel-{{ mat.id }}" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'material_delete' %}">
           {% csrf_token %}
 
@@ -349,31 +204,41 @@
           <div class="modal-body">
             <input type="hidden" name="material_id" value="{{ mat.id }}">
 
-            <div class="mb-3">
-              <label class="form-label">Nomi</label>
-              <input type="text" class="form-control" value="{{ mat.name }}" disabled>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.name }}" disabled>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Mavjud soni</label>
-              <input type="number" class="form-control" value="{{ mat.number }}" disabled>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Mavjud soni</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" class="form-control" value="{{ mat.number }}" disabled>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Narxi</label>
-              <input type="number" step="0.01" name="price"
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" step="0.01" name="price"
                      class="form-control"
                      value="{{ mat.price|default_if_none:''|stringformat:'s'|cut:',' }}" disabled>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Birligi</label>
-              <input type="text" class="form-control" value="{{ mat.unit|default_if_none:'' }}" disabled>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.unit|default_if_none:'' }}" disabled>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">1C code</label>
-              <input type="text" class="form-control" value="{{ mat.code|default_if_none:'' }}" disabled>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">1C code</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.code|default_if_none:'' }}" disabled>
+              </div>
             </div>
           </div>
 
@@ -387,7 +252,7 @@
     </div>
 
     <div class="modal fade" id="matbir-{{ mat.id }}" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'material_attach' %}">
           {% csrf_token %}
 
@@ -399,48 +264,62 @@
           <div class="modal-body">
             <input type="hidden" name="material_id" value="{{ mat.id }}">
 
-            <div class="mb-3">
-              <label class="form-label">Nomi</label>
-              <input type="text" class="form-control" value="{{ mat.name }}" disabled>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Xodim</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="employee_id" class="form-select" required>
+                 <option value="">Tanlang...</option>
+                  {% for emp in employees_boss %}
+                    <option value="{{ emp.id }}">
+                        {{ emp.full_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Mavjud soni</label>
-              <input type="number" class="form-control" value="{{ mat.number }}" disabled>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Beriladigan soni</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" name="give_number" class="form-control" min="1" max="{{ mat.number }}" required>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Narxi</label>
-              <input type="number" step="0.01" name="price"
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.name }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Mavjud soni</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" class="form-control" value="{{ mat.number }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" step="0.01" name="price"
                      class="form-control"
                      value="{{ mat.price|default_if_none:''|stringformat:'s'|cut:',' }}" disabled>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Birligi</label>
-              <input type="text" class="form-control" value="{{ mat.unit|default_if_none:'' }}" disabled>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.unit|default_if_none:'' }}" disabled>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">1C code</label>
-              <input type="text" class="form-control" value="{{ mat.code|default_if_none:'' }}" disabled>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Xodim</label>
-              <select name="employee_id" class="form-select" required>
-                <option value="">— Xodimni tanlang —</option>
-                {% for emp in employees_boss %}
-                  <option value="{{ emp.id }}">
-                    {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
-                  </option>
-                {% endfor %}
-              </select>
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Beriladigan soni</label>
-              <input type="number" name="give_number" class="form-control" min="1" max="{{ mat.number }}" required>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">1C code</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.code|default_if_none:'' }}" disabled>
+              </div>
             </div>
 
           </div>
@@ -455,7 +334,7 @@
     </div>
 
     <div class="modal fade" id="mattax-{{ mat.id }}" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'material_update' mat.id %}">
           {% csrf_token %}
 
@@ -487,7 +366,7 @@
 
             <div class="mb-3">
               <label class="form-label">1C kodi</label>
-              <input type="text" name="code" class="form-control" value="{{ mat.code }}">
+              <input type="text" name="code" class="form-control" value="{{ mat.code }}" required>
             </div>
           </div>
 

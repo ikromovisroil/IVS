@@ -1,0 +1,465 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<title xmlns:request.GET.employee>Tashkilot texnikalari</title>
+{% endblock title %}
+
+{% block content %}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1>Texnikalar</h1>
+    </div>
+
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+                <form class="row g-2 mt-1" method="get">
+                    <div class="col-md-3">
+                        <label for="organization" class="form-label">Tashkilotlar</label>
+                        <select id="organization" name="organization" class="form-select">
+                          <option value="">Tanlang...</option>
+                          {% for org in organization %}
+                            <option value="{{ org.id }}">
+                              {{ org.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Xolati</label>
+                        <select id="status" name="status" class="form-select">
+                          <option value="">Tanlang...</option>
+                          <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
+                          <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
+                          <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                          <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="employee" class="form-label">Xodimlar</label>
+                        <select id="employee" name="employee" class="form-select">
+                          <option value="">Tanlang...</option>
+                          {% for emp in employees_boss %}
+                            <option value="{{ emp.id }}"
+                              {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
+                              {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                    </div>
+                </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEXNIKALAR -->
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center">
+                 <h5 class="card-title">Texnikalar</h5>
+                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
+                   Texnika qo'shish
+                 </button>
+              </div>
+
+              <table class="table datatable">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    <th scope="col">Nomi</th>
+                    <th scope="col">I/N</th>
+                    <th scope="col">S/N</th>
+                    <th scope="col">Yili</th>
+                    <th scope="col">Tafsif</th>
+                  </tr>
+                </thead>
+                <tbody id="technicsBody">
+                {% for tex in technics %}
+                  <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>({{tex.category.name|default:"-"}}) {{tex.name|default:"-"}}</td>
+                    <td>{{tex.inventory|default:"-"}}</td>
+                    <td>{{tex.serial|default:"-"}}</td>
+                    <td>{{tex.year|default:"-"}}</td>
+                    <td>
+                      <div class="filter">
+                        <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
+                          <i class="bi bi-front" style="font-size: 18px;"></i>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                          <li>
+                            <a class="dropdown-item"
+                               href="javascript:void(0)"
+                               data-bs-toggle="modal"
+                               data-bs-target="#texdel-{{ tex.id }}">
+                              <i class="bi bi-trash"></i> O'chirish
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item"
+                               href="javascript:void(0)"
+                               data-bs-toggle="modal"
+                               data-bs-target="#textax-{{ tex.id }}">
+                              <i class="bi bi-brush"></i> Tahrirlash
+                            </a>
+                          </li>
+                          <li>
+                            <a class="dropdown-item"
+                               href="javascript:void(0)"
+                               data-bs-toggle="modal"
+                               data-bs-target="#texbir-{{ tex.id }}">
+                              <i class="bi bi-paperclip"></i> Biriktirish
+                            </a>
+                          </li>
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TEXNIKA CREATE MODAL -->
+    <div class="modal fade" id="verticalycentered" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form class="modal-content" method="post" action="{% url 'technics_create' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Texnika qo‘shish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.category }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.organization }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.name }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.parametr }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Inventar</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.inventory }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.serial }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Mac</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.mac }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Ip</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.ip }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.year }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.price }}
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    {% for tex in technics %}
+    <div class="modal fade" id="texdel-{{ tex.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" class="modal-content" action="{% url 'technics_delete' %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Texnika o'chirish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" name="texnika_id" value="{{ tex.id }}">
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" class="form-control" value="{{ tex.name }}" disabled>
+              </div>
+            </div>
+
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">O'chirish</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <div class="modal fade" id="texbir-{{ tex.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" class="modal-content" action="{% url 'technics_attach' %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Texnikani biriktirish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" name="texnika_id" value="{{ tex.id }}">
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="employee_id" class="form-select">
+                  <option value="">— Tanlang —</option>
+                  {% for emp in employees %}
+                    <option value="{{ emp.id }}" {% if tex.employee_id == emp.id %}selected{% endif %}>
+                      {{ emp.full_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.name }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Biriktirish</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <div class="modal fade" id="textax-{{ tex.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" class="modal-content" action="{% url 'technics_update' tex.id %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Texnikani tahrirlash</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <div class="col-md-8 col-lg-9">
+                  <select name="category" class="form-select" required>
+                    <option value="">— Tanlang —</option>
+                    {% for c in category %}
+                      <option value="{{ c.id }}" {% if tex.category_id == c.id %}selected{% endif %}>
+                        {{ c.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
+              <div class="col-md-8 col-lg-9">
+                  <select name="organization" class="form-select" required>
+                    <option value="">— Tanlang —</option>
+                    {% for o in organization %}
+                      <option value="{{ o.id }}" {% if tex.organization_id == o.id %}selected{% endif %}>
+                        {{ o.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="name" class="form-control" value="{{ tex.name }}" required>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="parametr" class="form-control" value="{{ tex.parametr|default_if_none:'' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="inventory" class="form-control" value="{{ tex.inventory|default_if_none:'' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="serial" class="form-control" value="{{ tex.serial|default_if_none:'' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">MAC</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="mac" class="form-control" value="{{ tex.mac|default_if_none:'' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">IP</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="ip" class="form-control" value="{{ tex.ip|default_if_none:'' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="number" name="year" class="form-control" value="{{ tex.year|default_if_none:'' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="number" step="0.01" name="price"
+                     class="form-control"
+                     value="{{ tex.price|default_if_none:''|stringformat:'s'|cut:',' }}">
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+
+</main>
+
+{% endblock content %}

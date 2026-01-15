@@ -189,7 +189,7 @@ class Employee(AutoSlugMixin, models.Model):
     @property
     def full_name(self):
         parts = [self.last_name, self.first_name, self.father_name]
-        return " ".join(p for p in parts if p) or "—"
+        return " ".join(p for p in parts if p) or self.user.username
 
     class Meta:
         db_table = 'employee'

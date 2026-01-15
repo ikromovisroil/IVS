@@ -488,146 +488,30 @@ def deedconsent_action(request, pk):
 
 @never_cache
 @login_required
-def barn(request):
+def barn_tex(request):
     emp_id = (request.GET.get("employee") or "").strip()
     status = (request.GET.get("status") or "").strip()
 
     technics_qs = Technics.objects.none()
-    material_qs = Material.objects.none()
 
     if emp_id or status:
         technics_qs = Technics.objects.all().order_by("-id")
-        material_qs = Material.objects.all().order_by("-id")
 
         if status:
             technics_qs = technics_qs.filter(status=status)
-            material_qs = material_qs.filter(status=status)
 
         if emp_id:
             technics_qs = technics_qs.filter(employee_id=emp_id)
-            material_qs = material_qs.filter(employee_id=emp_id)
 
     context = {
         "organization": Organization.objects.all(),
         "employees_boss": Employee.objects.filter(organization__org_type='IVS',is_boss=True),
         "technics": technics_qs,
-        "material": material_qs,
         "technics_form": TechnicsForm(),
-        "material_form": MaterialForm(),
+        "category": Category.objects.all(),
+        "employees": Employee.objects.all(),
     }
-    return render(request, 'main/barn.html', context)
-
-
-
-@never_cache
-@login_required
-def technics(request, slug=None):
-
-    # 🔒 Worker bo‘lmagan foydalanuvchi kira olmaydi
-    emp = getattr(request.user, "employee", None)
-    if not emp or emp.status != "worker":
-        raise PermissionDenied
-
-    # 1️⃣ CATEGORY FILTER
-    category = None
-    if slug:
-        category = get_object_or_404(Category, slug=slug)
-
-    technics_qs = (
-        Technics.objects
-        .select_related(
-            "category", "employee", "employee__user", "employee__rank",
-            "employee__organization", "employee__department",
-            "employee__directorate", "employee__division"
-        )
-        .only(
-            "id", "name",
-            "category__id", "category__name",
-            "employee__id", "employee__first_name", "employee__last_name",
-            "employee__user__id",
-            "employee__rank__id", "employee__rank__name",
-            "employee__organization__id", "employee__organization__name",
-            "employee__department__id", "employee__department__name",
-            "employee__directorate__id", "employee__directorate__name",
-            "employee__division__id", "employee__division__name",
-        )
-    )
-
-    if category:
-        technics_qs = technics_qs.filter(category=category)
-
-
-    # 2️⃣ FILTER PARAMETRLAR
-    org_id = request.GET.get("organization")
-    dep_id = request.GET.get("department")
-    dir_id = request.GET.get("directorate")
-    div_id = request.GET.get("division")
-
-
-    # 3️⃣ FILTERLASH (safe — employee None bo‘lsa ham xato bermaydi)
-    if org_id:
-        technics_qs = technics_qs.filter(employee__organization_id=org_id)
-
-    if dep_id:
-        technics_qs = technics_qs.filter(employee__department_id=dep_id)
-
-    if dir_id:
-        technics_qs = technics_qs.filter(employee__directorate_id=dir_id)
-
-    if div_id:
-        technics_qs = technics_qs.filter(employee__division_id=div_id)
-
-    # 4️⃣ TEXNIKALAR SONI
-    total_count = technics_qs.count()
-
-    # 5️⃣ XODIM BO‘YICHA GURUHLASH (⚡ juda tez)
-    grouped = defaultdict(list)
-
-    for t in technics_qs.order_by(
-        "employee__last_name",
-        "employee__first_name",
-        "category__name",
-        "name"
-    ):
-        if t.employee:   # ⚠️ xodimsiz texnika bo‘lsa xato bermaydi
-            grouped[t.employee].append(t)
-        else:
-            grouped[None].append(t)  # “biriktirilmagan texnika” guruhi
-
-    # 6️⃣ FILTER SELECTLAR — OPTIMALLASHTIRILGAN
-    organizations = Organization.objects.only("id", "name")
-
-    departments = Department.objects.select_related("organization").only(
-        "id", "name", "organization_id"
-    )
-
-    directorates = Directorate.objects.select_related("department").only(
-        "id", "name", "department_id"
-    )
-
-    divisions = Division.objects.select_related("directorate").only(
-        "id", "name", "directorate_id"
-    )
-
-    # 7️⃣ CONTEXT
-    context = {
-        "category": category,
-        "grouped_technics": grouped.items(),
-        "total_count": total_count,
-
-        # Filter selectlar uchun
-        "organizations": organizations,
-        "departments": departments,
-        "directorates": directorates,
-        "divisions": divisions,
-
-        # Selected qiymatlar
-        "selected_org": org_id,
-        "selected_dep": dep_id,
-        "selected_dir": dir_id,
-        "selected_div": div_id,
-    }
-    return render(request, "main/technics.html", context)
+    return render(request, 'main/barn_tex.html', context)
 
 
 @login_required
@@ -638,6 +522,110 @@ def technics_create(request):
         form.save()
 
     return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@login_required
+def technics_delete(request):
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    tex_id = request.POST.get("texnika_id")
+    if not tex_id:
+        messages.error(request, "Texnika topilmadi")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    tex = get_object_or_404(Technics, id=tex_id)
+    tex.delete()
+
+    messages.success(request, "Texnika o‘chirildi")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@login_required
+@transaction.atomic
+def technics_attach(request):
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    tex_id = request.POST.get("texnika_id")
+    employee_id = (request.POST.get("employee_id") or "").strip()
+
+    tex = get_object_or_404(Technics, id=tex_id)
+
+    if employee_id:
+        # 🔗 Biriktirish
+        emp = get_object_or_404(Employee, id=employee_id)
+        tex.employee = emp
+        tex.status = "active"
+        messages.success(request, "Texnika xodimga biriktirildi")
+    else:
+        # 🔓 Bo‘shatish
+        tex.employee = None
+        tex.status = "free"
+        messages.success(request, "Texnika bo‘shatildi")
+
+    tex.save()
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+
+@login_required
+@transaction.atomic
+def technics_update(request, pk):
+    tex = get_object_or_404(Technics, pk=pk)
+
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    category_id = (request.POST.get("category") or "").strip()
+    organization_id = (request.POST.get("organization") or "").strip()
+
+    if category_id:
+        tex.category = get_object_or_404(Category, pk=category_id)
+    else:
+        tex.category = None
+
+    if organization_id:
+        tex.organization = get_object_or_404(Organization, pk=organization_id)
+    else:
+        tex.organization = None
+
+    tex.name = (request.POST.get("name") or "").strip()
+    tex.parametr = (request.POST.get("parametr") or "").strip()
+    tex.inventory = (request.POST.get("inventory") or "").strip()
+    tex.serial = (request.POST.get("serial") or "").strip()
+    tex.mac = (request.POST.get("mac") or "").strip()
+    tex.ip = (request.POST.get("ip") or "").strip()
+    tex.year = (request.POST.get("year") or "").strip()
+    tex.price = request.POST.get("price") or 0
+    tex.save()
+    messages.success(request, "Texnika tahrirlandi!")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+@never_cache
+@login_required
+def barn_mat(request):
+    emp_id = (request.GET.get("employee") or "").strip()
+    status = (request.GET.get("status") or "").strip()
+
+    material_qs = Material.objects.none()
+
+    if emp_id or status:
+        material_qs = Material.objects.all().order_by("-id")
+
+        if status:
+            material_qs = material_qs.filter(status=status)
+
+        if emp_id:
+            material_qs = material_qs.filter(employee_id=emp_id)
+
+    context = {
+        "employees_boss": Employee.objects.filter(organization__org_type='IVS',is_boss=True),
+        "material": material_qs,
+        "material_form": MaterialForm(),
+    }
+    return render(request, 'main/barn_mat.html', context)
+
 
 @login_required
 def material_create(request):
@@ -752,6 +740,117 @@ def material_delete(request):
     messages.success(request, "Material o‘chirildi")
 
     return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@never_cache
+@login_required
+def technics(request, slug=None):
+
+    # 🔒 Worker bo‘lmagan foydalanuvchi kira olmaydi
+    emp = getattr(request.user, "employee", None)
+    if not emp or emp.status != "worker":
+        raise PermissionDenied
+
+    # 1️⃣ CATEGORY FILTER
+    category = None
+    if slug:
+        category = get_object_or_404(Category, slug=slug)
+
+    technics_qs = (
+        Technics.objects
+        .select_related(
+            "category", "employee", "employee__user", "employee__rank",
+            "employee__organization", "employee__department",
+            "employee__directorate", "employee__division"
+        )
+        .only(
+            "id", "name",
+            "category__id", "category__name",
+            "employee__id", "employee__first_name", "employee__last_name",
+            "employee__user__id",
+            "employee__rank__id", "employee__rank__name",
+            "employee__organization__id", "employee__organization__name",
+            "employee__department__id", "employee__department__name",
+            "employee__directorate__id", "employee__directorate__name",
+            "employee__division__id", "employee__division__name",
+        )
+    )
+
+    if category:
+        technics_qs = technics_qs.filter(category=category)
+
+
+    # 2️⃣ FILTER PARAMETRLAR
+    org_id = request.GET.get("organization")
+    dep_id = request.GET.get("department")
+    dir_id = request.GET.get("directorate")
+    div_id = request.GET.get("division")
+
+
+    # 3️⃣ FILTERLASH (safe — employee None bo‘lsa ham xato bermaydi)
+    if org_id:
+        technics_qs = technics_qs.filter(employee__organization_id=org_id)
+
+    if dep_id:
+        technics_qs = technics_qs.filter(employee__department_id=dep_id)
+
+    if dir_id:
+        technics_qs = technics_qs.filter(employee__directorate_id=dir_id)
+
+    if div_id:
+        technics_qs = technics_qs.filter(employee__division_id=div_id)
+
+    # 4️⃣ TEXNIKALAR SONI
+    total_count = technics_qs.count()
+
+    # 5️⃣ XODIM BO‘YICHA GURUHLASH (⚡ juda tez)
+    grouped = defaultdict(list)
+
+    for t in technics_qs.order_by(
+        "employee__last_name",
+        "employee__first_name",
+        "category__name",
+        "name"
+    ):
+        if t.employee:   # ⚠️ xodimsiz texnika bo‘lsa xato bermaydi
+            grouped[t.employee].append(t)
+        else:
+            grouped[None].append(t)  # “biriktirilmagan texnika” guruhi
+
+    # 6️⃣ FILTER SELECTLAR — OPTIMALLASHTIRILGAN
+    organizations = Organization.objects.only("id", "name")
+
+    departments = Department.objects.select_related("organization").only(
+        "id", "name", "organization_id"
+    )
+
+    directorates = Directorate.objects.select_related("department").only(
+        "id", "name", "department_id"
+    )
+
+    divisions = Division.objects.select_related("directorate").only(
+        "id", "name", "directorate_id"
+    )
+
+    # 7️⃣ CONTEXT
+    context = {
+        "category": category,
+        "grouped_technics": grouped.items(),
+        "total_count": total_count,
+
+        # Filter selectlar uchun
+        "organizations": organizations,
+        "departments": departments,
+        "directorates": directorates,
+        "divisions": divisions,
+
+        # Selected qiymatlar
+        "selected_org": org_id,
+        "selected_dep": dep_id,
+        "selected_dir": dir_id,
+        "selected_div": div_id,
+    }
+    return render(request, "main/technics.html", context)
 
 
 @never_cache
