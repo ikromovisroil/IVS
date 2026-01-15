@@ -498,7 +498,7 @@ def barn_tex(request):
     if status or organization_id or category_id:
         technics_qs = (
             Technics.objects
-            .select_related("organization", "category", "employee")
+            .select_related("organization", "category")
             .order_by("-id")
         )
 
@@ -512,12 +512,9 @@ def barn_tex(request):
         if category_id:
             technics_qs = technics_qs.filter(category_id=category_id)
 
-        if emp_id:
-            technics_qs = technics_qs.filter(employee_id=emp_id)
-
     context = {
         "organizations": Organization.objects.all(),
-        "employees_boss": Employee.objects.filter(organization__org_type="IVS", is_boss=True),
+        "employees": Employee.objects.all(),
         "technics": technics_qs,
         "technics_form": TechnicsForm(),
         "categories": Category.objects.all(),

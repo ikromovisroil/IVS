@@ -33,19 +33,6 @@
                   </div>
 
                   <div class="col-md-3">
-                    <label for="category" class="form-label">Kategoriya</label>
-                    <select id="category" name="category" class="form-select">
-                      <option value="">Tanlang...</option>
-                      {% for c in categories %}
-                        <option value="{{ c.id }}"
-                          {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
-                          {{ c.name }}
-                        </option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <div class="col-md-3">
                     <label for="status" class="form-label">Xolati</label>
                     <select id="status" name="status" class="form-select">
                       <option value="">Tanlang...</option>
@@ -57,13 +44,13 @@
                   </div>
 
                   <div class="col-md-3">
-                    <label for="employee" class="form-label">Xodimlar</label>
-                    <select id="employee" name="employee" class="form-select">
+                    <label for="category" class="form-label">Kategoriya</label>
+                    <select id="category" name="category" class="form-select">
                       <option value="">Tanlang...</option>
-                      {% for emp in employees_boss %}
-                        <option value="{{ emp.id }}"
-                          {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
-                          {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                      {% for c in categories %}
+                        <option value="{{ c.id }}"
+                          {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                          {{ c.name }}
                         </option>
                       {% endfor %}
                     </select>
