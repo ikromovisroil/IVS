@@ -5,10 +5,8 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
-# SECURITY
 SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-
 
 ALLOWED_HOSTS = [
     "report.imv.uz",
@@ -17,6 +15,9 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
+SESSION_COOKIE_AGE = 60 * 60 * 24
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = False
 
 # APPLICATIONS
 INSTALLED_APPS = [
@@ -142,23 +143,23 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
-
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ivs_servis',
-        'USER': 'ivs_user',
-        'PASSWORD': 'Password100',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
+
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'ivs_servis',
+#         'USER': 'ivs_user',
+#         'PASSWORD': 'Password100',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
 
 
 # PASSWORD VALIDATION
