@@ -494,32 +494,33 @@ def barn_tex(request):
     category_id = (request.GET.get("category") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    # Bazaviy QS (tezroq)
+    # ✅ Umumiy son (hammasi)
+    total_count = Technics.objects.count()
+
     qs = (
         Technics.objects
         .select_related("organization", "category", "employee")
         .order_by("-id")
     )
 
-    # Filterlar
     if organization_id:
         qs = qs.filter(organization_id=organization_id)
-
     if status:
         qs = qs.filter(status=status)
-
     if category_id:
         qs = qs.filter(category_id=category_id)
 
-    # Agar filter tanlanmasa — bo‘sh ko‘rsat (siz oldin shunaqa qilgansiz)
+    # ✅ Filter natijasi soni
+    filtered_count = qs.count()
+
+    # Sizda filter bo‘lmasa bo‘sh ko‘rsatish sharti bor edi:
     if not (status or organization_id or category_id):
         qs = Technics.objects.none()
+        filtered_count = 0
 
-    # ✅ 100 tadan pagination
     paginator = Paginator(qs, 100)
     page_obj = paginator.get_page(page_number)
 
-    # pagination linklarda filterlar yo‘qolib ketmasligi uchun (page ni olib tashlab)
     params = request.GET.copy()
     params.pop("page", None)
     qs_params = params.urlencode()
@@ -527,16 +528,16 @@ def barn_tex(request):
     context = {
         "organizations": Organization.objects.all(),
         "categories": Category.objects.all(),
-
         "technics_form": TechnicsForm(),
 
-        # jadval
         "page_obj": page_obj,
         "technics": page_obj.object_list,
-
-        # linklar uchun
         "qs_params": qs_params,
-        "row_start": page_obj.start_index() if qs.exists() else 0,
+        "row_start": page_obj.start_index() if filtered_count else 0,
+
+        # ✅ countlar
+        "total_count": total_count,
+        "filtered_count": filtered_count,
     }
     return render(request, "main/barn_tex.html", context)
 
