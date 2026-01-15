@@ -496,8 +496,8 @@ def barn(request):
     material_qs = Material.objects.none()
 
     if emp_id or status:
-        technics_qs = Technics.objects.all()
-        material_qs = Material.objects.all()
+        technics_qs = Technics.objects.all().order_by("-id")
+        material_qs = Material.objects.all().order_by("-id")
 
         if status:
             technics_qs = technics_qs.filter(status=status)
@@ -646,6 +646,7 @@ def material_create(request):
     if form.is_valid():
         form.save()
 
+    messages.info(request, "Material qo'shildi!")
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
