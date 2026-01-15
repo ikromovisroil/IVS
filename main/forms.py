@@ -72,14 +72,10 @@ class MaterialForm(forms.ModelForm):
     class Meta:
         model = Material
         fields = [
-            "employee", "status",
             "name", "code", "number", "unit",
             "price", "year"
         ]
         widgets = {
-            "employee": forms.Select(attrs={"class": "form-select"}),
-            "status": forms.Select(attrs={"class": "form-select", "required": True}),
-
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
             "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "code"}),
             "number": forms.NumberInput(attrs={"class": "form-control", "placeholder": "number", "required": True}),
