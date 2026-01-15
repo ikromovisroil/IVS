@@ -19,45 +19,59 @@
           <div class="card">
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
-                    <div class="col-md-3">
-                        <label for="organization" class="form-label">Tashkilotlar</label>
-                        <select id="organization" name="organization" class="form-select">
-                          <option value="">Tanlang...</option>
-                          {% for org in organization %}
-                            <option value="{{ org.id }}">
-                              {{ org.name }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                    </div>
+                  <div class="col-md-3">
+                    <label for="organization" class="form-label">Tashkilotlar</label>
+                    <select id="organization" name="organization" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for org in organizations %}
+                        <option value="{{ org.id }}"
+                          {% if request.GET.organization|stringformat:"s" == org.id|stringformat:"s" %}selected{% endif %}>
+                          {{ org.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
 
-                    <div class="col-md-3">
-                        <label for="status" class="form-label">Xolati</label>
-                        <select id="status" name="status" class="form-select">
-                          <option value="">Tanlang...</option>
-                          <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
-                          <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
-                          <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
-                          <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
-                        </select>
-                    </div>
+                  <div class="col-md-3">
+                    <label for="category" class="form-label">Kategoriya</label>
+                    <select id="category" name="category" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for c in categories %}
+                        <option value="{{ c.id }}"
+                          {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                          {{ c.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
 
-                    <div class="col-md-3">
-                        <label for="employee" class="form-label">Xodimlar</label>
-                        <select id="employee" name="employee" class="form-select">
-                          <option value="">Tanlang...</option>
-                          {% for emp in employees_boss %}
-                            <option value="{{ emp.id }}"
-                              {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
-                              {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                    </div>
+                  <div class="col-md-3">
+                    <label for="status" class="form-label">Xolati</label>
+                    <select id="status" name="status" class="form-select">
+                      <option value="">Tanlang...</option>
+                      <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
+                      <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
+                      <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                      <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
+                    </select>
+                  </div>
 
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Qidirish</button>
-                    </div>
+                  <div class="col-md-3">
+                    <label for="employee" class="form-label">Xodimlar</label>
+                    <select id="employee" name="employee" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for emp in employees_boss %}
+                        <option value="{{ emp.id }}"
+                          {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
+                          {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                  </div>
                 </form>
             </div>
           </div>

@@ -489,29 +489,40 @@ def deedconsent_action(request, pk):
 @never_cache
 @login_required
 def barn_tex(request):
-    emp_id = (request.GET.get("employee") or "").strip()
     status = (request.GET.get("status") or "").strip()
+    organization_id = (request.GET.get("organization") or "").strip()
+    category_id = (request.GET.get("category") or "").strip()
 
     technics_qs = Technics.objects.none()
 
-    if emp_id or status:
-        technics_qs = Technics.objects.all().order_by("-id")
+    if status or organization_id or category_id:
+        technics_qs = (
+            Technics.objects
+            .select_related("organization", "category", "employee")
+            .order_by("-id")
+        )
+
+        # ✅ FK larni *_id bilan filter qil
+        if organization_id:
+            technics_qs = technics_qs.filter(organization_id=organization_id)
 
         if status:
             technics_qs = technics_qs.filter(status=status)
+
+        if category_id:
+            technics_qs = technics_qs.filter(category_id=category_id)
 
         if emp_id:
             technics_qs = technics_qs.filter(employee_id=emp_id)
 
     context = {
-        "organization": Organization.objects.all(),
-        "employees_boss": Employee.objects.filter(organization__org_type='IVS',is_boss=True),
+        "organizations": Organization.objects.all(),
+        "employees_boss": Employee.objects.filter(organization__org_type="IVS", is_boss=True),
         "technics": technics_qs,
         "technics_form": TechnicsForm(),
-        "category": Category.objects.all(),
-        "employees": Employee.objects.all(),
+        "categories": Category.objects.all(),
     }
-    return render(request, 'main/barn_tex.html', context)
+    return render(request, "main/barn_tex.html", context)
 
 
 @login_required
