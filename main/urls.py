@@ -9,6 +9,12 @@ urlpatterns = [
     path('barn/', barn, name='barn'),
     path("barn/technics_create/", technics_create, name="technics_create"),
     path("barn/material_create/", material_create, name="material_create"),
+    path("material/update/<int:pk>/", material_update, name="material_update"),
+    path("material/attach/", material_attach, name="material_attach"),
+    path("material/delete/", material_delete, name="material_delete"),
+
+
+
 
     # NOTIFIKATSIYA
     path('deed/seen/', deed_mark_seen, name="deed_mark_seen"),

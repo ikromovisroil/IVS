@@ -649,6 +649,110 @@ def material_create(request):
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
+@login_required
+def material_update(request, pk):
+    mat = get_object_or_404(Material, pk=pk)
+    if request.method == "POST":
+        mat.name = request.POST.get("name", "").strip()
+        mat.number = request.POST.get("number") or 0
+        mat.price = request.POST.get("price") or 0
+        mat.code = request.POST.get("code", "").strip()
+        mat.unit = request.POST.get("unit", "").strip()
+        mat.save()
+        messages.info(request, "Material taxrirlandi!")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@login_required
+@transaction.atomic
+def material_attach(request):
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    material_id = request.POST.get("material_id")
+    employee_id = request.POST.get("employee_id")
+    give_number = request.POST.get("give_number")
+
+    # validatsiya
+    try:
+        give_number = int(give_number)
+    except (TypeError, ValueError):
+        messages.info(request, "Soni noto‘g‘ri kiritildi")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    if give_number <= 0:
+        messages.info(request, "Soni 1 dan katta bo‘lishi kerak")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    # Ombordagi material (berilayotgan)
+    src = get_object_or_404(Material, id=material_id)
+    emp = get_object_or_404(Employee, id=employee_id)
+
+    # omborda yetarlimi?
+    if (src.number or 0) < give_number:
+        messages.info(request, "Omborda yetarli material yo‘q")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    q = Material.objects.filter(employee=emp)
+
+    if src.code:
+        q = q.filter(code=src.code)
+    else:
+        q = q.filter(name=src.name)
+
+    dst = q.first()
+
+    if dst:
+        # ✅ bor → ustiga qo‘shamiz
+        dst.number = (dst.number or 0) + give_number
+
+        # narx/unit bo‘sh bo‘lsa, src dan to‘ldirib yuborish (ixtiyoriy)
+        if not dst.price and src.price:
+            dst.price = src.price
+        if not dst.unit and src.unit:
+            dst.unit = src.unit
+
+        dst.save()
+    else:
+        # ✅ yo‘q → yaratamiz
+        Material.objects.create(
+            employee=emp,
+            status="active",          # sizdagi status qiymatiga moslang
+            name=src.name,
+            code=src.code,
+            number=give_number,
+            unit=src.unit,
+            price=src.price,
+            year=src.year,
+        )
+
+    # ✅ Ombordan ayiramiz
+    src.number = (src.number or 0) - give_number
+    src.save()
+
+    messages.success(request, "Material biriktirildi")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@login_required
+def material_delete(request):
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    material_id = request.POST.get("material_id")
+
+    if not material_id:
+        messages.info(request, "Material topilmadi")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    mat = get_object_or_404(Material, id=material_id)
+
+    mat.delete()
+    messages.success(request, "Material o‘chirildi")
+
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
 @never_cache
 @login_required
 def organization(request, slug):
