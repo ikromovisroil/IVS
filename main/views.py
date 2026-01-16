@@ -829,8 +829,22 @@ def technics(request, slug=None):
 
     technics_qs = (
         Technics.objects
-        .select_related("organization", "category", "employee")
-        .order_by("-id")
+        .select_related("category", "employee", "employee__user", "employee__rank")
+        .prefetch_related("extratechnics_set")
+        .only(
+            "id", "name", "inventory", "serial", "ip", "mac", "year",
+            "category__id", "category__name",
+
+            "employee__id",
+            "employee__first_name", "employee__last_name", "employee__father_name",
+            "employee__user__username",
+            "employee__rank__id", "employee__rank__name",
+
+            "employee__organization_id",
+            "employee__department_id",
+            "employee__directorate_id",
+            "employee__division_id",
+        )
     )
 
     if category:
