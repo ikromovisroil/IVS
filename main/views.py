@@ -536,7 +536,6 @@ def barn_tex(request):
     context = {
         "organizations": Organization.objects.all(),
         "categories": Category.objects.all(),
-        "employees": Employee.objects.all(),
         "technics_form": TechnicsForm(),
 
         "page_obj": page_obj,
