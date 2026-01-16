@@ -502,23 +502,9 @@ def barn_tex(request):
         .select_related("organization", "category", "employee")
         .order_by("-id")
     )
-    employees = Employee.objects.none()
 
     if organization_id:
         qs = qs.filter(organization_id=organization_id)
-        employees = (
-            Employee.objects
-            .select_related("user")
-            .filter(organization_id=organization_id)
-            .only(
-                "id",
-                "first_name",
-                "last_name",
-                "father_name",
-                "user__username",
-            )
-            .order_by("last_name", "first_name")
-        )
     if status:
         qs = qs.filter(status=status)
     if category_id:
@@ -549,7 +535,6 @@ def barn_tex(request):
 
     context = {
         "organizations": Organization.objects.all(),
-        "employees": employees,
         "technics_form": TechnicsForm(),
 
         "page_obj": page_obj,

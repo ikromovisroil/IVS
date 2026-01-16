@@ -14,67 +14,67 @@
     </div>
 
     <!-- FILTER -->
-    <section class="section">
-      <div class="row">
-        <div class="col-lg-12">
-          <div class="card">
-            <div class="card-body">
-              <form class="row g-2 mt-1" method="get">
+        <section class="section">
+          <div class="row">
+            <div class="col-lg-12">
+              <div class="card">
+                <div class="card-body">
+                  <form class="row g-2 mt-1" method="get">
 
-                <div class="col-md-3">
-                  <label for="organization" class="form-label">Tashkilotlar</label>
-                  <select id="organization" name="organization" class="form-select">
-                    <option value="">Tanlang...</option>
-                    {% for org in organizations %}
-                      <option value="{{ org.id }}"
-                        {% if request.GET.organization|stringformat:"s" == org.id|stringformat:"s" %}selected{% endif %}>
-                        {{ org.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
+                    <div class="col-md-3">
+                        <label for="organization" class="form-label">Tashkilotlar</label>
+                        <select id="organization" name="organization" class="form-select">
+                          <option value="">Tanlang...</option>
+                          {% for org in organizations %}
+                            <option value="{{ org.id }}"
+                              {% if request.GET.organization|stringformat:"s" == org.id|stringformat:"s" %}selected{% endif %}>
+                              {{ org.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                      <label for="status" class="form-label">Xolati</label>
+                      <select id="status" name="status" class="form-select">
+                        <option value="">Tanlang...</option>
+                        <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
+                        <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
+                        <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                        <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
+                      </select>
+                    </div>
+
+                    <div class="col-md-3">
+                      <label for="category" class="form-label">Kategoriya</label>
+                      <select id="category" name="category" class="form-select">
+                        <option value="">Tanlang...</option>
+                        {% for c in categories %}
+                          <option value="{{ c.id }}"
+                            {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                            {{ c.name }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                    </div>
+
+                    <div class="col-md-3">
+                      <label for="name" class="form-label">Name</label>
+                      <input id="name" type="text" name="name" class="form-control"
+                             value="{{ request.GET.name|default:'' }}"
+                             placeholder="Texnika nomi...">
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+                      <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                    </div>
+
+                  </form>
                 </div>
-
-                <div class="col-md-3">
-                  <label for="status" class="form-label">Xolati</label>
-                  <select id="status" name="status" class="form-select">
-                    <option value="">Tanlang...</option>
-                    <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
-                    <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
-                    <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
-                    <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
-                  </select>
-                </div>
-
-                <div class="col-md-3">
-                  <label for="category" class="form-label">Kategoriya</label>
-                  <select id="category" name="category" class="form-select">
-                    <option value="">Tanlang...</option>
-                    {% for c in categories %}
-                      <option value="{{ c.id }}"
-                        {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
-                        {{ c.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                </div>
-
-                <div class="col-md-3">
-                  <label for="name" class="form-label">Name</label>
-                  <input id="name" type="text" name="name" class="form-control"
-                         value="{{ request.GET.name|default:'' }}"
-                         placeholder="Texnika nomi...">
-                </div>
-
-                <div class="col-md-3 d-flex align-items-end">
-                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
-                </div>
-
-              </form>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
-    </section>
+        </section>
 
     <!-- TEXNIKALAR -->
     <section class="section">
@@ -357,17 +357,14 @@
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
-              <div class="col-md-8 col-lg-9">
-                <select name="employee_id" class="form-select">
-                  <option value="">— Tanlang —</option>
-                  {% for emp in employees %}
-                    <option value="{{ emp.id }}" {% if tex.employee_id == emp.id %}selected{% endif %}>
-                      {{ emp.full_name }}
-                    </option>
-                  {% endfor %}
-                </select>
-              </div>
+                <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="employee_id"
+                          class="form-select employee-select"
+                          data-selected="{{ tex.employee_id|default:'' }}">
+                    <option value="">— Tanlang —</option>
+                  </select>
+                </div>
             </div>
 
             <div class="row mb-3">
@@ -519,5 +516,63 @@
     {% endfor %}
 
 </main>
+<script>
+  const orgSelect = document.getElementById("organization");
+
+  // org bo'yicha cache
+  const employeesCache = new Map(); // orgId -> [{id,text}]
+
+  async function fetchEmployees(orgId) {
+    if (!orgId) return [];
+    if (employeesCache.has(orgId)) return employeesCache.get(orgId);
+
+    const res = await fetch(`/ajax/employees-org/?organization=${encodeURIComponent(orgId)}`, {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+
+    // backend {"results":[{"id":..,"text":..}] } bo'lishi kerak
+    const data = await res.json();
+    const list = data.results || [];
+
+    employeesCache.set(orgId, list);
+    return list;
+  }
+
+  async function fillEmployeeSelect(selectEl, orgId) {
+    const selectedId = selectEl.dataset.selected || "";
+
+    selectEl.innerHTML = `<option value="">Yuklanmoqda...</option>`;
+    const employees = await fetchEmployees(orgId);
+
+    let html = `<option value="">— Tanlang —</option>`;
+    for (const e of employees) {
+      const sel = (String(e.id) === String(selectedId)) ? "selected" : "";
+      html += `<option value="${e.id}" ${sel}>${e.text}</option>`;
+    }
+    selectEl.innerHTML = html;
+  }
+
+  // Modal ochilganda xodimlarni yuklash
+  document.addEventListener("shown.bs.modal", async (event) => {
+    const modal = event.target;
+    const selectEl = modal.querySelector(".employee-select");
+    if (!selectEl) return;
+
+    const orgId = (orgSelect?.value || "").trim();
+    if (!orgId) {
+      selectEl.innerHTML = `<option value="">Avval tashkilotni tanlang</option>`;
+      return;
+    }
+
+    await fillEmployeeSelect(selectEl, orgId);
+  });
+
+  // Tashkilot o'zgarsa: hamma modal selectlarini reset
+  orgSelect?.addEventListener("change", () => {
+    document.querySelectorAll(".employee-select").forEach(sel => {
+      sel.innerHTML = `<option value="">— Tanlang —</option>`;
+    });
+  });
+</script>
 
 {% endblock content %}
