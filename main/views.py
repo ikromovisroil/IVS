@@ -643,9 +643,9 @@ def technics_update(request, pk):
 def barn_mat(request):
     emp_id = (request.GET.get("employee") or "").strip()
     status = (request.GET.get("status") or "").strip()
+    name = (request.GET.get("name") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    # ✅ Umumiy material soni
     total_count = Material.objects.count()
 
     qs = (
@@ -660,37 +660,32 @@ def barn_mat(request):
     if emp_id:
         qs = qs.filter(employee_id=emp_id)
 
-    # ✅ Filter natijasi soni
+    if name:
+        qs = qs.filter(
+            Q(name__icontains=name) |
+            Q(code__icontains=name)
+        )
+
     filtered_count = qs.count()
 
-    # Sizdagi eski shart: filter bo‘lmasa bo‘sh ko‘rsat
-    if not (emp_id or status):
+    if not (emp_id or status or name):
         qs = Material.objects.none()
         filtered_count = 0
 
-    # ✅ 100 tadan pagination
     paginator = Paginator(qs, 100)
     page_obj = paginator.get_page(page_number)
 
-    # pagination linklarda filter saqlansin (page ni olib tashlaymiz)
     params = request.GET.copy()
     params.pop("page", None)
     qs_params = params.urlencode()
 
     context = {
         "employees_boss": Employee.objects.filter(organization__org_type="IVS", is_boss=True),
-
-        # jadval
         "page_obj": page_obj,
         "material": page_obj.object_list,
-
         "material_form": MaterialForm(),
-
-        # linklar va raqam
         "qs_params": qs_params,
         "row_start": page_obj.start_index() if filtered_count else 0,
-
-        # ✅ countlar
         "total_count": total_count,
         "filtered_count": filtered_count,
     }
