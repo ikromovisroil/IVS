@@ -93,12 +93,10 @@
         <div class="card recent-sales overflow-auto">
           <div class="card-body">
 
-            <h5 class="card-title">
-              {% if category %}
-                {{ category.name }} — <span class="text-muted">{{ total_count }} ta texnika</span>
-              {% else %}
-                Hammasi — <span class="text-muted">{{ total_count }} ta texnika</span>
-              {% endif %}
+            <h5 class="card-title mb-0">
+                Texnikalar <b>|</b>
+                <i>Umumiy: {{ total_count }}</i> <b>|</b>
+                <i> Natija: {{ filtered_count }}</i>
             </h5>
 
             {# ❗ Datatable bo'lsa pagination bilan urishadi. Tavsiya: datatable class olib tashlang #}

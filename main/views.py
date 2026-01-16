@@ -806,13 +806,6 @@ def material_delete(request):
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
-from collections import defaultdict
-from django.core.paginator import Paginator
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404, render
-from django.views.decorators.cache import never_cache
-from django.contrib.auth.decorators import login_required
-
 @never_cache
 @login_required
 def technics(request, slug=None):
@@ -824,33 +817,38 @@ def technics(request, slug=None):
     if slug:
         category = get_object_or_404(Category, slug=slug)
 
+    org_id = (request.GET.get("organization") or "").strip()
+    dep_id = (request.GET.get("department") or "").strip()
+    dir_id = (request.GET.get("directorate") or "").strip()
+    div_id = (request.GET.get("division") or "").strip()
+    page_number = request.GET.get("page", 1)
+
+    organizations = Organization.objects.only("id", "name").order_by("name")
+
+    total_count = Technics.objects.count()
+
     technics_qs = (
         Technics.objects
-        .select_related(
-            "category", "employee", "employee__user", "employee__rank",
-            "employee__organization", "employee__department",
-            "employee__directorate", "employee__division"
-        )
+        .select_related("category", "employee", "employee__user", "employee__rank")
+        .prefetch_related("extratechnics_set")
         .only(
-            "id", "name",
+            "id", "name", "inventory", "serial", "ip", "mac", "year",
             "category__id", "category__name",
-            "employee__id", "employee__first_name", "employee__last_name", "employee__father_name",
-            "employee__user__id", "employee__user__username",
+
+            "employee__id",
+            "employee__first_name", "employee__last_name", "employee__father_name",
+            "employee__user__username",
             "employee__rank__id", "employee__rank__name",
-            "employee__organization__id", "employee__organization__name",
-            "employee__department__id", "employee__department__name",
-            "employee__directorate__id", "employee__directorate__name",
-            "employee__division__id", "employee__division__name",
+
+            "employee__organization_id",
+            "employee__department_id",
+            "employee__directorate_id",
+            "employee__division_id",
         )
     )
 
     if category:
         technics_qs = technics_qs.filter(category=category)
-
-    org_id = request.GET.get("organization")
-    dep_id = request.GET.get("department")
-    dir_id = request.GET.get("directorate")
-    div_id = request.GET.get("division")
 
     if org_id:
         technics_qs = technics_qs.filter(employee__organization_id=org_id)
@@ -861,52 +859,36 @@ def technics(request, slug=None):
     if div_id:
         technics_qs = technics_qs.filter(employee__division_id=div_id)
 
-    total_count = technics_qs.count()
+    filtered_count = technics_qs.count()
 
-    # ✅ GROUP BY employee (xodim bo'yicha)
     grouped = defaultdict(list)
-
     ordered_qs = technics_qs.order_by(
         "employee__last_name",
         "employee__first_name",
         "category__name",
         "name"
     )
-
     for t in ordered_qs:
-        grouped[t.employee].append(t)  # employee None bo'lsa ham key bo'la oladi
+        grouped[t.employee].append(t)
 
-    # ✅ Pagination: har sahifada 100 ta "xodim guruhi"
-    page_number = request.GET.get("page", 1)
-
-    grouped_items = list(grouped.items())  # [(employee, [technics...]), ...]
+    grouped_items = list(grouped.items())
     paginator = Paginator(grouped_items, 100)
     page_obj = paginator.get_page(page_number)
 
-    # pagination linklar uchun querystring
     params = request.GET.copy()
     params.pop("page", None)
     qs_params = params.urlencode()
 
-    organizations = Organization.objects.only("id", "name")
-    departments = Department.objects.only("id", "name", "organization_id")
-    directorates = Directorate.objects.only("id", "name", "department_id")
-    divisions = Division.objects.only("id", "name", "directorate_id")
-
     context = {
-        "category": category,
+        "category": category,  # xohlasangiz template'da ko'rsatasiz
+        "organizations": organizations,
 
-        # ✅ paginated grouped
         "page_obj": page_obj,
-        "grouped_technics": page_obj.object_list,  # shu template’da aylantirasiz
+        "grouped_technics": page_obj.object_list,
         "qs_params": qs_params,
 
         "total_count": total_count,
-
-        "organizations": organizations,
-        "departments": departments,
-        "directorates": directorates,
-        "divisions": divisions,
+        "filtered_count": filtered_count,
 
         "selected_org": org_id,
         "selected_dep": dep_id,
@@ -914,7 +896,6 @@ def technics(request, slug=None):
         "selected_div": div_id,
     }
     return render(request, "main/technics.html", context)
-
 
 
 @never_cache
@@ -995,7 +976,6 @@ def organization(request, slug):
         'divisions': divisions,
     }
     return render(request, 'main/organization.html', context)
-
 
 
 @never_cache
