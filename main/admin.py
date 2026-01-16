@@ -218,6 +218,7 @@ class TechnicsAdmin(admin.ModelAdmin):
         "name",
         "category",
         "organization",
+        "employee__organization",
         "employee",
         "status",
         "inventory",
