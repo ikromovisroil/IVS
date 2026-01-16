@@ -806,16 +806,20 @@ def material_delete(request):
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
+from collections import defaultdict
+from django.core.paginator import Paginator
+from django.core.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404, render
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
+
 @never_cache
 @login_required
 def technics(request, slug=None):
-
-    # 🔒 Worker bo‘lmagan foydalanuvchi kira olmaydi
     emp = getattr(request.user, "employee", None)
     if not emp or emp.status != "worker":
         raise PermissionDenied
 
-    # 1️⃣ CATEGORY FILTER
     category = None
     if slug:
         category = get_object_or_404(Category, slug=slug)
@@ -830,8 +834,8 @@ def technics(request, slug=None):
         .only(
             "id", "name",
             "category__id", "category__name",
-            "employee__id", "employee__first_name", "employee__last_name",
-            "employee__user__id",
+            "employee__id", "employee__first_name", "employee__last_name", "employee__father_name",
+            "employee__user__id", "employee__user__username",
             "employee__rank__id", "employee__rank__name",
             "employee__organization__id", "employee__organization__name",
             "employee__department__id", "employee__department__name",
@@ -843,78 +847,74 @@ def technics(request, slug=None):
     if category:
         technics_qs = technics_qs.filter(category=category)
 
-
-    # 2️⃣ FILTER PARAMETRLAR
     org_id = request.GET.get("organization")
     dep_id = request.GET.get("department")
     dir_id = request.GET.get("directorate")
     div_id = request.GET.get("division")
 
-
-    # 3️⃣ FILTERLASH (safe — employee None bo‘lsa ham xato bermaydi)
     if org_id:
         technics_qs = technics_qs.filter(employee__organization_id=org_id)
-
     if dep_id:
         technics_qs = technics_qs.filter(employee__department_id=dep_id)
-
     if dir_id:
         technics_qs = technics_qs.filter(employee__directorate_id=dir_id)
-
     if div_id:
         technics_qs = technics_qs.filter(employee__division_id=div_id)
 
-    # 4️⃣ TEXNIKALAR SONI
     total_count = technics_qs.count()
 
-    # 5️⃣ XODIM BO‘YICHA GURUHLASH (⚡ juda tez)
+    # ✅ GROUP BY employee (xodim bo'yicha)
     grouped = defaultdict(list)
 
-    for t in technics_qs.order_by(
+    ordered_qs = technics_qs.order_by(
         "employee__last_name",
         "employee__first_name",
         "category__name",
         "name"
-    ):
-        if t.employee:   # ⚠️ xodimsiz texnika bo‘lsa xato bermaydi
-            grouped[t.employee].append(t)
-        else:
-            grouped[None].append(t)  # “biriktirilmagan texnika” guruhi
+    )
 
-    # 6️⃣ FILTER SELECTLAR — OPTIMALLASHTIRILGAN
+    for t in ordered_qs:
+        grouped[t.employee].append(t)  # employee None bo'lsa ham key bo'la oladi
+
+    # ✅ Pagination: har sahifada 100 ta "xodim guruhi"
+    page_number = request.GET.get("page", 1)
+
+    grouped_items = list(grouped.items())  # [(employee, [technics...]), ...]
+    paginator = Paginator(grouped_items, 100)
+    page_obj = paginator.get_page(page_number)
+
+    # pagination linklar uchun querystring
+    params = request.GET.copy()
+    params.pop("page", None)
+    qs_params = params.urlencode()
+
     organizations = Organization.objects.only("id", "name")
+    departments = Department.objects.only("id", "name", "organization_id")
+    directorates = Directorate.objects.only("id", "name", "department_id")
+    divisions = Division.objects.only("id", "name", "directorate_id")
 
-    departments = Department.objects.select_related("organization").only(
-        "id", "name", "organization_id"
-    )
-
-    directorates = Directorate.objects.select_related("department").only(
-        "id", "name", "department_id"
-    )
-
-    divisions = Division.objects.select_related("directorate").only(
-        "id", "name", "directorate_id"
-    )
-
-    # 7️⃣ CONTEXT
     context = {
         "category": category,
-        "grouped_technics": grouped.items(),
+
+        # ✅ paginated grouped
+        "page_obj": page_obj,
+        "grouped_technics": page_obj.object_list,  # shu template’da aylantirasiz
+        "qs_params": qs_params,
+
         "total_count": total_count,
 
-        # Filter selectlar uchun
         "organizations": organizations,
         "departments": departments,
         "directorates": directorates,
         "divisions": divisions,
 
-        # Selected qiymatlar
         "selected_org": org_id,
         "selected_dep": dep_id,
         "selected_dir": dir_id,
         "selected_div": div_id,
     }
     return render(request, "main/technics.html", context)
+
 
 
 @never_cache
