@@ -1,12 +1,13 @@
 import os
 import subprocess
 from datetime import datetime
-
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import red
 from PyPDF2 import PdfReader, PdfWriter
 import qrcode
-
+import shutil
+import base64
+import json
 from django.conf import settings
 
 
@@ -131,8 +132,6 @@ def merge_pdf(original: str, overlay: str, output: str) -> None:
 # =========================================================
 # 4) Asosiy FUNKSIYA: DOCX → PDF → Overlay → Signed PDF
 # ==========================================================
-import shutil
-
 def sign_pdf(pdf_path: str, request, approver_name: str) -> bool:
 
     if not os.path.exists(pdf_path):
@@ -176,12 +175,6 @@ def sign_pdf(pdf_path: str, request, approver_name: str) -> bool:
         os.remove(overlay_path)
 
     return True
-
-
-
-
-import base64
-import json
 
 
 def decode_jwt(token):

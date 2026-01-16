@@ -10,7 +10,6 @@ from django.core.files import File
 from io import BytesIO
 from .docx_tables import *
 from .ajax_views import *
-import os
 import requests
 from PyPDF2 import PdfReader
 from django.views.decorators.csrf import csrf_exempt
@@ -21,8 +20,9 @@ from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
 from django.db import transaction
 from .forms import *
-
 from django.contrib.auth import update_session_auth_hash
+from django.core.paginator import Paginator
+
 
 def global_data(request):
     return {
@@ -485,7 +485,7 @@ def deedconsent_action(request, pk):
     messages.error(request, "Noto‘g‘ri amal")
     return redirect(redirect_url)
 
-from django.core.paginator import Paginator
+
 @never_cache
 @login_required
 def barn_tex(request):
@@ -1329,7 +1329,6 @@ def order_receiver(request):
     return render(request, 'main/order_receiver.html', context)
 
 
-
 @never_cache
 @login_required
 def order_approved(request):
@@ -1347,7 +1346,6 @@ def order_approved(request):
 
     messages.success(request, "Zayafka tasdiqlandi!")
     return redirect(request.META.get("HTTP_REFERER", "/"))
-
 
 
 @never_cache
