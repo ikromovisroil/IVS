@@ -236,6 +236,15 @@ class Technics(models.Model):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if self.employee:
+            self.status = 'active'
+
+        if self.status == 'free':
+            self.employee = None
+
+        super().save(*args, **kwargs)
+
     class Meta:
         db_table = 'technics'
         verbose_name = "Texnika"
