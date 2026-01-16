@@ -115,8 +115,7 @@
                       <th scope="row">
                         {{ row_start|add:forloop.counter0 }}
                       </th>
-
-                      <td>({{ tex.category.name|default:"-" }}) {{ tex.name|default:"-" }}</td>
+                      <td>{{ tex.name|default:"-" }}</td>
                       <td>{{ tex.inventory|default:"-" }}</td>
                       <td>{{ tex.serial|default:"-" }}</td>
                       <td>{{ tex.year|default:"-" }}</td>
