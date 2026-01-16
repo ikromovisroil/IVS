@@ -144,6 +144,20 @@
                 <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ d.id }}">
                     Tasdiqlash
                 </button>
+                {% with me=request.user.employee %}
+                  {# Sender QR #}
+                  {% if d.sender == me and d.file and not d.sender_qr_done %}
+                    <a href="{% url 'deed_pdf_view' d.id %}" target="_blank" class="btn btn-sm btn-warning">📄 Sender QR</a>
+                  {% endif %}
+
+                  {# Receiver Tasdiqlash #}
+                  {% if d.receiver == me and d.file and d.status != "approved" and not d.receiver_qr_done %}
+                    <a href="{% url 'deed_pdf_view' d.id %}" target="_blank" class="btn btn-sm btn-primary">📄 Tasdiqlash</a>
+                  {% elif d.receiver == me and d.status == "approved" %}
+                    <button class="btn btn-sm btn-secondary" disabled>✅ Tasdiqlangan</button>
+                  {% endif %}
+                {% endwith %}
+
 
                 <!-- MODAL -->
                 {% if d.status == 'viewed' %}

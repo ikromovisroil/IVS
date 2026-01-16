@@ -426,6 +426,8 @@ class Deed(models.Model):
     sender_seen = models.BooleanField(default=False)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
+    sender_qr_done = models.BooleanField(default=False)
+    receiver_qr_done = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Dalolatnoma #{self.id} → {self.receiver}"

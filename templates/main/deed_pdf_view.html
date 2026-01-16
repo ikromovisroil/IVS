@@ -1,0 +1,228 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>PDF + QR</title>
+  <style>
+    body { margin:0; font-family: Arial; }
+    .wrap { display:flex; height:100vh; }
+    .left { flex:1; overflow:auto; background:#f3f3f3; }
+    .right { width:320px; border-left:1px solid #ddd; padding:12px; background:#fff; }
+    #pdfContainer { position:relative; width:fit-content; margin:12px auto; }
+    canvas { display:block; background:#fff; }
+    #qrBox {
+      position:absolute; width:120px; height:120px; display:none; cursor:move;
+      border:2px dashed #1976d2; background:rgba(25,118,210,0.06);
+      align-items:center; justify-content:center; user-select:none;
+    }
+    #qrBox img { width:100%; height:100%; display:block; }
+    .btn { width:100%; padding:10px; margin:6px 0; cursor:pointer; }
+    .btn-primary { background:#1976d2; color:white; border:none; }
+    .btn-success { background:#2e7d32; color:white; border:none; }
+    .btn-danger { background:#c62828; color:white; border:none; }
+    .btn:disabled { opacity:.5; cursor:not-allowed; }
+    select, input { width:100%; padding:8px; margin:6px 0; }
+    .warn { color:#c62828; font-weight:bold; }
+    .info { font-size:12px; color:#666; }
+  </style>
+</head>
+<body>
+{% if error %}
+  <div style="padding:20px;color:red">{{ error }}</div>
+{% else %}
+<div class="wrap">
+  <div class="left">
+    <div id="pdfContainer">
+      <canvas id="pdfCanvas"></canvas>
+      <div id="qrBox"><img id="qrImg" alt="QR"></div>
+    </div>
+  </div>
+
+  <div class="right">
+    <h3>QR ({{ role }})</h3>
+
+    {% if qr_locked %}
+      <div class="warn">Siz bu hujjatga QR allaqachon qo‘ygansiz (yoki receiver tasdiqlagan).</div>
+    {% endif %}
+
+    <label>Bet</label>
+    <select id="pageSelect"></select>
+
+    <label>QR o‘lcham (px)</label>
+    <input id="qrSize" type="number" value="120" min="60" max="300"/>
+
+    <button class="btn btn-primary" id="btnCreate">QR yaratish</button>
+    <button class="btn btn-success" id="btnSave">Saqlash</button>
+    <button class="btn btn-danger" id="btnHide">Bekor qilish</button>
+
+    <div class="info">QR yarat → PDF ustida drag → Saqlash.</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+  const pdfUrl = "{{ pdf_url }}";
+  const deedId = "{{ deed_id }}";
+  const qrLocked = {{ qr_locked|yesno:"true,false" }};
+  const stampUrl = "{% url 'deed_stamp_qr' 0 %}".replace("/0/", "/" + deedId + "/");
+
+  const canvas = document.getElementById("pdfCanvas");
+  const ctx = canvas.getContext("2d");
+  const pdfContainer = document.getElementById("pdfContainer");
+
+  const qrBox = document.getElementById("qrBox");
+  const qrImg = document.getElementById("qrImg");
+
+  const pageSelect = document.getElementById("pageSelect");
+  const qrSizeInput = document.getElementById("qrSize");
+
+  const btnCreate = document.getElementById("btnCreate");
+  const btnSave = document.getElementById("btnSave");
+  const btnHide = document.getElementById("btnHide");
+
+  if (qrLocked) { btnCreate.disabled = true; btnSave.disabled = true; }
+
+  let pdfDoc = null;
+  let currentPage = 1;
+  let viewportScale = 1.5;
+
+  let isDragging = false;
+  let dragOffsetX = 0;
+  let dragOffsetY = 0;
+
+  function getQRState() {
+    const size = parseInt(qrSizeInput.value || "120", 10);
+    const left = parseFloat(qrBox.style.left || "0");
+    const top  = parseFloat(qrBox.style.top  || "0");
+    return { page: currentPage, x: left, y: top, size, scale: viewportScale };
+  }
+
+  async function renderPage(pageNum) {
+    const page = await pdfDoc.getPage(pageNum);
+    const viewport = page.getViewport({ scale: viewportScale });
+
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    pdfContainer.style.width = canvas.width + "px";
+
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    if (qrBox.dataset.page && parseInt(qrBox.dataset.page, 10) !== pageNum) {
+      qrBox.style.display = "none";
+    } else if (qrBox.dataset.page) {
+      qrBox.style.display = "flex";
+    }
+  }
+
+  async function init() {
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+    pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
+
+    for (let i = 1; i <= pdfDoc.numPages; i++) {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = "Bet " + i;
+      pageSelect.appendChild(opt);
+    }
+
+    pageSelect.value = "1";
+    currentPage = 1;
+    await renderPage(1);
+  }
+
+  pageSelect.addEventListener("change", async (e) => {
+    currentPage = parseInt(e.target.value, 10);
+    await renderPage(currentPage);
+  });
+
+  btnCreate.addEventListener("click", async () => {
+    if (qrLocked) return;
+
+    const size = parseInt(qrSizeInput.value || "120", 10);
+    qrBox.style.width = size + "px";
+    qrBox.style.height = size + "px";
+
+    const res = await fetch(stampUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ preview: true, page: currentPage, size })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) { alert(data.error || "QR preview xato"); return; }
+
+    qrImg.src = data.qr_data_url;
+
+    qrBox.style.left = "40px";
+    qrBox.style.top  = "40px";
+    qrBox.dataset.page = String(currentPage);
+    qrBox.style.display = "flex";
+  });
+
+  btnHide.addEventListener("click", () => {
+    qrBox.style.display = "none";
+    qrBox.dataset.page = "";
+  });
+
+  // drag
+  qrBox.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    const rect = qrBox.getBoundingClientRect();
+    dragOffsetX = e.clientX - rect.left;
+    dragOffsetY = e.clientY - rect.top;
+  });
+
+  document.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+
+    const containerRect = pdfContainer.getBoundingClientRect();
+    const x = e.clientX - containerRect.left - dragOffsetX;
+    const y = e.clientY - containerRect.top  - dragOffsetY;
+
+    const maxX = canvas.width - qrBox.offsetWidth;
+    const maxY = canvas.height - qrBox.offsetHeight;
+
+    qrBox.style.left = Math.max(0, Math.min(x, maxX)) + "px";
+    qrBox.style.top  = Math.max(0, Math.min(y, maxY)) + "px";
+  });
+
+  document.addEventListener("mouseup", () => { isDragging = false; });
+
+  btnSave.addEventListener("click", async () => {
+    if (qrLocked) return;
+
+    if (qrBox.style.display === "none") {
+      alert("Avval QR yaratib joylashtiring.");
+      return;
+    }
+
+    const st = getQRState();
+    const redirectUrl = document.referrer || "/";
+
+    const res = await fetch(stampUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        preview: false,
+        page: st.page,
+        x: st.x,
+        y: st.y,
+        size: st.size,
+        scale: st.scale,
+        redirect_url: redirectUrl
+      })
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) { alert(data.error || "Saqlash xato"); return; }
+
+    window.location.href = data.redirect_url;
+  });
+
+  init();
+</script>
+{% endif %}
+</body>
+</html>

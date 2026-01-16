@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import *
 from .ajax_views import *
+from .qk_views import *
 
 urlpatterns = [
     path("", home, name="home"),
@@ -85,5 +86,8 @@ urlpatterns = [
     path("sso/start/", sso_start_page, name="sso_start_page"),     # JS: PKCE va redirect
     path("sso/callback/", sso_callback_page, name="sso_callback"), # JS: code ni olib exchange ga yuboradi
     path("sso/exchange/", sso_exchange_and_finish, name="sso_exchange_and_finish"),
+
+    path("deed/<int:pk>/view/", deed_pdf_view, name="deed_pdf_view"),
+    path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
 
 ]
