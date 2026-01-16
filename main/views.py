@@ -492,9 +492,9 @@ def barn_tex(request):
     status = (request.GET.get("status") or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
     category_id = (request.GET.get("category") or "").strip()
+    name = (request.GET.get("name") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    # ✅ Umumiy son (hammasi)
     total_count = Technics.objects.count()
 
     qs = (
@@ -510,11 +510,19 @@ def barn_tex(request):
     if category_id:
         qs = qs.filter(category_id=category_id)
 
-    # ✅ Filter natijasi soni
+    # ✅ nomi bo‘yicha qidiruv
+    if name:
+        qs = qs.filter(
+            Q(name__icontains=name) |
+            Q(inventory__icontains=name) |
+            Q(serial__icontains=name) |
+            Q(year__icontains=name)
+        )
+
     filtered_count = qs.count()
 
-    # Sizda filter bo‘lmasa bo‘sh ko‘rsatish sharti bor edi:
-    if not (status or organization_id or category_id):
+    # ✅ filter bo‘lmasa bo‘sh ko‘rsatish (name ham kiritildi)
+    if not (status or organization_id or category_id or name):
         qs = Technics.objects.none()
         filtered_count = 0
 
@@ -535,7 +543,6 @@ def barn_tex(request):
         "qs_params": qs_params,
         "row_start": page_obj.start_index() if filtered_count else 0,
 
-        # ✅ countlar
         "total_count": total_count,
         "filtered_count": filtered_count,
     }
