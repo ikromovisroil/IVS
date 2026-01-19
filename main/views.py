@@ -165,7 +165,7 @@ def deed_status(request, pk):
     context = {
         "deed": deed,
     }
-    return render(request, "deed/status.html", context)
+    return render(request, "deed/deed_status.html", context)
 
 
 @never_cache
