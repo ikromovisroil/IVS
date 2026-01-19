@@ -150,9 +150,9 @@ def index(request):
 @login_required
 def contact(request):
     context = {
-        'deed_sender': Deed.objects.filter(sender=request.user.employee),
-        'deed_receiver': Deed.objects.filter(receiver=request.user.employee),
-        "deed_consent": Deed.objects.filter(deedconsent__employee=request.user.employee),
+        'deed_sender': Deed.objects.filter(sender=request.user.employee).order_by("-id"),
+        'deed_receiver': Deed.objects.filter(receiver=request.user.employee).order_by("-id"),
+        "deed_consent": Deed.objects.filter(deedconsent__employee=request.user.employee).order_by("-id"),
         'employee': Employee.objects
         .select_related("user", "rank","organization","department","directorate","division")
         .exclude(user=request.user)

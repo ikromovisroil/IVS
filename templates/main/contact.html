@@ -136,21 +136,21 @@
                             </td>
                             <td>
                                 {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
-                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-s{{ d.id }}">
                                         Rad etildi
                                     </span>
                                 {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
-                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-s{{ d.id }}">
                                         Tasdiqlandi
                                     </span>
                                 {% else %}
-                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-s{{ d.id }}">
                                         Kutulmoqda
                                     </span>
                                 {% endif %}
 
                                 <!-- MODAL -->
-                                <div class="modal fade" id="modalcondition{{ d.id }}" tabindex="-1">
+                                <div class="modal fade" id="modalcondition-s{{ d.id }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered modal-xl">
                                         <div class="modal-content">
                                             <!-- ================= HEADER ================= -->
@@ -249,12 +249,12 @@
                             </td>
                             <!-- Holat -->
                             <td>
-                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ d.id }}">
+                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-s{{ d.id }}">
                                     Tasdiqlash
                                 </button>
                                 <!-- MODAL -->
                                 {% if d.status_sender == "viewed" %}
-                                    <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
+                                    <div class="modal fade" id="modal-s{{ d.id }}" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered modal-lg">
                                             <div class="modal-content">
                                                 <div class="modal-header">
@@ -322,21 +322,21 @@
                             </td>
                             <td>
                                 {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
-                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                         Rad etildi
                                     </span>
                                 {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
-                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                         Tasdiqlandi
                                     </span>
                                 {% else %}
-                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                         Kutulmoqda
                                     </span>
                                 {% endif %}
 
                                 <!-- MODAL -->
-                                <div class="modal fade" id="modalcondition{{ d.id }}" tabindex="-1">
+                                <div class="modal fade" id="modalcondition-r{{ d.id }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered modal-xl">
                                         <div class="modal-content">
                                             <!-- ================= HEADER ================= -->
@@ -435,12 +435,12 @@
                             </td>
                             <!-- Holat -->
                             <td>
-                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ d.id }}">
+                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-r{{ d.id }}">
                                     Tasdiqlash
                                 </button>
                                 <!-- MODAL -->
                                 {% if d.status_receiver == "viewed" %}
-                                    <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
+                                    <div class="modal fade" id="modal-r{{ d.id }}" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered modal-lg">
                                             <div class="modal-content">
                                                 <div class="modal-header">
@@ -514,30 +514,22 @@
                             <!-- Holat -->
                             <td>
                                 {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
-                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
                                         Rad etildi
                                     </span>
                                 {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
-                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
                                         Tasdiqlandi
                                     </span>
                                 {% else %}
-                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
                                         Kutulmoqda
                                     </span>
                                 {% endif %}
 
-                                <!-- Ikonka -->
-                                {% if d.sender.user == user %}
-                                    <i class="bi bi-arrow-up"></i>
-                                {% elif d.receiver.user == user %}
-                                    <i class="bi bi-arrow-down"></i>
-                                {% else %}
-                                    <i class="bi bi-arrow-left-right"></i>
-                                {% endif %}
 
                                 <!-- MODAL -->
-                                <div class="modal fade" id="modalcondition{{ d.id }}" tabindex="-1">
+                                <div class="modal fade" id="modalcondition-c{{ d.id }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered modal-xl">
                                         <div class="modal-content">
                                             <!-- ================= HEADER ================= -->
@@ -636,13 +628,13 @@
                             </td>
                             <!-- Holat -->
                             <td>
-                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ d.id }}">
+                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-c{{ d.id }}">
                                     Tasdiqlash
                                 </button>
                                 <!-- MODAL -->
                                 {% for dc in d.deedconsent_set.all %}
                                    {% if dc.status == 'viewed' %}
-                                    <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
+                                    <div class="modal fade" id="modal-c{{ d.id }}" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered modal-lg">
                                             <div class="modal-content">
                                                 <div class="modal-header">
