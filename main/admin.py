@@ -309,13 +309,14 @@ class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "sender",
+        "status_sender",
         "receiver",
-        "status",
+        "status_receiver",
         "sender_seen",
         "date_creat",
     )
 
-    list_filter = ("status", "sender_seen")
+    list_filter = ( "status_sender", "status_receiver")
 
     search_fields = (
         "sender__last_name",

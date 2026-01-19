@@ -1,3 +1,4 @@
+# qkviews.py
 import base64
 import io
 import json
@@ -8,16 +9,18 @@ import fitz  # PyMuPDF
 import qrcode
 from PIL import Image
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 from django.db import transaction
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .models import Deed
-
 
 def _make_qr_png_bytes(text: str, size_px: int) -> bytes:
     qr = qrcode.QRCode(box_size=10, border=1)
@@ -41,10 +44,6 @@ def _stamp_qr_pdf_overwrite_same_name(
     render_scale: float,
     qr_png: bytes,
 ) -> None:
-    """
-    PDF nomi o‘zgarmaydi. Shu faylning o‘ziga yoziladi.
-    (Xavfsiz qilish uchun temp faylga saqlab, keyin o‘sha nomga replace qilinadi)
-    """
     doc = fitz.open(pdf_path)
     page_index = max(0, int(page_1based) - 1)
 
@@ -69,7 +68,7 @@ def _stamp_qr_pdf_overwrite_same_name(
     try:
         doc.save(tmp_path)
         doc.close()
-        os.replace(tmp_path, pdf_path)  # ✅ shu nomning o‘zi saqlanadi
+        os.replace(tmp_path, pdf_path)
     except Exception:
         try:
             doc.close()
@@ -80,35 +79,39 @@ def _stamp_qr_pdf_overwrite_same_name(
         raise
 
 
+@never_cache
 @login_required
 def deed_pdf_view(request, pk):
     deed = get_object_or_404(Deed, pk=pk)
     emp = request.user.employee
 
-    # ✅ faqat sender yoki receiver kira oladi
+    # faqat sender yoki receiver
     if deed.sender != emp and deed.receiver != emp:
         return render(request, "main/deed_pdf_view.html", {"error": "Sizga ruxsat yo‘q"})
 
     if not deed.file:
         return render(request, "main/deed_pdf_view.html", {"error": "PDF yo‘q"})
 
-    if deed.status == "rejected":
-        return render(request, "main/deed_pdf_view.html", {"error": "Hujjat rad etilgan"})
-
     role = "sender" if deed.sender == emp else "receiver"
 
-    # ✅ receiver approved bo‘lsa endi QR qo‘ya olmaydi (tasdiqlash tugaydi)
-    # sender esa o‘zi qo‘ymagan bo‘lsa, approved bo‘lsa ham qo‘yishi mumkin
-    # (agar sender ham approveddan keyin qo‘ymasın desangiz, pastdagi qatorni yoqing)
-    # if deed.status == "approved": return render(...)
+    # rad etilgan bo'lsa
+    is_rejected = (deed.status_sender == "rejected") or (deed.status_receiver == "rejected")
+    if is_rejected:
+        return render(request, "main/deed_pdf_view.html", {"error": "Hujjat rad etilgan"})
 
-    qr_locked = False
-    if role == "sender" and deed.sender_qr_done:
-        qr_locked = True
-    if role == "receiver" and (deed.receiver_qr_done or deed.status == "approved"):
-        qr_locked = True
+    # receiver QR qo‘yishi uchun SSO_OK bo‘lishi shart
+    if role == "receiver":
+        ok = request.session.get("SSO_OK") or {}
+        if ok.get("kind") != "deed" or ok.get("deed_id") != deed.id or ok.get("role") != "receiver":
+            return render(request, "main/deed_pdf_view.html", {"error": "Avval SSO orqali tasdiqlang"})
 
-    # ✅ cache-buster: date_edit o‘zgarsa URL ham o‘zgaradi
+    # QR lock (status orqali)
+    sender_qr_done = (deed.status_sender == "approved")
+    receiver_qr_done = (deed.status_receiver == "approved")
+    qr_locked = (role == "sender" and sender_qr_done) or (role == "receiver" and receiver_qr_done)
+
+    next_url = (request.GET.get("next") or "").strip() or request.META.get("HTTP_REFERER") or "/"
+
     v = int(deed.date_edit.timestamp()) if deed.date_edit else int(timezone.now().timestamp())
     pdf_url = f"{deed.file.url}?v={v}"
 
@@ -117,11 +120,16 @@ def deed_pdf_view(request, pk):
         "pdf_url": pdf_url,
         "role": role,
         "qr_locked": qr_locked,
+        "next_url": next_url,
     })
 
 
+# =========================
+# Stamp QR endpoint
+# =========================
 @csrf_exempt
 @require_http_methods(["POST"])
+@never_cache
 @login_required
 def deed_stamp_qr(request, pk):
     emp = request.user.employee
@@ -143,22 +151,34 @@ def deed_stamp_qr(request, pk):
         if deed.sender != emp and deed.receiver != emp:
             return JsonResponse({"ok": False, "error": "Sizga ruxsat yo‘q"}, status=403)
 
-        if deed.status == "rejected":
-            return JsonResponse({"ok": False, "error": "Hujjat rad etilgan"}, status=400)
-
         if not deed.file:
             return JsonResponse({"ok": False, "error": "PDF yo‘q"}, status=400)
 
         role = "sender" if deed.sender == emp else "receiver"
 
-        # ✅ role bo‘yicha qayta QR qo‘yishni blok
-        if role == "sender" and deed.sender_qr_done:
+        # rad etilgan bo'lsa
+        is_rejected = (deed.status_sender == "rejected") or (deed.status_receiver == "rejected")
+        if is_rejected:
+            return JsonResponse({"ok": False, "error": "Hujjat rad etilgan"}, status=400)
+
+        ok_sso = request.session.get("SSO_OK") or {}
+
+        # receiver uchun SSO OK shart
+        if role == "receiver":
+            if (
+                ok_sso.get("kind") != "deed"
+                or ok_sso.get("deed_id") != deed.id
+                or ok_sso.get("role") != "receiver"
+            ):
+                return JsonResponse({"ok": False, "error": "SSO tasdiq topilmadi"}, status=403)
+
+        # qayta qo‘yishni blok (status orqali)
+        if role == "sender" and deed.status_sender == "approved":
             return JsonResponse({"ok": False, "error": "Sender QR allaqachon qo‘yilgan"}, status=400)
+        if role == "receiver" and deed.status_receiver == "approved":
+            return JsonResponse({"ok": False, "error": "Receiver QR allaqachon qo‘yilgan"}, status=400)
 
-        if role == "receiver" and (deed.receiver_qr_done or deed.status == "approved"):
-            return JsonResponse({"ok": False, "error": "Receiver allaqachon tasdiqlagan"}, status=400)
-
-        # QR ichidagi matn (skaner qilinsa shu viewer ochilsin)
+        # QR ichidagi link
         verify_url = request.build_absolute_uri(f"/deed/{deed.id}/viewer/?by={role}")
         qr_png = _make_qr_png_bytes(verify_url, size_px=size)
 
@@ -166,8 +186,7 @@ def deed_stamp_qr(request, pk):
             b64 = base64.b64encode(qr_png).decode("utf-8")
             return JsonResponse({"ok": True, "qr_data_url": f"data:image/png;base64,{b64}"})
 
-
-        # save coords
+        # coords
         try:
             page = int(body.get("page") or 1)
             x = float(body.get("x") or 0)
@@ -176,7 +195,7 @@ def deed_stamp_qr(request, pk):
         except Exception:
             return JsonResponse({"ok": False, "error": "Koordinata/scale xato"}, status=400)
 
-        # ✅ PDFga urish (nom o‘zgarmaydi)
+        # PDFga QR urish
         try:
             _stamp_qr_pdf_overwrite_same_name(
                 pdf_path=deed.file.path,
@@ -190,16 +209,26 @@ def deed_stamp_qr(request, pk):
         except Exception as e:
             return JsonResponse({"ok": False, "error": f"PDFga QR urishda xato: {e}"}, status=400)
 
-        # ✅ DB yangilash + date_edit (cache bust)
+        # status update + message yozish
+        sso_message = (ok_sso.get("message") or "").strip()
         now = timezone.now()
-        if role == "sender":
-            deed.sender_qr_done = True
-            deed.date_edit = now
-            deed.save(update_fields=["sender_qr_done", "date_edit"])
-        else:
-            deed.receiver_qr_done = True
-            deed.status = "approved"
-            deed.date_edit = now
-            deed.save(update_fields=["receiver_qr_done", "status", "date_edit"])
 
-    return JsonResponse({"ok": True, "redirect_url": redirect_url})
+        if role == "sender":
+            deed.status_sender = "approved"
+            if sso_message:
+                deed.message_sender = sso_message
+            deed.date_edit = now
+            deed.save(update_fields=["status_sender", "message_sender", "date_edit"])
+            return JsonResponse({"ok": True, "redirect_url": redirect_url})
+
+        # receiver
+        deed.status_receiver = "approved"
+        if sso_message:
+            deed.message_receiver = sso_message
+        deed.date_edit = now
+        deed.save(update_fields=["status_receiver", "message_receiver", "date_edit"])
+
+        # receiver yakunlaganda SSO_OK tozalansin
+        request.session.pop("SSO_OK", None)
+        messages.success(request, "✅ Dalolatnoma tasdiqlandi")
+        return JsonResponse({"ok": True, "redirect_url": redirect_url})

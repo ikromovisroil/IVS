@@ -2,7 +2,15 @@
 <html>
 <body>
 <script>
-const code = new URLSearchParams(location.search).get("code");
+const qs = new URLSearchParams(location.search);
+const code = qs.get("code");
+const err  = qs.get("error");
+
+if (err || !code) {
+  alert("SSO xatolik: " + (err || "code kelmadi"));
+  window.location.href = "/";
+}
+
 const verifier = localStorage.getItem("pkce_verifier");
 
 fetch("/sso/exchange/", {
@@ -14,13 +22,15 @@ fetch("/sso/exchange/", {
     redirectUri: "{{ redirect_uri }}"
   })
 })
-.then(r => r.json())
-.then(data => {
-  if (data.status === "ok") {
+.then(r => r.json().then(j => ({ok:r.ok, data:j})))
+.then(({ok, data}) => {
+  localStorage.removeItem("pkce_verifier");
+
+  if (ok && data.status === "ok") {
     window.location.href = data.redirect;
   } else {
-    alert("SSO xatolik");
-    window.location.href = "/";
+    alert(data.message || "SSO xatolik");
+    window.location.href = data.redirect || "/";
   }
 });
 </script>

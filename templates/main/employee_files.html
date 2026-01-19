@@ -24,17 +24,17 @@
             </td>
             <!-- Holat -->
             <td>
-                {% if d.status == 'viewed' %}
-                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
-                        Kutulmoqda
+                {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
+                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                        Rad etildi
                     </span>
-                {% elif d.status == 'approved' %}
+                {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
                     <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
                         Tasdiqlandi
                     </span>
-                {% elif d.status == 'rejected' %}
-                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
-                        Rad etildi
+                {% else %}
+                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition{{ d.id }}">
+                        Kutulmoqda
                     </span>
                 {% endif %}
 
@@ -66,7 +66,13 @@
                                         <div class="col-6"><strong>Ismi:</strong> {{ d.sender.full_name }}</div>
                                         <div class="col-3">
                                             <strong>Holati:</strong>
-                                            <span class="badge bg-success">Tasdiqlandi</span>
+                                            {% if d.status_sender == 'viewed' %}
+                                                <span class="badge bg-warning">Kutulmoqda</span>
+                                            {% elif d.status_sender == 'approved' %}
+                                                <span class="badge bg-success">Tasdiqlandi</span>
+                                            {% elif d.status_sender == 'rejected' %}
+                                                <span class="badge bg-danger">Rad etildi</span>
+                                            {% endif %}
                                         </div>
                                         <div class="col-3"><strong>Sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
                                     </div>
@@ -85,11 +91,11 @@
                                         <div class="col-6"><strong>Ismi:</strong> {{ d.receiver.full_name }}</div>
                                         <div class="col-3">
                                             <strong>Holati:</strong>
-                                            {% if d.status == 'viewed' %}
+                                            {% if d.status_receiver == 'viewed' %}
                                                 <span class="badge bg-warning">Kutulmoqda</span>
-                                            {% elif d.status == 'approved' %}
+                                            {% elif d.status_receiver == 'approved' %}
                                                 <span class="badge bg-success">Tasdiqlandi</span>
-                                            {% elif d.status == 'rejected' %}
+                                            {% elif d.status_receiver == 'rejected' %}
                                                 <span class="badge bg-danger">Rad etildi</span>
                                             {% endif %}
                                         </div>
@@ -144,24 +150,8 @@
                 <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal{{ d.id }}">
                     Tasdiqlash
                 </button>
-                {% with me=request.user.employee %}
-                  {# Sender QR #}
-                  {% if d.sender == me and d.file and not d.sender_qr_done %}
-                    <a href="{% url 'deed_pdf_view' d.id %}" target="_blank" class="btn btn-sm btn-warning">📄 Sender QR</a>
-                  {% endif %}
-
-                  {# Receiver Tasdiqlash #}
-                  {% if d.receiver == me and d.file and d.status != "approved" and not d.receiver_qr_done %}
-                    <a href="{% url 'deed_pdf_view' d.id %}" target="_blank" class="btn btn-sm btn-primary">📄 Tasdiqlash</a>
-                  {% elif d.receiver == me and d.status == "approved" %}
-                    <button class="btn btn-sm btn-secondary" disabled>✅ Tasdiqlangan</button>
-                  {% endif %}
-                {% endwith %}
-
-
                 <!-- MODAL -->
-                {% if d.status == 'viewed' %}
-                    {% if d.receiver.user == user and d.status == 'viewed' %}
+                {% if d.sender == request.user.employee and d.status_sender == "viewed" %}
                     <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content">
@@ -178,7 +168,43 @@
 
                                         <div class="mb-3">
                                             <textarea
-                                                name="message_receiver"
+                                                name="message"
+                                                class="form-control"
+                                                style="height: 100px"
+                                                placeholder="Izoh yozing...">{{d.message_sender}}</textarea>
+                                        </div>
+
+                                        <div class="d-flex justify-content-center gap-2">
+                                            <button name="action" value="reject" class="btn btn-danger">
+                                                Rad etish
+                                            </button>
+                                            <button name="action" value="approve" class="btn btn-primary">
+                                                Tasdiqlash
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% elif d.receiver == request.user.employee and d.status_receiver == "viewed" %}
+                    <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Tasdiqlash</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div>
+                                        Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
+                                    </div><hr>
+                                    <form method="post" action="{% url 'deed_action' d.id %}">
+                                        {% csrf_token %}
+
+                                        <div class="mb-3">
+                                            <textarea
+                                                name="message"
                                                 class="form-control"
                                                 style="height: 100px"
                                                 placeholder="Izoh yozing..."></textarea>
@@ -197,42 +223,41 @@
                             </div>
                         </div>
                     </div>
-                    {% else %}
-                        {% for dc in d.deedconsent_set.all %}
-                           {% if dc.employee.user == user and dc.status == 'viewed' %}
-                            <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
-                                <div class="modal-dialog modal-dialog-centered modal-lg">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Tasdiqlash</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                {% else %}
+                    {% for dc in d.deedconsent_set.all %}
+                       {% if dc.employee == request.user.employee and dc.status == 'viewed' %}
+                        <div class="modal fade" id="modal{{ d.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Tasdiqlash</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div>
+                                            Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
                                         </div>
-                                        <div class="modal-body">
-                                            <div>
-                                                Hujjat tasdiqlangandan so‘ng hujjat yuridik kuchga ega bo‘ladi va rasmiylashtiriladi.
+                                        <hr>
+                                        <form method="post" action="{% url 'deedconsent_action' dc.id %}">
+                                            {% csrf_token %}
+                                            <div class="mb-3">
+                                                <textarea
+                                                    name="message"
+                                                    class="form-control"
+                                                    style="height: 100px"
+                                                    placeholder="Izoh yozing..."></textarea>
                                             </div>
-                                            <hr>
-                                            <form method="post" action="{% url 'deedconsent_action' dc.id %}">
-                                                {% csrf_token %}
-                                                <div class="mb-3">
-                                                    <textarea
-                                                        name="message"
-                                                        class="form-control"
-                                                        style="height: 100px"
-                                                        placeholder="Izoh yozing..."></textarea>
-                                                </div>
-                                                <div class="d-flex justify-content-center gap-2">
-                                                    <button name="action" value="reject" class="btn btn-danger">Rad etish</button>
-                                                    <button name="action" value="approve" class="btn btn-primary">Tasdiqlash</button>
-                                                </div>
-                                            </form>
-                                        </div>
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <button name="action" value="reject" class="btn btn-danger">Rad etish</button>
+                                                <button name="action" value="approve" class="btn btn-primary">Tasdiqlash</button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
-                            {% endif %}
-                        {% endfor %}
-                    {% endif %}
+                        </div>
+                        {% endif %}
+                    {% endfor %}
                 {% endif %}
             </td>
         </tr>

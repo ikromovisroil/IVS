@@ -12,14 +12,14 @@ def deed_notifications(request):
     # RECEIVER uchun: yangi kelgan dalolatnoma (status viewed)
     receiver_notes = Deed.objects.filter(
         receiver=employee,
-        status="viewed"
+        status_receiver="viewed"
     )
 
     # SENDER uchun: tasdiqlangan yoki rad etilgan, hali ko‘rilmagan
     sender_notes = Deed.objects.filter(
         sender=employee,
         sender_seen=False,
-        status__in=["approved", "rejected"]
+        status_sender__in=["approved", "rejected"]
     )
     # 3️⃣ KUZATUVCHI: kelishuv talab qilinayotgan yoki o‘zgargan
     watcher_notes = Deed.objects.filter(

@@ -10,7 +10,7 @@
     .right { width:320px; border-left:1px solid #ddd; padding:12px; background:#fff; }
     #pdfContainer { position:relative; width:fit-content; margin:12px auto; }
     canvas { display:block; background:#fff; }
-    #qrBox {
+    #qrBox{
       position:absolute; width:120px; height:120px; display:none; cursor:move;
       border:2px dashed #1976d2; background:rgba(25,118,210,0.06);
       align-items:center; justify-content:center; user-select:none;
@@ -42,14 +42,14 @@
     <h3>QR ({{ role }})</h3>
 
     {% if qr_locked %}
-      <div class="warn">Siz bu hujjatga QR allaqachon qo‘ygansiz (yoki receiver tasdiqlagan).</div>
+      <div class="warn">Siz bu hujjatga QR allaqachon qo‘ygansiz (yoki ruxsat yo‘q).</div>
     {% endif %}
 
     <label>Bet</label>
     <select id="pageSelect"></select>
 
     <label>QR o‘lcham (px)</label>
-    <input id="qrSize" type="number" value="120" min="60" max="300"/>
+    <input id="qrSize" type="number" value="120" min="60" max="400"/>
 
     <button class="btn btn-primary" id="btnCreate">QR yaratish</button>
     <button class="btn btn-success" id="btnSave">Saqlash</button>
@@ -61,9 +61,13 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
-  const pdfUrl = "{{ pdf_url }}";
-  const deedId = "{{ deed_id }}";
+  const pdfUrl   = "{{ pdf_url|escapejs }}";
+  const deedId   = "{{ deed_id }}";
   const qrLocked = {{ qr_locked|yesno:"true,false" }};
+  const nextUrl  = "{{ next_url|default:'/'|escapejs }}";
+
+  // URL'ni replace bilan "hack" qilmaymiz: backend url pattern /deed/<pk>/stamp-qr/ bo‘lsin
+  // Sizda hozir shu nom ishlaydi:
   const stampUrl = "{% url 'deed_stamp_qr' 0 %}".replace("/0/", "/" + deedId + "/");
 
   const canvas = document.getElementById("pdfCanvas");
@@ -80,7 +84,10 @@
   const btnSave = document.getElementById("btnSave");
   const btnHide = document.getElementById("btnHide");
 
-  if (qrLocked) { btnCreate.disabled = true; btnSave.disabled = true; }
+  if (qrLocked) {
+    btnCreate.disabled = true;
+    btnSave.disabled = true;
+  }
 
   let pdfDoc = null;
   let currentPage = 1;
@@ -107,6 +114,7 @@
 
     await page.render({ canvasContext: ctx, viewport }).promise;
 
+    // QR faqat shu page'da ko‘rinsin
     if (qrBox.dataset.page && parseInt(qrBox.dataset.page, 10) !== pageNum) {
       qrBox.style.display = "none";
     } else if (qrBox.dataset.page) {
@@ -120,6 +128,7 @@
 
     pdfDoc = await pdfjsLib.getDocument(pdfUrl).promise;
 
+    pageSelect.innerHTML = "";
     for (let i = 1; i <= pdfDoc.numPages; i++) {
       const opt = document.createElement("option");
       opt.value = i;
@@ -151,7 +160,10 @@
     });
 
     const data = await res.json();
-    if (!res.ok || !data.ok) { alert(data.error || "QR preview xato"); return; }
+    if (!res.ok || !data.ok) {
+      alert(data.error || "QR preview xato");
+      return;
+    }
 
     qrImg.src = data.qr_data_url;
 
@@ -166,9 +178,12 @@
     qrBox.dataset.page = "";
   });
 
-  // drag
+  // drag (tanlash/scroll bo‘lib ketmasin)
   qrBox.addEventListener("mousedown", (e) => {
+    if (qrLocked) return;
+    e.preventDefault();
     isDragging = true;
+
     const rect = qrBox.getBoundingClientRect();
     dragOffsetX = e.clientX - rect.left;
     dragOffsetY = e.clientY - rect.top;
@@ -199,7 +214,6 @@
     }
 
     const st = getQRState();
-    const redirectUrl = document.referrer || "/";
 
     const res = await fetch(stampUrl, {
       method: "POST",
@@ -211,14 +225,17 @@
         y: st.y,
         size: st.size,
         scale: st.scale,
-        redirect_url: redirectUrl
+        redirect_url: nextUrl
       })
     });
 
     const data = await res.json();
-    if (!res.ok || !data.ok) { alert(data.error || "Saqlash xato"); return; }
+    if (!res.ok || !data.ok) {
+      alert(data.error || "Saqlash xato");
+      return;
+    }
 
-    window.location.href = data.redirect_url;
+    window.location.href = data.redirect_url || nextUrl || "/";
   });
 
   init();

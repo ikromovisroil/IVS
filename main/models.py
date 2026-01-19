@@ -413,11 +413,16 @@ class OrderMaterial(models.Model):
 class Deed(models.Model):
     sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_sent',db_index=True)
     message_sender = models.TextField(null=True, blank=True)
+    status_sender = models.CharField(max_length=20, choices=[
+        ('viewed', 'Kutulmoqda'),
+        ('approved', 'Tasdiqlandi'),
+        ('rejected', 'Rad etildi'),
+    ], default='viewed', db_index=True)
+
 
     receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_received',db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
-
-    status = models.CharField(max_length=20, choices=[
+    status_receiver = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
@@ -426,8 +431,6 @@ class Deed(models.Model):
     sender_seen = models.BooleanField(default=False)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
-    sender_qr_done = models.BooleanField(default=False)
-    receiver_qr_done = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Dalolatnoma #{self.id} → {self.receiver}"
