@@ -43,6 +43,7 @@ def _stamp_qr_pdf_overwrite_same_name(
     size_px: int,
     render_scale: float,
     qr_png: bytes,
+    approved_text=None,   # py<3.10 bo'lsa ham ishlaydi
 ) -> None:
     doc = fitz.open(pdf_path)
     page_index = max(0, int(page_1based) - 1)
@@ -58,9 +59,24 @@ def _stamp_qr_pdf_overwrite_same_name(
     y = float(y_px) / float(render_scale)
     s = float(size_px) / float(render_scale)
 
+    # ✅ QR faqat tanlangan betga
     rect = fitz.Rect(x, y, x + s, y + s)
     page.insert_image(rect, stream=qr_png, overlay=True)
 
+    # ✅ Matn har bir betga (agar approved_text bo'lsa)
+    if approved_text:
+        for p in doc:
+            # chap tepa (point koordinata)
+            p.insert_text(
+                fitz.Point(10, 15),  # x=10, y=15 (xohlasangiz o'zgartirasiz)
+                approved_text,
+                fontsize=10,
+                fontname="helv",
+                color=(1, 0, 0),  # qizil
+                overlay=True,
+            )
+
+    # xavfsiz overwrite
     dir_name = os.path.dirname(pdf_path)
     fd, tmp_path = tempfile.mkstemp(prefix="tmp_qr_", suffix=".pdf", dir=dir_name)
     os.close(fd)
@@ -127,6 +143,8 @@ def deed_pdf_view(request, pk):
 # =========================
 # Stamp QR endpoint
 # =========================
+from datetime import datetime
+
 @csrf_exempt
 @require_http_methods(["POST"])
 @never_cache
@@ -134,6 +152,7 @@ def deed_pdf_view(request, pk):
 def deed_stamp_qr(request, pk):
     emp = request.user.employee
 
+    # 1) JSON parse
     try:
         body = json.loads(request.body or "{}")
     except Exception:
@@ -148,6 +167,7 @@ def deed_stamp_qr(request, pk):
     with transaction.atomic():
         deed = Deed.objects.select_for_update().get(pk=pk)
 
+        # 2) Permission: faqat sender/receiver
         if deed.sender != emp and deed.receiver != emp:
             return JsonResponse({"ok": False, "error": "Sizga ruxsat yo‘q"}, status=403)
 
@@ -156,14 +176,14 @@ def deed_stamp_qr(request, pk):
 
         role = "sender" if deed.sender == emp else "receiver"
 
-        # rad etilgan bo'lsa
+        # 3) Rad etilgan bo'lsa
         is_rejected = (deed.status_sender == "rejected") or (deed.status_receiver == "rejected")
         if is_rejected:
             return JsonResponse({"ok": False, "error": "Hujjat rad etilgan"}, status=400)
 
         ok_sso = request.session.get("SSO_OK") or {}
 
-        # receiver uchun SSO OK shart
+        # 4) Receiver uchun SSO OK shart
         if role == "receiver":
             if (
                 ok_sso.get("kind") != "deed"
@@ -172,21 +192,22 @@ def deed_stamp_qr(request, pk):
             ):
                 return JsonResponse({"ok": False, "error": "SSO tasdiq topilmadi"}, status=403)
 
-        # qayta qo‘yishni blok (status orqali)
+        # 5) Qayta qo‘yishni blok
         if role == "sender" and deed.status_sender == "approved":
             return JsonResponse({"ok": False, "error": "Sender QR allaqachon qo‘yilgan"}, status=400)
         if role == "receiver" and deed.status_receiver == "approved":
             return JsonResponse({"ok": False, "error": "Receiver QR allaqachon qo‘yilgan"}, status=400)
 
-        # QR ichidagi link
+        # 6) QR ichidagi link
         verify_url = request.build_absolute_uri(f"/deed/{deed.id}/viewer/?by={role}")
         qr_png = _make_qr_png_bytes(verify_url, size_px=size)
 
+        # 7) Preview bo'lsa - faqat QR rasm qaytariladi
         if preview:
             b64 = base64.b64encode(qr_png).decode("utf-8")
             return JsonResponse({"ok": True, "qr_data_url": f"data:image/png;base64,{b64}"})
 
-        # coords
+        # 8) Koordinatalar
         try:
             page = int(body.get("page") or 1)
             x = float(body.get("x") or 0)
@@ -195,7 +216,20 @@ def deed_stamp_qr(request, pk):
         except Exception:
             return JsonResponse({"ok": False, "error": "Koordinata/scale xato"}, status=400)
 
-        # PDFga QR urish
+        # 9) ✅ Approved text faqat receiver uchun
+        approved_text = None
+        if role == "receiver":
+            approver_name = (
+                getattr(emp, "full_name", None)
+                or emp.user.get_full_name()
+                or emp.user.username
+            )
+            approved_text = (
+                f"Ushbu hujjat {approver_name} tomonidan "
+                f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
+            )
+
+        # 10) PDFga QR (va receiver bo'lsa matn har bir betga)
         try:
             _stamp_qr_pdf_overwrite_same_name(
                 pdf_path=deed.file.path,
@@ -205,14 +239,16 @@ def deed_stamp_qr(request, pk):
                 size_px=size,
                 render_scale=scale,
                 qr_png=qr_png,
+                approved_text=approved_text,  # ✅ MUHIM
             )
         except Exception as e:
             return JsonResponse({"ok": False, "error": f"PDFga QR urishda xato: {e}"}, status=400)
 
-        # status update + message yozish
+        # 11) status update + message
         sso_message = (ok_sso.get("message") or "").strip()
         now = timezone.now()
 
+        # sender
         if role == "sender":
             deed.status_sender = "approved"
             if sso_message:
@@ -232,3 +268,4 @@ def deed_stamp_qr(request, pk):
         request.session.pop("SSO_OK", None)
         messages.success(request, "✅ Dalolatnoma tasdiqlandi")
         return JsonResponse({"ok": True, "redirect_url": redirect_url})
+
