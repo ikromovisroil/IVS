@@ -161,27 +161,27 @@ def contact(request):
 
 
 @never_cache
-@login_required
 def deed_post(request):
     if request.method != "POST":
         return redirect("contact")
 
-    message = request.POST.get("message", "").strip()
-    receiver_id = request.POST.get("receiver_id")
-    agreements = request.POST.getlist("agreements")
-
-    sender = Employee.objects.filter(user=request.user).first()
-
-    # 🔴 1. AVVAL receiver_id ni tekshiramiz
-    if not receiver_id:
-        messages.info(request, "Qabul qiluvchi tanlanmadi")
+    sender = getattr(request.user, "employee", None)
+    if not sender:
+        messages.info(request, "Xodim topilmadi")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    # 🔴 2. Keyin bazadan qidiramiz
-    receiver = Employee.objects.filter(id=receiver_id).first()
+    receiver_id = (request.POST.get("receiver") or "").strip()
+    message = (request.POST.get("body") or "").strip()  # ✅ template: name="body"
+    agreements = request.POST.getlist("agreements")
 
-    if not sender or not receiver:
-        messages.info(request, "Xodimlar noto‘g‘ri tanlandi")
+    if not receiver_id:
+        messages.info(request, "Imzolovchi tanlanmadi")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    receiver = get_object_or_404(Employee, pk=receiver_id)
+
+    if receiver.pk == sender.pk:
+        messages.info(request, "O'zingizni imzolovchi qilib tanlay olmaysiz")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
     upload_file = request.FILES.get("file")
@@ -189,63 +189,66 @@ def deed_post(request):
         messages.info(request, "Fayl yuklanmadi")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    # faqat DOCX va PDF ruxsat
     ext = os.path.splitext(upload_file.name)[1].lower()
     if ext not in [".docx", ".pdf"]:
         messages.info(request, "❌ Faqat Word (DOCX) yoki PDF fayl yuklash mumkin")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    # =============================
-    # 1️⃣ FAYLNI SAQLAYMIZ
-    # =============================
-    deed = Deed.objects.create(
-        sender=sender,
-        receiver=receiver,
-        message_sender=message,
-        file=upload_file,
-    )
+    try:
+        with transaction.atomic():
+            # 1) Deed yaratamiz
+            deed = Deed.objects.create(
+                sender=sender,
+                receiver=receiver,
+                message_sender=message,
+                file=upload_file,
+                status_sender="viewed",
+                status_receiver="viewed",
+            )
 
-    file_path = deed.file.path
+            file_path = deed.file.path
 
-    # =============================
-    # 2️⃣ AGAR DOCX BO‘LSA → PDF
-    # =============================
-    if ext == ".docx":
-        pdf_path, debug = convert_docx_to_pdf_libre(file_path)
+            # 2) DOCX bo'lsa -> PDF
+            if ext == ".docx":
+                pdf_path, debug = convert_docx_to_pdf_libre(file_path)
 
-        if not pdf_path or not os.path.exists(pdf_path):
-            print(debug)
-            messages.info(request, "❌ DOCX → PDF konvertatsiya xatosi")
-            deed.delete()
-            return redirect(request.META.get("HTTP_REFERER", "/"))
+                if not pdf_path or not os.path.exists(pdf_path):
+                    print(debug)
+                    raise RuntimeError("DOCX -> PDF convert xatosi")
 
-        # eski DOCX o‘chadi
-        try:
-            os.remove(file_path)
-        except:
-            pass
+                # eski docx o'chiramiz
+                try:
+                    os.remove(file_path)
+                except:
+                    pass
 
-        # PDF ni qayta saqlaymiz
-        with open(pdf_path, "rb") as f:
-            deed.file.save(os.path.basename(pdf_path), File(f), save=True)
+                # pdf ni deed.file ga qayta yozamiz
+                with open(pdf_path, "rb") as f:
+                    deed.file.save(os.path.basename(pdf_path), File(f), save=True)
 
-        try:
-            os.remove(pdf_path)
-        except:
-            pass
-    # =============================
-    # 4️⃣ KELISHUVCHILAR
-    # =============================
-    objs = []
-    for emp_id in agreements:
-        emp = Employee.objects.filter(id=emp_id).first()
-        if emp:
-            objs.append(Deedconsent(
-                deed=deed,
-                employee=emp,
-                status="viewed"
-            ))
-    Deedconsent.objects.bulk_create(objs)
+                try:
+                    os.remove(pdf_path)
+                except:
+                    pass
+
+            # 3) Kelishuvchilar (o'zini va receiver'ni qo'shmaymiz, takror bo'lsa distinct)
+            cleaned_ids = []
+            for x in agreements:
+                if str(x).isdigit():
+                    xid = int(x)
+                    if xid not in (sender.pk, receiver.pk):
+                        cleaned_ids.append(xid)
+
+            if cleaned_ids:
+                consent_emps = Employee.objects.filter(pk__in=set(cleaned_ids))
+                Deedconsent.objects.bulk_create([
+                    Deedconsent(deed=deed, employee=e, status="viewed")
+                    for e in consent_emps
+                ])
+
+    except Exception as e:
+        messages.info(request, f"❌ Xatolik: {e}")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
 
     messages.success(request, "✅ Dalolatnoma yuborildi")
     return redirect(request.META.get("HTTP_REFERER", "/"))
