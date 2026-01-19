@@ -51,53 +51,6 @@ def get_department_employees(request):
     return JsonResponse({"employees": data})
 
 
-def get_employee_files(request):
-    emp_id = request.GET.get("employee_id")
-    current_emp = getattr(request.user, "employee", None)
-
-    if current_emp is None:
-        return JsonResponse({"html": "<p>Bu foydalanuvchi xodim emas</p>"})
-
-    try:
-        other_emp = Employee.objects.get(id=int(emp_id))
-    except (Employee.DoesNotExist, TypeError, ValueError):
-        return JsonResponse({"html": "<p>Xodim topilmadi</p>"})
-
-    deeds = (
-        Deed.objects.filter(
-            # Men ↔ Tanlangan xodim
-            Q(sender=current_emp, receiver=other_emp) |
-            Q(sender=other_emp, receiver=current_emp) |
-
-            # Men yoki tanlangan xodim kelishuvchi bo‘lsa
-            Q(deedconsent__employee=current_emp,sender=other_emp)|
-            Q(deedconsent__employee=other_emp, sender=current_emp)
-        )
-        .select_related("sender__user", "receiver__user")
-        .prefetch_related("deedconsent_set__employee__user")
-        .distinct()
-        .order_by("-id")
-    )
-
-    # 🔥 ROLLNI ANIQLAYMIZ
-    for d in deeds:
-        if d.sender == current_emp:
-            d.user_role = "Yuboruvchi"
-        elif d.receiver == current_emp:
-            d.user_role = "Qabul qiluvchi"
-        elif d.deedconsent_set.filter(employee=current_emp).exists():
-            d.user_role = "Kelishuvchi"
-        else:
-            d.user_role = ""
-
-    html = render_to_string(
-        "main/employee_files.html",
-        {"deeds": deeds},
-        request=request,
-    )
-    return JsonResponse({"html": html})
-
-
 def ajax_load_departments(request):
     org_id = request.GET.get('organization')
 

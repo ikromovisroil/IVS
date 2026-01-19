@@ -22,6 +22,9 @@ from django.db import transaction
 from .forms import *
 from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
+import uuid
+from django.urls import reverse
+
 
 
 def global_data(request):
@@ -147,8 +150,12 @@ def index(request):
 @login_required
 def contact(request):
     context = {
-        'employee': Employee.objects.select_related('user')
-        .select_related("rank","organization","department","directorate","division")
+        'deed_sender': Deed.objects.filter(sender=request.user.employee),
+        'deed_receiver': Deed.objects.filter(receiver=request.user.employee),
+        "deed_consent": Deed.objects.filter(deedconsent__employee=request.user.employee),
+        'employee': Employee.objects
+        .select_related("user", "rank","organization","department","directorate","division")
+        .exclude(user=request.user)
     }
     return render(request, 'main/contact.html', context)
 
@@ -242,8 +249,6 @@ def deed_post(request):
 
     messages.success(request, "✅ Dalolatnoma yuborildi")
     return redirect(request.META.get("HTTP_REFERER", "/"))
-
-from django.urls import reverse
 
 
 def deed_action(request, pk):
