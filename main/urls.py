@@ -28,6 +28,8 @@ urlpatterns = [
     path('order/seen/', order_mark_seen, name="order_mark_seen"),
     path("deed/<int:pk>/action/", deed_action, name="deed_action"),
     path("deedconsent_action/<int:pk>/action/", deedconsent_action, name="deedconsent_action"),
+    path("deed/status/<int:pk>/", deed_status, name="deed_status"),
+
 
     # CONTACT
     path('contact/', contact, name='contact'),

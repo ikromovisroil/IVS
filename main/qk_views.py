@@ -128,8 +128,7 @@ def deed_pdf_view(request, pk):
 
     next_url = (request.GET.get("next") or "").strip() or request.META.get("HTTP_REFERER") or "/"
 
-    v = int(deed.date_edit.timestamp()) if deed.date_edit else int(timezone.now().timestamp())
-    pdf_url = f"{deed.file.url}?v={v}"
+    pdf_url = f"https://report.imv.uz/deed/status/{deed.id}/"
 
     return render(request, "main/deed_pdf_view.html", {
         "deed_id": deed.id,

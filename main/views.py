@@ -160,6 +160,14 @@ def contact(request):
     return render(request, 'main/contact.html', context)
 
 
+def deed_status(request, pk):
+    deed = get_object_or_404(Deed, pk=pk)
+    context = {
+        "deed": deed,
+    }
+    return render(request, "deed/status.html", context)
+
+
 @never_cache
 @login_required
 def deed_post(request):
