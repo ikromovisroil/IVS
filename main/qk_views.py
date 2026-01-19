@@ -200,8 +200,8 @@ def deed_stamp_qr(request, pk):
             return JsonResponse({"ok": False, "error": "Receiver QR allaqachon qo‘yilgan"}, status=400)
 
         # 6) QR ichidagi link
-        verify_url = request.build_absolute_uri(f"/deed/{deed.id}/viewer/?by={role}")
-        qr_png = _make_qr_png_bytes(verify_url, size_px=size)
+        status_url = request.build_absolute_uri(f"/deed/status/{deed.id}/")
+        qr_png = _make_qr_png_bytes(status_url, size_px=size)
 
         # 7) Preview bo'lsa - faqat QR rasm qaytariladi
         if preview:
