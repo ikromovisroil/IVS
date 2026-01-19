@@ -129,7 +129,7 @@ def deed_pdf_view(request, pk):
     next_url = (request.GET.get("next") or "").strip() or request.META.get("HTTP_REFERER") or "/"
 
     pdf_file_url = request.build_absolute_uri(deed.file.url)  # PDF faylning linki
-    status_url = request.build_absolute_uri(f"/deed/status/{deed.id}/")  # QR skaner ochadigan sahifa
+    status_url = request.build_absolute_uri(f"https://report.imv.uz/deed/status/{deed.id}/")  # QR skaner ochadigan sahifa
 
     return render(request, "main/deed_pdf_view.html", {
         "deed_id": deed.id,
@@ -200,7 +200,7 @@ def deed_stamp_qr(request, pk):
             return JsonResponse({"ok": False, "error": "Receiver QR allaqachon qo‘yilgan"}, status=400)
 
         # 6) QR ichidagi link
-        status_url = request.build_absolute_uri(f"/deed/status/{deed.id}/")
+        status_url = request.build_absolute_uri(f"https://report.imv.uz/deed/status/{deed.id}/")
         qr_png = _make_qr_png_bytes(status_url, size_px=size)
 
         # 7) Preview bo'lsa - faqat QR rasm qaytariladi
