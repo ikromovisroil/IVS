@@ -303,9 +303,14 @@ class OrderAdmin(admin.ModelAdmin):
 # ============================
 # DEED ADMIN
 # ============================
+class DeedconsentInline(admin.TabularInline):
+    model = Deedconsent
+    extra = 0
+
 
 @admin.register(Deed)
 class DeedAdmin(admin.ModelAdmin):
+    inlines = [DeedconsentInline]
     list_display = (
         "id",
         "sender",

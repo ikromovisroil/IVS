@@ -39,7 +39,7 @@
                 <div class="row mb-3">
                   <label class="col-sm-3 col-form-label">Imzolovchi</label>
                   <div class="col-sm-9">
-                    <select class="form-select select2" name="receiver" id="employee" required>
+                    <select class="form-select select2" name="receiver_id" id="employee" required>
                       <option value="">Tanlang...</option>
                       {% for emp in employee %}
                         <option value="{{ emp.id }}">{{ emp.full_name }}</option>
@@ -60,7 +60,7 @@
                 <div class="row mb-3">
                   <label class="col-sm-3 col-form-label">Izoh</label>
                   <div class="col-sm-9">
-                    <textarea class="form-control" name="body" rows="4" placeholder="Izoh yozing..."></textarea>
+                    <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
                   </div>
                 </div>
 
@@ -68,7 +68,7 @@
                 <div class="row mb-3">
                   <label class="col-sm-3 col-form-label">Kelishuvchilar</label>
                   <div class="col-sm-9">
-                    <select id="kelishuvchilar" name="agreements" class="form-select select2" multiple>
+                    <select id="kelishuvchilar" name="agreements[]" class="form-select select2" multiple>
                       {% for emp in employee %}
                         <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>
                       {% endfor %}
@@ -213,7 +213,7 @@
 
                                                 <!-- ================= KELISHUVCHILAR ================= -->
 
-                                                {% if d.deedconsent_set.all %}
+                                                {% if d.deedconsent_set.count %}
                                                     <div class="mb-4 p-3 border rounded bg-light">
                                                         <h5 class="fw-bold mb-2">Kelishuvchilar</h5><hr>
                                                         {% for dc in d.deedconsent_set.all %}
