@@ -25,7 +25,7 @@
     <div class="modal fade" id="sendModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">
         <div class="modal-content">
-          <form method="post" enctype="multipart/form-data">
+          <form action="{% url 'deed_post' %}" method="post" enctype="multipart/form-data">
             {% csrf_token %}
             <div class="modal-header">
               <h5 class="modal-title">#Xabar yuborish</h5>
@@ -68,7 +68,7 @@
                 <div class="row mb-3">
                   <label class="col-sm-3 col-form-label">Kelishuvchilar</label>
                   <div class="col-sm-9">
-                    <select id="kelishuvchilar" name="consent[]" class="form-select select2" multiple>
+                    <select id="kelishuvchilar" name="agreements" class="form-select select2" multiple>
                       {% for emp in employee %}
                         <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>
                       {% endfor %}
