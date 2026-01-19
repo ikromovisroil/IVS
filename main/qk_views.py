@@ -128,11 +128,13 @@ def deed_pdf_view(request, pk):
 
     next_url = (request.GET.get("next") or "").strip() or request.META.get("HTTP_REFERER") or "/"
 
-    pdf_url = f"https://report.imv.uz/deed/status/{deed.id}/"
+    pdf_file_url = request.build_absolute_uri(deed.file.url)  # PDF faylning linki
+    status_url = request.build_absolute_uri(f"/deed/status/{deed.id}/")  # QR skaner ochadigan sahifa
 
     return render(request, "main/deed_pdf_view.html", {
         "deed_id": deed.id,
-        "pdf_url": pdf_url,
+        "pdf_url": pdf_file_url,
+        "status_url": status_url,
         "role": role,
         "qr_locked": qr_locked,
         "next_url": next_url,
