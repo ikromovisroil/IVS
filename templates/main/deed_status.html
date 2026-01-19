@@ -36,7 +36,7 @@
       <div class="card shadow-sm">
         <div class="card-header d-flex align-items-center justify-content-between">
           <h5 class="m-0">Dalolatnoma holati</h5>
-          <a href=""></a>
+          <a href="{{ d.file.url }}" target="_blank">📄 Ko‘rish</a>
         </div>
 
         <div class="card-body">
@@ -64,7 +64,6 @@
             {% if deed.message_sender %}
               <div class="mt-2">
                 <strong>Izoh:</strong>
-                <a href="{{ d.file.url }}" target="_blank">📄 Ko‘rish</a>
               </div>
             {% endif %}
           </div>
