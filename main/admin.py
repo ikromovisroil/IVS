@@ -11,6 +11,10 @@ from .models import *
 
 admin.site.unregister(Group)
 
+@admin.register(Rol)
+class RolAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
 
 # ============================
 # USER ADMIN + EMPLOYEE INLINE
@@ -129,6 +133,7 @@ class RankAdmin(admin.ModelAdmin):
 
 from django.contrib import admin
 from .models import *
+
 
 
 @admin.register(Employee)
