@@ -13,7 +13,7 @@ admin.site.unregister(Group)
 
 @admin.register(Rol)
 class RolAdmin(admin.ModelAdmin):
-    list_display = ("id",)
+    list_display = ("id", 'employee',)
 
 # ============================
 # USER ADMIN + EMPLOYEE INLINE
