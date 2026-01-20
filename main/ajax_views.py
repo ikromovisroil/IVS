@@ -162,3 +162,44 @@ def ajax_employees_org(request):
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})
 
+
+def ajax_org_employees(request):
+    org_id = (request.GET.get("org_id") or "").strip()
+    if not org_id:
+        return JsonResponse({"results": []})
+
+    # Receiver uchun (Imzolovchi)
+    receiver_qs = Employee.objects.filter(
+        organization_id=org_id,
+        rol__boss=True
+    ).select_related("rank").order_by("last_name", "first_name")
+
+    data = []
+    for e in receiver_qs:
+        data.append({
+            "id": e.id,
+            "full_name": e.full_name,
+        })
+
+    return JsonResponse({"results": data})
+
+def ajax_agreements_employees(request):
+    org_id = (request.GET.get("org_id") or "").strip()
+    if not org_id:
+        return JsonResponse({"results": []})
+
+    qs = Employee.objects.filter(
+        organization_id=org_id,
+        organization__org_type="IVS",
+        rol__boss=True
+    ).select_related("rank", "organization").order_by("last_name", "first_name")
+
+    data = []
+    for e in qs:
+        data.append({
+            "id": e.id,
+            "text": f"{e.full_name}",
+        })
+
+    return JsonResponse({"results": data})
+

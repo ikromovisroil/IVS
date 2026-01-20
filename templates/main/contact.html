@@ -33,50 +33,76 @@
             </div>
 
             <div class="modal-body">
-              <div class="px-4">
 
-                <!-- Imzolovchi -->
-                <div class="row mb-3">
-                  <label class="col-sm-3 col-form-label">Imzolovchi</label>
-                  <div class="col-sm-9">
-                    <select class="form-select select2" name="receiver_id" id="employee" required>
-                      <option value="">Tanlang...</option>
-                      {% for emp in employee %}
-                        <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
+                <div class="border rounded bg-light p-3">
+                    <h4>Xizmat ko'rsatuvchi tashkilot</h4>
+                    <!-- Imzolovchi -->
+                    <div class="row mb-3">
+                      <label class="col-sm-3 col-form-label">Imzolovchi</label>
+                      <div class="col-sm-9">
+                        <select class="form-select" name="sender_id" id="sender_id" required>
+                          <option value="">Tanlang...</option>
+                          {% for emp in senders %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
                 </div>
 
-                <!-- File -->
+                <div class="border rounded bg-light p-3 mt-3">
+                    <h4>Imzolovchi tashkilot</h4>
+                    <!-- Imzolovchi -->
+                    <div class="row mb-3">
+                      <label class="col-sm-3 col-form-label">Tashkilot</label>
+                      <div class="col-sm-9">
+                        <select class="form-select" name="receiver_org" id="receiver_org" required>
+                          <option value="">Tanlang...</option>
+                          {% for org in organization %}
+                            <option value="{{ org.id }}">{{ org.name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div class="row mb-3">
+                      <label class="col-sm-3 col-form-label">Imzolovchi</label>
+                      <div class="col-sm-9">
+                        <select class="form-select" name="receiver_id" id="receiver_id" required>
+                          <option value="">Tanlang...</option>
+                          {% for emp in employee %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                </div>
+
+                <div class="border rounded bg-light p-3 mt-3">
+                    <h4>Kelishuvchilar</h4>
+
+                    <div class="row mb-3">
+                      <label class="col-sm-3 col-form-label">Kelishuvchilar</label>
+                      <div class="col-sm-9">
+                        <select id="kelishuvchilar" name="agreements[]" class="form-select select2" multiple>
+                          {% for emp in employee %}
+                            <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>
+                          {% endfor %}
+                        </select>
+                      </div>
+                    </div>
+                </div>
+                <div class="border rounded bg-light p-3 mt-3">
+
+                    <!-- File -->
                 <div class="row mb-3">
                   <label class="col-sm-3 col-form-label">Fayl</label>
                   <div class="col-sm-9">
                     <input class="form-control" type="file" name="file" required>
                   </div>
                 </div>
-
-                <!-- Izoh -->
-                <div class="row mb-3">
-                  <label class="col-sm-3 col-form-label">Izoh</label>
-                  <div class="col-sm-9">
-                    <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
-                  </div>
                 </div>
 
-                <!-- Kelishuvchilar -->
-                <div class="row mb-3">
-                  <label class="col-sm-3 col-form-label">Kelishuvchilar</label>
-                  <div class="col-sm-9">
-                    <select id="kelishuvchilar" name="agreements[]" class="form-select select2" multiple>
-                      {% for emp in employee %}
-                        <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-                </div>
-
-              </div>
             </div>
 
             <div class="modal-footer justify-content-center gap-2">
@@ -685,20 +711,193 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-  $(function () {
-    $('#sendModal').on('shown.bs.modal', function () {
-      $(this).find('select.select2').each(function () {
-        if (!$(this).hasClass('select2-hidden-accessible')) {
-          $(this).select2({
-            width: '100%',
-            dropdownParent: $('#sendModal'),
-            placeholder: 'Tanlang...'
-          });
-        }
+document.addEventListener("DOMContentLoaded", function () {
+  const modalEl = document.getElementById("sendModal");
+
+  const orgSelect = document.getElementById("receiver_org");
+  const receiverSelect = document.getElementById("receiver_id");
+  const agreementsSelect = document.getElementById("kelishuvchilar");
+
+  // ----------------------------
+  // Helpers
+  // ----------------------------
+  function setReceiverLoading() {
+    receiverSelect.innerHTML = '<option value="">Yuklanmoqda...</option>';
+    receiverSelect.disabled = true;
+  }
+  function resetReceiver() {
+    receiverSelect.innerHTML = '<option value="">Tanlang...</option>';
+    receiverSelect.disabled = false;
+  }
+
+  function setAgreementsLoading() {
+    agreementsSelect.innerHTML = '';
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "Yuklanmoqda...";
+    agreementsSelect.appendChild(opt);
+    agreementsSelect.disabled = true;
+  }
+  function resetAgreements() {
+    agreementsSelect.innerHTML = "";
+    agreementsSelect.disabled = false;
+  }
+
+  async function fetchJSON(url) {
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    return await res.json();
+  }
+
+  // ----------------------------
+  // Receiver employees (boss)
+  // endpoint: {% url 'ajax_org_employees' %}?org_id=...
+  // returns: {"results":[{"id":1,"full_name":"..."}]}
+  // ----------------------------
+  async function loadReceiverEmployees(orgId) {
+    if (!orgId) {
+      resetReceiver();
+      receiverSelect.innerHTML = '<option value="">Avval tashkilotni tanlang...</option>';
+      receiverSelect.disabled = true;
+      return;
+    }
+
+    setReceiverLoading();
+
+    try {
+      const url = "{% url 'ajax_org_employees' %}" + "?org_id=" + encodeURIComponent(orgId);
+      const data = await fetchJSON(url);
+
+      receiverSelect.innerHTML = '<option value="">Tanlang...</option>';
+
+      (data.results || []).forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.full_name;
+        receiverSelect.appendChild(opt);
       });
+
+      receiverSelect.disabled = false;
+
+      if (!(data.results || []).length) {
+        receiverSelect.innerHTML = '<option value="">Xodim topilmadi</option>';
+        receiverSelect.disabled = true;
+      }
+    } catch (e) {
+      console.error("receiver ajax error:", e);
+      receiverSelect.innerHTML = '<option value="">Xatolik</option>';
+      receiverSelect.disabled = true;
+    }
+  }
+
+  // ----------------------------
+  // Agreements employees (IVS + boss + org_id)
+  // endpoint: {% url 'ajax_agreements_employees' %}?org_id=...
+  // returns: {"results":[{"id":1,"text":"..."}]}
+  // ----------------------------
+  async function loadAgreementsEmployees(orgId) {
+    if (!orgId) {
+      resetAgreements();
+      agreementsSelect.disabled = true;
+      return;
+    }
+
+    setAgreementsLoading();
+
+    try {
+      const url = "{% url 'ajax_agreements_employees' %}" + "?org_id=" + encodeURIComponent(orgId);
+      const data = await fetchJSON(url);
+
+      agreementsSelect.innerHTML = "";
+
+      (data.results || []).forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item.id;
+        opt.textContent = item.text || item.full_name || "";
+        agreementsSelect.appendChild(opt);
+      });
+
+      agreementsSelect.disabled = false;
+
+      // select2 bo'lsa yangilash
+      if (window.jQuery && jQuery.fn.select2) {
+        jQuery(agreementsSelect).trigger("change.select2");
+      }
+
+      if (!(data.results || []).length) {
+        agreementsSelect.innerHTML = "";
+        agreementsSelect.disabled = true;
+        // select2 ko'rinishi uchun placeholder option
+        const opt = document.createElement("option");
+        opt.value = "";
+        opt.textContent = "Kelishuvchi topilmadi";
+        agreementsSelect.appendChild(opt);
+
+        if (window.jQuery && jQuery.fn.select2) {
+          jQuery(agreementsSelect).trigger("change.select2");
+        }
+      }
+    } catch (e) {
+      console.error("agreements ajax error:", e);
+      agreementsSelect.innerHTML = "";
+      agreementsSelect.disabled = true;
+    }
+  }
+
+  // ----------------------------
+  // Select2 init in modal
+  // ----------------------------
+  function initSelect2() {
+    if (!(window.jQuery && jQuery.fn.select2)) return;
+
+    // qayta init bo'lib ketmasin
+    const $a = jQuery("#kelishuvchilar");
+    if ($a.hasClass("select2-hidden-accessible")) return;
+
+    $a.select2({
+      dropdownParent: jQuery("#sendModal"),
+      width: "100%",
+      placeholder: "Kelishuvchilarni tanlang...",
+      allowClear: true
     });
+  }
+
+  // Modal ochilganda select2 init
+  modalEl.addEventListener("shown.bs.modal", function () {
+    initSelect2();
+
+    // modal ochilganda org tanlangan bo'lsa yuklab qo'yamiz
+    if (orgSelect.value) {
+      loadReceiverEmployees(orgSelect.value);
+      loadAgreementsEmployees(orgSelect.value);
+    } else {
+      receiverSelect.innerHTML = '<option value="">Avval tashkilotni tanlang...</option>';
+      receiverSelect.disabled = true;
+      agreementsSelect.disabled = true;
+    }
   });
+
+  // Tashkilot o'zgarganda ikkisini ham yangilaymiz
+  orgSelect.addEventListener("change", function () {
+    const orgId = this.value;
+
+    // receiver dropdown ni yangilash
+    loadReceiverEmployees(orgId);
+
+    // kelishuvchilarni tozalab qayta yuklash
+    // (oldin tanlanganlarni ham tozalaydi)
+    if (window.jQuery && jQuery.fn.select2) {
+      jQuery(agreementsSelect).val(null).trigger("change"); // select2 selection clear
+    } else {
+      agreementsSelect.value = "";
+    }
+    loadAgreementsEmployees(orgId);
+  });
+});
 </script>
+
+
+
 
 
 {% endblock content %}

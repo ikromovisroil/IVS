@@ -187,18 +187,18 @@ def contact(request):
         .order_by("-id")
     )
 
-    employees = (
-        Employee.objects
+    senders = (
+        Employee.objects.filter(rol__boss=True)
         .select_related("user", "rank", "organization", "department", "directorate", "division")
-        .exclude(user=request.user)
-        .order_by("last_name", "first_name")
+        .order_by("last_name", "first_name", "father_name")
     )
 
     context = {
         "deed_sender": deed_sender,
         "deed_receiver": deed_receiver,
         "deed_consent": deed_consent,
-        "employee": employees,
+        "senders": senders,
+        "organization": Organization.objects.exclude(org_type="IVS"),
     }
     return render(request, "main/contact.html", context)
 
