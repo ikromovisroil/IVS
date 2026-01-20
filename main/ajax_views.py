@@ -191,7 +191,7 @@ def ajax_agreements_employees(request):
     qs = Employee.objects.filter(
         organization_id=org_id,
         organization__org_type="IVS",
-        rol__boss=True
+        # rol__boss=True
     ).select_related("rank", "organization").order_by("last_name", "first_name")
 
     data = []

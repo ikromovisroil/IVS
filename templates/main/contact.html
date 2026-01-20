@@ -711,193 +711,120 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-  const modalEl = document.getElementById("sendModal");
+(function () {
+  // === 1) URL'larni moslab oling ===
+  // urls.py da name berilgan bo'lishi kerak
+  const URL_RECEIVER = "{% url 'ajax_org_employees' %}";
+  const URL_AGREEMENTS = "{% url 'ajax_agreements_employees' %}";
 
   const orgSelect = document.getElementById("receiver_org");
   const receiverSelect = document.getElementById("receiver_id");
   const agreementsSelect = document.getElementById("kelishuvchilar");
 
-  // ----------------------------
-  // Helpers
-  // ----------------------------
-  function setReceiverLoading() {
-    receiverSelect.innerHTML = '<option value="">Yuklanmoqda...</option>';
-    receiverSelect.disabled = true;
-  }
-  function resetReceiver() {
-    receiverSelect.innerHTML = '<option value="">Tanlang...</option>';
-    receiverSelect.disabled = false;
-  }
+  if (!orgSelect || !receiverSelect || !agreementsSelect) return;
 
-  function setAgreementsLoading() {
-    agreementsSelect.innerHTML = '';
+  // === helper: option tozalash/qo'shish ===
+  function resetSelect(selectEl, placeholderText) {
+    selectEl.innerHTML = "";
     const opt = document.createElement("option");
     opt.value = "";
-    opt.textContent = "Yuklanmoqda...";
-    agreementsSelect.appendChild(opt);
-    agreementsSelect.disabled = true;
-  }
-  function resetAgreements() {
-    agreementsSelect.innerHTML = "";
-    agreementsSelect.disabled = false;
+    opt.textContent = placeholderText || "Tanlang...";
+    selectEl.appendChild(opt);
   }
 
-  async function fetchJSON(url) {
-    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    return await res.json();
-  }
-
-  // ----------------------------
-  // Receiver employees (boss)
-  // endpoint: {% url 'ajax_org_employees' %}?org_id=...
-  // returns: {"results":[{"id":1,"full_name":"..."}]}
-  // ----------------------------
-  async function loadReceiverEmployees(orgId) {
-    if (!orgId) {
-      resetReceiver();
-      receiverSelect.innerHTML = '<option value="">Avval tashkilotni tanlang...</option>';
-      receiverSelect.disabled = true;
-      return;
-    }
-
-    setReceiverLoading();
-
-    try {
-      const url = "{% url 'ajax_org_employees' %}" + "?org_id=" + encodeURIComponent(orgId);
-      const data = await fetchJSON(url);
-
-      receiverSelect.innerHTML = '<option value="">Tanlang...</option>';
-
-      (data.results || []).forEach(item => {
-        const opt = document.createElement("option");
-        opt.value = item.id;
-        opt.textContent = item.full_name;
-        receiverSelect.appendChild(opt);
-      });
-
-      receiverSelect.disabled = false;
-
-      if (!(data.results || []).length) {
-        receiverSelect.innerHTML = '<option value="">Xodim topilmadi</option>';
-        receiverSelect.disabled = true;
-      }
-    } catch (e) {
-      console.error("receiver ajax error:", e);
-      receiverSelect.innerHTML = '<option value="">Xatolik</option>';
-      receiverSelect.disabled = true;
+  function fillSelect(selectEl, items, textKey) {
+    // items: [{id, full_name}] yoki [{id, text}]
+    for (const item of items) {
+      const opt = document.createElement("option");
+      opt.value = item.id;
+      opt.textContent = item[textKey] ?? item.full_name ?? item.text ?? "";
+      selectEl.appendChild(opt);
     }
   }
 
-  // ----------------------------
-  // Agreements employees (IVS + boss + org_id)
-  // endpoint: {% url 'ajax_agreements_employees' %}?org_id=...
-  // returns: {"results":[{"id":1,"text":"..."}]}
-  // ----------------------------
-  async function loadAgreementsEmployees(orgId) {
-    if (!orgId) {
-      resetAgreements();
-      agreementsSelect.disabled = true;
-      return;
-    }
-
-    setAgreementsLoading();
-
-    try {
-      const url = "{% url 'ajax_agreements_employees' %}" + "?org_id=" + encodeURIComponent(orgId);
-      const data = await fetchJSON(url);
-
-      agreementsSelect.innerHTML = "";
-
-      (data.results || []).forEach(item => {
-        const opt = document.createElement("option");
-        opt.value = item.id;
-        opt.textContent = item.text || item.full_name || "";
-        agreementsSelect.appendChild(opt);
-      });
-
-      agreementsSelect.disabled = false;
-
-      // select2 bo'lsa yangilash
-      if (window.jQuery && jQuery.fn.select2) {
-        jQuery(agreementsSelect).trigger("change.select2");
-      }
-
-      if (!(data.results || []).length) {
-        agreementsSelect.innerHTML = "";
-        agreementsSelect.disabled = true;
-        // select2 ko'rinishi uchun placeholder option
-        const opt = document.createElement("option");
-        opt.value = "";
-        opt.textContent = "Kelishuvchi topilmadi";
-        agreementsSelect.appendChild(opt);
-
-        if (window.jQuery && jQuery.fn.select2) {
-          jQuery(agreementsSelect).trigger("change.select2");
-        }
-      }
-    } catch (e) {
-      console.error("agreements ajax error:", e);
-      agreementsSelect.innerHTML = "";
-      agreementsSelect.disabled = true;
-    }
-  }
-
-  // ----------------------------
-  // Select2 init in modal
-  // ----------------------------
+  // Select2 init (modal ichida dropdown chiqishi uchun dropdownParent beramiz)
   function initSelect2() {
-    if (!(window.jQuery && jQuery.fn.select2)) return;
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+      const $ = window.jQuery;
+      const modalEl = document.getElementById("sendModal");
 
-    // qayta init bo'lib ketmasin
-    const $a = jQuery("#kelishuvchilar");
-    if ($a.hasClass("select2-hidden-accessible")) return;
-
-    $a.select2({
-      dropdownParent: jQuery("#sendModal"),
-      width: "100%",
-      placeholder: "Kelishuvchilarni tanlang...",
-      allowClear: true
-    });
+      $("#kelishuvchilar").select2({
+        width: "100%",
+        dropdownParent: modalEl ? $(modalEl) : null
+      });
+    }
   }
 
-  // Modal ochilganda select2 init
-  modalEl.addEventListener("shown.bs.modal", function () {
-    initSelect2();
-
-    // modal ochilganda org tanlangan bo'lsa yuklab qo'yamiz
-    if (orgSelect.value) {
-      loadReceiverEmployees(orgSelect.value);
-      loadAgreementsEmployees(orgSelect.value);
-    } else {
-      receiverSelect.innerHTML = '<option value="">Avval tashkilotni tanlang...</option>';
-      receiverSelect.disabled = true;
-      agreementsSelect.disabled = true;
+  // agreements select2 bo'lsa: options yangilanganda refresh qilish
+  function refreshSelect2() {
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+      const $ = window.jQuery;
+      $("#kelishuvchilar").trigger("change.select2");
     }
-  });
+  }
 
-  // Tashkilot o'zgarganda ikkisini ham yangilaymiz
+  // === 2) AJAX fetch ===
+  async function loadEmployees(orgId) {
+    resetSelect(receiverSelect, "Tanlang...");
+    // kelishuvchilar (multiple) uchun placeholder shart emas, tozalab yuboramiz:
+    agreementsSelect.innerHTML = "";
+
+    if (!orgId) {
+      refreshSelect2();
+      return;
+    }
+
+    // loader (xohlasangiz): receiverSelect.disabled = true; agreementsSelect.disabled = true;
+
+    try {
+      const [r1, r2] = await Promise.all([
+        fetch(`${URL_RECEIVER}?org_id=${encodeURIComponent(orgId)}`, { headers: { "X-Requested-With": "XMLHttpRequest" }}),
+        fetch(`${URL_AGREEMENTS}?org_id=${encodeURIComponent(orgId)}`, { headers: { "X-Requested-With": "XMLHttpRequest" }})
+      ]);
+
+      if (!r1.ok || !r2.ok) throw new Error("Server javobi xato");
+
+      const dataReceiver = await r1.json();    // {results:[{id, full_name}]}
+      const dataAgreements = await r2.json();  // {results:[{id, text}]}
+
+      // receiver_id
+      fillSelect(receiverSelect, dataReceiver.results || [], "full_name");
+
+      // kelishuvchilar
+      fillSelect(agreementsSelect, dataAgreements.results || [], "text");
+
+      refreshSelect2();
+    } catch (err) {
+      console.error(err);
+      // xohlasangiz alert:
+      // alert("Xodimlarni yuklashda xatolik!");
+      resetSelect(receiverSelect, "Tanlang...");
+      agreementsSelect.innerHTML = "";
+      refreshSelect2();
+    } finally {
+      // receiverSelect.disabled = false; agreementsSelect.disabled = false;
+    }
+  }
+
+  // === 3) Events ===
   orgSelect.addEventListener("change", function () {
-    const orgId = this.value;
-
-    // receiver dropdown ni yangilash
-    loadReceiverEmployees(orgId);
-
-    // kelishuvchilarni tozalab qayta yuklash
-    // (oldin tanlanganlarni ham tozalaydi)
-    if (window.jQuery && jQuery.fn.select2) {
-      jQuery(agreementsSelect).val(null).trigger("change"); // select2 selection clear
-    } else {
-      agreementsSelect.value = "";
-    }
-    loadAgreementsEmployees(orgId);
+    loadEmployees(this.value);
   });
-});
+
+  // Modal ochilganda select2 init + agar org oldin tanlangan bo'lsa yuklab qo'yish
+  document.addEventListener("shown.bs.modal", function (e) {
+    if (e.target && e.target.id === "sendModal") {
+      initSelect2();
+      if (orgSelect.value) loadEmployees(orgSelect.value);
+    }
+  });
+
+  // Agar sahifa yuklanganda select2 kerak bo'lsa:
+  document.addEventListener("DOMContentLoaded", function () {
+    initSelect2();
+  });
+})();
 </script>
-
-
-
 
 
 {% endblock content %}
