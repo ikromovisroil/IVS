@@ -148,7 +148,8 @@ class Region(models.Model):
 
 
 class Rol(models.Model):
-    status = models.BooleanField(default=False, db_index=True)
+    employee = models.OneToOneField("Employee", on_delete=models.CASCADE, null=True, blank=True)
+    client = models.BooleanField(default=False, db_index=True)
     is_boss = models.BooleanField(default=False, db_index=True)
     is_shop = models.BooleanField(default=False, db_index=True)
 
@@ -165,7 +166,6 @@ class Rol(models.Model):
 # Xodim.
 class Employee(AutoSlugMixin, models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee',db_index=True)
-    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True, blank=True ,db_index=True)
     last_name = models.CharField(max_length=100, null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True, blank=True)
     father_name = models.CharField(max_length=100, null=True, blank=True)
@@ -192,6 +192,7 @@ class Employee(AutoSlugMixin, models.Model):
         # Agar department tanlangan bo‘lsa → organization avtomatik to‘lsin
         if self.department and self.department.organization:
             self.organization = self.department.organization
+
 
         super().save(*args, **kwargs)
 
