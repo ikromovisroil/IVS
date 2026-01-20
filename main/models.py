@@ -153,7 +153,7 @@ class Rol(models.Model):
     boss = models.BooleanField(default=False, db_index=True)
     shop = models.BooleanField(default=False, db_index=True)
     barn = models.BooleanField(default=False, db_index=True)
-
+    akt = models.BooleanField(default=False, db_index=True)
 
 
     def __str__(self):

@@ -5,8 +5,9 @@ import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
-SECRET_KEY = os.getenv("SECRET_KEY")
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+
+SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
+DEBUG = os.getenv("DEBUG") == "True"
 
 ALLOWED_HOSTS = [
     "report.imv.uz",
@@ -15,14 +16,16 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
 ]
 
-SESSION_COOKIE_AGE = 60 * 60 * 24
-SESSION_SAVE_EVERY_REQUEST = False
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+# SESSION
+SESSION_COOKIE_AGE = 60 * 60 * 6  # 6 soat
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_COOKIE_HTTPONLY = True
 
 # APPLICATIONS
 INSTALLED_APPS = [
     'jazzmin',
-    # Django default
+
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -31,7 +34,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
 
-    # Third-party
     'rest_framework',
     'rest_framework_simplejwt',
     "rest_framework_simplejwt.token_blacklist",
@@ -39,7 +41,6 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_yasg',
 
-    # Local apps
     'main.apps.MainConfig',
     "core.apps.CoreConfig",
     'users',
@@ -62,15 +63,16 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 20,
 }
 
-# JWT SETTINGS
+# JWT
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "ROTATE_REFRESH_TOKENS": True,
     "BLACKLIST_AFTER_ROTATION": True,
 }
 
-# Swagger — Bearer token chiqarish uchun
+# Swagger
 SWAGGER_SETTINGS = {
     "SECURITY_DEFINITIONS": {
         "Bearer": {
@@ -80,13 +82,13 @@ SWAGGER_SETTINGS = {
             "description": "Format: Bearer <Access Token>",
         }
     },
-    "USE_SESSION_AUTH": False,
+    "USE_SESSION_AUTH": True,
 }
 
 # MIDDLEWARE
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'corsheaders.middleware.CorsMiddleware',     # CORS YUQORIDA BO‘LSIN
+    'corsheaders.middleware.CorsMiddleware',
 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -98,20 +100,25 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "core.middlewares.audit.AuditMiddleware",
-
 ]
 
 AUTHENTICATION_BACKENDS = [
     "django.contrib.auth.backends.ModelBackend",
 ]
-# CORS — frontendga API ishlashi uchun
+
+# CORS / CSRF
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     "https://report.imv.uz",
-    "http://localhost:8000",
 ]
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://report.imv.uz",
+]
+
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 ROOT_URLCONF = 'config.urls'
 
 # TEMPLATES
@@ -126,7 +133,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
 
-                # Custom
                 'main.views.global_data',
                 'main.context_processors.deed_notifications',
                 'main.context_processors.order_notifications',
@@ -136,12 +142,6 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'config.wsgi.application'
-
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://report.imv.uz",
-]
-
 
 # DATABASES = {
 #     'default': {
@@ -153,14 +153,13 @@ CSRF_TRUSTED_ORIGINS = [
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'ivs_servis',
-        'USER': 'ivs_user',
-        'PASSWORD': 'Password100',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.getenv("DB_NAME"),
+        'USER': os.getenv("DB_USER"),
+        'PASSWORD': os.getenv("DB_PASSWORD"),
+        'HOST': os.getenv("DB_HOST", "localhost"),
+        'PORT': os.getenv("DB_PORT", "5432"),
     }
 }
-
 
 # PASSWORD VALIDATION
 AUTH_PASSWORD_VALIDATORS = [
@@ -177,12 +176,9 @@ USE_I18N = True
 USE_L10N = True
 USE_TZ = True
 
-
 # STATIC & MEDIA
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [
-    BASE_DIR / "static",
-]
+STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 MEDIA_URL = '/media/'
@@ -190,14 +186,27 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# # LOGIN / LOGOUT
+# LOGIN
 LOGIN_URL = "/sso/login/"
 LOGIN_REDIRECT_URL = 'profil'
 LOGOUT_REDIRECT_URL = "/sso/login/"
 
-# ===== MF SSO CONFIG =====
+# SSO
 SSO_CLIENT_ID = os.getenv("SSO_CLIENT_ID")
 SSO_CLIENT_SECRET = os.getenv("SSO_CLIENT_SECRET")
-
 SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
+
+# PROD SECURITY
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_REFERRER_POLICY = "same-origin"
+    X_FRAME_OPTIONS = "DENY"

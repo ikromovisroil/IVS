@@ -437,6 +437,7 @@
         </li>
 
         <!-- Hisobotlar -->
+        {% if request.user.employee.rol.akt %}
         <li class="nav-item">
           <a class="nav-link
              {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' %}
@@ -475,8 +476,10 @@
               </li>
             </ul>
         </li><!-- End Charts Nav -->
+        {% endif %}
 
           <!-- Sklad -->
+        {% if request.user.employee.rol.barn %}
         <li class="nav-item">
           <a class="nav-link {% if url_name not in 'barn_tex barn_mat' %}collapsed{% endif %}"
              data-bs-target="#forms-navs" data-bs-toggle="collapse" href="#">
@@ -505,6 +508,7 @@
 
           </ul>
         </li>
+        {% endif %}
 
         <!-- DASHBOARD -->
         <li class="nav-item">
