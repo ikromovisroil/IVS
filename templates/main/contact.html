@@ -712,42 +712,49 @@
 
 <script>
 (function () {
-  // === 1) URL'larni moslab oling ===
-  // urls.py da name berilgan bo'lishi kerak
   const URL_RECEIVER = "{% url 'ajax_org_employees' %}";
-  const URL_AGREEMENTS = "{% url 'ajax_agreements_employees' %}";
+  const URL_AGR = "{% url 'ajax_agreements_employees' %}";
 
   const orgSelect = document.getElementById("receiver_org");
   const receiverSelect = document.getElementById("receiver_id");
-  const agreementsSelect = document.getElementById("kelishuvchilar");
+  const agrSelect = document.getElementById("kelishuvchilar");
+  const modalEl = document.getElementById("sendModal");
 
-  if (!orgSelect || !receiverSelect || !agreementsSelect) return;
+  if (!orgSelect || !receiverSelect || !agrSelect) return;
 
-  // === helper: option tozalash/qo'shish ===
-  function resetSelect(selectEl, placeholderText) {
-    selectEl.innerHTML = "";
-    const opt = document.createElement("option");
-    opt.value = "";
-    opt.textContent = placeholderText || "Tanlang...";
-    selectEl.appendChild(opt);
+  function resetReceiver() {
+    receiverSelect.innerHTML = '<option value="">Tanlang...</option>';
   }
 
-  function fillSelect(selectEl, items, textKey) {
-    // items: [{id, full_name}] yoki [{id, text}]
-    for (const item of items) {
+  function fillReceiver(items) {
+    resetReceiver();
+    items.forEach(it => {
       const opt = document.createElement("option");
-      opt.value = item.id;
-      opt.textContent = item[textKey] ?? item.full_name ?? item.text ?? "";
-      selectEl.appendChild(opt);
+      opt.value = it.id;
+      opt.textContent = it.text || it.full_name || "";
+      receiverSelect.appendChild(opt);
+    });
+  }
+
+  function fillAgreements(items) {
+    // select2 bo'lsa ham bo'lmasa ham ishlaydi
+    agrSelect.innerHTML = "";
+    items.forEach(it => {
+      const opt = document.createElement("option");
+      opt.value = it.id;
+      opt.textContent = it.text || "";
+      agrSelect.appendChild(opt);
+    });
+
+    // select2 refresh
+    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
+      window.jQuery(agrSelect).trigger("change.select2");
     }
   }
 
-  // Select2 init (modal ichida dropdown chiqishi uchun dropdownParent beramiz)
   function initSelect2() {
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
       const $ = window.jQuery;
-      const modalEl = document.getElementById("sendModal");
-
       $("#kelishuvchilar").select2({
         width: "100%",
         dropdownParent: modalEl ? $(modalEl) : null
@@ -755,76 +762,53 @@
     }
   }
 
-  // agreements select2 bo'lsa: options yangilanganda refresh qilish
-  function refreshSelect2() {
-    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
-      const $ = window.jQuery;
-      $("#kelishuvchilar").trigger("change.select2");
-    }
-  }
+  async function loadBoth(orgId) {
+    resetReceiver();
+    fillAgreements([]);
 
-  // === 2) AJAX fetch ===
-  async function loadEmployees(orgId) {
-    resetSelect(receiverSelect, "Tanlang...");
-    // kelishuvchilar (multiple) uchun placeholder shart emas, tozalab yuboramiz:
-    agreementsSelect.innerHTML = "";
-
-    if (!orgId) {
-      refreshSelect2();
-      return;
-    }
-
-    // loader (xohlasangiz): receiverSelect.disabled = true; agreementsSelect.disabled = true;
+    if (!orgId) return;
 
     try {
       const [r1, r2] = await Promise.all([
-        fetch(`${URL_RECEIVER}?org_id=${encodeURIComponent(orgId)}`, { headers: { "X-Requested-With": "XMLHttpRequest" }}),
-        fetch(`${URL_AGREEMENTS}?org_id=${encodeURIComponent(orgId)}`, { headers: { "X-Requested-With": "XMLHttpRequest" }})
+        fetch(`${URL_RECEIVER}?org_id=${encodeURIComponent(orgId)}`, {headers: {"X-Requested-With":"XMLHttpRequest"}}),
+        fetch(`${URL_AGR}?org_id=${encodeURIComponent(orgId)}`, {headers: {"X-Requested-With":"XMLHttpRequest"}})
       ]);
 
-      if (!r1.ok || !r2.ok) throw new Error("Server javobi xato");
+      // Debug uchun: status ko'rinadi
+      console.log("receiver status:", r1.status, "agreements status:", r2.status);
 
-      const dataReceiver = await r1.json();    // {results:[{id, full_name}]}
-      const dataAgreements = await r2.json();  // {results:[{id, text}]}
+      const d1 = await r1.json();
+      const d2 = await r2.json();
 
-      // receiver_id
-      fillSelect(receiverSelect, dataReceiver.results || [], "full_name");
+      console.log("receiver json:", d1);
+      console.log("agreements json:", d2);
 
-      // kelishuvchilar
-      fillSelect(agreementsSelect, dataAgreements.results || [], "text");
-
-      refreshSelect2();
-    } catch (err) {
-      console.error(err);
-      // xohlasangiz alert:
-      // alert("Xodimlarni yuklashda xatolik!");
-      resetSelect(receiverSelect, "Tanlang...");
-      agreementsSelect.innerHTML = "";
-      refreshSelect2();
-    } finally {
-      // receiverSelect.disabled = false; agreementsSelect.disabled = false;
+      fillReceiver(d1.results || []);
+      fillAgreements(d2.results || []);
+    } catch (e) {
+      console.error("AJAX error:", e);
+      resetReceiver();
+      fillAgreements([]);
     }
   }
 
-  // === 3) Events ===
+  // org change
   orgSelect.addEventListener("change", function () {
-    loadEmployees(this.value);
+    loadBoth(this.value);
   });
 
-  // Modal ochilganda select2 init + agar org oldin tanlangan bo'lsa yuklab qo'yish
+  // modal ochilganda select2 init + agar org tanlangan bo'lsa yuklash
   document.addEventListener("shown.bs.modal", function (e) {
     if (e.target && e.target.id === "sendModal") {
       initSelect2();
-      if (orgSelect.value) loadEmployees(orgSelect.value);
+      if (orgSelect.value) loadBoth(orgSelect.value);
     }
   });
 
-  // Agar sahifa yuklanganda select2 kerak bo'lsa:
-  document.addEventListener("DOMContentLoaded", function () {
-    initSelect2();
-  });
+  document.addEventListener("DOMContentLoaded", initSelect2);
 })();
 </script>
+
 
 
 {% endblock content %}
