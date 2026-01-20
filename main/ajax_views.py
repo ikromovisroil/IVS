@@ -171,7 +171,7 @@ def ajax_org_employees(request):
     # Receiver uchun (Imzolovchi)
     receiver_qs = Employee.objects.filter(
         organization_id=org_id,
-        rol__boss=True
+        # rol__boss=True
     ).select_related("rank").order_by("last_name", "first_name")
 
     data = []
@@ -190,11 +190,11 @@ def ajax_agreements_employees(request):
 
     imv_boss = Employee.objects.filter(
         organization_id=org_id,
-        rol__boss=True,
+        # rol__boss=True,
     )
     ivs_boss = Employee.objects.filter(
         organization__org_type="IVS",
-        rol__boss=True,
+        # rol__boss=True,
     )
     qs = ((imv_boss | ivs_boss).select_related("rank", "organization")
           .distinct().order_by("last_name","first_name"))

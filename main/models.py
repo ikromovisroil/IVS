@@ -427,22 +427,28 @@ class OrderMaterial(models.Model):
 
 
 class Deed(models.Model):
-    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_sent',db_index=True)
+    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_sender',db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     status_sender = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
     ], default='viewed', db_index=True)
+    date_sender = models.DateTimeField(null=True, blank=True)
 
 
-    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deeds_received',db_index=True)
+
+    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_received',db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
     status_receiver = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
     ], default='viewed',db_index=True)
+    date_receiver = models.DateTimeField(null=True, blank=True)
+
+    user = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_user', null=True, blank=True,db_index=True)
+    message_user = models.TextField(null=True, blank=True)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
     sender_seen = models.BooleanField(default=False)
     date_creat = models.DateTimeField(auto_now_add=True)

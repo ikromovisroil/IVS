@@ -219,15 +219,20 @@ def deed_post(request):
     employee = getattr(request.user, "employee", None)
     back_url = request.META.get("HTTP_REFERER", "/")
 
-    message = (request.POST.get("message") or "").strip()
+    sender_id = (request.POST.get("sender_id") or "").strip()
     receiver_id = (request.POST.get("receiver_id") or "").strip()
-    agreements = request.POST.getlist("agreements[]")
+    message = request.POST.get("message", "").strip()
+    agreements = request.POST.getlist("agreements[]")  # ✅ shu joy to'g'ri
 
     if not receiver_id:
         messages.info(request, "Qabul qiluvchi tanlanmadi")
         return redirect(back_url)
-
     receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
+
+    if not sender_id:
+        messages.info(request, "Imzolovchi tanlanmadi")
+        return redirect(back_url)
+    sender = get_object_or_404(Employee.objects.select_related("user"), id=sender_id)
 
     upload_file = request.FILES.get("file")
     if not upload_file:
@@ -239,37 +244,32 @@ def deed_post(request):
         messages.info(request, "❌ Faqat Word (DOCX) yoki PDF fayl yuklash mumkin")
         return redirect(back_url)
 
-    # ✅ xavfsiz filename (ixtiyoriy, lekin tavsiya)
     upload_file.name = f"deed_{uuid.uuid4().hex}{ext}"
 
-    # 1) Deed yaratamiz
     deed = Deed.objects.create(
-        sender=employee,
+        user=employee,
+        sender=sender,
         receiver=receiver,
-        message_sender=message,
         file=upload_file,
+        message_user=message,
         status_sender="viewed",
         status_receiver="viewed",
     )
 
     file_path = deed.file.path
 
-    # 2) DOCX bo‘lsa PDF ga o‘tkazamiz
+    # DOCX => PDF
     if ext == ".docx":
         pdf_path, debug = convert_docx_to_pdf_libre(file_path)
-
         if not pdf_path or not os.path.exists(pdf_path):
-            # atomic bo‘lgani uchun deed ham rollback bo‘ladi
             messages.info(request, "❌ DOCX → PDF konvertatsiya xatosi")
             raise Exception(f"DOCX->PDF failed: {debug}")
 
-        # eski docx ni o‘chiramiz
         try:
             os.remove(file_path)
         except Exception:
             pass
 
-        # pdf ni deed.file ga qayta saqlaymiz
         with open(pdf_path, "rb") as f:
             deed.file.save(os.path.basename(pdf_path), File(f), save=True)
 
@@ -278,8 +278,7 @@ def deed_post(request):
         except Exception:
             pass
 
-    # 3) Kelishuvchilar — N+1 ni yo‘q qilamiz
-    # agreements ichidan bo‘shlarni tozalaymiz, dublikatni olib tashlaymiz
+    # agreements[] -> ids
     ids = []
     for x in agreements:
         x = (x or "").strip()
@@ -287,8 +286,12 @@ def deed_post(request):
             ids.append(int(x))
     ids = list(set(ids))
 
-    # xohlasangiz sender/receiver ni olib tashlaymiz
-    ids = [i for i in ids if i not in (employee.id, receiver.id)]
+    # sender/receiver va o'zini olib tashlash
+    exclude_ids = {receiver.id, sender.id}
+    if employee:
+        exclude_ids.add(employee.id)
+
+    ids = [i for i in ids if i not in exclude_ids]
 
     if ids:
         emps = Employee.objects.filter(id__in=ids).only("id")
