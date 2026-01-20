@@ -46,7 +46,7 @@
                             <span class="badge bg-danger text-white">Rad etildi</span>
                         {% endif %}
                     </div>
-                    {% if or.materials_all.exists and user.employee.status == "worker" %}
+                    {% if or.materials_all.exists and not user.employee.rol.client %}
                       {% if or.receiver %}
                          <a href="{% url 'order_deed' or.pk %}" data-download="true">📄 Fayl</a>
                       {% endif %}

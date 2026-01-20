@@ -24,8 +24,10 @@ from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
 import uuid
 from django.urls import reverse
-
-
+from urllib.parse import urlencode
+from django.views.decorators.http import require_POST
+from decimal import Decimal, InvalidOperation
+from datetime import date
 
 def global_data(request):
     return {
@@ -39,10 +41,14 @@ def home(request):
     return redirect("profil")
 
 
+
 @never_cache
 @login_required
 def profil(request):
-    employee = request.user.employee
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
     user = request.user
 
     emp_form = EmployeeProfileForm(instance=employee)
@@ -51,8 +57,9 @@ def profil(request):
 
     if request.method == "POST":
         action = request.POST.get("action")
+
         if action == "edit_profile":
-            emp_form = EmployeeProfileForm(request.POST, instance=employee)
+            emp_form = EmployeeProfileForm(request.POST, request.FILES or None, instance=employee)
             email_form = UserEmailForm(request.POST, instance=user)
 
             if emp_form.is_valid() and email_form.is_valid():
@@ -60,88 +67,94 @@ def profil(request):
                 email_form.save()
                 messages.success(request, "Profil muvaffaqiyatli yangilandi")
                 return redirect("profil")
-            else:
-                messages.info(request, "Maydonlarda xatolik bor. Qayta tekshiring")
+            messages.info(request, "Maydonlarda xatolik bor. Qayta tekshiring")
+
         elif action == "change_password":
             pwd_form = StyledPasswordChangeForm(user=user, data=request.POST)
-
             if pwd_form.is_valid():
                 pwd_form.save()
-                # foydalanuvchi sessiyasi saqlanib qolsin
                 update_session_auth_hash(request, pwd_form.user)
-
                 messages.success(request, "Parol muvaffaqiyatli o‘zgartirildi")
                 return redirect("profil")
-            else:
-                messages.info(request, "Parolni o‘zgartirishda xatolik")
+            messages.info(request, "Parolni o‘zgartirishda xatolik")
 
         else:
             messages.info(request, "Noto‘g‘ri so‘rov")
             return redirect("profil")
-    context = {
+
+    return render(request, "main/profil.html", {
         "employee": employee,
         "emp_form": emp_form,
         "email_form": email_form,
         "pwd_form": pwd_form,
-    }
-    return render(request, "main/profil.html", context)
+    })
 
 
 @never_cache
 @login_required
 def index(request):
-    # 🔒 Employee tekshiruvi
-    if not hasattr(request.user, "employee"):
+    # 1) Employee + Rol xavfsiz tekshiruv
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied
 
-    if request.user.employee.status != "worker":
+    role = getattr(employee, "rol", None)  # rol yo‘q bo‘lsa None
+    if not role:
         raise PermissionDenied
 
-    organizations = Organization.objects.filter(
-        org_type__in=['IMV', 'PENSIYA', 'GAZNA']
+    if role.client:   # client bo‘lsa kirish yo‘q
+        raise PermissionDenied
+
+    org_qs = Organization.objects.filter(org_type__in=["IMV", "PENSIYA", "GAZNA"]).only("id", "name", "org_type")
+    cat_qs = Category.objects.all().only("id", "name")
+
+    orgs = list(org_qs)
+    cats = list(cat_qs)
+
+    # 2) Chart uchun bitta query: category + organization bo‘yicha group count
+    grouped = (
+        Technics.objects
+        .filter(employee__organization__in=orgs, category__in=cats)
+        .values("category_id", "employee__organization_id")
+        .annotate(cnt=Count("id"))
     )
-    categorys = Category.objects.all()
+
+    # tez lookup: (cat_id, org_id) -> cnt
+    m = {(g["category_id"], g["employee__organization_id"]): g["cnt"] for g in grouped}
 
     chart_data = []
-
-    for cat in categorys:
-        row = {
-            "category": cat.name,   # x o‘qi uchun
-        }
-        for org in organizations:
-            count = Technics.objects.filter(
-                employee__organization=org,
-                category=cat,
-            ).count()
-            # JS uchun field: org_1, org_2 ...
-            row[f"org_{org.id}"] = count
+    for cat in cats:
+        row = {"category": cat.name}
+        for org in orgs:
+            row[f"org_{org.id}"] = m.get((cat.id, org.id), 0)
         chart_data.append(row)
 
-    pie_data = []
-
-    for org in organizations:
-        total = Technics.objects.filter(
-            employee__organization=org
-        ).count()
-
-        pie_data.append({
-            "name": org.name,
-            "count": total
-        })
-    organizations1 = Organization.objects.filter(org_type__in=['IMV', 'PENSIYA', 'GAZNA']
-                                                 ).annotate(
-        technics_count=Count('employee__technics', distinct=True)
+    # 3) Pie uchun ham bitta query: org bo‘yicha count
+    pie_grouped = (
+        Technics.objects
+        .filter(employee__organization__in=orgs)
+        .values("employee__organization_id", "employee__organization__name")
+        .annotate(cnt=Count("id"))
     )
-    logs = LogEntry.objects.select_related('user', 'content_type').order_by('-action_time')[:10]
+    pie_data = [{"name": p["employee__organization__name"], "count": p["cnt"]} for p in pie_grouped]
+
+    # 4) organizations1 (sizda kerak bo‘lsa) — shu yerda ham optimize
+    organizations1 = (
+        Organization.objects
+        .filter(id__in=[o.id for o in orgs])
+        .annotate(technics_count=Count("employee__technics", distinct=True))
+        .only("id", "name")
+    )
+
+    logs = LogEntry.objects.select_related("user", "content_type").order_by("-action_time")[:10]
 
     context = {
         "logs": logs,
         "organizations1": organizations1,
-        "organizations": organizations,
-        "categorys": categorys,
+        "organizations": orgs,
+        "categorys": cats,
         "chart_data": json.dumps(chart_data, cls=DjangoJSONEncoder),
         "pie_data": json.dumps(pie_data, cls=DjangoJSONEncoder),
-
     }
     return render(request, "main/index.html", context)
 
@@ -149,15 +162,45 @@ def index(request):
 @never_cache
 @login_required
 def contact(request):
-    context = {
-        'deed_sender': Deed.objects.filter(sender=request.user.employee).order_by("-id"),
-        'deed_receiver': Deed.objects.filter(receiver=request.user.employee).order_by("-id"),
-        "deed_consent": Deed.objects.filter(deedconsent__employee=request.user.employee).order_by("-id"),
-        'employee': Employee.objects
-        .select_related("user", "rank","organization","department","directorate","division")
+    employee = getattr(request.user, "employee", None)
+
+    # Deed listlar (tezroq bo‘lishi uchun select_related)
+    deed_sender = (
+        Deed.objects
+        .filter(sender=employee)
+        .select_related("sender", "receiver")
+        .order_by("-id")
+    )
+
+    deed_receiver = (
+        Deed.objects
+        .filter(receiver=employee)
+        .select_related("sender", "receiver")
+        .order_by("-id")
+    )
+
+    deed_consent = (
+        Deed.objects
+        .filter(deedconsent__employee=employee)
+        .select_related("sender", "receiver")
+        .distinct()              # ✅ dublikat bo‘lmasin
+        .order_by("-id")
+    )
+
+    employees = (
+        Employee.objects
+        .select_related("user", "rank", "organization", "department", "directorate", "division")
         .exclude(user=request.user)
+        .order_by("last_name", "first_name")
+    )
+
+    context = {
+        "deed_sender": deed_sender,
+        "deed_receiver": deed_receiver,
+        "deed_consent": deed_consent,
+        "employee": employees,
     }
-    return render(request, 'main/contact.html', context)
+    return render(request, "main/contact.html", context)
 
 
 def deed_status(request, pk):
@@ -168,44 +211,40 @@ def deed_status(request, pk):
 
 @never_cache
 @login_required
+@transaction.atomic
 def deed_post(request):
     if request.method != "POST":
         return redirect("contact")
 
-    message = request.POST.get("message", "").strip()
-    receiver_id = request.POST.get("receiver_id")
+    employee = getattr(request.user, "employee", None)
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    message = (request.POST.get("message") or "").strip()
+    receiver_id = (request.POST.get("receiver_id") or "").strip()
     agreements = request.POST.getlist("agreements[]")
 
-    sender = Employee.objects.filter(user=request.user).first()
-
-    # 🔴 1. AVVAL receiver_id ni tekshiramiz
     if not receiver_id:
         messages.info(request, "Qabul qiluvchi tanlanmadi")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        return redirect(back_url)
 
-    # 🔴 2. Keyin bazadan qidiramiz
-    receiver = Employee.objects.filter(id=receiver_id).first()
-
-    if not sender or not receiver:
-        messages.info(request, "Xodimlar noto‘g‘ri tanlandi")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
 
     upload_file = request.FILES.get("file")
     if not upload_file:
         messages.info(request, "Fayl yuklanmadi")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        return redirect(back_url)
 
-    # faqat DOCX va PDF ruxsat
     ext = os.path.splitext(upload_file.name)[1].lower()
     if ext not in [".docx", ".pdf"]:
         messages.info(request, "❌ Faqat Word (DOCX) yoki PDF fayl yuklash mumkin")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        return redirect(back_url)
 
-    # =============================
-    # 1️⃣ FAYLNI SAQLAYMIZ
-    # =============================
+    # ✅ xavfsiz filename (ixtiyoriy, lekin tavsiya)
+    upload_file.name = f"deed_{uuid.uuid4().hex}{ext}"
+
+    # 1) Deed yaratamiz
     deed = Deed.objects.create(
-        sender=sender,
+        sender=employee,
         receiver=receiver,
         message_sender=message,
         file=upload_file,
@@ -215,64 +254,70 @@ def deed_post(request):
 
     file_path = deed.file.path
 
-    # =============================
-    # 2️⃣ AGAR DOCX BO‘LSA → PDF
-    # =============================
+    # 2) DOCX bo‘lsa PDF ga o‘tkazamiz
     if ext == ".docx":
         pdf_path, debug = convert_docx_to_pdf_libre(file_path)
 
         if not pdf_path or not os.path.exists(pdf_path):
-            print(debug)
+            # atomic bo‘lgani uchun deed ham rollback bo‘ladi
             messages.info(request, "❌ DOCX → PDF konvertatsiya xatosi")
-            deed.delete()
-            return redirect(request.META.get("HTTP_REFERER", "/"))
+            raise Exception(f"DOCX->PDF failed: {debug}")
 
-        # eski DOCX o‘chadi
+        # eski docx ni o‘chiramiz
         try:
             os.remove(file_path)
-        except:
+        except Exception:
             pass
 
-        # PDF ni qayta saqlaymiz
+        # pdf ni deed.file ga qayta saqlaymiz
         with open(pdf_path, "rb") as f:
             deed.file.save(os.path.basename(pdf_path), File(f), save=True)
 
         try:
             os.remove(pdf_path)
-        except:
+        except Exception:
             pass
-    # =============================
-    # 4️⃣ KELISHUVCHILAR
-    # =============================
-    objs = []
-    for emp_id in agreements:
-        emp = Employee.objects.filter(id=emp_id).first()
-        if emp:
-            objs.append(Deedconsent(
-                deed=deed,
-                employee=emp,
-                status="viewed"
-            ))
-    Deedconsent.objects.bulk_create(objs)
 
-    messages.success(request, "✅ Dalolatnoma yuborildi")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+    # 3) Kelishuvchilar — N+1 ni yo‘q qilamiz
+    # agreements ichidan bo‘shlarni tozalaymiz, dublikatni olib tashlaymiz
+    ids = []
+    for x in agreements:
+        x = (x or "").strip()
+        if x.isdigit():
+            ids.append(int(x))
+    ids = list(set(ids))
+
+    # xohlasangiz sender/receiver ni olib tashlaymiz
+    ids = [i for i in ids if i not in (employee.id, receiver.id)]
+
+    if ids:
+        emps = Employee.objects.filter(id__in=ids).only("id")
+        objs = [Deedconsent(deed=deed, employee=e, status="viewed") for e in emps]
+        Deedconsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    messages.success(request, "Imzolashga yuborildi")
+    return redirect(back_url)
 
 
+@never_cache
+@login_required
 def deed_action(request, pk):
-    deed = get_object_or_404(Deed, pk=pk)
-    emp = getattr(request.user, "employee", None)
-
     if request.method != "POST":
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
+    emp = getattr(request.user, "employee", None)
     if not emp:
         raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
     action = (request.POST.get("action") or "").strip()
 
-    # Kim bosdi? + to'g'ri textarea'dan message olish
+    deed = get_object_or_404(
+        Deed.objects.select_related("sender", "receiver"),
+        pk=pk
+    )
+
+    # kim bosdi?
     if deed.receiver_id == emp.id:
         role = "receiver"
         message = (request.POST.get("message_receiver") or "").strip()
@@ -285,18 +330,20 @@ def deed_action(request, pk):
     # ❌ Reject
     if action == "reject":
         now = timezone.now()
+        update_fields = ["date_edit"]
+
         if role == "receiver":
             deed.status_receiver = "rejected"
             deed.message_receiver = message
+            update_fields += ["status_receiver", "message_receiver"]
         else:
             deed.status_sender = "rejected"
             deed.message_sender = message
+            update_fields += ["status_sender", "message_sender"]
+
         deed.date_edit = now
-        deed.save(update_fields=[
-            "status_receiver", "message_receiver",
-            "status_sender", "message_sender",
-            "date_edit"
-        ])
+        deed.save(update_fields=update_fields)
+
         messages.info(request, "Dalolatnoma rad etildi")
         return redirect(back_url)
 
@@ -308,7 +355,7 @@ def deed_action(request, pk):
 
         file_path = deed.file.path
 
-        if not os.path.exists(file_path):
+        if not (file_path and os.path.exists(file_path)):
             messages.info(request, "PDF topilmadi")
             return redirect(back_url)
 
@@ -326,14 +373,13 @@ def deed_action(request, pk):
             messages.info(request, "PDF o‘qilmadi")
             return redirect(back_url)
 
-        # SSO tugagandan keyin qayerga boramiz? -> PDF viewer
-        after_sso_url = reverse("deed_pdf_view", args=[deed.id]) + f"?next={back_url}"
+        # next url ni xavfsiz encode qilamiz
+        after_sso_url = reverse("deed_pdf_view", args=[deed.id]) + "?" + urlencode({"next": back_url})
 
-        # SSO callback tugagach qaysi statusni update qilish uchun role+message saqlaymiz
         request.session["PENDING_APPROVE"] = {
             "deed_id": deed.id,
-            "role": role,          # sender / receiver
-            "message": message,    # shu odam yozgan izoh
+            "role": role,          # sender/receiver
+            "message": message,
             "redirect_url": back_url,
             "after_sso_url": after_sso_url,
         }
@@ -370,13 +416,14 @@ def sso_callback_page(request):
 @csrf_exempt
 @never_cache
 @login_required
+@require_POST
 def sso_exchange_and_finish(request):
-    """
-    callback.html fetch qilib shu endpointga code+verifier yuboradi.
-    Biz esa token olib PINFL tekshiramiz va SSO_OK ni sessionga yozamiz.
-    """
+    pending = None
     try:
-        body = json.loads(request.body or "{}")
+        try:
+            body = json.loads(request.body or "{}")
+        except Exception:
+            return JsonResponse({"status": "error", "message": "JSON noto‘g‘ri", "redirect": "/"}, status=400)
 
         code = body.get("code")
         code_verifier = body.get("codeVerifier")
@@ -388,9 +435,7 @@ def sso_exchange_and_finish(request):
                 status=400
             )
 
-        token_data = exchange_code_for_token(code, code_verifier, redirect_uri)
-        user_data = decode_jwt(token_data["id_token"])
-
+        # 2) Pending tekshiruv
         pending = request.session.get("PENDING_APPROVE")
         if not pending:
             raise PermissionDenied("Pending yo‘q")
@@ -400,19 +445,27 @@ def sso_exchange_and_finish(request):
         redirect_url = pending.get("redirect_url", "/")
         after_sso_url = pending.get("after_sso_url") or redirect_url
 
-        # PINFL tekshiruv
-        employee_pinfl = getattr(getattr(request.user, "employee", None), "pinfl", None)
-        sso_pinfl = user_data.get("pinfl")
-
-        if not employee_pinfl or employee_pinfl != sso_pinfl:
+        employee = getattr(request.user, "employee", None)
+        if not employee:
             request.session.pop("PENDING_APPROVE", None)
-            messages.error(request, "SSO kalit egasi va foydalanuvchi mos kelmadi!")
+            return JsonResponse({"status": "forbidden", "message": "Employee yo‘q", "redirect": redirect_url}, status=403)
+
+        token_data = exchange_code_for_token(code, code_verifier, redirect_uri)
+        id_token = token_data.get("id_token")
+        if not id_token:
+            raise PermissionDenied("id_token yo‘q")
+
+        user_data = decode_jwt(id_token) or {}
+        sso_pinfl = user_data.get("pinfl")
+        employee_pinfl = getattr(employee, "pinfl", None)
+
+        if not employee_pinfl or not sso_pinfl or employee_pinfl != sso_pinfl:
+            request.session.pop("PENDING_APPROVE", None)
             return JsonResponse(
                 {"status": "forbidden", "message": "PINFL mos emas", "redirect": redirect_url},
                 status=403
             )
 
-        # Deed approve oqimi (sender/receiver)
         if role in ("sender", "receiver"):
             deed_id = pending.get("deed_id")
             if not deed_id:
@@ -426,28 +479,33 @@ def sso_exchange_and_finish(request):
             }
             request.session.pop("PENDING_APPROVE", None)
             request.session.modified = True
-
             return JsonResponse({"status": "ok", "redirect": after_sso_url})
 
-        # Consent (ixtiyoriy)
         if role == "consent":
-            consent = get_object_or_404(Deedconsent, pk=pending["consent_id"])
-            if consent.employee.user != request.user:
+            consent_id = pending.get("consent_id")
+            if not consent_id:
+                raise PermissionDenied("consent_id yo‘q")
+
+            consent = get_object_or_404(Deedconsent.objects.select_related("employee__user"), pk=consent_id)
+
+            if consent.employee.user_id != request.user.id:
                 raise PermissionDenied("Ruxsat yo‘q")
 
             if consent.status != "approved":
                 consent.status = "approved"
-                consent.message = pending.get("message", "")
+                consent.message = message or ""
+                consent.date_edit = timezone.now()
                 consent.save(update_fields=["status", "message", "date_edit"])
 
             request.session.pop("PENDING_APPROVE", None)
-            messages.success(request, "✅ Kelishuv tasdiqlandi")
+            request.session.modified = True
             return JsonResponse({"status": "ok", "redirect": redirect_url})
 
         raise PermissionDenied("Noto‘g‘ri pending turi")
 
     except PermissionDenied as e:
         return JsonResponse({"status": "error", "message": str(e), "redirect": "/"}, status=403)
+
     except Exception as e:
         print("SSO ERROR:", e)
         return JsonResponse({"status": "error", "message": "SSO xatolik", "redirect": "/"}, status=500)
@@ -482,58 +540,94 @@ def exchange_code_for_token(code, code_verifier, redirect_uri):
 
 @never_cache
 @login_required
+@require_POST
 def deedconsent_action(request, pk):
-    consent = get_object_or_404(Deedconsent, pk=pk)
+    back_url = request.META.get("HTTP_REFERER", "/")
 
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    consent = get_object_or_404(
+        Deedconsent.objects.select_related("employee__user", "deed"),
+        pk=pk
+    )
 
-    if consent.employee.user != request.user:
+    # faqat o‘sha employee egasi bosishi mumkin
+    if consent.employee.user_id != request.user.id:
         messages.info(request, "Sizga ruxsat yo‘q")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        return redirect(back_url)
 
+    # qayta bosib yubormasin
     if consent.status != "viewed":
         messages.info(request, "Bu kelishuv allaqachon ko‘rib chiqilgan")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        return redirect(back_url)
 
-    action = request.POST.get("action")
+    action = (request.POST.get("action") or "").strip()
     message = (request.POST.get("message") or "").strip()
-    redirect_url = request.META.get("HTTP_REFERER", "/")
 
-    # ❌ reject — SSO shart emas (xohlasangiz SSO qildirsa ham bo'ladi)
+    # ❌ reject — SSO shart emas
     if action == "reject":
         consent.status = "rejected"
         consent.message = message
-        consent.save()
+        consent.date_edit = timezone.now()
+        consent.save(update_fields=["status", "message", "date_edit"])
         messages.warning(request, "Rad etildi!")
-        return redirect(redirect_url)
+        return redirect(back_url)
 
-    # ✅ approve — SSO orqali (lekin QR qo'ymaydi)
+    # ✅ approve — SSO orqali
     if action == "approve":
         request.session["PENDING_APPROVE"] = {
             "role": "consent",
             "consent_id": consent.id,
             "message": message,
-            "redirect_url": redirect_url,
+            "redirect_url": back_url,
+            "after_sso_url": back_url,
         }
         request.session.modified = True
         return redirect("sso_start_page")
 
     messages.error(request, "Noto‘g‘ri amal")
-    return redirect(redirect_url)
+    return redirect(back_url)
 
 
 @never_cache
 @login_required
 def barn_tex(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:
+        raise PermissionDenied
+
     status = (request.GET.get("status") or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
     category_id = (request.GET.get("category") or "").strip()
     name = (request.GET.get("name") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    total_count = Technics.objects.count()
+    has_filter = bool(status or organization_id or category_id or name)
 
+    if not has_filter:
+        qs = Technics.objects.none()
+        page_obj = Paginator(qs, 100).get_page(page_number)
+
+        params = request.GET.copy()
+        params.pop("page", None)
+
+        return render(request, "main/barn_tex.html", {
+            "organizations": Organization.objects.only("id", "name").order_by("name"),
+            "categories": Category.objects.only("id", "name").order_by("name"),
+            "technics_form": TechnicsForm(),
+
+            "page_obj": page_obj,
+            "technics": page_obj.object_list,
+            "qs_params": params.urlencode(),
+            "row_start": 0,
+
+            "total_count": 0,       # filter bo‘lmasa ko‘rsatmaymiz
+            "filtered_count": 0,
+        })
+
+    # ✅ Filter bor bo‘lsa — query ishlaydi
     qs = (
         Technics.objects
         .select_related("organization", "category", "employee")
@@ -547,7 +641,6 @@ def barn_tex(request):
     if category_id:
         qs = qs.filter(category_id=category_id)
 
-    # ✅ nomi bo‘yicha qidiruv
     if name:
         qs = qs.filter(
             Q(name__icontains=name) |
@@ -556,28 +649,26 @@ def barn_tex(request):
             Q(year__icontains=name)
         )
 
+    # ✅ countlar faqat filter bo‘lganda
     filtered_count = qs.count()
 
-    # ✅ filter bo‘lmasa bo‘sh ko‘rsatish (name ham kiritildi)
-    if not (status or organization_id or category_id or name):
-        qs = Technics.objects.none()
-        filtered_count = 0
+    # total_count ni ko‘rsatish shart bo‘lmasa olib tashlang (katta jadvalda og‘ir)
+    total_count = Technics.objects.count()
 
     paginator = Paginator(qs, 100)
     page_obj = paginator.get_page(page_number)
 
     params = request.GET.copy()
     params.pop("page", None)
-    qs_params = params.urlencode()
 
     context = {
-        "organizations": Organization.objects.all(),
-        "categories": Category.objects.all(),
+        "organizations": Organization.objects.only("id", "name").order_by("name"),
+        "categories": Category.objects.only("id", "name").order_by("name"),
         "technics_form": TechnicsForm(),
 
         "page_obj": page_obj,
         "technics": page_obj.object_list,
-        "qs_params": qs_params,
+        "qs_params": params.urlencode(),
         "row_start": page_obj.start_index() if filtered_count else 0,
 
         "total_count": total_count,
@@ -587,81 +678,133 @@ def barn_tex(request):
 
 
 @login_required
+@require_POST
 def technics_create(request):
-    form = TechnicsForm(request.POST)
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi qo‘sha olsin
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    form = TechnicsForm(request.POST)
     if form.is_valid():
         form.save()
+        messages.success(request, "Texnika qo‘shildi")
+    else:
+        messages.error(request, "Maʼlumotlarda xatolik bor")
 
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+    return redirect(back_url)
 
 
 @login_required
+@require_POST
 def technics_delete(request):
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    tex_id = request.POST.get("texnika_id")
-    if not tex_id:
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi o‘chirishi mumkin
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    tex_id = (request.POST.get("texnika_id") or "").strip()
+    if not tex_id.isdigit():
         messages.error(request, "Texnika topilmadi")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        return redirect(back_url)
 
-    tex = get_object_or_404(Technics, id=tex_id)
+    tex = get_object_or_404(Technics, id=int(tex_id))
     tex.delete()
-
     messages.success(request, "Texnika o‘chirildi")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+    return redirect(back_url)
 
 
 @login_required
+@require_POST
 @transaction.atomic
 def technics_attach(request):
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    tex_id = request.POST.get("texnika_id")
-    employee_id = (request.POST.get("employee_id") or "").strip()
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi qo‘sha olsin
+        raise PermissionDenied
 
-    tex = get_object_or_404(Technics, id=tex_id)
+    back_url = request.META.get("HTTP_REFERER", "/")
 
-    if employee_id:
-        # 🔗 Biriktirish
-        emp = get_object_or_404(Employee, id=employee_id)
-        tex.employee = emp
+    tex_id = (request.POST.get("texnika_id") or "").strip()
+    emp_id = (request.POST.get("employee_id") or "").strip()
+
+    if not tex_id.isdigit():
+        messages.error(request, "Texnika topilmadi")
+        return redirect(back_url)
+
+    # ✅ lock: parallel bosishlar muammo qilmasin
+    tex = get_object_or_404(Technics.objects.select_for_update(), id=int(tex_id))
+
+    if emp_id:
+        if not emp_id.isdigit():
+            messages.error(request, "Xodim noto‘g‘ri tanlandi")
+            return redirect(back_url)
+
+        emp = get_object_or_404(Employee.objects.select_related("organization", "region"), id=int(emp_id))
+        tex.employee_id = emp.id
         tex.status = "active"
+        tex.save(update_fields=["employee", "status", "date_edit"] if hasattr(tex, "date_edit") else ["employee", "status"])
         messages.success(request, "Texnika xodimga biriktirildi")
     else:
-        # 🔓 Bo‘shatish
         tex.employee = None
         tex.status = "free"
+        tex.save(update_fields=["employee", "status", "date_edit"] if hasattr(tex, "date_edit") else ["employee", "status"])
         messages.success(request, "Texnika bo‘shatildi")
 
-    tex.save()
-    return redirect(request.META.get("HTTP_REFERER", "/"))
-
+    return redirect(back_url)
 
 
 @login_required
+@require_POST
 @transaction.atomic
 def technics_update(request, pk):
-    tex = get_object_or_404(Technics, pk=pk)
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi tahrirlay oladi
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    # 🔒 lock (parallel update muammosi bo‘lmasin)
+    tex = get_object_or_404(Technics.objects.select_for_update(), pk=pk)
 
     category_id = (request.POST.get("category") or "").strip()
     organization_id = (request.POST.get("organization") or "").strip()
 
+    # FK lar
     if category_id:
-        tex.category = get_object_or_404(Category, pk=category_id)
+        if not category_id.isdigit():
+            messages.error(request, "Kategoriya noto‘g‘ri")
+            return redirect(back_url)
+        tex.category = get_object_or_404(Category, pk=int(category_id))
     else:
         tex.category = None
 
     if organization_id:
-        tex.organization = get_object_or_404(Organization, pk=organization_id)
+        if not organization_id.isdigit():
+            messages.error(request, "Tashkilot noto‘g‘ri")
+            return redirect(back_url)
+        tex.organization = get_object_or_404(Organization, pk=int(organization_id))
     else:
         tex.organization = None
 
+    # Oddiy maydonlar
     tex.name = (request.POST.get("name") or "").strip()
     tex.parametr = (request.POST.get("parametr") or "").strip()
     tex.inventory = (request.POST.get("inventory") or "").strip()
@@ -669,24 +812,69 @@ def technics_update(request, pk):
     tex.mac = (request.POST.get("mac") or "").strip()
     tex.ip = (request.POST.get("ip") or "").strip()
     tex.year = (request.POST.get("year") or "").strip()
-    tex.price = request.POST.get("price") or 0
-    tex.save()
+
+    # 💰 Price: 14.45 yoki 14,45 ni qabul qiladi
+    raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
+    raw_price = raw_price.replace(",", ".")  # 14,45 -> 14.45
+
+    try:
+        tex.price = Decimal(raw_price) if raw_price else Decimal("0")
+        if tex.price < 0:
+            raise InvalidOperation
+    except (InvalidOperation, ValueError):
+        messages.error(request, "Narx noto‘g‘ri kiritildi (misol: 14.45 yoki 14,45)")
+        return redirect(back_url)
+
+    # 💾 Minimal saqlash
+    tex.save(update_fields=[
+        "category", "organization",
+        "name", "parametr", "inventory", "serial", "mac", "ip", "year", "price"
+    ])
+
     messages.success(request, "Texnika tahrirlandi!")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+    return redirect(back_url)
+
 
 @never_cache
 @login_required
 def barn_mat(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not (role.barn or role.boss):
+        raise PermissionDenied
+
     emp_id = (request.GET.get("employee") or "").strip()
     status = (request.GET.get("status") or "").strip()
     name = (request.GET.get("name") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    total_count = Material.objects.count()
+    has_filter = bool(emp_id or status or name)
+
+    # ✅ filter bo‘lmasa bo‘sh ko‘rsatamiz (tez)
+    if not has_filter:
+        qs = Material.objects.none()
+        page_obj = Paginator(qs, 100).get_page(page_number)
+
+        params = request.GET.copy()
+        params.pop("page", None)
+
+        return render(request, "main/barn_mat.html", {
+            "employees_boss": Employee.objects.filter(rol__client=False, rol__boss=True),
+            "page_obj": page_obj,
+            "material": page_obj.object_list,
+            "material_form": MaterialForm(),
+            "qs_params": params.urlencode(),
+            "row_start": 0,
+            "total_count": 0,
+            "filtered_count": 0,
+        })
 
     qs = (
         Material.objects
-        .select_related("employee")
+        .select_related("employee", "employee__user")
         .order_by("-id")
     )
 
@@ -694,19 +882,17 @@ def barn_mat(request):
         qs = qs.filter(status=status)
 
     if emp_id:
-        qs = qs.filter(employee_id=emp_id)
+        # id bo‘lmasa ignore (xohlasangiz error ham qilamiz)
+        if emp_id.isdigit():
+            qs = qs.filter(employee_id=int(emp_id))
+        else:
+            qs = Material.objects.none()
 
     if name:
-        qs = qs.filter(
-            Q(name__icontains=name) |
-            Q(code__icontains=name)
-        )
+        qs = qs.filter(Q(name__icontains=name) | Q(code__icontains=name))
 
     filtered_count = qs.count()
-
-    if not (emp_id or status or name):
-        qs = Material.objects.none()
-        filtered_count = 0
+    total_count = Material.objects.count()  # kerak bo‘lmasa olib tashlang
 
     paginator = Paginator(qs, 100)
     page_obj = paginator.get_page(page_number)
@@ -716,7 +902,7 @@ def barn_mat(request):
     qs_params = params.urlencode()
 
     context = {
-        "employees_boss": Employee.objects.filter(organization__org_type="IVS", is_boss=True),
+        "employees_boss": Employee.objects.filter(rol__client=False, rol__boss=True),
         "page_obj": page_obj,
         "material": page_obj.object_list,
         "material_form": MaterialForm(),
@@ -729,125 +915,212 @@ def barn_mat(request):
 
 
 @login_required
+@require_POST
 def material_create(request):
-    form = MaterialForm(request.POST)
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi qo‘sha oladi
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    form = MaterialForm(request.POST)
     if form.is_valid():
         form.save()
+        messages.success(request, "Material qo‘shildi!")
+    else:
+        messages.error(request, "Maʼlumotlarda xatolik bor")
 
-    messages.info(request, "Material qo'shildi!")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+    return redirect(back_url)
 
 
 @login_required
+@require_POST
 def material_update(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi tahrirlay oladi
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
     mat = get_object_or_404(Material, pk=pk)
-    if request.method == "POST":
-        mat.name = request.POST.get("name", "").strip()
-        mat.number = request.POST.get("number") or 0
-        mat.price = request.POST.get("price") or 0
-        mat.code = request.POST.get("code", "").strip()
-        mat.unit = request.POST.get("unit", "").strip()
-        mat.save()
-        messages.info(request, "Material taxrirlandi!")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    mat.name = (request.POST.get("name") or "").strip()
+    mat.code = (request.POST.get("code") or "").strip()
+    mat.unit = (request.POST.get("unit") or "").strip()
+
+    # number validatsiya (butun son)
+    raw_number = (request.POST.get("number") or "").strip()
+    try:
+        mat.number = int(raw_number) if raw_number else 0
+        if mat.number < 0:
+            raise ValueError
+    except ValueError:
+        messages.error(request, "Soni noto‘g‘ri kiritildi")
+        return redirect(back_url)
+
+    # price validatsiya (14.45 yoki 14,45)
+    raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
+    raw_price = raw_price.replace(",", ".")
+    try:
+        mat.price = Decimal(raw_price) if raw_price else Decimal("0")
+        if mat.price < 0:
+            raise InvalidOperation
+    except (InvalidOperation, ValueError):
+        messages.error(request, "Narx noto‘g‘ri (misol: 14.45 yoki 14,45)")
+        return redirect(back_url)
+
+    mat.save(update_fields=["name", "number", "price", "code", "unit"])
+    messages.success(request, "Material tahrirlandi!")
+    return redirect(back_url)
 
 
 @login_required
+@require_POST
 @transaction.atomic
 def material_attach(request):
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    material_id = request.POST.get("material_id")
-    employee_id = request.POST.get("employee_id")
-    give_number = request.POST.get("give_number")
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi
+        raise PermissionDenied
 
-    # validatsiya
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    material_id = (request.POST.get("material_id") or "").strip()
+    employee_id = (request.POST.get("employee_id") or "").strip()
+    give_number = (request.POST.get("give_number") or "").strip()
+
+    # id lar validatsiya
+    if not material_id.isdigit() or not employee_id.isdigit():
+        messages.error(request, "Material yoki xodim noto‘g‘ri tanlandi")
+        return redirect(back_url)
+
+    # son validatsiya
     try:
-        give_number = int(give_number)
+        give_number_int = int(give_number)
+        if give_number_int <= 0:
+            raise ValueError
     except (TypeError, ValueError):
-        messages.info(request, "Soni noto‘g‘ri kiritildi")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+        messages.error(request, "Soni noto‘g‘ri kiritildi")
+        return redirect(back_url)
 
-    if give_number <= 0:
-        messages.info(request, "Soni 1 dan katta bo‘lishi kerak")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    # 🔒 Ombordagi materialni lock qilamiz
+    src = get_object_or_404(
+        Material.objects.select_for_update(),
+        id=int(material_id)
+    )
 
-    # Ombordagi material (berilayotgan)
-    src = get_object_or_404(Material, id=material_id)
-    emp = get_object_or_404(Employee, id=employee_id)
+    emp = get_object_or_404(Employee, id=int(employee_id))
 
-    # omborda yetarlimi?
-    if (src.number or 0) < give_number:
-        messages.info(request, "Omborda yetarli material yo‘q")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    src_qty = int(src.number or 0)
+    if src_qty < give_number_int:
+        messages.error(request, f"Omborda yetarli material yo‘q (bor: {src_qty})")
+        return redirect(back_url)
 
-    q = Material.objects.filter(employee=emp)
-
-    if src.code:
-        q = q.filter(code=src.code)
+    # dst ni aniqlash: code bo‘lsa code, bo‘lmasa name
+    dst_filter = {"employee_id": emp.id}
+    if (src.code or "").strip():
+        dst_filter["code"] = src.code
     else:
-        q = q.filter(name=src.name)
+        dst_filter["name"] = src.name
 
-    dst = q.first()
+    # 🔒 dst ni ham lock bilan olamiz (bor bo‘lsa)
+    dst = (
+        Material.objects
+        .select_for_update()
+        .filter(**dst_filter)
+        .first()
+    )
 
     if dst:
-        # ✅ bor → ustiga qo‘shamiz
-        dst.number = (dst.number or 0) + give_number
+        # mavjud bo‘lsa qo‘shamiz
+        dst.number = int(dst.number or 0) + give_number_int
 
-        # narx/unit bo‘sh bo‘lsa, src dan to‘ldirib yuborish (ixtiyoriy)
-        if not dst.price and src.price:
+        # price/unit bo‘sh bo‘lsa src dan ko‘chirib qo‘yamiz
+        if (dst.price in [None, 0, "0"]) and src.price not in [None, 0, "0"]:
             dst.price = src.price
-        if not dst.unit and src.unit:
+        if not (dst.unit or "").strip() and (src.unit or "").strip():
             dst.unit = src.unit
 
-        dst.save()
+        # status active bo‘lsin (ixtiyoriy)
+        if hasattr(dst, "status") and dst.status != "active":
+            dst.status = "active"
+
+        save_fields = ["number"]
+        if "price" in [f.name for f in dst._meta.fields]:
+            save_fields += ["price"]
+        if "unit" in [f.name for f in dst._meta.fields]:
+            save_fields += ["unit"]
+        if "status" in [f.name for f in dst._meta.fields]:
+            save_fields += ["status"]
+
+        dst.save(update_fields=list(set(save_fields)))
     else:
-        # ✅ yo‘q → yaratamiz
+        # yo‘q bo‘lsa yaratamiz
         Material.objects.create(
             employee=emp,
-            status="active",          # sizdagi status qiymatiga moslang
+            status="active",
             name=src.name,
             code=src.code,
-            number=give_number,
+            number=give_number_int,
             unit=src.unit,
             price=src.price,
-            year=src.year,
+            year=getattr(src, "year", None),
         )
 
-    # ✅ Ombordan ayiramiz
-    src.number = (src.number or 0) - give_number
-    src.save()
+    # Ombordan ayiramiz
+    src.number = src_qty - give_number_int
+    src.save(update_fields=["number"])
 
     messages.success(request, "Material biriktirildi")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+    return redirect(back_url)
 
 
 @login_required
+@require_POST
 def material_delete(request):
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    material_id = request.POST.get("material_id")
+    role = getattr(employee, "rol", None)
+    if not role or not role.barn:   # faqat omborchi o‘chira oladi
+        raise PermissionDenied
 
-    if not material_id:
-        messages.info(request, "Material topilmadi")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+    back_url = request.META.get("HTTP_REFERER", "/")
 
-    mat = get_object_or_404(Material, id=material_id)
+    material_id = (request.POST.get("material_id") or "").strip()
+    if not material_id.isdigit():
+        messages.error(request, "Material topilmadi")
+        return redirect(back_url)
+
+    mat = get_object_or_404(Material, id=int(material_id))
 
     mat.delete()
     messages.success(request, "Material o‘chirildi")
 
-    return redirect(request.META.get("HTTP_REFERER", "/"))
+    return redirect(back_url)
 
 
 @never_cache
 @login_required
 def technics(request, slug=None):
-    emp = getattr(request.user, "employee", None)
-    if not emp or emp.status != "worker":
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
         raise PermissionDenied
 
     category = None
@@ -862,21 +1135,17 @@ def technics(request, slug=None):
 
     organizations = Organization.objects.only("id", "name").order_by("name")
 
-    total_count = Technics.objects.count()
-
-    technics_qs = (
+    qs = (
         Technics.objects
         .select_related("category", "employee", "employee__user", "employee__rank")
         .prefetch_related("extratechnics_set")
         .only(
             "id", "name", "inventory", "serial", "ip", "mac", "year",
             "category__id", "category__name",
-
             "employee__id",
             "employee__first_name", "employee__last_name", "employee__father_name",
             "employee__user__username",
             "employee__rank__id", "employee__rank__name",
-
             "employee__organization_id",
             "employee__department_id",
             "employee__directorate_id",
@@ -885,26 +1154,28 @@ def technics(request, slug=None):
     )
 
     if category:
-        technics_qs = technics_qs.filter(category=category)
+        qs = qs.filter(category=category)
 
-    if org_id:
-        technics_qs = technics_qs.filter(employee__organization_id=org_id)
-    if dep_id:
-        technics_qs = technics_qs.filter(employee__department_id=dep_id)
-    if dir_id:
-        technics_qs = technics_qs.filter(employee__directorate_id=dir_id)
-    if div_id:
-        technics_qs = technics_qs.filter(employee__division_id=div_id)
+    # id larni isdigit bilan tekshirib olamiz (xavfsiz)
+    if org_id and org_id.isdigit():
+        qs = qs.filter(employee__organization_id=int(org_id))
+    if dep_id and dep_id.isdigit():
+        qs = qs.filter(employee__department_id=int(dep_id))
+    if dir_id and dir_id.isdigit():
+        qs = qs.filter(employee__directorate_id=int(dir_id))
+    if div_id and div_id.isdigit():
+        qs = qs.filter(employee__division_id=int(div_id))
 
-    filtered_count = technics_qs.count()
+    filtered_count = qs.count()
 
-    grouped = defaultdict(list)
-    ordered_qs = technics_qs.order_by(
+    ordered_qs = qs.order_by(
         "employee__last_name",
         "employee__first_name",
         "category__name",
         "name"
     )
+
+    grouped = defaultdict(list)
     for t in ordered_qs:
         grouped[t.employee].append(t)
 
@@ -917,14 +1188,13 @@ def technics(request, slug=None):
     qs_params = params.urlencode()
 
     context = {
-        "category": category,  # xohlasangiz template'da ko'rsatasiz
+        "category": category,
         "organizations": organizations,
 
         "page_obj": page_obj,
         "grouped_technics": page_obj.object_list,
         "qs_params": qs_params,
 
-        "total_count": total_count,
         "filtered_count": filtered_count,
 
         "selected_org": org_id,
@@ -938,251 +1208,310 @@ def technics(request, slug=None):
 @never_cache
 @login_required
 def organization(request, slug):
-
-    # 🔒 Foydalanuvchi Worker bo‘lishi shart
-    emp = getattr(request.user, "employee", None)
-    if not emp or emp.status != "worker":
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied
-    # ⚡ Technics ni oldindan yuklab qo‘yamiz
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
+    # ⚡ Technics ni oldindan yuklaymiz (faqat kerakli fieldlar)
     tech_prefetch = Prefetch(
         "technics_set",
-        queryset=Technics.objects.select_related("category"),
+        queryset=(
+            Technics.objects
+            .select_related("category")
+            .only("id", "name", "serial", "inventory", "year", "category__id", "category__name")
+        ),
         to_attr="tech_list"
     )
-    # 🟢 ORGANIZATION (asosiy obyekt)
-    organization = (
-        Organization.objects
-        .annotate(
-            technics_count=Count("employee__technics", distinct=True)
+
+    # Employee prefetchniki ham yengillatamiz
+    emp_prefetch_org = Prefetch(
+        "employee_set",
+        queryset=(
+            Employee.objects
+            .select_related("rank", "user")
+            .only(
+                "id", "first_name", "last_name", "father_name",
+                "rank__id", "rank__name",
+                "user__id", "user__username",
+                "organization_id", "department_id", "directorate_id", "division_id",
+            )
+            .prefetch_related(tech_prefetch)
         )
-        .prefetch_related(
-            Prefetch("employee_set", queryset=Employee.objects.prefetch_related(tech_prefetch))
-        )
-        .get(slug=slug)
     )
+
+    # 🟢 ORGANIZATION
+    org = get_object_or_404(
+        Organization.objects
+        .annotate(technics_count=Count("employee__technics", distinct=True))
+        .prefetch_related(emp_prefetch_org),
+        slug=slug
+    )
+
     # 🟡 DEPARTMENTS
     departments = (
         Department.objects
-        .filter(organization=organization)
+        .filter(organization=org)
         .select_related("organization")
-        .annotate(
-            technics_count=Count("employee__technics", distinct=True)
-        )
+        .annotate(technics_count=Count("employee__technics", distinct=True))
         .prefetch_related(
-            Prefetch("employee_set",
-                     queryset=Employee.objects
-                     .select_related("rank", "user")
-                     .prefetch_related(tech_prefetch))
+            Prefetch(
+                "employee_set",
+                queryset=(
+                    Employee.objects
+                    .select_related("rank", "user")
+                    .only(
+                        "id", "first_name", "last_name", "father_name",
+                        "rank__id", "rank__name",
+                        "user__id", "user__username",
+                        "organization_id", "department_id", "directorate_id", "division_id",
+                    )
+                    .prefetch_related(tech_prefetch)
+                )
+            )
         )
     )
+
     # 🔵 DIRECTORATES
     directorates = (
         Directorate.objects
-        .filter(department__organization=organization)
+        .filter(department__organization=org)
         .select_related("department")
-        .annotate(
-            technics_count=Count("employee__technics", distinct=True)
-        )
+        .annotate(technics_count=Count("employee__technics", distinct=True))
         .prefetch_related(
-            Prefetch("employee_set",
-                     queryset=Employee.objects
-                     .select_related("rank", "user")
-                     .prefetch_related(tech_prefetch))
+            Prefetch(
+                "employee_set",
+                queryset=(
+                    Employee.objects
+                    .select_related("rank", "user")
+                    .only(
+                        "id", "first_name", "last_name", "father_name",
+                        "rank__id", "rank__name",
+                        "user__id", "user__username",
+                        "organization_id", "department_id", "directorate_id", "division_id",
+                    )
+                    .prefetch_related(tech_prefetch)
+                )
+            )
         )
     )
+
     # 🟣 DIVISIONS
     divisions = (
         Division.objects
-        .filter(directorate__department__organization=organization)
+        .filter(directorate__department__organization=org)
         .select_related("directorate")
-        .annotate(
-            technics_count=Count("employee__technics", distinct=True)
-        )
+        .annotate(technics_count=Count("employee__technics", distinct=True))
         .prefetch_related(
-            Prefetch("employee_set",
-                     queryset=Employee.objects
-                     .select_related("rank", "user")
-                     .prefetch_related(tech_prefetch))
+            Prefetch(
+                "employee_set",
+                queryset=(
+                    Employee.objects
+                    .select_related("rank", "user")
+                    .only(
+                        "id", "first_name", "last_name", "father_name",
+                        "rank__id", "rank__name",
+                        "user__id", "user__username",
+                        "organization_id", "department_id", "directorate_id", "division_id",
+                    )
+                    .prefetch_related(tech_prefetch)
+                )
+            )
         )
     )
 
     context = {
-        'organizations': organization,
-        'departments': departments,
-        'directorates': directorates,
-        'divisions': divisions,
+        "organizations": org,
+        "departments": departments,
+        "directorates": directorates,
+        "divisions": divisions,
     }
-    return render(request, 'main/organization.html', context)
+    return render(request, "main/organization.html", context)
 
 
 @never_cache
 @login_required
 def document_get(request):
-    # 🔒 Employee tekshiruvi
-    if not hasattr(request.user, "employee"):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied
 
-    if request.user.employee.status != "worker":
+    role = getattr(employee, "rol", None)
+    if role and role.client:
         raise PermissionDenied
-    """GET so‘rovi uchun sahifani ko‘rsatish"""
+
     context = {
-        'organizations': Organization.objects.all(),
-        'departments': Department.objects.select_related('organization'),
-        'directorate': Directorate.objects.select_related('department'),
-        'division': Division.objects.select_related('directorate'),
+        "organizations": Organization.objects.only("id", "name", "slug", "org_type").order_by("name"),
+        "departments": Department.objects.select_related("organization").only(
+            "id", "name", "organization_id"
+        ).order_by("name"),
+        "directorate": Directorate.objects.select_related("department").only(
+            "id", "name", "department_id"
+        ).order_by("name"),
+        "division": Division.objects.select_related("directorate").only(
+            "id", "name", "directorate_id"
+        ).order_by("name"),
     }
-    return render(request, 'main/document.html', context)
+    return render(request, "main/document.html", context)
 
 
 @never_cache
 @login_required
+@require_POST
 def document_post(request):
-    """POST so‘rovi uchun dalolatnoma yaratish"""
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     oylar = [
         "yanvarda", "fevralda", "martda", "aprelda", "mayda", "iyunda",
         "iyulda", "avgustda", "sentabrda", "oktabrda", "noyabrda", "dekabrda"
     ]
 
-    if request.method != 'POST':
-        return redirect('document_get')
+    # === FORM ===
+    org_id = (request.POST.get("organization") or "").strip()
+    dep_id = (request.POST.get("department") or "").strip()
+    dir_id = (request.POST.get("directorate") or "").strip()
+    div_id = (request.POST.get("division") or "").strip()
 
-    # === FORM MA'LUMOTLARI ===
-    org_id = request.POST.get('organization')
-    dep_id = request.POST.get('department')
-    dir_id = request.POST.get('directorate')
-    div_id = request.POST.get('division')
-    post_id = request.POST.get('post_id')
-    fio_id = request.POST.get('fio_id')
-    date_id = request.POST.get('date_id')
-    namber_id = request.POST.get('namber_id')
-    rim_id = request.POST.get('rim_id')
+    post_id = (request.POST.get("post_id") or "").strip()
+    fio_id = (request.POST.get("fio_id") or "").strip()
+    date_id = (request.POST.get("date_id") or "").strip()
+    namber_id = (request.POST.get("namber_id") or "").strip()
+    rim_id = (request.POST.get("rim_id") or "").strip()
 
-    # === OBYEKTLARNI OLISH ===
-    org = Organization.objects.filter(id=org_id).first() if org_id else None
-    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    dir = Directorate.objects.filter(id=dir_id).first() if dir_id else None
-    div = Division.objects.filter(id=div_id).first() if div_id else None
+    # === OBYEKTLAR (xavfsiz) ===
+    org = dep = dir = div = None
 
-    # === SANANI FORMATLASH ===
-    formatted_date = ''
-    if date_id:
-        try:
-            dt = datetime.strptime(date_id.strip(), "%Y-%m-%d").date()
-            oy_nomi = oylar[dt.month - 1]
-            formatted_date = f"{dt.year} yil {dt.day}-{oy_nomi}"
-        except Exception:
-            formatted_date = date_id
-
-    # === QAYSI BO‘LIM TANLANGANINI ANIQLASH ===
-    if div:
-        full_name = div
-        filter_kwargs = {"employee__division": div}
-    elif dir:
-        full_name = dir
-        filter_kwargs = {"employee__directorate": dir}
-    elif dep:
-        full_name = dep
-        filter_kwargs = {"employee__department": dep}
-    elif org:
-        full_name = org
-        filter_kwargs = {"employee__organization": org}
+    if div_id:
+        if not div_id.isdigit():
+            return HttpResponse("Division noto‘g‘ri", status=400)
+        div = get_object_or_404(Division, id=int(div_id))
+    elif dir_id:
+        if not dir_id.isdigit():
+            return HttpResponse("Directorate noto‘g‘ri", status=400)
+        dir = get_object_or_404(Directorate, id=int(dir_id))
+    elif dep_id:
+        if not dep_id.isdigit():
+            return HttpResponse("Department noto‘g‘ri", status=400)
+        dep = get_object_or_404(Department, id=int(dep_id))
+    elif org_id:
+        if not org_id.isdigit():
+            return HttpResponse("Organization noto‘g‘ri", status=400)
+        org = get_object_or_404(Organization, id=int(org_id))
     else:
         return HttpResponse("Tashkilot / bo‘lim tanlanmagan!", status=400)
 
-    # === TEXNIKALAR SONI (matn uchun) ===
-    komp_qs = Technics.objects.filter(
-        category__name__in=['Kompyuter', 'Planshet', 'Noutbook', 'Doska'],
-        **filter_kwargs
+    # === SANANI FORMATLASH ===
+    formatted_date = ""
+    if date_id:
+        try:
+            dt = datetime.strptime(date_id, "%Y-%m-%d").date()
+            formatted_date = f"{dt.year} yil {dt.day}-{oylar[dt.month - 1]}"
+        except Exception:
+            formatted_date = date_id
+
+    # === QAYSI BO‘LIM TANLANGANI ===
+    if div:
+        full_obj = div
+        filter_kwargs = {"employee__division_id": div.id}
+    elif dir:
+        full_obj = dir
+        filter_kwargs = {"employee__directorate_id": dir.id}
+    elif dep:
+        full_obj = dep
+        filter_kwargs = {"employee__department_id": dep.id}
+    else:
+        full_obj = org
+        filter_kwargs = {"employee__organization_id": org.id}
+
+    # === TEXNIKA QS ===
+    komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
+    prin_names = ["A4 Printer", "Printer", "scaner"]
+
+    base_qs = Technics.objects.filter(**filter_kwargs)
+
+    # ✅ 1 ta so‘rovda 2 ta count
+    counts = (
+        base_qs.values("category__name")
+        .filter(category__name__in=komp_names + prin_names)
+        .annotate(c=Count("id"))
     )
+    komp_count = sum(x["c"] for x in counts if x["category__name"] in komp_names)
+    prin_count = sum(x["c"] for x in counts if x["category__name"] in prin_names)
 
-    # 🔥 Printer kategoriyalarini yuqoridagi get_technics_count bilan bir xil qilamiz
-    prin_qs = Technics.objects.filter(
-        category__name__in=['A4 Printer', 'Printer', 'scaner'],
-        **filter_kwargs
-    )
-
-    komp_count = komp_qs.count()
-    prin_count = prin_qs.count()
-
-    # === TEXNIKALAR MATNI ===
     texnikalar_matni = ""
     if komp_count > 0:
-        texnikalar_matni += (
-            f"1.1. Biriktirilgan kompyuterlarga xizmat ko‘rsatish – {komp_count} dona.\n"
-        )
+        texnikalar_matni += f"1.1. Biriktirilgan kompyuterlarga xizmat ko‘rsatish – {komp_count} dona.\n"
     if prin_count > 0:
-        texnikalar_matni += (
-            f"1.2. Printerlarga xizmat ko‘rsatish – {prin_count} dona.\n"
-        )
+        texnikalar_matni += f"1.2. Printerlarga xizmat ko‘rsatish – {prin_count} dona.\n"
     if not texnikalar_matni:
         texnikalar_matni = "Texnikalar mavjud emas."
 
-    # === JADVAL UCHUN REAL RO‘YXAT ===
+    # === JADVAL UCHUN DATA (faqat values) ===
     kompyuterlar = list(
-        komp_qs.values(
-            'name',      # Rusumi
-            'serial',    # Seriya raqami
-            'inventory'  # Inventar raqami
-        )
+        base_qs.filter(category__name__in=komp_names).values("name", "serial", "inventory")
     )
-
     printerlar = list(
-        prin_qs.values(
-            'name',      # Rusumi
-            'serial'     # Seriya raqami
-        )
+        base_qs.filter(category__name__in=prin_names).values("name", "serial")
     )
 
-    # === SHABLONNI OCHISH ===
-    template_path = os.path.join(settings.MEDIA_ROOT, 'document', 'dalolatnoma.docx')
+    # === SHABLON ===
+    template_path = os.path.join(settings.MEDIA_ROOT, "document", "dalolatnoma.docx")
     if not os.path.exists(template_path):
         return HttpResponse("Shablon fayl topilmadi!", status=404)
 
     doc = Document(template_path)
 
-    # === ALMASHTIRILADIGAN MATNLAR ===
     replacements = {
-        'DEPARTMENT': full_name.name,
-        'POST': post_id or '',
-        'FIO': fio_id or '',
-        'DATA': formatted_date or '',
-        'NAMBER': namber_id or '',
-        'RIM': rim_id or '',
-        'STYLE': full_name.name,
-        'TEXNIKALAR': texnikalar_matni,
+        "DEPARTMENT": getattr(full_obj, "name", "") or "",
+        "POST": post_id,
+        "FIO": fio_id,
+        "DATA": formatted_date,
+        "NAMBER": namber_id,
+        "RIM": rim_id,
+        "STYLE": getattr(full_obj, "name", "") or "",
+        "TEXNIKALAR": texnikalar_matni,
     }
 
     # === TEXT ALMASHTIRISH ===
+    bold_keys = {"STYLE", "FIO", "DATA", "NAMBER"}
     for p in doc.paragraphs:
         for run in p.runs:
+            txt = run.text
+            changed = False
             for old, new in replacements.items():
-                if old in run.text:
-                    run.text = run.text.replace(old, new)
-                    run.font.name = 'Times New Roman'
-                    run.font.size = Pt(12)
-                    if old in ['STYLE', 'FIO', 'DATA', 'NAMBER']:
+                if old in txt:
+                    txt = txt.replace(old, new)
+                    changed = True
+                    if old in bold_keys:
                         run.font.bold = True
+            if changed:
+                run.text = txt
+                run.font.name = "Times New Roman"
+                run.font.size = Pt(12)
 
-    # === TABLE JOYINI TOPISH ===
-    target_paragraph = None
-    for p in doc.paragraphs:
-        if 'TABLE' in p.text:
-            target_paragraph = p
-            p.text = ''
-            break
+    # === TABLE joyi ===
+    target_paragraph = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
+    if target_paragraph:
+        target_paragraph.text = ""
 
-    # === JADVALLAR Sarlavhalari ===
-    headers_pc = ['№', 'Rusumi', 'Kompyuter SR:', 'Inventar raqami:']
-    headers_printer = ['№', 'Rusumi', 'Printer SR:']
+    headers_pc = ["№", "Rusumi", "Kompyuter SR:", "Inventar raqami:"]
+    headers_printer = ["№", "Rusumi", "Printer SR:"]
 
-    # === JADVALLARNI YARATISH ===
     heading1, table1 = create_table(
         doc,
         "Kompyuterlar (PC/Noutbuk/Planshet/Info-kiosk)",
         kompyuterlar,
         headers_pc
     )
-
     heading2, table2 = create_table(
         doc,
         "Printerlar (A4/A3/Skanner)",
@@ -1190,12 +1519,10 @@ def document_post(request):
         headers_printer
     )
 
-    # === JOYLASHTIRISH ===
     if target_paragraph:
         if table1:
             target_paragraph._p.addnext(heading1._p)
             heading1._p.addnext(table1._tbl)
-
             if table2:
                 table1._tbl.addnext(heading2._p)
                 heading2._p.addnext(table2._tbl)
@@ -1203,11 +1530,10 @@ def document_post(request):
             target_paragraph._p.addnext(heading2._p)
             heading2._p.addnext(table2._tbl)
 
-    # === FAYLNI YUKLATISH ===
     response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     )
-    response['Content-Disposition'] = 'attachment; filename=\"dalolatnoma.docx\"'
+    response["Content-Disposition"] = 'attachment; filename="dalolatnoma.docx"'
     doc.save(response)
     return response
 
@@ -1215,36 +1541,82 @@ def document_post(request):
 @never_cache
 @login_required
 def order_sender(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
+    orders_qs = (
+        Order.objects
+        .filter(sender=employee)
+        .select_related("goal", "goal__topic", "technics", "receiver", "sender")
+        .order_by("-id")
+    )
+
+    topics_qs = Topic.objects.only("id", "name").order_by("name")
+
+    goals_qs = (
+        Goal.objects
+        .select_related("topic")
+        .only("id", "name", "topic__id", "topic__name")
+        .order_by("name")
+    )
+
+    technics_qs = (
+        Technics.objects
+        .filter(employee=employee)
+        .select_related("category")
+        .only("id", "name", "serial", "inventory", "category__id", "category__name")
+        .order_by("name")
+    )
 
     context = {
-        "order": Order.objects.filter(sender=request.user.employee).order_by('-id'),
-        "topic": Topic.objects.all(),
-        "goal": Goal.objects.select_related('topic'),
-        "technics": Technics.objects.filter(employee=request.user.employee),
+        "order": orders_qs,
+        "topic": topics_qs,
+        "goal": goals_qs,
+        "technics": technics_qs,
     }
-    return render(request, 'main/order_sender.html', context)
+    return render(request, "main/order_sender.html", context)
 
 
 @never_cache
 @login_required
+@require_POST
 def order_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    if request.method != 'POST':
-        return redirect('order_sender')
 
-    # 🔥 Kirgan userning employee obyektini olamiz
-    employee = request.user.employee
+    goal_id = (request.POST.get("goal") or "").strip()
+    technics_id = (request.POST.get("technics") or "").strip()
+    body = (request.POST.get("body") or "").strip()
+    type_of_work = (request.POST.get("type_of_work") or "online").strip()
 
-    goal_id = request.POST.get("goal")
-    technics_id = request.POST.get("technics")
-    body = request.POST.get("body")
-    type_of_work = request.POST.get("type_of_work", "online")
 
-    # 🔥 Ma'lumotlarni bazadan olamiz
-    goal = Goal.objects.filter(id=goal_id).first() if goal_id else None
-    technic = Technics.objects.filter(id=technics_id).first() if technics_id else None
+    allowed_types = {"online", "offline"}
+    if type_of_work not in allowed_types:
+        type_of_work = "online"
 
-    # 🔥 Yangi Order yaratamiz
+    # FK larni xavfsiz olish
+    goal = None
+    if goal_id:
+        if not goal_id.isdigit():
+            messages.error(request, "Goal noto‘g‘ri")
+            return redirect("order_sender")
+        goal = get_object_or_404(Goal, id=int(goal_id))
+
+    technic = None
+    if technics_id:
+        if not technics_id.isdigit():
+            messages.error(request, "Texnika noto‘g‘ri")
+            return redirect("order_sender")
+        # ✅ xavfsizlik: user faqat o‘ziga biriktirilgan texnikani tanlay olsin
+        technic = get_object_or_404(Technics, id=int(technics_id), employee=employee)
+
     Order.objects.create(
         sender=employee,
         goal=goal,
@@ -1252,6 +1624,8 @@ def order_post(request):
         body=body,
         type_of_work=type_of_work,
     )
+
+    messages.success(request, "Zayavka yuborildi")
     return redirect("order_sender")
 
 
@@ -1275,7 +1649,7 @@ def order_deed(request, pk):
             Q(department=sender.department) &
             Q(directorate=sender.directorate) &
             Q(division=sender.division),
-            is_boss=True
+            rol__boss=True
         )
         .select_related("rank")
         .first()
@@ -1350,20 +1724,57 @@ def order_deed(request, pk):
 @never_cache
 @login_required
 def order_receiver(request):
-    employee = request.user.employee
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    if employee.is_boss:
-        orders = Order.objects.filter(sender__region=employee.region).order_by('-id')
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
+    is_boss = bool(role and role.boss)
+
+    orders = (
+        Order.objects
+        .select_related(
+            "sender", "sender__rank", "sender__region",
+            "receiver", "receiver__rank",
+            "goal", "goal__topic",
+            "technics", "technics__category",
+        )
+        .order_by("-id")
+    )
+
+    if is_boss:
+        # Boss: region bo‘yicha ko‘radi
+        orders = orders.filter(sender__region=employee.region)
     else:
-        orders = Order.objects.filter(receiver=employee).order_by('-id')
+        # Oddiy: faqat o‘ziga tushganlari
+        orders = orders.filter(receiver=employee)
 
     context = {
-        "employee": Employee.objects.filter(organization__org_type="IVS"),
+        "employee": (
+            Employee.objects
+            .filter(organization__org_type="IVS")
+            .select_related("user", "rank", "organization")
+            .only(
+                "id", "first_name", "last_name", "father_name",
+                "user__username",
+                "rank__id", "rank__name",
+                "organization__id", "organization__name",
+            )
+            .order_by("last_name", "first_name")
+        ),
         "order": orders,
-        "topic": Topic.objects.all(),
-        "goal": Goal.objects.select_related('topic'),
+        "topic": Topic.objects.only("id", "name").order_by("name"),
+        "goal": (
+            Goal.objects
+            .select_related("topic")
+            .only("id", "name", "topic__id", "topic__name")
+            .order_by("name")
+        ),
     }
-    return render(request, 'main/order_receiver.html', context)
+    return render(request, "main/order_receiver.html", context)
 
 
 @never_cache
@@ -1448,7 +1859,7 @@ def akt_get(request):
     if not hasattr(request.user, "employee"):
         raise PermissionDenied
 
-    if request.user.employee.status != "worker":
+    if request.user.employee.rol.client:
         raise PermissionDenied
 
     context = {
@@ -1456,7 +1867,7 @@ def akt_get(request):
     }
     return render(request, 'main/akt.html', context)
 
-from datetime import date
+
 @never_cache
 @login_required
 def akt_post(request):
@@ -1580,7 +1991,7 @@ def svod_get(request):
     if not hasattr(request.user, "employee"):
         raise PermissionDenied
 
-    if request.user.employee.status != "worker":
+    if request.user.employee.rol.client:
         raise PermissionDenied
 
     context = {
@@ -1723,7 +2134,7 @@ def reestr_get(request):
     if not hasattr(request.user, "employee"):
         raise PermissionDenied
 
-    if request.user.employee.status != "worker":
+    if request.user.employee.rol.client:
         raise PermissionDenied
 
     context = {

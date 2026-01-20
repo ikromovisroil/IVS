@@ -59,14 +59,13 @@ def order_notifications(request):
     )
 
     # 2) Bosslar uchun
-    if employee:
-        boss_notes = Order.objects.filter(
-            status='viewed',
-            sender__region=employee.region,
-            receiver_seen=False
-        ).exclude(receiver=employee)
-    else:
-        boss_notes = Order.objects.none()
+    boss_notes = Order.objects.filter(
+        status="viewed",
+        sender__region=employee.region,
+        receiver_seen=False,
+        receiver__rol__boss=True,
+    ).exclude(receiver=employee)
+
 
     # 3) Sender uchun
     sender_notes = Order.objects.filter(
