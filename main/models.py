@@ -152,6 +152,8 @@ class Rol(models.Model):
     client = models.BooleanField(default=False, db_index=True)
     is_boss = models.BooleanField(default=False, db_index=True)
     is_shop = models.BooleanField(default=False, db_index=True)
+    is_barn = models.BooleanField(default=False, db_index=True)
+
 
 
     def __str__(self):
