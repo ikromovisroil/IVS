@@ -179,7 +179,7 @@
                 {# ================= RECEIVER ================= #}
                 {% if request.user == d.receiver.user %}
 
-                    <a href="{% url 'contact' %}?employee={{ d.sender.slug }}"
+                    <a href="{% url 'contact' %}"
                        class="text-decoration-none notification-card d-block px-3 py-3">
 
                         <div class="fw-bold text-dark">
@@ -199,7 +199,7 @@
                 {# ================= SENDER ================= #}
                 {% elif request.user == d.sender.user %}
 
-                    <a href="{% url 'contact' %}?employee={{ d.receiver.slug }}"
+                    <a href="{% url 'contact' %}"
                        class="text-decoration-none notification-card d-block px-3 py-3">
 
                         <div class="fw-bold text-dark">
@@ -229,7 +229,7 @@
                 {# ================= KUZATUVCHI ================= #}
                 {% else %}
 
-                    <a href="{% url 'contact' %}?employee={{ d.sender.slug }}"
+                    <a href="{% url 'contact' %}"
                        class="text-decoration-none notification-card d-block px-3 py-3">
 
                         <div class="fw-bold text-dark">

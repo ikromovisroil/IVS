@@ -166,7 +166,7 @@ class Rol(models.Model):
 
 
 # Xodim.
-class Employee(AutoSlugMixin, models.Model):
+class Employee(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee',db_index=True)
     last_name = models.CharField(max_length=100, null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True, blank=True)

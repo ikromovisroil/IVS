@@ -11,7 +11,7 @@ def deed_mark_seen(request):
 
     Deed.objects.filter(
         sender__user=request.user,
-        status__in=['approved', 'rejected'],
+        status_sender__in=['approved', 'rejected'],
         sender_seen=False
     ).update(sender_seen=True)
 
@@ -24,7 +24,7 @@ def order_mark_seen(request):
 
     Order.objects.filter(
         receiver__user=request.user,
-        status__in=['approved', 'rejected'],
+        status_receiver__in=['approved', 'rejected'],
         receiver_seen=False
     ).update(receiver_seen=True)
 
