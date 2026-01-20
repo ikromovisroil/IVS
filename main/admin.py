@@ -33,7 +33,6 @@ class EmployeeInline(admin.StackedInline):
         "department",
         "organization",
         "rank",
-        "status",
         "phone",
         "pinfl",
     ]
@@ -144,7 +143,6 @@ class EmployeeAdmin(admin.ModelAdmin):
         "division",
         "region",
         "rank",
-        "status",
     )
 
     list_filter = (
@@ -154,7 +152,6 @@ class EmployeeAdmin(admin.ModelAdmin):
         "division",
         "region",
         "rank",
-        "status",
     )
 
     search_fields = (

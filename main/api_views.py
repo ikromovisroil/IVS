@@ -2,9 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-from .models import *
 from .serializers import *
-from .filters import TechnicsFilter, EmployeeFilter
 
 
 # ---- SIMPLE CRUD ---- #
@@ -44,12 +42,11 @@ class StructureViewSet(ModelViewSet):
 # ---- EMPLOYEE ---- #
 class EmployeeViewSet(ModelViewSet):
     queryset = Employee.objects.select_related(
-        "user", "structure", "division", "directorate", "department", "organization", "rank"
+        "user", "division", "directorate", "department", "organization", "rank"
     )
     serializer_class = EmployeeSerializer
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = EmployeeFilter
     search_fields = ['user__first_name', 'user__last_name', 'phone']
     ordering_fields = ['id', 'date_creat']
     ordering = ['-date_creat']
@@ -74,7 +71,6 @@ class TechnicsViewSet(ModelViewSet):
     serializer_class = TechnicsSerializer
 
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = TechnicsFilter
 
     search_fields = ['name', 'serial', 'inventory', 'ip']
     ordering_fields = ['name', 'date_creat', 'price']

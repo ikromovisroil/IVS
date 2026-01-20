@@ -147,9 +147,23 @@ class Region(models.Model):
         verbose_name_plural = "Mintaqalar"
 
 
+class Rol(models.Model):
+    name = models.CharField(max_length=50)
+    is_boss = models.BooleanField(default=False, db_index=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'rol'
+        verbose_name = "rol"
+        verbose_name_plural = "rol"
+
+
 # Xodim.
 class Employee(AutoSlugMixin, models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee',db_index=True)
+    rol = models.ForeignKey(Rol, on_delete=models.SET_NULL, null=True, blank=True ,db_index=True)
     last_name = models.CharField(max_length=100, null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True, blank=True)
     father_name = models.CharField(max_length=100, null=True, blank=True)
@@ -159,11 +173,8 @@ class Employee(AutoSlugMixin, models.Model):
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     rank = models.ForeignKey(Rank, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
-    STATUS = (('client', 'Mijoz'), ('worker', 'IVS xodimi'))
-    status = models.CharField(max_length=20, choices=STATUS, default='client',db_index=True)
     phone = models.CharField(max_length=50,null=True,blank=True)
     pinfl = models.CharField(max_length=20, null=True, blank=True,db_index=True)
-    is_boss = models.BooleanField(default=False, db_index=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
