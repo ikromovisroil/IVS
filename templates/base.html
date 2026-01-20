@@ -333,7 +333,7 @@
         </li>
 
 
-        {% if request.user.employee.status == "client" %}
+        {% if request.user.employee.rol.id == "1" %}
         <!-- CLIENT — ZAYAFKA YUBORISH -->
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'order_sender' %}collapsed{% endif %}"
