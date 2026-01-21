@@ -323,6 +323,7 @@ def deed_post(request):
 
 @never_cache
 @login_required
+@transaction.atomic
 def deed_action(request, pk):
     if request.method != "POST":
         return redirect(request.META.get("HTTP_REFERER", "/"))
@@ -335,21 +336,25 @@ def deed_action(request, pk):
     action = (request.POST.get("action") or "").strip()
 
     deed = get_object_or_404(
-        Deed.objects.select_related("sender", "receiver"),
+        Deed.objects.select_related("sender", "receiver", "user"),
         pk=pk
     )
 
-    # kim bosdi?
-    if deed.receiver_id == emp.id:
+    role = None
+    message = ""
+
+    if deed.receiver_id and deed.receiver_id == emp.id:
         role = "receiver"
         message = (request.POST.get("message_receiver") or "").strip()
     elif deed.sender_id == emp.id:
         role = "sender"
         message = (request.POST.get("message_sender") or "").strip()
-    else:
+
+    # ✅ role topilmasa ruxsat yo'q
+    if role is None:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
-    # ❌ Reject
+    # ==== Reject ====
     if action == "reject":
         now = timezone.now()
         update_fields = ["date_edit"]
@@ -358,7 +363,7 @@ def deed_action(request, pk):
             deed.status_receiver = "rejected"
             deed.message_receiver = message
             update_fields += ["status_receiver", "message_receiver"]
-        else:
+        elif role == "sender":
             deed.status_sender = "rejected"
             deed.message_sender = message
             update_fields += ["status_sender", "message_sender"]
@@ -369,14 +374,13 @@ def deed_action(request, pk):
         messages.info(request, "Dalolatnoma rad etildi")
         return redirect(back_url)
 
-    # ✅ Approve → SSO → Viewer
+    # ==== Approve -> SSO -> Viewer ====
     if action == "approve":
         if not deed.file:
             messages.info(request, "PDF yo‘q")
             return redirect(back_url)
 
         file_path = deed.file.path
-
         if not (file_path and os.path.exists(file_path)):
             messages.info(request, "PDF topilmadi")
             return redirect(back_url)
@@ -395,7 +399,6 @@ def deed_action(request, pk):
             messages.info(request, "PDF o‘qilmadi")
             return redirect(back_url)
 
-        # next url ni xavfsiz encode qilamiz
         after_sso_url = reverse("deed_pdf_view", args=[deed.id]) + "?" + urlencode({"next": back_url})
 
         request.session["PENDING_APPROVE"] = {
@@ -534,29 +537,49 @@ def sso_exchange_and_finish(request):
 
 
 def exchange_code_for_token(code, code_verifier, redirect_uri):
-    auth = base64.b64encode(
-        f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
-    ).decode()
-
     data = {
         "grant_type": "authorization_code",
         "code": code,
         "code_verifier": code_verifier,
         "redirect_uri": redirect_uri,
+        "client_id": settings.SSO_CLIENT_ID,  # ✅ KO'PINCHA SHART!
     }
+
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
+
+    # 1) Avval Basic bilan urinib ko'ramiz (agar secret bor bo'lsa)
+    if getattr(settings, "SSO_CLIENT_SECRET", None):
+        auth = base64.b64encode(
+            f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
+        ).decode()
+        headers["Authorization"] = f"Basic {auth}"
 
     response = requests.post(
         settings.SSO_TOKEN_URL,
         data=data,
-        headers={
-            "Authorization": f"Basic {auth}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        timeout=10,
+        headers=headers,
+        timeout=15,
     )
+
+    # 2) Agar invalid_client bo'lsa, Basic'siz qayta urinib ko'ramiz
+    if response.status_code != 200 and "invalid_client" in (response.text or ""):
+        headers.pop("Authorization", None)
+        # Ba'zi providerlar secretni body'da kutadi:
+        if getattr(settings, "SSO_CLIENT_SECRET", None):
+            data["client_secret"] = settings.SSO_CLIENT_SECRET
+
+        response = requests.post(
+            settings.SSO_TOKEN_URL,
+            data=data,
+            headers=headers,
+            timeout=15,
+        )
 
     if response.status_code != 200:
         raise PermissionDenied(f"SSO token olinmadi: {response.text}")
+
     return response.json()
 
 
