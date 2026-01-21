@@ -41,6 +41,7 @@ def home(request):
     return redirect("profil")
 
 
+
 @never_cache
 @login_required
 def profil(request):
@@ -163,6 +164,7 @@ def index(request):
 def contact(request):
     employee = getattr(request.user, "employee", None)
 
+    # Deed listlar (tezroq bo‘lishi uchun select_related)
     deed_user = (
         Deed.objects
         .filter(sender=employee)
@@ -170,9 +172,9 @@ def contact(request):
         .order_by("-id")
     )
 
-    deed_sender = (
+    deed_receiver = (
         Deed.objects
-        .filter(Q(receiver=employee) | Q(sender=employee))
+        .filter(receiver=employee)
         .select_related("sender", "receiver")
         .order_by("-id")
     )
@@ -193,7 +195,7 @@ def contact(request):
 
     context = {
         "deed_user": deed_user,
-        "deed_sender": deed_sender,
+        "deed_receiver": deed_receiver,
         "deed_consent": deed_consent,
         "senders": senders,
         "organization": Organization.objects.exclude(org_type="IVS"),
@@ -217,21 +219,20 @@ def deed_post(request):
     employee = getattr(request.user, "employee", None)
     back_url = request.META.get("HTTP_REFERER", "/")
 
-    sender_id = (request.POST.get("sender_id") or "").strip()      # xizmat ko'rsatuvchi vakil (majbur)
-    receiver_id = (request.POST.get("receiver_id") or "").strip()  # imzolovchi org vakil (ixtiyoriy)
+    sender_id = (request.POST.get("sender_id") or "").strip()
+    receiver_id = (request.POST.get("receiver_id") or "").strip()
     message = request.POST.get("message", "").strip()
-    agreements = request.POST.getlist("agreements[]")
+    agreements = request.POST.getlist("agreements[]")  # ✅ shu joy to'g'ri
 
-    # ✅ Sender majburiy
+    if not receiver_id:
+        messages.info(request, "Qabul qiluvchi tanlanmadi")
+        return redirect(back_url)
+    receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
+
     if not sender_id:
-        messages.info(request, "Xizmat ko'rsatuvchi tashkilot vakili tanlang")
+        messages.info(request, "Imzolovchi tanlanmadi")
         return redirect(back_url)
     sender = get_object_or_404(Employee.objects.select_related("user"), id=sender_id)
-
-    # ✅ Receiver ixtiyoriy
-    receiver = None
-    if receiver_id:
-        receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
 
     upload_file = request.FILES.get("file")
     if not upload_file:
@@ -245,18 +246,14 @@ def deed_post(request):
 
     upload_file.name = f"deed_{uuid.uuid4().hex}{ext}"
 
-    # ✅ Statuslar
-    status_sender = "viewed"                      # sender majbur
-    status_receiver = "viewed" if receiver else "not_required"  # receiver bo'lmasa 1ta QR
-
     deed = Deed.objects.create(
         user=employee,
         sender=sender,
         receiver=receiver,
         file=upload_file,
         message_user=message,
-        status_sender=status_sender,
-        status_receiver=status_receiver,
+        status_sender="viewed",
+        status_receiver="viewed",
     )
 
     file_path = deed.file.path
@@ -289,11 +286,10 @@ def deed_post(request):
             ids.append(int(x))
     ids = list(set(ids))
 
-    # ✅ Exclude: sender va receiver (receiver bo'lmasa qo'shilmaydi)
-    exclude_ids = set()
-    exclude_ids.add(sender.id)
-    if receiver:
-        exclude_ids.add(receiver.id)
+    # sender/receiver va o'zini olib tashlash
+    exclude_ids = {receiver.id, sender.id}
+    if employee:
+        exclude_ids.add(employee.id)
 
     ids = [i for i in ids if i not in exclude_ids]
 
@@ -308,7 +304,6 @@ def deed_post(request):
 
 @never_cache
 @login_required
-@transaction.atomic
 def deed_action(request, pk):
     if request.method != "POST":
         return redirect(request.META.get("HTTP_REFERER", "/"))
@@ -321,25 +316,21 @@ def deed_action(request, pk):
     action = (request.POST.get("action") or "").strip()
 
     deed = get_object_or_404(
-        Deed.objects.select_related("sender", "receiver", "user"),
+        Deed.objects.select_related("sender", "receiver"),
         pk=pk
     )
 
-    role = None
-    message = ""
-
-    if deed.receiver_id and deed.receiver_id == emp.id:
+    # kim bosdi?
+    if deed.receiver_id == emp.id:
         role = "receiver"
         message = (request.POST.get("message_receiver") or "").strip()
     elif deed.sender_id == emp.id:
         role = "sender"
         message = (request.POST.get("message_sender") or "").strip()
-
-    # ✅ role topilmasa ruxsat yo'q
-    if role is None:
+    else:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
-    # ==== Reject ====
+    # ❌ Reject
     if action == "reject":
         now = timezone.now()
         update_fields = ["date_edit"]
@@ -348,7 +339,7 @@ def deed_action(request, pk):
             deed.status_receiver = "rejected"
             deed.message_receiver = message
             update_fields += ["status_receiver", "message_receiver"]
-        elif role == "sender":
+        else:
             deed.status_sender = "rejected"
             deed.message_sender = message
             update_fields += ["status_sender", "message_sender"]
@@ -359,13 +350,14 @@ def deed_action(request, pk):
         messages.info(request, "Dalolatnoma rad etildi")
         return redirect(back_url)
 
-    # ==== Approve -> SSO -> Viewer ====
+    # ✅ Approve → SSO → Viewer
     if action == "approve":
         if not deed.file:
             messages.info(request, "PDF yo‘q")
             return redirect(back_url)
 
         file_path = deed.file.path
+
         if not (file_path and os.path.exists(file_path)):
             messages.info(request, "PDF topilmadi")
             return redirect(back_url)
@@ -384,6 +376,7 @@ def deed_action(request, pk):
             messages.info(request, "PDF o‘qilmadi")
             return redirect(back_url)
 
+        # next url ni xavfsiz encode qilamiz
         after_sso_url = reverse("deed_pdf_view", args=[deed.id]) + "?" + urlencode({"next": back_url})
 
         request.session["PENDING_APPROVE"] = {
@@ -522,49 +515,29 @@ def sso_exchange_and_finish(request):
 
 
 def exchange_code_for_token(code, code_verifier, redirect_uri):
+    auth = base64.b64encode(
+        f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
+    ).decode()
+
     data = {
         "grant_type": "authorization_code",
         "code": code,
         "code_verifier": code_verifier,
         "redirect_uri": redirect_uri,
-        "client_id": settings.SSO_CLIENT_ID,  # ✅ KO'PINCHA SHART!
     }
-
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-
-    # 1) Avval Basic bilan urinib ko'ramiz (agar secret bor bo'lsa)
-    if getattr(settings, "SSO_CLIENT_SECRET", None):
-        auth = base64.b64encode(
-            f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
-        ).decode()
-        headers["Authorization"] = f"Basic {auth}"
 
     response = requests.post(
         settings.SSO_TOKEN_URL,
         data=data,
-        headers=headers,
-        timeout=15,
+        headers={
+            "Authorization": f"Basic {auth}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        timeout=10,
     )
-
-    # 2) Agar invalid_client bo'lsa, Basic'siz qayta urinib ko'ramiz
-    if response.status_code != 200 and "invalid_client" in (response.text or ""):
-        headers.pop("Authorization", None)
-        # Ba'zi providerlar secretni body'da kutadi:
-        if getattr(settings, "SSO_CLIENT_SECRET", None):
-            data["client_secret"] = settings.SSO_CLIENT_SECRET
-
-        response = requests.post(
-            settings.SSO_TOKEN_URL,
-            data=data,
-            headers=headers,
-            timeout=15,
-        )
 
     if response.status_code != 200:
         raise PermissionDenied(f"SSO token olinmadi: {response.text}")
-
     return response.json()
 
 
