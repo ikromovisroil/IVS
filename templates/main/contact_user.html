@@ -35,7 +35,7 @@
             <div class="modal-body">
 
                 <div class="border rounded bg-light p-3">
-                    <h4>Xizmat ko'rsatuvchi tashkilot vakili</h4>
+                    <h4>Xizmat ko'rsatuvchinig vakili</h4>
                     <!-- Imzolovchi -->
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Imzolovchi</label>
@@ -51,7 +51,7 @@
                 </div>
 
                 <div class="border rounded bg-light p-3 mt-3">
-                    <h4>Imzolovchi tashkilot vakili</h4>
+                    <h4>Imzolovchi tomon vakili</h4>
                     <!-- Imzolovchi -->
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Tashkilot</label>
@@ -305,7 +305,7 @@
                             <!-- Holat -->
                             <td>
                                 <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-s{{ d.id }}">
-                                    Tasdiqlash
+                                    Taxrirlash
                                 </button>
                                 <!-- MODAL -->
                                 {% if d.sender == request.user.employee and d.status_sender == "viewed" %}
