@@ -389,6 +389,7 @@ def deed_action(request, pk):
         request.session.modified = True
         return redirect("sso_start_page")
 
+    print("client_id:", repr(settings.SSO_CLIENT_ID))
     messages.error(request, "Noto‘g‘ri amal")
     return redirect(back_url)
 
