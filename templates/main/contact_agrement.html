@@ -57,18 +57,34 @@
                             </td>
                             <!-- Holat -->
                             <td>
-                                {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
-                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
-                                        Rad etildi
-                                    </span>
-                                {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
-                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
-                                        Tasdiqlandi
-                                    </span>
+                                {% if d.receiver %}
+                                    {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                            Rad etildi
+                                        </span>
+                                    {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                            Tasdiqlandi
+                                        </span>
+                                    {% else %}
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                            Kutulmoqda
+                                        </span>
+                                    {% endif %}
                                 {% else %}
-                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
-                                        Kutulmoqda
-                                    </span>
+                                    {% if d.status_sender == 'rejected'  %}
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                            Rad etildi
+                                        </span>
+                                    {% elif d.status_sender == 'approved' %}
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                            Tasdiqlandi
+                                        </span>
+                                    {% else %}
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                            Kutulmoqda
+                                        </span>
+                                    {% endif %}
                                 {% endif %}
 
 
