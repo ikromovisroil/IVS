@@ -322,16 +322,41 @@
           </a>
         </li>
 
-
-        <!-- ARIZALAR -->
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'contact' %}collapsed{% endif %}"
-             href="{% url 'contact' %}">
+          <a class="nav-link {% if url_name not in 'contact_user contact contact_agrement' %}collapsed{% endif %}"
+             data-bs-target="#forms-nav-deed" data-bs-toggle="collapse" href="#">
             <i class="bi bi-envelope"></i>
             <span>Xabarlar</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
           </a>
-        </li>
 
+          <ul id="forms-nav-deed"
+              class="nav-content collapse {% if url_name in 'contact_user contact contact_agrement' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+
+            <li>
+              <a class="{% if url_name == 'contact_user' %}active{% endif %}"
+                 href="{% url 'contact_user' %}">
+                <i class="bi bi-circle"></i><span>Imzolashga yuborish</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="{% if url_name == 'contact' %}active{% endif %}"
+                 href="{% url 'contact' %}">
+                <i class="bi bi-circle"></i><span>Imzolash uchun</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="{% if url_name == 'contact_agrement' %}active{% endif %}"
+                 href="{% url 'contact_agrement' %}">
+                <i class="bi bi-circle"></i><span>Kelishish uchun</span>
+              </a>
+            </li>
+
+          </ul>
+        </li>
 
         {% if request.user.employee.rol.client %}
         <!-- CLIENT — ZAYAFKA YUBORISH -->
