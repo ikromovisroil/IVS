@@ -41,96 +41,106 @@
 
         <div class="card-body">
 
-          <!-- ================= SENDER ================= -->
-          <div class="mb-4 p-3 border rounded bg-light">
-            <h5 class="fw-bold mb-2">Yuboruvchi</h5><hr>
-            <div class="row gy-2">
-              <div class="col-12 col-md-6"><strong>Ismi:</strong> {{ deed.sender.full_name }}</div>
-              <div class="col-6 col-md-3">
-                <strong>Holati:</strong>
-                {% if deed.status_sender == 'viewed' %}
-                  <span class="badge bg-warning text-dark">Kutilmoqda</span>
-                {% elif deed.status_sender == 'approved' %}
-                  <span class="badge bg-success">Tasdiqlandi</span>
-                {% elif deed.status_sender == 'rejected' %}
-                  <span class="badge bg-danger">Rad etildi</span>
-                {% else %}
-                  <span class="badge bg-secondary">Noma’lum</span>
-                {% endif %}
-              </div>
-              <div class="col-6 col-md-3"><strong>Sana:</strong> {{ deed.date_creat|date:"d.m.Y H:i" }}</div>
-            </div>
-
-            {% if deed.message_sender %}
-              <div class="mt-2">
-                <strong>Izoh:</strong>
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- ================= RECEIVER ================= -->
-          <div class="mb-4 p-3 border rounded bg-light">
-            <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
-            <div class="row gy-2">
-              <div class="col-12 col-md-6"><strong>Ismi:</strong> {{ deed.receiver.full_name }}</div>
-              <div class="col-6 col-md-3">
-                <strong>Holati:</strong>
-                {% if deed.status_receiver == 'viewed' %}
-                  <span class="badge bg-warning text-dark">Kutilmoqda</span>
-                {% elif deed.status_receiver == 'approved' %}
-                  <span class="badge bg-success">Tasdiqlandi</span>
-                {% elif deed.status_receiver == 'rejected' %}
-                  <span class="badge bg-danger">Rad etildi</span>
-                {% else %}
-                  <span class="badge bg-secondary">Noma’lum</span>
-                {% endif %}
-              </div>
-              <div class="col-6 col-md-3"><strong>Sana:</strong> {{ deed.date_edit|date:"d.m.Y H:i" }}</div>
-            </div>
-
-            {% if deed.message_receiver %}
-              <div class="mt-2">
-                <strong>Izoh:</strong>
-                <span class="text-muted">{{ deed.message_receiver }}</span>
-              </div>
-            {% endif %}
-          </div>
-
-          <!-- ================= KELISHUVCHILAR ================= -->
-          {% if deed.deedconsent_set.count %}
+          <!-- ================= USER ================= -->
             <div class="mb-4 p-3 border rounded bg-light">
-              <h5 class="fw-bold mb-2">Kelishuvchilar</h5><hr>
-
-              {% for dc in deed.deedconsent_set.all %}
-                <div class="row gy-2">
-                  <div class="col-12 col-md-6"><strong>Ismi:</strong> {{ dc.employee.full_name }}</div>
-                  <div class="col-6 col-md-3">
-                    <strong>Holati:</strong>
-                    {% if dc.status == 'viewed' %}
-                      <span class="badge bg-warning text-dark">Kutilmoqda</span>
-                    {% elif dc.status == 'approved' %}
-                      <span class="badge bg-success">Tasdiqlandi</span>
-                    {% elif dc.status == 'rejected' %}
-                      <span class="badge bg-danger">Rad etildi</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Noma’lum</span>
-                    {% endif %}
-                  </div>
-                  <div class="col-6 col-md-3"><strong>Sana:</strong> {{ dc.date_edit|date:"d.m.Y H:i" }}</div>
+                <h5 class="fw-bold mb-2">Jo'natuvchi</h5><hr>
+                <div class="row">
+                    <div class="col-6"><strong>Ismi:</strong> {{ d.user.full_name }}</div>
+                    <div class="col-3">
+                        <strong>Holati:</strong>
+                    </div>
+                    <div class="col-3"><strong>Sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
                 </div>
-
-                {% if dc.message %}
-                  <div class="mt-2">
-                    <strong>Izoh:</strong>
-                    <span class="text-muted">{{ dc.message }}</span>
-                  </div>
+                {% if d.message_user %}
+                    <div class="mt-2">
+                        <strong>Izoh:</strong>
+                        <span class="text-muted">{{ d.message_user }}</span>
+                    </div>
                 {% endif %}
-                <hr>
-              {% endfor %}
             </div>
-          {% else %}
-            <p class="text-muted">Kelishuvchilar yo‘q</p>
-          {% endif %}
+
+            <div class="mb-4 p-3 border rounded bg-light">
+                <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
+                <div class="row">
+                    <div class="col-6"><strong>Ismi:</strong> {{ d.sender.full_name }}</div>
+                    <div class="col-3">
+                        <strong>Holati:</strong>
+                        {% if d.status_sender == 'viewed' %}
+                            <span class="badge bg-warning">Kutulmoqda</span>
+                        {% elif d.status_sender == 'approved' %}
+                            <span class="badge bg-success">Tasdiqlandi</span>
+                        {% elif d.status_sender == 'rejected' %}
+                            <span class="badge bg-danger">Rad etildi</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-3"><strong>Sana:</strong> {{ d.date_sender|date:"d.m.Y H:i" }}</div>
+                </div>
+                {% if d.message_sender %}
+                    <div class="mt-2">
+                        <strong>Izoh:</strong>
+                        <span class="text-muted">{{ d.message_sender }}</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- ================= RECEIVER ================= -->
+            {% if d.receiver %}
+            <div class="mb-4 p-3 border rounded bg-light">
+                <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
+                <div class="row">
+                    <div class="col-6"><strong>Ismi:</strong> {{ d.receiver.full_name }}</div>
+                    <div class="col-3">
+                        <strong>Holati:</strong>
+                        {% if d.status_receiver == 'viewed' %}
+                            <span class="badge bg-warning">Kutulmoqda</span>
+                        {% elif d.status_receiver == 'approved' %}
+                            <span class="badge bg-success">Tasdiqlandi</span>
+                        {% elif d.status_receiver == 'rejected' %}
+                            <span class="badge bg-danger">Rad etildi</span>
+                        {% endif %}
+                    </div>
+                    <div class="col-3"><strong>Sana:</strong> {{ d.date_receiver|date:"d.m.Y H:i" }}</div>
+                </div>
+                {% if d.message_receiver %}
+                    <div class="mt-2">
+                        <strong>Izoh:</strong>
+                        <span class="text-muted">{{ d.message_receiver }}</span>
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- ================= KELISHUVCHILAR ================= -->
+
+            {% if d.deedconsent_set.count %}
+                <div class="mb-4 p-3 border rounded bg-light">
+                    <h5 class="fw-bold mb-2">Kelishuvchilar</h5><hr>
+                    {% for dc in d.deedconsent_set.all %}
+                        <div class="row">
+                            <div class="col-6"><strong>Ismi:</strong> {{ dc.employee.full_name }}</div>
+                            <div class="col-3">
+                                <strong>Holati:</strong>
+                                {% if dc.status == 'viewed' %}
+                                    <span class="badge bg-warning">Kutulmoqda</span>
+                                {% elif dc.status == 'approved' %}
+                                    <span class="badge bg-success">Tasdiqlandi</span>
+                                {% elif dc.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rad etildi</span>
+                                {% endif %}
+                            </div>
+                            <div class="col-3"><strong>Sana:</strong> {{ dc.date_edit|date:"d.m.Y H:i" }}</div>
+                        </div>
+                        {% if dc.message %}
+                            <div class="mt-2">
+                                <strong>Izoh:</strong>
+                                <span class="text-muted">{{ dc.message }}</span>
+                            </div>
+                        {% endif %}<hr>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted">Kelishuvchilar yo‘q</p>
+            {% endif %}
 
         </div>
       </div>
