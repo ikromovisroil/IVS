@@ -515,30 +515,49 @@ def sso_exchange_and_finish(request):
 
 
 def exchange_code_for_token(code, code_verifier, redirect_uri):
-    auth = base64.b64encode(
-        f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
-    ).decode()
+    client_id = (settings.SSO_CLIENT_ID or "").strip()
+    client_secret = (settings.SSO_CLIENT_SECRET or "").strip()
 
     data = {
         "grant_type": "authorization_code",
         "code": code,
         "code_verifier": code_verifier,
         "redirect_uri": redirect_uri,
+        "client_id": client_id,  # ✅ MUHIM!
     }
 
-    response = requests.post(
-        settings.SSO_TOKEN_URL,
-        data=data,
-        headers={
-            "Authorization": f"Basic {auth}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        timeout=10,
-    )
+    headers = {
+        "Content-Type": "application/x-www-form-urlencoded",
+    }
 
-    if response.status_code != 200:
-        raise PermissionDenied(f"SSO token olinmadi: {response.text}")
-    return response.json()
+    # 1) BASIC (client_secret_basic)
+    if client_secret:
+        auth = base64.b64encode(f"{client_id}:{client_secret}".encode()).decode()
+        r = requests.post(
+            settings.SSO_TOKEN_URL,
+            data=data,
+            headers={**headers, "Authorization": f"Basic {auth}"},
+            timeout=15,
+        )
+    else:
+        r = None
+
+    # 2) BODY SECRET (client_secret_post) — Basic qabul qilmasa
+    if (r is None) or (r.status_code != 200 and "invalid_client" in (r.text or "")):
+        data2 = dict(data)
+        if client_secret:
+            data2["client_secret"] = client_secret
+        r = requests.post(
+            settings.SSO_TOKEN_URL,
+            data=data2,
+            headers=headers,
+            timeout=15,
+        )
+
+    if r.status_code != 200:
+        raise PermissionDenied(f"SSO token olinmadi: {r.text}")
+
+    return r.json()
 
 
 @never_cache
