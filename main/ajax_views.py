@@ -206,3 +206,18 @@ def ajax_agreements_employees(request):
 
     return JsonResponse({"results": data})
 
+
+from django.core.exceptions import PermissionDenied
+def deedconsent_delete(request, pk):
+    emp = getattr(request.user, "employee", None)
+    if not emp:
+        raise PermissionDenied
+
+    obj = get_object_or_404(Deedconsent, pk=pk)
+
+    if obj.deed.user_id != emp.id:
+        raise PermissionDenied
+
+    obj.delete()
+    return JsonResponse({"ok": True})
+

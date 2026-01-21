@@ -28,6 +28,8 @@ from urllib.parse import urlencode
 from django.views.decorators.http import require_POST
 from decimal import Decimal, InvalidOperation
 from datetime import date
+import tempfile
+
 
 def global_data(request):
     return {
@@ -409,6 +411,111 @@ def deed_action(request, pk):
         return redirect("sso_start_page")
 
     messages.error(request, "Noto‘g‘ri amal")
+    return redirect(back_url)
+
+
+@never_cache
+@login_required
+@transaction.atomic
+def deed_update(request, pk):
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    emp = getattr(request.user, "employee", None)
+    if not emp:
+        raise PermissionDenied("Employee yo‘q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    deed = get_object_or_404(
+        Deed.objects.select_related("user", "sender", "receiver").select_for_update(),
+        pk=pk
+    )
+    if getattr(deed, "user_id", None) != emp.id:
+        raise PermissionDenied("Siz bu xabarni tahrirlay olmaysiz")
+
+    sender_id = (request.POST.get("sender_id") or "").strip()
+    receiver_id = (request.POST.get("receiver_id") or "").strip()
+    agreements_ids = request.POST.getlist("agreements[]")
+    message = (request.POST.get("message") or "").strip()
+    upload_file = request.FILES.get("file")  # ixtiyoriy qilsak ham bo‘ladi
+
+    if sender_id:
+        deed.sender = get_object_or_404(Employee, pk=sender_id)
+    if receiver_id:
+        deed.receiver = get_object_or_404(Employee, pk=receiver_id)
+    # message update
+    if hasattr(deed, "message_user"):
+        deed.message_user = message
+    deed.date_edit = timezone.now()
+    if upload_file:
+        ext = os.path.splitext(upload_file.name)[1].lower()
+        if ext not in [".docx", ".pdf"]:
+            messages.info(request, "❌ Faqat Word (DOCX) yoki PDF fayl yuklash mumkin")
+            return redirect(back_url)
+
+        old_path = deed.file.path if deed.file else None
+
+        if ext == ".pdf":
+            deed.file = upload_file
+            deed.save()
+        else:
+            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
+                for chunk in upload_file.chunks():
+                    tmp.write(chunk)
+                tmp_docx_path = tmp.name
+
+            pdf_path = None
+            try:
+                pdf_path, debug = convert_docx_to_pdf_libre(tmp_docx_path)
+                if not pdf_path or not os.path.exists(pdf_path):
+                    messages.info(request, "❌ DOCX → PDF konvertatsiya xatosi")
+                    raise Exception(f"DOCX->PDF failed: {debug}")
+
+                with open(pdf_path, "rb") as f:
+                    deed.file.save(os.path.basename(pdf_path), File(f), save=True)
+
+            finally:
+                try:
+                    os.remove(tmp_docx_path)
+                except Exception:
+                    pass
+                if pdf_path:
+                    try:
+                        os.remove(pdf_path)
+                    except Exception:
+                        pass
+
+        if old_path and os.path.exists(old_path):
+            try:
+                os.remove(old_path)
+            except Exception:
+                pass
+
+    exclude_ids = set(
+        Deedconsent.objects.filter(deed=deed).values_list("employee_id", flat=True)
+    )
+    if deed.sender_id:
+        exclude_ids.add(deed.sender_id)
+    if deed.receiver_id:
+        exclude_ids.add(deed.receiver_id)
+
+    clean_ids = []
+    for x in agreements_ids:
+        x = (x or "").strip()
+        if x.isdigit():
+            clean_ids.append(int(x))
+    clean_ids = list(dict.fromkeys(clean_ids))
+
+    new_ids = [eid for eid in clean_ids if eid not in exclude_ids]
+
+    if new_ids:
+        qs = Employee.objects.filter(id__in=new_ids)
+        bulk = [Deedconsent(deed=deed, employee=e) for e in qs]
+        Deedconsent.objects.bulk_create(bulk)
+
+    deed.save()
+    messages.success(request, "Xabar yangilandi")
     return redirect(back_url)
 
 

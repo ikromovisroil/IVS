@@ -40,6 +40,8 @@ urlpatterns = [
 
     # DEEDorder_deed
     path('deed_post/', deed_post, name='deed_post'),
+    path('deed_update/<int:pk>', deed_update, name='deed_update'),
+    path("deed/consent/<int:pk>/delete/", deedconsent_delete, name="deedconsent_delete"),
 
 
     # TECHNICS
