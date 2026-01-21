@@ -185,25 +185,24 @@ def ajax_org_employees(request):
 
 def ajax_agreements_employees(request):
     org_id = (request.GET.get("org_id") or "").strip()
-    if not org_id:
-        return JsonResponse({"results": []})
 
-    imv_boss = Employee.objects.filter(
-        organization_id=org_id,
-        # rol__boss=True,
-    )
-    ivs_boss = Employee.objects.filter(
+    qs = Employee.objects.filter(
         organization__org_type="IVS",
         # rol__boss=True,
     )
-    qs = ((imv_boss | ivs_boss).select_related("rank", "organization")
-          .distinct().order_by("last_name","first_name"))
-    data = []
-    for e in qs:
-        data.append({
-            "id": e.id,
-            "text": f"{e.full_name}",
-        })
+
+    if org_id and org_id.isdigit():
+        qs = Employee.objects.filter(
+            Q(organization_id=org_id) | Q(organization__org_type="IVS"),
+            # rol__boss=True,
+        )
+
+    qs = qs.select_related("rank", "organization").distinct().order_by("last_name", "first_name")
+
+    data = [{
+        "id": e.id,
+        "text": f"{e.full_name}",
+    } for e in qs]
 
     return JsonResponse({"results": data})
 

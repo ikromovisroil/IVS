@@ -219,20 +219,21 @@ def deed_post(request):
     employee = getattr(request.user, "employee", None)
     back_url = request.META.get("HTTP_REFERER", "/")
 
-    sender_id = (request.POST.get("sender_id") or "").strip()
+    sender_id = (request.POST.get("sender_id") or "").strip()   # ✅ endi ixtiyoriy
     receiver_id = (request.POST.get("receiver_id") or "").strip()
     message = request.POST.get("message", "").strip()
-    agreements = request.POST.getlist("agreements[]")  # ✅ shu joy to'g'ri
+    agreements = request.POST.getlist("agreements[]")
 
+    # ✅ Receiver majburiy
     if not receiver_id:
-        messages.info(request, "Qabul qiluvchi tanlanmadi")
+        messages.info(request, "Xizmat ko'rsatuvchi tashkilot vakili tanlang")
         return redirect(back_url)
     receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
 
-    if not sender_id:
-        messages.info(request, "Imzolovchi tanlanmadi")
-        return redirect(back_url)
-    sender = get_object_or_404(Employee.objects.select_related("user"), id=sender_id)
+    # ✅ Sender ixtiyoriy
+    sender = None
+    if sender_id:
+        sender = get_object_or_404(Employee.objects.select_related("user"), id=sender_id)
 
     upload_file = request.FILES.get("file")
     if not upload_file:
@@ -246,14 +247,18 @@ def deed_post(request):
 
     upload_file.name = f"deed_{uuid.uuid4().hex}{ext}"
 
+    # ✅ status ni ham holatga qarab qo'yamiz
+    status_sender = "viewed" if sender else "None"   # yoki None / "empty"
+    status_receiver = "viewed"
+
     deed = Deed.objects.create(
         user=employee,
-        sender=sender,
+        sender=sender,              # ✅ None bo'lishi mumkin
         receiver=receiver,
         file=upload_file,
         message_user=message,
-        status_sender="viewed",
-        status_receiver="viewed",
+        status_sender=status_sender,
+        status_receiver=status_receiver,
     )
 
     file_path = deed.file.path
@@ -278,7 +283,6 @@ def deed_post(request):
         except Exception:
             pass
 
-    # agreements[] -> ids
     ids = []
     for x in agreements:
         x = (x or "").strip()
@@ -286,10 +290,9 @@ def deed_post(request):
             ids.append(int(x))
     ids = list(set(ids))
 
-    # sender/receiver va o'zini olib tashlash
-    exclude_ids = {receiver.id, sender.id}
-    if employee:
-        exclude_ids.add(employee.id)
+    exclude_ids = {receiver.id}
+    if sender:
+        exclude_ids.add(sender.id)
 
     ids = [i for i in ids if i not in exclude_ids]
 

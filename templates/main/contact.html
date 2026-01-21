@@ -750,69 +750,93 @@
 
   if (!orgSelect || !receiverSelect || !agrSelect) return;
 
+  // =========================
+  // Helpers
+  // =========================
   function resetReceiver() {
     receiverSelect.innerHTML = '<option value="">Tanlang...</option>';
   }
 
   function fillReceiver(items) {
     resetReceiver();
-    items.forEach(it => {
+    (items || []).forEach(it => {
       const opt = document.createElement("option");
-      opt.value = it.id;
+      opt.value = String(it.id);
       opt.textContent = it.text || it.full_name || "";
       receiverSelect.appendChild(opt);
     });
   }
 
+  function getSelectedAgreementIds() {
+    // multiple selectdan tanlangan value larni olamiz
+    return Array.from(agrSelect.selectedOptions || []).map(o => String(o.value));
+  }
+
   function fillAgreements(items) {
-    // select2 bo'lsa ham bo'lmasa ham ishlaydi
+    const prevSelected = new Set(getSelectedAgreementIds());
+
     agrSelect.innerHTML = "";
-    items.forEach(it => {
+    (items || []).forEach(it => {
       const opt = document.createElement("option");
-      opt.value = it.id;
-      opt.textContent = it.text || "";
+      opt.value = String(it.id);
+      opt.textContent = it.text || it.full_name || "";
+      if (prevSelected.has(String(it.id))) opt.selected = true; // oldingi tanlovni saqlash
       agrSelect.appendChild(opt);
     });
 
     // select2 refresh
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
-      window.jQuery(agrSelect).trigger("change.select2");
+      window.jQuery(agrSelect).trigger("change");
     }
   }
 
-  function initSelect2() {
-    if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
-      const $ = window.jQuery;
-      $("#kelishuvchilar").select2({
-        width: "100%",
-        dropdownParent: modalEl ? $(modalEl) : null
-      });
-    }
+  function initSelect2Once() {
+    if (!(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2)) return;
+
+    const $ = window.jQuery;
+    const $sel = $("#kelishuvchilar");
+
+    // qayta init bo'lib ketmasin
+    if ($sel.data("select2")) return;
+
+    $sel.select2({
+      width: "100%",
+      dropdownParent: modalEl ? $(modalEl) : null
+    });
   }
 
+  async function fetchJSON(url) {
+    const r = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!r.ok) {
+      throw new Error(`HTTP ${r.status} for ${url}`);
+    }
+    return r.json();
+  }
+
+  // =========================
+  // Main loader:
+  // - Agreements har doim yuklanadi (org bo'sh bo'lsa ham) -> default IVS keladi
+  // - Receiver faqat org tanlanganda yuklanadi
+  // =========================
   async function loadBoth(orgId) {
-    resetReceiver();
-    fillAgreements([]);
+    const oid = (orgId || "").trim();
 
-    if (!orgId) return;
+    // Receiver reset
+    resetReceiver();
 
     try {
-      const [r1, r2] = await Promise.all([
-        fetch(`${URL_RECEIVER}?org_id=${encodeURIComponent(orgId)}`, {headers: {"X-Requested-With":"XMLHttpRequest"}}),
-        fetch(`${URL_AGR}?org_id=${encodeURIComponent(orgId)}`, {headers: {"X-Requested-With":"XMLHttpRequest"}})
-      ]);
+      // 1) Agreements: doim
+      const agrUrl = `${URL_AGR}?org_id=${encodeURIComponent(oid)}`;
+      const dAgr = await fetchJSON(agrUrl);
+      fillAgreements(dAgr.results || []);
 
-      // Debug uchun: status ko'rinadi
-      console.log("receiver status:", r1.status, "agreements status:", r2.status);
+      // 2) Receiver: faqat org bo'lsa
+      if (!oid) return;
 
-      const d1 = await r1.json();
-      const d2 = await r2.json();
+      const recUrl = `${URL_RECEIVER}?org_id=${encodeURIComponent(oid)}`;
+      const dRec = await fetchJSON(recUrl);
+      fillReceiver(dRec.results || []);
 
-      console.log("receiver json:", d1);
-      console.log("agreements json:", d2);
-
-      fillReceiver(d1.results || []);
-      fillAgreements(d2.results || []);
     } catch (e) {
       console.error("AJAX error:", e);
       resetReceiver();
@@ -820,22 +844,31 @@
     }
   }
 
-  // org change
+  // =========================
+  // Events
+  // =========================
+  // Org o'zgarsa: receiver + agreements reload
   orgSelect.addEventListener("change", function () {
     loadBoth(this.value);
   });
 
-  // modal ochilganda select2 init + agar org tanlangan bo'lsa yuklash
+  // Modal ochilganda:
+  // - select2 init
+  // - org bo'sh bo'lsa ham agreements default yuklanadi
   document.addEventListener("shown.bs.modal", function (e) {
     if (e.target && e.target.id === "sendModal") {
-      initSelect2();
-      if (orgSelect.value) loadBoth(orgSelect.value);
+      initSelect2Once();
+      loadBoth(orgSelect.value); // org bo'sh bo'lsa ham kelishuvchilar keladi
     }
   });
 
-  document.addEventListener("DOMContentLoaded", initSelect2);
+  // Sahifa yuklanganda select2 init (modal ochilmasdan ham)
+  document.addEventListener("DOMContentLoaded", function () {
+    initSelect2Once();
+  });
 })();
 </script>
+
 
 
 
