@@ -180,7 +180,7 @@
                                             <!-- ================= BODY ================= -->
                                             <div class="modal-body">
 
-                                                <!-- ================= SENDER ================= -->
+                                                <!-- ================= USER ================= -->
                                                 <div class="mb-4 p-3 border rounded bg-light">
                                                     <h5 class="fw-bold mb-2">Jo'natuvchi</h5><hr>
                                                     <div class="row">
@@ -224,6 +224,7 @@
                                                 </div>
 
                                                 <!-- ================= RECEIVER ================= -->
+                                                {% if d.receiver %}
                                                 <div class="mb-4 p-3 border rounded bg-light">
                                                     <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
                                                     <div class="row">
@@ -247,6 +248,7 @@
                                                         </div>
                                                     {% endif %}
                                                 </div>
+                                                {% endif %}
 
                                                 <!-- ================= KELISHUVCHILAR ================= -->
 
