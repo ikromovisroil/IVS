@@ -305,15 +305,15 @@
               data-bs-parent="#sidebar-nav">
 
             <li>
-              <a class="{% if url_name == 'contact_user' %}active{% endif %}"
-                 href="{% url 'contact_user' %}">
+              <a class="{% if url_name == 'contact' %}active{% endif %}"
+                 href="{% url 'contact' %}">
                 <i class="bi bi-circle"></i><span>Imzolashga yuborish</span>
               </a>
             </li>
 
             <li>
-              <a class="{% if url_name == 'contact' %}active{% endif %}"
-                 href="{% url 'contact' %}">
+              <a class="{% if url_name == 'contact_user' %}active{% endif %}"
+                 href="{% url 'contact_user' %}">
                 <i class="bi bi-circle"></i><span>Imzolash uchun</span>
               </a>
             </li>

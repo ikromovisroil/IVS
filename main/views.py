@@ -160,7 +160,7 @@ def index(request):
 
 @never_cache
 @login_required
-def contact(request):
+def contact_user(request):
     employee = getattr(request.user, "employee", None)
     deed_receiver = (
         Deed.objects
@@ -171,7 +171,7 @@ def contact(request):
     context = {
         "deed_receiver": deed_receiver,
     }
-    return render(request, "main/contact.html", context)
+    return render(request, "main/contact_user.html", context)
 
 
 @never_cache
@@ -195,7 +195,7 @@ def contact_agrement(request):
 
 @never_cache
 @login_required
-def contact_user(request):
+def contact(request):
     employee = getattr(request.user, "employee", None)
     deed_sender = (
         Deed.objects
@@ -213,7 +213,7 @@ def contact_user(request):
         "senders": senders,
         "organization": Organization.objects.exclude(org_type="IVS"),
     }
-    return render(request, "main/contact_user.html", context)
+    return render(request, "main/contact.html", context)
 
 
 def deed_status(request, pk):
