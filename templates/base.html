@@ -176,8 +176,8 @@
 
                 {% for d in deed_notifications %}
 
-                {# ================= RECEIVER SENDER ================= #}
-                {% if request.user == d.receiver.user or request.user == d.sender.user %}
+                {# ================= RECEIVER ================= #}
+                {% if request.user == d.receiver.user %}
 
                     <a href="{% url 'contact' %}"
                        class="text-decoration-none notification-card d-block px-3 py-3">
@@ -196,10 +196,40 @@
 
                     </a>
 
+                {# ================= SENDER ================= #}
+                {% elif request.user == d.sender.user %}
+
+                    <a href="{% url 'contact' %}"
+                       class="text-decoration-none notification-card d-block px-3 py-3">
+
+                        <div class="fw-bold text-dark">
+                             {{ d.sender.full_name }}
+                        </div>
+
+                        {% if d.status == 'approved' %}
+                            <div class="small text-success mt-1">
+                                Yuborgan dalolatnomangiz tasdiqlandi
+                            </div>
+                        {% elif d.status == 'rejected' %}
+                            <div class="small text-danger mt-1">
+                                Yuborgan dalolatnomangiz rad etildi
+                            </div>
+                        {% else %}
+                            <div class="small text-secondary mt-1">
+                                Dalolatnoma ko‘rib chiqilmoqda
+                            </div>
+                        {% endif %}
+
+                        <div class="small text-muted mt-1">
+                            {{ d.date_edit|timesince }} oldin
+                        </div>
+
+                    </a>
+
                 {# ================= KUZATUVCHI ================= #}
                 {% else %}
 
-                    <a href="{% url 'contact_agrement' %}"
+                    <a href="{% url 'contact' %}"
                        class="text-decoration-none notification-card d-block px-3 py-3">
 
                         <div class="fw-bold text-dark">
@@ -292,41 +322,16 @@
           </a>
         </li>
 
+
+        <!-- ARIZALAR -->
         <li class="nav-item">
-          <a class="nav-link {% if url_name not in 'contact_user contact contact_agrement' %}collapsed{% endif %}"
-             data-bs-target="#forms-nav-deed" data-bs-toggle="collapse" href="#">
+          <a class="nav-link {% if url_name != 'contact' %}collapsed{% endif %}"
+             href="{% url 'contact' %}">
             <i class="bi bi-envelope"></i>
             <span>Xabarlar</span>
-            <i class="bi bi-chevron-down ms-auto"></i>
           </a>
-
-          <ul id="forms-nav-deed"
-              class="nav-content collapse {% if url_name in 'contact_user contact contact_agrement' %}show{% endif %}"
-              data-bs-parent="#sidebar-nav">
-
-            <li>
-              <a class="{% if url_name == 'contact' %}active{% endif %}"
-                 href="{% url 'contact' %}">
-                <i class="bi bi-circle"></i><span>Imzolashga yuborish</span>
-              </a>
-            </li>
-
-            <li>
-              <a class="{% if url_name == 'contact_user' %}active{% endif %}"
-                 href="{% url 'contact_user' %}">
-                <i class="bi bi-circle"></i><span>Imzolash uchun</span>
-              </a>
-            </li>
-
-            <li>
-              <a class="{% if url_name == 'contact_agrement' %}active{% endif %}"
-                 href="{% url 'contact_agrement' %}">
-                <i class="bi bi-circle"></i><span>Kelishish uchun</span>
-              </a>
-            </li>
-
-          </ul>
         </li>
+
 
         {% if request.user.employee.rol.client %}
         <!-- CLIENT — ZAYAFKA YUBORISH -->

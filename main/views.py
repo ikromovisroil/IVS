@@ -160,24 +160,22 @@ def index(request):
 
 @never_cache
 @login_required
-def contact_user(request):
+def contact(request):
     employee = getattr(request.user, "employee", None)
-    deed_receiver = (
+
+    deed_user = (
+        Deed.objects
+        .filter(sender=employee)
+        .select_related("sender", "receiver")
+        .order_by("-id")
+    )
+
+    deed_sender = (
         Deed.objects
         .filter(Q(receiver=employee) | Q(sender=employee))
         .select_related("sender", "receiver")
         .order_by("-id")
     )
-    context = {
-        "deed_receiver": deed_receiver,
-    }
-    return render(request, "main/contact_user.html", context)
-
-
-@never_cache
-@login_required
-def contact_agrement(request):
-    employee = getattr(request.user, "employee", None)
 
     deed_consent = (
         Deed.objects
@@ -187,29 +185,16 @@ def contact_agrement(request):
         .order_by("-id")
     )
 
-    context = {
-        "deed_consent": deed_consent,
-    }
-    return render(request, "main/contact_agrement.html", context)
-
-
-@never_cache
-@login_required
-def contact(request):
-    employee = getattr(request.user, "employee", None)
-    deed_sender = (
-        Deed.objects
-        .filter(user=employee)
-        .select_related("sender", "receiver")
-        .order_by("-id")
-    )
     senders = (
         Employee.objects.filter(rol__boss=True)
         .select_related("user", "rank", "organization", "department", "directorate", "division")
         .order_by("last_name", "first_name", "father_name")
     )
+
     context = {
+        "deed_user": deed_user,
         "deed_sender": deed_sender,
+        "deed_consent": deed_consent,
         "senders": senders,
         "organization": Organization.objects.exclude(org_type="IVS"),
     }
