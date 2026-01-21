@@ -525,6 +525,8 @@ def exchange_code_for_token(code, code_verifier, redirect_uri):
         "redirect_uri": redirect_uri,
         "client_id": client_id,  # ✅ MUHIM!
     }
+    print("redirect_uri:", repr(redirect_uri))
+    print("client_id:", repr(settings.SSO_CLIENT_ID))
 
     headers = {
         "Content-Type": "application/x-www-form-urlencoded",
