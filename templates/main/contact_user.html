@@ -56,7 +56,7 @@
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Tashkilot</label>
                       <div class="col-sm-9">
-                        <select class="form-select" name="receiver_org" id="receiver_org" required>
+                        <select class="form-select" name="receiver_org" id="receiver_org">
                           <option value="">Tanlang...</option>
                           {% for org in organization %}
                             <option value="{{ org.id }}">{{ org.name }}</option>
@@ -68,7 +68,7 @@
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Imzolovchi</label>
                       <div class="col-sm-9">
-                        <select class="form-select" name="receiver_id" id="receiver_id" required>
+                        <select class="form-select" name="receiver_id" id="receiver_id">
                           <option value="">Tanlang...</option>
                           {% for emp in employee %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>

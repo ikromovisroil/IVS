@@ -176,8 +176,8 @@
 
                 {% for d in deed_notifications %}
 
-                {# ================= RECEIVER ================= #}
-                {% if request.user == d.receiver.user %}
+                {# ================= RECEIVER SENDER ================= #}
+                {% if request.user == d.receiver.user or request.user == d.sender.user %}
 
                     <a href="{% url 'contact' %}"
                        class="text-decoration-none notification-card d-block px-3 py-3">
@@ -196,40 +196,10 @@
 
                     </a>
 
-                {# ================= SENDER ================= #}
-                {% elif request.user == d.sender.user %}
-
-                    <a href="{% url 'contact' %}"
-                       class="text-decoration-none notification-card d-block px-3 py-3">
-
-                        <div class="fw-bold text-dark">
-                             {{ d.sender.full_name }}
-                        </div>
-
-                        {% if d.status == 'approved' %}
-                            <div class="small text-success mt-1">
-                                Yuborgan dalolatnomangiz tasdiqlandi
-                            </div>
-                        {% elif d.status == 'rejected' %}
-                            <div class="small text-danger mt-1">
-                                Yuborgan dalolatnomangiz rad etildi
-                            </div>
-                        {% else %}
-                            <div class="small text-secondary mt-1">
-                                Dalolatnoma ko‘rib chiqilmoqda
-                            </div>
-                        {% endif %}
-
-                        <div class="small text-muted mt-1">
-                            {{ d.date_edit|timesince }} oldin
-                        </div>
-
-                    </a>
-
                 {# ================= KUZATUVCHI ================= #}
                 {% else %}
 
-                    <a href="{% url 'contact' %}"
+                    <a href="{% url 'contact_agrement' %}"
                        class="text-decoration-none notification-card d-block px-3 py-3">
 
                         <div class="fw-bold text-dark">

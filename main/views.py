@@ -232,21 +232,21 @@ def deed_post(request):
     employee = getattr(request.user, "employee", None)
     back_url = request.META.get("HTTP_REFERER", "/")
 
-    sender_id = (request.POST.get("sender_id") or "").strip()   # ✅ endi ixtiyoriy
-    receiver_id = (request.POST.get("receiver_id") or "").strip()
+    sender_id = (request.POST.get("sender_id") or "").strip()      # xizmat ko'rsatuvchi vakil (majbur)
+    receiver_id = (request.POST.get("receiver_id") or "").strip()  # imzolovchi org vakil (ixtiyoriy)
     message = request.POST.get("message", "").strip()
     agreements = request.POST.getlist("agreements[]")
 
-    # ✅ Receiver majburiy
-    if not receiver_id:
+    # ✅ Sender majburiy
+    if not sender_id:
         messages.info(request, "Xizmat ko'rsatuvchi tashkilot vakili tanlang")
         return redirect(back_url)
-    receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
+    sender = get_object_or_404(Employee.objects.select_related("user"), id=sender_id)
 
-    # ✅ Sender ixtiyoriy
-    sender = None
-    if sender_id:
-        sender = get_object_or_404(Employee.objects.select_related("user"), id=sender_id)
+    # ✅ Receiver ixtiyoriy
+    receiver = None
+    if receiver_id:
+        receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
 
     upload_file = request.FILES.get("file")
     if not upload_file:
@@ -260,13 +260,13 @@ def deed_post(request):
 
     upload_file.name = f"deed_{uuid.uuid4().hex}{ext}"
 
-    # ✅ status ni ham holatga qarab qo'yamiz
-    status_sender = "viewed" if sender else "None"   # yoki None / "empty"
-    status_receiver = "viewed"
+    # ✅ Statuslar
+    status_sender = "viewed"                      # sender majbur
+    status_receiver = "viewed" if receiver else "not_required"  # receiver bo'lmasa 1ta QR
 
     deed = Deed.objects.create(
         user=employee,
-        sender=sender,              # ✅ None bo'lishi mumkin
+        sender=sender,
         receiver=receiver,
         file=upload_file,
         message_user=message,
@@ -296,6 +296,7 @@ def deed_post(request):
         except Exception:
             pass
 
+    # agreements[] -> ids
     ids = []
     for x in agreements:
         x = (x or "").strip()
@@ -303,9 +304,11 @@ def deed_post(request):
             ids.append(int(x))
     ids = list(set(ids))
 
-    exclude_ids = {receiver.id}
-    if sender:
-        exclude_ids.add(sender.id)
+    # ✅ Exclude: sender va receiver (receiver bo'lmasa qo'shilmaydi)
+    exclude_ids = set()
+    exclude_ids.add(sender.id)
+    if receiver:
+        exclude_ids.add(receiver.id)
 
     ids = [i for i in ids if i not in exclude_ids]
 
