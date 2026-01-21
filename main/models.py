@@ -427,7 +427,7 @@ class OrderMaterial(models.Model):
 
 
 class Deed(models.Model):
-    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_sender',db_index=True)
+    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_sender', null=True, blank=True ,db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     status_sender = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
@@ -436,9 +436,7 @@ class Deed(models.Model):
     ], default='viewed', db_index=True)
     date_sender = models.DateTimeField(null=True, blank=True)
 
-
-
-    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_received',db_index=True)
+    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_received', null=True, blank=True, db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
     status_receiver = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),

@@ -167,14 +167,14 @@ def contact(request):
     # Deed listlar (tezroq bo‘lishi uchun select_related)
     deed_sender = (
         Deed.objects
-        .filter(sender=employee)
+        .filter(user=employee)
         .select_related("sender", "receiver")
         .order_by("-id")
     )
 
     deed_receiver = (
         Deed.objects
-        .filter(receiver=employee)
+        .filter(Q(receiver=employee) | Q(sender=employee))
         .select_related("sender", "receiver")
         .order_by("-id")
     )
