@@ -117,7 +117,7 @@
                                                                 <span class="badge bg-danger">Rad etildi</span>
                                                             {% endif %}
                                                         </div>
-                                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
+                                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_sender|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_sender %}
                                                         <div class="mt-2">
@@ -143,7 +143,7 @@
                                                                 <span class="badge bg-danger">Rad etildi</span>
                                                             {% endif %}
                                                         </div>
-                                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_edit|date:"d.m.Y H:i" }}</div>
+                                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_receiver|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_receiver %}
                                                         <div class="mt-2">

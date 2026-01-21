@@ -141,10 +141,9 @@ def deed_pdf_view(request, pk):
     })
 
 
-# =========================
-# Stamp QR endpoint
-# =========================
 from datetime import datetime
+
+FINAL_MARK = "[FINAL_TEXT_DONE]"
 
 @csrf_exempt
 @require_http_methods(["POST"])
@@ -178,8 +177,7 @@ def deed_stamp_qr(request, pk):
         role = "sender" if deed.sender == emp else "receiver"
 
         # 3) Rad etilgan bo'lsa
-        is_rejected = (deed.status_sender == "rejected") or (deed.status_receiver == "rejected")
-        if is_rejected:
+        if deed.status_sender == "rejected" or deed.status_receiver == "rejected":
             return JsonResponse({"ok": False, "error": "Hujjat rad etilgan"}, status=400)
 
         ok_sso = request.session.get("SSO_OK") or {}
@@ -217,20 +215,44 @@ def deed_stamp_qr(request, pk):
         except Exception:
             return JsonResponse({"ok": False, "error": "Koordinata/scale xato"}, status=400)
 
-        # 9) ✅ Approved text faqat receiver uchun
-        approved_text = None
-        if role == "receiver":
-            approver_name = (
-                getattr(emp, "full_name", None)
-                or emp.user.get_full_name()
-                or emp.user.username
-            )
-            approved_text = (
-                f"Ushbu hujjat {approver_name} tomonidan "
-                f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
-            )
+        # 9) Status update + message (AVVAL statusni yozamiz)
+        sso_message = (ok_sso.get("message") or "").strip()
+        now = timezone.now()
 
-        # 10) PDFga QR (va receiver bo'lsa matn har bir betga)
+        if role == "sender":
+            deed.status_sender = "approved"
+            deed.date_sender = now  # sizda bor
+            if sso_message:
+                deed.message_sender = sso_message
+            deed.date_receiver = now
+            deed.save(update_fields=["status_sender", "date_sender", "message_sender", "date_edit"])
+        else:
+            deed.status_receiver = "approved"
+            deed.date_receiver = now  # sizda bor
+            if sso_message:
+                deed.message_receiver = sso_message
+            deed.date_edit = now
+            deed.save(update_fields=["status_receiver", "date_receiver", "message_receiver", "date_edit"])
+
+        # 10) IKKALASI TASDIQLANGANMI? bo‘lsa — text tayyorlaymiz
+        approved_text = None
+        already_marked = (deed.message_user or "").find(FINAL_MARK) != -1
+
+        if deed.receiver:
+            if deed.status_sender == "approved" and deed.status_receiver == "approved" and not already_marked:
+                approved_text = (
+                    f"Ushbu hujjat {deed.sender} va {deed.receiver}tomonidan "
+                    f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
+                )
+
+        else:
+            if deed.status_sender == "approved" and not already_marked:
+                approved_text = (
+                    f"Ushbu hujjat {deed.sender} tomonidan "
+                    f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
+                )
+
+        # 11) PDFga QR (har doim), text esa faqat final bo‘lsa
         try:
             _stamp_qr_pdf_overwrite_same_name(
                 pdf_path=deed.file.path,
@@ -240,33 +262,15 @@ def deed_stamp_qr(request, pk):
                 size_px=size,
                 render_scale=scale,
                 qr_png=qr_png,
-                approved_text=approved_text,  # ✅ MUHIM
+                approved_text=approved_text,  # faqat ikkalasi bo‘lsa matn yoziladi
             )
         except Exception as e:
             return JsonResponse({"ok": False, "error": f"PDFga QR urishda xato: {e}"}, status=400)
 
-        # 11) status update + message
-        sso_message = (ok_sso.get("message") or "").strip()
-        now = timezone.now()
+        # 12) receiver yakunlaganda SSO_OK tozalansin
+        if role == "receiver":
+            request.session.pop("SSO_OK", None)
 
-        # sender
-        if role == "sender":
-            deed.status_sender = "approved"
-            if sso_message:
-                deed.message_sender = sso_message
-            deed.date_edit = now
-            deed.save(update_fields=["status_sender", "message_sender", "date_edit"])
-            return JsonResponse({"ok": True, "redirect_url": redirect_url})
-
-        # receiver
-        deed.status_receiver = "approved"
-        if sso_message:
-            deed.message_receiver = sso_message
-        deed.date_edit = now
-        deed.save(update_fields=["status_receiver", "message_receiver", "date_edit"])
-
-        # receiver yakunlaganda SSO_OK tozalansin
-        request.session.pop("SSO_OK", None)
-        messages.success(request, "✅ Dalolatnoma tasdiqlandi")
+        messages.success(request, "✅ QR qo‘yildi")
         return JsonResponse({"ok": True, "redirect_url": redirect_url})
 
