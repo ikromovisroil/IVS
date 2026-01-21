@@ -218,7 +218,7 @@ def contact_user(request):
 
 def deed_status(request, pk):
     deed = get_object_or_404(Deed, pk=pk)
-    context = {"deed": deed}
+    context = {"d": deed}
     return render(request, "main/deed_status.html", context)
 
 
