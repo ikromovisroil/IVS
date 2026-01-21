@@ -33,6 +33,8 @@ urlpatterns = [
 
     # CONTACT
     path('contact/', contact, name='contact'),
+    path('contact_user/', contact_user, name='contact_user'),
+    path('contact_agrement/', contact_agrement, name='contact_agrement'),
     path("get-dep-employees/", get_department_employees, name="get_dep_employees"),
 
 
