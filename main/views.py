@@ -29,7 +29,6 @@ from django.views.decorators.http import require_POST
 from decimal import Decimal, InvalidOperation
 from datetime import date
 import tempfile
-import mammoth
 
 @require_POST
 def docx_to_html(request):
