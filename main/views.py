@@ -1694,10 +1694,6 @@ def order_sender(request):
     if not employee:
         raise PermissionDenied
 
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
-
     orders_qs = (
         Order.objects
         .filter(sender=employee)

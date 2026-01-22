@@ -303,13 +303,14 @@
           <ul id="forms-nav-deed"
               class="nav-content collapse {% if url_name in 'contact_user contact contact_agrement' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
-
+            {% if not request.user.employee.rol.client %}
             <li>
               <a class="{% if url_name == 'contact_user' %}active{% endif %}"
                  href="{% url 'contact_user' %}">
                 <i class="bi bi-circle"></i><span>Imzolashga yuborish</span>
               </a>
             </li>
+            {% endif %}
 
             <li>
               <a class="{% if url_name == 'contact' %}active{% endif %}"
