@@ -4,7 +4,6 @@ from django.contrib.auth.models import Group, User
 
 from .models import *
 
-
 # ============================
 # GROUP O‘CHIRILDI
 # ============================

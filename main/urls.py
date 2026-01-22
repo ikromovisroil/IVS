@@ -21,8 +21,6 @@ urlpatterns = [
     path("barn_mat/delete/", material_delete, name="material_delete"),
 
 
-
-
     # NOTIFIKATSIYA
     path('deed/seen/', deed_mark_seen, name="deed_mark_seen"),
     path('order/seen/', order_mark_seen, name="order_mark_seen"),
@@ -47,7 +45,6 @@ urlpatterns = [
     # TECHNICS
     path('technics/', technics, name='technics'),
     path('technics/<slug:slug>/', technics, name='technics'),
-
 
     # FILTER AJAX
     path('ajax/load-departments/', ajax_load_departments, name='ajax_load_departments'),
