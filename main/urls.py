@@ -2,6 +2,7 @@ from django.urls import path
 from .views import *
 from .ajax_views import *
 from .qk_views import *
+from .onlyoffice_views import *
 
 urlpatterns = [
     path("", home, name="home"),
@@ -93,5 +94,8 @@ urlpatterns = [
 
     path("deed/<int:pk>/viewer/", deed_pdf_view, name="deed_pdf_view"),
     path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
+
+     path("deed/<int:pk>/edit-docx/", deed_docx_edit, name="deed_docx_edit"),
+    path("onlyoffice/callback/<int:pk>/", onlyoffice_callback, name="onlyoffice_callback"),
 
 ]

@@ -197,6 +197,10 @@ SSO_CLIENT_SECRET = os.getenv("SSO_CLIENT_SECRET")
 SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
 
+ONLYOFFICE_DS_URL_LOCAL = "http://127.0.0.1"
+ONLYOFFICE_DS_URL_PROD  = "https://office.report.imv.uz"
+
+
 # PROD SECURITY
 if not DEBUG:
     SECURE_SSL_REDIRECT = True

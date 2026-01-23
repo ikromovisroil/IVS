@@ -30,25 +30,6 @@ from decimal import Decimal, InvalidOperation
 from datetime import date
 import tempfile
 
-@require_POST
-def docx_to_html(request):
-    f = request.FILES.get("file")
-    if not f:
-        return JsonResponse({"ok": False, "error": "Fayl tanlanmadi"}, status=400)
-
-    ext = os.path.splitext(f.name)[1].lower()
-    if ext != ".docx":
-        return JsonResponse({"ok": False, "error": "Faqat .docx qabul qilinadi"}, status=400)
-
-    try:
-        # mammoth file-like obyekt bilan ishlaydi
-        result = mammoth.convert_to_html(f)
-        html = result.value or ""
-        messages = result.messages or []
-        return JsonResponse({"ok": True, "html": html, "messages": messages})
-    except Exception as e:
-        return JsonResponse({"ok": False, "error": str(e)}, status=500)
-
 
 def global_data(request):
     return {
