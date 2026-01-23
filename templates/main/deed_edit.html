@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DOCX Editor</title>
+  <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>
+</head>
+<body style="margin:0;">
+  <div id="editor" style="height:100vh;"></div>
+
+  <script>
+    const config = {{ config_json|safe }};
+    config.token = "{{ token }}";
+    const docEditor = new DocsAPI.DocEditor("editor", config);
+  </script>
+</body>
+</html>
