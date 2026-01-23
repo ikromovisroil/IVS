@@ -6,16 +6,61 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     html, body { height: 100%; margin: 0; }
-    #editor { height: 100vh; width: 100vw; }
+    #topbar {
+      height: 48px;
+      background: #f5f6f8;
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      border-bottom: 1px solid #ddd;
+    }
+    #editor { height: calc(100vh - 48px); width: 100vw; }
+    .btn-save {
+      margin-left: auto;
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: 0;
+      background: #0d6efd;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
   </style>
+
   <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>
 </head>
 <body>
+  <div id="topbar">
+    <strong>Hujjatni tahrirlash</strong>
+    <button class="btn-save" id="saveExitBtn">Saqlash va chiqish</button>
+  </div>
+
   <div id="editor"></div>
+
   <script>
+    const BACK_URL = document.referrer || "/";  // qayerga qaytsin
+
+    let wantExit = false;
+
     const config = {{ config_json|safe }};
     config.token = "{{ token }}";
+
+    config.events = {
+      // Hujjat holati o‘zgarganda chaqiriladi
+      onDocumentStateChange: function (state) {
+        // state = false bo‘lsa — hamma o‘zgarishlar saqlangan
+        if (!state && wantExit) {
+          window.location.href = BACK_URL;
+        }
+      }
+    };
+
     const docEditor = new DocsAPI.DocEditor("editor", config);
+
+    document.getElementById("saveExitBtn").onclick = function () {
+      wantExit = true;
+      docEditor.save();   // OnlyOffice'ga majburiy saqlash
+    };
   </script>
 </body>
 </html>
