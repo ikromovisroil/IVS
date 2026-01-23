@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title>DOCX Editor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
     html, body { height: 100%; margin: 0; }
     #topbar {
@@ -13,18 +14,21 @@
       align-items: center;
       padding: 0 12px;
       border-bottom: 1px solid #ddd;
+      gap: 10px;
+      font-family: Arial, sans-serif;
     }
     #editor { height: calc(100vh - 48px); width: 100vw; }
-    .btn-save {
-      margin-left: auto;
+
+    .btn {
       padding: 6px 14px;
       border-radius: 6px;
       border: 0;
-      background: #0d6efd;
-      color: #fff;
       cursor: pointer;
       font-size: 14px;
     }
+    .btn-save { margin-left: auto; background: #0d6efd; color: #fff; }
+    .btn-cancel { background: #6c757d; color: #fff; }
+    .status { font-size: 13px; color: #555; }
   </style>
 
   <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>
@@ -32,26 +36,31 @@
 <body>
   <div id="topbar">
     <strong>Hujjatni tahrirlash</strong>
-    <button class="btn-save" id="saveExitBtn">Saqlash va chiqish</button>
+    <span class="status" id="statusText">Tayyor</span>
+
+    <button class="btn btn-cancel" onclick="window.location.href='{{ back_url }}'">Chiqish</button>
+    <button class="btn btn-save" id="saveExitBtn">Saqlash va chiqish</button>
   </div>
 
   <div id="editor"></div>
 
   <script>
-    const BACK_URL = document.referrer || "/";  // qayerga qaytsin
-
+    const BACK_URL = "{{ back_url|escapejs }}";
     let wantExit = false;
 
     const config = {{ config_json|safe }};
     config.token = "{{ token }}";
 
     config.events = {
-      // Hujjat holati o‘zgarganda chaqiriladi
-      onDocumentStateChange: function (state) {
-        // state = false bo‘lsa — hamma o‘zgarishlar saqlangan
-        if (!state && wantExit) {
+      onDocumentStateChange: function (changed) {
+        // changed=true => o'zgarish bor, changed=false => hammasi saqlangan
+        document.getElementById("statusText").innerText = changed ? "O‘zgarish bor..." : "Saqlangan";
+        if (!changed && wantExit) {
           window.location.href = BACK_URL;
         }
+      },
+      onError: function (e) {
+        document.getElementById("statusText").innerText = "Xatolik: " + (e?.data?.message || "unknown");
       }
     };
 
@@ -59,7 +68,9 @@
 
     document.getElementById("saveExitBtn").onclick = function () {
       wantExit = true;
-      docEditor.save();   // OnlyOffice'ga majburiy saqlash
+      document.getElementById("statusText").innerText = "Saqlanmoqda...";
+      docEditor.save();
+      // Agar internet sekin bo‘lsa, onDocumentStateChange(false) kelganda qaytadi
     };
   </script>
 </body>
