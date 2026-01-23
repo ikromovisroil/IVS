@@ -2,7 +2,6 @@ from django.urls import path
 from .views import *
 from .ajax_views import *
 from .qk_views import *
-from .wopi_views import *
 
 urlpatterns = [
     path("", home, name="home"),
@@ -95,10 +94,4 @@ urlpatterns = [
     path("deed/<int:pk>/viewer/", deed_pdf_view, name="deed_pdf_view"),
     path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
 
-    path("deed/<int:pk>/edit-docx/", deed_edit_docx, name="deed_edit_docx"),
-
-    # WOPI endpoints
-    path("wopi/files/<int:pk>", wopi_check_file_info, name="wopi_check_file_info"),
-    path("wopi/files/<int:pk>/contents", wopi_file_contents, name="wopi_file_contents"),
 ]
-

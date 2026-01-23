@@ -198,24 +198,6 @@ SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
 
 
-COLLABORA_URL = "https://office.imv.uz"  # yoki http://SERVER_IP:9980
-
-# WOPI endpoint (sizning django domain)
-# Masalan: https://report.imv.uz/wopi/files/<id>
-WOPI_BASE_URL = "https://report.imv.uz"  # request.build_absolute_uri bilan ham bo‘ladi
-
-# Access token signing (oddiy, xavfsiz)
-from django.core.management.utils import get_random_secret_key
-WOPI_TOKEN_SECRET = SECRET_KEY  # yoki alohida secret
-WOPI_TOKEN_MAX_AGE_SECONDS = 60 * 60  # 1 soat
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "wopi-locks",
-    }
-}
-
-
 # PROD SECURITY
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
