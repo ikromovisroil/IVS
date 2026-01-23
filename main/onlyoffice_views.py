@@ -52,7 +52,7 @@ def deed_edit(request, pk):
     }
 
     token = jwt.encode(config, settings.ONLYOFFICE_JWT_SECRET, algorithm="HS256")
-    return render(request, "onlyoffice/deed_edit.html", {
+    return render(request, "main/deed_edit.html", {
         "docserver": settings.ONLYOFFICE_DS_URL,
         "config_json": json.dumps(config),
         "token": token,
