@@ -112,37 +112,62 @@ def replace_text(doc, replacements: dict):
                                 run.font.name = "Times New Roman"
                                 run.font.size = Pt(12)
 
-#Akt table all
+
 def create_table_akt(doc, title, data, headers):
 
     widths = [1, 4, 3, 5, 2, 2, 4, 4, 3]
 
+    # Title
     h = doc.add_paragraph()
     r = h.add_run(title)
     r.bold = True
     r.font.name = "Times New Roman"
     r.font.size = Pt(10)
 
-    table = doc.add_table(rows=1, cols=len(headers))
+    # ✅ 2 qatorli header
+    table = doc.add_table(rows=2, cols=len(headers))
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
 
     fix_table_layout(table)
     set_table_borders(table)
     force_tbl_grid(table, widths)
 
-    hdr = table.rows[0].cells
-    for i, text in enumerate(headers):
-        set_cell_text(hdr[i], text, bold=True, center=True)
-        set_col_width(hdr[i], widths[i])
+    h1 = table.rows[0].cells
+    h2 = table.rows[1].cells
 
+    # 0..5 ustunlar (№..Birligi) - vertikal merge
+    for col in range(0, 6):
+        cell = h1[col].merge(h2[col])
+        set_cell_text(cell, headers[col], bold=True, center=True)
+        set_col_width(cell, widths[col])
+
+    # ✅ Guruh: 6..8 (F.I.Sh, Lavozimi, Narxi)
+    grp = h1[6].merge(h1[7]).merge(h1[8])
+    set_cell_text(grp, "Kimga o'rnatildi yoki o'rnatilganligini tasdiqlovchi mas'ul shaxs (xarajatlar)", bold=True, center=True)
+
+    # pastki headerlar
+    set_cell_text(h2[6], headers[6], bold=True, center=True)  # F.I.Sh.
+    set_cell_text(h2[7], headers[7], bold=True, center=True)  # Lavozimi
+    set_cell_text(h2[8], headers[8], bold=True, center=True)  # Narxi
+
+    set_col_width(h2[6], widths[6])
+    set_col_width(h2[7], widths[7])
+    set_col_width(h2[8], widths[8])
+
+    # ✅ Data qatorlari
     for idx, row in enumerate(data, start=1):
         cells = table.add_row().cells
-        full = [idx] + row
-        for i, val in enumerate(full):
+
+        full = [idx] + list(row)   # № qo‘shildi => 9 ta bo‘ladi
+        while len(full) < 9:
+            full.append("")
+
+        for i, val in enumerate(full[:9]):
             set_cell_text(cells[i], val, center=True)
             set_col_width(cells[i], widths[i])
 
     return h, table
+
 
 
 def set_column_widths(table, widths_cm):
