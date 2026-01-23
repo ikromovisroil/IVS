@@ -1,21 +1,93 @@
+<!--<!doctype html>-->
+<!--<html>-->
+<!--<head>-->
+<!--  <meta charset="utf-8">-->
+<!--  <title>DOCX Editor</title>-->
+<!--  <meta name="viewport" content="width=device-width, initial-scale=1">-->
+<!--  <style>-->
+<!--    html, body { height: 100%; margin: 0; }-->
+<!--    #editor { height: 100vh; width: 100vw; }-->
+<!--  </style>-->
+<!--  <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>-->
+<!--</head>-->
+<!--<body>-->
+<!--  <div id="editor"></div>-->
+<!--  <script>-->
+<!--    const config = {{ config_json|safe }};-->
+<!--    config.token = "{{ token }}";-->
+<!--    const docEditor = new DocsAPI.DocEditor("editor", config);-->
+<!--  </script>-->
+<!--</body>-->
+<!--</html>-->
 <!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>DOCX Editor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
     html, body { height: 100%; margin: 0; }
-    #editor { height: 100vh; width: 100vw; }
+
+    #topbar{
+      height:48px;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:0 12px;
+      border-bottom:1px solid #ddd;
+      background:#f5f6f8;
+      font-family: Arial, sans-serif;
+    }
+    #editor { height: calc(100vh - 48px); width: 100vw; }
+
+    .btn{
+      padding:6px 14px;
+      border:0;
+      border-radius:6px;
+      cursor:pointer;
+      font-size:14px;
+    }
+    .btn-save{ margin-left:auto; background:#0d6efd; color:white; }
+    .status{ font-size:13px; color:#555; }
   </style>
+
   <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>
 </head>
+
 <body>
+  <div id="topbar">
+    <b>DOCX tahrirlash</b>
+    <span class="status" id="statusText">Tayyor</span>
+
+    <button class="btn btn-save" id="saveBtn">Saqlash</button>
+  </div>
+
   <div id="editor"></div>
+
   <script>
     const config = {{ config_json|safe }};
     config.token = "{{ token }}";
+
+    // ✅ status ko'rsatish
+    config.events = {
+      onDocumentStateChange: function (changed) {
+        // changed=true => o'zgarish bor, changed=false => hammasi saqlangan
+        document.getElementById("statusText").innerText =
+          changed ? "O‘zgarish bor..." : "Saqlangan ✅";
+      },
+      onError: function (e) {
+        document.getElementById("statusText").innerText =
+          "Xatolik: " + (e?.data?.message || "unknown");
+      }
+    };
+
     const docEditor = new DocsAPI.DocEditor("editor", config);
+
+    document.getElementById("saveBtn").onclick = function () {
+      document.getElementById("statusText").innerText = "Saqlanmoqda...";
+      docEditor.save(); // ✅ serverga save qilishni majburiy chaqiradi
+    };
   </script>
 </body>
 </html>
