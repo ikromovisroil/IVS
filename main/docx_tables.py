@@ -313,6 +313,8 @@ def set_cell_text_reestr(cell, text, bold=False, center=False, font_size=6.5):
 
     if center:
         p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        cell.vertical_alignment = WD_ALIGN_VERTICAL.CENTER
+
 
 #Reestr table
 def create_table_cols_reestr(doc, data, grand_total=0):
