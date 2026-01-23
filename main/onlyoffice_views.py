@@ -68,7 +68,7 @@ def deed_edit(request, pk):
     # qaysi sahifaga qaytish (masalan ro‘yxat)
     back_url = request.GET.get("back") or request.META.get("HTTP_REFERER") or "/"
 
-    return render(request, "onlyoffice/deed_edit.html", {
+    return render(request, "main/deed_edit.html", {
         "docserver": settings.ONLYOFFICE_DS_URL,
         "config_json": json.dumps(config),
         "token": token,
