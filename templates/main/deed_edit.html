@@ -3,11 +3,15 @@
 <head>
   <meta charset="utf-8">
   <title>DOCX Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #editor { height: 100vh; width: 100vw; }
+  </style>
   <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>
 </head>
-<body style="margin:0;">
-  <div id="editor" style="height:100vh;"></div>
-
+<body>
+  <div id="editor"></div>
   <script>
     const config = {{ config_json|safe }};
     config.token = "{{ token }}";
