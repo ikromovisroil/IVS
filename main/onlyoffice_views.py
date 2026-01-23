@@ -32,37 +32,32 @@ def deed_edit(request, pk):
     deed = get_object_or_404(Deed, pk=pk)
     docx = _get_docx(deed)
 
-    # OnlyOffice docker ichida, shuning uchun LAN IP bilan URL bo‘lsin
-    file_url = _abs(request, f"/onlyoffice/file/{deed.id}/")
-    callback_url = _abs(request, f"/onlyoffice/callback/{deed.id}/")
+    base = "http://192.168.120.142:8000"  # ✅ LAN IP
 
-    # key unique bo‘lishi kerak (fayl yangilanganda o‘zgarib tursin)
-    key = f"deed-{deed.id}-{int(deed.updated_at.timestamp())}" if hasattr(deed, "updated_at") else f"deed-{deed.id}"
+    file_url = f"{base}/onlyoffice/file/{deed.id}/"
+    callback_url = f"{base}/onlyoffice/callback/{deed.id}/"
 
     config = {
         "document": {
             "fileType": "docx",
-            "key": key,
-            "title": os.path.basename(docx.name) or "document.docx",
+            "key": f"deed-{deed.id}",
+            "title": os.path.basename(docx.name),
             "url": file_url,
         },
         "editorConfig": {
             "mode": "edit",
             "callbackUrl": callback_url,
-            "user": {
-                "id": str(getattr(request.user, "id", "0")),
-                "name": getattr(request.user, "username", "user"),
-            },
+            "user": {"id": str(request.user.id), "name": request.user.username},
         },
     }
 
     token = jwt.encode(config, settings.ONLYOFFICE_JWT_SECRET, algorithm="HS256")
-
-    return render(request, "main/deed_edit.html", {
+    return render(request, "onlyoffice/deed_edit.html", {
         "docserver": settings.ONLYOFFICE_DS_URL,
         "config_json": json.dumps(config),
         "token": token,
     })
+
 
 
 def onlyoffice_file(request, pk):
