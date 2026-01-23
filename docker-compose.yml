@@ -1,10 +1,21 @@
 version: "3.8"
+
 services:
-  onlyoffice:
-    image: onlyoffice/documentserver:latest
-    container_name: onlyoffice
+  collabora:
+    image: collabora/code:latest
+    container_name: collabora
     restart: always
     ports:
-      - "8082:80"
+      - "9980:9980"
     environment:
-      - JWT_ENABLED=false
+      # Sizning domain regex ko‘rinishida bo‘lishi kerak (nuqta escaped)
+      # Masalan: report.imv.uz bo‘lsa:
+      - domain=report\.imv\.uz
+#      - domain=127\.0\.0\.1|localhost
+      - username=admin
+      - password=StrongPassword123
+      - extra_params=--o:ssl.enable=false --o:ssl.termination=true
+    cap_add:
+      - MKNOD
+    security_opt:
+      - seccomp:unconfined
