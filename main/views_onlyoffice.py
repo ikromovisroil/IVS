@@ -104,7 +104,7 @@ def deed_edit(request, pk: int):
     # editor yopilganda qayerga qaytsin
     return_url = request.GET.get("return") or "/"
 
-    return render(request, "main/deed_edit.html", {
+    return render(request, "main/deed_editor.html", {
         "docserver": docserver,
         "config_json": json.dumps(config),
         "jwt_token": token_jwt,
