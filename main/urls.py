@@ -97,7 +97,8 @@ urlpatterns = [
 
     path("deed/<int:pk>/edit/", collabora_editor, name="deed_edit"),
 
-    path("wopi/files/<int:pk>", wopi_check_file_info, name="wopi_check_file_info"),
     path("wopi/files/<int:pk>/contents", wopi_file_contents, name="wopi_file_contents"),
+    path("wopi/files/<int:pk>", wopi_check_file_info, name="wopi_file_info")
+
 
 ]
