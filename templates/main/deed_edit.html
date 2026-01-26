@@ -2,82 +2,14 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>DOCX Editor</title>
+  <title>{{ deed.title|default:"DOCX Editor" }}</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
     html, body { height: 100%; margin: 0; }
-    #topbar{
-      height:48px;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:0 12px;
-      border-bottom:1px solid #ddd;
-      background:#f5f6f8;
-      font-family: Arial, sans-serif;
-    }
-    #editor { height: calc(100vh - 48px); width: 100vw; }
-    .btn{
-      padding:6px 14px;
-      border:0;
-      border-radius:6px;
-      cursor:pointer;
-      font-size:14px;
-    }
-    .btn-save{ margin-left:auto; background:#0d6efd; color:white; }
-    .btn-exit{ background:#6c757d; color:white; }
-    .status{ font-size:13px; color:#555; }
+    iframe { width: 100%; height: 100%; border: 0; }
   </style>
-
-  <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>
 </head>
-
 <body>
-  <div id="topbar">
-    <b>DOCX tahrirlash</b>
-    <span class="status" id="statusText">Tayyor</span>
-
-    <button class="btn btn-exit" id="exitBtn">Chiqish</button>
-    <button class="btn btn-save" id="saveExitBtn">Saqlash va qaytish</button>
-  </div>
-
-  <div id="editor"></div>
-
-  <script>
-    const BACK_URL = document.referrer || "{% url 'contact_user' %}";
-    let wantExit = false;
-
-    const config = {{ config_json|safe }};
-    config.token = "{{ token }}";
-
-    config.events = {
-      onDocumentStateChange: function (changed) {
-        const statusEl = document.getElementById("statusText");
-        statusEl.innerText = changed ? "O‘zgarish bor..." : "Saqlangan ✅";
-
-        if (!changed && wantExit) {
-          window.location.href = BACK_URL;
-        }
-      },
-      onError: function (e) {
-        document.getElementById("statusText").innerText =
-          "Xatolik: " + (e?.data?.message || "unknown");
-        wantExit = false;
-      }
-    };
-
-    const docEditor = new DocsAPI.DocEditor("editor", config);
-
-    document.getElementById("exitBtn").onclick = function () {
-      window.location.href = BACK_URL;
-    };
-
-    document.getElementById("saveExitBtn").onclick = function () {
-      wantExit = true;
-      document.getElementById("statusText").innerText = "Saqlanmoqda...";
-      docEditor.save();
-    };
-  </script>
+  <iframe src="{{ editor_url }}" allow="clipboard-read; clipboard-write"></iframe>
 </body>
 </html>
