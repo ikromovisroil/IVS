@@ -95,7 +95,7 @@ urlpatterns = [
     path("deed/<int:pk>/viewer/", deed_pdf_view, name="deed_pdf_view"),
     path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
 
-    path("deed/<int:pk>/edit/", collabora_editor, name="deed_edit_collabora"),
+    path("deed/<int:pk>/edit/", collabora_editor, name="deed_edit"),
 
     path("wopi/files/<int:pk>", wopi_check_file_info, name="wopi_check_file_info"),
     path("wopi/files/<int:pk>/contents", wopi_file_contents, name="wopi_file_contents"),
