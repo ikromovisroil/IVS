@@ -45,14 +45,6 @@ def _stable_doc_key(deed: Deed, docx_path: str, docx_name: str) -> str:
     return hashlib.sha256(src.encode("utf-8")).hexdigest()
 
 
-# ----------------------------
-# Oddiy sahifalar: list + create blank
-# ----------------------------
-def deed_list(request):
-    deeds = Deed.objects.order_by("-id")
-    return render(request, "main/deed_list.html", {"deeds": deeds})
-
-
 def deed_create_blank(request):
     """
     0 dan blank docx yaratib beradi (minimal).

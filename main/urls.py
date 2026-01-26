@@ -95,7 +95,6 @@ urlpatterns = [
     path("deed/<int:pk>/viewer/", deed_pdf_view, name="deed_pdf_view"),
     path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
 
-    path("deed/create-blank/", deed_create_blank, name="deed_create_blank"),
     path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
 
     # OnlyOffice endpoints

@@ -45,7 +45,7 @@
   <div id="editor"></div>
 
   <script>
-    const BACK_URL = document.referrer || "{% url 'deed_list' %}";
+    const BACK_URL = document.referrer || "{% url 'contact_user' %}";
     let wantExit = false;
 
     const config = {{ config_json|safe }};
