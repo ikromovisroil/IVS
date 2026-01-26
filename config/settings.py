@@ -192,8 +192,17 @@ SSO_CLIENT_SECRET = os.getenv("SSO_CLIENT_SECRET")
 SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
 
-COLLABORA_URL = "https://report.imv.uz/collabora"
-WOPI_TOKEN_SECRET = "change-this-super-secret"
+ONLYOFFICE = {
+    # Endi docserver shu:
+    "DOCSERVER_URL": "https://report.imv.uz/onlyoffice",
+
+    # docx download link uchun token
+    "DOWNLOAD_TOKEN_SECRET": "CHANGE_ME_DOWNLOAD_SECRET",
+
+    # JWT (hozir OFF). Agar DocumentServer'da JWT yoqsangiz True + secret
+    "JWT_ENABLED": False,
+    "JWT_SECRET": "CHANGE_ME_JWT_SECRET",
+}
 
 # PROD SECURITY
 if not DEBUG:

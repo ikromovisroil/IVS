@@ -2,7 +2,7 @@ from django.urls import path
 from .views import *
 from .ajax_views import *
 from .qk_views import *
-from .wopi_views import *
+from .views_onlyoffice import *
 
 urlpatterns = [
     path("", home, name="home"),
@@ -95,10 +95,13 @@ urlpatterns = [
     path("deed/<int:pk>/viewer/", deed_pdf_view, name="deed_pdf_view"),
     path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
 
-    path("deed/<int:pk>/edit/", collabora_editor, name="deed_edit"),
+    path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
 
-    path("wopi/files/<int:pk>/contents", wopi_file_contents, name="wopi_file_contents"),
-    path("wopi/files/<int:pk>", wopi_check_file_info, name="wopi_file_info")
+    # DocumentServer callback
+    path("onlyoffice/callback/<int:pk>/", onlyoffice_callback, name="onlyoffice_callback"),
+
+    # DocumentServer docx download (token bilan)
+    path("onlyoffice/file/<int:pk>/", onlyoffice_file, name="onlyoffice_file"),
 
 
 ]

@@ -1,9 +1,59 @@
-{% extends "base.html" %}
-{% block content %}
-<style>
-  html, body { height: 100%; }
-  .wopi-frame { width: 100%; height: 85vh; border: 0; }
-</style>
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>DOCX Editor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #topbar {
+      height: 52px; display:flex; gap:10px; align-items:center;
+      padding: 0 12px; border-bottom:1px solid #eee;
+      font-family: Arial, sans-serif;
+    }
+    #editor { height: calc(100vh - 52px); width: 100vw; }
+    button { padding: 8px 12px; cursor:pointer; }
+  </style>
 
-<iframe class="wopi-frame" src="{{ editor_url }}" allow="clipboard-read; clipboard-write"></iframe>
-{% endblock %}
+  <script src="{{ docserver }}/web-apps/apps/api/documents/api.js"></script>
+</head>
+<body>
+
+  <div id="topbar">
+    <button id="btn-close">Chiqish</button>
+    <button id="btn-save-close">Saqlash & Chiqish</button>
+    <span style="opacity:.7">OnlyOffice</span>
+  </div>
+
+  <div id="editor"></div>
+
+  <script>
+    const returnUrl = "{{ return_url|escapejs }}";
+    const config = {{ config_json|safe }};
+
+    {% if jwt_token %}
+      config.token = "{{ jwt_token }}";
+    {% endif %}
+
+    const editor = new DocsAPI.DocEditor("editor", {
+      ...config,
+      events: {
+        onRequestClose: function() {
+          window.location.href = returnUrl;
+        }
+      }
+    });
+
+    document.getElementById("btn-close").onclick = () => {
+      window.location.href = returnUrl;
+    };
+
+    document.getElementById("btn-save-close").onclick = () => {
+      // DS callback tezroq kelishi uchun
+      try { editor.serviceCommand("forcesave", {}); } catch(e) {}
+      setTimeout(() => window.location.href = returnUrl, 800);
+    };
+  </script>
+
+</body>
+</html>
