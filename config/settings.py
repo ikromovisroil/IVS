@@ -192,7 +192,7 @@ SSO_CLIENT_SECRET = os.getenv("SSO_CLIENT_SECRET")
 SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
 
-COLLABORA_URL = "http://192.168.120.142:9980"
+COLLABORA_URL = "https://report.imv.uz/collabora"
 WOPI_TOKEN_SECRET = "change-this-super-secret"
 
 # PROD SECURITY
