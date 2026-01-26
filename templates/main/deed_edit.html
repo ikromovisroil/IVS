@@ -7,7 +7,6 @@
 
   <style>
     html, body { height: 100%; margin: 0; }
-
     #topbar{
       height:48px;
       display:flex;
@@ -19,7 +18,6 @@
       font-family: Arial, sans-serif;
     }
     #editor { height: calc(100vh - 48px); width: 100vw; }
-
     .btn{
       padding:6px 14px;
       border:0;
@@ -47,21 +45,17 @@
   <div id="editor"></div>
 
   <script>
-    // qayerga qaytish (avvalgi sahifa bo'lmasa / ga ketadi)
-    const BACK_URL = document.referrer || "/";
-
+    const BACK_URL = document.referrer || "{% url 'deed_list' %}";
     let wantExit = false;
 
     const config = {{ config_json|safe }};
     config.token = "{{ token }}";
 
     config.events = {
-      // changed=true => o'zgarish bor, changed=false => hammasi saqlangan
       onDocumentStateChange: function (changed) {
         const statusEl = document.getElementById("statusText");
         statusEl.innerText = changed ? "O‘zgarish bor..." : "Saqlangan ✅";
 
-        // ✅ Saqlash tugmasi bosilgan bo‘lsa va endi o‘zgarish qolmagan bo‘lsa → qaytamiz
         if (!changed && wantExit) {
           window.location.href = BACK_URL;
         }
@@ -69,7 +63,6 @@
       onError: function (e) {
         document.getElementById("statusText").innerText =
           "Xatolik: " + (e?.data?.message || "unknown");
-        // xatolik bo‘lsa qaytarmaymiz
         wantExit = false;
       }
     };
@@ -83,7 +76,7 @@
     document.getElementById("saveExitBtn").onclick = function () {
       wantExit = true;
       document.getElementById("statusText").innerText = "Saqlanmoqda...";
-      docEditor.save(); // ✅ majburiy save
+      docEditor.save();
     };
   </script>
 </body>

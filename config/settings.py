@@ -193,7 +193,12 @@ SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
 
 ONLYOFFICE_DS_URL = "http://192.168.120.142:8082"
+
+# JWT secret (DocumentServer bilan bir xil bo‘lishi shart)
 ONLYOFFICE_JWT_SECRET = "b2b28350a62a476e08d65f8bd3e4b796417042e6db5dd858b36139f8d4cc089f"
+
+# Sizning Django serveringiz LAN base URL (callback/file url uchun)
+PUBLIC_BASE_URL = "http://192.168.120.142:8000"
 
 # PROD SECURITY
 if not DEBUG:
