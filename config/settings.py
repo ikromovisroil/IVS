@@ -192,17 +192,13 @@ SSO_CLIENT_SECRET = os.getenv("SSO_CLIENT_SECRET")
 SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
 
-ONLYOFFICE = {
-    # Endi docserver shu:
-    "DOCSERVER_URL": "https://report.imv.uz/onlyoffice",
+CSRF_TRUSTED_ORIGINS = ["https://report.imv.uz"]
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+USE_X_FORWARDED_HOST = True
 
-    # docx download link uchun token
-    "DOWNLOAD_TOKEN_SECRET": "CHANGE_ME_DOWNLOAD_SECRET",
-
-    # JWT (hozir OFF). Agar DocumentServer'da JWT yoqsangiz True + secret
-    "JWT_ENABLED": False,
-    "JWT_SECRET": "CHANGE_ME_JWT_SECRET",
-}
+# OnlyOffice sozlamalari
+ONLYOFFICE_DOCSERVER = "https://report.imv.uz/office"
+ONLYOFFICE_JWT_SECRET = "super_secret_string"
 
 # PROD SECURITY
 if not DEBUG:

@@ -2,9 +2,10 @@ from django.urls import path
 from .views import *
 from .ajax_views import *
 from .qk_views import *
-from .views_onlyoffice import *
+from .docs_views import *
 
 urlpatterns = [
+    path("word", word, name="word"),
     path("", home, name="home"),
     path('profil/', profil, name='profil'),
     path('index/', index, name='index'),
@@ -96,12 +97,6 @@ urlpatterns = [
     path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
 
     path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
-
-    # DocumentServer callback
-    path("onlyoffice/callback/<int:pk>/", onlyoffice_callback, name="onlyoffice_callback"),
-
-    # DocumentServer docx download (token bilan)
     path("onlyoffice/file/<int:pk>/", onlyoffice_file, name="onlyoffice_file"),
-
-
+    path("onlyoffice/callback/<int:pk>/", onlyoffice_callback, name="onlyoffice_callback"),
 ]
