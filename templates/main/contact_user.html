@@ -153,9 +153,6 @@
                                 {% endif %}
                             </td>
                             <td>
-                                <a href="{% url 'deed_edit' d.pk %}" class="btn btn-sm btn-primary">
-                                    DOCX tahrirlash
-                                </a>
                                 {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
                                     <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-s{{ d.id }}">
                                         Rad etildi
