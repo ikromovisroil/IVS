@@ -2418,3 +2418,18 @@ def reestr_post(request):
     )
     response["Content-Disposition"] = 'attachment; filename="reestr.docx"'
     return response
+
+
+@never_cache
+@login_required
+def technics_get(request):
+    if not hasattr(request.user, "employee"):
+        raise PermissionDenied
+
+    employee = getattr(request.user, "employee", None)
+    technics = Technics.objects.filter(employee=employee)
+
+    context = {
+        'technics': technics,
+    }
+    return render(request, 'main/technics_get.html', context)

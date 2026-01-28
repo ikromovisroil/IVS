@@ -8,6 +8,7 @@ urlpatterns = [
     path("", home, name="home"),
     path('profil/', profil, name='profil'),
     path('index/', index, name='index'),
+    path('technics_get/', technics_get, name='technics_get'),
 
     path('barn_tex/', barn_tex, name='barn_tex'),
     path("barn_tex/technics_create/", technics_create, name="technics_create"),
