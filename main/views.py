@@ -1345,7 +1345,6 @@ def organization(request, slug):
     if role and role.client:
         raise PermissionDenied
 
-    # ⚡ Technics ni oldindan yuklaymiz (faqat kerakli fieldlar)
     tech_prefetch = Prefetch(
         "technics_set",
         queryset=(
@@ -1356,32 +1355,31 @@ def organization(request, slug):
         to_attr="tech_list"
     )
 
-    # Employee prefetchniki ham yengillatamiz
-    emp_prefetch_org = Prefetch(
-        "employee_set",
-        queryset=(
-            Employee.objects
-            .select_related("rank", "user")
-            .only(
-                "id", "first_name", "last_name", "father_name",
-                "rank__id", "rank__name",
-                "user__id", "user__username",
-                "organization_id", "department_id", "directorate_id", "division_id",
-            )
-            .prefetch_related(tech_prefetch)
-        )
-    )
-
-    # 🟢 ORGANIZATION
+    # 🔷 ORG
     org = get_object_or_404(
         Organization.objects
         .annotate(technics_count=Count("employee__technics", distinct=True))
-        .prefetch_related(emp_prefetch_org),
+        .prefetch_related(
+            Prefetch(
+                "employee_set",
+                queryset=(
+                    Employee.objects
+                    .select_related("rank", "user")
+                    .only(
+                        "id", "first_name", "last_name", "father_name",
+                        "rank__id", "rank__name",
+                        "user__id", "user__username",
+                        "organization_id", "department_id", "directorate_id", "division_id",
+                    )
+                    .prefetch_related(tech_prefetch)
+                )
+            )
+        ),
         slug=slug
     )
 
-    # 🟡 DEPARTMENTS
-    departments = (
+    # 🟡 DEPARTMENTS (pagination qilinadigan qism)
+    departments_qs = (
         Department.objects
         .filter(organization=org)
         .select_related("organization")
@@ -1402,7 +1400,12 @@ def organization(request, slug):
                 )
             )
         )
+        .order_by("id")  # ✅ barqaror pagination
     )
+
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(departments_qs, 1)  # xohlasangiz 10/20 qiling
+    page_obj = paginator.get_page(page_number)
 
     # 🔵 DIRECTORATES
     directorates = (
@@ -1453,8 +1456,10 @@ def organization(request, slug):
     )
 
     context = {
-        "organizations": org,
-        "departments": departments,
+        "organization": org,          # nomini ham to'g'rilab qo'ydim (organizations emas)
+        "departments": page_obj,      # ✅ template’da for loop: departments
+        "page_obj": page_obj,         # ✅ pagination blok ishlashi uchun
+        "paginator": paginator,
         "directorates": directorates,
         "divisions": divisions,
     }
@@ -1698,8 +1703,16 @@ def order_sender(request):
         .order_by("name")
     )
 
+    # ✅ PAGINATION
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 24)   # har sahifada 4 ta
+    page_obj = paginator.get_page(page_number)
+
     context = {
-        "order": orders_qs,
+        "order": page_obj,          # ✅ for loop shu orqali yuradi
+        "page_obj": page_obj,       # ✅ pagination uchun
+        "paginator": paginator,     # ✅ pagination uchun
+
         "topic": topics_qs,
         "goal": goals_qs,
         "technics": technics_qs,
@@ -1859,7 +1872,7 @@ def order_receiver(request):
 
     is_boss = bool(role and role.boss)
 
-    orders = (
+    orders_qs = (
         Order.objects
         .select_related(
             "sender", "sender__rank", "sender__region",
@@ -1871,11 +1884,14 @@ def order_receiver(request):
     )
 
     if is_boss:
-        # Boss: region bo‘yicha ko‘radi
-        orders = orders.filter(sender__region=employee.region)
+        orders_qs = orders_qs.filter(sender__region_id=employee.region_id)
     else:
-        # Oddiy: faqat o‘ziga tushganlari
-        orders = orders.filter(receiver=employee)
+        orders_qs = orders_qs.filter(receiver_id=employee.id)
+
+    # ✅ PAGINATION
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 24)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "employee": (
@@ -1890,7 +1906,10 @@ def order_receiver(request):
             )
             .order_by("last_name", "first_name")
         ),
-        "order": orders,
+        # ✅ oldingi templatingiz buzilmasin:
+        "order": page_obj,         # for loop shu orqali yuraveradi
+        "page_obj": page_obj,      # nav uchun
+        "paginator": paginator,    # nav uchun
         "topic": Topic.objects.only("id", "name").order_by("name"),
         "goal": (
             Goal.objects
@@ -1898,6 +1917,7 @@ def order_receiver(request):
             .only("id", "name", "topic__id", "topic__name")
             .order_by("name")
         ),
+        "is_boss": is_boss,
     }
     return render(request, "main/order_receiver.html", context)
 
