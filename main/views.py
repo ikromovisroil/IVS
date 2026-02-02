@@ -2088,7 +2088,7 @@ def akt_post(request):
             (q.order.sender.rank.name if q.order and q.order.sender and q.order.sender.rank else ""),
             f"{q.material.price:,}".replace(",", " ") if q.material and q.material.price else "",
             q.order.id if q.id else "",
-            q.order.date_creat.strftime("%d.%m.%Y %H:%M") if q.order and q.order.date_creat else "",
+            q.order.date_creat.strftime("%d.%m.%Y") if q.order and q.order.date_creat else "",
         ])
 
     h, table = create_table_akt_all(
