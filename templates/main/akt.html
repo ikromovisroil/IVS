@@ -46,7 +46,7 @@
                 </div>
                 <div class="col-12">
                   <label for="employee" class="form-label">Xodim :</label>
-                    <select id="employee" name="employee" class="form-select">
+                    <select id="employee" name="employee" class="form-select" required>
                         <option value="">Tanlang...</option>
                         {% for emp in employees %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>

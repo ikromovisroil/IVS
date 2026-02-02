@@ -168,7 +168,64 @@ def create_table_akt(doc, title, data, headers):
 
     return h, table
 
+def create_table_akt_all(doc, title, data, headers):
 
+    widths = [1, 4, 3, 4, 2, 2, 3, 2, 2, 2, 2]
+
+    # Title
+    h = doc.add_paragraph()
+    r = h.add_run(title)
+    r.bold = True
+    r.font.name = "Times New Roman"
+    r.font.size = Pt(10)
+
+    # ✅ 2 qatorli header
+    table = doc.add_table(rows=2, cols=len(headers))
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    fix_table_layout(table)
+    set_table_borders(table)
+    force_tbl_grid(table, widths)
+
+    h1 = table.rows[0].cells
+    h2 = table.rows[1].cells
+
+    # 0..5 ustunlar (№..Birligi) - vertikal merge
+    for col in range(0, 6):
+        cell = h1[col].merge(h2[col])
+        set_cell_text(cell, headers[col], bold=True, center=True)
+        set_col_width(cell, widths[col])
+
+    # ✅ Guruh: 6..8 (F.I.Sh, Lavozimi, Narxi)
+    grp = h1[6].merge(h1[7]).merge(h1[8]).merge(h1[9]).merge(h1[10])
+    set_cell_text(grp, "Kimga o'rnatildi yoki o'rnatilganligini tasdiqlovchi mas'ul shaxs (xarajatlar)", bold=True, center=True)
+
+    # pastki headerlar
+    set_cell_text(h2[6], headers[6], bold=True, center=True)  # F.I.Sh.
+    set_cell_text(h2[7], headers[7], bold=True, center=True)  # Lavozimi
+    set_cell_text(h2[8], headers[8], bold=True, center=True)  # Narxi
+    set_cell_text(h2[9], headers[9], bold=True, center=True)  # Id
+    set_cell_text(h2[10], headers[10], bold=True, center=True)  # Sana
+
+    set_col_width(h2[6], widths[6])
+    set_col_width(h2[7], widths[7])
+    set_col_width(h2[8], widths[8])
+    set_col_width(h2[9], widths[9])
+    set_col_width(h2[10], widths[10])
+
+    # ✅ Data qatorlari
+    for idx, row in enumerate(data, start=1):
+        cells = table.add_row().cells
+
+        full = [idx] + list(row)   # № qo‘shildi => 9 ta bo‘ladi
+        while len(full) < 11:
+            full.append("")
+
+        for i, val in enumerate(full[:11]):
+            set_cell_text(cells[i], val, center=True)
+            set_col_width(cells[i], widths[i])
+
+    return h, table
 
 def set_column_widths(table, widths_cm):
     """

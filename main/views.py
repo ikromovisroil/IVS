@@ -2072,6 +2072,8 @@ def akt_post(request):
         "F.I.Sh.",
         "Lavozimi",
         "Eslatma*",
+        "So'rovnoma №",
+        "Materiallarni O'rnatish sanasi",
     ]
 
     rows = []
@@ -2085,9 +2087,11 @@ def akt_post(request):
             q.order.sender.full_name if q.order and q.order.sender else "",
             (q.order.sender.rank.name if q.order and q.order.sender and q.order.sender.rank else ""),
             f"{q.material.price:,}".replace(",", " ") if q.material and q.material.price else "",
+            q.order.id if q.id else "",
+            q.order.date_creat if q.date_creat else "",
         ])
 
-    h, table = create_table_akt(
+    h, table = create_table_akt_all(
         doc,
         "Biriktirilgan texnika bo‘yicha dalolatnoma",
         rows,
