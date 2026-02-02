@@ -168,6 +168,7 @@ def create_table_akt(doc, title, data, headers):
 
     return h, table
 
+
 def create_table_akt_all(doc, title, data, headers):
 
     widths = [1, 4, 3, 4, 2, 2, 3, 2, 2, 2, 2]
@@ -226,6 +227,7 @@ def create_table_akt_all(doc, title, data, headers):
             set_col_width(cells[i], widths[i])
 
     return h, table
+
 
 def set_column_widths(table, widths_cm):
     """
