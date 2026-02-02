@@ -482,7 +482,7 @@
         {% endif %}
 
           <!-- Sklad -->
-        {% if request.user.employee.rol.barn %}
+        {% if request.user.employee.rol.technics or request.user.employee.rol.material %}
         <li class="nav-item">
           <a class="nav-link {% if url_name not in 'barn_tex barn_mat' %}collapsed{% endif %}"
              data-bs-target="#forms-navs" data-bs-toggle="collapse" href="#">
@@ -494,21 +494,22 @@
           <ul id="forms-navs"
               class="nav-content collapse {% if url_name in 'barn_tex barn_mat' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
-
+            {% if request.user.employee.rol.technics%}
             <li>
               <a class="{% if url_name == 'barn_tex' %}active{% endif %}"
                  href="{% url 'barn_tex' %}">
                 <i class="bi bi-circle"></i><span>Texnikalar</span>
               </a>
             </li>
-
+            {% endif %}
+            {% if request.user.employee.rol.material %}
             <li>
               <a class="{% if url_name == 'barn_mat' %}active{% endif %}"
                  href="{% url 'barn_mat' %}">
                 <i class="bi bi-circle"></i><span>Materiallar</span>
               </a>
             </li>
-
+            {% endif %}
           </ul>
         </li>
         {% endif %}

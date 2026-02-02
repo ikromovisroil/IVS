@@ -12,7 +12,7 @@ admin.site.unregister(Group)
 
 @admin.register(Rol)
 class RolAdmin(admin.ModelAdmin):
-    list_display = ("id", 'employee','client','boss','shop','akt','barn',)
+    list_display = ("id", 'employee','client','boss','shop','akt','technics','technics_edit','material','material_edit',)
     search_fields = (
         "employee__last_name",
         "employee__first_name",

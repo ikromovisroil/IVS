@@ -152,8 +152,11 @@ class Rol(models.Model):
     client = models.BooleanField(default=False, db_index=True)
     boss = models.BooleanField(default=False, db_index=True)
     shop = models.BooleanField(default=False, db_index=True)
-    barn = models.BooleanField(default=False, db_index=True)
     akt = models.BooleanField(default=False, db_index=True)
+    technics = models.BooleanField(default=False, db_index=True)
+    technics_edit = models.BooleanField(default=False, db_index=True)
+    material = models.BooleanField(default=False, db_index=True)
+    material_edit = models.BooleanField(default=False, db_index=True)
 
 
     def __str__(self):

@@ -729,7 +729,7 @@ def barn_tex(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:
+    if not role or not role.technics:
         raise PermissionDenied
 
     status = (request.GET.get("status") or "").strip()
@@ -819,7 +819,7 @@ def technics_create(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi qo‘sha olsin
+    if not role or not role.technics:
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -842,7 +842,7 @@ def technics_delete(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi o‘chirishi mumkin
+    if not role or not role.technics_edit:   # faqat omborchi o‘chirishi mumkin
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -867,7 +867,7 @@ def technics_attach(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi qo‘sha olsin
+    if not role or not role.technics_edit:  # faqat omborchi o‘chirishi mumkin
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -910,7 +910,7 @@ def technics_update(request, pk):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi tahrirlay oladi
+    if not role or not role.technics_edit:  # faqat omborchi o‘chirishi mumkin
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -977,7 +977,7 @@ def barn_mat(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not (role.barn or role.boss):
+    if not role or not role.material:
         raise PermissionDenied
 
     emp_id = (request.GET.get("employee") or "").strip()
@@ -1056,7 +1056,7 @@ def material_create(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi qo‘sha oladi
+    if not role or not role.material:  # faqat omborchi o‘chirishi mumkin
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -1079,7 +1079,7 @@ def material_update(request, pk):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi tahrirlay oladi
+    if not role or not role.material_edit:  # faqat omborchi o‘chirishi mumkin
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -1125,7 +1125,7 @@ def material_attach(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi
+    if not role or not role.material_edit:  # faqat omborchi o‘chirishi mumkin
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -1228,7 +1228,7 @@ def material_delete(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.barn:   # faqat omborchi o‘chira oladi
+    if not role or not role.material_edit:  # faqat omborchi o‘chirishi mumkin
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
