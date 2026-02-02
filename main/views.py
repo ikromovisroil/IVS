@@ -43,11 +43,6 @@ def home(request):
     return redirect("profil")
 
 
-@login_required
-def word(request):
-    return render(request, "main/word.html")
-
-
 @never_cache
 @login_required
 def profil(request):

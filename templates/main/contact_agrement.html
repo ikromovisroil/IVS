@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-<title>Arizalar</title>
+<title>Xabarlar</title>
 {% endblock %}
 
 {% block css %}
@@ -36,7 +36,7 @@
                             <th>Sana</th>
                             <th>Fayllar</th>
                             <th>Xolati</th>
-                            <th>Tasdiqlash</th>
+                            <th>Kelishish</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -59,37 +59,36 @@
                             <td>
                                 {% if d.receiver %}
                                     {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
-                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                             Rad etildi
                                         </span>
                                     {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
-                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                             Tasdiqlandi
                                         </span>
                                     {% else %}
-                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                             Kutulmoqda
                                         </span>
                                     {% endif %}
                                 {% else %}
                                     {% if d.status_sender == 'rejected'  %}
-                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                             Rad etildi
                                         </span>
                                     {% elif d.status_sender == 'approved' %}
-                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                             Tasdiqlandi
                                         </span>
                                     {% else %}
-                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-c{{ d.id }}">
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
                                             Kutulmoqda
                                         </span>
                                     {% endif %}
                                 {% endif %}
 
-
                                 <!-- MODAL -->
-                                <div class="modal fade" id="modalcondition-c{{ d.id }}" tabindex="-1">
+                                <div class="modal fade" id="modalcondition-r{{ d.id }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered modal-xl">
                                         <div class="modal-content">
                                             <!-- ================= HEADER ================= -->
@@ -209,7 +208,7 @@
                             <!-- Holat -->
                             <td>
                                 <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-c{{ d.id }}">
-                                    Tasdiqlash
+                                    Kelishish
                                 </button>
                                 <!-- MODAL -->
                                 {% for dc in d.deedconsent_set.all %}
@@ -218,7 +217,7 @@
                                         <div class="modal-dialog modal-dialog-centered modal-lg">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title">Tasdiqlash</h5>
+                                                    <h5 class="modal-title">Kelishish</h5>
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body">

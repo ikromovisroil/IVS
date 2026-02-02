@@ -4,7 +4,6 @@ from .ajax_views import *
 from .qk_views import *
 
 urlpatterns = [
-    path("word", word, name="word"),
     path("", home, name="home"),
     path('profil/', profil, name='profil'),
     path('index/', index, name='index'),
@@ -56,6 +55,7 @@ urlpatterns = [
     path("ajax/employees-org/", ajax_employees_org, name="ajax_employees_org"),
     path("ajax/ajax_org_employees/", ajax_org_employees, name="ajax_org_employees"),
     path("ajax/ajax_agreements_employees/", ajax_agreements_employees, name="ajax_agreements_employees"),
+    path("ajax/deedconsent/delete/", ajax_deedconsent_delete, name="ajax_deedconsent_delete"),
 
     # ORGANIZATION
     path('organization/<slug:slug>/', organization, name='organization'),

@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-<title>Arizalar</title>
+<title>Xabarlar</title>
 {% endblock %}
 
 {% block css %}
@@ -35,12 +35,12 @@
             <div class="modal-body">
 
                 <div class="border rounded bg-light p-3">
-                    <h4>Xizmat ko'rsatuvchi tashkilot vakili</h4>
+                    <h4>Xizmat ko'rsatuvchining vakili</h4>
                     <!-- Imzolovchi -->
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Imzolovchi</label>
                       <div class="col-sm-9">
-                        <select class="form-select" name="sender_id" id="sender_id" required>
+                        <select class="form-select js-sender-id" name="sender_id" required>
                           <option value="">Tanlang...</option>
                           {% for emp in senders %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>
@@ -51,12 +51,12 @@
                 </div>
 
                 <div class="border rounded bg-light p-3 mt-3">
-                    <h4>Imzolovchi tashkilot vakili</h4>
+                    <h4>Ikkinchi tomon vakili</h4>
                     <!-- Imzolovchi -->
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Tashkilot</label>
                       <div class="col-sm-9">
-                        <select class="form-select" name="receiver_org" id="receiver_org">
+                        <select class="form-select js-receiver-org" name="receiver_org">
                           <option value="">Tanlang...</option>
                           {% for org in organization %}
                             <option value="{{ org.id }}">{{ org.name }}</option>
@@ -68,7 +68,7 @@
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Imzolovchi</label>
                       <div class="col-sm-9">
-                        <select class="form-select" name="receiver_id" id="receiver_id">
+                        <select class="form-select js-receiver-id" name="receiver_id">
                           <option value="">Tanlang...</option>
                           {% for emp in employee %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>
@@ -84,7 +84,7 @@
                     <div class="row mb-3">
                       <label class="col-sm-3 col-form-label">Kelishuvchilar</label>
                       <div class="col-sm-9">
-                        <select id="kelishuvchilar" name="agreements[]" class="form-select select2" multiple>
+                        <select name="agreements[]" class="form-select select2 js-agreements" multiple>
                           {% for emp in employee %}
                             <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>
                           {% endfor %}
@@ -137,6 +137,7 @@
                             <th>Sana</th>
                             <th>Fayllar</th>
                             <th>Xolati</th>
+                            <th>Taxrirlash</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -153,22 +154,38 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
-                                    <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-s{{ d.id }}">
-                                        Rad etildi
-                                    </span>
-                                {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
-                                    <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-s{{ d.id }}">
-                                        Tasdiqlandi
-                                    </span>
+                                {% if d.receiver %}
+                                    {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected'  %}
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Rad etildi
+                                        </span>
+                                    {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Tasdiqlandi
+                                        </span>
+                                    {% else %}
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Kutulmoqda
+                                        </span>
+                                    {% endif %}
                                 {% else %}
-                                    <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-s{{ d.id }}">
-                                        Kutulmoqda
-                                    </span>
+                                    {% if d.status_sender == 'rejected'  %}
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Rad etildi
+                                        </span>
+                                    {% elif d.status_sender == 'approved' %}
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Tasdiqlandi
+                                        </span>
+                                    {% else %}
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Kutulmoqda
+                                        </span>
+                                    {% endif %}
                                 {% endif %}
 
                                 <!-- MODAL -->
-                                <div class="modal fade" id="modalcondition-s{{ d.id }}" tabindex="-1">
+                                <div class="modal fade" id="modalcondition-r{{ d.id }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered modal-xl">
                                         <div class="modal-content">
                                             <!-- ================= HEADER ================= -->
@@ -285,6 +302,131 @@
                                     </div>
                                 </div>
                             </td>
+                            <td>
+                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-r{{ d.id }}">
+                                    Taxrirlash
+                                </button>
+                                <!-- MODAL -->
+                                {% if d.user == request.user.employee %}
+                                  {% if d.status_sender == 'viewed' or d.status_receiver == 'viewed' %}
+                                    <div class="modal fade" id="modal-r{{ d.id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-dialog-centered modal-lg">
+                                            <div class="modal-content">
+                                              <form action="{% url 'deed_update' d.pk %}" method="post" enctype="multipart/form-data">
+                                                {% csrf_token %}
+                                                <div class="modal-header">
+                                                  <h5 class="modal-title">#Xabar yuborish</h5>
+                                                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+
+                                                <div class="modal-body">
+
+                                                    <div class="border rounded bg-light p-3">
+                                                        <h4>Xizmat ko'rsatuvchining vakili</h4>
+                                                        <!-- Imzolovchi -->
+                                                        <div class="row mb-3">
+                                                          <label class="col-sm-3 col-form-label">Imzolovchi</label>
+                                                          <div class="col-sm-9">
+                                                            <select class="form-select js-sender-id" name="sender_id">
+                                                              <option value="">Tanlang...</option>
+                                                              {% for emp in senders %}
+                                                                <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                                                              {% endfor %}
+                                                            </select>
+                                                            <span>Imzolovchi :</span> <i><b>{{d.sender.full_name}}</b></i>
+                                                          </div>
+                                                        </div>
+                                                    </div>
+                                                    {% if d.receiver %}
+                                                    <div class="border rounded bg-light p-3 mt-3">
+                                                        <h4>Ikkinchi tomon vakili</h4>
+                                                        <!-- Imzolovchi -->
+                                                        <div class="row mb-3">
+                                                          <label class="col-sm-3 col-form-label">Tashkilot</label>
+                                                          <div class="col-sm-9">
+                                                            <select class="form-select js-receiver-org" name="receiver_org">
+                                                              <option value="">Tanlang...</option>
+                                                              {% for org in organization %}
+                                                                <option value="{{ org.id }}">{{ org.name }}</option>
+                                                              {% endfor %}
+                                                            </select>
+                                                          </div>
+                                                        </div>
+                                                        <div class="row mb-3">
+                                                          <label class="col-sm-3 col-form-label">Imzolovchi</label>
+                                                          <div class="col-sm-9">
+                                                            <select class="form-select js-receiver-id" name="receiver_id">
+                                                              <option value="">Tanlang...</option>
+                                                              {% for emp in employee %}
+                                                                <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                                                              {% endfor %}
+                                                            </select>
+                                                            <span>Imzolovchi :</span> <i><b>{{d.receiver.full_name}}</b></i>
+                                                          </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endif %}
+                                                    <div class="border rounded bg-light p-3 mt-3">
+                                                        <h4>Kelishuvchilar</h4>
+
+                                                        <div class="row mb-3">
+                                                          <label class="col-sm-3 col-form-label">Kelishuvchilar</label>
+                                                          <div class="col-sm-9">
+                                                            <select name="agreements[]" class="form-select select2 js-agreements" multiple>
+                                                              {% for emp in employee %}
+                                                                <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>
+                                                              {% endfor %}
+                                                            </select>
+                                                            {% for i in d.deedconsent_set.all %}
+                                                              <div class="d-flex justify-content-between align-items-center border rounded px-2 py-1 mb-1"
+                                                                   id="dc-row-{{ i.id }}">
+                                                                <div>
+                                                                  <span>Kelishuvchi :</span>
+                                                                  <i><b>{{ i.employee.full_name }}</b></i>
+                                                                </div>
+
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-outline-danger py-0 px-2 js-remove-consent"
+                                                                        data-dc-id="{{ i.id }}"
+                                                                        title="Kelishuvchini o‘chirish">
+                                                                  X
+                                                                </button>
+                                                              </div>
+                                                            {% endfor %}
+                                                          </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="border rounded bg-light p-3 mt-3">
+                                                        <!-- File -->
+                                                        <div class="row mb-3">
+                                                          <label class="col-sm-3 col-form-label">Fayl</label>
+                                                          <div class="col-sm-9">
+                                                            <input class="form-control" type="file" name="file">
+                                                              <span>File :</span> <i><a href="{{ d.file.url }}">📄 Ko‘rish</a></i><br>
+                                                          </div>
+                                                        </div>
+
+                                                        <div class="row mb-3">
+                                                          <label class="col-sm-3 col-form-label">Izoh</label>
+                                                          <div class="col-sm-9">
+                                                          <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing...">{{d.message_user}}</textarea>
+                                                          </div>
+                                                        </div>
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="modal-footer justify-content-center gap-2">
+                                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                                                  <button type="submit" class="btn btn-primary">Yuborish</button>
+                                                </div>
+                                              </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                  {% endif %}
+                                {% endif %}
+                            </td>
                             <!-- Holat -->
                         </tr>
                     {% endfor %}
@@ -305,133 +447,168 @@
 <script>
 (function () {
   const URL_RECEIVER = "{% url 'ajax_org_employees' %}";
-  const URL_AGR = "{% url 'ajax_agreements_employees' %}";
+  const URL_AGR      = "{% url 'ajax_agreements_employees' %}";
+  const URL_DEL_DC   = "{% url 'ajax_deedconsent_delete' %}";
 
-  const orgSelect = document.getElementById("receiver_org");
-  const receiverSelect = document.getElementById("receiver_id");
-  const agrSelect = document.getElementById("kelishuvchilar");
-  const modalEl = document.getElementById("sendModal");
-
-  if (!orgSelect || !receiverSelect || !agrSelect) return;
-
-  // =========================
-  // Helpers
-  // =========================
-  function resetReceiver() {
-    receiverSelect.innerHTML = '<option value="">Tanlang...</option>';
+  async function fetchJSON(url) {
+    const r = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    if (!r.ok) throw new Error(`HTTP ${r.status} for ${url}`);
+    return r.json();
   }
 
-  function fillReceiver(items) {
-    resetReceiver();
+  function getCSRFToken() {
+    const name = "csrftoken=";
+    const parts = document.cookie.split(";").map(s => s.trim());
+    for (const p of parts) {
+      if (p.startsWith(name)) return p.substring(name.length);
+    }
+    return "";
+  }
+
+  function resetReceiver(selectEl) {
+    if (!selectEl) return;
+    selectEl.innerHTML = '<option value="">Tanlang...</option>';
+  }
+
+  function fillReceiver(selectEl, items) {
+    resetReceiver(selectEl);
     (items || []).forEach(it => {
       const opt = document.createElement("option");
       opt.value = String(it.id);
       opt.textContent = it.text || it.full_name || "";
-      receiverSelect.appendChild(opt);
+      selectEl.appendChild(opt);
     });
   }
 
-  function getSelectedAgreementIds() {
-    // multiple selectdan tanlangan value larni olamiz
-    return Array.from(agrSelect.selectedOptions || []).map(o => String(o.value));
+  function getSelectedIds(selectEl) {
+    return Array.from(selectEl?.selectedOptions || []).map(o => String(o.value));
   }
 
-  function fillAgreements(items) {
-    const prevSelected = new Set(getSelectedAgreementIds());
+  function fillAgreements(selectEl, items) {
+    const prev = new Set(getSelectedIds(selectEl));
+    selectEl.innerHTML = "";
 
-    agrSelect.innerHTML = "";
     (items || []).forEach(it => {
       const opt = document.createElement("option");
       opt.value = String(it.id);
       opt.textContent = it.text || it.full_name || "";
-      if (prevSelected.has(String(it.id))) opt.selected = true; // oldingi tanlovni saqlash
-      agrSelect.appendChild(opt);
+      if (prev.has(String(it.id))) opt.selected = true;
+      selectEl.appendChild(opt);
     });
 
     // select2 refresh
     if (window.jQuery && window.jQuery.fn && window.jQuery.fn.select2) {
-      window.jQuery(agrSelect).trigger("change");
+      window.jQuery(selectEl).trigger("change");
     }
   }
 
-  function initSelect2Once() {
+  function initSelect2(modalEl) {
     if (!(window.jQuery && window.jQuery.fn && window.jQuery.fn.select2)) return;
-
     const $ = window.jQuery;
-    const $sel = $("#kelishuvchilar");
 
-    // qayta init bo'lib ketmasin
-    if ($sel.data("select2")) return;
+    $(modalEl).find("select.select2.js-agreements").each(function () {
+      const $sel = $(this);
+      if ($sel.data("select2")) return;
 
-    $sel.select2({
-      width: "100%",
-      dropdownParent: modalEl ? $(modalEl) : null
+      $sel.select2({
+        width: "100%",
+        dropdownParent: $(modalEl)
+      });
     });
   }
 
-  async function fetchJSON(url) {
-    const r = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
-    if (!r.ok) {
-      throw new Error(`HTTP ${r.status} for ${url}`);
-    }
-    return r.json();
-  }
+  async function loadBoth(modalEl) {
+    const orgSelect      = modalEl.querySelector(".js-receiver-org");
+    const receiverSelect = modalEl.querySelector(".js-receiver-id");
+    const agrSelect      = modalEl.querySelector(".js-agreements");
 
-  // =========================
-  // Main loader:
-  // - Agreements har doim yuklanadi (org bo'sh bo'lsa ham) -> default IVS keladi
-  // - Receiver faqat org tanlanganda yuklanadi
-  // =========================
-  async function loadBoth(orgId) {
-    const oid = (orgId || "").trim();
+    if (!orgSelect || !receiverSelect || !agrSelect) return;
 
-    // Receiver reset
-    resetReceiver();
+    const oid = (orgSelect.value || "").trim();
+
+    resetReceiver(receiverSelect);
 
     try {
-      // 1) Agreements: doim
+      // agreements doim
       const agrUrl = `${URL_AGR}?org_id=${encodeURIComponent(oid)}`;
       const dAgr = await fetchJSON(agrUrl);
-      fillAgreements(dAgr.results || []);
+      fillAgreements(agrSelect, dAgr.results || []);
 
-      // 2) Receiver: faqat org bo'lsa
+      // receiver faqat org tanlanganda
       if (!oid) return;
 
       const recUrl = `${URL_RECEIVER}?org_id=${encodeURIComponent(oid)}`;
       const dRec = await fetchJSON(recUrl);
-      fillReceiver(dRec.results || []);
+      fillReceiver(receiverSelect, dRec.results || []);
 
     } catch (e) {
       console.error("AJAX error:", e);
-      resetReceiver();
-      fillAgreements([]);
+      resetReceiver(receiverSelect);
+      fillAgreements(agrSelect, []);
     }
   }
 
-  // =========================
-  // Events
-  // =========================
-  // Org o'zgarsa: receiver + agreements reload
-  orgSelect.addEventListener("change", function () {
-    loadBoth(this.value);
-  });
-
-  // Modal ochilganda:
-  // - select2 init
-  // - org bo'sh bo'lsa ham agreements default yuklanadi
+  // ✅ Modal ochilganda: qaysi modal bo‘lsa ham ishlaydi
   document.addEventListener("shown.bs.modal", function (e) {
-    if (e.target && e.target.id === "sendModal") {
-      initSelect2Once();
-      loadBoth(orgSelect.value); // org bo'sh bo'lsa ham kelishuvchilar keladi
+    const modalEl = e.target;
+    if (!modalEl) return;
+
+    initSelect2(modalEl);
+    loadBoth(modalEl);
+
+    const orgSelect = modalEl.querySelector(".js-receiver-org");
+    if (orgSelect && !orgSelect.dataset.bound) {
+      orgSelect.dataset.bound = "1";
+      orgSelect.addEventListener("change", function () {
+        loadBoth(modalEl);
+      });
     }
   });
 
-  // Sahifa yuklanganda select2 init (modal ochilmasdan ham)
-  document.addEventListener("DOMContentLoaded", function () {
-    initSelect2Once();
+  // ✅ Kelishuvchini o‘chirish (X)
+  document.addEventListener("click", async function (e) {
+    const btn = e.target.closest(".js-remove-consent");
+    if (!btn) return;
+
+    const dcId = btn.dataset.dcId;
+    if (!dcId) return;
+
+    if (!confirm("Kelishuvchini o‘chirasizmi?")) return;
+
+    btn.disabled = true;
+
+    try {
+      const form = new FormData();
+      form.append("dc_id", dcId);
+
+      const res = await fetch(URL_DEL_DC, {
+        method: "POST",
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          "X-CSRFToken": getCSRFToken()
+        },
+        body: form
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        alert(data.error || "Xatolik!");
+        btn.disabled = false;
+        return;
+      }
+
+      const row = document.getElementById("dc-row-" + dcId);
+      if (row) row.remove();
+
+    } catch (err) {
+      console.error(err);
+      alert("Server bilan aloqa xatosi!");
+      btn.disabled = false;
+    }
   });
+
 })();
 </script>
-
 
 {% endblock content %}

@@ -221,3 +221,17 @@ def deedconsent_delete(request, pk):
     obj.delete()
     return JsonResponse({"ok": True})
 
+def ajax_deedconsent_delete(request):
+    dc_id = request.POST.get("dc_id")
+    if not dc_id:
+        return JsonResponse({"ok": False, "error": "dc_id required"}, status=400)
+
+    dc = get_object_or_404(Deedconsent, id=dc_id)
+
+    # ✅ RUXSAT: faqat deed egasi (jo‘natuvchi) o‘chira olsin
+    # sizda request.user.employee bor
+    if not hasattr(request.user, "employee") or dc.deed.user_id != request.user.employee.id:
+        return JsonResponse({"ok": False, "error": "permission denied"}, status=403)
+
+    dc.delete()
+    return JsonResponse({"ok": True, "deleted_id": int(dc_id)})
