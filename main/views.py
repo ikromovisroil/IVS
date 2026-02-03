@@ -344,10 +344,10 @@ def deed_action(request, pk):
     # kim bosdi?
     if deed.receiver_id == emp.id:
         role = "receiver"
-        message = (request.POST.get("message_receiver") or "").strip()
+        message = (request.POST.get("message") or "").strip()
     elif deed.sender_id == emp.id:
         role = "sender"
-        message = (request.POST.get("message_sender") or "").strip()
+        message = (request.POST.get("message") or "").strip()
     else:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
