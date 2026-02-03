@@ -428,7 +428,7 @@ def deed_update(request, pk):
     back_url = request.META.get("HTTP_REFERER", "/")
 
     deed = get_object_or_404(
-        Deed.objects.select_related("user", "sender", "receiver").select_for_update(),
+        Deed.objects.select_related("user", "sender", "receiver"),
         pk=pk
     )
     if getattr(deed, "user_id", None) != emp.id:
