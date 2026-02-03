@@ -2031,8 +2031,8 @@ def akt_post(request):
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
     qs = OrderMaterial.objects.filter(
-        order__date_creat__gte=date1,
-        order__date_creat__lt=date2,
+        order__date_finished__gte=date1,
+        order__date_finished__lt=date2,
         order__sender__department_id=dep_id,
         order__receiver__region=request.user.employee.region,
     )
@@ -2167,8 +2167,8 @@ def svod_post(request):
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
     qs = OrderMaterial.objects.filter(
-        order__date_creat__gte=date1,
-        order__date_creat__lt=date2,
+        order__date_finished__gte=date1,
+        order__date_finished__lt=date2,
         order__sender__organization_id=org_id,
         order__receiver__region=request.user.employee.region,
     )
@@ -2311,8 +2311,8 @@ def reestr_post(request):
     date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
 
     qs = OrderMaterial.objects.filter(
-        order__date_creat__gte=date1,
-        order__date_creat__lt=date2,
+        order__date_finished__gte=date1,
+        order__date_finished__lt=date2,
         order__sender__organization_id=org_id,
         order__receiver__region=request.user.employee.region,
     )
