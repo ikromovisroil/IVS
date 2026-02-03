@@ -9,7 +9,11 @@ load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
 DEBUG = os.getenv("DEBUG") == "True"
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [
+    "report.imv.uz",
+    "localhost",
+    "127.0.0.1",
+]
 
 # SESSION
 SESSION_COOKIE_AGE = 60 * 60 * 6  # 6 soat
