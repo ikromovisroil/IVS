@@ -241,7 +241,9 @@ def deed_stamp_qr(request, pk):
         if deed.receiver:
             if deed.status_sender == "approved" and deed.status_receiver == "approved" and not already_marked:
                 approved_text = (
-                    f"Ushbu hujjat {deed.sender} va {deed.receiver}tomonidan "
+                    f"Ushbu hujjat {deed.sender} tomonidan "
+                    f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da va "
+                    f"{deed.receiver} tomonidan "
                     f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
                 )
 
