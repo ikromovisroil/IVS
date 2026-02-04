@@ -344,12 +344,14 @@ class Goal(models.Model):
 
 # zayafka.
 class Order(models.Model):
-    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_sent',db_index=True)
+    sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_sender', null=True, blank=True, db_index=True)
     goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
-    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_received',null=True, blank=True,db_index=True)
     body = models.TextField(null=True, blank=True)
-    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     rating = models.PositiveIntegerField(null=True, blank=True)
+
+    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_receiver',null=True, blank=True,db_index=True)
+    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
         ('accepted', 'Qabul qilindi'),
@@ -357,12 +359,7 @@ class Order(models.Model):
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
     ], default='viewed',db_index=True)
-    type_of_work = models.CharField(max_length=20, choices=[
-        ('online', 'onlayin'),
-        ('offline', 'oflayin'),
-    ], default='online',db_index=True)
     receiver_seen = models.BooleanField(default=False)
-    user = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='orders_user', null=True, blank=True,db_index=True)
     # --- Sana maydonlari ---
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
@@ -407,7 +404,7 @@ class Order(models.Model):
 
 # zayafkadan soralgan materiali.
 class OrderMaterial(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="materials",db_index=True)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     number = models.PositiveIntegerField(default=1)
 
