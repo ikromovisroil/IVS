@@ -84,11 +84,6 @@ class MaterialViewSet(ModelViewSet):
     filterset_fields = ['employee', 'technics']
 
 
-# ---- TOPIC & GOAL ---- #
-class TopicViewSet(ModelViewSet):
-    queryset = Topic.objects.all()
-    serializer_class = TopicSerializer
-
 
 class GoalViewSet(ModelViewSet):
     queryset = Goal.objects.select_related("topic")

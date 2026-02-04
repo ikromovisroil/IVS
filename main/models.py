@@ -328,23 +328,10 @@ class Material(models.Model):
         verbose_name_plural = "materiallar"
 
 
-# mavzu.
-class Topic(models.Model):
-    name = models.CharField(max_length=200)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = 'topic'
-        verbose_name = "Mavzu"
-        verbose_name_plural = "Mavzular"
-
 
 # maqsad.
 class Goal(models.Model):
     name = models.CharField(max_length=200)
-    topic = models.ForeignKey(Topic, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
 
     def __str__(self):
         return self.name

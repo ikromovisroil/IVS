@@ -78,15 +78,6 @@ class MaterialSerializer(serializers.ModelSerializer):
         model = Material
         fields = '__all__'
 
-
-# ---- TOPIC ---- #
-
-class TopicSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Topic
-        fields = '__all__'
-
-
 # ---- GOAL ---- #
 
 class GoalSerializer(serializers.ModelSerializer):

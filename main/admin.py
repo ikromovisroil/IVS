@@ -257,16 +257,10 @@ class MaterialAdmin(admin.ModelAdmin):
 # TOPIC & GOAL ADMIN
 # ============================
 
-@admin.register(Topic)
-class TopicAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
-
 
 @admin.register(Goal)
 class GoalAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "topic")
-    list_filter = ("topic",)
+    list_display = ("id", "name",)
     search_fields = ("name",)
 
 
