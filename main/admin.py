@@ -1,16 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import (
-    Organization, Department, Directorate, Division,
-    Rank, Region,
-    Rol, Employee,
-    Category, Technics, ExtraTechnics,
-    Unit, Material,
-    Goal, Order, OrderMaterial,
-    Deed, DeedConsent,
-)
-
+from .models import *
 # ----------------------------
 # Base helpers
 # ----------------------------
