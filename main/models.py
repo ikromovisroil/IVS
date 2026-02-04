@@ -61,7 +61,7 @@ class Organization(AutoSlugMixin, models.Model):
     name = models.CharField(max_length=200)
 
     def __str__(self):
-        return f"{self.name} ({self.org_type})"
+        return f"{self.name}"
 
 
     class Meta:
@@ -166,12 +166,12 @@ class Employee(models.Model):
     last_name = models.CharField(max_length=100, null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True, blank=True)
     father_name = models.CharField(max_length=100, null=True, blank=True)
-    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
-    division = models.ForeignKey(Division, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
-    directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    division = models.ForeignKey(Division, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     rank = models.ForeignKey(Rank, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     phone = models.CharField(max_length=50,null=True,blank=True)
     pinfl = models.CharField(max_length=20, null=True, blank=True,db_index=True)
     date_creat = models.DateTimeField(auto_now_add=True)
@@ -225,12 +225,13 @@ class Category(AutoSlugMixin, models.Model):
 class Technics(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
-        ('active', 'Aktiv'),
         ('free', "Bo'sh"),
+        ('active', 'Aktiv'),
         ('repair', 'Ta’mirda'),
-        ('defect', 'Brak')
+        ('defect', 'Yaroqsiz')
     ], default='free',db_index=True)
     name = models.CharField(max_length=100)
     parametr = models.CharField(max_length=100,null=True,blank=True)
@@ -238,9 +239,8 @@ class Technics(models.Model):
     serial = models.CharField(max_length=50,null=True,blank=True)
     mac = models.CharField(max_length=50, null=True, blank=True)
     ip = models.CharField(max_length=50,null=True,blank=True)
-    year = models.CharField(max_length=50,null=True,blank=True)
-    body = models.CharField(max_length=200, null=True, blank=True)
     price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
+    year = models.CharField(max_length=50,null=True,blank=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
