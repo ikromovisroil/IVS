@@ -70,8 +70,7 @@ admin.site.register(User, UserAdmin)
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "org_type", "is_active")
-    list_filter = ("org_type", "is_active")
+    list_display = ("id", "name",)
     search_fields = ("name",)
     exclude = ("slug",)
 

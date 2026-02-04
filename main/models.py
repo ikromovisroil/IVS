@@ -58,15 +58,7 @@ class AutoSlugMixin(models.Model):
 
 # Organizator.
 class Organization(AutoSlugMixin, models.Model):
-    ORG_TYPES = (
-        ('IMV', 'IMV'),
-        ('PENSIYA', 'PENSIYA'),
-        ('GAZNA', "G'azna"),
-        ('IVS', 'IVS'),
-    )
-    org_type = models.CharField(max_length=10, choices=ORG_TYPES, db_index=True)
     name = models.CharField(max_length=200)
-    is_active = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.name} ({self.org_type})"
