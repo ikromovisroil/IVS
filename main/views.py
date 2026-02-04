@@ -1682,16 +1682,13 @@ def order_sender(request):
     orders_qs = (
         Order.objects
         .filter(sender=employee)
-        .select_related("goal", "goal__topic", "technics", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
-    topics_qs = Topic.objects.only("id", "name").order_by("name")
-
     goals_qs = (
         Goal.objects
-        .select_related("topic")
-        .only("id", "name", "topic__id", "topic__name")
+        .only("id", "name",)
         .order_by("name")
     )
 
@@ -1713,7 +1710,6 @@ def order_sender(request):
         "page_obj": page_obj,       # ✅ pagination uchun
         "paginator": paginator,     # ✅ pagination uchun
 
-        "topic": topics_qs,
         "goal": goals_qs,
         "technics": technics_qs,
     }
