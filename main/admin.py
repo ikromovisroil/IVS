@@ -304,7 +304,7 @@ class OrderAdmin(admin.ModelAdmin):
 # DEED ADMIN
 # ============================
 class DeedconsentInline(admin.TabularInline):
-    model = Deedconsent
+    model = DeedConsent
     extra = 0
 
 

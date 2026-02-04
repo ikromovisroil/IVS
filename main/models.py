@@ -418,7 +418,7 @@ class OrderMaterial(models.Model):
 
 
 class Deed(models.Model):
-    sender = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_sender', null=True, blank=True ,db_index=True)
+    sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_sender', null=True, blank=True ,db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     status_sender = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
@@ -426,20 +426,22 @@ class Deed(models.Model):
         ('rejected', 'Rad etildi'),
     ], default='viewed', db_index=True)
     date_sender = models.DateTimeField(null=True, blank=True)
+    sender_seen = models.BooleanField(default=False, db_index=True)
 
-    receiver = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_received', null=True, blank=True, db_index=True)
+    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_receiver', null=True,
+                                 blank=True, db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
     status_receiver = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
-    ], default='viewed',db_index=True)
+    ], default='viewed', db_index=True)
     date_receiver = models.DateTimeField(null=True, blank=True)
+    receiver_seen = models.BooleanField(default=False, db_index=True)
 
-    user = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='deed_user', null=True, blank=True,db_index=True)
+    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True,db_index=True)
     message_user = models.TextField(null=True, blank=True)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
-    sender_seen = models.BooleanField(default=False)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
@@ -452,9 +454,9 @@ class Deed(models.Model):
         verbose_name_plural = "Aktlar"
 
 
-class Deedconsent(models.Model):
+class DeedConsent(models.Model):
     deed = models.ForeignKey(Deed, on_delete=models.CASCADE,db_index=True)
-    employee = models.ForeignKey(Employee, on_delete=models.CASCADE,db_index=True)
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     message = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
