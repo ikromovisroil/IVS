@@ -287,10 +287,24 @@ class ExtraTechnics(models.Model):
         verbose_name = "Qo'shimcha texnika"
         verbose_name_plural = "Qo'shimcha texnikalar"
 
+
+# birligi
+class Unit(models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'unit'
+        verbose_name = "birligi"
+        verbose_name_plural = "birligi"
+
+
 # material.
 class Material(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
-    # unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('free', "Bo'sh"),
         ('active', 'Aktiv'),
