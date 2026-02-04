@@ -79,7 +79,10 @@ urlpatterns = [
 
     # ZAYAVKA
     path('order_sender/', order_sender, name='order_sender'),
+    path('order_sender_arxiv/', order_sender_arxiv, name='order_sender_arxiv'),
     path('order_receiver/', order_receiver, name='order_receiver'),
+    path('order_receiver_activ/', order_receiver_activ, name='order_receiver_activ'),
+    path('order_receiver_arxiv/', order_receiver_arxiv, name='order_receiver_arxiv'),
     path('order_post/', order_post, name='order_post'),
     path('order_deed/<int:pk>/', order_deed, name='order_deed'),
     path('ordermaterial_post/', ordermaterial_post, name='ordermaterial_post'),

@@ -17,48 +17,6 @@
     <div class="pagetitle">
         <div class="d-flex justify-content-between align-items-center">
              <h1>Arizalar</h1>
-             <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">Ariza Yuborish</button>
-        </div>
-    </div>
-    <div class="modal fade" id="modal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-          <div class="modal-content">
-            <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
-            <div class="modal-header">
-              <h5 class="modal-title">#Ariza Yuborish</h5>
-              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="">
-                    <!-- Mavzu -->
-                    <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Arizaning Maqsadi:</label>
-                        <div class="col-sm-9">
-                            <select class="form-select" name="goal" id="topic-select" required>
-                                <option value="">tanlang</option>
-                                {% for t in goal %}
-                                    <option value="{{ t.id }}">{{ t.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Izoh -->
-                    <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Izoh:</label>
-                        <div class="col-sm-9">
-                            <textarea class="form-control" name="body" style="height: 100px"></textarea>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer d-flex justify-content-center gap-2">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
-                    <button type="submit" class="btn btn-primary">Yuborish</button>
-                </div>
-            </div>
-            </form>
-          </div>
         </div>
     </div>
 
@@ -72,11 +30,15 @@
               <ul class="nav nav-tabs nav-tabs-bordered">
 
                 <li class="nav-item">
-                  <a href="{% url 'order_sender' %}" class="nav-link active">Arizalar</a>
+                  <a href="{% url 'order_receiver' %}" class="nav-link">Arizalar</a>
                 </li>
 
                 <li class="nav-item">
-                  <a href="{% url 'order_sender_arxiv' %}" class="nav-link" >Tarix</a>
+                  <a href="{% url 'order_receiver_activ' %}" class="nav-link" >Bajarish</a>
+                </li>
+
+                <li class="nav-item">
+                  <a href="{% url 'order_receiver_arxiv' %}" class="nav-link active" >Tarix</a>
                 </li>
 
               </ul>
@@ -86,8 +48,8 @@
                     <thead>
                       <tr>
                         <th scope="col">#</th>
+                        <th scope="col">Mualif</th>
                         <th scope="col">Ariza Maqsadi</th>
-                        <th scope="col">Bajardi</th>
                         <th scope="col">Xolati</th>
                         <th scope="col">Sana</th>
                       </tr>
@@ -96,16 +58,10 @@
                     {% for o in order %}
                       <tr>
                         <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ o.sender.full_name }}</td>
                         <td>{{ o.goal.name }}</td>
-                        <td>{{ o.receiver.full_name }}</td>
                         <td>
-                            {% if o.status == "viewed" %}
-                                <span class="badge bg-warning text-white">Kutulmoqda</span>
-                            {% elif or.status == "accepted" %}
-                                <span class="badge bg-primary text-white">Qabul qilindi</span>
-                            {% elif or.status == "finished" %}
-                                <span class="badge bg-info text-white">Yakunlandi</span>
-                            {% elif or.status == "approved" %}
+                            {% if or.status == "approved" %}
                                 <span class="badge bg-success text-white">Tasdiqlandi</span>
                             {% elif or.status == "rejected" %}
                                 <span class="badge bg-danger text-white">Rad etildi</span>

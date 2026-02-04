@@ -1681,7 +1681,7 @@ def order_sender(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender=employee)
+        .filter(sender=employee,status__in=["viewed", "accepted", "finished"],)
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
@@ -1692,17 +1692,9 @@ def order_sender(request):
         .order_by("name")
     )
 
-    technics_qs = (
-        Technics.objects
-        .filter(employee=employee)
-        .select_related("category")
-        .only("id", "name", "serial", "inventory", "category__id", "category__name")
-        .order_by("name")
-    )
-
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 24)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -1711,9 +1703,43 @@ def order_sender(request):
         "paginator": paginator,     # ✅ pagination uchun
 
         "goal": goals_qs,
-        "technics": technics_qs,
     }
     return render(request, "main/order_sender.html", context)
+
+
+@never_cache
+@login_required
+def order_sender_arxiv(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    orders_qs = (
+        Order.objects
+        .filter(sender=employee,status__in=["approved", "rejected",],)
+        .select_related("goal", "technics", "receiver", "sender")
+        .order_by("-id")
+    )
+
+    goals_qs = (
+        Goal.objects
+        .only("id", "name",)
+        .order_by("name")
+    )
+
+    # ✅ PAGINATION
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "order": page_obj,          # ✅ for loop shu orqali yuradi
+        "page_obj": page_obj,       # ✅ pagination uchun
+        "paginator": paginator,     # ✅ pagination uchun
+
+        "goal": goals_qs,
+    }
+    return render(request, "main/order_sender_arxiv.html", context)
 
 
 @never_cache
@@ -1721,46 +1747,27 @@ def order_sender(request):
 @require_POST
 def order_post(request):
     employee = getattr(request.user, "employee", None)
+    back_url = request.META.get("HTTP_REFERER", "/")
+
     if not employee:
         raise PermissionDenied
 
-
     goal_id = (request.POST.get("goal") or "").strip()
-    technics_id = (request.POST.get("technics") or "").strip()
     body = (request.POST.get("body") or "").strip()
-    type_of_work = (request.POST.get("type_of_work") or "online").strip()
 
+    if not goal_id.isdigit():
+        messages.error(request, "Ariza turi tanlanmadi yoki noto‘g‘ri.")
+        return redirect("order_sender")
 
-    allowed_types = {"online", "offline"}
-    if type_of_work not in allowed_types:
-        type_of_work = "online"
-
-    # FK larni xavfsiz olish
-    goal = None
-    if goal_id:
-        if not goal_id.isdigit():
-            messages.error(request, "Goal noto‘g‘ri")
-            return redirect("order_sender")
-        goal = get_object_or_404(Goal, id=int(goal_id))
-
-    technic = None
-    if technics_id:
-        if not technics_id.isdigit():
-            messages.error(request, "Texnika noto‘g‘ri")
-            return redirect("order_sender")
-        # ✅ xavfsizlik: user faqat o‘ziga biriktirilgan texnikani tanlay olsin
-        technic = get_object_or_404(Technics, id=int(technics_id), employee=employee)
+    goal = get_object_or_404(Goal, id=int(goal_id))
 
     Order.objects.create(
         sender=employee,
         goal=goal,
-        technics=technic,
         body=body,
-        type_of_work=type_of_work,
     )
-
     messages.success(request, "Zayavka yuborildi")
-    return redirect("order_sender")
+    return redirect(back_url)
 
 
 @never_cache
@@ -1862,60 +1869,78 @@ def order_receiver(request):
     if not employee:
         raise PermissionDenied
 
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
-
-    is_boss = bool(role and role.boss)
-
     orders_qs = (
         Order.objects
-        .select_related(
-            "sender", "sender__rank", "sender__region",
-            "receiver", "receiver__rank",
-            "goal", "goal__topic",
-            "technics", "technics__category",
-        )
+        .filter(sender__region=employee.region,status="viewed",)
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
-    if is_boss:
-        orders_qs = orders_qs.filter(sender__region_id=employee.region_id)
-    else:
-        orders_qs = orders_qs.filter(receiver_id=employee.id)
-
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 24)
+    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
-        "employee": (
-            Employee.objects
-            .filter(organization__org_type="IVS")
-            .select_related("user", "rank", "organization")
-            .only(
-                "id", "first_name", "last_name", "father_name",
-                "user__username",
-                "rank__id", "rank__name",
-                "organization__id", "organization__name",
-            )
-            .order_by("last_name", "first_name")
-        ),
-        # ✅ oldingi templatingiz buzilmasin:
-        "order": page_obj,         # for loop shu orqali yuraveradi
-        "page_obj": page_obj,      # nav uchun
-        "paginator": paginator,    # nav uchun
-        "topic": Topic.objects.only("id", "name").order_by("name"),
-        "goal": (
-            Goal.objects
-            .select_related("topic")
-            .only("id", "name", "topic__id", "topic__name")
-            .order_by("name")
-        ),
-        "is_boss": is_boss,
+        "order": page_obj,          # ✅ for loop shu orqali yuradi
+        "page_obj": page_obj,       # ✅ pagination uchun
+        "paginator": paginator,     # ✅ pagination uchun
     }
     return render(request, "main/order_receiver.html", context)
+
+
+@never_cache
+@login_required
+def order_receiver_activ(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    orders_qs = (
+        Order.objects
+        .filter(sender__region=employee.region,status__in=["accepted", "finished"],)
+        .select_related("goal", "technics", "receiver", "sender")
+        .order_by("-id")
+    )
+
+    # ✅ PAGINATION
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "order": page_obj,          # ✅ for loop shu orqali yuradi
+        "page_obj": page_obj,       # ✅ pagination uchun
+        "paginator": paginator,     # ✅ pagination uchun
+    }
+    return render(request, "main/order_receiver_activ.html", context)
+
+
+@never_cache
+@login_required
+def order_receiver_arxiv(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    orders_qs = (
+        Order.objects
+        .filter(sender__region=employee.region,status__in=["approved", "rejected",],)
+        .select_related("goal", "technics", "receiver", "sender")
+        .order_by("-id")
+    )
+
+    # ✅ PAGINATION
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "order": page_obj,          # ✅ for loop shu orqali yuradi
+        "page_obj": page_obj,       # ✅ pagination uchun
+        "paginator": paginator,     # ✅ pagination uchun
+    }
+    return render(request, "main/order_receiver_arxiv.html", context)
 
 
 @never_cache
