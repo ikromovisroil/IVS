@@ -614,7 +614,7 @@ def sso_exchange_and_finish(request):
             if not consent_id:
                 raise PermissionDenied("consent_id yo‘q")
 
-            consent = get_object_or_404(DeedConsent.objects.select_related("employee__user"), pk=consent_id)
+            consent = get_object_or_404(Deedconsent.objects.select_related("employee__user"), pk=consent_id)
 
             if consent.employee.user_id != request.user.id:
                 raise PermissionDenied("Ruxsat yo‘q")
