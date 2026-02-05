@@ -94,34 +94,29 @@ def profil(request):
 @never_cache
 @login_required
 def index(request):
-    # 1) Employee + Rol xavfsiz tekshiruv
     employee = getattr(request.user, "employee", None)
-    if not employee:
+    if not employee or not getattr(employee, "rol", None) or employee.rol.client:
         raise PermissionDenied
 
-    role = getattr(employee, "rol", None)  # rol yo‘q bo‘lsa None
-    if not role:
-        raise PermissionDenied
+    org_ids = [1, 2, 3]
 
-    if role.client:   # client bo‘lsa kirish yo‘q
-        raise PermissionDenied
+    orgs = list(
+        Organization.objects.filter(id__in=org_ids).only("id", "name")
+    )
 
-    org_qs = Organization.objects.filter(org_type__in=["IMV", "PENSIYA", "GAZNA"]).only("id", "name", "org_type")
-    cat_qs = Category.objects.all().only("id", "name")
+    cats = list(
+        Category.objects.only("id", "name")
+    )
 
-    orgs = list(org_qs)
-    cats = list(cat_qs)
-
-    # 2) Chart uchun bitta query: category + organization bo‘yicha group count
+    # Chart: (category, org) bo‘yicha count
     grouped = (
         Technics.objects
-        .filter(employee__organization__in=orgs, category__in=cats)
-        .values("category_id", "employee__organization_id")
+        .filter(organization_id__in=org_ids, category_id__in=[c.id for c in cats])
+        .values("category_id", "organization_id")
         .annotate(cnt=Count("id"))
     )
 
-    # tez lookup: (cat_id, org_id) -> cnt
-    m = {(g["category_id"], g["employee__organization_id"]): g["cnt"] for g in grouped}
+    m = {(g["category_id"], g["organization_id"]): g["cnt"] for g in grouped}
 
     chart_data = []
     for cat in cats:
@@ -130,24 +125,28 @@ def index(request):
             row[f"org_{org.id}"] = m.get((cat.id, org.id), 0)
         chart_data.append(row)
 
-    # 3) Pie uchun ham bitta query: org bo‘yicha count
+    # Pie: org bo‘yicha count
     pie_grouped = (
         Technics.objects
-        .filter(employee__organization__in=orgs)
-        .values("employee__organization_id", "employee__organization__name")
+        .filter(organization_id__in=org_ids)
+        .values("organization_id", "organization__name")
         .annotate(cnt=Count("id"))
+        .order_by("organization__name")
     )
-    pie_data = [{"name": p["employee__organization__name"], "count": p["cnt"]} for p in pie_grouped]
+    pie_data = [{"name": p["organization__name"], "count": p["cnt"]} for p in pie_grouped]
 
-    # 4) organizations1 (sizda kerak bo‘lsa) — shu yerda ham optimize
     organizations1 = (
         Organization.objects
-        .filter(id__in=[o.id for o in orgs])
-        .annotate(technics_count=Count("employee__technics", distinct=True))
+        .filter(id__in=org_ids)
+        .annotate(technics_count=Count("technics", distinct=True))  # related_name bo‘lmasa: "technics_set"
         .only("id", "name")
     )
 
-    logs = LogEntry.objects.select_related("user", "content_type").order_by("-action_time")[:10]
+    logs = (
+        LogEntry.objects
+        .select_related("user", "content_type")
+        .order_by("-action_time")[:10]
+    )
 
     context = {
         "logs": logs,
@@ -615,7 +614,7 @@ def sso_exchange_and_finish(request):
             if not consent_id:
                 raise PermissionDenied("consent_id yo‘q")
 
-            consent = get_object_or_404(Deedconsent.objects.select_related("employee__user"), pk=consent_id)
+            consent = get_object_or_404(DeedConsent.objects.select_related("employee__user"), pk=consent_id)
 
             if consent.employee.user_id != request.user.id:
                 raise PermissionDenied("Ruxsat yo‘q")
@@ -674,7 +673,7 @@ def deedconsent_action(request, pk):
     back_url = request.META.get("HTTP_REFERER", "/")
 
     consent = get_object_or_404(
-        Deedconsent.objects.select_related("employee__user", "deed"),
+        DeedConsent.objects.select_related("employee__user", "deed"),
         pk=pk
     )
 

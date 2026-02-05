@@ -88,12 +88,24 @@
 <script>
 $(function () {
 
+  function initSelect2() {
+    // dropdownParent: agar modal bo‘lsa kerak bo‘ladi. Hozir oddiy sahifa — baribir zarar qilmaydi.
+    $('#organization, #department, #employee').select2({
+      width: '100%',
+      placeholder: 'Tanlang...',
+      allowClear: true
+    });
+  }
+
+  initSelect2();
+
   function loadDepartments(orgId, selectedDepId=null) {
-    $('#department').html('<option value="">Yuklanmoqda...</option>');
-    $('#employee').html('<option value="">Tanlang...</option>');
+    // select2 bo‘lsa ham oddiy option qo‘yamiz
+    $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+    $('#employee').html('<option value="">Tanlang...</option>').trigger('change.select2');
 
     if (!orgId) {
-      $('#department').html('<option value="">Tanlang...</option>');
+      $('#department').html('<option value="">Tanlang...</option>').trigger('change.select2');
       return;
     }
 
@@ -101,21 +113,21 @@ $(function () {
       url: "{% url 'ajax_load_departments' %}",
       data: { organization: orgId },
       success: function (data) {
-        let options = '<option value="">Tanlang...</option>';
+        let options = '<option value=""></option>'; // select2 placeholder uchun bo‘sh option
         data.forEach(function(dep){
-          const selected = (selectedDepId == dep.id) ? 'selected' : '';
+          const selected = (String(selectedDepId) === String(dep.id)) ? 'selected' : '';
           options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
         });
-        $('#department').html(options);
+        $('#department').html(options).trigger('change.select2');
       }
     });
   }
 
   function loadEmployees(depId, selectedEmpId=null) {
-    $('#employee').html('<option value="">Yuklanmoqda...</option>');
+    $('#employee').html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
 
     if (!depId) {
-      $('#employee').html('<option value="">Tanlang...</option>');
+      $('#employee').html('<option value="">Tanlang...</option>').trigger('change.select2');
       return;
     }
 
@@ -123,12 +135,12 @@ $(function () {
       url: "{% url 'ajax_load_employees' %}",
       data: { department: depId },
       success: function (data) {
-        let options = '<option value="">Tanlang...</option>';
+        let options = '<option value=""></option>';
         data.forEach(function(emp){
-          const selected = (selectedEmpId == emp.id) ? 'selected' : '';
+          const selected = (String(selectedEmpId) === String(emp.id)) ? 'selected' : '';
           options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
         });
-        $('#employee').html(options);
+        $('#employee').html(options).trigger('change.select2');
       }
     });
   }
@@ -142,21 +154,21 @@ $(function () {
     loadEmployees($(this).val());
   });
 
-  // OLDINGI TANLANGANLARNI QAYTA TIKLASH (ixtiyoriy)
+  // OLDINGI TANLANGANLARNI QAYTA TIKLASH
   const initialOrg = '{{ selected_org|default:"" }}';
   const initialDep = '{{ selected_dep|default:"" }}';
   const initialEmp = '{{ selected_emp|default:"" }}';
 
   if (initialOrg) {
-    $('#organization').val(initialOrg);
+    $('#organization').val(initialOrg).trigger('change.select2');
     loadDepartments(initialOrg, initialDep);
 
     if (initialDep) {
-      // dep yuklanishi async, shuning uchun kichik delay
+      // departments ajaxdan kelishini kutib, keyin employees
       setTimeout(function(){
-        $('#department').val(initialDep);
+        $('#department').val(initialDep).trigger('change.select2');
         loadEmployees(initialDep, initialEmp);
-      }, 200);
+      }, 250);
     }
   }
 
