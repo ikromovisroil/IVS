@@ -22,10 +22,9 @@
 
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Vertical Form</h5>
-
+              <h5 class="card-title">Filtrlash</h5>
               <!-- Vertical Form -->
-              <form class="row g-3" action="{% url 'akt_post' %}" method="post" data-download="true">{% csrf_token %}
+              <div class="row g-3">
                 <div class="col-12">
                   <label for="organization" class="form-label">Tashkilot :</label>
                     <select id="organization" name="organization" class="form-select" required>
@@ -44,15 +43,6 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-12">
-                  <label for="employee" class="form-label">Xodim :</label>
-                    <select id="employee" name="employee" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for emp in employees %}
-                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
                 <div class="col-md-12">
                   <label for="date1" class="col-sm-2 col-form-label">Sana :</label>
                   <input type="date" name="date1" id="date1" required class="form-control">
@@ -60,10 +50,23 @@
                 <div class="col-md-12">
                   <input type="date" name="date2" id="date2" required class="form-control">
                 </div>
+              </div><hr><!-- Vertical Form -->
+              <h5 class="card-title">Imzolashga yuborish</h5>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="employee" class="form-label">Imzolovchi xodim :</label>
+                    <select id="employee" name="employee" class="form-select" required>
+                        <option value="">Tanlang...</option>
+                        {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="text-center">
                   <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                  <button onclick="makePDF()">PDF yuklab olish</button>
                 </div>
-              </form><!-- Vertical Form -->
+              </div><!-- Vertical Form -->
 
             </div>
           </div>
@@ -71,8 +74,8 @@
         </div>
 
         <div class="col-lg-8">
-            <div class="card"  id="pdf-area">
-                <div class="card-body mt-5">
+            <div class="card" id="pdf-area">
+                <div class="card-body mt-3 mb-0">
                     <div class="text-center">
                         <b>Sarf materiallari, ehtiyot qismlar va uskunalar o'rnatish ishlari haqida</b>
                     </div>
@@ -86,8 +89,8 @@
                         Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi “Axborot texnalogiyalar markazi” davlat unitar korxonasining vakillari:
                     </div>
                     <div class="text-center">
-                        <b> <ins>RECEIVER </ins>  </b> <br>
-                        <span class="small text-muted d-block" style="font-size:11px; margin-top:-2px;">
+                        <b><ins>{{request.user.employee.full_name}} ({{ request.user.employee.rank.name }})</ins></b><br>
+                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
                             (FIO, ATM mutaxassisning lavozimi)
                         </span>
                     </div>
@@ -95,18 +98,18 @@
                         <div class="col-6">
                             <span>O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi</span><br>
                             <b><ins>Palonchayev paloncha</ins></b><br>
-                            <span class="small text-muted d-block" style="font-size:11px; margin-top:-2px;">
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
                                 (FIO, lavozimi)
                             </span>
                         </div>
                         <div class="col-6">
                             <b><ins>DEPARTMENT</ins></b><br>
-                            <span>O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi</span>
+                            <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
                         </div>
                     </div>
                     <div class="text-center">
                         <b> <ins>Quyda ko’rsatilgan materiallarni o’rnatish </ins>  </b> <br>
-                        <span class="small text-muted d-block" style="font-size:11px; margin-top:-2px;">
+                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
                             (ATM mutaxassislari tomonidan bajarilgan ish turlari bo'yicha tafsilotlar)
                         </span>
                     </div>
@@ -116,7 +119,7 @@
                             <b>quyidagi materiallari, ehtiyot qismlar va uskunalar o'rnatildi:</b>
                         </div>
                         <div class="col-6">
-                            <b>quyidagi materiallari, ehtiyot qismlar va uskunalar o'rnatildi:</b>
+                            <b>4 - mart 2025  yildagi  1 - sonli shartnomaga muvofiq</b>
                         </div>
                     </div>
                     <div class="text-center">
@@ -124,14 +127,14 @@
                             <thead>
                               <!-- 1-qator -->
                               <tr>
-                                <th rowspan="3" class="text-center align-middle">№</th>
-                                <th rowspan="3" class="text-center align-middle">Ish bajarilgan qurilmaning nomi</th>
-                                <th rowspan="3" class="text-center align-middle">Qurilmaning seriya raqami</th>
-                                <th rowspan="3" class="text-center align-middle">
+                                <th rowspan="2" class="text-center align-middle">№</th>
+                                <th rowspan="2" class="text-center align-middle">Ish bajarilgan qurilmaning nomi</th>
+                                <th rowspan="2" class="text-center align-middle">Qurilmaning seriya raqami</th>
+                                <th rowspan="2" class="text-center align-middle">
                                   Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi
                                 </th>
-                                <th rowspan="3" class="text-center align-middle">Soni</th>
-                                <th rowspan="3" class="text-center align-middle">O‘lchov birligi</th>
+                                <th rowspan="2" class="text-center align-middle">Soni</th>
+                                <th rowspan="2" class="text-center align-middle">O‘lchov birligi</th>
                                 <th colspan="5" class="text-center align-middle">
                                   Kimga o‘rnatildi yoki o‘rnatilganligini tasdiqlovchi mas’ul shaxs (xarajatlar)
                                 </th>
@@ -139,13 +142,8 @@
 
                               <!-- 2-qator -->
                               <tr>
-                                <th rowspan="2" class="text-center align-middle">F.I.Sh.</th>
-                                <th rowspan="2" class="text-center align-middle">Lavozimi</th>
-                                <th colspan="3" class="text-center align-middle">Eslatma*</th>
-                              </tr>
-
-                              <!-- 3-qator -->
-                              <tr>
+                                <th class="text-center align-middle">F.I.Sh.</th>
+                                <th class="text-center align-middle">Lavozimi</th>
                                 <th class="text-center align-middle">Eslatma*</th>
                                 <th class="text-center align-middle">So‘rovnoma №</th>
                                 <th class="text-center align-middle">Materiallarni o‘rnatish sanasi</th>
@@ -191,6 +189,110 @@
                                 <td>178605</td>
                                 <td>178605</td>
                               </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
+                            <tr>
+                                <th scope="row">1</th>
+                                <td>Brandon Jacob</td>
+                                <td>gd178605</td>
+                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
+                                <td>28</td>
+                                <td>dona</td>
+                                <td>Xanbabaev Alisher  Baxarovich</td>
+                                <td>Bo‘lim boshlig‘i</td>
+                                <td>275200</td>
+                                <td>178605</td>
+                                <td>178605</td>
+                              </tr>
                             </tbody>
                         </table>
                     </div>
@@ -201,9 +303,17 @@
                     <div class="row text-center">
                         <div class="col-6">
                             <b>Xizmat ko'rsatuvchinig vakili:</b><br>
+                            <span>{{request.user.employee.full_name}}</span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( FIO )
+                            </span>
                         </div>
                         <div class="col-6">
-                            <b>O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakili:</b>
+                            <b>O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakili:</b><br>
+                            <span>{{request.user.employee.full_name}}</span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( FIO )
+                            </span>
                         </div>
                     </div>
 
@@ -216,6 +326,28 @@
   </main><!-- End #main -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<script>
+function makePDF() {
+    const element = document.getElementById("pdf-area");
+
+    html2pdf().from(element).set({
+        margin: [5, 5, 25, 5],
+        filename: 'hisobot.pdf',
+        html2canvas: {
+            scale: 2,
+            scrollX: 0,
+            scrollY: 0
+        },
+        jsPDF: {
+            unit: 'mm',
+            format: 'a4',
+            orientation: 'landscape' // 🔥 GORIZONTAL
+        }
+    }).save();
+}
+</script>
 <script>
 $(function () {
 

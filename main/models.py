@@ -59,6 +59,7 @@ class AutoSlugMixin(models.Model):
 # Organizator.
 class Organization(AutoSlugMixin, models.Model):
     name = models.CharField(max_length=200)
+    contract = models.CharField(max_length=200, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name}"

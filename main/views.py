@@ -2104,6 +2104,7 @@ def akt_get(request):
 
     context = {
         'organizations': Organization.objects.all(),
+        'technics': OrderMaterial.objects.filter(),
     }
     return render(request, 'main/akt.html', context)
 
