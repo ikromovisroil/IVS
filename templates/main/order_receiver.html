@@ -48,7 +48,7 @@
                     <thead>
                       <tr>
                         <th scope="col">#</th>
-                        <th scope="col">Mualif</th>
+                        <th scope="col">Muallif</th>
                         <th scope="col">Ariza Maqsadi</th>
                         <th scope="col">Xolati</th>
                         <th scope="col">Sana</th>
@@ -62,22 +62,40 @@
                         <td>{{ o.goal.name }}</td>
                         <td>
                             {% if o.status == "viewed" %}
-                                <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{ d.id }}">Kutulmoqda</span>
+                                <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Kutulmoqda</span>
                             {% endif %}
 
-                            <div class="modal fade" id="verticalmodal{{ d.id }}" tabindex="-1">
+                            <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">
                                 <div class="modal-dialog modal-dialog-centered modal-lg">
                                   <div class="modal-content">
                                     <div class="modal-header">
-                                      <h5 class="modal-title">Arizalar</h5>
+                                      <h5 class="modal-title">Ariza tafsilotlari</h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-                                      Non omnis incidunt qui sed occaecati magni asperiores est mollitia. Soluta at et reprehenderit. Placeat autem numquam et fuga numquam. Tempora in facere consequatur sit dolor ipsum. Consequatur nemo amet incidunt est facilis. Dolorem neque recusandae quo sit molestias sint dignissimos.
+                                        <div class="row g-2">
+                                            <div class="col-6 text-muted">Holati</div>
+                                            <div class="col-6">{{ o.get_status_display }}</div>
+                                            <div class="col-6 text-muted">Kiritilgan sana</div>
+                                            <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+                                            <div class="col-6 text-muted">Muallif</div>
+                                            <div class="col-6">{{ o.sender.full_name }}</div>
+                                            <div class="col-6 text-muted">Ariza Maqsadi</div>
+                                            <div class="col-6">{{ o.goal.name }}</div>
+                                            <div class="col-6 text-muted">Telefon</div>
+                                            <div class="col-6">{{ o.sender.phone }}</div>
+                                            <div class="col-6 text-muted">Izox</div>
+                                            <div class="col-6">{{ o.body }}</div>
+                                        </div>
                                     </div>
                                     <div class="modal-footer d-flex justify-content-center gap-2">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
-                                        <button type="submit" class="btn btn-primary">Yuborish</button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Etiborsiz qoldirish</button>
+                                        <form action="{% url 'order_accepted' o.pk %}" method="post" style="display:inline;">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-primary">
+                                                Qabul qilish
+                                            </button>
+                                        </form>
                                     </div>
                                   </div>
                                 </div>

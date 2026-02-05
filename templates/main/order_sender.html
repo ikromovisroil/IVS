@@ -100,16 +100,97 @@
                         <td>{{ o.receiver.full_name }}</td>
                         <td>
                             {% if o.status == "viewed" %}
-                                <span class="badge bg-warning text-white">Kutulmoqda</span>
-                            {% elif or.status == "accepted" %}
-                                <span class="badge bg-primary text-white">Qabul qilindi</span>
-                            {% elif or.status == "finished" %}
-                                <span class="badge bg-info text-white">Yakunlandi</span>
-                            {% elif or.status == "approved" %}
-                                <span class="badge bg-success text-white">Tasdiqlandi</span>
-                            {% elif or.status == "rejected" %}
-                                <span class="badge bg-danger text-white">Rad etildi</span>
+                                <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Kutulmoqda</span>
+                            {% elif o.status == "accepted" %}
+                                <span type="button" class="badge bg-primary text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Qabul qilindi</span>
+                            {% elif o.status == "finished" %}
+                                <span type="button" class="badge bg-info text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Yakunlandi</span>
                             {% endif %}
+
+                            <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered modal-lg">
+                                  <form class="modal-content" action="{% url 'order_decide' o.id %}" method="post">{% csrf_token %}
+                                    <div class="modal-header">
+                                      <h5 class="modal-title">Ariza tafsilotlari</h5>
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row g-2">
+                                            <div class="col-6 text-muted">Holati</div>
+                                            <div class="col-6">{{ o.get_status_display }}</div>
+                                            <div class="col-6 text-muted">Kiritilgan sana</div>
+                                            <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+                                            <div class="col-6 text-muted">Muallif</div>
+                                            <div class="col-6">{{ o.sender.full_name }}</div>
+                                            <div class="col-6 text-muted">Ariza Maqsadi</div>
+                                            <div class="col-6">{{ o.goal.name }}</div>
+                                            <div class="col-6 text-muted">Telefon</div>
+                                            <div class="col-6">{{ o.sender.phone }}</div>
+                                            <div class="col-6 text-muted">Izox</div>
+                                            <div class="col-6">{{ o.body }}</div>
+                                            <div class="col-6 text-muted">Bajardi</div>
+                                            <div class="col-6">{{ o.receiver.full_name }}</div>
+                                            <div class="col-6 text-muted">Texnika</div>
+                                            <div class="col-6">{{ o.technics.name }}</div>
+                                        </div>
+                                         {% if o.materials_all.exists %}
+                                          <hr>
+                                          <table class="table">
+                                            <thead>
+                                            <tr>
+                                              <th>#</th>
+                                              <th>Material Name</th>
+                                              <th>Soni</th>
+                                              <th>Narxi</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for m in o.materials_all %}
+                                              <tr>
+                                                <th scope="row">{{ forloop.counter }}</th>
+                                                <td>{{ m.material.name }}</td>
+                                                <td>{{ m.number|intcomma }}</td>
+                                                <td>{{ m.material.price|intcomma }}</td>
+                                              </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                          </table>
+                                        {% endif %}
+
+                                        {% if o.status == 'finished' %}
+                                        <hr>
+                                        <div>
+                                           <div class="rating text-center">
+                                                <input type="radio" name="rating" id="star1-{{ or.id }}" value="1">
+                                                <label for="star1-{{ or.id }}">1⭐</label>
+
+                                                <input type="radio" name="rating" id="star2-{{ or.id }}" value="2">
+                                                <label for="star2-{{ or.id }}">2⭐</label>
+
+                                                <input type="radio" name="rating" id="star3-{{ or.id }}" value="3">
+                                                <label for="star3-{{ or.id }}">3⭐</label>
+
+                                                <input type="radio" name="rating" id="star4-{{ or.id }}" value="4">
+                                                <label for="star4-{{ or.id }}">4⭐</label>
+
+                                                <input type="radio" name="rating" id="star5-{{ or.id }}" value="5" required>
+                                                <label for="star5-{{ or.id }}">5⭐</label>
+                                           </div>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="modal-footer d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Etiborsiz qoldirish</button>
+                                        {% if o.status in 'viewed accepted' %}
+                                        <button type="submit" name="action" value="reject" class="btn btn-danger">Bekor qilish</button>
+                                        {% endif %}
+                                        {% if o.status == 'finished' %}
+                                        <button type="submit" name="action" value="approve" class="btn btn-primary">Tasdiqlash</button>
+                                        {% endif %}
+                                    </div>
+                                  </form>
+                                </div>
+                            </div><!-- End Vertically centered Modal-->
                         </td>
                         <td>{{ o.date_creat }}</td>
                       </tr>

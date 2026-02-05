@@ -7,115 +7,304 @@
 {% endblock title %}
 
 {% block css %}
+  {# Select2 CSS #}
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock css %}
-
 
 {% block content %}
 
 <main id="main" class="main">
 
-    <div class="pagetitle">
-        <div class="d-flex justify-content-between align-items-center">
-             <h1>Arizalar</h1>
-        </div>
+  <div class="pagetitle">
+    <div class="d-flex justify-content-between align-items-center">
+      <h1>Arizalar</h1>
     </div>
+  </div>
 
-    <section class="section profile">
-      <div class="row">
-        <div class="col-xl-12">
+  <section class="section profile">
+    <div class="row">
+      <div class="col-xl-12">
 
-          <div class="card">
-            <div class="card-body pt-3">
-              <!-- Bordered Tabs -->
-              <ul class="nav nav-tabs nav-tabs-bordered">
+        <div class="card">
+          <div class="card-body pt-3">
 
-                <li class="nav-item">
-                  <a href="{% url 'order_receiver' %}" class="nav-link">Arizalar</a>
-                </li>
+            <ul class="nav nav-tabs nav-tabs-bordered">
+              <li class="nav-item">
+                <a href="{% url 'order_receiver' %}" class="nav-link">Arizalar</a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'order_receiver_activ' %}" class="nav-link active">Bajarish</a>
+              </li>
+              <li class="nav-item">
+                <a href="{% url 'order_receiver_arxiv' %}" class="nav-link">Tarix</a>
+              </li>
+            </ul>
 
-                <li class="nav-item">
-                  <a href="{% url 'order_receiver_activ' %}" class="nav-link active" >Bajarish</a>
-                </li>
+            <div class="tab-content pt-2">
 
-                <li class="nav-item">
-                  <a href="{% url 'order_receiver_arxiv' %}" class="nav-link" >Tarix</a>
-                </li>
+              <table class="table">
+                <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Muallif</th>
+                  <th>Ariza Maqsadi</th>
+                  <th>Xolati</th>
+                  <th>Sana</th>
+                </tr>
+                </thead>
 
-              </ul>
-              <div class="tab-content pt-2">
+                <tbody>
+                {% for o in order %}
+                  <tr>
+                    <th scope="row">{{ forloop.counter }}</th>
+                    <td>{{ o.sender.full_name }}</td>
+                    <td>{{ o.goal.name }}</td>
 
-                <table class="table">
-                    <thead>
-                      <tr>
-                        <th scope="col">#</th>
-                        <th scope="col">Mualif</th>
-                        <th scope="col">Ariza Maqsadi</th>
-                        <th scope="col">Xolati</th>
-                        <th scope="col">Sana</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                    {% for o in order %}
-                      <tr>
-                        <th scope="row">{{ forloop.counter }}</th>
-                        <td>{{ o.sender.full_name }}</td>
-                        <td>{{ o.goal.name }}</td>
-                        <td>
-                            {% if or.status == "accepted" %}
-                                <span class="badge bg-primary text-white">Qabul qilindi</span>
-                            {% elif or.status == "finished" %}
-                                <span class="badge bg-info text-white">Yakunlandi</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ o.date_creat }}</td>
-                      </tr>
+                    <td>
+                      {% if o.status == "accepted" %}
+                        <span type="button"
+                              class="badge bg-primary text-white"
+                              data-bs-toggle="modal"
+                              data-bs-target="#verticalmodal{{ o.id }}">
+                          Qabul qilindi
+                        </span>
+                      {% elif o.status == "finished" %}
+                        <span type="button"
+                              class="badge bg-info text-white"
+                              data-bs-toggle="modal"
+                              data-bs-target="#verticalmodal{{ o.id }}">
+                          Yakunlandi
+                        </span>
+                      {% endif %}
+
+                      {# ===== MODAL ===== #}
+                      <div class="modal fade" id="verticalmodal{{ o.id }}" tabindex="-1">
+                        <div class="modal-dialog modal-dialog-centered modal-lg">
+
+                          <form class="modal-content" action="{% url 'ordermaterial_post' %}" method="post">
+                            {% csrf_token %}
+
+                            <div class="modal-header">
+                              <h5 class="modal-title">Arizani Yakunlash</h5>
+                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <div class="modal-body">
+
+                              <div class="row g-2">
+                                <div class="col-6 text-muted">Holati</div>
+                                <div class="col-6">{{ o.get_status_display }}</div>
+
+                                <div class="col-6 text-muted">Kiritilgan sana</div>
+                                <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+
+                                <div class="col-6 text-muted">Muallif</div>
+                                <div class="col-6">{{ o.sender.full_name }}</div>
+
+                                <div class="col-6 text-muted">Ariza Maqsadi</div>
+                                <div class="col-6">{{ o.goal.name }}</div>
+
+                                <div class="col-6 text-muted">Telefon</div>
+                                <div class="col-6">{{ o.sender.phone }}</div>
+
+                                <div class="col-6 text-muted">Izox</div>
+                                <div class="col-6">{{ o.body }}</div>
+                              </div>
+
+                              <hr>
+
+                              {# (Optional) Texnika select — siz keyin to‘ldirasiz #}
+                              <div class="row g-2">
+                                <div class="row mb-12">
+                                    <h4>Texnikani tanlang</h4>
+                                    <div class="col-sm-12">
+                                    <select
+                                      class="form-select js-tech-select" name="technics_id" required>
+                                      <option value="">— Tanlang —</option>
+                                      {% for t in technics %}
+                                        <option value="{{ t.id }}" {% if o.technics_id == t.id %}selected{% endif %}>
+                                          {{ t.name|default:"" }} | {{ t.inventory|default:"" }} | {{ t.serial|default:"" }} | {{ t.mac|default:"" }}
+                                        </option>
+                                      {% endfor %}
+                                    </select>
+                                  </div>
+                                </div>
+                              </div><hr>
+                              <div>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                  <h4 class="m-0">Materiallar</h4>
+                                  <button type="button" class="btn btn-success" onclick="addMaterialRow({{ o.id }})">
+                                    + Material qo‘shish
+                                  </button>
+                                </div>
+                                <input type="hidden" name="order_id" value="{{ o.id }}">
+                                {# JS options manbai #}
+                                <template id="material-options-{{ o.id }}">
+                                  <option value="">— Tanlang —</option>
+                                  {% for mat in materials %}
+                                    <option value="{{ mat.id }}">{{ mat.name }} | {{ mat.code }}</option>
+                                  {% endfor %}
+                                </template>
+
+                                <div id="materials-container-{{ o.id }}"></div>
+
+                                {% if o.materials_all.exists %}
+                                  <hr>
+                                  <table class="table">
+                                    <thead>
+                                    <tr>
+                                      <th>#</th>
+                                      <th>Material Name</th>
+                                      <th>Soni</th>
+                                      <th>Narxi</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {% for m in o.materials_all %}
+                                      <tr>
+                                        <th scope="row">{{ forloop.counter }}</th>
+                                        <td>{{ m.material.name }}</td>
+                                        <td>{{ m.number|intcomma }}</td>
+                                        <td>{{ m.material.price|intcomma }}</td>
+                                      </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                  </table>
+                                {% endif %}
+                              </div>
+
+                            </div>
+
+                            <div class="modal-footer d-flex justify-content-center gap-2">
+                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Etiborsiz qoldirish
+                              </button>
+                              <button type="submit" class="btn btn-primary">
+                                Yakunlash
+                              </button>
+                            </div>
+
+                          </form>
+                        </div>
+                      </div>
+                      {# ===== /MODAL ===== #}
+                    </td>
+
+                    <td>{{ o.date_creat }}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+
+              {# ===== PAGINATION ===== #}
+              {% if page_obj.paginator.num_pages > 1 %}
+                <nav aria-label="Order pagination" class="mt-3">
+                  <ul class="pagination justify-content-center">
+
+                    {% if page_obj.has_previous %}
+                      <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+                      </li>
+                    {% else %}
+                      <li class="page-item disabled"><span class="page-link">‹</span></li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                      {% if num == page_obj.number %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                      {% elif num >= page_obj.number|add:-3 and num <= page_obj.number|add:3 %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                      {% endif %}
                     {% endfor %}
-                    </tbody>
-                </table>
 
-                 {% if page_obj.paginator.num_pages > 1 %}
-                    <nav aria-label="Order pagination" class="mt-3">
-                      <ul class="pagination justify-content-center">
+                    {% if page_obj.has_next %}
+                      <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+                      </li>
+                    {% else %}
+                      <li class="page-item disabled"><span class="page-link">›</span></li>
+                    {% endif %}
 
-                        {# Oldingi #}
-                        {% if page_obj.has_previous %}
-                          <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
-                          </li>
-                        {% else %}
-                          <li class="page-item disabled"><span class="page-link">‹</span></li>
-                        {% endif %}
+                  </ul>
+                </nav>
+              {% endif %}
+              {# ===== /PAGINATION ===== #}
 
-                        {# Sahifa raqamlari (atrofida 2 tadan) #}
-                        {% for num in page_obj.paginator.page_range %}
-                          {% if num == page_obj.number %}
-                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-                          {% elif num >= page_obj.number|add:-3 and num <= page_obj.number|add:3 %}
-                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                          {% endif %}
-                        {% endfor %}
+            </div><!-- End tab-content -->
 
-                        {# Keyingi #}
-                        {% if page_obj.has_next %}
-                          <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
-                          </li>
-                        {% else %}
-                          <li class="page-item disabled"><span class="page-link">›</span></li>
-                        {% endif %}
-
-                      </ul>
-                    </nav>
-                 {% endif %}
-
-              </div><!-- End Bordered Tabs -->
-
-            </div>
           </div>
         </div>
+
       </div>
-    </section>
+    </div>
+  </section>
 </main>
 
-{% endblock %}
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+  function initSelect2($selectElem, orderId) {
+    $selectElem.select2({
+      dropdownParent: $("#verticalmodal" + orderId),
+      width: "100%",
+    });
+  }
+
+  // ✅ Modal ochilganda ichidagi selectlarni init qilamiz
+  $(document).on("shown.bs.modal", ".modal", function () {
+    const modalId = $(this).attr("id");              // verticalmodal12
+    const orderId = modalId.replace("verticalmodal", "");
+
+    // Tech select
+    const $tech = $(this).find(".js-tech-select");
+    if ($tech.length && !$tech.hasClass("select2-hidden-accessible")) {
+      initSelect2($tech, orderId);
+    }
+
+    // Material selectlar (agar oldin qo‘shilgan bo‘lsa)
+    $(this).find(".js-material-select").each(function () {
+      const $mat = $(this);
+      if (!$mat.hasClass("select2-hidden-accessible")) {
+        initSelect2($mat, orderId);
+      }
+    });
+  });
+
+  // ✅ Material qator qo‘shish
+  window.addMaterialRow = function(orderId) {
+    let tpl = document.querySelector("#material-options-" + orderId);
+    let optionsHtml = tpl ? tpl.innerHTML : '<option value="">— Tanlang —</option>';
+
+    let $row = $(`
+      <div class="row align-items-center mb-2 material-row">
+        <div class="col-6">
+          <select class="form-select js-material-select" name="material_id[]">
+            ${optionsHtml}
+          </select>
+        </div>
+        <div class="col-4">
+          <input type="number" class="form-control" name="number[]" value="1" min="1">
+        </div>
+        <div class="col-2 text-end">
+          <button type="button" class="btn btn-danger w-100 remove-btn">X</button>
+        </div>
+      </div>
+    `);
+
+    $("#materials-container-" + orderId).append($row);
+
+    let $newSelect = $row.find(".js-material-select");
+    initSelect2($newSelect, orderId);
+  };
+
+  $(document).on("click", ".remove-btn", function () {
+    $(this).closest(".material-row").remove();
+  });
+
+});
+</script>
+
+{% endblock %}

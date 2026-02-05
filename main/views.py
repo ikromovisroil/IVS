@@ -1672,6 +1672,7 @@ def document_post(request):
     return response
 
 
+# yangi arizalar
 @never_cache
 @login_required
 def order_sender(request):
@@ -1689,7 +1690,7 @@ def order_sender(request):
     goals_qs = (
         Goal.objects
         .only("id", "name",)
-        .order_by("name")
+        .order_by("-id")
     )
 
     # ✅ PAGINATION
@@ -1707,6 +1708,49 @@ def order_sender(request):
     return render(request, "main/order_sender.html", context)
 
 
+# arizani tasdiqlash yoki bekor qilish
+@never_cache
+@login_required
+@require_POST
+def order_decide(request, pk):
+    order = get_object_or_404(Order, id=pk)
+    action = request.POST.get("action")  # approve | reject
+
+    if action == "rejected":
+        order.status = "rejected"
+        order.save()
+
+        messages.success(request, "Ariza bekor qilindi!")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    if action == "approved":
+        rating = request.POST.get("rating")
+
+        if not rating:
+            messages.error(request, "Iltimos, baho (yulduz) tanlang!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        try:
+            rating = int(rating)
+        except ValueError:
+            messages.error(request, "Baho noto‘g‘ri!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        if rating < 1 or rating > 5:
+            messages.error(request, "Baho 1 dan 5 gacha bo‘lishi kerak!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        order.rating = rating
+        order.status = "approved"
+        order.save()
+        messages.success(request, "Ariza tasdiqlandi va baholandi!")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    messages.error(request, "Noma’lum amal!")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+# arizalar arxivi
 @never_cache
 @login_required
 def order_sender_arxiv(request):
@@ -1724,7 +1768,7 @@ def order_sender_arxiv(request):
     goals_qs = (
         Goal.objects
         .only("id", "name",)
-        .order_by("name")
+        .order_by("-id")
     )
 
     # ✅ PAGINATION
@@ -1766,7 +1810,7 @@ def order_post(request):
         goal=goal,
         body=body,
     )
-    messages.success(request, "Zayavka yuborildi")
+    messages.success(request, "Ariza yuborildi")
     return redirect(back_url)
 
 
@@ -1891,6 +1935,26 @@ def order_receiver(request):
 
 @never_cache
 @login_required
+@require_POST
+def order_accepted(request, pk):
+    employee = getattr(request.user, "employee", None)
+    order = get_object_or_404(Order, pk=pk)
+
+    if order.status == "accepted":
+        messages.warning(request, "Bu ariza allaqachon qabul qilingan")
+        return redirect('order_receiver_activ')
+
+    order.status = "accepted"
+    order.receiver = employee
+    order.save()
+
+    messages.success(request, "Ariza qabul qilindi!")
+    return redirect('order_receiver_activ')
+
+
+
+@never_cache
+@login_required
 def order_receiver_activ(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1902,6 +1966,8 @@ def order_receiver_activ(request):
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
+    technics = Technics.objects.all()
+    materials = Material.objects.all()
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
@@ -1912,6 +1978,8 @@ def order_receiver_activ(request):
         "order": page_obj,          # ✅ for loop shu orqali yuradi
         "page_obj": page_obj,       # ✅ pagination uchun
         "paginator": paginator,     # ✅ pagination uchun
+        'technics': technics,
+        'materials': materials,
     }
     return render(request, "main/order_receiver_activ.html", context)
 
@@ -1962,60 +2030,67 @@ def order_approved(request):
     return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
+from django.db.models import F
 @never_cache
 @login_required
+@require_POST
 @transaction.atomic
 def ordermaterial_post(request):
-
-    if request.method != "POST":
-        return redirect("order_sender")
-
-    employee_id = request.POST.get("employee_id")
     order_id = request.POST.get("order_id")
     technics_id = request.POST.get("technics_id")
     material_ids = request.POST.getlist("material_id[]")
     numbers = request.POST.getlist("number[]")
 
-    order = get_object_or_404(Order, id=order_id)
+    # 🔒 Order ni lock qilib olamiz (parallel submit bo‘lsa ham)
+    order = get_object_or_404(Order.objects.select_for_update(), id=order_id)
 
-    if technics_id:
-        order.technics_id = technics_id
+    # ✅ Texnika majburiy bo‘lsa: tekshirish
+    if not technics_id:
+        messages.info(request, "Iltimos, texnikani tanlang!")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    if employee_id:
-        order.receiver_id = employee_id
-        order.user = request.user.employee
-        order.status = "accepted"
+    order.technics_id = technics_id
 
-    order.save()
-
+    # ✅ Materiallar bo‘sh bo‘lishi mumkin (xohlasangiz majburiy qiling)
+    pairs = []
     for m_id, num in zip(material_ids, numbers):
         if not m_id:
             continue
-
-        material = Material.objects.select_for_update().filter(id=m_id).first()
-        if not material:
-            messages.info(request, "Material topilmadi!")
-
         try:
-            number = int(num) if num else 1
+            n = int(num or 1)
         except ValueError:
             messages.info(request, "Material soni noto‘g‘ri kiritilgan!")
             return redirect(request.META.get("HTTP_REFERER", "/"))
-
-        if number <= 0:
+        if n <= 0:
             messages.info(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+        pairs.append((m_id, n))
 
-        if material.number < number:
+    # 🔁 Har bir materialni tekshirib, ombordagi sonni xavfsiz kamaytiramiz
+    for m_id, n in pairs:
+        material = Material.objects.select_for_update().filter(id=m_id).first()
+        if not material:
+            messages.info(request, "Material topilmadi!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        # ✅ Yetarlilik tekshiruvi
+        if material.number < n:
             messages.info(request, f"{material.name} yetarli emas! Omborda {material.number} dona bor.")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        OrderMaterial.objects.create(order=order, material=material, number=number)
+        # ✅ OrderMaterial yaratish
+        OrderMaterial.objects.create(order=order, material=material, number=n)
 
-        material.number -= number
-        material.save()
+        # ✅ Ombordan ayrish (atomic)
+        material.number = F("number") - n
+        material.save(update_fields=["number"])
 
-    messages.success(request, "Zayavka muvaffaqiyatli qabul qilindi")
-    return redirect("order_receiver")
+    # ✅ Status yakunlandi qilish
+    order.status = "finished"
+    order.save(update_fields=["technics", "status", "date_edit", "date_finished"])
+
+    messages.success(request, "Ariza yakunlandi!")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
 @never_cache

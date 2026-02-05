@@ -404,7 +404,7 @@ class Order(models.Model):
 
 # zayafkadan soralgan materiali.
 class OrderMaterial(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="materials", db_index=True)
     material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     number = models.PositiveIntegerField(default=1)
 

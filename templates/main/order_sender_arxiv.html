@@ -99,17 +99,63 @@
                         <td>{{ o.goal.name }}</td>
                         <td>{{ o.receiver.full_name }}</td>
                         <td>
-                            {% if o.status == "viewed" %}
-                                <span class="badge bg-warning text-white">Kutulmoqda</span>
-                            {% elif or.status == "accepted" %}
-                                <span class="badge bg-primary text-white">Qabul qilindi</span>
-                            {% elif or.status == "finished" %}
-                                <span class="badge bg-info text-white">Yakunlandi</span>
-                            {% elif or.status == "approved" %}
-                                <span class="badge bg-success text-white">Tasdiqlandi</span>
-                            {% elif or.status == "rejected" %}
-                                <span class="badge bg-danger text-white">Rad etildi</span>
+                            {% if o.status == "approved" %}
+                                <span type="button" class="badge bg-success text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Tasdiqlandi</span>
+                            {% elif o.status == "rejected" %}
+                                <span type="button" class="badge bg-danger text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Rad etildi</span>
                             {% endif %}
+
+                            <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered modal-lg">
+                                  <div class="modal-content">
+                                    <div class="modal-header">
+                                      <h5 class="modal-title">Ariza tafsilotlari</h5>
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row g-2">
+                                            <div class="col-6 text-muted">Holati</div>
+                                            <div class="col-6">{{ o.get_status_display }}</div>
+                                            <div class="col-6 text-muted">Kiritilgan sana</div>
+                                            <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+                                            <div class="col-6 text-muted">Muallif</div>
+                                            <div class="col-6">{{ o.sender.full_name }}</div>
+                                            <div class="col-6 text-muted">Ariza Maqsadi</div>
+                                            <div class="col-6">{{ o.goal.name }}</div>
+                                            <div class="col-6 text-muted">Telefon</div>
+                                            <div class="col-6">{{ o.sender.phone }}</div>
+                                            <div class="col-6 text-muted">Izox</div>
+                                            <div class="col-6">{{ o.body }}</div>
+                                            <div class="col-6 text-muted">Texnika</div>
+                                            <div class="col-6">{{ o.technics.name }}</div>
+                                        </div>
+                                        {% if o.materials_all.exists %}
+                                          <hr>
+                                          <table class="table">
+                                            <thead>
+                                            <tr>
+                                              <th>#</th>
+                                              <th>Material Name</th>
+                                              <th>Soni</th>
+                                              <th>Narxi</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            {% for m in o.materials_all %}
+                                              <tr>
+                                                <th scope="row">{{ forloop.counter }}</th>
+                                                <td>{{ m.material.name }}</td>
+                                                <td>{{ m.number|intcomma }}</td>
+                                                <td>{{ m.material.price|intcomma }}</td>
+                                              </tr>
+                                            {% endfor %}
+                                            </tbody>
+                                          </table>
+                                        {% endif %}
+                                    </div>
+                                  </div>
+                                </div>
+                            </div><!-- End Vertically centered Modal-->
                         </td>
                         <td>{{ o.date_creat }}</td>
                       </tr>
