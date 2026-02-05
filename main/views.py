@@ -2140,12 +2140,12 @@ def akt_post(request):
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
 
     ORG_TEXT = {
-        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
-        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
-        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
-        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
+        "4": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
+        "1": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
+        "2": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
+        "3": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
     }
-    org_name = ORG_TEXT.get(org.org_type, "")
+    org_name = ORG_TEXT.get(org.id, "")
 
     employees = []
     seen = set()

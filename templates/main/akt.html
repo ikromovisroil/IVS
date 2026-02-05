@@ -21,7 +21,7 @@
         <div class="col-lg-4">
 
           <div class="card">
-            <div class="card-body">
+            <form action="{% url 'akt_post' %}" method="post" class="card-body">{% csrf_token %}
               <h5 class="card-title">Filtrlash</h5>
               <!-- Vertical Form -->
               <div class="row g-3">
@@ -68,7 +68,7 @@
                 </div>
               </div><!-- Vertical Form -->
 
-            </div>
+            </form>
           </div>
 
         </div>
