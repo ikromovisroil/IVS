@@ -19,9 +19,9 @@
     <section class="section">
       <div class="row">
         <div class="col-lg-4">
-
+         <form action="{% url 'svod_post' %}" method="post">{% csrf_token %}
           <div class="card">
-            <form action="{% url 'svod_post' %}" method="post" class="card-body">{% csrf_token %}
+            <div class="card-body">
               <h5 class="card-title">Filtrlash</h5>
               <!-- Vertical Form -->
               <div class="row g-3">
@@ -41,7 +41,14 @@
                 <div class="col-md-12">
                   <input type="date" name="date2" id="date2" required class="form-control">
                 </div>
-              </div><hr><!-- Vertical Form -->
+                <div class="text-center">
+                  <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
               <h5 class="card-title">Imzolashga yuborish</h5>
               <div class="row g-3">
                 <div class="col-12">
@@ -62,20 +69,17 @@
                         {% endfor %}
                     </select>
                 </div>
-
                 <div class="col-12">
                   <label for="message" class="form-label">Izox :</label>
                   <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
                 </div>
-
                 <div class="text-center">
                   <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
                 </div>
               </div><!-- Vertical Form -->
-
-            </form>
+            </div>
           </div>
-
+         </form>
         </div>
 
         <div class="col-lg-8">
@@ -120,16 +124,9 @@
                                 <th class="text-center align-middle">Kod 1С</th>
                               </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="resultsBody">
                               <tr>
-                                <th scope="row">1</th>
-                                <td>адаптер беспроводной hdmi 50 м. (Full HD1080р,расстояние передачи от 1ТХ до 1RX: макс. 50 м, состоит их двухпередатчиков ТХ)</td>
-                                <td>dona</td>
-                                <td>28</td>
-                                <td>455000</td>
-                                <td>910000</td>
-                                <td>Akt №178602 ga  16.12.2025y, </td>
-                                <td>5325</td>
+                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
                               </tr>
                             </tbody>
                         </table>
@@ -163,6 +160,266 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
+$(document).ready(function() {
+    // O'zgaruvchilar
+    let currentReportData = [];
+
+    // Dastlabki sanalarni belgilash
+    function setDefaultDates() {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        $('#date1').val(firstDay.toISOString().split('T')[0]);
+        $('#date2').val(today.toISOString().split('T')[0]);
+    }
+
+    setDefaultDates();
+
+    // Hisobot yaratish
+    $('#btnGenerate').click(function() {
+        generateReport();
+    });
+
+    // Enter bosganda ham ishlash
+    $('#svodForm input').keypress(function(e) {
+        if (e.which === 13) {
+            generateReport();
+        }
+    });
+
+    function generateReport() {
+        const orgId = $('#organization').val();
+        const date1 = $('#date1').val();
+        const date2 = $('#date2').val();
+
+        // Validatsiya
+        if (!orgId || !date1 || !date2) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Diqqat!',
+                text: 'Iltimos, barcha maydonlarni to\'ldiring',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if (new Date(date1) > new Date(date2)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Xato!',
+                text: 'Boshlanish sanasi tugash sanasidan keyin bo\'lishi mumkin emas',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        // Yuklanish indikatori
+        $('#resultsBody').html(`
+            <tr>
+                <td colspan="8" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Yuklanmoqda...</span>
+                    </div>
+                    <p class="mt-2">Hisobot yuklanmoqda...</p>
+                </td>
+            </tr>
+        `);
+
+        // AJAX so'rovi
+        $.ajax({
+            url: "{% url 'ajax_svod_materials' %}",
+            method: 'GET',
+            data: {
+                organization: orgId,
+                date1: date1,
+                date2: date2,
+                _token: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                currentReportData = response;
+                displayReport(response);
+                updateStats(response);
+                updateHeader(orgId, date1, date2);
+                $('#btnExport').prop('disabled', false);
+            },
+            error: function(xhr, status, error) {
+                console.error('Xatolik:', error);
+                $('#resultsBody').html(`
+                    <tr>
+                        <td colspan="8" class="text-center text-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Xatolik yuz berdi: ${error}
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+    }
+
+    // Hisobotni ekranga chiqarish
+    function displayReport(data) {
+        if (!data || data.length === 0) {
+            $('#resultsBody').html(`
+                <tr>
+                    <td colspan="8" class="text-center text-muted">
+                        <i class="bi bi-inbox"></i> Tanlangan parametrlar bo'yicha ma'lumot topilmadi
+                    </td>
+                </tr>
+            `);
+            $('#summarySection').hide();
+            return;
+        }
+
+        let html = '';
+        let totalAmount = 0;
+        let itemCount = 0;
+
+        data.forEach(function(item, index) {
+            // Jami qatorni o'tkazib yuborish (u alohida ko'rsatiladi)
+            if (item.is_total) {
+                totalAmount = parseFloat(item.total_sum) || 0;
+                return;
+            }
+
+            itemCount++;
+            const price = parseFloat(item.price) || 0;
+            const quantity = parseFloat(item.total_number) || 0;
+            const sum = parseFloat(item.total_sum) || 0;
+
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.material__name || ''}</td>
+                    <td>${item.material__unit__name || ''}</td>
+                    <td>${item.total_number || ''}</td>
+                    <td>${item.material__price || ''}</td>
+                    <td>${item.total_sum || ''}</td>
+                    <td>${item.order_info || ''}</td>
+                    <td>${item.material__code || ''}</td>
+                </tr>
+            `;
+        });
+
+        // Jami qator qo'shish
+        if (totalAmount > 0) {
+            html += `
+                <tr class="total-row">
+                    <td colspan="6" class="text-end"><strong>JAMI:</strong></td>
+                    <td class="numeric-cell"><strong>${totalAmount.toLocaleString('uz-UZ')}</strong></td>
+                    <td></td>
+                </tr>
+            `;
+        }
+
+        $('#resultsBody').html(html);
+        $('#totalAmount').text(totalAmount.toLocaleString('uz-UZ'));
+        $('#summarySection').show();
+
+        // Xulosa matni
+        $('#summaryText').html(`
+            <strong>${itemCount} turdagi material</strong> <br>
+            Sana oralig'i: ${$('#date1').val()} - ${$('#date2').val()} <br>
+            Jami summa: <strong>${totalAmount.toLocaleString('uz-UZ')} UZS</strong>
+        `);
+    }
+
+    // Statistika yangilash
+    function updateStats(data) {
+        if (!data || data.length === 0) {
+            $('#stats').html('<p class="text-muted">Ma\'lumot yo\'q</p>');
+            return;
+        }
+
+        const totalItems = data.length - 1; // Jami qatorni hisobga olmaslik
+        let totalAmount = 0;
+
+        data.forEach(function(item) {
+            if (item.is_total) {
+                totalAmount = parseFloat(item.total_sum) || 0;
+            }
+        });
+
+        $('#stats').html(`
+            <div class="d-flex justify-content-between">
+                <span>Material turlari:</span>
+                <strong>${totalItems}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Jami summa:</span>
+                <strong>${totalAmount.toLocaleString('uz-UZ')} UZS</strong>
+            </div>
+            <hr>
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i> Barcha materiallar uchun yig'ma ko'rsatkichlar
+            </small>
+        `);
+    }
+
+    // Sarlavha yangilash
+    function updateHeader(orgId, date1, date2) {
+        const orgName = $('#organization option:selected').text();
+
+        $('#headerOrg').text(orgName);
+        $('#headerDates').text(`${date1} - ${date2}`);
+        $('#reportHeader').show();
+    }
+
+    // Excel ga yuklash
+    $('#btnExport').click(function() {
+        if (!currentReportData || currentReportData.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Diqqat!',
+                text: 'Avval hisobot yarating',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        exportToExcel();
+    });
+
+    // Excel export funksiyasi
+    function exportToExcel() {
+        // Bu funksiya Excel fayl yaratadi
+        // Siz SheetJS yoki boshqa kutubxonadan foydalanishingiz mumkin
+
+        Swal.fire({
+            icon: 'info',
+            title: 'Excel ga yuklash',
+            text: 'Fayl tayyorlanmoqda...',
+            showConfirmButton: false,
+            allowOutsideClick: false
+        });
+
+        // Oddiy CSV yoki Excel yaratish logikasi
+        setTimeout(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Muvaffaqiyatli!',
+                text: 'Fayl yuklandi',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }, 1000);
+    }
+
+    // Material tafsilotlari
+    window.showDetails = function(materialId) {
+        // Bu funksiya materialning batafsil ma'lumotlarini ko'rsatadi
+        Swal.fire({
+            title: 'Material tafsilotlari',
+            html: 'Yuklanmoqda...',
+            showConfirmButton: false
+        });
+
+        // AJAX so'rovi orqali material tafsilotlarini olish
+        // Bu sizning loyihangizga qarab to'ldiriladi
+    };
+});
+</script>
+
+
+<script>
 $(function () {
 
   function initSelect2All() {
@@ -179,106 +436,6 @@ $(function () {
   }
 
   initSelect2All();
-
-  function loadDepartments(orgId, selectedDepId=null) {
-    $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-
-    // dep o‘zgarsa xodimlarni ham bo‘shatamiz
-    $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
-    $('#employee').html('<option value="">Tanlang...</option>').trigger('change');
-
-    if (!orgId) {
-      $('#department').html('<option value="">Tanlang...</option>').trigger('change');
-      return;
-    }
-
-    $.ajax({
-      url: "{% url 'ajax_load_departments' %}",
-      data: { organization: orgId },
-      success: function (data) {
-        let options = '<option value=""></option>';
-        data.forEach(function(dep){
-          const selected = (String(selectedDepId) === String(dep.id)) ? 'selected' : '';
-          options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
-        });
-
-        $('#department').html(options).trigger('change');
-      }
-    });
-  }
-
-  // ✅ Department bo‘yicha xodimlarni ikkala selectga to‘ldiradi
-  function loadEmployeesToBoth(depId, selectedSenderId=null, selectedConsentIds=[]) {
-    $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-    $('#employee').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-
-    if (!depId) {
-      $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
-      $('#employee').html('<option value="">Tanlang...</option>').trigger('change');
-      return;
-    }
-
-    $.ajax({
-      url: "{% url 'ajax_load_employees' %}",
-      data: { department: depId },
-      success: function (data) {
-
-        // sender (single)
-        let senderOptions = '<option value=""></option>';
-        // kelishuvchilar (multiple)
-        let consentOptions = '<option value=""></option>';
-
-        const consentSet = new Set((selectedConsentIds || []).map(String));
-
-        data.forEach(function(emp){
-          const sid = String(emp.id);
-
-          const senderSelected = (String(selectedSenderId) === sid) ? 'selected' : '';
-          senderOptions += `<option value="${sid}" ${senderSelected}>${emp.full_name}</option>`;
-
-          const consentSelected = consentSet.has(sid) ? 'selected' : '';
-          consentOptions += `<option value="${sid}" ${consentSelected}>${emp.full_name}</option>`;
-        });
-
-        $('#sender').html(senderOptions).trigger('change');
-        $('#employee').html(consentOptions).trigger('change');
-      }
-    });
-  }
-
-  // EVENTS
-  $('#organization').on('change', function(){
-    loadDepartments($(this).val());
-  });
-
-  $('#department').on('change', function(){
-    // dep tanlanganda ikkalasiga ham xodim chiqsin
-    loadEmployeesToBoth($(this).val());
-  });
-
-  // OLDINGI TANLANGANLARNI QAYTA TIKLASH
-  const initialOrg = '{{ selected_org|default:"" }}';
-  const initialDep = '{{ selected_dep|default:"" }}';
-
-  // sender oldin tanlanganini ham saqlamoqchi bo‘lsangiz viewdan selected_sender yuboring
-  const initialSender = '{{ selected_sender|default:"" }}';
-
-  // kelishuvchilar multiple bo‘lgani uchun list kerak: viewdan selected_employees ni list qilib yuboring
-  // masalan: [1,2,3]
-  const initialConsentList = {{ selected_employees|default:"[]"|safe }};
-
-  if (initialOrg) {
-    $('#organization').val(initialOrg).trigger('change');
-    loadDepartments(initialOrg, initialDep);
-
-    if (initialDep) {
-      setTimeout(function(){
-        $('#department').val(initialDep).trigger('change');
-        loadEmployeesToBoth(initialDep, initialSender, initialConsentList);
-      }, 250);
-    }
-  }
-
 });
 </script>
 

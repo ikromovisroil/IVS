@@ -2307,9 +2307,7 @@ def svod_get(request):
 
     context = {
         'organizations': Organization.objects.all(),
-        'departments': Department.objects.select_related('organization'),
-        'directorate': Directorate.objects.select_related('department'),
-        'division': Division.objects.select_related('directorate'),
+        'employees': Employee.objects.all(),
     }
     return render(request, 'main/svod.html', context)
 

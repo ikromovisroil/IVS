@@ -57,6 +57,7 @@ urlpatterns = [
     path("ajax/ajax_agreements_employees/", ajax_agreements_employees, name="ajax_agreements_employees"),
     path("ajax/deedconsent/delete/", ajax_deedconsent_delete, name="ajax_deedconsent_delete"),
     path("ajax/akt-materials/", ajax_akt_materials, name="ajax_akt_materials"),
+    path("ajax/svod_materials/", ajax_svod_materials, name="ajax_svod_materials"),
 
     # ORGANIZATION
     path('organization/<slug:slug>/', organization, name='organization'),

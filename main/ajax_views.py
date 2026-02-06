@@ -287,3 +287,99 @@ def ajax_akt_materials(request):
     )
 
     return JsonResponse(list(qs), safe=False)
+
+from datetime import datetime, timedelta
+from django.core.exceptions import PermissionDenied
+from django.http import JsonResponse
+from django.utils import timezone
+
+from django.db.models import Sum, F, DecimalField, ExpressionWrapper, Value
+from django.db.models.functions import Coalesce, Cast
+from django.contrib.postgres.aggregates import StringAgg
+
+
+def ajax_svod_materials(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    org_id = request.GET.get("organization")
+    d1 = request.GET.get("date1")
+    d2 = request.GET.get("date2")
+
+    if not org_id or not d1 or not d2:
+        return JsonResponse([], safe=False)
+
+    try:
+        date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
+        date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
+    except ValueError:
+        return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
+
+    # umumiy filter (2 marta yozmaslik uchun)
+    base_filter = dict(
+        order__date_finished__gte=date1,
+        order__date_finished__lt=date2,
+        order__sender__organization_id=org_id,
+        order__receiver__region=employee.region,
+    )
+
+    # Decimal/Integer aralashmasligi uchun
+    dec = DecimalField(max_digits=18, decimal_places=2)
+    zero_dec = Value(0, output_field=dec)
+
+    # 1) Material bo‘yicha svod: qty + sum
+    qs = (
+        OrderMaterial.objects.filter(**base_filter)
+        .values(
+            "material_id",                 # ✅ shart
+            "material__code",
+            "material__name",
+            "material__unit__name",
+            "material__price",
+        )
+        .annotate(
+            total_number=Coalesce(Sum("number"), 0),
+        )
+        .annotate(
+            total_sum=ExpressionWrapper(
+                Coalesce(F("material__price"), zero_dec) *
+                Cast(Coalesce(F("total_number"), 0), output_field=dec),
+                output_field=dec,
+            )
+        )
+        .order_by("material__code", "material__name")
+    )
+
+    # 2) Har bir material uchun order_id + date_finished yig‘amiz (SQLite friendly)
+    rel = (
+        OrderMaterial.objects.filter(**base_filter)
+        .values("material_id", "order_id", "order__date_finished")
+        .distinct()
+    )
+
+    material_orders = {}
+    for r in rel:
+        mid = r["material_id"]
+        dt = r["order__date_finished"]
+        dt_str = dt.date().isoformat() if dt else ""
+        txt = f'Akt №{r["order_id"]} ga {dt_str}y'
+        material_orders.setdefault(mid, []).append(txt)
+
+    # 3) JSON tayyorlash
+    data = []
+    for item in qs:
+        mid = item["material_id"]
+        order_info = ", ".join(material_orders.get(mid, []))
+
+        data.append({
+            "material__name": item.get("material__name", ""),
+            "material__unit__name": item.get("material__unit__name", ""),
+            "total_number": float(item.get("total_number") or 0),
+            "material__price": float(item.get("material__price") or 0),
+            "total_sum": float(item.get("total_sum") or 0),
+            "order_info": order_info,  # ✅ probelsiz key
+            "material__code": item.get("material__code", ""),
+        })
+
+    return JsonResponse(data, safe=False)
