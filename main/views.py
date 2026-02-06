@@ -2115,9 +2115,10 @@ def akt_post(request):
     if request.method != "POST":
         return redirect("akt_get")
 
+    employee = getattr(request.user, "employee", None)
     org_id = request.POST.get("organization") or None
     dep_id = request.POST.get("department") or None
-    employee_id = request.POST.get("employee") or None
+    sender_id = request.POST.get("employee") or None
 
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
@@ -2135,36 +2136,22 @@ def akt_post(request):
 
     org = Organization.objects.filter(id=org_id).first() if org_id else None
     dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    sender = Employee.objects.filter(id=employee_id).first() if employee_id else None
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
 
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
 
     ORG_TEXT = {
-        "4": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
-        "1": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
-        "2": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
-        "3": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
+        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
+        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
+        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
+        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
     }
     org_name = ORG_TEXT.get(org.id, "")
 
-    employees = []
-    seen = set()
-
-    for q in qs:
-        emp = q.order.receiver if q.order and q.order.receiver else None
-        if emp and emp.id not in seen:
-            seen.add(emp.id)
-            rank = emp.rank.name if emp.rank else ""
-            text = f"{emp.full_name} ({rank})" if rank else emp.full_name
-            employees.append(text)
-
-    receiver_text = ", ".join(employees)
-
     replace_text(doc, {
-        "ID": f" ",
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
-        "RECEIVER": receiver_text,
+        "RECEIVER": str(employee),
         "SENDER": sender.full_name if sender else "",
         "DEPARTMENT": dep.name if dep else "",
     })
