@@ -37,7 +37,7 @@ def set_cell_text(cell, text, bold=False, center=False):
     p = cell.paragraphs[0]
     run = p.add_run("" if text is None else str(text))
     run.font.name = "Times New Roman"
-    run.font.size = Pt(8)
+    run.font.size = Pt(7)
     run.bold = bold
 
     p.paragraph_format.space_before = Pt(0)
