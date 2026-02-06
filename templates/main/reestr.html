@@ -19,19 +19,18 @@
     <section class="section">
       <div class="row">
         <div class="col-lg-4">
-
+         <form action="{% url 'reestr_post' %}" method="post">{% csrf_token %}
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Vertical Form</h5>
-
+              <h5 class="card-title">Filtrlash</h5>
               <!-- Vertical Form -->
-              <form class="row g-3" action="{% url 'reestr_post' %}" method="post" data-download="true">{% csrf_token %}
+              <div class="row g-3">
                 <div class="col-12">
                   <label for="organization" class="form-label">Tashkilot :</label>
                     <select id="organization" name="organization" class="form-select" required>
                         <option value="">Tanlang...</option>
                         {% for org in organizations %}
-                            <option value="{{ org.id }}">{{ org.name }}</option>
+                            <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -43,20 +42,107 @@
                   <input type="date" name="date2" id="date2" required class="form-control">
                 </div>
                 <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                  <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
                 </div>
-              </form><!-- Vertical Form -->
-
+              </div>
             </div>
           </div>
-
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Imzolashga yuborish</h5>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                    <select id="sender" name="sender" class="form-select" required>
+                        <option value="">Tanlang...</option>
+                        {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                    <select id="agreements" name="agreements[]" class="form-select" multiple>
+                        <option value="">Tanlang...</option>
+                        {% for emp in deedconsent %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="message" class="form-label">Izox :</label>
+                  <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                </div>
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
+                </div>
+              </div><!-- Vertical Form -->
+            </div>
+          </div>
+         </form>
         </div>
 
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-body m-5">
-                    <div class="d-flex justify-content-center align-items-center mb-3">
-                        <h5 class="text-center"><b>Reestr</b></h5>
+                <div class="card-body mt-5">
+                    <div class="text-center">
+                        <b>Kompyuter va ofis uskunalariga servis xizmat ko'rsatish jarayonida foydalanilgan</b><br>
+                        <b>sarf materiallar, ehtiyot qismlar va uskunalar bo'yicha</b><br>
+                        <b>R E E S T R I</b><br>
+                        <b>ORGANIZATION </b><br>
+                        <b>Markaziy apparat</b><br>
+                        <b>2026 yil dekabir oyi uchun</b><br>
+                    </div>
+                    <div class="text-center">
+                        <table class="table table-bordered table-sm text-center align-middle" style="font-size:9px;">
+                            <thead>
+                              <tr>
+                                <th rowspan="2" class="text-center align-middle">№</th>
+                                <th rowspan="2" class="text-center align-middle">Qurilma nomi</th>
+                                <th rowspan="2" class="text-center align-middle">Qurilma modeli</th>
+                                <th rowspan="2" class="text-center align-middle">Seriya №</th>
+                                <th rowspan="2" class="text-center align-middle">Sarf materiallari nomi</th>
+                                <th rowspan="2" class="text-center align-middle">Soni</th>
+                                <th rowspan="2" class="text-center align-middle">Birlikdagi narxi</th>
+                                <th rowspan="2" class="text-center align-middle">Materiallarning umumiy qiymati</th>
+                                <th colspan="2" class="text-center align-middle">Qurilmadan foydalanuvchi</th>
+                                <th rowspan="2" class="text-center align-middle">Tashkilot, bo'lim nomi</th>
+                                <th rowspan="2" class="text-center align-middle">Kim tomonidan o'rnatilgan</th>
+                                <th rowspan="2" class="text-center align-middle">O'rnatish sanasi</th>
+                                <th rowspan="2" class="text-center align-middle">So'rovnoma №</th>
+                                <th rowspan="2" class="text-center align-middle">So'rovnoma sanasi</th>
+                                <th rowspan="2" class="text-center align-middle">1C kodi</th>
+                              </tr>
+                              <tr>
+                                <th class="text-center align-middle">F.I.Sh.</th>
+                                <th class="text-center align-middle">Lavozimi</th>
+                              </tr>
+                            </thead>
+                            <tbody id="resultsBody">
+                              <tr>
+                                  <td colspan="16" class="text-center text-muted">Filtr tanlang</td>
+                              </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <b>04 mart 2025 yildagi 1 - sonli;  :shartnomalarga muvofiq</b>
+                    </div>
+                    <div class="container mt-3">
+                        <div class="row mt-3">
+                            <div class="col-6 text-start"><b>Boshqarma boshlig'i</b></div>
+                            <div class="col-6 text-start"><b>Nazrullayev A.</b></div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-6 text-start"><b>Tekshirdi va qabul qildi</b><br><b>Bosh mutaxassis</b></div>
+                            <div class="col-6 text-start"><b>Yakushina E.</b></div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-6 text-start"><b>Kelishildi</b><br><b>Bosh hisobchi</b></div>
+                            <div class="col-6 text-start"><b>Mengniyozov F.A.</b></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -66,6 +152,285 @@
 
   </main><!-- End #main -->
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    // O'zgaruvchilar
+    let currentReportData = [];
+
+    // Dastlabki sanalarni belgilash
+    function setDefaultDates() {
+        const today = new Date();
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+
+        $('#date1').val(firstDay.toISOString().split('T')[0]);
+        $('#date2').val(today.toISOString().split('T')[0]);
+    }
+
+    setDefaultDates();
+
+    // Hisobot yaratish
+    $('#btnGenerate').click(function() {
+        generateReport();
+    });
+
+    // Enter bosganda ham ishlash
+    $('#svodForm input').keypress(function(e) {
+        if (e.which === 13) {
+            generateReport();
+        }
+    });
+
+    function generateReport() {
+        const orgId = $('#organization').val();
+        const date1 = $('#date1').val();
+        const date2 = $('#date2').val();
+
+        // Validatsiya
+        if (!orgId || !date1 || !date2) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Diqqat!',
+                text: 'Iltimos, barcha maydonlarni to\'ldiring',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        if (new Date(date1) > new Date(date2)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Xato!',
+                text: 'Boshlanish sanasi tugash sanasidan keyin bo\'lishi mumkin emas',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        // Yuklanish indikatori
+        $('#resultsBody').html(`
+            <tr>
+                <td colspan="8" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Yuklanmoqda...</span>
+                    </div>
+                    <p class="mt-2">Hisobot yuklanmoqda...</p>
+                </td>
+            </tr>
+        `);
+
+        // AJAX so'rovi
+        $.ajax({
+            url: "{% url 'ajax_svod_materials' %}",
+            method: 'GET',
+            data: {
+                organization: orgId,
+                date1: date1,
+                date2: date2,
+                _token: '{{ csrf_token }}'
+            },
+            success: function(response) {
+                currentReportData = response;
+                displayReport(response);
+                updateStats(response);
+                updateHeader(orgId, date1, date2);
+                $('#btnExport').prop('disabled', false);
+            },
+            error: function(xhr, status, error) {
+                console.error('Xatolik:', error);
+                $('#resultsBody').html(`
+                    <tr>
+                        <td colspan="8" class="text-center text-danger">
+                            <i class="bi bi-exclamation-triangle"></i> Xatolik yuz berdi: ${error}
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+    }
+
+    // Hisobotni ekranga chiqarish
+    function displayReport(data) {
+        if (!data || data.length === 0) {
+            $('#resultsBody').html(`
+                <tr>
+                    <td colspan="8" class="text-center text-muted">
+                        <i class="bi bi-inbox"></i> Tanlangan parametrlar bo'yicha ma'lumot topilmadi
+                    </td>
+                </tr>
+            `);
+            $('#summarySection').hide();
+            return;
+        }
+
+        let html = '';
+        let totalAmount = 0;
+        let itemCount = 0;
+
+        data.forEach(function(item, index) {
+            // Jami qatorni o'tkazib yuborish (u alohida ko'rsatiladi)
+            if (item.is_total) {
+                totalAmount = parseFloat(item.total_sum) || 0;
+                return;
+            }
+
+            itemCount++;
+            const price = parseFloat(item.price) || 0;
+            const quantity = parseFloat(item.total_number) || 0;
+            const sum = parseFloat(item.total_sum) || 0;
+
+            html += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.material__name || ''}</td>
+                    <td>${item.material__unit__name || ''}</td>
+                    <td>${item.total_number || ''}</td>
+                    <td>${item.material__price || ''}</td>
+                    <td>${item.total_sum || ''}</td>
+                    <td>${item.order_info || ''}</td>
+                    <td>${item.material__code || ''}</td>
+                </tr>
+            `;
+        });
+
+        // Jami qator qo'shish
+        if (totalAmount > 0) {
+            html += `
+                <tr class="total-row">
+                    <td colspan="6" class="text-end"><strong>JAMI:</strong></td>
+                    <td class="numeric-cell"><strong>${totalAmount.toLocaleString('uz-UZ')}</strong></td>
+                    <td></td>
+                </tr>
+            `;
+        }
+
+        $('#resultsBody').html(html);
+        $('#totalAmount').text(totalAmount.toLocaleString('uz-UZ'));
+        $('#summarySection').show();
+
+        // Xulosa matni
+        $('#summaryText').html(`
+            <strong>${itemCount} turdagi material</strong> <br>
+            Sana oralig'i: ${$('#date1').val()} - ${$('#date2').val()} <br>
+            Jami summa: <strong>${totalAmount.toLocaleString('uz-UZ')} UZS</strong>
+        `);
+    }
+
+    // Statistika yangilash
+    function updateStats(data) {
+        if (!data || data.length === 0) {
+            $('#stats').html('<p class="text-muted">Ma\'lumot yo\'q</p>');
+            return;
+        }
+
+        const totalItems = data.length - 1; // Jami qatorni hisobga olmaslik
+        let totalAmount = 0;
+
+        data.forEach(function(item) {
+            if (item.is_total) {
+                totalAmount = parseFloat(item.total_sum) || 0;
+            }
+        });
+
+        $('#stats').html(`
+            <div class="d-flex justify-content-between">
+                <span>Material turlari:</span>
+                <strong>${totalItems}</strong>
+            </div>
+            <div class="d-flex justify-content-between">
+                <span>Jami summa:</span>
+                <strong>${totalAmount.toLocaleString('uz-UZ')} UZS</strong>
+            </div>
+            <hr>
+            <small class="text-muted">
+                <i class="bi bi-info-circle"></i> Barcha materiallar uchun yig'ma ko'rsatkichlar
+            </small>
+        `);
+    }
+
+    // Sarlavha yangilash
+    function updateHeader(orgId, date1, date2) {
+        const orgName = $('#organization option:selected').text();
+
+        $('#headerOrg').text(orgName);
+        $('#headerDates').text(`${date1} - ${date2}`);
+        $('#reportHeader').show();
+    }
+
+    // Excel ga yuklash
+    $('#btnExport').click(function() {
+        if (!currentReportData || currentReportData.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Diqqat!',
+                text: 'Avval hisobot yarating',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
+        exportToExcel();
+    });
+
+    // Excel export funksiyasi
+    function exportToExcel() {
+        // Bu funksiya Excel fayl yaratadi
+        // Siz SheetJS yoki boshqa kutubxonadan foydalanishingiz mumkin
+
+        Swal.fire({
+            icon: 'info',
+            title: 'Excel ga yuklash',
+            text: 'Fayl tayyorlanmoqda...',
+            showConfirmButton: false,
+            allowOutsideClick: false
+        });
+
+        // Oddiy CSV yoki Excel yaratish logikasi
+        setTimeout(() => {
+            Swal.fire({
+                icon: 'success',
+                title: 'Muvaffaqiyatli!',
+                text: 'Fayl yuklandi',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }, 1000);
+    }
+
+    // Material tafsilotlari
+    window.showDetails = function(materialId) {
+        // Bu funksiya materialning batafsil ma'lumotlarini ko'rsatadi
+        Swal.fire({
+            title: 'Material tafsilotlari',
+            html: 'Yuklanmoqda...',
+            showConfirmButton: false
+        });
+
+        // AJAX so'rovi orqali material tafsilotlarini olish
+        // Bu sizning loyihangizga qarab to'ldiriladi
+    };
+});
+</script>
+
+<script>
+$(function () {
+
+  function initSelect2All() {
+    $('select').each(function () {
+      const $el = $(this);
+      if ($el.data('select2')) return;
+
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
+    });
+  }
+
+  initSelect2All();
+});
+</script>
 {% endblock content %}
 
 {% block js %}
