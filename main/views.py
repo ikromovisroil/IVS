@@ -29,6 +29,7 @@ from django.views.decorators.http import require_POST
 from decimal import Decimal, InvalidOperation
 from datetime import date
 import tempfile
+from django.core.files.base import ContentFile
 
 
 def global_data(request):
@@ -212,7 +213,7 @@ def contact_user(request):
     context = {
         "deed_sender": deed_sender,
         "senders": senders,
-        "organization": Organization.objects.exclude(org_type="IVS"),
+        "organization": Organization.objects.all(),
     }
     return render(request, "main/contact_user.html", context)
 
@@ -2096,21 +2097,58 @@ def ordermaterial_post(request):
 @login_required
 def akt_get(request):
 
-    if not hasattr(request.user, "employee"):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied
 
-    if request.user.employee.rol.client:
-        raise PermissionDenied
+
+    # 🔹 GET dan keladigan qiymatlar
+    dep_id = request.GET.get("department")
+    date1 = request.GET.get("date1")
+    date2 = request.GET.get("date2")
+
+    materials_qs = OrderMaterial.objects.none()
+
+    # 🔹 Agar hamma filterlar bo‘lsa – qidiramiz
+    if dep_id and date1 and date2:
+        try:
+            d1 = timezone.make_aware(datetime.strptime(date1, "%Y-%m-%d"))
+            d2 = timezone.make_aware(
+                datetime.strptime(date2, "%Y-%m-%d") + timedelta(days=1)
+            )
+
+            materials_qs = (
+                OrderMaterial.objects.filter(
+                    order__date_finished__gte=d1,
+                    order__date_finished__lt=d2,
+                    order__sender__department_id=dep_id,
+                    order__receiver__region=employee.region,
+                )
+                .select_related(
+                    "order",
+                    "order__sender",
+                    "order__sender__rank",
+                    "order__sender__department",
+                    "material",
+                    "technic",
+                )
+                .order_by("id")
+            )
+        except ValueError:
+            materials_qs = OrderMaterial.objects.none()
 
     context = {
-        'organizations': Organization.objects.all(),
-        'technics': OrderMaterial.objects.filter(),
+        "organizations": Organization.objects.all(),
+        "technics": materials_qs,
+        "date1": date1,
+        "date2": date2,
     }
-    return render(request, 'main/akt.html', context)
+    return render(request, "main/akt.html", context)
 
 
 @never_cache
 @login_required
+@require_POST
 def akt_post(request):
     if request.method != "POST":
         return redirect("akt_get")
@@ -2118,7 +2156,9 @@ def akt_post(request):
     employee = getattr(request.user, "employee", None)
     org_id = request.POST.get("organization") or None
     dep_id = request.POST.get("department") or None
-    sender_id = request.POST.get("employee") or None
+    sender_id = request.POST.get("sender") or None
+    message = request.POST.get("message", "").strip() or None
+    agreements = request.POST.getlist("agreements[]")
 
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
@@ -2146,7 +2186,7 @@ def akt_post(request):
         2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
         3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
     }
-    org_name = ORG_TEXT.get(org.id, "")
+    org_name = ORG_TEXT.get(org.id, "") if org else ""
 
     replace_text(doc, {
         "ORGANIZATION": org_name,
@@ -2154,6 +2194,7 @@ def akt_post(request):
         "RECEIVER": str(employee),
         "SENDER": sender.full_name if sender else "",
         "DEPARTMENT": dep.name if dep else "",
+        "CONTRACT": str(org.contract) if org else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -2219,9 +2260,39 @@ def akt_post(request):
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
 
-    response = HttpResponse(pdf_bytes, content_type="application/pdf")
-    response["Content-Disposition"] = 'attachment; filename="order.pdf"'
-    return response
+    deed = Deed.objects.create(
+        sender=sender,  # ✅ obyekt
+        user=employee,
+        message_user=message,
+    )
+    # ✅ FileField ga saqlash
+    deed.file.save("akt.pdf", ContentFile(pdf_bytes), save=True)
+
+    # ✅ agreements id larini tozalash
+    agreements = agreements or []  # ✅ ekstra xavfsizlik
+
+    ids = []
+    for x in agreements:
+        x = (x or "").strip()
+        if x.isdigit():
+            ids.append(int(x))
+    ids = list(set(ids))
+
+    # ✅ sender va receiver(employee) ni exclude qilish
+    exclude_ids = set()
+    if sender:
+        exclude_ids.add(sender.id)
+    exclude_ids.add(employee.id)
+
+    ids = [i for i in ids if i not in exclude_ids]
+
+    if ids:
+        emps = Employee.objects.filter(id__in=ids).only("id")
+        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    messages.success(request, "Ariza yuborildi")
+    return redirect("contact_user")
 
 
 @never_cache
@@ -2250,7 +2321,12 @@ def svod_post(request):
     if request.method != "POST":
         return redirect("document_get")
 
-    org_id = request.POST.get("organization")
+    employee = getattr(request.user, "employee", None)
+    org_id = request.POST.get("organization") or None
+    sender_id = request.POST.get("sender") or None
+    message = request.POST.get("message", "").strip() or None
+    agreements = request.POST.getlist("agreements[]")
+
     date_id1 = request.POST.get("date1")
     date_id2 = request.POST.get("date2")
 
@@ -2265,15 +2341,17 @@ def svod_post(request):
     )
 
     org = Organization.objects.filter(id=org_id).first() if org_id else None
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
     ORG_TEXT = {
-        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazini",
-        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
-        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
-        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
+        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
+        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
+        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
+        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
     }
-    org_name = ORG_TEXT.get(getattr(org, "org_type", None), "")
+    org_name = ORG_TEXT.get(org.id, "") if org else ""
+
     replace_text(doc, {
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
@@ -2355,16 +2433,54 @@ def svod_post(request):
     table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
     target._p.addnext(table._tbl)
 
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, "order.docx")
+        doc.save(docx_path)
 
-    response = HttpResponse(
-        buffer.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
+        if not pdf_path:
+            return HttpResponse(
+                "DOCX -> PDF convert xato!\n\n" + debug,
+                content_type="text/plain",
+                status=500
+            )
+
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+    deed = Deed.objects.create(
+        sender=sender,  # ✅ obyekt
+        user=employee,
+        message_user=message,
     )
-    response["Content-Disposition"] = 'attachment; filename="svod.docx"'
-    return response
+    # ✅ FileField ga saqlash
+    deed.file.save("akt.pdf", ContentFile(pdf_bytes), save=True)
+
+    # ✅ agreements id larini tozalash
+    agreements = agreements or []  # ✅ ekstra xavfsizlik
+
+    ids = []
+    for x in agreements:
+        x = (x or "").strip()
+        if x.isdigit():
+            ids.append(int(x))
+    ids = list(set(ids))
+
+    # ✅ sender va receiver(employee) ni exclude qilish
+    exclude_ids = set()
+    if sender:
+        exclude_ids.add(sender.id)
+    exclude_ids.add(employee.id)
+
+    ids = [i for i in ids if i not in exclude_ids]
+
+    if ids:
+        emps = Employee.objects.filter(id__in=ids).only("id")
+        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    messages.success(request, "Ariza yuborildi")
+    return redirect("contact_user")
 
 
 @never_cache

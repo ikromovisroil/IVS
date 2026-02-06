@@ -213,7 +213,7 @@ def deedconsent_delete(request, pk):
     if not emp:
         raise PermissionDenied
 
-    obj = get_object_or_404(Deedconsent, pk=pk)
+    obj = get_object_or_404(DeedConsent, pk=pk)
 
     if obj.deed.user_id != emp.id:
         raise PermissionDenied
@@ -226,7 +226,7 @@ def ajax_deedconsent_delete(request):
     if not dc_id:
         return JsonResponse({"ok": False, "error": "dc_id required"}, status=400)
 
-    dc = get_object_or_404(Deedconsent, id=dc_id)
+    dc = get_object_or_404(DeedConsent, id=dc_id)
 
     # ✅ RUXSAT: faqat deed egasi (jo‘natuvchi) o‘chira olsin
     # sizda request.user.employee bor
@@ -235,3 +235,55 @@ def ajax_deedconsent_delete(request):
 
     dc.delete()
     return JsonResponse({"ok": True, "deleted_id": int(dc_id)})
+
+from datetime import datetime, timedelta
+from django.db.models import F, Value, CharField
+from django.db.models.functions import Concat
+def ajax_akt_materials(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    dep_id = request.GET.get("department")
+    d1 = request.GET.get("date1")
+    d2 = request.GET.get("date2")
+
+    if not dep_id or not d1 or not d2:
+        return JsonResponse([], safe=False)
+
+    date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
+    date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
+
+    qs = (
+        OrderMaterial.objects.filter(
+            order__date_finished__gte=date1,
+            order__date_finished__lt=date2,
+            order__sender__department_id=dep_id,
+            order__receiver__region=employee.region,
+        )
+        .annotate(
+            full_name=Concat(
+                F('order__sender__first_name'),
+                Value(' '),
+                F('order__sender__last_name'),
+                Value(' '),
+                F('order__sender__father_name'),
+                output_field=CharField()
+            ),
+            rank_name=F('order__sender__rank__name'),  # rank nomini olish
+        )
+        .values(
+            "order__technics__name",
+            "order__technics__serial",
+            "material__name",
+            "number",
+            "material__unit__name",
+            "full_name",  # endi bu mavjud
+            "rank_name",  # rank nomi
+            "material__price",
+            "id",
+            "order__date_finished",
+        )
+    )
+
+    return JsonResponse(list(qs), safe=False)

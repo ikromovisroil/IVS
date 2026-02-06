@@ -403,7 +403,9 @@
                                                           <label class="col-sm-3 col-form-label">Fayl</label>
                                                           <div class="col-sm-9">
                                                             <input class="form-control" type="file" name="file">
+                                                              {% if d.file %}
                                                               <span>File :</span> <i><a href="{{ d.file.url }}">📄 Ko‘rish</a></i><br>
+                                                               {% endif %}
                                                           </div>
                                                         </div>
 

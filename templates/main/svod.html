@@ -21,17 +21,16 @@
         <div class="col-lg-4">
 
           <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Vertical Form</h5>
-
+            <form action="{% url 'svod_post' %}" method="post" class="card-body">{% csrf_token %}
+              <h5 class="card-title">Filtrlash</h5>
               <!-- Vertical Form -->
-              <form class="row g-3" action="{% url 'svod_post' %}" method="post" data-download="true">{% csrf_token %}
+              <div class="row g-3">
                 <div class="col-12">
                   <label for="organization" class="form-label">Tashkilot :</label>
                     <select id="organization" name="organization" class="form-select" required>
                         <option value="">Tanlang...</option>
                         {% for org in organizations %}
-                            <option value="{{ org.id }}">{{ org.name }}</option>
+                            <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -42,21 +41,117 @@
                 <div class="col-md-12">
                   <input type="date" name="date2" id="date2" required class="form-control">
                 </div>
-                <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+              </div><hr><!-- Vertical Form -->
+              <h5 class="card-title">Imzolashga yuborish</h5>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                    <select id="sender" name="sender" class="form-select" required>
+                        <option value="">Tanlang...</option>
+                        {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-              </form><!-- Vertical Form -->
+                <div class="col-12">
+                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                    <select id="agreements" name="agreements[]" class="form-select" multiple>
+                        <option value="">Tanlang...</option>
+                        {% for emp in deedconsent %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
 
-            </div>
+                <div class="col-12">
+                  <label for="message" class="form-label">Izox :</label>
+                  <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                </div>
+
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
+                </div>
+              </div><!-- Vertical Form -->
+
+            </form>
           </div>
 
         </div>
 
         <div class="col-lg-8">
             <div class="card">
-                <div class="card-body m-5">
+                <div class="card-body mt-5">
                     <div class="d-flex justify-content-center align-items-center mb-3">
-                        <h5 class="text-center"><b>Yakuniy hisobot</b></h5>
+                        <div class="row text-center">
+                            <div class="col-6">
+                            </div>
+                            <div class="col-6">
+                                <b>
+                                    "Tasdiqlayman"
+                                    Oʻzbekiston Respublikasi Iqtisodiyot va moliya
+                                    vazirligi huzuridagi “Axborot texnalogiyalar markazi”
+                                    direktori vazifasini vaqtincha bajaruvchi
+                                    F.Xujamqulov
+                                </b>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        15.02.2026 y
+                    </div>
+                    <div class="text-center">
+                        <b>Kompyuter va ofis uskunalariga servis xizmat ko'rsatish jarayonida foydalanilgan</b><br>
+                        <b>sarf materiallar, ehtiyot qismlar va uskunalar bo'yicha</b><br>
+                        <b>Y A K U N I Y    H I S O B O T</b><br>
+                        <b>ORGANIZATION </b><br>
+                        <b>2026 yil dekabir oyi uchun</b><br>
+                    </div>
+                    <div class="text-center">
+                        <table class="table table-bordered table-sm text-center align-middle" style="font-size:10px;">
+                            <thead>
+                              <tr>
+                                <th class="text-center align-middle">№</th>
+                                <th class="text-center align-middle">Materialning nomi</th>
+                                <th class="text-center align-middle">O'lchov birligi</th>
+                                <th class="text-center align-middle">Miqdori</th>
+                                <th class="text-center align-middle">Birlik narxi</th>
+                                <th class="text-center align-middle">Umumiy qiymati</th>
+                                <th class="text-center align-middle">Eslatma</th>
+                                <th class="text-center align-middle">Kod 1С</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <th scope="row">1</th>
+                                <td>адаптер беспроводной hdmi 50 м. (Full HD1080р,расстояние передачи от 1ТХ до 1RX: макс. 50 м, состоит их двухпередатчиков ТХ)</td>
+                                <td>dona</td>
+                                <td>28</td>
+                                <td>455000</td>
+                                <td>910000</td>
+                                <td>Akt №178602 ga  16.12.2025y, </td>
+                                <td>5325</td>
+                              </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <b>04 mart 2025 yildagi 1 - sonli;  :shartnomalarga muvofiq</b>
+                    </div>
+                    <div class="container mt-3">
+                        <div class="row mt-3">
+                            <div class="col-6 text-start"><b>Boshqarma boshlig'i</b></div>
+                            <div class="col-6 text-start"><b>Nazrullayev A.</b></div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-6 text-start"><b>Tekshirdi va qabul qildi</b><br><b>Bosh mutaxassis</b></div>
+                            <div class="col-6 text-start"><b>Yakushina E.</b></div>
+                        </div>
+
+                        <div class="row mt-3">
+                            <div class="col-6 text-start"><b>Kelishildi</b><br><b>Bosh hisobchi</b></div>
+                            <div class="col-6 text-start"><b>Mengniyozov F.A.</b></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -65,6 +160,127 @@
     </section>
 
   </main><!-- End #main -->
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(function () {
+
+  function initSelect2All() {
+    $('select').each(function () {
+      const $el = $(this);
+      if ($el.data('select2')) return;
+
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
+    });
+  }
+
+  initSelect2All();
+
+  function loadDepartments(orgId, selectedDepId=null) {
+    $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+    // dep o‘zgarsa xodimlarni ham bo‘shatamiz
+    $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+    $('#employee').html('<option value="">Tanlang...</option>').trigger('change');
+
+    if (!orgId) {
+      $('#department').html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_load_departments' %}",
+      data: { organization: orgId },
+      success: function (data) {
+        let options = '<option value=""></option>';
+        data.forEach(function(dep){
+          const selected = (String(selectedDepId) === String(dep.id)) ? 'selected' : '';
+          options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
+        });
+
+        $('#department').html(options).trigger('change');
+      }
+    });
+  }
+
+  // ✅ Department bo‘yicha xodimlarni ikkala selectga to‘ldiradi
+  function loadEmployeesToBoth(depId, selectedSenderId=null, selectedConsentIds=[]) {
+    $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
+    $('#employee').html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+    if (!depId) {
+      $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+      $('#employee').html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_load_employees' %}",
+      data: { department: depId },
+      success: function (data) {
+
+        // sender (single)
+        let senderOptions = '<option value=""></option>';
+        // kelishuvchilar (multiple)
+        let consentOptions = '<option value=""></option>';
+
+        const consentSet = new Set((selectedConsentIds || []).map(String));
+
+        data.forEach(function(emp){
+          const sid = String(emp.id);
+
+          const senderSelected = (String(selectedSenderId) === sid) ? 'selected' : '';
+          senderOptions += `<option value="${sid}" ${senderSelected}>${emp.full_name}</option>`;
+
+          const consentSelected = consentSet.has(sid) ? 'selected' : '';
+          consentOptions += `<option value="${sid}" ${consentSelected}>${emp.full_name}</option>`;
+        });
+
+        $('#sender').html(senderOptions).trigger('change');
+        $('#employee').html(consentOptions).trigger('change');
+      }
+    });
+  }
+
+  // EVENTS
+  $('#organization').on('change', function(){
+    loadDepartments($(this).val());
+  });
+
+  $('#department').on('change', function(){
+    // dep tanlanganda ikkalasiga ham xodim chiqsin
+    loadEmployeesToBoth($(this).val());
+  });
+
+  // OLDINGI TANLANGANLARNI QAYTA TIKLASH
+  const initialOrg = '{{ selected_org|default:"" }}';
+  const initialDep = '{{ selected_dep|default:"" }}';
+
+  // sender oldin tanlanganini ham saqlamoqchi bo‘lsangiz viewdan selected_sender yuboring
+  const initialSender = '{{ selected_sender|default:"" }}';
+
+  // kelishuvchilar multiple bo‘lgani uchun list kerak: viewdan selected_employees ni list qilib yuboring
+  // masalan: [1,2,3]
+  const initialConsentList = {{ selected_employees|default:"[]"|safe }};
+
+  if (initialOrg) {
+    $('#organization').val(initialOrg).trigger('change');
+    loadDepartments(initialOrg, initialDep);
+
+    if (initialDep) {
+      setTimeout(function(){
+        $('#department').val(initialDep).trigger('change');
+        loadEmployeesToBoth(initialDep, initialSender, initialConsentList);
+      }, 250);
+    }
+  }
+
+});
+</script>
 
 {% endblock content %}
 

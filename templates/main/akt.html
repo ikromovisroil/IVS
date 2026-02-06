@@ -19,9 +19,9 @@
     <section class="section">
       <div class="row">
         <div class="col-lg-4">
-
+         <form action="{% url 'akt_post' %}" method="post">{% csrf_token %}
           <div class="card">
-            <form action="{% url 'akt_post' %}" method="post" class="card-body">{% csrf_token %}
+            <div class="card-body">
               <h5 class="card-title">Filtrlash</h5>
               <!-- Vertical Form -->
               <div class="row g-3">
@@ -50,32 +50,50 @@
                 <div class="col-md-12">
                   <input type="date" name="date2" id="date2" required class="form-control">
                 </div>
-              </div><hr><!-- Vertical Form -->
+                <div class="text-center">
+                  <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-body">
               <h5 class="card-title">Imzolashga yuborish</h5>
               <div class="row g-3">
                 <div class="col-12">
-                  <label for="employee" class="form-label">Imzolovchi xodim :</label>
-                    <select id="employee" name="employee" class="form-select" required>
+                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                    <select id="sender" name="sender" class="form-select" required>
                         <option value="">Tanlang...</option>
                         {% for emp in employees %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>
                         {% endfor %}
                     </select>
                 </div>
+                <div class="col-12">
+                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                    <select id="agreements" name="agreements[]" class="form-select" multiple>
+                        <option value="">Tanlang...</option>
+                        {% for emp in deedconsent %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="message" class="form-label">Izox :</label>
+                  <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                </div>
                 <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
-                  <button onclick="makePDF()">PDF yuklab olish</button>
+                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
                 </div>
               </div><!-- Vertical Form -->
-
-            </form>
+            </div>
           </div>
-
+         </form>
         </div>
 
         <div class="col-lg-8">
-            <div class="card" id="pdf-area">
-                <div class="card-body mt-3 mb-0">
+            <div class="card">
+                <div class="card-body mt-5">
                     <div class="text-center">
                         <b>Sarf materiallari, ehtiyot qismlar va uskunalar o'rnatish ishlari haqida</b>
                     </div>
@@ -96,14 +114,14 @@
                     </div>
                     <div class="row text-center">
                         <div class="col-6">
-                            <span>O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi</span><br>
-                            <b><ins>Palonchayev paloncha</ins></b><br>
+                            <span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va Moliya vazirligi </span> tashkiloti vakili:</span><br>
+                            <b><ins id="sender_name1">Palonchayev paloncha</ins></b><br>
                             <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
                                 (FIO, lavozimi)
                             </span>
                         </div>
                         <div class="col-6">
-                            <b><ins>DEPARTMENT</ins></b><br>
+                            <b><ins id="dep_id">DEPARTMENT</ins></b><br>
                             <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
                         </div>
                     </div>
@@ -149,149 +167,9 @@
                                 <th class="text-center align-middle">Materiallarni o‘rnatish sanasi</th>
                               </tr>
                             </thead>
-                            <tbody>
+                            <tbody id="materials_tbody">
                               <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>2016-05-25</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                              <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
-                              </tr>
-                            <tr>
-                                <th scope="row">1</th>
-                                <td>Brandon Jacob</td>
-                                <td>gd178605</td>
-                                <td>Клавиатура: беспроводная Bluetoothклавиатура-бесшумная мышь.Характеристики ЖИТЭ ультра компактная KM-18 с Кабельпитания Type-C. Буквы РУСС</td>
-                                <td>28</td>
-                                <td>dona</td>
-                                <td>Xanbabaev Alisher  Baxarovich</td>
-                                <td>Bo‘lim boshlig‘i</td>
-                                <td>275200</td>
-                                <td>178605</td>
-                                <td>178605</td>
+                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
                               </tr>
                             </tbody>
                         </table>
@@ -309,8 +187,8 @@
                             </span>
                         </div>
                         <div class="col-6">
-                            <b>O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakili:</b><br>
-                            <span>{{request.user.employee.full_name}}</span><br>
+                            <b><span>O‘zbekiston Respublikasi <span id="org_id_2">Iqtisodiyot va Moliya vazirligi </span> tashkiloti vakili:</span></b><br>
+                            <span id="sender_name2">dsdsdsdsdsdsdsdsds</span><br>
                             <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
                                 ( FIO )
                             </span>
@@ -326,49 +204,59 @@
   </main><!-- End #main -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
-<script>
-function makePDF() {
-    const element = document.getElementById("pdf-area");
-
-    html2pdf().from(element).set({
-        margin: [5, 5, 25, 5],
-        filename: 'hisobot.pdf',
-        html2canvas: {
-            scale: 2,
-            scrollX: 0,
-            scrollY: 0
-        },
-        jsPDF: {
-            unit: 'mm',
-            format: 'a4',
-            orientation: 'landscape' // 🔥 GORIZONTAL
-        }
-    }).save();
-}
-</script>
 <script>
 $(function () {
 
-  function initSelect2() {
-    // dropdownParent: agar modal bo‘lsa kerak bo‘ladi. Hozir oddiy sahifa — baribir zarar qilmaydi.
-    $('#organization, #department, #employee').select2({
-      width: '100%',
-      placeholder: 'Tanlang...',
-      allowClear: true
-    });
+  // ----------------- Helpers -----------------
+  function ymdToDmy(ymd){
+    if(!ymd) return '';
+    const [y,m,d] = ymd.split('-');
+    if(!y||!m||!d) return '';
+    return `${d}.${m}.${y}`;
   }
 
+  function setLoadingTbody(){
+    $('#materials_tbody').html(`
+      <tr>
+        <td colspan="11" class="text-center">
+          <div class="spinner-border spinner-border-sm" role="status"></div>
+          Yuklanmoqda...
+        </td>
+      </tr>
+    `);
+  }
+
+  function setEmptyTbody(msg){
+    $('#materials_tbody').html(`
+      <tr>
+        <td colspan="11" class="text-center text-muted">${msg}</td>
+      </tr>
+    `);
+  }
+
+  // ----------------- Select2 init -----------------
+  function initSelect2(){
+    $('#organization, #department, #sender, #agreements').each(function(){
+      const $el = $(this);
+      if ($el.data('select2')) return;
+
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
+    });
+  }
   initSelect2();
 
+  // ----------------- Cascade: Org -> Dep -----------------
   function loadDepartments(orgId, selectedDepId=null) {
-    // select2 bo‘lsa ham oddiy option qo‘yamiz
-    $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
-    $('#employee').html('<option value="">Tanlang...</option>').trigger('change.select2');
+    $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change');
+    $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+    $('#agreements').html('').trigger('change');
 
     if (!orgId) {
-      $('#department').html('<option value="">Tanlang...</option>').trigger('change.select2');
+      $('#department').html('<option value="">Tanlang...</option>').trigger('change');
       return;
     }
 
@@ -376,21 +264,24 @@ $(function () {
       url: "{% url 'ajax_load_departments' %}",
       data: { organization: orgId },
       success: function (data) {
-        let options = '<option value=""></option>'; // select2 placeholder uchun bo‘sh option
+        let options = '<option value=""></option>';
         data.forEach(function(dep){
           const selected = (String(selectedDepId) === String(dep.id)) ? 'selected' : '';
           options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
         });
-        $('#department').html(options).trigger('change.select2');
+        $('#department').html(options).trigger('change');
       }
     });
   }
 
-  function loadEmployees(depId, selectedEmpId=null) {
-    $('#employee').html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+  // ----------------- Cascade: Dep -> Employees -----------------
+  function loadEmployees(depId, selectedSenderId=null, selectedConsentIds=[]) {
+    $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
+    $('#agreements').html('').trigger('change');
 
     if (!depId) {
-      $('#employee').html('<option value="">Tanlang...</option>').trigger('change.select2');
+      $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+      $('#agreements').html('').trigger('change');
       return;
     }
 
@@ -398,39 +289,154 @@ $(function () {
       url: "{% url 'ajax_load_employees' %}",
       data: { department: depId },
       success: function (data) {
-        let options = '<option value=""></option>';
+
+        let senderOptions = '<option value=""></option>';
+        let consentOptions = '';
+
+        const consentSet = new Set((selectedConsentIds || []).map(String));
+
         data.forEach(function(emp){
-          const selected = (String(selectedEmpId) === String(emp.id)) ? 'selected' : '';
-          options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+          const sid = String(emp.id);
+
+          const senderSelected = (String(selectedSenderId) === sid) ? 'selected' : '';
+          senderOptions += `<option value="${sid}" ${senderSelected}>${emp.full_name}</option>`;
+
+          const consentSelected = consentSet.has(sid) ? 'selected' : '';
+          consentOptions += `<option value="${sid}" ${consentSelected}>${emp.full_name}</option>`;
         });
-        $('#employee').html(options).trigger('change.select2');
+
+        $('#sender').html(senderOptions).trigger('change');
+        $('#agreements').html(consentOptions).trigger('change');
       }
     });
   }
 
-  // EVENTS
   $('#organization').on('change', function(){
-    loadDepartments($(this).val());
+    const orgId = $(this).val();
+    loadDepartments(orgId);
   });
 
   $('#department').on('change', function(){
-    loadEmployees($(this).val());
+    const depId = $(this).val();
+    loadEmployees(depId);
   });
 
-  // OLDINGI TANLANGANLARNI QAYTA TIKLASH
+  // ----------------- Sender text update -----------------
+  $('#sender').on('change', function(){
+    const txt = $('#sender option:selected').text() || '';
+    $('#sender_name1').text(txt || '—');
+    $('#sender_name2').text(txt || '—');
+  });
+
+  // ----------------- SEARCH MATERIALS -----------------
+  function searchMaterials() {
+    const orgId = $('#organization').val();
+    const depId = $('#department').val();
+    const date1 = $('#date1').val();
+    const date2 = $('#date2').val();
+
+    if (!orgId || !depId || !date1 || !date2) {
+      alert("Iltimos, tashkilot, departament va sanalarni to‘liq tanlang!");
+      return;
+    }
+
+    // Org/dep nomlarini hujjatga chiqarish
+    const orgName = $('#organization option:selected').text();
+    const depName = $('#department option:selected').text();
+    $('#org_id_1, #org_id_2').text(orgName);
+    $('#dep_id').text(depName);
+
+    // Sana
+    $('#doc_date').text(ymdToDmy(date2) + " y");
+
+    setLoadingTbody();
+
+    $.ajax({
+      url: "{% url 'ajax_akt_materials' %}",
+      method: "GET",
+      data: {
+        department: depId,
+        date1: date1,
+        date2: date2
+      },
+      success: function(data){
+        if (!data || data.length === 0) {
+          setEmptyTbody("Tanlangan sana oralig‘ida ma’lumot topilmadi");
+          return;
+        }
+
+        let html = "";
+        data.forEach(function(item, index){
+
+          const finished = item['order__date_finished'] ? new Date(item['order__date_finished']) : null;
+          const formattedDate = finished ? finished.toLocaleDateString('ru-RU') : '-';
+
+          html += `
+            <tr>
+              <td>${index + 1}</td>
+              <td>${item['order__technics__name'] || '-'}</td>
+              <td>${item['order__technics__serial'] || '-'}</td>
+              <td>${item['material__name'] || '-'}</td>
+              <td>${item['number'] || '0'}</td>
+              <td>${item['material__unit__name'] || '-'}</td>
+              <td>${item['full_name'] || '-'}</td>
+              <td>${item['rank_name'] || '-'}</td>
+              <td>${item['material__price'] || '0'}</td>
+              <td>${item['id'] || '-'}</td>
+              <td>${formattedDate}</td>
+            </tr>
+          `;
+        });
+
+        $('#materials_tbody').html(html);
+      },
+      error: function(xhr){
+        $('#materials_tbody').html(`
+          <tr>
+            <td colspan="11" class="text-center text-danger">
+              Xatolik: Server javob bermadi (${xhr.status})
+            </td>
+          </tr>
+        `);
+        console.log(xhr.responseText);
+      }
+    });
+  }
+
+  $('#btnSearch').on('click', searchMaterials);
+
+  // Date inputlarda Enter bilan qidirish (input type=date’da har doim ishlamasligi mumkin, lekin qoldiramiz)
+  $('input[type="date"]').on('keydown', function(e){
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      searchMaterials();
+    }
+  });
+
+  // ----------------- Default date -----------------
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const weekAgo = new Date();
+  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgoStr = weekAgo.toISOString().split('T')[0];
+
+  if (!$('#date1').val()) $('#date1').val(weekAgoStr);
+  if (!$('#date2').val()) $('#date2').val(todayStr);
+
+  // ----------------- Old selections restore (agar view berayotgan bo‘lsa) -----------------
   const initialOrg = '{{ selected_org|default:"" }}';
   const initialDep = '{{ selected_dep|default:"" }}';
-  const initialEmp = '{{ selected_emp|default:"" }}';
+  const initialSender = '{{ selected_sender|default:"" }}';
+  const initialConsentList = {{ selected_employees|default:"[]"|safe }};
 
   if (initialOrg) {
-    $('#organization').val(initialOrg).trigger('change.select2');
+    $('#organization').val(initialOrg).trigger('change');
     loadDepartments(initialOrg, initialDep);
 
     if (initialDep) {
-      // departments ajaxdan kelishini kutib, keyin employees
       setTimeout(function(){
-        $('#department').val(initialDep).trigger('change.select2');
-        loadEmployees(initialDep, initialEmp);
+        $('#department').val(initialDep).trigger('change');
+        loadEmployees(initialDep, initialSender, initialConsentList);
       }, 250);
     }
   }
