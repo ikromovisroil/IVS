@@ -21,16 +21,18 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     output_dir = os.path.dirname(docx_path)
     expected_pdf = os.path.splitext(docx_path)[0] + ".pdf"
 
-    # soffice aniqlash
+    # ✅ soffice aniqlash (tez + to'g'ri)
     if os.name == "nt":
         candidates = [
             r"C:\Program Files\LibreOffice\program\soffice.exe",
             r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
         ]
+        soffice = next((c for c in candidates if os.path.exists(c)), None)
     else:
-        candidates = ["soffice", "libreoffice"]
+        soffice = shutil.which("soffice") or shutil.which("libreoffice")
 
-    soffice = candidates[0]
+    if not soffice:
+        return None, "LibreOffice (soffice) topilmadi. (sudo apt install libreoffice)"
 
     env = os.environ.copy()
     env.setdefault("HOME", output_dir)
@@ -38,6 +40,8 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     cmd = [
         soffice,
         "--headless",
+        "--invisible",
+        "--nodefault",
         "--nologo",
         "--nofirststartwizard",
         "--norestore",
@@ -49,30 +53,26 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     try:
         proc = subprocess.run(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            env=env
+            stdout=subprocess.DEVNULL,   # ✅ stdout/stderr ni o'qimaslik tezroq
+            stderr=subprocess.DEVNULL,
+            env=env,
+            timeout=30                  # ✅ osilib qolmasin
         )
     except Exception as e:
         return None, str(e)
 
-    debug = (
-        f"CMD: {' '.join(cmd)}\n"
-        f"RC: {proc.returncode}\n"
-        f"STDOUT:\n{proc.stdout}\n"
-        f"STDERR:\n{proc.stderr}\n"
-        f"EXPECTED: {expected_pdf}\n"
-        f"EXISTS: {os.path.exists(expected_pdf)}"
-    )
-
     if proc.returncode != 0:
-        return None, debug
+        return None, f"LibreOffice returncode={proc.returncode}"
 
     if os.path.exists(expected_pdf):
-        return expected_pdf, debug
+        return expected_pdf, "OK"
 
-    return None, debug
+    # LibreOffice ba'zan nomni o'zgartirishi mumkin → fallback
+    pdfs = [f for f in os.listdir(output_dir) if f.lower().endswith(".pdf")]
+    if pdfs:
+        return os.path.join(output_dir, pdfs[0]), "OK (fallback)"
+
+    return None, "PDF yaratilmadi"
 
 
 

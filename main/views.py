@@ -2204,15 +2204,23 @@ def akt_post(request):
     target._p.addnext(h._p)
     h._p.addnext(table._tbl)
 
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, "order.docx")
+        doc.save(docx_path)
 
-    response = HttpResponse(
-        buffer.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
-    response["Content-Disposition"] = 'attachment; filename="order.docx"'
+        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
+        if not pdf_path:
+            return HttpResponse(
+                "DOCX -> PDF convert xato!\n\n" + debug,
+                content_type="text/plain",
+                status=500
+            )
+
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = 'attachment; filename="order.pdf"'
     return response
 
 
