@@ -25,31 +25,34 @@
     <section class="section">
       <div class="row">
         <div class="col-lg-4">
-         <form action="{% url 'document_post' %}" method="post">{% csrf_token %}
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Filtrlash</h5>
-              <!-- Vertical Form -->
-              <div class="row g-3">
-                <div class="col-12">
-                  <label for="organization" class="form-label">Tashkilot :</label>
+          <form action="{% url 'document_post' %}" method="post">{% csrf_token %}
+
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Filtrlash</h5>
+
+                <div class="row g-3">
+                  <div class="col-12">
+                    <label for="organization" class="form-label">Tashkilot :</label>
                     <select id="organization" name="organization" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for org in organizations %}
-                            <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
-                        {% endfor %}
+                      <option value="">Tanlang...</option>
+                      {% for org in organizations %}
+                        <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
+                      {% endfor %}
                     </select>
-                </div>
-                <div class="col-12">
-                  <label for="department" class="form-label">Departament :</label>
+                  </div>
+
+                  <div class="col-12">
+                    <label for="department" class="form-label">Departament :</label>
                     <select id="department" name="department" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for dep in departments %}
-                            <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
-                        {% endfor %}
+                      <option value="">Tanlang...</option>
+                      {% for dep in departments %}
+                        <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
+                      {% endfor %}
                     </select>
-                </div>
-                <div class="col-md-12">
+                  </div>
+
+                  <div class="col-md-12">
                     <label for="rim_id" class="form-label">Chorak:</label>
                     <select id="rim_id" name="rim_id" class="form-select" required>
                       <option value="">Tanlang...</option>
@@ -58,47 +61,66 @@
                       <option value="III">III</option>
                       <option value="IV">IV</option>
                     </select>
-                </div>
-                <div class="text-center">
-                  <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
+                  </div>
+
+                  <div class="text-center">
+                    <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Imzolashga yuborish</h5>
-              <div class="row g-3">
-                <div class="col-12">
-                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
+
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Imzolashga yuborish</h5>
+
+                <div class="row g-3">
+                  <!-- ✅ xizmat ko'rsatuvchi vakili -->
+                  <div class="col-12">
+                    <label for="sender" class="form-label">Xizmat ko'rsatuvchining vakili</label>
                     <select id="sender" name="sender" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for emp in emp_bos %}
-                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                        {% endfor %}
+                      <option value="">Tanlang...</option>
+                      {% for emp in emp_bos %}
+                        <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                      {% endfor %}
                     </select>
-                </div>
-                <div class="col-12">
-                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                  </div>
+
+                  <!-- ✅ tashkilot vakili (receiver) -->
+                  <div class="col-12">
+                    <label for="receiver" class="form-label">Tashkilot vakili:</label>
+                    <select id="receiver" name="receiver" class="form-select" required>
+                      <option value="">Tanlang...</option>
+                      {% for emp in emp_bos %}
+                        <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-12">
+                    <label for="agreements" class="form-label">Kelishuvchilar :</label>
                     <select id="agreements" name="agreements[]" class="form-select" multiple>
-                        <option value="">Tanlang...</option>
-                        {% for emp in deedconsent %}
-                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                        {% endfor %}
+                      {% for emp in deedconsent %}
+                        <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                      {% endfor %}
                     </select>
+                  </div>
+
+                  <div class="col-12">
+                    <label for="message" class="form-label">Izox :</label>
+                    <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                  </div>
+
+                  <div class="text-center">
+                    <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
+                  </div>
                 </div>
-                <div class="col-12">
-                  <label for="message" class="form-label">Izox :</label>
-                  <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
-                </div>
-                <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
-                </div>
-              </div><!-- Vertical Form -->
+              </div>
             </div>
-          </div>
-         </form>
+
+          </form>
         </div>
+
 
         <div class="col-lg-8">
             <div class="card">

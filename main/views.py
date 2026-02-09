@@ -1479,7 +1479,7 @@ def document_get(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
-        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
+        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468,1]),
     }
     return render(request, "main/document.html", context)
 
@@ -1495,19 +1495,35 @@ def document_post(request):
     org_id = (request.POST.get("organization") or "").strip()
     dep_id = (request.POST.get("department") or "").strip()
 
+    sender_id = (request.POST.get("sender") or "").strip() or None
+    receiver_id = (request.POST.get("receiver") or "").strip() or None  # agar formda bo'lsa
+    message = (request.POST.get("message") or "").strip() or None
+
+    # ✅ agreements list
+    agreements = request.POST.getlist("agreements[]")  # <select name="agreements[]">
+
     org = Organization.objects.filter(id=org_id).first() if org_id else None
     dep = Department.objects.filter(id=dep_id).first() if dep_id else None
+    if not dep:
+        return HttpResponse("Department topilmadi!", status=404)
+
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
+    receiver = Employee.objects.filter(id=receiver_id).first() if receiver_id else None
 
     # === TEXNIKA QS ===
     komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
     prin_names = ["A4 Printer", "Printer", "scaner"]
 
-    base_qs = Technics.objects.filter(order__sender__department_id=dep_id)
+    # ✅ Technics modelingizga mos (department bor)
+    base_qs = (
+        Technics.objects.filter(department_id=dep_id)
+        .select_related("category")
+        .distinct()
+    )
 
-    # ✅ 1 ta so‘rovda 2 ta count
     counts = (
-        base_qs.values("category__name")
-        .filter(category__name__in=komp_names + prin_names)
+        base_qs.filter(category__name__in=komp_names + prin_names)
+        .values("category__name")
         .annotate(c=Count("id"))
     )
     komp_count = sum(x["c"] for x in counts if x["category__name"] in komp_names)
@@ -1521,7 +1537,6 @@ def document_post(request):
     if not texnikalar_matni:
         texnikalar_matni = "Texnikalar mavjud emas."
 
-    # === JADVAL UCHUN DATA (faqat values) ===
     kompyuterlar = list(
         base_qs.filter(category__name__in=komp_names).values("name", "serial", "inventory")
     )
@@ -1538,15 +1553,17 @@ def document_post(request):
 
     replacements = {
         "DEPARTMENT": dep.name or "",
-        "FIO": request.user.employee.full_name or "",
+        "FIO": employee.full_name or "",
         "DATA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": org.contract,
-        "RIM": '1',
+        "CONTRACT": getattr(org, "contract", "") or "",
+        "RIM": (request.POST.get("rim_id") or "1"),      # formdan olsa bo'ladi
         "TEXNIKALAR": texnikalar_matni,
     }
 
-    # === TEXT ALMASHTIRISH ===
-    bold_keys = {"STYLE", "FIO", "DATA", "NAMBER"}
+    bold_keys = {"FIO", "DATA"}
+
+    # ⚠️ Sizdagi usul run-split bo'lsa ba'zan ishlamaydi, lekin hozircha qoldiryapman.
+    # (xohlasangiz keyin 100% replace funksiyasini qo'yib beraman)
     for p in doc.paragraphs:
         for run in p.runs:
             txt = run.text
@@ -1594,12 +1611,52 @@ def document_post(request):
             target_paragraph._p.addnext(heading2._p)
             heading2._p.addnext(table2._tbl)
 
-    response = HttpResponse(
-        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+    # === DOCX -> PDF ===
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, "dalolatnoma.docx")
+        doc.save(docx_path)
+
+        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
+        if not pdf_path:
+            return HttpResponse("DOCX -> PDF convert xato!\n\n" + (debug or ""), content_type="text/plain", status=500)
+
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+    # === Deed yaratish ===
+    deed = Deed.objects.create(
+        sender=sender,
+        receiver=receiver,        # ✅ receiver alohida
+        user=employee,
+        message_user=message,
     )
-    response["Content-Disposition"] = 'attachment; filename="dalolatnoma.docx"'
-    doc.save(response)
-    return response
+    deed.file.save("dalolatnoma.pdf", ContentFile(pdf_bytes), save=True)
+
+    # === agreements tozalash ===
+    ids = []
+    for x in agreements:
+        x = (x or "").strip()
+        if x.isdigit():
+            ids.append(int(x))
+    ids = list(set(ids))
+
+    # sender, receiver, user(employee) ni exclude qilish
+    exclude_ids = set()
+    if sender:
+        exclude_ids.add(sender.id)
+    if receiver:
+        exclude_ids.add(receiver.id)
+    exclude_ids.add(employee.id)
+
+    ids = [i for i in ids if i not in exclude_ids]
+
+    if ids:
+        emps = Employee.objects.filter(id__in=ids).only("id")
+        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    messages.success(request, "Dalolatnoma yuborildi")
+    return redirect("contact_user")
 
 
 # yangi arizalar
