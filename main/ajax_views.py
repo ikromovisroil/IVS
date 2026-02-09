@@ -512,34 +512,25 @@ def ajax_document_preview(request):
     komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
     prin_names = ["A4 Printer", "Printer", "scaner"]
 
-    # ✅ Sizning model bo'yicha eng to'g'ri filter
-    base_qs = (
-        Technics.objects.filter(employee__department_id=dep_id)
-        .select_related("category")
+    # ✅ faqat shu department
+    kompyuter_qs = Technics.objects.filter(
+        employee__department_id=dep_id,
+        category__name__in=komp_names
     )
-
-    counts = (
-        base_qs.filter(category__name__in=komp_names + prin_names)
-        .values("category__name")
-        .annotate(c=Count("id"))
+    printer_qs = Technics.objects.filter(
+        employee__department_id=dep_id,
+        category__name__in=prin_names
     )
-
-    komp_count = sum(x["c"] for x in counts if x["category__name"] in komp_names)
-    prin_count = sum(x["c"] for x in counts if x["category__name"] in prin_names)
-
     kompyuterlar = list(
-        base_qs.filter(category__name__in=komp_names)
-        .values("name", "serial", "inventory")
+        kompyuter_qs.values("name", "serial", "inventory")
     )
-
     printerlar = list(
-        base_qs.filter(category__name__in=prin_names)
-        .values("name", "serial")
+        printer_qs.values("name", "serial")
     )
 
     data = {
-        "komp_count": komp_count,
-        "prin_count": prin_count,
+        "komp_count": kompyuter_qs.count(),
+        "prin_count": printer_qs.count(),
         "kompyuterlar": kompyuterlar,
         "printerlar": printerlar,
     }
