@@ -316,8 +316,8 @@ def deed_post(request):
 
     if ids:
         emps = Employee.objects.filter(id__in=ids).only("id")
-        objs = [Deedconsent(deed=deed, employee=e, status="viewed") for e in emps]
-        Deedconsent.objects.bulk_create(objs, ignore_conflicts=True)
+        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
     messages.success(request, "Imzolashga yuborildi")
     return redirect(back_url)
@@ -493,7 +493,7 @@ def deed_update(request, pk):
                 pass
 
     exclude_ids = set(
-        Deedconsent.objects.filter(deed=deed).values_list("employee_id", flat=True)
+        DeedConsent.objects.filter(deed=deed).values_list("employee_id", flat=True)
     )
     if deed.sender_id:
         exclude_ids.add(deed.sender_id)
@@ -511,8 +511,8 @@ def deed_update(request, pk):
 
     if new_ids:
         qs = Employee.objects.filter(id__in=new_ids)
-        bulk = [Deedconsent(deed=deed, employee=e) for e in qs]
-        Deedconsent.objects.bulk_create(bulk)
+        bulk = [DeedConsent(deed=deed, employee=e) for e in qs]
+        DeedConsent.objects.bulk_create(bulk)
 
     deed.save()
     messages.success(request, "Xabar yangilandi")
@@ -615,7 +615,7 @@ def sso_exchange_and_finish(request):
             if not consent_id:
                 raise PermissionDenied("consent_id yo‘q")
 
-            consent = get_object_or_404(Deedconsent.objects.select_related("employee__user"), pk=consent_id)
+            consent = get_object_or_404(DeedConsent.objects.select_related("employee__user"), pk=consent_id)
 
             if consent.employee.user_id != request.user.id:
                 raise PermissionDenied("Ruxsat yo‘q")
