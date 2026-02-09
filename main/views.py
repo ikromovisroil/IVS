@@ -1479,15 +1479,6 @@ def document_get(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
-        "departments": Department.objects.select_related("organization").only(
-            "id", "name", "organization_id"
-        ).order_by("name"),
-        "directorate": Directorate.objects.select_related("department").only(
-            "id", "name", "department_id"
-        ).order_by("name"),
-        "division": Division.objects.select_related("directorate").only(
-            "id", "name", "directorate_id"
-        ).order_by("name"),
     }
     return render(request, "main/document.html", context)
 

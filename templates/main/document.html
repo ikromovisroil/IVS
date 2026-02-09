@@ -289,12 +289,24 @@
 <script>
 $(function () {
 
+  // ----------------- Select2 init -----------------
+  function initSelect2All() {
+    $('select').each(function () {
+      const $el = $(this);
+      if ($el.data('select2')) return;
+      $el.select2({ width: '100%', placeholder: 'Tanlang...', allowClear: true });
+    });
+  }
+  initSelect2All();
+
+  // ----------------- HTML escape -----------------
   function esc(s){
     return String(s ?? '').replace(/[&<>"']/g, (m) => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
     }[m]));
   }
 
+  // ----------------- Fill tables -----------------
   function fillPcTable(items){
     const $tb = $('#pc_tbody');
     if (!items || !items.length){
@@ -332,9 +344,43 @@ $(function () {
     $tb.html(html);
   }
 
+  // ----------------- Org -> Dep AJAX -----------------
+  function loadDepartmentsByOrg(orgId, selectedDepId=null){
+    const $dep = $('#department');
+
+    $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+    if (!orgId){
+      $dep.html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_load_departments' %}",
+      method: "GET",
+      dataType: "json",
+      data: { organization: orgId },
+      success: function(deps){
+        let opt = '<option value="">Tanlang...</option>';
+        (deps || []).forEach(d => {
+          const sel = (selectedDepId && String(d.id) === String(selectedDepId)) ? 'selected' : '';
+          opt += `<option value="${d.id}" ${sel}>${esc(d.name)}</option>`;
+        });
+        $dep.html(opt).trigger('change');
+      },
+      error: function(){
+        $dep.html('<option value="">Xatolik (dep yuklanmadi)</option>').trigger('change');
+      }
+    });
+  }
+
+  $('#organization').on('change', function(){
+    loadDepartmentsByOrg($(this).val());
+  });
+
+  // ----------------- Preview (faqat dep_id) -----------------
   $('#btnSearch').on('click', function () {
     const depId = $('#department').val();
-
     if (!depId){
       alert("Departmentni tanlang!");
       return;
@@ -349,53 +395,35 @@ $(function () {
       dataType: "json",
       data: { department: depId },
       success: function (res) {
-        // Matnlar (xohlasangiz)
         $('#selekt_id_text_1').text(res.department_name || '');
         $('#selekt_id_text_2').text(res.department_name || '');
 
-        // Countlar
         $('#techkomp').text(res.komp_count ?? 0);
         $('#techpr').text((res.prin_count ?? 0) + " dona.");
 
-        // Jadvallar
         fillPcTable(res.kompyuterlar || []);
         fillPrTable(res.printerlar || []);
       },
       error: function (xhr) {
         let msg = "Xatolik yuz berdi";
-        try {
-          const j = xhr.responseJSON;
-          if (j && j.error) msg = j.error;
-        } catch(e){}
+        try { if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error; } catch(e){}
         $('#pc_tbody').html(`<tr><td colspan="4" class="text-center text-danger">${esc(msg)}</td></tr>`);
         $('#pr_tbody').html(`<tr><td colspan="3" class="text-center text-danger">${esc(msg)}</td></tr>`);
       }
     });
   });
 
-});
-</script>
+  // ----------------- (ixtiyoriy) Sahifa ochilganda oldingi tanlovlarni tiklash -----------------
+  const initialOrg = '{{ selected_org|default:"" }}';
+  const initialDep = '{{ selected_dep|default:"" }}';
 
-<script>
-$(function () {
-
-  function initSelect2All() {
-    $('select').each(function () {
-      const $el = $(this);
-      if ($el.data('select2')) return;
-
-      $el.select2({
-        width: '100%',
-        placeholder: 'Tanlang...',
-        allowClear: true
-      });
-    });
+  if (initialOrg){
+    $('#organization').val(initialOrg).trigger('change');
+    loadDepartmentsByOrg(initialOrg, initialDep);
   }
 
-  initSelect2All();
 });
 </script>
-
 {% endblock content %}
 
 {% block js %}
