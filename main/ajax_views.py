@@ -512,7 +512,7 @@ def ajax_document_preview(request):
     komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
     prin_names = ["A4 Printer", "Printer", "scaner"]
 
-    base_qs = Technics.objects.filter(department_id=dep_id).select_related("category")
+    base_qs = Technics.objects.filter(employee_department_id=dep_id).select_related("category")
 
     komp_qs = base_qs.filter(category__name__in=komp_names)
     prin_qs = base_qs.filter(category__name__in=prin_names)
