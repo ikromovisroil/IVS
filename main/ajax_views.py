@@ -512,15 +512,26 @@ def ajax_document_preview(request):
     komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
     prin_names = ["A4 Printer", "Printer", "scaner"]
 
-    base_qs = Technics.objects.filter(employee_department_id=dep_id).select_related("category")
+    # ✅ faqat shu department
+    kompyuter_qs = Technics.objects.filter(
+        employee__department_id=dep_id,
+        category__name__in=komp_names
+    )
+    printer_qs = Technics.objects.filter(
+        employee__department_id=dep_id,
+        category__name__in=prin_names
+    )
+    kompyuterlar = list(
+        kompyuter_qs.values("name", "serial", "inventory")
+    )
+    printerlar = list(
+        printer_qs.values("name", "serial")
+    )
 
-    komp_qs = base_qs.filter(category__name__in=komp_names)
-    prin_qs = base_qs.filter(category__name__in=prin_names)
-
-    return JsonResponse({
-        "department_name": dep.name or "",
-        "komp_count": komp_qs.count(),
-        "prin_count": prin_qs.count(),
-        "kompyuterlar": list(komp_qs.values("name", "serial", "inventory")),
-        "printerlar": list(prin_qs.values("name", "serial")),
-    })
+    data = {
+        "komp_count": kompyuter_qs.count(),
+        "prin_count": printer_qs.count(),
+        "kompyuterlar": kompyuterlar,
+        "printerlar": printerlar,
+    }
+    return JsonResponse(data)
