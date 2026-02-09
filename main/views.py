@@ -1479,6 +1479,7 @@ def document_get(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
+        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
     }
     return render(request, "main/document.html", context)
 
@@ -2236,7 +2237,7 @@ def svod_get(request):
 
     context = {
         'organizations': Organization.objects.all(),
-        'employees': Employee.objects.all(),
+        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
     }
     return render(request, 'main/svod.html', context)
 
@@ -2422,9 +2423,7 @@ def reestr_get(request):
 
     context = {
         'organizations': Organization.objects.all(),
-        'departments': Department.objects.select_related('organization'),
-        'directorate': Directorate.objects.select_related('department'),
-        'division': Division.objects.select_related('directorate'),
+        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
     }
     return render(request, 'main/reestr.html', context)
 
