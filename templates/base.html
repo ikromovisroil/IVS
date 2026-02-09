@@ -372,7 +372,7 @@
 
         {% if request.user.employee.rol.client %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'order_sender' %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"
              href="{% url 'technics_get' %}">
             <i class="bi bi-menu-button-wide"></i>
             <span>Texnikalarim</span>

@@ -168,20 +168,25 @@ def ajax_org_employees(request):
     if not org_id:
         return JsonResponse({"results": []})
 
-    # Receiver uchun (Imzolovchi)
-    receiver_qs = Employee.objects.filter(
-        organization_id=org_id,
-        # rol__boss=True
-    ).select_related("rank").order_by("last_name", "first_name")
+    qs = (
+        Employee.objects
+        .filter(organization_id=org_id)
+        .select_related("rank")
+        .annotate(
+            full_name=Concat(
+                Coalesce(F("last_name"), Value("")),
+                Value(" "),
+                Coalesce(F("first_name"), Value("")),
+                Value(" "),
+                Coalesce(F("father_name"), Value("")),
+                output_field=CharField(),
+            )
+        )
+        .values("id", "full_name")
+        .order_by("full_name")
+    )
 
-    data = []
-    for e in receiver_qs:
-        data.append({
-            "id": e.id,
-            "full_name": e.full_name,
-        })
-
-    return JsonResponse({"results": data})
+    return JsonResponse({"results": list(qs)})
 
 def ajax_agreements_employees(request):
     org_id = (request.GET.get("org_id") or "").strip()
@@ -323,7 +328,6 @@ def ajax_svod_materials(request):
         order__sender__organization_id=org_id,
         order__receiver__region=employee.region,
     )
-
     # Decimal/Integer aralashmasligi uchun
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
@@ -357,7 +361,6 @@ def ajax_svod_materials(request):
         .values("material_id", "order_id", "order__date_finished")
         .distinct()
     )
-
     material_orders = {}
     for r in rel:
         mid = r["material_id"]
@@ -381,5 +384,114 @@ def ajax_svod_materials(request):
             "order_info": order_info,  # ✅ probelsiz key
             "material__code": item.get("material__code", ""),
         })
+    return JsonResponse(data, safe=False)
+
+
+def ajax_reestr_materials(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    org_id = request.GET.get("organization")
+    d1 = request.GET.get("date1")
+    d2 = request.GET.get("date2")
+
+    if not org_id or not d1 or not d2:
+        return JsonResponse([], safe=False)
+
+    try:
+        date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
+        date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
+    except ValueError:
+        return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
+
+    dec = DecimalField(max_digits=18, decimal_places=2)
+    zero_dec = Value(0, output_field=dec)
+
+    qs = (
+        OrderMaterial.objects.filter(
+            order__date_finished__gte=date1,
+            order__date_finished__lt=date2,
+            order__sender__organization_id=org_id,
+            order__receiver__region=employee.region,
+        )
+        .annotate(
+            total_sum=ExpressionWrapper(
+                Coalesce(F("material__price"), zero_dec) *
+                Cast(Coalesce(F("number"), 0), output_field=dec),
+                output_field=dec,
+            ),
+
+            # ✅ Sender FIO
+            sender_full_name=Concat(
+                Coalesce(F("order__sender__last_name"), Value("")),
+                Value(" "),
+                Coalesce(F("order__sender__first_name"), Value("")),
+                Value(" "),
+                Coalesce(F("order__sender__father_name"), Value("")),
+                output_field=CharField(),
+            ),
+
+            # ✅ Receiver FIO
+            receiver_full_name=Concat(
+                Coalesce(F("order__receiver__last_name"), Value("")),
+                Value(" "),
+                Coalesce(F("order__receiver__first_name"), Value("")),
+                Value(" "),
+                Coalesce(F("order__receiver__father_name"), Value("")),
+                output_field=CharField(),
+            ),
+        )
+        .values(
+            "order__id",
+            "order__date_finished",
+            "order__date_creat",
+            "order__technics__name",
+            "order__technics__serial",
+
+            "material__code",
+            "material__name",
+            "material__price",
+            "number",
+
+            "sender_full_name",
+            "order__sender__rank__name",
+            "order__sender__department__name",
+
+            "receiver_full_name",
+            "order__receiver__rank__name",
+
+            "total_sum",
+        )
+        .order_by("material__code", "material__name", "order__id")
+    )
+
+    data = []
+    for item in qs:
+        data.append({
+            "order_id": item.get("order__id"),
+
+            "date_finished": item["order__date_finished"].strftime("%d.%m.%Y")
+                if item.get("order__date_finished") else "",
+            "date_creat": item["order__date_creat"].strftime("%d.%m.%Y")
+                if item.get("order__date_creat") else "",
+
+            "technics_name": item.get("order__technics__name", ""),
+            "technics_serial": item.get("order__technics__serial", ""),
+
+            "material_code": item.get("material__code", ""),
+            "material_name": item.get("material__name", ""),
+            "number": float(item.get("number") or 0),
+            "material_price": float(item.get("material__price") or 0),
+            "total_sum": float(item.get("total_sum") or 0),
+
+            "sender": (item.get("sender_full_name") or "").strip(),
+            "sender_rank": item.get("order__sender__rank__name", ""),
+            "department": item.get("order__sender__department__name", ""),
+
+            "receiver": (item.get("receiver_full_name") or "").strip(),
+            "receiver_rank": item.get("order__receiver__rank__name", ""),
+        })
 
     return JsonResponse(data, safe=False)
+

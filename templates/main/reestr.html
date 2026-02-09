@@ -99,7 +99,6 @@
                               <tr>
                                 <th rowspan="2" class="text-center align-middle">№</th>
                                 <th rowspan="2" class="text-center align-middle">Qurilma nomi</th>
-                                <th rowspan="2" class="text-center align-middle">Qurilma modeli</th>
                                 <th rowspan="2" class="text-center align-middle">Seriya №</th>
                                 <th rowspan="2" class="text-center align-middle">Sarf materiallari nomi</th>
                                 <th rowspan="2" class="text-center align-middle">Soni</th>
@@ -154,261 +153,184 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function() {
-    // O'zgaruvchilar
-    let currentReportData = [];
+$(function() {
 
-    // Dastlabki sanalarni belgilash
-    function setDefaultDates() {
-        const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  // default: oy boshidan bugungacha
+  function pad2(n){ return (n<10?'0':'')+n; }
+  function setDefaultDates() {
+    const now = new Date();
+    const first = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        $('#date1').val(firstDay.toISOString().split('T')[0]);
-        $('#date2').val(today.toISOString().split('T')[0]);
+    $('#date1').val(`${first.getFullYear()}-${pad2(first.getMonth()+1)}-${pad2(first.getDate())}`);
+    $('#date2').val(`${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`);
+  }
+  setDefaultDates();
+
+  $('#btnGenerate').on('click', generateReport);
+
+  // Enter bosilganda ham ishlasin (form ichida)
+  $('form input').on('keypress', function(e){
+    if(e.which === 13){
+      e.preventDefault();
+      generateReport();
+    }
+  });
+
+  function generateReport() {
+    const orgId = $('#organization').val();
+    const date1 = $('#date1').val();
+    const date2 = $('#date2').val();
+
+    if (!orgId || !date1 || !date2) {
+      alert("Iltimos, tashkilot va sanalarni to‘ldiring!");
+      return;
+    }
+    if (new Date(date1) > new Date(date2)) {
+      alert("Boshlanish sanasi tugash sanasidan keyin bo‘lishi mumkin emas!");
+      return;
     }
 
-    setDefaultDates();
+    $('#resultsBody').html(`
+      <tr>
+        <td colspan="15" class="text-center">
+          <div class="spinner-border text-primary" role="status"></div>
+          <div class="mt-2">Hisobot yuklanmoqda...</div>
+        </td>
+      </tr>
+    `);
 
-    // Hisobot yaratish
-    $('#btnGenerate').click(function() {
-        generateReport();
-    });
-
-    // Enter bosganda ham ishlash
-    $('#svodForm input').keypress(function(e) {
-        if (e.which === 13) {
-            generateReport();
-        }
-    });
-
-    function generateReport() {
-        const orgId = $('#organization').val();
-        const date1 = $('#date1').val();
-        const date2 = $('#date2').val();
-
-        // Validatsiya
-        if (!orgId || !date1 || !date2) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Diqqat!',
-                text: 'Iltimos, barcha maydonlarni to\'ldiring',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        if (new Date(date1) > new Date(date2)) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Xato!',
-                text: 'Boshlanish sanasi tugash sanasidan keyin bo\'lishi mumkin emas',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        // Yuklanish indikatori
+    $.ajax({
+      url: "{% url 'ajax_reestr_materials' %}",
+      method: 'GET',
+      data: { organization: orgId, date1: date1, date2: date2 },
+      success: function(rows) {
+        renderTable(rows || []);
+      },
+      error: function(xhr) {
         $('#resultsBody').html(`
-            <tr>
-                <td colspan="8" class="text-center">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Yuklanmoqda...</span>
-                    </div>
-                    <p class="mt-2">Hisobot yuklanmoqda...</p>
-                </td>
-            </tr>
+          <tr>
+            <td colspan="15" class="text-center text-danger">
+              Xatolik: ${xhr.responseJSON?.error || xhr.status}
+            </td>
+          </tr>
         `);
+      }
+    });
+  }
 
-        // AJAX so'rovi
-        $.ajax({
-            url: "{% url 'ajax_svod_materials' %}",
-            method: 'GET',
-            data: {
-                organization: orgId,
-                date1: date1,
-                date2: date2,
-                _token: '{{ csrf_token }}'
-            },
-            success: function(response) {
-                currentReportData = response;
-                displayReport(response);
-                updateStats(response);
-                updateHeader(orgId, date1, date2);
-                $('#btnExport').prop('disabled', false);
-            },
-            error: function(xhr, status, error) {
-                console.error('Xatolik:', error);
-                $('#resultsBody').html(`
-                    <tr>
-                        <td colspan="8" class="text-center text-danger">
-                            <i class="bi bi-exclamation-triangle"></i> Xatolik yuz berdi: ${error}
-                        </td>
-                    </tr>
-                `);
-            }
-        });
+  function renderTable(rows){
+    if(!rows.length){
+      $('#resultsBody').html(`
+        <tr><td colspan="15" class="text-center text-muted">Ma’lumot topilmadi</td></tr>
+      `);
+      return;
     }
 
-    // Hisobotni ekranga chiqarish
-    function displayReport(data) {
-        if (!data || data.length === 0) {
-            $('#resultsBody').html(`
-                <tr>
-                    <td colspan="8" class="text-center text-muted">
-                        <i class="bi bi-inbox"></i> Tanlangan parametrlar bo'yicha ma'lumot topilmadi
-                    </td>
-                </tr>
-            `);
-            $('#summarySection').hide();
-            return;
-        }
+    let html = "";
+    let total = 0;
 
-        let html = '';
-        let totalAmount = 0;
-        let itemCount = 0;
+    rows.forEach((r, idx) => {
+      const sum = parseFloat(r.total_sum) || 0;
+      total += sum;
 
-        data.forEach(function(item, index) {
-            // Jami qatorni o'tkazib yuborish (u alohida ko'rsatiladi)
-            if (item.is_total) {
-                totalAmount = parseFloat(item.total_sum) || 0;
-                return;
-            }
+      html += `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${r.technics_name || ""}</td>
+          <td>${r.technics_serial || ""}</td>
+          <td>${r.material_name || ""}</td>
+          <td class="text-end">${r.number ?? ""}</td>
+          <td class="text-end">${r.material_price ?? ""}</td>
+          <td class="text-end">${r.total_sum ?? ""}</td>
 
-            itemCount++;
-            const price = parseFloat(item.price) || 0;
-            const quantity = parseFloat(item.total_number) || 0;
-            const sum = parseFloat(item.total_sum) || 0;
+          <!-- Qurilmadan foydalanuvchi -->
+          <td>${r.receiver || ""}</td>
+          <td>${r.receiver_rank || ""}</td>
 
-            html += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.material__name || ''}</td>
-                    <td>${item.material__unit__name || ''}</td>
-                    <td>${item.total_number || ''}</td>
-                    <td>${item.material__price || ''}</td>
-                    <td>${item.total_sum || ''}</td>
-                    <td>${item.order_info || ''}</td>
-                    <td>${item.material__code || ''}</td>
-                </tr>
-            `;
-        });
+          <!-- Tashkilot/bo‘lim -->
+          <td>${r.department || ""}</td>
 
-        // Jami qator qo'shish
-        if (totalAmount > 0) {
-            html += `
-                <tr class="total-row">
-                    <td colspan="6" class="text-end"><strong>JAMI:</strong></td>
-                    <td class="numeric-cell"><strong>${totalAmount.toLocaleString('uz-UZ')}</strong></td>
-                    <td></td>
-                </tr>
-            `;
-        }
+          <!-- Kim tomonidan o‘rnatilgan -->
+          <td>${r.sender || ""}</td>
 
-        $('#resultsBody').html(html);
-        $('#totalAmount').text(totalAmount.toLocaleString('uz-UZ'));
-        $('#summarySection').show();
-
-        // Xulosa matni
-        $('#summaryText').html(`
-            <strong>${itemCount} turdagi material</strong> <br>
-            Sana oralig'i: ${$('#date1').val()} - ${$('#date2').val()} <br>
-            Jami summa: <strong>${totalAmount.toLocaleString('uz-UZ')} UZS</strong>
-        `);
-    }
-
-    // Statistika yangilash
-    function updateStats(data) {
-        if (!data || data.length === 0) {
-            $('#stats').html('<p class="text-muted">Ma\'lumot yo\'q</p>');
-            return;
-        }
-
-        const totalItems = data.length - 1; // Jami qatorni hisobga olmaslik
-        let totalAmount = 0;
-
-        data.forEach(function(item) {
-            if (item.is_total) {
-                totalAmount = parseFloat(item.total_sum) || 0;
-            }
-        });
-
-        $('#stats').html(`
-            <div class="d-flex justify-content-between">
-                <span>Material turlari:</span>
-                <strong>${totalItems}</strong>
-            </div>
-            <div class="d-flex justify-content-between">
-                <span>Jami summa:</span>
-                <strong>${totalAmount.toLocaleString('uz-UZ')} UZS</strong>
-            </div>
-            <hr>
-            <small class="text-muted">
-                <i class="bi bi-info-circle"></i> Barcha materiallar uchun yig'ma ko'rsatkichlar
-            </small>
-        `);
-    }
-
-    // Sarlavha yangilash
-    function updateHeader(orgId, date1, date2) {
-        const orgName = $('#organization option:selected').text();
-
-        $('#headerOrg').text(orgName);
-        $('#headerDates').text(`${date1} - ${date2}`);
-        $('#reportHeader').show();
-    }
-
-    // Excel ga yuklash
-    $('#btnExport').click(function() {
-        if (!currentReportData || currentReportData.length === 0) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Diqqat!',
-                text: 'Avval hisobot yarating',
-                confirmButtonText: 'OK'
-            });
-            return;
-        }
-
-        exportToExcel();
+          <!-- O‘rnatish / so‘rov -->
+          <td>${r.date_finished || ""}</td>
+          <td>${r.order_id || ""}</td>
+          <td>${r.date_creat || ""}</td>
+          <td>${r.material_code || ""}</td>
+        </tr>
+      `;
     });
 
-    // Excel export funksiyasi
-    function exportToExcel() {
-        // Bu funksiya Excel fayl yaratadi
-        // Siz SheetJS yoki boshqa kutubxonadan foydalanishingiz mumkin
+    // JAMI qator
+    html += `
+      <tr>
+        <td colspan="6" class="text-end"><b>JAMI:</b></td>
+        <td class="text-end"><b>${total.toLocaleString('uz-UZ')}</b></td>
+        <td colspan="8"></td>
+      </tr>
+    `;
 
-        Swal.fire({
-            icon: 'info',
-            title: 'Excel ga yuklash',
-            text: 'Fayl tayyorlanmoqda...',
-            showConfirmButton: false,
-            allowOutsideClick: false
-        });
+    $('#resultsBody').html(html);
+  }
 
-        // Oddiy CSV yoki Excel yaratish logikasi
-        setTimeout(() => {
-            Swal.fire({
-                icon: 'success',
-                title: 'Muvaffaqiyatli!',
-                text: 'Fayl yuklandi',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }, 1000);
+});
+</script>
+
+
+<script>
+$(function () {
+
+  function fillEmployees(orgId){
+    if(!orgId){
+      $('#sender').html('<option value="">Tanlang...</option>');
+      $('#agreements').html('');
+      $('#sender').trigger('change');
+      $('#agreements').trigger('change');
+      return;
     }
 
-    // Material tafsilotlari
-    window.showDetails = function(materialId) {
-        // Bu funksiya materialning batafsil ma'lumotlarini ko'rsatadi
-        Swal.fire({
-            title: 'Material tafsilotlari',
-            html: 'Yuklanmoqda...',
-            showConfirmButton: false
+    $('#sender').html('<option value="">Yuklanmoqda...</option>');
+    $('#agreements').html('');
+
+    $.ajax({
+      url: "{% url 'ajax_org_employees' %}",
+      method: "GET",
+      data: { org_id: orgId }, // ✅ view org_id kutyapti
+      success: function(resp){
+        const list = resp.results || []; // ✅ JSON ichidan results ni olamiz
+
+        let senderOpt = '<option value="">Tanlang...</option>';
+        let agrOpt = '';
+
+        list.forEach(emp => {
+          senderOpt += `<option value="${emp.id}">${emp.full_name}</option>`;
+          agrOpt += `<option value="${emp.id}">${emp.full_name}</option>`;
         });
 
-        // AJAX so'rovi orqali material tafsilotlarini olish
-        // Bu sizning loyihangizga qarab to'ldiriladi
-    };
+        $('#sender').html(senderOpt);
+        $('#agreements').html(agrOpt);
+
+        // select2 bo‘lsa yangilash
+        $('#sender').trigger('change');
+        $('#agreements').trigger('change');
+      },
+      error: function(xhr){
+        console.log("EMP AJAX ERROR:", xhr.status, xhr.responseText);
+        alert("Xodimlarni yuklashda xatolik!");
+      }
+    });
+  }
+
+  $('#organization').on('change', function(){
+    fillEmployees($(this).val());
+  });
+
+  const initialOrg = $('#organization').val();
+  if(initialOrg){
+    fillEmployees(initialOrg);
+  }
+
 });
 </script>
 

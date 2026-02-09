@@ -2505,25 +2505,92 @@ def reestr_get(request):
 def reestr_post(request):
     if request.method != "POST":
         return redirect("document_get")
-    user = request.user.employee
 
-    org_id = request.POST.get("organization")
-    date_id1 = request.POST.get("date1")
-    date_id2 = request.POST.get("date2")
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    # Sana parse
-    date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
-    date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
+    # formdan keladiganlar
+    org_id = request.POST.get("organization") or None
+    date_id1 = request.POST.get("date1") or ""
+    date_id2 = request.POST.get("date2") or ""
 
-    qs = OrderMaterial.objects.filter(
-        order__date_finished__gte=date1,
-        order__date_finished__lt=date2,
-        order__sender__organization_id=org_id,
-        order__receiver__region=request.user.employee.region,
+    # agar siz deed yaratishda ishlatsangiz (sizning oldingi akt_post uslubingizga mos)
+    sender_id = request.POST.get("sender") or None
+    message = (request.POST.get("message") or "").strip() or None
+    agreements = request.POST.getlist("agreements[]")  # select2 bo'lsa
+
+    if not org_id or not date_id1 or not date_id2:
+        return HttpResponse("organization/date1/date2 shart", status=400)
+
+    # sana parse
+    try:
+        date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
+        date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
+    except ValueError:
+        return HttpResponse("Sana formati noto'g'ri (YYYY-MM-DD)", status=400)
+
+    org = Organization.objects.filter(id=org_id).first()
+
+    # ✅ N+1 oldini olish
+    qs = (
+        OrderMaterial.objects.filter(
+            order__date_finished__gte=date1,
+            order__date_finished__lt=date2,
+            order__sender__organization_id=org_id,
+            order__receiver__region=employee.region,
+        )
+        .select_related(
+            "order",
+            "order__technics",
+            "order__sender",
+            "order__sender__rank",
+            "order__sender__department",
+            "order__receiver",
+            "material",
+        )
     )
 
-    org = Organization.objects.filter(id=org_id).first() if org_id else None
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx"))
+    # ✅ rows va grand_total
+    rows = []
+    grand_total = Decimal("0")
+
+    for q in qs:
+        technics = q.order.technics if (q.order and q.order.technics) else None
+        material = q.material
+
+        # xavfsiz Decimal
+        price = Decimal(str(material.price)) if (material and material.price is not None) else Decimal("0")
+        number = Decimal(str(q.number)) if q.number is not None else Decimal("0")
+        total = price * number
+        grand_total += total
+
+        sender_emp = q.order.sender if q.order else None
+        receiver_emp = q.order.receiver if q.order else None
+
+        rows.append([
+            technics.name if technics else "",
+            technics.serial if technics else "",
+            material.name if material else "",
+            str(number),                    # soni
+            str(price),                     # birlik narx
+            str(total),                     # umumiy
+            (sender_emp.full_name if sender_emp else ""),
+            (sender_emp.rank.name if (sender_emp and sender_emp.rank) else ""),
+            (sender_emp.department.name if (sender_emp and sender_emp.department) else ""),
+            (receiver_emp.full_name if receiver_emp else ""),
+            (q.order.date_creat.strftime("%d.%m.%Y") if (q.order and q.order.date_creat) else ""),
+            (str(q.order.id) if q.order else ""),
+            (q.order.date_finished.strftime("%d.%m.%Y") if (q.order and q.order.date_finished) else ""),
+            (material.code if (material and material.code) else ""),
+        ])
+
+    # ✅ DOCX template
+    template_path = os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx")
+    if not os.path.exists(template_path):
+        return HttpResponse(f"Template topilmadi: {template_path}", status=500)
+
+    doc = Document(template_path)
 
     ORG_TEXT = {
         "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazini",
@@ -2532,14 +2599,16 @@ def reestr_post(request):
         "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
     }
     org_name = ORG_TEXT.get(getattr(org, "org_type", None), "")
+
     replace_text(doc, {
-        "ORGANIZATION":org_name,
-        "XUDUD": request.user.employee.region.name if request.user.employee.region else "",
+        "ORGANIZATION": org_name,
+        "XUDUD": employee.region.name if employee.region else "",
     })
 
+    # TABLE placeholder paragrafini topamiz
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
-        return HttpResponse("TABLE topilmadi", status=500)
+        return HttpResponse("DOCX ichidan TABLE placeholder topilmadi", status=500)
 
     # TABLE paragrafini tozalash
     target.text = ""
@@ -2547,101 +2616,61 @@ def reestr_post(request):
     target.paragraph_format.space_after = Pt(0)
     target.paragraph_format.line_spacing = 1
 
-    rows_map = OrderedDict()
-
-    for q in qs:
-        if not q.material or not q.order or not q.order.technics:
-            continue
-
-        technics = q.order.technics
-        material_obj = q.material
-
-        # Texnika
-        name = technics.name or ""
-        serial = getattr(technics, "serial", "") or ""
-
-        # Material
-        material_name = material_obj.name or ""
-        qty = int(q.number or 0)
-        unit_price = int(material_obj.price or 0)
-        total = unit_price * qty
-        code = getattr(material_obj, "code", "") or ""
-
-        # Kimlar
-        sender = q.order.sender.full_name if getattr(q.order, "sender", None) else ""
-        rank = getattr(q.order.sender, "rank", "") if getattr(q.order, "sender", None) else ""
-        department = getattr(q.order.sender, "department", "") if getattr(q.order, "sender", None) else ""
-        receiver = q.order.receiver.full_name if getattr(q.order, "receiver", None) else ""
-
-        # Sana format: 25.11.2025
-        date_finished = q.order.date_finished.strftime("%d.%m.%Y") if getattr(q.order, "date_finished", None) else ""
-        date_creat = q.order.date_creat.strftime("%d.%m.%Y") if getattr(q.order, "date_creat", None) else ""
-
-        order_id = q.order.id or ""
-
-        # ✅ Guruhlash: 1 texnika + 1 material
-        key = (technics.id, material_obj.id)
-
-        if key not in rows_map:
-            rows_map[key] = {
-                "name": name,
-                "serial": serial,
-                "material": material_name,
-                "qty": 0,
-                "unit_price": unit_price,
-                "total": 0,
-                "fio": sender,          # Qurilmadan foydalanuvchi FIO
-                "lavozim": rank,        # Qurilmadan foydalanuvchi lavozim
-                "tashkilot": department,# Tashkilot/bo‘lim
-                "ornatgan": receiver,   # Kim tomonidan o‘rnatilgan
-                "ornatish_sana": date_finished,
-                "sorov_no": order_id,
-                "sorov_sana": date_creat,
-                "code": code,
-            }
-
-        # ✅ Yig‘indi
-        rows_map[key]["qty"] += qty
-        rows_map[key]["total"] += total
-
-    # ✅ grand_total — faqat grouped natijalardan
-    grand_total = sum(int(v.get("total") or 0) for v in rows_map.values())
-
-    # ✅ Jadval data (№ ni create_table_cols_reestr o‘zi qo‘shadi)
-    rows = []
-    for _, v in rows_map.items():
-        rows.append([
-            v["name"],
-            v["serial"],
-            v["material"],
-            v["qty"],
-            f"{int(v['unit_price'] or 0):,}".replace(",", " "),
-            f"{int(v['total'] or 0):,}".replace(",", " "),
-            v["fio"],
-            v["lavozim"],
-            v["tashkilot"],
-            v["ornatgan"],
-            v["ornatish_sana"],
-            v["sorov_no"],
-            v["sorov_sana"],
-            v["code"],
-        ])
-
-    # ✅ 2 qatorli headerli jadval yaratish
+    # ✅ jadval yaratish + qo'shish
     table = create_table_cols_reestr(doc, rows, grand_total=grand_total)
     target._p.addnext(table._tbl)
 
-    # Faylni qaytarish
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
+    # ✅ docx -> pdf
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, "reestr.docx")
+        doc.save(docx_path)
 
-    response = HttpResponse(
-        buffer.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
+        if not pdf_path:
+            return HttpResponse(
+                "DOCX -> PDF convert xato!\n\n" + (debug or ""),
+                content_type="text/plain",
+                status=500
+            )
+
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+    # ✅ sender aniqlash (bo'lmasa employee)
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
+    if not sender:
+        sender = employee
+
+    # ✅ Deed yaratish va PDF saqlash
+    deed = Deed.objects.create(
+        sender=sender,
+        user=employee,
+        message_user=message,
     )
-    response["Content-Disposition"] = 'attachment; filename="reestr.docx"'
-    return response
+    deed.file.save("reestr.pdf", ContentFile(pdf_bytes), save=True)
+
+    # ✅ agreements larni tozalash
+    agreements = agreements or []
+    ids = []
+    for x in agreements:
+        x = (x or "").strip()
+        if x.isdigit():
+            ids.append(int(x))
+    ids = list(set(ids))
+
+    # sender va employee ni consentdan chiqaramiz
+    exclude_ids = {employee.id}
+    if sender:
+        exclude_ids.add(sender.id)
+    ids = [i for i in ids if i not in exclude_ids]
+
+    if ids:
+        emps = Employee.objects.filter(id__in=ids).only("id")
+        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    messages.success(request, "Reestr yuborildi")
+    return redirect("contact_user")
 
 
 @never_cache
