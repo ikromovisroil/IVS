@@ -25,13 +25,12 @@
     <section class="section">
       <div class="row">
         <div class="col-lg-4">
-
+         <form action="{% url 'document_post' %}" method="post">{% csrf_token %}
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Vertical Form</h5>
-
+              <h5 class="card-title">Filtrlash</h5>
               <!-- Vertical Form -->
-              <form class="row g-3" action="{% url 'document_post' %}" method="post" data-download="true">{% csrf_token %}
+              <div class="row g-3">
                 <div class="col-12">
                   <label for="organization" class="form-label">Tashkilot :</label>
                     <select id="organization" name="organization" class="form-select" required>
@@ -43,47 +42,12 @@
                 </div>
                 <div class="col-12">
                   <label for="department" class="form-label">Departament :</label>
-                    <select id="department" name="department" class="form-select">
+                    <select id="department" name="department" class="form-select" required>
                         <option value="">Tanlang...</option>
                         {% for dep in departments %}
                             <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
                         {% endfor %}
                     </select>
-                </div>
-                <div class="col-12">
-                  <label for="directorate" class="form-label">Boshqarma :</label>
-                    <select id="directorate" name="directorate" class="form-select">
-                        <option value="">Tanlang...</option>
-                        {% for dir in directorates %}
-                            <option value="{{ dir.id }}" {% if selected_dir == dir.id|stringformat:"s" %}selected{% endif %}>{{ dir.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12">
-                  <label for="division" class="form-label">bo'lim :</label>
-                    <select id="division" name="division" class="form-select">
-                        <option value="">Tanlang...</option>
-                        {% for div in divisions %}
-                            <option value="{{ div.id }}" {% if selected_div == div.id|stringformat:"s" %}selected{% endif %}>{{ div
-                        .name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-12">
-                  <label for="post_id" class="form-label">Lavozim :</label>
-                  <input type="text" name="post_id" id="post_id" class="form-control" required  placeholder="direktori">
-                </div>
-                <div class="col-md-12">
-                  <label for="fio_id" class="form-label">F.I.O :</label>
-                  <input type="text" name="fio_id" id="fio_id" class="form-control" required  placeholder="Sh.Muxamedov">
-                </div>
-                <div class="col-md-12">
-                  <label for="date_id" class="col-sm-2 col-form-label">Sana :</label>
-                  <input type="date" name="date_id" id="date_id" required class="form-control">
-                </div>
-                <div class="col-md-12">
-                  <label for="namber_id" class="form-label">Shartnoma raqami :</label>
-                  <input type="text" name="namber_id" class="form-control" required id="namber_id" placeholder="1">
                 </div>
                 <div class="col-md-12">
                     <label for="rim_id" class="form-label">Chorak:</label>
@@ -96,13 +60,44 @@
                     </select>
                 </div>
                 <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                  <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
                 </div>
-              </form><!-- Vertical Form -->
-
+              </div>
             </div>
           </div>
-
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Imzolashga yuborish</h5>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                    <select id="sender" name="sender" class="form-select" required>
+                        <option value="">Tanlang...</option>
+                        {% for emp in employees %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                    <select id="agreements" name="agreements[]" class="form-select" multiple>
+                        <option value="">Tanlang...</option>
+                        {% for emp in deedconsent %}
+                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12">
+                  <label for="message" class="form-label">Izox :</label>
+                  <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                </div>
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
+                </div>
+              </div><!-- Vertical Form -->
+            </div>
+          </div>
+         </form>
         </div>
 
         <div class="col-lg-8">
@@ -112,15 +107,15 @@
                         <h5 class="text-center"><b>DALOLATNOMA</b></h5>
                     </div>
                     <div class="text-end">
-                        "_____"_______________2025 yil
+                        15.02.2026 y
                     </div>
-                    <div class="mt-5 text-justify">
+                    <div class="mt-3 text-justify">
                         Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                         <span id="selekt_id_text_1">Davlat byudjeti siyosati departamenti</span>
                         <span id="post_id_text">direktori</span>
                         <b id="fio_id_text_1">Sh.Muxamedov</b>,
                         va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari
-                        markazi direktori vazifasini vaqtincha bajaruvchi <b>O.Eshchanov</b>:
+                        markazi direktori vazifasini vaqtincha bajaruvchi <b>F.Xujamqulov</b>:
                         O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi hamda O‘zbekiston Respublikasi Iqtisodiyot
                         va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
                         <b><span id="date_id_text">2025 yil 4-martda</span> tuzilgan <span id="namber_id_text">1</span>-sonli</b>
@@ -149,7 +144,137 @@
                             O‘zbekiston Respublikasi
                             Iqtisodiyot va moliya vazirligi
                             huzuridagi ATM direktori v.v.b. <br> <br> <br> <br>
-                                __________________ O.Eshchanov</b>
+                                __________________ F.Xujamqulov</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-body m-5">
+                    <div class="text-end">
+                        "           "                            2025 yil.
+                    </div>
+                    <div class="text-center">
+                        <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
+                    </div>
+                    <div class="text-center">
+                        <b>DEPARTMENT</b><br>
+                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                            (boshqarma nomi)
+                        </span>
+                    </div>
+                    <div class="text-center">
+                       <span>Biz, </span> <span><ins>Tankoz E.E.   bosh mutaxassis,   Jumayev U.O.   2-toifali mutaxassis</ins></span><br>
+                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                           (F.I.Sh.) (lavozimi)
+                        </span>
+                    </div>
+                    <div>
+                        <b>Xizmat ko‘rsatilyotgan texnikalarni rusumi seriya raqami:</b><br>
+                    </div>
+                    <div>
+                        <b>Kompyuterlar (PC/Noutbuk/Planshet/Info-kiosk)</b><br>
+                    </div>
+                    <div class="text-center">
+                        <table class="table table-bordered table-sm text-center align-middle">
+                            <thead>
+                              <tr>
+                                <th class="text-center align-middle">№</th>
+                                <th class="text-center align-middle">Rusumi</th>
+                                <th class="text-center align-middle">Kompyuter SR:</th>
+                                <th class="text-center align-middle">Inventar raqami:</th>
+                              </tr>
+                            </thead>
+                            <tbody id="pc_tbody">
+                              <tr>
+                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
+                              </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <b>Printerlar (A4/A3/Skanner)</b><br>
+                    </div>
+                    <div class="text-center">
+                        <table class="table table-bordered table-sm text-center align-middle">
+                            <thead>
+                              <tr>
+                                <th class="text-center align-middle">№</th>
+                                <th class="text-center align-middle">Rusumi</th>
+                                <th class="text-center align-middle">Kompyuter SR:</th>
+                              </tr>
+                            </thead>
+                            <tbody id="pr_tbody">
+                              <tr>
+                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
+                              </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi vakili:</b><br>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <span><ins>Muxamedov Sh</ins></span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( FIO )
+                            </span>
+                        </div>
+                        <div class="col-4">
+                            <span><ins>Department direktori</ins></span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( lavozimi )
+                            </span>
+                        </div>
+                        <div class="col-4">
+                            <span>_________________</span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( imzo )
+                            </span>
+                        </div>
+                    </div>
+                    <div>
+                        <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</b><br>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <span><ins>Muxamedov Sh</ins></span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( FIO )
+                            </span>
+                        </div>
+                        <div class="col-4">
+                            <span><ins>Bosh mutaxassis</ins></span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( lavozimi )
+                            </span>
+                        </div>
+                        <div class="col-4">
+                            <span>_________________</span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( imzo )
+                            </span>
+                        </div>
+                    </div>
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <span><ins>Muxamedov Sh</ins></span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( FIO )
+                            </span>
+                        </div>
+                        <div class="col-4">
+                            <span><ins>2-toifali mutaxassis</ins></span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( lavozimi )
+                            </span>
+                        </div>
+                        <div class="col-4">
+                            <span>_________________</span><br>
+                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                                ( imzo )
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -162,152 +287,137 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(document).ready(function () {
+$(function () {
 
-    // 1. DEPARTAMENTLARNI YUKLASH
-    function loadDepartments(orgId, selectedDepId = null) {
-        $('#department').html('<option value="">Yuklanmoqda...</option>');
-        $('#directorate').html('<option value="">Tanlang...</option>');
-        $('#division').html('<option value="">Tanlang...</option>');
+  function initSelect2All() {
+    $('select').each(function () {
+      const $el = $(this);
+      if ($el.data('select2')) return;
 
-        if (orgId) {
-            $.ajax({
-                url: "{% url 'ajax_load_departments' %}",
-                data: { 'organization': orgId },
-                success: function (data) {
-                    let options = '<option value="">Tanlang...</option>';
-                    $.each(data, function (i, dep) {
-                        let selected = (selectedDepId == dep.id) ? 'selected' : '';
-                        options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
-                    });
-                    $('#department').html(options);
-                }
-            });
-        } else {
-            $('#department').html('<option value="">Tanlang...</option>');
-        }
-    }
-
-    // 2. DIRECTORATE YUKLASH
-    function loadDirectorate(depId, selectedDirId = null) {
-        $('#directorate').html('<option value="">Yuklanmoqda...</option>');
-        $('#division').html('<option value="">Tanlang...</option>');
-
-        if (depId) {
-            $.ajax({
-                url: "{% url 'ajax_load_directorate' %}",
-                data: { 'department': depId },
-                success: function (data) {
-                    let options = '<option value="">Tanlang...</option>';
-                    $.each(data, function (i, dir) {
-                        let selected = (selectedDirId == dir.id) ? 'selected' : '';
-                        options += `<option value="${dir.id}" ${selected}>${dir.name}</option>`;
-                    });
-                    $('#directorate').html(options);
-                }
-            });
-        } else {
-            $('#directorate').html('<option value="">Tanlang...</option>');
-        }
-    }
-
-    // 3. DIVISION YUKLASH
-    function loadDivision(dirId, selectedDivId = null) {
-        $('#division').html('<option value="">Yuklanmoqda...</option>');
-
-        if (dirId) {
-            $.ajax({
-                url: "{% url 'ajax_load_division' %}",
-                data: { 'directorate': dirId },
-                success: function (data) {
-                    let options = '<option value="">Tanlang...</option>';
-                    $.each(data, function (i, div) {
-                        let selected = (selectedDivId == div.id) ? 'selected' : '';
-                        options += `<option value="${div.id}" ${selected}>${div.name}</option>`;
-                    });
-                    $('#division').html(options);
-                }
-            });
-        } else {
-            $('#division').html('<option value="">Tanlang...</option>');
-        }
-    }
-
-
-    // === EVENTLAR ===
-
-    $('#organization').change(function () {
-        loadDepartments($(this).val());
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
     });
+  }
+  initSelect2All();
 
-    $('#department').change(function () {
-        loadDirectorate($(this).val());
-    });
+  function esc(s){
+    return String(s ?? '').replace(/[&<>"']/g, (m) => ({
+      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+    }[m]));
+  }
 
-    $('#directorate').change(function () {
-        loadDivision($(this).val());
-    });
-
-
-    // === OLDINGI TANLANGAN QIYMATLARNI QAYTA TIKLASH ===
-
-    let initialOrg = '{{ selected_org }}';
-    let initialDep = '{{ selected_dep }}';
-    let initialDir = '{{ selected_dir }}';
-    let initialDiv = '{{ selected_div }}';
-
-    if (initialOrg) {
-        $('#organization').val(initialOrg);
-        loadDepartments(initialOrg, initialDep);
-
-        if (initialDep) {
-            loadDirectorate(initialDep, initialDir);
-
-            if (initialDir) {
-                loadDivision(initialDir, initialDiv);
-            }
-        }
+  function fillPcTable(items){
+    const $tb = $('#pc_tbody');
+    if (!items || !items.length){
+      $tb.html(`<tr><td colspan="4" class="text-center text-muted">Ma'lumot topilmadi</td></tr>`);
+      return;
     }
+    let html = '';
+    items.forEach((x, i) => {
+      html += `
+        <tr>
+          <td>${i+1}</td>
+          <td>${esc(x.name)}</td>
+          <td>${esc(x.serial)}</td>
+          <td>${esc(x.inventory)}</td>
+        </tr>`;
+    });
+    $tb.html(html);
+  }
+
+  function fillPrTable(items){
+    const $tb = $('#pr_tbody');
+    if (!items || !items.length){
+      $tb.html(`<tr><td colspan="3" class="text-center text-muted">Ma'lumot topilmadi</td></tr>`);
+      return;
+    }
+    let html = '';
+    items.forEach((x, i) => {
+      html += `
+        <tr>
+          <td>${i+1}</td>
+          <td>${esc(x.name)}</td>
+          <td>${esc(x.serial)}</td>
+        </tr>`;
+    });
+    $tb.html(html);
+  }
+
+  $('#btnSearch').on('click', function () {
+    const orgId = $('#organization').val();
+    const depId = $('#department').val();
+    const rimId = $('#rim_id').val();
+
+    if (!orgId || !depId || !rimId){
+      alert("Organization, Department va Chorakni tanlang!");
+      return;
+    }
+
+    // loading holati
+    $('#pc_tbody').html(`<tr><td colspan="4" class="text-center text-muted">Yuklanmoqda...</td></tr>`);
+    $('#pr_tbody').html(`<tr><td colspan="3" class="text-center text-muted">Yuklanmoqda...</td></tr>`);
+
+    $.ajax({
+      url: "{% url 'ajax_document_preview' %}",
+      method: "GET",
+      dataType: "json",
+      data: {
+        organization: orgId,
+        department: depId,
+        rim_id: rimId
+      },
+      success: function (res) {
+        // Matnlarni to'ldirish
+        $('#selekt_id_text_1').text(res.department_name || '');
+        $('#selekt_id_text_2').text(res.department_name || '');
+        $('#rim_id_text').text(res.rim_id || '');
+
+        // Sanani ham xohlasangiz:
+        // $('#date_id_text').text(res.today || '');
+
+        // Countlar
+        $('#techkomp').text(res.komp_count ?? 0);
+        $('#techpr').text((res.prin_count ?? 0) + " dona.");
+
+        // Jadvallar
+        fillPcTable(res.kompyuterlar || []);
+        fillPrTable(res.printerlar || []);
+      },
+      error: function (xhr) {
+        let msg = "Xatolik yuz berdi";
+        try {
+          const j = xhr.responseJSON;
+          if (j && j.error) msg = j.error;
+        } catch(e){}
+        $('#pc_tbody').html(`<tr><td colspan="4" class="text-center text-danger">${esc(msg)}</td></tr>`);
+        $('#pr_tbody').html(`<tr><td colspan="3" class="text-center text-danger">${esc(msg)}</td></tr>`);
+      }
+    });
+  });
 
 });
+</script>
 
-$(document).ready(function(){
+<script>
+$(function () {
 
-    function updateTechnicCount(){
-        const orgId = $('#organization').val();
-        const depId = $('#department').val();
-        const dirId = $('#directorate').val();
-        const divId = $('#division').val();
+  function initSelect2All() {
+    $('select').each(function () {
+      const $el = $(this);
+      if ($el.data('select2')) return;
 
-        $.ajax({
-            url: "{% url 'get_technics_count' %}",
-            data: {
-                'org_id': orgId,
-                'dep_id': depId,
-                'dir_id': dirId,
-                'div_id': divId
-            },
-            success: function(data){
-
-                // Kompyuterlar soni
-                $('#techkomp').text(data.kompyuterlar + ' dona');
-
-                // Printerlar soni
-                $('#techpr').text(data.printerlar + ' dona');
-            },
-            error: function(err){
-                console.error("AJAX xato:", err);
-            }
-        });
-    }
-
-    // Har qanday select o‘zgarganda
-    $('#organization, #department, #directorate, #division').on('change', function(){
-        updateTechnicCount();
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
     });
+  }
 
-    // Sahifa yangi yuklanganda ham hisoblasin
-    updateTechnicCount();
+  initSelect2All();
 });
 </script>
 

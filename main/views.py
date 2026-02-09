@@ -1478,7 +1478,7 @@ def document_get(request):
         raise PermissionDenied
 
     context = {
-        "organizations": Organization.objects.only("id", "name", "slug", "org_type").order_by("name"),
+        "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
         "departments": Department.objects.select_related("organization").only(
             "id", "name", "organization_id"
         ).order_by("name"),
@@ -1500,77 +1500,17 @@ def document_post(request):
     if not employee:
         raise PermissionDenied
 
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
-
-    oylar = [
-        "yanvarda", "fevralda", "martda", "aprelda", "mayda", "iyunda",
-        "iyulda", "avgustda", "sentabrda", "oktabrda", "noyabrda", "dekabrda"
-    ]
-
-    # === FORM ===
     org_id = (request.POST.get("organization") or "").strip()
     dep_id = (request.POST.get("department") or "").strip()
-    dir_id = (request.POST.get("directorate") or "").strip()
-    div_id = (request.POST.get("division") or "").strip()
 
-    post_id = (request.POST.get("post_id") or "").strip()
-    fio_id = (request.POST.get("fio_id") or "").strip()
-    date_id = (request.POST.get("date_id") or "").strip()
-    namber_id = (request.POST.get("namber_id") or "").strip()
-    rim_id = (request.POST.get("rim_id") or "").strip()
-
-    # === OBYEKTLAR (xavfsiz) ===
-    org = dep = dir = div = None
-
-    if div_id:
-        if not div_id.isdigit():
-            return HttpResponse("Division noto‘g‘ri", status=400)
-        div = get_object_or_404(Division, id=int(div_id))
-    elif dir_id:
-        if not dir_id.isdigit():
-            return HttpResponse("Directorate noto‘g‘ri", status=400)
-        dir = get_object_or_404(Directorate, id=int(dir_id))
-    elif dep_id:
-        if not dep_id.isdigit():
-            return HttpResponse("Department noto‘g‘ri", status=400)
-        dep = get_object_or_404(Department, id=int(dep_id))
-    elif org_id:
-        if not org_id.isdigit():
-            return HttpResponse("Organization noto‘g‘ri", status=400)
-        org = get_object_or_404(Organization, id=int(org_id))
-    else:
-        return HttpResponse("Tashkilot / bo‘lim tanlanmagan!", status=400)
-
-    # === SANANI FORMATLASH ===
-    formatted_date = ""
-    if date_id:
-        try:
-            dt = datetime.strptime(date_id, "%Y-%m-%d").date()
-            formatted_date = f"{dt.year} yil {dt.day}-{oylar[dt.month - 1]}"
-        except Exception:
-            formatted_date = date_id
-
-    # === QAYSI BO‘LIM TANLANGANI ===
-    if div:
-        full_obj = div
-        filter_kwargs = {"employee__division_id": div.id}
-    elif dir:
-        full_obj = dir
-        filter_kwargs = {"employee__directorate_id": dir.id}
-    elif dep:
-        full_obj = dep
-        filter_kwargs = {"employee__department_id": dep.id}
-    else:
-        full_obj = org
-        filter_kwargs = {"employee__organization_id": org.id}
+    org = Organization.objects.filter(id=org_id).first() if org_id else None
+    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
 
     # === TEXNIKA QS ===
     komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
     prin_names = ["A4 Printer", "Printer", "scaner"]
 
-    base_qs = Technics.objects.filter(**filter_kwargs)
+    base_qs = Technics.objects.filter(order__sender__department_id=dep_id)
 
     # ✅ 1 ta so‘rovda 2 ta count
     counts = (
@@ -1605,13 +1545,11 @@ def document_post(request):
     doc = Document(template_path)
 
     replacements = {
-        "DEPARTMENT": getattr(full_obj, "name", "") or "",
-        "POST": post_id,
-        "FIO": fio_id,
-        "DATA": formatted_date,
-        "NAMBER": namber_id,
-        "RIM": rim_id,
-        "STYLE": getattr(full_obj, "name", "") or "",
+        "DEPARTMENT": dep.name or "",
+        "FIO": request.user.employee.full_name or "",
+        "DATA": date.today().strftime("%d.%m.%Y"),
+        "CONTRACT": org.contract,
+        "RIM": '1',
         "TEXNIKALAR": texnikalar_matni,
     }
 

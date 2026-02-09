@@ -495,3 +495,61 @@ def ajax_reestr_materials(request):
 
     return JsonResponse(data, safe=False)
 
+from datetime import date
+from django.db.models import Count
+def ajax_document_preview(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    org_id = (request.GET.get("organization") or "").strip()
+    dep_id = (request.GET.get("department") or "").strip()
+    rim_id = (request.GET.get("rim_id") or "").strip()  # I / II / III / IV
+
+    if not dep_id or not rim_id:
+        return JsonResponse({"error": "department va chorak majburiy"}, status=400)
+
+    dep = Department.objects.filter(id=dep_id).first()
+    if not dep:
+        return JsonResponse({"error": "Department topilmadi"}, status=404)
+
+    # Sizga kerak bo'lsa org ham tekshiring
+    org = Organization.objects.filter(id=org_id).first() if org_id else None
+
+    komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
+    prin_names = ["A4 Printer", "Printer", "scaner"]
+
+    base_qs = (
+        Technics.objects.filter(order__sender__department_id=dep_id)
+        .select_related("category")
+        .distinct()
+    )
+
+    counts = (
+        base_qs.filter(category__name__in=komp_names + prin_names)
+        .values("category__name")
+        .annotate(c=Count("id"))
+    )
+    komp_count = sum(x["c"] for x in counts if x["category__name"] in komp_names)
+    prin_count = sum(x["c"] for x in counts if x["category__name"] in prin_names)
+
+    kompyuterlar = list(
+        base_qs.filter(category__name__in=komp_names)
+        .values("name", "serial", "inventory")
+    )
+    printerlar = list(
+        base_qs.filter(category__name__in=prin_names)
+        .values("name", "serial")
+    )
+
+    data = {
+        "department_name": dep.name or "",
+        "rim_id": rim_id,
+        "today": date.today().strftime("%d.%m.%Y"),
+        "fio": employee.full_name or "",
+        "komp_count": komp_count,
+        "prin_count": prin_count,
+        "kompyuterlar": kompyuterlar,
+        "printerlar": printerlar,
+    }
+    return JsonResponse(data, safe=False)
