@@ -124,10 +124,26 @@
                                             <div class="col-6">{{ o.sender.full_name }}</div>
                                             <div class="col-6 text-muted">Ariza Maqsadi</div>
                                             <div class="col-6">{{ o.goal.name }}</div>
+                                            {% if o.sender.organization %}
+                                            <div class="col-6 text-muted">Tashkilot</div>
+                                            <div class="col-6">{{ o.sender.organization|default:"" }}</div>
+                                            {% endif %}
+                                            {% if o.sender.department %}
+                                            <div class="col-6 text-muted">Departament</div>
+                                            <div class="col-6">{{ o.sender.department|default:"" }}</div>
+                                            {% endif %}
+                                            {% if o.sender.directorate %}
+                                            <div class="col-6 text-muted">Boshqarma</div>
+                                            <div class="col-6">{{ o.sender.directorate|default:"" }}</div>
+                                            {% endif %}
+                                            {% if o.sender.division %}
+                                            <div class="col-6 text-muted">Bo'lim</div>
+                                            <div class="col-6">{{ o.sender.division|default:"" }}</div>
+                                            {% endif %}
                                             <div class="col-6 text-muted">Telefon</div>
                                             <div class="col-6">{{ o.sender.phone }}</div>
                                             <div class="col-6 text-muted">Izox</div>
-                                            <div class="col-6">{{ o.body }}</div>
+                                            <div class="col-6">{{ o.body }}</div><hr>
                                             <div class="col-6 text-muted">Bajardi</div>
                                             <div class="col-6">{{ o.receiver.full_name }}</div>
                                             <div class="col-6 text-muted">Texnika</div>
@@ -182,10 +198,10 @@
                                     <div class="modal-footer d-flex justify-content-center gap-2">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Etiborsiz qoldirish</button>
                                         {% if o.status in 'viewed accepted' %}
-                                        <button type="submit" name="action" value="reject" class="btn btn-danger">Bekor qilish</button>
+                                        <button type="submit" name="action" value="rejected" class="btn btn-danger">Bekor qilish</button>
                                         {% endif %}
                                         {% if o.status == 'finished' %}
-                                        <button type="submit" name="action" value="approve" class="btn btn-primary">Tasdiqlash</button>
+                                        <button type="submit" name="action" value="approved" class="btn btn-primary">Tasdiqlash</button>
                                         {% endif %}
                                     </div>
                                   </form>
