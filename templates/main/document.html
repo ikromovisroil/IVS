@@ -289,20 +289,6 @@
 <script>
 $(function () {
 
-  function initSelect2All() {
-    $('select').each(function () {
-      const $el = $(this);
-      if ($el.data('select2')) return;
-
-      $el.select2({
-        width: '100%',
-        placeholder: 'Tanlang...',
-        allowClear: true
-      });
-    });
-  }
-  initSelect2All();
-
   function esc(s){
     return String(s ?? '').replace(/[&<>"']/g, (m) => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
@@ -347,16 +333,13 @@ $(function () {
   }
 
   $('#btnSearch').on('click', function () {
-    const orgId = $('#organization').val();
     const depId = $('#department').val();
-    const rimId = $('#rim_id').val();
 
-    if (!orgId || !depId || !rimId){
-      alert("Organization, Department va Chorakni tanlang!");
+    if (!depId){
+      alert("Departmentni tanlang!");
       return;
     }
 
-    // loading holati
     $('#pc_tbody').html(`<tr><td colspan="4" class="text-center text-muted">Yuklanmoqda...</td></tr>`);
     $('#pr_tbody').html(`<tr><td colspan="3" class="text-center text-muted">Yuklanmoqda...</td></tr>`);
 
@@ -364,19 +347,11 @@ $(function () {
       url: "{% url 'ajax_document_preview' %}",
       method: "GET",
       dataType: "json",
-      data: {
-        organization: orgId,
-        department: depId,
-        rim_id: rimId
-      },
+      data: { department: depId },
       success: function (res) {
-        // Matnlarni to'ldirish
+        // Matnlar (xohlasangiz)
         $('#selekt_id_text_1').text(res.department_name || '');
         $('#selekt_id_text_2').text(res.department_name || '');
-        $('#rim_id_text').text(res.rim_id || '');
-
-        // Sanani ham xohlasangiz:
-        // $('#date_id_text').text(res.today || '');
 
         // Countlar
         $('#techkomp').text(res.komp_count ?? 0);
