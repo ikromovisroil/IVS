@@ -547,7 +547,6 @@ def sso_callback_page(request):
 @login_required
 @require_POST
 def sso_exchange_and_finish(request):
-    pending = None
     try:
         try:
             body = json.loads(request.body or "{}")
@@ -557,28 +556,23 @@ def sso_exchange_and_finish(request):
         code = body.get("code")
         code_verifier = body.get("codeVerifier")
         redirect_uri = body.get("redirectUri")
-
         if not code or not code_verifier or not redirect_uri:
-            return JsonResponse(
-                {"status": "error", "message": "SSO parametrlari to‘liq emas", "redirect": "/"},
-                status=400
-            )
+            return JsonResponse({"status": "error", "message": "SSO parametrlari to‘liq emas", "redirect": "/"}, status=400)
 
-        # 2) Pending tekshiruv
         pending = request.session.get("PENDING_APPROVE")
         if not pending:
             raise PermissionDenied("Pending yo‘q")
 
-        role = pending.get("role")  # sender/receiver/consent
-        message = pending.get("message", "")
-        redirect_url = pending.get("redirect_url", "/")
-        after_sso_url = pending.get("after_sso_url") or redirect_url
+        role = pending.get("role")
+        message = (pending.get("message") or "").strip()
+        redirect_url = pending.get("redirect_url") or "/"
 
         employee = getattr(request.user, "employee", None)
         if not employee:
             request.session.pop("PENDING_APPROVE", None)
             return JsonResponse({"status": "forbidden", "message": "Employee yo‘q", "redirect": redirect_url}, status=403)
 
+        # token olish
         token_data = exchange_code_for_token(code, code_verifier, redirect_uri)
         id_token = token_data.get("id_token")
         if not id_token:
@@ -590,33 +584,66 @@ def sso_exchange_and_finish(request):
 
         if not employee_pinfl or not sso_pinfl or employee_pinfl != sso_pinfl:
             request.session.pop("PENDING_APPROVE", None)
-            return JsonResponse(
-                {"status": "forbidden", "message": "PINFL mos emas", "redirect": redirect_url},
-                status=403
-            )
+            return JsonResponse({"status": "forbidden", "message": "PINFL mos emas", "redirect": redirect_url}, status=403)
 
+        # ✅ sender/receiver: AUTO QR + APPROVE
         if role in ("sender", "receiver"):
             deed_id = pending.get("deed_id")
             if not deed_id:
-                raise PermissionDenied("Deed topilmadi")
+                raise PermissionDenied("Deed yo‘q")
 
-            request.session["SSO_OK"] = {
-                "kind": "deed",
-                "role": role,
-                "deed_id": int(deed_id),
-                "message": message or "",
-            }
+            deed = get_object_or_404(Deed.objects.select_related("sender", "receiver"), pk=int(deed_id))
+
+            # ruxsat tekshiruv
+            if role == "sender" and deed.sender_id != employee.id:
+                raise PermissionDenied("Sender emassiz")
+            if role == "receiver" and deed.receiver_id != employee.id:
+                raise PermissionDenied("Receiver emassiz")
+
+            # qayta bosishdan himoya
+            if role == "sender" and deed.status_sender == "approved":
+                request.session.pop("PENDING_APPROVE", None)
+                return JsonResponse({"status": "ok", "redirect": redirect_url})
+
+            if role == "receiver" and deed.status_receiver == "approved":
+                request.session.pop("PENDING_APPROVE", None)
+                return JsonResponse({"status": "ok", "redirect": redirect_url})
+
+            if not deed.file:
+                raise PermissionDenied("PDF yo‘q")
+
+            pdf_path = deed.file.path
+            approver_name = employee.full_name
+
+            # PDF sign + DB update (atomik)
+            with transaction.atomic():
+                sign_pdf_inplace(pdf_path=pdf_path, request=request, approver_name=approver_name,deed_id=deed.pk,)
+
+                now = timezone.now()
+                if role == "sender":
+                    Deed.objects.filter(pk=deed.pk).update(
+                        status_sender="approved",
+                        message_sender=message or "",
+                        date_edit=now,
+                    )
+                else:
+                    Deed.objects.filter(pk=deed.pk).update(
+                        status_receiver="approved",
+                        message_receiver=message or "",
+                        date_edit=now,
+                    )
+
             request.session.pop("PENDING_APPROVE", None)
             request.session.modified = True
-            return JsonResponse({"status": "ok", "redirect": after_sso_url})
+            return JsonResponse({"status": "ok", "redirect": redirect_url})
 
+        # ✅ consent bo‘lsa avvalgidek
         if role == "consent":
             consent_id = pending.get("consent_id")
             if not consent_id:
                 raise PermissionDenied("consent_id yo‘q")
 
-            consent = get_object_or_404(DeedConsent.objects.select_related("employee__user"), pk=consent_id)
-
+            consent = get_object_or_404(DeedConsent.objects.select_related("employee__user"), pk=int(consent_id))
             if consent.employee.user_id != request.user.id:
                 raise PermissionDenied("Ruxsat yo‘q")
 
@@ -634,7 +661,8 @@ def sso_exchange_and_finish(request):
 
     except PermissionDenied as e:
         return JsonResponse({"status": "error", "message": str(e), "redirect": "/"}, status=403)
-
+    except TimeoutError:
+        return JsonResponse({"status": "error", "message": "PDF band, qayta urinib ko‘ring", "redirect": "/"}, status=409)
     except Exception as e:
         print("SSO ERROR:", e)
         return JsonResponse({"status": "error", "message": "SSO xatolik", "redirect": "/"}, status=500)
@@ -652,7 +680,7 @@ def exchange_code_for_token(code, code_verifier, redirect_uri):
         "redirect_uri": redirect_uri,
     }
 
-    response = requests.post(
+    r = requests.post(
         settings.SSO_TOKEN_URL,
         data=data,
         headers={
@@ -662,9 +690,10 @@ def exchange_code_for_token(code, code_verifier, redirect_uri):
         timeout=10,
     )
 
-    if response.status_code != 200:
-        raise PermissionDenied(f"SSO token olinmadi: {response.text}")
-    return response.json()
+    if r.status_code != 200:
+        raise PermissionDenied(f"SSO token olinmadi: {r.text}")
+
+    return r.json()
 
 
 @never_cache

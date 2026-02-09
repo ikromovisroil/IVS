@@ -9,7 +9,9 @@ import shutil
 import base64
 import json
 from django.conf import settings
-
+from django.utils import timezone
+from contextlib import contextmanager
+from qrcode.constants import ERROR_CORRECT_M
 
 # ==========================================================
 # 1) DOCX → PDF (LIBREOFFICE)  → (pdf_path, debug)
@@ -76,40 +78,120 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
 
 
 
-def create_overlay_pdf(original_pdf_path: str,text: str,qr_link: str,overlay_path: str):
-    reader = PdfReader(original_pdf_path)
-    first_page = reader.pages[0]
+@contextmanager
+def file_lock(lock_path: str, timeout: int = 10):
+    start = timezone.now()
+    while True:
+        try:
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.close(fd)
+            break
+        except FileExistsError:
+            if (timezone.now() - start).total_seconds() > timeout:
+                raise TimeoutError("PDF band (lock timeout)")
+    try:
+        yield
+    finally:
+        try:
+            os.remove(lock_path)
+        except Exception:
+            pass
 
-    width = float(first_page.mediabox.width)
-    height = float(first_page.mediabox.height)
 
-    # QR yaratamiz
+def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, overlay_path: str):
     qr_png = overlay_path.replace(".pdf", "_qr.png")
-    qrcode.make(qr_link).save(qr_png)
 
-    c = canvas.Canvas(overlay_path, pagesize=(width, height))
+    # 🔥 QR ni qo‘lda yaratamiz
+    qr = qrcode.QRCode(
+        version=None,
+        error_correction=ERROR_CORRECT_M,
+        box_size=6,
+        border=1,
+    )
+    qr.add_data(qr_link)
+    qr.make(fit=True)
+
+    img = qr.make_image(fill_color="black", back_color="white")
+    img.save(qr_png)
+
+    c = canvas.Canvas(overlay_path, pagesize=(page_w, page_h))
     c.setFillColor(red)
 
-    # Imzo matni (yuqori chap)
+    # Yozuv (yuqori chap)
     c.setFont("Helvetica-Bold", 10)
-    c.drawString(20, height - 30, text)
+    c.drawString(10, page_h - 15, text)
 
     # QR (pastki markaz)
-    qr_size = 80
-    x_center = (width - qr_size) / 2
-    c.drawImage(
-        qr_png,
-        x_center,
-        20,
-        width=qr_size,
-        height=qr_size,
-        mask="auto"
-    )
+    qr_size = 60
+    x_center = (page_w - qr_size) / 2
+    c.drawImage(qr_png, x_center, 2, width=qr_size, height=qr_size, mask="auto")
 
     c.save()
 
-    if os.path.exists(qr_png):
+    try:
         os.remove(qr_png)
+    except Exception:
+        pass
+
+
+from django.urls import reverse
+def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -> None:
+    """
+    PDF ning o'zini o'ziga imzolaydi: HAR BIR SAHIFAGA QR + yozuv qo'yadi.
+    QR skaner bo‘lsa: /deed/status/<deed_id>/ ga olib boradi.
+    """
+
+    if not pdf_path or not os.path.exists(pdf_path):
+        raise FileNotFoundError("PDF topilmadi")
+
+    if not pdf_path.lower().endswith(".pdf"):
+        raise ValueError("PDF noto‘g‘ri")
+
+    abs_pdf = os.path.abspath(pdf_path)
+
+    # ✅ QR endi STATUS sahifaga olib boradi
+    qr_link = request.build_absolute_uri(
+        reverse("deed_status", args=[int(deed_id)])
+    )
+
+    # Matn
+    text = (
+        f"Ushbu hujjat {approver_name} tomonidan "
+        f"{timezone.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
+    )
+
+    lock_path = abs_pdf + ".lock"
+    with file_lock(lock_path, timeout=10):
+        reader = PdfReader(abs_pdf)
+        if not reader.pages:
+            raise ValueError("PDF bo‘sh")
+
+        first = reader.pages[0]
+        w = float(first.mediabox.width)
+        h = float(first.mediabox.height)
+
+        overlay_path = abs_pdf.replace(".pdf", "_overlay.pdf")
+        tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
+
+        create_overlay_pdf(w, h, text, qr_link, overlay_path)
+
+        overlay_reader = PdfReader(overlay_path)
+        overlay_page = overlay_reader.pages[0]
+
+        writer = PdfWriter()
+        for page in reader.pages:
+            page.merge_page(overlay_page)  # ✅ har bir sahifaga
+            writer.add_page(page)
+
+        with open(tmp_out, "wb") as f:
+            writer.write(f)
+
+        shutil.move(tmp_out, abs_pdf)
+
+        try:
+            os.remove(overlay_path)
+        except Exception:
+            pass
 
 
 # ==========================================================
