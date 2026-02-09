@@ -73,7 +73,7 @@
                   <label for="sender" class="form-label">Imzolovchi xodim :</label>
                     <select id="sender" name="sender" class="form-select" required>
                         <option value="">Tanlang...</option>
-                        {% for emp in employees %}
+                        {% for emp in emp_bos %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>
                         {% endfor %}
                     </select>
