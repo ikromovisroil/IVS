@@ -212,7 +212,7 @@
                                 </button>
                                 <!-- MODAL -->
                                 {% for dc in d.deedconsent_set.all %}
-                                   {% if dc.employee == request.user.employee and ds.status == "viewed" %}
+                                   {% if dc.employee == request.user.employee and dc.status == "viewed" %}
                                     <div class="modal fade" id="modal-c{{ d.id }}" tabindex="-1">
                                         <div class="modal-dialog modal-dialog-centered modal-lg">
                                             <div class="modal-content">
