@@ -1,29 +1,138 @@
-import os
-import subprocess
 from datetime import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import red
-from PyPDF2 import PdfReader, PdfWriter
 import qrcode
-import shutil
 import base64
 import json
 from django.conf import settings
 from django.utils import timezone
 from contextlib import contextmanager
 from qrcode.constants import ERROR_CORRECT_M
+import os
+import subprocess
+from typing import Optional, Tuple
+from PyPDF2 import PdfReader, PdfWriter
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.lib.colors import Color
+from io import BytesIO
 
-# ==========================================================
-# 1) DOCX → PDF (LIBREOFFICE)  → (pdf_path, debug)
-# ==========================================================
-def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
+# =========================
+# 1) PDF watermark chizish (overlay PDF yaratamiz)
+# =========================
+def _make_watermark_overlay(page_width: float, page_height: float, text: str) -> BytesIO:
+    """
+    Bitta sahifalik watermark overlay PDF (memoryda).
+    """
+    packet = BytesIO()
+    c = canvas.Canvas(packet, pagesize=(page_width, page_height))
+
+    # Yengil kulrang + shaffofroq (reportlab: alpha ishlashi muhitga bog'liq, lekin ko'p holatda OK)
+    # Agar alpha ishlamasa ham, rangni juda och qilamiz.
+    light_gray = Color(0.6, 0.6, 0.6, alpha=0.20)
+    c.setFillColor(light_gray)
+
+    # Markazga diagonal yozuv
+    c.saveState()
+    c.translate(page_width / 2, page_height / 2)
+    c.rotate(35)
+
+    # Font
+    c.setFont("Helvetica-Bold", 52)
+    c.drawCentredString(0, 0, text)
+
+    c.restoreState()
+    c.showPage()
+    c.save()
+
+    packet.seek(0)
+    return packet
+
+
+# =========================
+# 2) PDF ga watermark bosish
+# =========================
+def apply_watermark_pdf(
+    pdf_path: str,
+    watermark_text: str = "TASDIQLANMAGAN",
+    keep_original_backup: bool = True,
+) -> Tuple[Optional[str], str]:
+    """
+    pdf_path faylni watermark qilib, natijani shu pdf_path'ning o'ziga yozadi.
+    keep_original_backup=True bo'lsa: pdf_path.orig backup saqlaydi.
+    """
+    if not os.path.exists(pdf_path):
+        return None, f"PDF topilmadi: {pdf_path}"
+
+    backup_path = pdf_path + ".orig"
+
+    try:
+        # Backup faqat bir marta
+        if keep_original_backup and not os.path.exists(backup_path):
+            shutil.copy2(pdf_path, backup_path)
+
+        reader = PdfReader(pdf_path)
+        writer = PdfWriter()
+
+        for page in reader.pages:
+            # Sahifa o'lchami
+            w = float(page.mediabox.width)
+            h = float(page.mediabox.height)
+
+            overlay_stream = _make_watermark_overlay(w, h, watermark_text)
+            overlay_pdf = PdfReader(overlay_stream)
+            overlay_page = overlay_pdf.pages[0]
+
+            # Watermark merge
+            page.merge_page(overlay_page)
+            writer.add_page(page)
+
+        # Vaqtinchalik yozib, keyin almashtirish (xavfsiz)
+        tmp_path = pdf_path + ".tmp"
+        with open(tmp_path, "wb") as f:
+            writer.write(f)
+
+        os.replace(tmp_path, pdf_path)
+        return pdf_path, "OK (watermark applied)"
+    except Exception as e:
+        return None, f"Watermark error: {e}"
+
+
+# =========================
+# 3) Watermarkni olib tashlash (backupdan tiklash)
+# =========================
+def remove_watermark_pdf(pdf_path: str) -> Tuple[Optional[str], str]:
+    """
+    pdf_path.orig bo'lsa, shuni qaytarib pdf_path qiladi (watermark yo'qoladi).
+    """
+    backup_path = pdf_path + ".orig"
+    if not os.path.exists(backup_path):
+        return None, f"Backup topilmadi (remove qilib bo'lmaydi): {backup_path}"
+
+    try:
+        # watermarkli pdfni backupdan tiklaymiz
+        os.replace(backup_path, pdf_path)
+        return pdf_path, "OK (watermark removed)"
+    except Exception as e:
+        return None, f"Remove watermark error: {e}"
+
+
+# =========================
+# 4) DOCX → PDF (LibreOffice) + (kerak bo'lsa watermark)
+# =========================
+def convert_docx_to_pdf_libre(
+    docx_path: str,
+    add_watermark: bool = True,
+    watermark_text: str = "TASDIQLANMAGAN",
+) -> Tuple[Optional[str], str]:
     if not os.path.exists(docx_path):
         return None, f"DOCX topilmadi: {docx_path}"
 
     output_dir = os.path.dirname(docx_path)
     expected_pdf = os.path.splitext(docx_path)[0] + ".pdf"
 
-    # ✅ soffice aniqlash (tez + to'g'ri)
+    # soffice aniqlash
     if os.name == "nt":
         candidates = [
             r"C:\Program Files\LibreOffice\program\soffice.exe",
@@ -55,10 +164,10 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     try:
         proc = subprocess.run(
             cmd,
-            stdout=subprocess.DEVNULL,   # ✅ stdout/stderr ni o'qimaslik tezroq
+            stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             env=env,
-            timeout=30                  # ✅ osilib qolmasin
+            timeout=30
         )
     except Exception as e:
         return None, str(e)
@@ -66,15 +175,26 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     if proc.returncode != 0:
         return None, f"LibreOffice returncode={proc.returncode}"
 
+    pdf_path = None
     if os.path.exists(expected_pdf):
-        return expected_pdf, "OK"
+        pdf_path = expected_pdf
+    else:
+        # fallback
+        pdfs = [f for f in os.listdir(output_dir) if f.lower().endswith(".pdf")]
+        if pdfs:
+            pdf_path = os.path.join(output_dir, pdfs[0])
 
-    # LibreOffice ba'zan nomni o'zgartirishi mumkin → fallback
-    pdfs = [f for f in os.listdir(output_dir) if f.lower().endswith(".pdf")]
-    if pdfs:
-        return os.path.join(output_dir, pdfs[0]), "OK (fallback)"
+    if not pdf_path or not os.path.exists(pdf_path):
+        return None, "PDF yaratilmadi"
 
-    return None, "PDF yaratilmadi"
+    # Watermark qo'yish
+    if add_watermark:
+        wm_path, wm_msg = apply_watermark_pdf(pdf_path, watermark_text=watermark_text, keep_original_backup=True)
+        if not wm_path:
+            return pdf_path, f"PDF OK, lekin watermark qo'yilmadi: {wm_msg}"
+        return wm_path, "OK (pdf+watermark)"
+
+    return pdf_path, "OK (pdf only)"
 
 
 
