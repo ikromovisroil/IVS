@@ -16,298 +16,247 @@
 
 {% block content %}
 
- <main id="main" class="main">
+<main id="main" class="main">
 
-    <div class="pagetitle">
-      <h1>Dalolatnoma</h1>
-    </div><!-- End Page Title -->
+  <div class="pagetitle">
+    <h1>Dalolatnoma</h1>
+  </div>
 
-    <section class="section">
-      <div class="row">
-        <div class="col-lg-4">
-          <form action="{% url 'document_post' %}" method="post">{% csrf_token %}
+  <section class="section">
+    <div class="row">
 
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Filtrlash</h5>
+      <div class="col-lg-4">
+        <form action="{% url 'document_post' %}" method="post">{% csrf_token %}
 
-                <div class="row g-3">
-                  <div class="col-12">
-                    <label for="organization" class="form-label">Tashkilot :</label>
-                    <select id="organization" name="organization" class="form-select" required>
-                      <option value="">Tanlang...</option>
-                      {% for org in organizations %}
-                        <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Filtrlash</h5>
 
-                  <div class="col-12">
-                    <label for="department" class="form-label">Departament :</label>
-                    <select id="department" name="department" class="form-select" required>
-                      <option value="">Tanlang...</option>
-                      {% for dep in departments %}
-                        <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="organization" class="form-label">Tashkilot :</label>
+                  <select id="organization" name="organization" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {% for org in organizations %}
+                      <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>
+                        {{ org.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
 
-                  <div class="col-md-12">
-                    <label for="rim_id" class="form-label">Chorak:</label>
-                    <select id="rim_id" name="rim_id" class="form-select" required>
-                      <option value="">Tanlang...</option>
-                      <option value="I">I</option>
-                      <option value="II">II</option>
-                      <option value="III">III</option>
-                      <option value="IV">IV</option>
-                    </select>
-                  </div>
+                <div class="col-12">
+                  <label for="department" class="form-label">Departament :</label>
+                  <select id="department" name="department" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {% for dep in departments %}
+                      <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>
+                        {{ dep.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
 
-                  <div class="text-center">
-                    <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
-                  </div>
+                <div class="col-md-12">
+                  <label for="rim_id" class="form-label">Chorak:</label>
+                  <select id="rim_id" name="rim_id" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    <option value="I">I</option>
+                    <option value="II">II</option>
+                    <option value="III">III</option>
+                    <option value="IV">IV</option>
+                  </select>
+                </div>
+
+                <div class="text-center">
+                  <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Imzolashga yuborish</h5>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Imzolashga yuborish</h5>
 
-                <div class="row g-3">
-                  <!-- ✅ xizmat ko'rsatuvchi vakili -->
-                  <div class="col-12">
-                    <label for="sender" class="form-label">Xizmat ko'rsatuvchining vakili</label>
-                    <select id="sender" name="sender" class="form-select" required>
-                      <option value="">Tanlang...</option>
-                      {% for emp in emp_bos %}
-                        <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
+              <div class="row g-3">
 
-                  <!-- ✅ tashkilot vakili (receiver) -->
-                  <div class="col-12">
-                    <label for="receiver" class="form-label">Tashkilot vakili:</label>
-                    <select id="receiver" name="receiver" class="form-select" required>
-                      <option value="">Tanlang...</option>
-                      {% for emp in emp_bos %}
-                        <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <div class="col-12">
-                    <label for="agreements" class="form-label">Kelishuvchilar :</label>
-                    <select id="agreements" name="agreements[]" class="form-select" multiple>
-                      {% for emp in deedconsent %}
-                        <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                      {% endfor %}
-                    </select>
-                  </div>
-
-                  <div class="col-12">
-                    <label for="message" class="form-label">Izox :</label>
-                    <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
-                  </div>
-
-                  <div class="text-center">
-                    <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
-                  </div>
+                <div class="col-12">
+                  <label for="sender" class="form-label">Xizmat ko'rsatuvchining vakili</label>
+                  <select id="sender" name="sender" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {% for emp in emp_bos %}
+                      <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                    {% endfor %}
+                  </select>
                 </div>
+
+                <div class="col-12">
+                  <label for="receiver" class="form-label">Tashkilot vakili:</label>
+                  <select id="receiver" name="receiver" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {% for emp in emp_bos %}
+                      <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                  <select id="agreements" name="agreements[]" class="form-select" multiple>
+                    {% for emp in deedconsent %}
+                      <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label for="message" class="form-label">Izox :</label>
+                  <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                </div>
+
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
+                </div>
+
               </div>
             </div>
+          </div>
 
-          </form>
+        </form>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body m-5">
+
+            <div class="d-flex justify-content-center align-items-center mb-3">
+              <h5 class="text-center"><b>DALOLATNOMA</b></h5>
+            </div>
+
+            <div class="text-end">
+              15.02.2026 y
+            </div>
+
+            <div class="mt-3 text-justify">
+              Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+              <span id="selekt_id_text_1">Davlat byudjeti siyosati departamenti</span>
+              <span id="post_id_text">direktori</span>
+              <b id="fio_id_text_1">Sh.Muxamedov</b>,
+              va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari
+              markazi direktori vazifasini vaqtincha bajaruvchi <b>F.Xujamqulov</b>:
+              O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi hamda O‘zbekiston Respublikasi Iqtisodiyot
+              va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
+              <b><span id="date_id_text">2025 yil 4-martda</span> tuzilgan <span id="namber_id_text">1</span>-sonli</b>
+              shartnomaga asosan
+              <span id="selekt_id_text_2">Davlat byudjeti siyosati departamenti</span>
+              bo‘yicha 2025 yil <span id="rim_id_text">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
+              Ishlar texnologik xaritaga muvofiq amalga oshirildi.
+            </div>
+
+            <div class="mt-5">
+              <b> 1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
+            </div>
+
+            <div class="mt-5">
+              <b>1.1.</b> Biriktirilgan kompyuterlarga xizmat ko‘rsatish – <b id="techkomp">52</b>
+            </div>
+
+            <div class="mt-5">
+              <b>1.4.</b> A3 formatli printerlarga xizmat ko‘rsatish – <b id="techpr">2 dona.</b>
+            </div>
+
+            <div class="row mt-5">
+              <div class="col-6 text-center p-5"><b>
+                O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+                <span id="selekt_id_text">Davlat byudjeti siyosati departamenti</span>
+                <br><br><br><br>
+                ________________ <span id="fio_id_text">Sh.Muxamedov</span>
+              </b></div>
+
+              <div class="col-6 text-center p-5"><b>
+                O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.
+                <br><br><br><br>
+                __________________ F.Xujamqulov
+              </b></div>
+            </div>
+
+          </div>
         </div>
 
+        <div class="card">
+          <div class="card-body m-5">
 
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body m-5">
-                    <div class="d-flex justify-content-center align-items-center mb-3">
-                        <h5 class="text-center"><b>DALOLATNOMA</b></h5>
-                    </div>
-                    <div class="text-end">
-                        15.02.2026 y
-                    </div>
-                    <div class="mt-3 text-justify">
-                        Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                        <span id="selekt_id_text_1">Davlat byudjeti siyosati departamenti</span>
-                        <span id="post_id_text">direktori</span>
-                        <b id="fio_id_text_1">Sh.Muxamedov</b>,
-                        va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari
-                        markazi direktori vazifasini vaqtincha bajaruvchi <b>F.Xujamqulov</b>:
-                        O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi hamda O‘zbekiston Respublikasi Iqtisodiyot
-                        va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
-                        <b><span id="date_id_text">2025 yil 4-martda</span> tuzilgan <span id="namber_id_text">1</span>-sonli</b>
-                        shartnomaga asosan
-                        <span id="selekt_id_text_2">Davlat byudjeti siyosati departamenti</span>
-                        bo‘yicha 2025 yil <span id="rim_id_text">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
-                        Ishlar texnologik xaritaga muvofiq amalga oshirildi.
-                      </div>
-                    <div class="mt-5">
-                        <b> 1.	Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
-                    </div>
-                    <div class="mt-5">
-                       <b>1.1.</b> Biriktirilgan kompyuterlarga (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar)  xizmat ko‘rsatish – <b id="techkomp">52</b>
-                    </div>
-                    <div class="mt-5">
-                        <b>1.4.</b> A3 formatli printerlarga (tarmoq va tarmoqsiz lazer, purkovchi (струйный) va ko‘p funksiyali printerlar ) xizmat ko‘rsatish – <b id="techpr">2 dona.</b>
-                    </div>
-                    <div class="row mt-5">
-                        <div class="col-6 text-center p-5"><b>
-                            O‘zbekiston Respublikasi
-                            Iqtisodiyot va moliya vazirligi
-                            <span id="selekt_id_text">Davlat byudjeti siyosati departamenti</span> <br> <br> <br> <br>
-                                ________________ <span id="fio_id_text">Sh.Muxamedov</span></b>
-                        </div>
-                        <div class="col-6 text-center p-5"><b>
-                            O‘zbekiston Respublikasi
-                            Iqtisodiyot va moliya vazirligi
-                            huzuridagi ATM direktori v.v.b. <br> <br> <br> <br>
-                                __________________ F.Xujamqulov</b>
-                        </div>
-                    </div>
-                </div>
+            <div class="text-end">
+              "           "                            2025 yil.
             </div>
-            <div class="card">
-                <div class="card-body m-5">
-                    <div class="text-end">
-                        "           "                            2025 yil.
-                    </div>
-                    <div class="text-center">
-                        <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
-                    </div>
-                    <div class="text-center">
-                        <b>DEPARTMENT</b><br>
-                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                            (boshqarma nomi)
-                        </span>
-                    </div>
-                    <div class="text-center">
-                       <span>Biz, </span> <span><ins>Tankoz E.E.   bosh mutaxassis,   Jumayev U.O.   2-toifali mutaxassis</ins></span><br>
-                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                           (F.I.Sh.) (lavozimi)
-                        </span>
-                    </div>
-                    <div>
-                        <b>Xizmat ko‘rsatilyotgan texnikalarni rusumi seriya raqami:</b><br>
-                    </div>
-                    <div>
-                        <b>Kompyuterlar (PC/Noutbuk/Planshet/Info-kiosk)</b><br>
-                    </div>
-                    <div class="text-center">
-                        <table class="table table-bordered table-sm text-center align-middle">
-                            <thead>
-                              <tr>
-                                <th class="text-center align-middle">№</th>
-                                <th class="text-center align-middle">Rusumi</th>
-                                <th class="text-center align-middle">Kompyuter SR:</th>
-                                <th class="text-center align-middle">Inventar raqami:</th>
-                              </tr>
-                            </thead>
-                            <tbody id="pc_tbody">
-                              <tr>
-                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
-                              </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div>
-                        <b>Printerlar (A4/A3/Skanner)</b><br>
-                    </div>
-                    <div class="text-center">
-                        <table class="table table-bordered table-sm text-center align-middle">
-                            <thead>
-                              <tr>
-                                <th class="text-center align-middle">№</th>
-                                <th class="text-center align-middle">Rusumi</th>
-                                <th class="text-center align-middle">Kompyuter SR:</th>
-                              </tr>
-                            </thead>
-                            <tbody id="pr_tbody">
-                              <tr>
-                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
-                              </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div>
-                        <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi vakili:</b><br>
-                    </div>
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <span><ins>Muxamedov Sh</ins></span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( FIO )
-                            </span>
-                        </div>
-                        <div class="col-4">
-                            <span><ins>Department direktori</ins></span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( lavozimi )
-                            </span>
-                        </div>
-                        <div class="col-4">
-                            <span>_________________</span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( imzo )
-                            </span>
-                        </div>
-                    </div>
-                    <div>
-                        <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</b><br>
-                    </div>
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <span><ins>Muxamedov Sh</ins></span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( FIO )
-                            </span>
-                        </div>
-                        <div class="col-4">
-                            <span><ins>Bosh mutaxassis</ins></span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( lavozimi )
-                            </span>
-                        </div>
-                        <div class="col-4">
-                            <span>_________________</span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( imzo )
-                            </span>
-                        </div>
-                    </div>
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <span><ins>Muxamedov Sh</ins></span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( FIO )
-                            </span>
-                        </div>
-                        <div class="col-4">
-                            <span><ins>2-toifali mutaxassis</ins></span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( lavozimi )
-                            </span>
-                        </div>
-                        <div class="col-4">
-                            <span>_________________</span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( imzo )
-                            </span>
-                        </div>
-                    </div>
-                </div>
+
+            <div class="text-center">
+              <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
             </div>
+
+            <div class="text-center">
+              <b>DEPARTMENT</b><br>
+              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                (boshqarma nomi)
+              </span>
+            </div>
+
+            <div class="text-center">
+              <span>Biz, </span>
+              <span><ins>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</ins></span><br>
+              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                (F.I.Sh.) (lavozimi)
+              </span>
+            </div>
+
+            <div><b>Xizmat ko‘rsatilyotgan texnikalarni rusumi seriya raqami:</b><br></div>
+            <div><b>Kompyuterlar (PC/Noutbuk/Planshet/Info-kiosk)</b><br></div>
+
+            <div class="text-center">
+              <table class="table table-bordered table-sm text-center align-middle">
+                <thead>
+                  <tr>
+                    <th>№</th>
+                    <th>Rusumi</th>
+                    <th>Kompyuter SR:</th>
+                    <th>Inventar raqami:</th>
+                  </tr>
+                </thead>
+                <tbody id="pc_tbody">
+                  <tr><td colspan="4" class="text-center text-muted">Filtr tanlang</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div><b>Printerlar (A4/A3/Skanner)</b><br></div>
+
+            <div class="text-center">
+              <table class="table table-bordered table-sm text-center align-middle">
+                <thead>
+                  <tr>
+                    <th>№</th>
+                    <th>Rusumi</th>
+                    <th>Kompyuter SR:</th>
+                  </tr>
+                </thead>
+                <tbody id="pr_tbody">
+                  <tr><td colspan="3" class="text-center text-muted">Filtr tanlang</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+          </div>
         </div>
       </div>
-    </section>
 
-  </main><!-- End #main -->
+    </div>
+  </section>
+
+</main>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 $(function () {
 
@@ -369,7 +318,6 @@ $(function () {
   // ----------------- Org -> Dep AJAX -----------------
   function loadDepartmentsByOrg(orgId, selectedDepId=null){
     const $dep = $('#department');
-
     $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change');
 
     if (!orgId){
@@ -396,11 +344,80 @@ $(function () {
     });
   }
 
+  // ----------------- Dep -> Sender + Agreements AJAX -----------------
+  function loadSenderByDep(depId){
+    const $sender = $('#sender');
+    $sender.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+    if(!depId){
+      $sender.html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_dep_signatory' %}",
+      method: "GET",
+      dataType: "json",
+      data: { department: depId },
+      success: function(list){
+        let opt = '<option value="">Tanlang...</option>';
+        (list || []).forEach(emp => {
+          opt += `<option value="${emp.id}">${esc(emp.full_name)}</option>`;
+        });
+        $sender.html(opt).trigger('change');
+      },
+      error: function(xhr){
+        console.log("sender ajax error:", xhr.status, xhr.responseText);
+        $sender.html('<option value="">Xatolik</option>').trigger('change');
+      }
+    });
+  }
+
+  function loadAgreementsByDep(depId){
+    const $agr = $('#agreements');
+    $agr.html('').trigger('change');
+
+    if(!depId){
+      $agr.html('').trigger('change');
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_dep_negotiator' %}",
+      method: "GET",
+      dataType: "json",
+      data: { department: depId },
+      success: function(list){
+        let opt = '';
+        (list || []).forEach(emp => {
+          opt += `<option value="${emp.id}">${esc(emp.full_name)}</option>`;
+        });
+        $agr.html(opt).trigger('change');
+      },
+      error: function(xhr){
+        console.log("agreements ajax error:", xhr.status, xhr.responseText);
+        $agr.html('').trigger('change');
+      }
+    });
+  }
+
+  // ----------------- Eventlar -----------------
   $('#organization').on('change', function(){
-    loadDepartmentsByOrg($(this).val());
+    const orgId = $(this).val();
+    loadDepartmentsByOrg(orgId);
+
+    // org o‘zgarsa sender/agreements tozalansin
+    $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+    $('#agreements').html('').trigger('change');
   });
 
-  // ----------------- Preview (faqat dep_id) -----------------
+  $('#department').on('change', function(){
+    const depId = $(this).val();
+    loadSenderByDep(depId);
+    loadAgreementsByDep(depId);
+  });
+
+  // ----------------- Preview -----------------
   $('#btnSearch').on('click', function () {
     const depId = $('#department').val();
     if (!depId){
@@ -435,17 +452,26 @@ $(function () {
     });
   });
 
-  // ----------------- (ixtiyoriy) Sahifa ochilganda oldingi tanlovlarni tiklash -----------------
+  // ----------------- Restore -----------------
   const initialOrg = '{{ selected_org|default:"" }}';
   const initialDep = '{{ selected_dep|default:"" }}';
 
   if (initialOrg){
     $('#organization').val(initialOrg).trigger('change');
     loadDepartmentsByOrg(initialOrg, initialDep);
+
+    if (initialDep){
+      setTimeout(function(){
+        $('#department').val(initialDep).trigger('change');
+        loadSenderByDep(initialDep);
+        loadAgreementsByDep(initialDep);
+      }, 250);
+    }
   }
 
 });
 </script>
+
 {% endblock content %}
 
 {% block js %}

@@ -1508,7 +1508,7 @@ def document_get(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
-        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468,1]),
+        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
     }
     return render(request, "main/document.html", context)
 
