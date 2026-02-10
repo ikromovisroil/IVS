@@ -277,63 +277,6 @@ $(function() {
 });
 </script>
 
-
-<script>
-$(function () {
-
-  function fillEmployees(orgId){
-    if(!orgId){
-      $('#sender').html('<option value="">Tanlang...</option>');
-      $('#agreements').html('');
-      $('#sender').trigger('change');
-      $('#agreements').trigger('change');
-      return;
-    }
-
-    $('#sender').html('<option value="">Yuklanmoqda...</option>');
-    $('#agreements').html('');
-
-    $.ajax({
-      url: "{% url 'ajax_employees_org' %}",
-      method: "GET",
-      data: { org_id: orgId }, // ✅ view org_id kutyapti
-      success: function(resp){
-        const list = resp.results || []; // ✅ JSON ichidan results ni olamiz
-
-        let senderOpt = '<option value="">Tanlang...</option>';
-        let agrOpt = '';
-
-        list.forEach(emp => {
-          senderOpt += `<option value="${emp.id}">${emp.full_name}</option>`;
-          agrOpt += `<option value="${emp.id}">${emp.full_name}</option>`;
-        });
-
-        $('#sender').html(senderOpt);
-        $('#agreements').html(agrOpt);
-
-        // select2 bo‘lsa yangilash
-        $('#sender').trigger('change');
-        $('#agreements').trigger('change');
-      },
-      error: function(xhr){
-        console.log("EMP AJAX ERROR:", xhr.status, xhr.responseText);
-        alert("Xodimlarni yuklashda xatolik!");
-      }
-    });
-  }
-
-  $('#organization').on('change', function(){
-    fillEmployees($(this).val());
-  });
-
-  const initialOrg = $('#organization').val();
-  if(initialOrg){
-    fillEmployees(initialOrg);
-  }
-
-});
-</script>
-
 <script>
 $(function () {
 
