@@ -547,25 +547,17 @@ def sso_callback_page(request):
 @require_POST
 def sso_exchange_and_finish(request):
     try:
-        # ---------------- JSON ----------------
         try:
             body = json.loads(request.body or "{}")
         except Exception:
-            return JsonResponse(
-                {"status": "error", "message": "JSON noto‘g‘ri", "redirect": "/"},
-                status=400
-            )
+            return JsonResponse({"status": "error", "message": "JSON noto‘g‘ri", "redirect": "/"}, status=400)
 
         code = body.get("code")
         code_verifier = body.get("codeVerifier")
         redirect_uri = body.get("redirectUri")
         if not code or not code_verifier or not redirect_uri:
-            return JsonResponse(
-                {"status": "error", "message": "SSO parametrlari to‘liq emas", "redirect": "/"},
-                status=400
-            )
+            return JsonResponse({"status": "error", "message": "SSO parametrlari to‘liq emas", "redirect": "/"}, status=400)
 
-        # ------------- session pending ----------
         pending = request.session.get("PENDING_APPROVE")
         if not pending:
             raise PermissionDenied("Pending yo‘q")
@@ -577,13 +569,9 @@ def sso_exchange_and_finish(request):
         employee = getattr(request.user, "employee", None)
         if not employee:
             request.session.pop("PENDING_APPROVE", None)
-            request.session.modified = True
-            return JsonResponse(
-                {"status": "forbidden", "message": "Employee yo‘q", "redirect": redirect_url},
-                status=403
-            )
+            return JsonResponse({"status": "forbidden", "message": "Employee yo‘q", "redirect": redirect_url}, status=403)
 
-        # ---------------- token olish ----------------
+        # token olish
         token_data = exchange_code_for_token(code, code_verifier, redirect_uri)
         id_token = token_data.get("id_token")
         if not id_token:
@@ -595,60 +583,42 @@ def sso_exchange_and_finish(request):
 
         if not employee_pinfl or not sso_pinfl or employee_pinfl != sso_pinfl:
             request.session.pop("PENDING_APPROVE", None)
-            request.session.modified = True
-            return JsonResponse(
-                {"status": "forbidden", "message": "PINFL mos emas", "redirect": redirect_url},
-                status=403
-            )
+            return JsonResponse({"status": "forbidden", "message": "PINFL mos emas", "redirect": redirect_url}, status=403)
 
-        # =========================================================
-        # ✅ SENDER / RECEIVER
-        # =========================================================
+        # ✅ sender/receiver: AUTO QR + APPROVE
         if role in ("sender", "receiver"):
             deed_id = pending.get("deed_id")
             if not deed_id:
                 raise PermissionDenied("Deed yo‘q")
 
-            # ⚠️ select_for_update -> parallel bosishdan himoya
+            deed = get_object_or_404(Deed.objects.select_related("sender", "receiver"), pk=int(deed_id))
+
+            # ruxsat tekshiruv
+            if role == "sender" and deed.sender_id != employee.id:
+                raise PermissionDenied("Sender emassiz")
+            if role == "receiver" and deed.receiver_id != employee.id:
+                raise PermissionDenied("Receiver emassiz")
+
+            # qayta bosishdan himoya
+            if role == "sender" and deed.status_sender == "approved":
+                request.session.pop("PENDING_APPROVE", None)
+                return JsonResponse({"status": "ok", "redirect": redirect_url})
+
+            if role == "receiver" and deed.status_receiver == "approved":
+                request.session.pop("PENDING_APPROVE", None)
+                return JsonResponse({"status": "ok", "redirect": redirect_url})
+
+            if not deed.file:
+                raise PermissionDenied("PDF yo‘q")
+
+            pdf_path = deed.file.path
+            approver_name = employee.full_name
+
+            # PDF sign + DB update (atomik)
             with transaction.atomic():
-                deed = get_object_or_404(
-                    Deed.objects.select_for_update().select_related("sender", "receiver"),
-                    pk=int(deed_id)
-                )
+                sign_pdf_inplace(pdf_path=pdf_path, request=request, approver_name=approver_name,deed_id=deed.pk,)
 
-                # ruxsat tekshiruv
-                if role == "sender" and deed.sender_id != employee.id:
-                    raise PermissionDenied("Sender emassiz")
-                if role == "receiver" and deed.receiver_id != employee.id:
-                    raise PermissionDenied("Receiver emassiz")
-
-                # qayta bosishdan himoya
-                if role == "sender" and deed.status_sender == "approved":
-                    request.session.pop("PENDING_APPROVE", None)
-                    request.session.modified = True
-                    return JsonResponse({"status": "ok", "redirect": redirect_url})
-
-                if role == "receiver" and deed.status_receiver == "approved":
-                    request.session.pop("PENDING_APPROVE", None)
-                    request.session.modified = True
-                    return JsonResponse({"status": "ok", "redirect": redirect_url})
-
-                if not deed.file:
-                    raise PermissionDenied("PDF yo‘q")
-
-                pdf_path = deed.file.path
-                approver_name = employee.full_name
                 now = timezone.now()
-
-                # 1) PDF sign
-                sign_pdf_inplace(
-                    pdf_path=pdf_path,
-                    request=request,
-                    approver_name=approver_name,
-                    deed_id=deed.pk,
-                )
-
-                # 2) DB update
                 if role == "sender":
                     Deed.objects.filter(pk=deed.pk).update(
                         status_sender="approved",
@@ -662,42 +632,17 @@ def sso_exchange_and_finish(request):
                         date_edit=now,
                     )
 
-                # 3) MUHIM: yangilangan holatni qayta o‘qiymiz
-                deed.refresh_from_db(fields=["status_sender", "status_receiver", "receiver_id"])
-
-                # 4) Watermark sharti:
-                #    - receiver yo'q bo'lsa: sender approved bo'lsa bas
-                #    - receiver bor bo'lsa: sender+receiver ikkalasi approved bo'lsin
-                try:
-                    if not deed.receiver_id:
-                        # receiver YO'Q
-                        if deed.status_sender == "approved":
-                            remove_watermark_pdf(pdf_path)
-                    else:
-                        # receiver BOR
-                        if deed.status_sender == "approved" and deed.status_receiver == "approved":
-                            remove_watermark_pdf(pdf_path)
-                except Exception as wm_e:
-                    # watermark ishlamasa ham approve ketaversin (xohlasangiz 500 qilsak ham bo'ladi)
-                    print("WATERMARK REMOVE ERROR:", wm_e)
-
-            # session cleanup (atomicdan tashqarida ham bo'ladi)
             request.session.pop("PENDING_APPROVE", None)
             request.session.modified = True
             return JsonResponse({"status": "ok", "redirect": redirect_url})
 
-        # =========================================================
-        # ✅ CONSENT
-        # =========================================================
+        # ✅ consent bo‘lsa avvalgidek
         if role == "consent":
             consent_id = pending.get("consent_id")
             if not consent_id:
                 raise PermissionDenied("consent_id yo‘q")
 
-            consent = get_object_or_404(
-                DeedConsent.objects.select_related("employee__user"),
-                pk=int(consent_id)
-            )
+            consent = get_object_or_404(DeedConsent.objects.select_related("employee__user"), pk=int(consent_id))
             if consent.employee.user_id != request.user.id:
                 raise PermissionDenied("Ruxsat yo‘q")
 
