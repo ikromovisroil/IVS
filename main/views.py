@@ -2023,6 +2023,169 @@ def order_accepted(request, pk):
     return redirect('order_receiver_activ')
 
 
+@never_cache
+@login_required
+def order_receiver_deed(request,pk):
+    employee = getattr(request.user, "employee", None)
+    order = get_object_or_404(Order, pk=pk)
+    my_dep_id = request.user.employee.department_id
+
+    if not employee:
+        raise PermissionDenied
+
+    context = {
+        'order':order,
+        'emp_bos':Employee.objects.filter(department=order.sender.department),
+        'employee': Employee.objects.filter(Q(department=order.sender.department) | Q(department_id=my_dep_id)),
+    }
+    return render(request, "main/order_receiver_deed.html", context)
+
+
+@never_cache
+@login_required
+@require_POST
+def order_receiver_deed_post(request,pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    order = get_object_or_404(Order, pk=pk)
+
+    sender_id = request.POST.get("sender") or None
+    message = (request.POST.get("message") or "").strip() or None
+    agreements = request.POST.getlist("agreements[]") or []
+
+    sender = Employee.objects.select_related("rank", "department", "organization").filter(id=sender_id).first()
+    if not sender:
+        messages.error(request, "Imzolovchi xodim tanlanmagan!")
+        return redirect("order_receiver_deed", pk=order.pk)
+
+    # ✅ OrderMaterial
+    qs = (
+        OrderMaterial.objects
+        .filter(order=order)
+        .select_related("material__unit", "order__technics", "order__sender__rank")
+    )
+
+    # ✅ Organization/Department (field nomlarini sizdagi modelga mos)
+    dep = getattr(order.sender, "department", None)
+    org = getattr(order.sender, "organization", None)  # agar sizda organizator bo‘lsa, shu yerda moslang
+
+    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
+
+    ORG_TEXT = {
+        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
+        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
+        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
+        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
+    }
+
+    org_id = getattr(org, "id", None)
+    org_name = ORG_TEXT.get(org_id, "") if org_id else ""
+
+    replace_text(doc, {
+        "ORGANIZATION": org_name,
+        "ID": str(order.id),
+        "SANA": date.today().strftime("%d.%m.%Y"),
+        "RECEIVER": employee.full_name if hasattr(employee, "full_name") else str(employee),
+        "SENDER": sender.full_name,
+        "DEPARTMENT": dep.name if dep else "",
+        "CONTRACT": str(getattr(org, "contract", "") or ""),
+    })
+
+    target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
+    if not target:
+        return HttpResponse("TABLE topilmadi", status=500)
+
+    target.text = ""
+    target.paragraph_format.space_before = Pt(0)
+    target.paragraph_format.space_after = Pt(0)
+    target.paragraph_format.line_spacing = 1
+
+    headers = [
+        "№",
+        "Ish bajarilgan qurilma nomi",
+        "Qurilma seriya raqami",
+        "Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi",
+        "Soni",
+        "O'lchov birligi",
+        "F.I.Sh.",
+        "Lavozimi",
+        "Eslatma*",
+    ]
+
+    rows = []
+    for q in qs:
+        rows.append([
+            q.order.technics.name if q.order.technics else "",
+            q.order.technics.serial if q.order.technics else "",
+            q.material.name if q.material else "",
+            q.number or "",
+            (q.material.unit if q.material and q.material.unit else "dona"),
+            q.order.sender.full_name if q.order and q.order.sender else "",
+            (q.order.sender.rank.name if q.order and q.order.sender and q.order.sender.rank else ""),
+            f"{q.material.price:,}".replace(",", " ") if q.material and q.material.price else "",
+        ])
+
+    h, table = create_table_akt(
+        doc,
+        "Biriktirilgan texnika bo‘yicha dalolatnoma",
+        rows,
+        headers
+    )
+
+    target._p.addnext(h._p)
+    h._p.addnext(table._tbl)
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        docx_path = os.path.join(tmpdir, "order.docx")
+        doc.save(docx_path)
+
+        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
+        if not pdf_path:
+            return HttpResponse(
+                "DOCX -> PDF convert xato!\n\n" + debug,
+                content_type="text/plain",
+                status=500
+            )
+
+        with open(pdf_path, "rb") as f:
+            pdf_bytes = f.read()
+
+    deed = Deed.objects.create(
+        sender=sender,  # ✅ obyekt
+        user=employee,
+        message_user=message,
+    )
+    # ✅ FileField ga saqlash
+    deed.file.save("akt.pdf", ContentFile(pdf_bytes), save=True)
+
+    # ✅ agreements id larini tozalash
+    agreements = agreements or []  # ✅ ekstra xavfsizlik
+
+    ids = []
+    for x in agreements:
+        x = (x or "").strip()
+        if x.isdigit():
+            ids.append(int(x))
+    ids = list(set(ids))
+
+    # ✅ sender va receiver(employee) ni exclude qilish
+    exclude_ids = set()
+    if sender:
+        exclude_ids.add(sender.id)
+    exclude_ids.add(employee.id)
+
+    ids = [i for i in ids if i not in exclude_ids]
+
+    if ids:
+        emps = Employee.objects.filter(id__in=ids).only("id")
+        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    messages.success(request, "Ariza yuborildi")
+    return redirect("contact_user")
+
 
 @never_cache
 @login_required
@@ -2221,6 +2384,7 @@ def akt_post(request):
 
     replace_text(doc, {
         "ORGANIZATION": org_name,
+        "ID": '',
         "SANA": date.today().strftime("%d.%m.%Y"),
         "RECEIVER": str(employee),
         "SENDER": sender.full_name if sender else "",

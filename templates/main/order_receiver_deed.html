@@ -1,0 +1,236 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  <title>Hisobot</title>
+{% endblock title %}
+
+{% block css %}
+<link rel="stylesheet" href="{% static 'assets/vendor/select2/select2.min.css' %}">
+{% endblock css %}
+
+{% block content %}
+
+<main id="main" class="main">
+
+  <div class="pagetitle">
+    <h1>Imzolashga yuborish</h1>
+  </div>
+
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-4">
+        <form action="{% url 'order_receiver_deed_post' order.pk %}" method="post">
+          {% csrf_token %}
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Imzolashga yuborish</h5>
+
+              <div class="row g-3">
+                <div class="col-12">
+                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                  <select id="sender" name="sender" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {% for i in emp_bos %}
+                      <option
+                        value="{{ i.id }}"
+                        data-fullname="{{ i.full_name|default:'' }}"
+                        data-rank="{{ i.rank.name|default:'' }}"
+                        data-org="{{ i.organization.name|default:'' }}"
+                        data-dep="{{ i.department.name|default:'' }}"
+                      >
+                        {{ i.full_name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                  <select id="agreements" name="agreements[]" class="form-select" multiple>
+                    {% for i in employee %}
+                      <option value="{{ i.id }}">{{ i.full_name }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label for="message" class="form-label">Izox :</label>
+                  <textarea id="message" class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                </div>
+
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body mt-5">
+            <div class="text-center"><b>Sarf materiallari, ehtiyot qismlar va uskunalar o'rnatish ishlari haqida</b></div>
+            <div class="text-center"><b>DALOLATNOMA № {{order.id}}</b></div>
+
+            <div class="text-end">
+              <span id="doc_date">—</span>
+            </div>
+
+            <div class="text-center">
+              Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
+              “Axborot texnalogiyalar markazi” davlat unitar korxonasining vakillari:
+            </div>
+
+            <div class="text-center">
+              <b><ins>{{request.user.employee.full_name}} ({{ request.user.employee.rank.name }})</ins></b><br>
+              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                (FIO, ATM mutaxassisning lavozimi)
+              </span>
+            </div>
+
+            <div class="row text-center">
+              <div class="col-6">
+                <span>O‘zbekiston Respublikasi <span id="org_id_1">—</span> tashkiloti vakili:</span><br>
+                <b><ins id="sender_name1">—</ins></b><br>
+                <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">(FIO, lavozimi)</span>
+              </div>
+              <div class="col-6">
+                <b><ins id="dep_id">—</ins></b><br>
+                <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <b><ins>Quyda ko’rsatilgan materiallarni o’rnatish</ins></b><br>
+              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                (ATM mutaxassislari tomonidan bajarilgan ish turlari bo'yicha tafsilotlar)
+              </span>
+            </div>
+
+            <div class="row text-center">
+              <div class="col-6">
+                <b>Iqtisodiyot va Moliya vazirligining huzuridagi ATM tomonidan</b><br>
+                <b>quyidagi materiallari, ehtiyot qismlar va uskunalar o'rnatildi:</b>
+              </div>
+              <div class="col-6">
+                <b>4 - mart 2025 yildagi 1 - sonli shartnomaga muvofiq</b>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <table class="table table-bordered table-sm text-center align-middle" style="font-size:10px;">
+                <thead>
+                  <tr>
+                    <th rowspan="2" class="text-center align-middle">№</th>
+                    <th rowspan="2" class="text-center align-middle">Ish bajarilgan qurilmaning nomi</th>
+                    <th rowspan="2" class="text-center align-middle">Qurilmaning seriya raqami</th>
+                    <th rowspan="2" class="text-center align-middle">Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi</th>
+                    <th rowspan="2" class="text-center align-middle">Soni</th>
+                    <th rowspan="2" class="text-center align-middle">O‘lchov birligi</th>
+                    <th colspan="3" class="text-center align-middle">
+                      Kimga o‘rnatildi yoki o‘rnatilganligini tasdiqlovchi mas’ul shaxs (xarajatlar)
+                    </th>
+                  </tr>
+                  <tr>
+                    <th class="text-center align-middle">F.I.Sh.</th>
+                    <th class="text-center align-middle">Lavozimi</th>
+                    <th class="text-center align-middle">Eslatma*</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for m in order.materials_all %}
+                  <tr>
+                      <td>{{ forloop.counter }}</td>
+                      <td class="text-center text-muted">{{order.technics.name}}</td>
+                      <td class="text-center text-muted">{{order.technics.serial}}</td>
+                      <td class="text-center text-muted">{{m.material.name}}</td>
+                      <td class="text-center text-muted">{{m.number}}</td>
+                      <td class="text-center text-muted">{{m.material.unit.name}}</td>
+                      <td class="text-center text-muted">{{order.sender.full_name}}</td>
+                      <td class="text-center text-muted">{{order.sender.rank.name}}</td>
+                      <td class="text-center text-muted">{{m.material.price}}</td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b>
+              <p>Izoh: o'rnatilgan ehtiyot qismlar yoki asbob-uskunalar birlikdagi narxi, buxgalteriya hisobini yuritish uchun.</p>
+            </div>
+
+            <div class="row text-center">
+              <div class="col-6">
+                <b>Xizmat ko'rsatuvchinig vakili:</b><br>
+                <span>{{request.user.employee.full_name}}</span><br>
+                <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">( FIO )</span>
+              </div>
+              <div class="col-6">
+                <b><span>O‘zbekiston Respublikasi <span id="org_id_2">—</span> tashkiloti vakili:</span></b><br>
+                <span id="sender_name2">—</span><br>
+                <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">( FIO )</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+{% endblock content %}
+
+{% block js %}
+
+<script>
+  // Sana
+  (function () {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    document.getElementById('doc_date').textContent = `${dd}.${mm}.${yyyy}`;
+  })();
+
+  // Sender tanlanganda o‘ngdagi preview matnlarini avtomatik to‘ldirish
+  document.getElementById('sender').addEventListener('change', function () {
+    const opt = this.options[this.selectedIndex];
+    const fullName = opt.getAttribute('data-fullname') || '—';
+    const rank = opt.getAttribute('data-rank') || '';
+    const org = opt.getAttribute('data-org') || '—';
+    const dep = opt.getAttribute('data-dep') || '—';
+
+    document.getElementById('sender_name1').textContent = (rank ? `${fullName} (${rank})` : fullName);
+    document.getElementById('sender_name2').textContent = fullName;
+    document.getElementById('org_id_1').textContent = org;
+    document.getElementById('org_id_2').textContent = org;
+    document.getElementById('dep_id').textContent = dep;
+  });
+</script>
+<script>
+$(function () {
+
+  function initSelect2All() {
+    $('select').each(function () {
+      const $el = $(this);
+      if ($el.data('select2')) return;
+
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
+    });
+  }
+
+  initSelect2All();
+});
+</script>
+{% endblock js %}

@@ -52,6 +52,7 @@
                         <th scope="col">Ariza Maqsadi</th>
                         <th scope="col">Xolati</th>
                         <th scope="col">Sana</th>
+                        <th scope="col">Imzolashga yuborish</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -136,6 +137,7 @@
                             </div><!-- End Vertically centered Modal-->
                         </td>
                         <td>{{ o.date_creat }}</td>
+                        <td><a href="{% url 'order_receiver_deed' o.pk %}">Yuborish</a></td>
                       </tr>
                     {% endfor %}
                     </tbody>
