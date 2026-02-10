@@ -2282,8 +2282,9 @@ def svod_get(request):
         raise PermissionDenied
 
     context = {
-        'organizations': Organization.objects.all(),
-        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
+        "organizations": Organization.objects.all().order_by("id"),
+        "emp_bos": Employee.objects.filter(id__in=[3470, 3469, 3468]).select_related("rank"),
+        "employee": Employee.objects.filter(id=4).select_related("rank"),
     }
     return render(request, 'main/svod.html', context)
 
@@ -2469,7 +2470,8 @@ def reestr_get(request):
 
     context = {
         'organizations': Organization.objects.all(),
-        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
+        "emp_bos": Employee.objects.filter(id__in=[3470, 3469, 3468]),
+        "employee": Employee.objects.filter(id=4),
     }
     return render(request, 'main/reestr.html', context)
 

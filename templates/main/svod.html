@@ -55,7 +55,7 @@
                   <label for="sender" class="form-label">Imzolovchi xodim :</label>
                     <select id="sender" name="sender" class="form-select" required>
                         <option value="">Tanlang...</option>
-                        {% for emp in employees %}
+                        {% for emp in emp_bos %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>
                         {% endfor %}
                     </select>
@@ -64,7 +64,7 @@
                   <label for="agreements" class="form-label">Kelishuvchilar :</label>
                     <select id="agreements" name="agreements[]" class="form-select" multiple>
                         <option value="">Tanlang...</option>
-                        {% for emp in deedconsent %}
+                        {% for emp in employee %}
                             <option value="{{ emp.id }}">{{ emp.full_name }}</option>
                         {% endfor %}
                     </select>
@@ -159,7 +159,6 @@
   </main><!-- End #main -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
 $(function() {
@@ -170,20 +169,10 @@ $(function() {
     const now = new Date();
     const first = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    $('#date1').val(`${first.getFullYear()}-${pad2(first.getMonth()+1)}-${pad2(first.getDate())}`);
-    $('#date2').val(`${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`);
+    if (!$('#date1').val()) $('#date1').val(`${first.getFullYear()}-${pad2(first.getMonth()+1)}-${pad2(first.getDate())}`);
+    if (!$('#date2').val()) $('#date2').val(`${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`);
   }
   setDefaultDates();
-
-  // tashkilot tanlanganda xodimlarni yuklash
-  $('#organization').on('change', function(){
-    fillEmployees($(this).val());
-  });
-
-  const initialOrg = $('#organization').val();
-  if(initialOrg){
-    fillEmployees(initialOrg);
-  }
 
   $('#btnGenerate').on('click', generateReport);
 
@@ -221,19 +210,18 @@ $(function() {
         $('#resultsBody').html(`
           <tr>
             <td colspan="8" class="text-center text-danger">
-              Xatolik: ${xhr.responseJSON?.error || xhr.status}
+              Xatolik: ${(xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : xhr.status}
             </td>
           </tr>
         `);
+        console.log(xhr.responseText);
       }
     });
   }
 
   function renderTable(rows){
     if(!rows.length){
-      $('#resultsBody').html(`
-        <tr><td colspan="8" class="text-center text-muted">Ma’lumot topilmadi</td></tr>
-      `);
+      $('#resultsBody').html(`<tr><td colspan="8" class="text-center text-muted">Ma’lumot topilmadi</td></tr>`);
       return;
     }
 
@@ -249,16 +237,15 @@ $(function() {
           <td>${idx + 1}</td>
           <td>${r.material__name || ''}</td>
           <td>${r.material__unit__name || ''}</td>
-          <td class="text-end">${r.total_number || ''}</td>
-          <td class="text-end">${r.material__price || ''}</td>
-          <td class="text-end">${r.total_sum || ''}</td>
+          <td class="text-end">${(r.total_number ?? '')}</td>
+          <td class="text-end">${(r.material__price ?? '')}</td>
+          <td class="text-end">${(r.total_sum ?? '')}</td>
           <td>${r.order_info || ''}</td>
           <td>${r.material__code || ''}</td>
         </tr>
       `;
     });
 
-    // JAMI qator
     html += `
       <tr>
         <td colspan="5" class="text-end"><b>JAMI:</b></td>
@@ -270,52 +257,8 @@ $(function() {
     $('#resultsBody').html(html);
   }
 
-  // ✅ xodimlarni tashkilot bo‘yicha chiqarish
-  function fillEmployees(orgId){
-    if(!orgId){
-      $('#sender').html('<option value="">Tanlang...</option>');
-      $('#agreements').html('');
-      $('#sender').trigger('change');
-      $('#agreements').trigger('change');
-      return;
-    }
-
-    $('#sender').html('<option value="">Yuklanmoqda...</option>');
-    $('#agreements').html('');
-
-    $.ajax({
-      url: "{% url 'ajax_org_employees' %}",
-      method: "GET",
-      data: { org_id: orgId },
-      success: function(resp){
-        const list = resp.results || [];
-
-        let senderOpt = '<option value="">Tanlang...</option>';
-        let agrOpt = '';
-
-        list.forEach(emp => {
-          // 👇 bu yerda view nima qaytarsa shuni ishlating:
-          const name = emp.full_name || emp.fio || emp.text || '';
-          senderOpt += `<option value="${emp.id}">${name}</option>`;
-          agrOpt += `<option value="${emp.id}">${name}</option>`;
-        });
-
-        $('#sender').html(senderOpt);
-        $('#agreements').html(agrOpt);
-
-        $('#sender').trigger('change');
-        $('#agreements').trigger('change');
-      },
-      error: function(xhr){
-        console.log("EMP AJAX ERROR:", xhr.status, xhr.responseText);
-        alert("Xodimlarni yuklashda xatolik!");
-      }
-    });
-  }
-
 });
 </script>
-
 <script>
 $(function () {
 
