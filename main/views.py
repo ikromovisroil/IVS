@@ -626,66 +626,58 @@ def sso_exchange_and_finish(request):
             with transaction.atomic():
                 deed = (
                     Deed.objects
-                    .select_related("sender", "receiver")
                     .select_for_update()
                     .get(pk=int(deed_id))
                 )
 
-                # ruxsat tekshiruv
+                # ruxsat tekshiruv (join shart emas)
                 if role == "sender" and deed.sender_id != employee.id:
                     raise PermissionDenied("Sender emassiz")
                 if role == "receiver" and deed.receiver_id != employee.id:
                     raise PermissionDenied("Receiver emassiz")
 
-                # qayta bosishdan himoya (idempotent)
-                if role == "sender" and deed.status_sender == "approved":
-                    request.session.pop("PENDING_APPROVE", None)
-                    request.session.modified = True
-                    return JsonResponse({"status": "ok", "redirect": redirect_url})
-
-                if role == "receiver" and deed.status_receiver == "approved":
-                    request.session.pop("PENDING_APPROVE", None)
-                    request.session.modified = True
-                    return JsonResponse({"status": "ok", "redirect": redirect_url})
-
                 if not deed.file:
                     raise PermissionDenied("PDF yo‘q")
-
                 pdf_path = deed.file.path
 
-                # ---- 1) Status update ----
+                # status update
                 if role == "sender":
+                    if deed.status_sender == "approved":
+                        request.session.pop("PENDING_APPROVE", None)
+                        request.session.modified = True
+                        return JsonResponse({"status": "ok", "redirect": redirect_url})
+
                     Deed.objects.filter(pk=deed.pk).update(
                         status_sender="approved",
                         message_sender=message or "",
-                        date_edit=now,
+                        date_edit=timezone.now(),
                     )
                     deed.status_sender = "approved"
 
-                else:  # role == "receiver"
+                else:  # receiver
+                    if deed.status_receiver == "approved":
+                        request.session.pop("PENDING_APPROVE", None)
+                        request.session.modified = True
+                        return JsonResponse({"status": "ok", "redirect": redirect_url})
+
                     Deed.objects.filter(pk=deed.pk).update(
                         status_receiver="approved",
                         message_receiver=message or "",
-                        date_edit=now,
+                        date_edit=timezone.now(),
                     )
                     deed.status_receiver = "approved"
 
-                # ---- 2) FINAL shart ----
+                # FINAL shart (siz aytgandek)
                 is_final = (
-                    (deed.receiver_id is None and deed.status_sender == "approved")
-                    or (
-                        deed.receiver_id is not None
-                        and deed.status_sender == "approved"
-                        and deed.status_receiver == "approved"
-                    )
+                        (deed.receiver_id is None and deed.status_sender == "approved")
+                        or (deed.receiver_id is not None and deed.status_sender == "approved" and deed.status_receiver == "approved")
                 )
 
-                # ---- 3) QR only final ----
                 if is_final:
                     sign_pdf_inplace(
                         pdf_path=pdf_path,
                         request=request,
-                        approver_name=approver_name,
+                        approver_name=employee.full_name,
                         deed_id=deed.pk,
                     )
 
