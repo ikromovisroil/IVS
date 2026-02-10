@@ -34,8 +34,8 @@ from django.core.files.base import ContentFile
 
 def global_data(request):
     return {
-        "global_organizations": Organization.objects.all(),
-        "global_categorys": Category.objects.all(),
+        "global_organizations": Organization.objects.only("id", "name").order_by("name"),
+        "global_categorys": Category.objects.only("id", "name").order_by("name"),
     }
 
 
@@ -2112,52 +2112,12 @@ def ordermaterial_post(request):
 @never_cache
 @login_required
 def akt_get(request):
-
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
 
-
-    # 🔹 GET dan keladigan qiymatlar
-    dep_id = request.GET.get("department")
-    date1 = request.GET.get("date1")
-    date2 = request.GET.get("date2")
-
-    materials_qs = OrderMaterial.objects.none()
-
-    # 🔹 Agar hamma filterlar bo‘lsa – qidiramiz
-    if dep_id and date1 and date2:
-        try:
-            d1 = timezone.make_aware(datetime.strptime(date1, "%Y-%m-%d"))
-            d2 = timezone.make_aware(
-                datetime.strptime(date2, "%Y-%m-%d") + timedelta(days=1)
-            )
-
-            materials_qs = (
-                OrderMaterial.objects.filter(
-                    order__date_finished__gte=d1,
-                    order__date_finished__lt=d2,
-                    order__sender__department_id=dep_id,
-                    order__receiver__region=employee.region,
-                )
-                .select_related(
-                    "order",
-                    "order__sender",
-                    "order__sender__rank",
-                    "order__sender__department",
-                    "material",
-                    "technic",
-                )
-                .order_by("id")
-            )
-        except ValueError:
-            materials_qs = OrderMaterial.objects.none()
-
     context = {
         "organizations": Organization.objects.all(),
-        "technics": materials_qs,
-        "date1": date1,
-        "date2": date2,
     }
     return render(request, "main/akt.html", context)
 

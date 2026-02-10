@@ -1,8 +1,12 @@
 from django.shortcuts import get_object_or_404
 from .models import *
-from django.http import JsonResponse
 from django.db.models import Q
-from django.template.loader import render_to_string
+from django.utils import timezone
+from django.core.exceptions import PermissionDenied
+from datetime import datetime, timedelta
+from django.db.models import Sum, F, DecimalField, ExpressionWrapper, Value,CharField
+from django.db.models.functions import Coalesce, Cast,Concat
+from django.http import JsonResponse
 
 
 def deed_mark_seen(request):
@@ -29,6 +33,7 @@ def order_mark_seen(request):
     ).update(receiver_seen=True)
 
     return JsonResponse({'status': 'ok'})
+
 
 def get_department_employees(request):
     emp_id = request.GET.get("employee_id")
@@ -90,48 +95,8 @@ def ajax_load_division(request):
     return JsonResponse(list(division), safe=False)
 
 
-def get_technics_count(request):
-    division_id = request.GET.get('division')
-
-    komp_count = Technics.objects.filter(
-        category__name__in=['Kompyuter', 'Planshet', 'Noutbook', 'Doska'],
-        employee__division_id=division_id
-    ).count()
-
-    prin_count = Technics.objects.filter(
-        category__name__in=['A4 Printer', 'A3 Printer', 'scaner'],
-        employee__division_id=division_id
-    ).count()
-
-    return JsonResponse({
-        "komp": komp_count,
-        "printer": prin_count
-    })
-
-def get_goals(request, topic_id):
-    goals = Goal.objects.filter(topic_id=topic_id).values("id", "name")
-
-    return JsonResponse({"goals": list(goals)})
-
-
-def order_finish(request, pk):
-    order = get_object_or_404(Order, id=pk)
-    order.status = "finished"
-    order.save()
-    return JsonResponse({"status": "ok"})
-
-
-def order_rejected(request, pk):
-    order = get_object_or_404(Order, id=pk)
-    order.status = "rejected"
-    order.save()
-    return JsonResponse({"status": "ok"})
-
-
-from django.http import JsonResponse
-def ajax_load_employees(request):
+def ajax_dep_signatory(request):
     dep_id = request.GET.get("department")
-
     if not dep_id:
         return JsonResponse([], safe=False)
 
@@ -140,8 +105,25 @@ def ajax_load_employees(request):
         .filter(department_id=dep_id)
         .select_related("rank")
         .order_by("last_name", "first_name", "father_name")
+        .distinct()
     )
+    data = [{"id": e.id, "full_name": e.full_name} for e in qs]
+    return JsonResponse(data, safe=False)
 
+
+def ajax_dep_negotiator(request):
+    dep_id = request.GET.get("department")
+    my_dep_id = request.user.employee.department_id
+    if not dep_id:
+        return JsonResponse([], safe=False)
+
+    qs = (
+        Employee.objects
+        .filter(Q(department_id=dep_id) | Q(department_id=my_dep_id))
+        .select_related("rank")
+        .order_by("last_name", "first_name", "father_name")
+        .distinct()
+    )
     data = [{"id": e.id, "full_name": e.full_name} for e in qs]
     return JsonResponse(data, safe=False)
 
@@ -162,31 +144,6 @@ def ajax_employees_org(request):
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})
 
-
-def ajax_org_employees(request):
-    org_id = (request.GET.get("org_id") or "").strip()
-    if not org_id:
-        return JsonResponse({"results": []})
-
-    qs = (
-        Employee.objects
-        .filter(organization_id=org_id)
-        .select_related("rank")
-        .annotate(
-            full_name=Concat(
-                Coalesce(F("last_name"), Value("")),
-                Value(" "),
-                Coalesce(F("first_name"), Value("")),
-                Value(" "),
-                Coalesce(F("father_name"), Value("")),
-                output_field=CharField(),
-            )
-        )
-        .values("id", "full_name")
-        .order_by("full_name")
-    )
-
-    return JsonResponse({"results": list(qs)})
 
 def ajax_agreements_employees(request):
     org_id = (request.GET.get("org_id") or "").strip()
@@ -212,7 +169,6 @@ def ajax_agreements_employees(request):
     return JsonResponse({"results": data})
 
 
-from django.core.exceptions import PermissionDenied
 def deedconsent_delete(request, pk):
     emp = getattr(request.user, "employee", None)
     if not emp:
@@ -225,6 +181,7 @@ def deedconsent_delete(request, pk):
 
     obj.delete()
     return JsonResponse({"ok": True})
+
 
 def ajax_deedconsent_delete(request):
     dc_id = request.POST.get("dc_id")
@@ -241,9 +198,7 @@ def ajax_deedconsent_delete(request):
     dc.delete()
     return JsonResponse({"ok": True, "deleted_id": int(dc_id)})
 
-from datetime import datetime, timedelta
-from django.db.models import F, Value, CharField
-from django.db.models.functions import Concat
+
 def ajax_akt_materials(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -292,15 +247,6 @@ def ajax_akt_materials(request):
     )
 
     return JsonResponse(list(qs), safe=False)
-
-from datetime import datetime, timedelta
-from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse
-from django.utils import timezone
-
-from django.db.models import Sum, F, DecimalField, ExpressionWrapper, Value
-from django.db.models.functions import Coalesce, Cast
-from django.contrib.postgres.aggregates import StringAgg
 
 
 def ajax_svod_materials(request):
@@ -495,7 +441,7 @@ def ajax_reestr_materials(request):
 
     return JsonResponse(data, safe=False)
 
-from django.db.models import Count
+
 def ajax_document_preview(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

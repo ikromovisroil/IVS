@@ -51,15 +51,15 @@ urlpatterns = [
     path('ajax/load-departments/', ajax_load_departments, name='ajax_load_departments'),
     path('ajax/load-directorate/', ajax_load_directorate, name='ajax_load_directorate'),
     path('ajax/load-division/', ajax_load_division, name='ajax_load_division'),
-    path("ajax/employees/", ajax_load_employees, name="ajax_load_employees"),
     path("ajax/employees-org/", ajax_employees_org, name="ajax_employees_org"),
-    path("ajax/ajax_org_employees/", ajax_org_employees, name="ajax_org_employees"),
     path("ajax/ajax_agreements_employees/", ajax_agreements_employees, name="ajax_agreements_employees"),
     path("ajax/deedconsent/delete/", ajax_deedconsent_delete, name="ajax_deedconsent_delete"),
     path("ajax/akt-materials/", ajax_akt_materials, name="ajax_akt_materials"),
     path("ajax/svod_materials/", ajax_svod_materials, name="ajax_svod_materials"),
     path("ajax/reestr_materials/", ajax_reestr_materials, name="ajax_reestr_materials"),
     path("ajax/ajax_document/", ajax_document_preview, name="ajax_document_preview"),
+    path("ajax/dep_signatory/", ajax_dep_signatory, name="ajax_dep_signatory"),
+    path("ajax/dep_negotiator/", ajax_dep_negotiator, name="ajax_dep_negotiator"),
 
     # ORGANIZATION
     path('organization/<slug:slug>/', organization, name='organization'),
@@ -67,7 +67,6 @@ urlpatterns = [
     # DOCUMENT
     path('document/', document_get, name='document_get'),
     path('document/document_post/', document_post, name='document_post'),
-    path('document/technics_count/', get_technics_count, name='get_technics_count'),
 
     # AKT
     path('akt/', akt_get, name='akt_get'),
@@ -93,10 +92,7 @@ urlpatterns = [
     path('order_post/', order_post, name='order_post'),
     path('order_deed/<int:pk>/', order_deed, name='order_deed'),
     path('ordermaterial_post/', ordermaterial_post, name='ordermaterial_post'),
-    path('order/finish/<int:pk>/', order_finish, name='order_finish'),
-    path('order/rejected/<int:pk>/', order_rejected, name='order_rejected'),
     path("order/approved/", order_approved, name="order_approved"),
-    path("get_goals/<int:topic_id>/", get_goals, name="get_goals"),
 
     # SSO
     path("sso/start/", sso_start_page, name="sso_start_page"),     # JS: PKCE va redirect

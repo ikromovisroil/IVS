@@ -98,7 +98,7 @@ def replace_text(doc, replacements: dict):
                 if old in run.text:
                     run.text = run.text.replace(old, new)
                     run.font.name = "Times New Roman"
-                    run.font.size = Pt(12)
+                    run.font.size = Pt(10)
 
     # Jadval ichidagi matnlar
     for table in doc.tables:
@@ -110,7 +110,7 @@ def replace_text(doc, replacements: dict):
                             if old in run.text:
                                 run.text = run.text.replace(old, new)
                                 run.font.name = "Times New Roman"
-                                run.font.size = Pt(12)
+                                run.font.size = Pt(10)
 
 
 def create_table_akt(doc, title, data, headers):

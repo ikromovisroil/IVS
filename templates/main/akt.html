@@ -2,208 +2,221 @@
 {% load static %}
 
 {% block title %}
-    <title>Hisobot</title>
+  <title>Hisobot</title>
 {% endblock title %}
 
 {% block css %}
+  {# Agar Select2 sizning base.html da ulangan bo‘lsa, quyidagi 2 qatorni olib tashlasa ham bo‘ladi #}
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock css %}
 
 {% block content %}
 
- <main id="main" class="main">
+<main id="main" class="main">
 
-    <div class="pagetitle">
-      <h1>Akt</h1>
-    </div><!-- End Page Title -->
+  <div class="pagetitle">
+    <h1>Akt</h1>
+  </div>
 
-    <section class="section">
-      <div class="row">
-        <div class="col-lg-4">
-         <form action="{% url 'akt_post' %}" method="post">{% csrf_token %}
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-4">
+        <form action="{% url 'akt_post' %}" method="post">{% csrf_token %}
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Filtrlash</h5>
-              <!-- Vertical Form -->
+
               <div class="row g-3">
                 <div class="col-12">
                   <label for="organization" class="form-label">Tashkilot :</label>
-                    <select id="organization" name="organization" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for org in organizations %}
-                            <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
-                        {% endfor %}
-                    </select>
+                  <select id="organization" name="organization" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {% for org in organizations %}
+                      <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>
+                        {{ org.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
                 </div>
+
                 <div class="col-12">
                   <label for="department" class="form-label">Departament :</label>
-                    <select id="department" name="department" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for dep in departments %}
-                            <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>{{ dep.name }}</option>
-                        {% endfor %}
-                    </select>
+                  <select id="department" name="department" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {% for dep in departments %}
+                      <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>
+                        {{ dep.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
                 </div>
+
                 <div class="col-md-12">
                   <label for="date1" class="col-sm-2 col-form-label">Sana :</label>
                   <input type="date" name="date1" id="date1" required class="form-control">
                 </div>
+
                 <div class="col-md-12">
                   <input type="date" name="date2" id="date2" required class="form-control">
                 </div>
+
                 <div class="text-center">
                   <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
                 </div>
               </div>
+
             </div>
           </div>
+
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Imzolashga yuborish</h5>
+
               <div class="row g-3">
                 <div class="col-12">
                   <label for="sender" class="form-label">Imzolovchi xodim :</label>
-                    <select id="sender" name="sender" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for emp in employees %}
-                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                        {% endfor %}
-                    </select>
+                  <select id="sender" name="sender" class="form-select" required>
+                    <option value="">Tanlang...</option>
+                    {# Endi buni backenddan to‘ldirish shart emas — department tanlanganda ajax_dep_signatory to‘ldiradi #}
+                  </select>
                 </div>
+
                 <div class="col-12">
                   <label for="agreements" class="form-label">Kelishuvchilar :</label>
-                    <select id="agreements" name="agreements[]" class="form-select" multiple>
-                        <option value="">Tanlang...</option>
-                        {% for emp in deedconsent %}
-                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                        {% endfor %}
-                    </select>
+                  <select id="agreements" name="agreements[]" class="form-select" multiple>
+                    {# Endi buni backenddan to‘ldirish shart emas — department tanlanganda ajax_dep_negotiator to‘ldiradi #}
+                  </select>
                 </div>
+
                 <div class="col-12">
                   <label for="message" class="form-label">Izox :</label>
                   <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
                 </div>
+
                 <div class="text-center">
                   <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
                 </div>
-              </div><!-- Vertical Form -->
+              </div>
+
             </div>
           </div>
-         </form>
-        </div>
+        </form>
+      </div>
 
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body mt-5">
-                    <div class="text-center">
-                        <b>Sarf materiallari, ehtiyot qismlar va uskunalar o'rnatish ishlari haqida</b>
-                    </div>
-                    <div class="text-center">
-                        <b>DALOLATNOMA</b>
-                    </div>
-                    <div class="text-end">
-                        15.02.2026 y
-                    </div>
-                    <div class="text-center">
-                        Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi “Axborot texnalogiyalar markazi” davlat unitar korxonasining vakillari:
-                    </div>
-                    <div class="text-center">
-                        <b><ins>{{request.user.employee.full_name}} ({{ request.user.employee.rank.name }})</ins></b><br>
-                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                            (FIO, ATM mutaxassisning lavozimi)
-                        </span>
-                    </div>
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va Moliya vazirligi </span> tashkiloti vakili:</span><br>
-                            <b><ins id="sender_name1">Palonchayev paloncha</ins></b><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                (FIO, lavozimi)
-                            </span>
-                        </div>
-                        <div class="col-6">
-                            <b><ins id="dep_id">DEPARTMENT</ins></b><br>
-                            <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <b> <ins>Quyda ko’rsatilgan materiallarni o’rnatish </ins>  </b> <br>
-                        <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                            (ATM mutaxassislari tomonidan bajarilgan ish turlari bo'yicha tafsilotlar)
-                        </span>
-                    </div>
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <b>Iqtisodiyot va Moliya vazirligining huzuridagi  ATM tomonidan</b><br>
-                            <b>quyidagi materiallari, ehtiyot qismlar va uskunalar o'rnatildi:</b>
-                        </div>
-                        <div class="col-6">
-                            <b>4 - mart 2025  yildagi  1 - sonli shartnomaga muvofiq</b>
-                        </div>
-                    </div>
-                    <div class="text-center">
-                        <table class="table table-bordered table-sm text-center align-middle" style="font-size:10px;">
-                            <thead>
-                              <!-- 1-qator -->
-                              <tr>
-                                <th rowspan="2" class="text-center align-middle">№</th>
-                                <th rowspan="2" class="text-center align-middle">Ish bajarilgan qurilmaning nomi</th>
-                                <th rowspan="2" class="text-center align-middle">Qurilmaning seriya raqami</th>
-                                <th rowspan="2" class="text-center align-middle">
-                                  Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi
-                                </th>
-                                <th rowspan="2" class="text-center align-middle">Soni</th>
-                                <th rowspan="2" class="text-center align-middle">O‘lchov birligi</th>
-                                <th colspan="5" class="text-center align-middle">
-                                  Kimga o‘rnatildi yoki o‘rnatilganligini tasdiqlovchi mas’ul shaxs (xarajatlar)
-                                </th>
-                              </tr>
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body mt-5">
+            <div class="text-center"><b>Sarf materiallari, ehtiyot qismlar va uskunalar o'rnatish ishlari haqida</b></div>
+            <div class="text-center"><b>DALOLATNOMA</b></div>
 
-                              <!-- 2-qator -->
-                              <tr>
-                                <th class="text-center align-middle">F.I.Sh.</th>
-                                <th class="text-center align-middle">Lavozimi</th>
-                                <th class="text-center align-middle">Eslatma*</th>
-                                <th class="text-center align-middle">So‘rovnoma №</th>
-                                <th class="text-center align-middle">Materiallarni o‘rnatish sanasi</th>
-                              </tr>
-                            </thead>
-                            <tbody id="materials_tbody">
-                              <tr>
-                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
-                              </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div>
-                        <b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b>
-                        <p>Izoh: o'rnatilgan ehtiyot qismlar yoki asbob-uskunalar  birlikdagi narxi, buxgalteriya hisobini yuritish uchun.</p>
-                    </div>
-                    <div class="row text-center">
-                        <div class="col-6">
-                            <b>Xizmat ko'rsatuvchinig vakili:</b><br>
-                            <span>{{request.user.employee.full_name}}</span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( FIO )
-                            </span>
-                        </div>
-                        <div class="col-6">
-                            <b><span>O‘zbekiston Respublikasi <span id="org_id_2">Iqtisodiyot va Moliya vazirligi </span> tashkiloti vakili:</span></b><br>
-                            <span id="sender_name2">dsdsdsdsdsdsdsdsds</span><br>
-                            <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                                ( FIO )
-                            </span>
-                        </div>
-                    </div>
-
-                </div>
+            <div class="text-end">
+              <span id="doc_date">—</span>
             </div>
+
+            <div class="text-center">
+              Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
+              “Axborot texnalogiyalar markazi” davlat unitar korxonasining vakillari:
+            </div>
+
+            <div class="text-center">
+              <b><ins>{{request.user.employee.full_name}} ({{ request.user.employee.rank.name }})</ins></b><br>
+              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                (FIO, ATM mutaxassisning lavozimi)
+              </span>
+            </div>
+
+            <div class="row text-center">
+              <div class="col-6">
+                <span>O‘zbekiston Respublikasi <span id="org_id_1">—</span> tashkiloti vakili:</span><br>
+                <b><ins id="sender_name1">—</ins></b><br>
+                <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">(FIO, lavozimi)</span>
+              </div>
+              <div class="col-6">
+                <b><ins id="dep_id">—</ins></b><br>
+                <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <b><ins>Quyda ko’rsatilgan materiallarni o’rnatish</ins></b><br>
+              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
+                (ATM mutaxassislari tomonidan bajarilgan ish turlari bo'yicha tafsilotlar)
+              </span>
+            </div>
+
+            <div class="row text-center">
+              <div class="col-6">
+                <b>Iqtisodiyot va Moliya vazirligining huzuridagi ATM tomonidan</b><br>
+                <b>quyidagi materiallari, ehtiyot qismlar va uskunalar o'rnatildi:</b>
+              </div>
+              <div class="col-6">
+                <b>4 - mart 2025 yildagi 1 - sonli shartnomaga muvofiq</b>
+              </div>
+            </div>
+
+            <div class="text-center">
+              <table class="table table-bordered table-sm text-center align-middle" style="font-size:10px;">
+                <thead>
+                  <tr>
+                    <th rowspan="2" class="text-center align-middle">№</th>
+                    <th rowspan="2" class="text-center align-middle">Ish bajarilgan qurilmaning nomi</th>
+                    <th rowspan="2" class="text-center align-middle">Qurilmaning seriya raqami</th>
+                    <th rowspan="2" class="text-center align-middle">Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi</th>
+                    <th rowspan="2" class="text-center align-middle">Soni</th>
+                    <th rowspan="2" class="text-center align-middle">O‘lchov birligi</th>
+                    <th colspan="5" class="text-center align-middle">
+                      Kimga o‘rnatildi yoki o‘rnatilganligini tasdiqlovchi mas’ul shaxs (xarajatlar)
+                    </th>
+                  </tr>
+                  <tr>
+                    <th class="text-center align-middle">F.I.Sh.</th>
+                    <th class="text-center align-middle">Lavozimi</th>
+                    <th class="text-center align-middle">Eslatma*</th>
+                    <th class="text-center align-middle">So‘rovnoma №</th>
+                    <th class="text-center align-middle">Materiallarni o‘rnatish sanasi</th>
+                  </tr>
+                </thead>
+                <tbody id="materials_tbody">
+                  <tr>
+                    <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div>
+              <b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b>
+              <p>Izoh: o'rnatilgan ehtiyot qismlar yoki asbob-uskunalar birlikdagi narxi, buxgalteriya hisobini yuritish uchun.</p>
+            </div>
+
+            <div class="row text-center">
+              <div class="col-6">
+                <b>Xizmat ko'rsatuvchinig vakili:</b><br>
+                <span>{{request.user.employee.full_name}}</span><br>
+                <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">( FIO )</span>
+              </div>
+              <div class="col-6">
+                <b><span>O‘zbekiston Respublikasi <span id="org_id_2">—</span> tashkiloti vakili:</span></b><br>
+                <span id="sender_name2">—</span><br>
+                <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">( FIO )</span>
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
-    </section>
 
-  </main><!-- End #main -->
+    </div>
+  </section>
+
+</main>
+
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+{# Agar Select2 sizning base.html da ulangan bo‘lsa, quyidagi 1 qatorni olib tashlasa ham bo‘ladi #}
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
 $(function () {
 
@@ -252,7 +265,9 @@ $(function () {
   // ----------------- Cascade: Org -> Dep -----------------
   function loadDepartments(orgId, selectedDepId=null) {
     $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-    $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+
+    // org o‘zgarsa imzolovchi/kelishuvchi bo‘shatsin
+    $('#sender').html('<option value=""></option>').trigger('change');
     $('#agreements').html('').trigger('change');
 
     if (!orgId) {
@@ -274,43 +289,64 @@ $(function () {
     });
   }
 
-  // ----------------- Cascade: Dep -> Employees -----------------
-  function loadEmployees(depId, selectedSenderId=null, selectedConsentIds=[]) {
+  // ----------------- Dep -> Signatory -----------------
+  function loadSignatories(depId, selectedSenderId=null) {
     $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-    $('#agreements').html('').trigger('change');
 
     if (!depId) {
       $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_dep_signatory' %}",
+      data: { department: depId },
+      success: function (data) {
+        let options = '<option value=""></option>';
+        data.forEach(function(emp){
+          const sid = String(emp.id);
+          const sel = (String(selectedSenderId) === sid) ? 'selected' : '';
+          options += `<option value="${sid}" ${sel}>${emp.full_name}</option>`;
+        });
+        $('#sender').html(options).trigger('change');
+      },
+      error: function(xhr){
+        console.log(xhr.responseText);
+        $('#sender').html('<option value="">Xatolik</option>').trigger('change');
+      }
+    });
+  }
+
+  // ----------------- Dep -> Negotiators -----------------
+  function loadNegotiators(depId, selectedConsentIds=[]) {
+    $('#agreements').html('').trigger('change');
+
+    if (!depId) {
       $('#agreements').html('').trigger('change');
       return;
     }
 
     $.ajax({
-      url: "{% url 'ajax_load_employees' %}",
+      url: "{% url 'ajax_dep_negotiator' %}",
       data: { department: depId },
       success: function (data) {
-
-        let senderOptions = '<option value=""></option>';
-        let consentOptions = '';
-
-        const consentSet = new Set((selectedConsentIds || []).map(String));
-
+        let options = '';
+        const setSel = new Set((selectedConsentIds || []).map(String));
         data.forEach(function(emp){
           const sid = String(emp.id);
-
-          const senderSelected = (String(selectedSenderId) === sid) ? 'selected' : '';
-          senderOptions += `<option value="${sid}" ${senderSelected}>${emp.full_name}</option>`;
-
-          const consentSelected = consentSet.has(sid) ? 'selected' : '';
-          consentOptions += `<option value="${sid}" ${consentSelected}>${emp.full_name}</option>`;
+          const sel = setSel.has(sid) ? 'selected' : '';
+          options += `<option value="${sid}" ${sel}>${emp.full_name}</option>`;
         });
-
-        $('#sender').html(senderOptions).trigger('change');
-        $('#agreements').html(consentOptions).trigger('change');
+        $('#agreements').html(options).trigger('change');
+      },
+      error: function(xhr){
+        console.log(xhr.responseText);
+        $('#agreements').html('').trigger('change');
       }
     });
   }
 
+  // ----------------- change handlers -----------------
   $('#organization').on('change', function(){
     const orgId = $(this).val();
     loadDepartments(orgId);
@@ -318,7 +354,10 @@ $(function () {
 
   $('#department').on('change', function(){
     const depId = $(this).val();
-    loadEmployees(depId);
+
+    // dep tanlanganda 2 ta ajax:
+    loadSignatories(depId);
+    loadNegotiators(depId);
   });
 
   // ----------------- Sender text update -----------------
@@ -367,7 +406,6 @@ $(function () {
 
         let html = "";
         data.forEach(function(item, index){
-
           const finished = item['order__date_finished'] ? new Date(item['order__date_finished']) : null;
           const formattedDate = finished ? finished.toLocaleDateString('ru-RU') : '-';
 
@@ -405,14 +443,6 @@ $(function () {
 
   $('#btnSearch').on('click', searchMaterials);
 
-  // Date inputlarda Enter bilan qidirish (input type=date’da har doim ishlamasligi mumkin, lekin qoldiramiz)
-  $('input[type="date"]').on('keydown', function(e){
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      searchMaterials();
-    }
-  });
-
   // ----------------- Default date -----------------
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
@@ -423,7 +453,7 @@ $(function () {
   if (!$('#date1').val()) $('#date1').val(weekAgoStr);
   if (!$('#date2').val()) $('#date2').val(todayStr);
 
-  // ----------------- Old selections restore (agar view berayotgan bo‘lsa) -----------------
+  // ----------------- Old selections restore -----------------
   const initialOrg = '{{ selected_org|default:"" }}';
   const initialDep = '{{ selected_dep|default:"" }}';
   const initialSender = '{{ selected_sender|default:"" }}';
@@ -436,7 +466,10 @@ $(function () {
     if (initialDep) {
       setTimeout(function(){
         $('#department').val(initialDep).trigger('change');
-        loadEmployees(initialDep, initialSender, initialConsentList);
+
+        // dep tanlangandagi 2 ta ajax restore
+        loadSignatories(initialDep, initialSender);
+        loadNegotiators(initialDep, initialConsentList);
       }, 250);
     }
   }

@@ -294,7 +294,7 @@ $(function () {
     $('#agreements').html('');
 
     $.ajax({
-      url: "{% url 'ajax_org_employees' %}",
+      url: "{% url 'ajax_employees_org' %}",
       method: "GET",
       data: { org_id: orgId }, // ✅ view org_id kutyapti
       success: function(resp){
