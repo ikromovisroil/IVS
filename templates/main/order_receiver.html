@@ -99,9 +99,9 @@
                                             <div class="col-6 text-muted">Ariza Maqsadi</div>
                                             <div class="col-6">{{ o.goal.name }}</div>
                                             <div class="col-6 text-muted">Telefon</div>
-                                            <div class="col-6">{{ o.sender.phone }}</div>
+                                            <div class="col-6">{{ o.sender.phone|default:"Ko‘rsatilmagan" }}</div>
                                             <div class="col-6 text-muted">Izox</div>
-                                            <div class="col-6">{{ o.body }}</div>
+                                            <div class="col-6">{{ o.body|default:"Izoh mavjud emas" }}</div>
                                         </div>
                                     </div>
                                     <div class="modal-footer d-flex justify-content-center gap-2">

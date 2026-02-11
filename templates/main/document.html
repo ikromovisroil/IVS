@@ -135,8 +135,9 @@
             </div>
 
             <div class="text-end">
-              15.02.2026 y
+              <span id="doc_date">—</span> y
             </div>
+
 
             <div class="mt-3 text-justify">
               Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
@@ -188,7 +189,7 @@
           <div class="card-body m-5">
 
             <div class="text-end">
-              "           "                            2025 yil.
+              <span id="doc_date2">—</span> y
             </div>
 
             <div class="text-center">
@@ -471,7 +472,16 @@ $(function () {
 
 });
 </script>
-
+<script>
+  (function () {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    document.getElementById('doc_date').textContent = `${dd}.${mm}.${yyyy}`;
+    document.getElementById('doc_date2').textContent = `${dd}.${mm}.${yyyy}`;
+  })();
+</script>
 {% endblock content %}
 
 {% block js %}

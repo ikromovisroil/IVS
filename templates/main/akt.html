@@ -28,7 +28,7 @@
 
               <div class="row g-3">
                 <div class="col-12">
-                  <label for="organization" class="form-label">Tashkilot :</label>
+                  <label for="organization" class="form-label">Tashkilot:</label>
                   <select id="organization" name="organization" class="form-select" required>
                     <option value="">Tanlang...</option>
                     {% for org in organizations %}
@@ -40,7 +40,7 @@
                 </div>
 
                 <div class="col-12">
-                  <label for="department" class="form-label">Departament :</label>
+                  <label for="department" class="form-label">Departament:</label>
                   <select id="department" name="department" class="form-select" required>
                     <option value="">Tanlang...</option>
                     {% for dep in departments %}
@@ -52,7 +52,7 @@
                 </div>
 
                 <div class="col-md-12">
-                  <label for="date1" class="col-sm-2 col-form-label">Sana :</label>
+                  <label for="date1" class="col-sm-2 col-form-label">Sana:</label>
                   <input type="date" name="date1" id="date1" required class="form-control">
                 </div>
 
@@ -74,7 +74,7 @@
 
               <div class="row g-3">
                 <div class="col-12">
-                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                  <label for="sender" class="form-label">Imzolovchi xodim:</label>
                   <select id="sender" name="sender" class="form-select" required>
                     <option value="">Tanlang...</option>
                     {# Endi buni backenddan to‘ldirish shart emas — department tanlanganda ajax_dep_signatory to‘ldiradi #}
@@ -89,7 +89,7 @@
                 </div>
 
                 <div class="col-12">
-                  <label for="message" class="form-label">Izox :</label>
+                  <label for="message" class="form-label">Izoh :</label>
                   <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
                 </div>
 
@@ -476,7 +476,15 @@ $(function () {
 
 });
 </script>
-
+<script>
+  (function () {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    document.getElementById('doc_date').textContent = `${dd}.${mm}.${yyyy}`;
+  })();
+</script>
 {% endblock content %}
 
 {% block js %}

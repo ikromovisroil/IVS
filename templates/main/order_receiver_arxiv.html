@@ -137,7 +137,11 @@
                             </div><!-- End Vertically centered Modal-->
                         </td>
                         <td>{{ o.date_creat }}</td>
-                        <td><a href="{% url 'order_receiver_deed' o.pk %}">Yuborish</a></td>
+                        <td>
+                            {% if o.materials_all.exists %}
+                            <a href="{% url 'order_receiver_deed' o.pk %}">Yuborish</a>
+                            {% endif %}
+                        </td>
                       </tr>
                     {% endfor %}
                     </tbody>
