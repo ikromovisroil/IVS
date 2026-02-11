@@ -2542,14 +2542,23 @@ def svod_post(request):
     doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
 
     ORG_TEXT = {
-        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
-        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
-        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
-        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
+        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazi",
+        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
+        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
+        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
     }
     org_name = ORG_TEXT.get(org.id, "") if org else ""
+    OY_NOMLARI = [
+        "",  # index 0 ishlatilmaydi
+        "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+        "iyul", "avgust", "sentyabr", "oktabr", "noyabr", "dekabr"
+    ]
+    year = date1.year
+    month_name = OY_NOMLARI[date1.month]
 
+    oy_matni = f"{year} yil {month_name} oyi uchun"
     replace_text(doc, {
+        "OY": oy_matni,
         "EMPLOYEE": employee.full_name,
         "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
@@ -2794,10 +2803,10 @@ def reestr_post(request):
     doc = Document(template_path)
 
     ORG_TEXT = {
-        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
-        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
-        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
-        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
+        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazi",
+        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
+        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
+        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
     }
     org_name = ORG_TEXT.get(org.id, "") if org else ""
 
