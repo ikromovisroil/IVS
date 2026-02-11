@@ -2563,7 +2563,7 @@ def svod_post(request):
         "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": str(org.contract) if org and org.contract else "",
+        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -2810,12 +2810,22 @@ def reestr_post(request):
         3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
     }
     org_name = ORG_TEXT.get(org.id, "") if org else ""
+    OY_NOMLARI = [
+        "",  # index 0 ishlatilmaydi
+        "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+        "iyul", "avgust", "sentyabr", "oktabr", "noyabr", "dekabr"
+    ]
+    year = date1.year
+    month_name = OY_NOMLARI[date1.month]
 
+    oy_matni = f"{year} yil {month_name} oyi uchun"
     replace_text(doc, {
+        "DATE": oy_matni,
         "EMPLOYEE": employee.full_name,
         "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
-        "XUDUD": employee.region.name if employee.region else "",
+        "SANA": date.today().strftime("%d.%m.%Y"),
+        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
     })
 
     # TABLE placeholder paragrafini topamiz
