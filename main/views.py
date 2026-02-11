@@ -541,17 +541,6 @@ def sso_callback_page(request):
     })
 
 
-import json
-from django.http import JsonResponse
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from django.db import transaction
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.cache import never_cache
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.http import require_POST
-
 @csrf_exempt
 @never_cache
 @login_required
