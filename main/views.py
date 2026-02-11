@@ -2563,7 +2563,7 @@ def svod_post(request):
         "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
+        "CONTRACT": str(org.contract) if org and org.contract else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -2720,20 +2720,20 @@ def reestr_post(request):
     if not employee:
         raise PermissionDenied
 
-    # ===== formdan keladiganlar =====
+    # formdan keladiganlar
     org_id = request.POST.get("organization") or None
     date_id1 = request.POST.get("date1") or ""
     date_id2 = request.POST.get("date2") or ""
 
-    # agar deed yaratishda ishlatsangiz
+    # agar siz deed yaratishda ishlatsangiz (sizning oldingi akt_post uslubingizga mos)
     sender_id = request.POST.get("sender") or None
     message = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]")
+    agreements = request.POST.getlist("agreements[]")  # select2 bo'lsa
 
     if not org_id or not date_id1 or not date_id2:
         return HttpResponse("organization/date1/date2 shart", status=400)
 
-    # ===== sana parse =====
+    # sana parse
     try:
         date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
         date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
@@ -2742,7 +2742,7 @@ def reestr_post(request):
 
     org = Organization.objects.filter(id=org_id).first()
 
-    # ===== Query =====
+    # ✅ N+1 oldini olish
     qs = (
         OrderMaterial.objects.filter(
             material__employee=employee,
@@ -2759,57 +2759,44 @@ def reestr_post(request):
             "order__sender__department",
             "order__receiver",
             "material",
-            "material__employee",          # ✅ material o‘rnatgan xodim
-            "material__employee__rank",
-            "material__employee__department",
         )
     )
 
-    # ===== rows, jami, receiver ro‘yxat =====
+    # ✅ rows va grand_total
     rows = []
     grand_total = Decimal("0")
-
-    installers = []  # [(rank, fio), ...]
-    seen_ids = set()
 
     for q in qs:
         technics = q.order.technics if (q.order and q.order.technics) else None
         material = q.material
 
+        # xavfsiz Decimal
         price = Decimal(str(material.price)) if (material and material.price is not None) else Decimal("0")
         number = Decimal(str(q.number)) if q.number is not None else Decimal("0")
         total = price * number
         grand_total += total
 
         sender_emp = q.order.sender if q.order else None
-
-        # ✅ Kim o‘rnatgan = material.employee
-        installer_emp = getattr(material, "employee", None)
-
-        if installer_emp and installer_emp.id not in seen_ids:
-            seen_ids.add(installer_emp.id)
-            rank_text = installer_emp.rank.name if getattr(installer_emp, "rank", None) else ""
-            fio_text = installer_emp.full_name or ""
-            installers.append((rank_text, fio_text))
+        receiver_emp = q.order.receiver if q.order else None
 
         rows.append([
             technics.name if technics else "",
             technics.serial if technics else "",
             material.name if material else "",
-            str(number),
-            str(price),
-            str(total),
+            str(number),                    # soni
+            str(price),                     # birlik narx
+            str(total),                     # umumiy
             (sender_emp.full_name if sender_emp else ""),
             (sender_emp.rank.name if (sender_emp and sender_emp.rank) else ""),
             (sender_emp.department.name if (sender_emp and sender_emp.department) else ""),
-            (installer_emp.full_name if installer_emp else ""),  # ✅ jadvaldagi ustun
+            (receiver_emp.full_name if receiver_emp else ""),
             (q.order.date_creat.strftime("%d.%m.%Y") if (q.order and q.order.date_creat) else ""),
             (str(q.order.id) if q.order else ""),
             (q.order.date_finished.strftime("%d.%m.%Y") if (q.order and q.order.date_finished) else ""),
             (material.code if (material and material.code) else ""),
         ])
 
-    # ===== DOCX template =====
+    # ✅ DOCX template
     template_path = os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx")
     if not os.path.exists(template_path):
         return HttpResponse(f"Template topilmadi: {template_path}", status=500)
@@ -2823,51 +2810,40 @@ def reestr_post(request):
         3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
     }
     org_name = ORG_TEXT.get(org.id, "") if org else ""
-
     OY_NOMLARI = [
-        "",
+        "",  # index 0 ishlatilmaydi
         "yanvar", "fevral", "mart", "aprel", "may", "iyun",
         "iyul", "avgust", "sentyabr", "oktabr", "noyabr", "dekabr"
     ]
     year = date1.year
     month_name = OY_NOMLARI[date1.month]
-    oy_matni = f"{year} yil {month_name} oyi uchun"
 
-    # ===== placeholder replace =====
+    oy_matni = f"{year} yil {month_name} oyi uchun"
     replace_text(doc, {
         "DATE": oy_matni,
         "EMPLOYEE": employee.full_name,
-        "RANK": employee.rank.name if employee.rank else "",
+        "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": f"{org.contract} ga muvofiq" if org and getattr(org, "contract", None) else "",
+        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
     })
 
-    # ===== RECEIVER placeholder joyiga 2 ustunli jadval qo‘yish =====
-    receiver_p = next((p for p in doc.paragraphs if "RECEIVER" in p.text), None)
-    if receiver_p:
-        receiver_p.text = ""
-        receiver_p.paragraph_format.space_before = Pt(0)
-        receiver_p.paragraph_format.space_after = Pt(0)
-        receiver_p.paragraph_format.line_spacing = 1
-
-        receiver_tbl = create_receiver_list_table(doc, installers, left_w=7.5, right_w=9.5, font_size=12)
-        receiver_p._p.addnext(receiver_tbl._tbl)
-
-    # ===== TABLE placeholder (katta reestr jadvali) =====
+    # TABLE placeholder paragrafini topamiz
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
         return HttpResponse("DOCX ichidan TABLE placeholder topilmadi", status=500)
 
+    # TABLE paragrafini tozalash
     target.text = ""
     target.paragraph_format.space_before = Pt(0)
     target.paragraph_format.space_after = Pt(0)
     target.paragraph_format.line_spacing = 1
 
+    # ✅ jadval yaratish + qo'shish
     table = create_table_cols_reestr(doc, rows, grand_total=grand_total)
     target._p.addnext(table._tbl)
 
-    # ===== docx -> pdf =====
+    # ✅ docx -> pdf
     with tempfile.TemporaryDirectory() as tmpdir:
         docx_path = os.path.join(tmpdir, "reestr.docx")
         doc.save(docx_path)
@@ -2883,12 +2859,12 @@ def reestr_post(request):
         with open(pdf_path, "rb") as f:
             pdf_bytes = f.read()
 
-    # ===== sender =====
+    # ✅ sender aniqlash (bo'lmasa employee)
     sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
     if not sender:
         sender = employee
 
-    # ===== deed yaratish =====
+    # ✅ Deed yaratish va PDF saqlash
     deed = Deed.objects.create(
         sender=sender,
         user=employee,
@@ -2896,7 +2872,7 @@ def reestr_post(request):
     )
     deed.file.save("reestr.pdf", ContentFile(pdf_bytes), save=True)
 
-    # ===== agreements =====
+    # ✅ agreements larni tozalash
     agreements = agreements or []
     ids = []
     for x in agreements:
@@ -2905,6 +2881,7 @@ def reestr_post(request):
             ids.append(int(x))
     ids = list(set(ids))
 
+    # sender va employee ni consentdan chiqaramiz
     exclude_ids = {employee.id}
     if sender:
         exclude_ids.add(sender.id)
