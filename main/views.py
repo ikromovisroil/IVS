@@ -2744,7 +2744,7 @@ def reestr_post(request):
     # ✅ N+1 oldini olish
     qs = (
         OrderMaterial.objects.filter(
-            material__employee=employee,
+            # material__employee=employee,
             order__date_finished__gte=date1,
             order__date_finished__lt=date2,
             order__sender__organization_id=org_id,
