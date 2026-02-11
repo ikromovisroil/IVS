@@ -2563,6 +2563,7 @@ def svod_post(request):
         "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
+        "CONTRACT": str(org.contract) if org and org.contract else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
