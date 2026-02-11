@@ -2725,7 +2725,6 @@ def reestr_post(request):
     date_id1 = request.POST.get("date1") or ""
     date_id2 = request.POST.get("date2") or ""
 
-    # agar siz deed yaratishda ishlatsangiz (sizning oldingi akt_post uslubingizga mos)
     sender_id = request.POST.get("sender") or None
     message = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")  # select2 bo'lsa
@@ -2758,6 +2757,7 @@ def reestr_post(request):
             "order__sender__rank",
             "order__sender__department",
             "order__receiver",
+            "order__receiver__rank",
             "material",
         )
     )
@@ -2767,34 +2767,46 @@ def reestr_post(request):
     grand_total = Decimal("0")
 
     for q in qs:
-        technics = q.order.technics if (q.order and q.order.technics) else None
+        order = q.order
+        technics = order.technics if (order and order.technics) else None
         material = q.material
 
-        # xavfsiz Decimal
         price = Decimal(str(material.price)) if (material and material.price is not None) else Decimal("0")
         number = Decimal(str(q.number)) if q.number is not None else Decimal("0")
         total = price * number
         grand_total += total
 
-        sender_emp = q.order.sender if q.order else None
-        receiver_emp = q.order.receiver if q.order else None
+        sender_emp = order.sender if order else None
+        receiver_emp = order.receiver if order else None
 
         rows.append([
             technics.name if technics else "",
             technics.serial if technics else "",
             material.name if material else "",
-            str(number),                    # soni
-            str(price),                     # birlik narx
-            str(total),                     # umumiy
+            str(number),
+            str(price),
+            str(total),
             (sender_emp.full_name if sender_emp else ""),
             (sender_emp.rank.name if (sender_emp and sender_emp.rank) else ""),
             (sender_emp.department.name if (sender_emp and sender_emp.department) else ""),
             (receiver_emp.full_name if receiver_emp else ""),
-            (q.order.date_creat.strftime("%d.%m.%Y") if (q.order and q.order.date_creat) else ""),
-            (str(q.order.id) if q.order else ""),
-            (q.order.date_finished.strftime("%d.%m.%Y") if (q.order and q.order.date_finished) else ""),
+            (order.date_creat.strftime("%d.%m.%Y") if (order and order.date_creat) else ""),
+            (str(order.id) if order else ""),
+            (order.date_finished.strftime("%d.%m.%Y") if (order and order.date_finished) else ""),
             (material.code if (material and material.code) else ""),
         ])
+
+    # ✅ receiverlar ro'yxati (unikal order.receiver lar)
+    receiver_ids = (
+        qs.exclude(order__receiver__isnull=True)
+          .values_list("order__receiver_id", flat=True)
+          .distinct()
+    )
+    receivers = (
+        Employee.objects.filter(id__in=receiver_ids)
+        .select_related("rank")
+        .order_by("rank__name", "last_name", "first_name")
+    )
 
     # ✅ DOCX template
     template_path = os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx")
@@ -2810,25 +2822,28 @@ def reestr_post(request):
         3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
     }
     org_name = ORG_TEXT.get(org.id, "") if org else ""
+
     OY_NOMLARI = [
-        "",  # index 0 ishlatilmaydi
-        "yanvar", "fevral", "mart", "aprel", "may", "iyun",
+        "", "yanvar", "fevral", "mart", "aprel", "may", "iyun",
         "iyul", "avgust", "sentyabr", "oktabr", "noyabr", "dekabr"
     ]
-    year = date1.year
-    month_name = OY_NOMLARI[date1.month]
+    oy_matni = f"{date1.year} yil {OY_NOMLARI[date1.month]} oyi uchun"
 
-    oy_matni = f"{year} yil {month_name} oyi uchun"
     replace_text(doc, {
         "DATE": oy_matni,
-        "EMPLOYEE": employee.full_name,
-        "RANK": employee.rank.name,
+        "EMPLOYEE": employee.full_name if employee else "",
+        "RANK": employee.rank.name if (employee and employee.rank) else "",
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
+        "CONTRACT": f"{org.contract} ga muvofiq" if org and getattr(org, "contract", None) else "",
     })
 
-    # TABLE placeholder paragrafini topamiz
+    # ✅ RECEIVER placeholder joyiga receiverlar chiqadi
+    ok = insert_receivers_into_placeholder(doc, "RECEIVER", receivers)
+    if not ok:
+        return HttpResponse("DOCX ichidan RECEIVER placeholder topilmadi", status=500)
+
+    # ✅ TABLE placeholder paragrafini topamiz
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
     if not target:
         return HttpResponse("DOCX ichidan TABLE placeholder topilmadi", status=500)
