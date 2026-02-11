@@ -790,3 +790,56 @@ def insert_receivers_into_placeholder(doc, placeholder: str, receivers):
             p = np
 
     return True
+
+
+def short_fio(emp):
+    """Zayniddinov S. F. ko'rinishiga keltiradi."""
+    if not emp:
+        return ""
+    ln = (getattr(emp, "last_name", "") or "").strip()
+    fn = (getattr(emp, "first_name", "") or "").strip()
+    mn = (getattr(emp, "father_name", "") or "").strip()
+    fi = (fn[:1] + ".") if fn else ""
+    mi = (mn[:1] + ".") if mn else ""
+    return f"{ln} {fi} {mi}".replace("  ", " ").strip()
+
+
+def insert_receivers_into_placeholder(doc, placeholder: str, receivers):
+    """
+    reestr.docx ichidagi 'RECEIVER' placeholder turgan joyga
+    receiverlar ro'yxatini qator-qator qilib yozadi.
+    """
+    p = next((p for p in doc.paragraphs if placeholder in p.text), None)
+    if not p:
+        return False
+
+    # placeholder matnni tozalash
+    p.text = ""
+    p.paragraph_format.space_before = Pt(0)
+    p.paragraph_format.space_after = Pt(0)
+    p.paragraph_format.line_spacing = 1
+    p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+    receivers_list = list(receivers)
+    if not receivers_list:
+        p.add_run("—")
+        return True
+
+    for idx, emp in enumerate(receivers_list, start=1):
+        # chap tomonda rank yoki "1-toifali mutaxassis" chiqishini xohlasangiz:
+        left = emp.rank.name if getattr(emp, "rank", None) else f"{idx}-toifali mutaxassis"
+        right = short_fio(emp)
+
+        line = f"{left}  {right}"
+
+        if idx == 1:
+            p.add_run(line)
+        else:
+            np = p.insert_paragraph_after(line)
+            np.paragraph_format.space_before = Pt(0)
+            np.paragraph_format.space_after = Pt(0)
+            np.paragraph_format.line_spacing = 1
+            np.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            p = np
+
+    return True
