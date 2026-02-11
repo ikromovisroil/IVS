@@ -2558,7 +2558,7 @@ def svod_post(request):
 
     oy_matni = f"{year} yil {month_name} oyi uchun"
     replace_text(doc, {
-        "OY": oy_matni,
+        "DATE": oy_matni,
         "EMPLOYEE": employee.full_name,
         "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
