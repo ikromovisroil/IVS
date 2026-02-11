@@ -2384,12 +2384,14 @@ def akt_post(request):
 
     replace_text(doc, {
         "ORGANIZATION": org_name,
-        "ID": '',
+        "ID": "",
         "SANA": date.today().strftime("%d.%m.%Y"),
-        "RECEIVER": str(employee),
+        "RECEIVER": employee.full_name if employee else "",
+        "RANK_R": f"({employee.rank.name})" if employee and employee.rank else "",
         "SENDER": sender.full_name if sender else "",
+        "RANK_S": f"({sender.rank.name})" if sender and sender.rank else "",
         "DEPARTMENT": dep.name if dep else "",
-        "CONTRACT": str(org.contract) if org else "",
+        "CONTRACT": str(org.contract) if org and org.contract else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -2788,14 +2790,16 @@ def reestr_post(request):
     doc = Document(template_path)
 
     ORG_TEXT = {
-        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazini",
-        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
-        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
-        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
+        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
+        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
+        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
+        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
     }
-    org_name = ORG_TEXT.get(getattr(org, "org_type", None), "")
+    org_name = ORG_TEXT.get(org.id, "") if org else ""
 
     replace_text(doc, {
+        "EMPLOYEE": employee.full_name,
+        "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
         "XUDUD": employee.region.name if employee.region else "",
     })
