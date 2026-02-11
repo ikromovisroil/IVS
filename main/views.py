@@ -2201,7 +2201,17 @@ def order_receiver_activ(request):
         .order_by("-id")
     )
     technics = Technics.objects.all()
-    materials = Material.objects.all()
+    my_materials = Material.objects.filter(employee=employee)
+    if my_materials.exists():
+        materials = my_materials
+    else:
+        # 2) bo'limdagi omborchi (shop=True) materiallari
+        materials = Material.objects.filter(
+            employee__rol__shop=True,
+            employee__region=employee.region,
+            employee__organization=employee.organization,
+            employee__department=employee.department,
+        )
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
