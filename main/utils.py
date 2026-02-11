@@ -122,7 +122,7 @@ def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, ov
     c.drawString(10, page_h - 15, text)
 
     # QR (pastki markaz)
-    qr_size = 60
+    qr_size = 65
     x_center = (page_w - qr_size) / 2
     c.drawImage(qr_png, x_center, 2, width=qr_size, height=qr_size, mask="auto")
 

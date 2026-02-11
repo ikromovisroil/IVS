@@ -2391,7 +2391,7 @@ def akt_post(request):
         "SENDER": sender.full_name if sender else "",
         "RANK_S": f"({sender.rank.name})" if sender and sender.rank else "",
         "DEPARTMENT": dep.name if dep else "",
-        "CONTRACT": str(org.contract) if org and org.contract else "",
+        "CONTRACT": f"{org.contract}ga muvofiq" if org and org.contract else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
@@ -2563,7 +2563,7 @@ def svod_post(request):
         "RANK": employee.rank.name,
         "ORGANIZATION": org_name,
         "SANA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": str(org.contract) if org and org.contract else "",
+        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
     })
 
     target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)

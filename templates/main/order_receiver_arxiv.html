@@ -63,8 +63,10 @@
                         <td>{{ o.goal.name }}</td>
                         <td>
                             {% if o.status == "approved" %}
+                                <i class="bi bi-check-circle-fill me-1">
                                 <span type="button" class="badge bg-success text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Tasdiqlandi</span>
                             {% elif o.status == "rejected" %}
+                                <i class="bi bi-x-circle me-1"></i>
                                 <span type="button" class="badge bg-danger text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Rad etildi</span>
                             {% endif %}
 

@@ -269,6 +269,7 @@ def ajax_svod_materials(request):
 
     # umumiy filter (2 marta yozmaslik uchun)
     base_filter = dict(
+        material__employee=employee,
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
         order__sender__organization_id=org_id,
@@ -356,6 +357,7 @@ def ajax_reestr_materials(request):
 
     qs = (
         OrderMaterial.objects.filter(
+            material__employee=employee,
             order__date_finished__gte=date1,
             order__date_finished__lt=date2,
             order__sender__organization_id=org_id,

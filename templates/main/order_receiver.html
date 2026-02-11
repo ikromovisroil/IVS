@@ -62,7 +62,7 @@
                         <td>{{ o.goal.name }}</td>
                         <td>
                             {% if o.status == "viewed" %}
-                                <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Kutulmoqda</span>
+                                <i class="bi bi-clock me-1"></i><span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Kutulmoqda</span>
                             {% endif %}
 
                             <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">

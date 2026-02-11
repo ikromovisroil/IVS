@@ -62,6 +62,7 @@
 
                     <td>
                       {% if o.status == "accepted" %}
+                        <i class="bi bi-check-circle me-1"></i>
                         <span type="button"
                               class="badge bg-primary text-white"
                               data-bs-toggle="modal"
@@ -69,6 +70,7 @@
                           Qabul qilindi
                         </span>
                       {% elif o.status == "finished" %}
+                        <i class="bi bi-play-circle me-1"></i>
                         <span type="button"
                               class="badge bg-info text-white"
                               data-bs-toggle="modal"
