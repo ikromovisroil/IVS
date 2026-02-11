@@ -1,17 +1,23 @@
 import os
-import subprocess
-from datetime import datetime
-from reportlab.pdfgen import canvas
-from reportlab.lib.colors import red
-from PyPDF2 import PdfReader, PdfWriter
-import qrcode
 import shutil
+import subprocess
 import base64
 import json
+from datetime import datetime
+
+from contextlib import contextmanager
 from django.conf import settings
 from django.utils import timezone
-from contextlib import contextmanager
+from django.urls import reverse
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.colors import red
+
+from PyPDF2 import PdfReader, PdfWriter
+
+import qrcode
 from qrcode.constants import ERROR_CORRECT_M
+
 
 # ==========================================================
 # 1) DOCX → PDF (LIBREOFFICE)  → (pdf_path, debug)
@@ -23,7 +29,7 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     output_dir = os.path.dirname(docx_path)
     expected_pdf = os.path.splitext(docx_path)[0] + ".pdf"
 
-    # ✅ soffice aniqlash (tez + to'g'ri)
+    # soffice aniqlash
     if os.name == "nt":
         candidates = [
             r"C:\Program Files\LibreOffice\program\soffice.exe",
@@ -55,10 +61,10 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     try:
         proc = subprocess.run(
             cmd,
-            stdout=subprocess.DEVNULL,   # ✅ stdout/stderr ni o'qimaslik tezroq
+            stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             env=env,
-            timeout=30                  # ✅ osilib qolmasin
+            timeout=30
         )
     except Exception as e:
         return None, str(e)
@@ -69,7 +75,7 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     if os.path.exists(expected_pdf):
         return expected_pdf, "OK"
 
-    # LibreOffice ba'zan nomni o'zgartirishi mumkin → fallback
+    # fallback
     pdfs = [f for f in os.listdir(output_dir) if f.lower().endswith(".pdf")]
     if pdfs:
         return os.path.join(output_dir, pdfs[0]), "OK (fallback)"
@@ -77,7 +83,9 @@ def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
     return None, "PDF yaratilmadi"
 
 
-
+# ==========================================================
+# 2) Lock (PDF band bo‘lib qolmasin)
+# ==========================================================
 @contextmanager
 def file_lock(lock_path: str, timeout: int = 10):
     start = timezone.now()
@@ -98,10 +106,12 @@ def file_lock(lock_path: str, timeout: int = 10):
             pass
 
 
+# ==========================================================
+# 3) Overlay PDF yaratish (page_w/page_h bo‘yicha)
+# ==========================================================
 def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, overlay_path: str):
     qr_png = overlay_path.replace(".pdf", "_qr.png")
 
-    # 🔥 QR ni qo‘lda yaratamiz
     qr = qrcode.QRCode(
         version=None,
         error_correction=ERROR_CORRECT_M,
@@ -110,7 +120,6 @@ def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, ov
     )
     qr.add_data(qr_link)
     qr.make(fit=True)
-
     img = qr.make_image(fill_color="black", back_color="white")
     img.save(qr_png)
 
@@ -134,11 +143,13 @@ def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, ov
         pass
 
 
-from django.urls import reverse
+# ==========================================================
+# 4) PDF ga imzo (HAR BIR SAHIFAGA) — inplace
+# ==========================================================
 def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -> None:
     """
     PDF ning o'zini o'ziga imzolaydi: HAR BIR SAHIFAGA QR + yozuv qo'yadi.
-    QR skaner bo‘lsa: /deed/status/<deed_id>/ ga olib boradi.
+    QR skaner bo‘lsa: deed_status sahifaga olib boradi.
     """
 
     if not pdf_path or not os.path.exists(pdf_path):
@@ -149,12 +160,11 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
 
     abs_pdf = os.path.abspath(pdf_path)
 
-    # ✅ QR endi STATUS sahifaga olib boradi
+    # QR link: status sahifa
     qr_link = request.build_absolute_uri(
         reverse("deed_status", args=[int(deed_id)])
     )
 
-    # Matn
     text = (
         f"Ushbu hujjat {approver_name} tomonidan "
         f"{timezone.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
@@ -173,6 +183,7 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
         overlay_path = abs_pdf.replace(".pdf", "_overlay.pdf")
         tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
 
+        # overlay 1 ta sahifa qilib yaratiladi (o‘lchami PDF bilan bir xil)
         create_overlay_pdf(w, h, text, qr_link, overlay_path)
 
         overlay_reader = PdfReader(overlay_path)
@@ -180,12 +191,13 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
 
         writer = PdfWriter()
         for page in reader.pages:
-            page.merge_page(overlay_page)  # ✅ har bir sahifaga
+            page.merge_page(overlay_page)   # har bir sahifaga
             writer.add_page(page)
 
         with open(tmp_out, "wb") as f:
             writer.write(f)
 
+        # eski pdf o‘rniga yozish
         shutil.move(tmp_out, abs_pdf)
 
         try:
@@ -195,74 +207,8 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
 
 
 # ==========================================================
-# 3) Original + Overlay PDF birlashtirish
+# JWT decode (o‘zingizniki)
 # ==========================================================
-def merge_pdf(original: str, overlay: str, output: str) -> None:
-    reader = PdfReader(original)
-    overlay_reader = PdfReader(overlay)
-    writer = PdfWriter()
-
-    overlay_page = overlay_reader.pages[0]
-
-    for page in reader.pages:
-        page.merge_page(overlay_page)
-        writer.add_page(page)
-
-    with open(output, "wb") as f:
-        writer.write(f)
-
-
-# =========================================================
-# 4) Asosiy FUNKSIYA: DOCX → PDF → Overlay → Signed PDF
-# ==========================================================
-import shutil
-
-def sign_pdf(pdf_path: str, request, approver_name: str) -> bool:
-
-    if not os.path.exists(pdf_path):
-        print("❌ PDF topilmadi:", pdf_path)
-        return False
-
-    pdf_path = os.path.abspath(pdf_path)
-
-    text = (
-        f"Ushbu hujjat {approver_name} tomonidan "
-        f"{datetime.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
-    )
-
-    media_root = os.path.abspath(settings.MEDIA_ROOT)
-    rel_pdf = os.path.relpath(pdf_path, media_root).replace(os.sep, "/")
-
-    # QR doim shu faylni ochadi (fayl nomi o‘zgarmaydi)
-    qr_link = request.build_absolute_uri(settings.MEDIA_URL + rel_pdf)
-
-    overlay_path = pdf_path.replace(".pdf", "_overlay.pdf")
-    merged_tmp = pdf_path.replace(".pdf", "_merged_tmp.pdf")
-
-    create_overlay_pdf(
-        original_pdf_path=pdf_path,
-        text=text,
-        qr_link=qr_link,
-        overlay_path=overlay_path
-    )
-
-    merge_pdf(
-        original=pdf_path,
-        overlay=overlay_path,
-        output=merged_tmp
-    )
-
-    # 🔥 ASOSIY NUQTA
-    # Imzolangan hujjat — eski faylning o‘ziga yoziladi
-    shutil.move(merged_tmp, pdf_path)
-
-    if os.path.exists(overlay_path):
-        os.remove(overlay_path)
-
-    return True
-
-
-
 def decode_jwt(token):
     payload = token.split(".")[1]
     payload += "=" * (-len(payload) % 4)
@@ -274,4 +220,3 @@ def get_sso_redirect_uri(request):
     if "localhost" in host or "127.0.0.1" in host:
         return "http://localhost:8000/sso/callback/"
     return "https://report.imv.uz/sso/callback/"
-

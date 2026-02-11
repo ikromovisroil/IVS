@@ -47,8 +47,10 @@
                             <td>{{ d.receiver.full_name }}</td>
                             <td>{{ d.date_creat|date:"d-m-Y H:i" }}</td>
                             <td>
-                                {% if d.file %}
-                                    <a href="{{ d.file.url }}" target="_blank">📄 Ko‘rish</a>
+                                {% if d.file and d.file.url %}
+                                    <a href="{{ d.file.url }}" target="_blank">
+                                        📄 Ko‘rish
+                                    </a>
                                 {% else %}
                                     —
                                 {% endif %}

@@ -561,14 +561,14 @@ def sso_exchange_and_finish(request):
         redirect_uri = body.get("redirectUri")
         if not code or not code_verifier or not redirect_uri:
             return JsonResponse(
-                {"status": "error", "message": "SSO parametrlari to‘liq emas", "redirect": "/"},
+                {"status": "error", "message": "SSO parametrlari to'liq emas", "redirect": "/"},
                 status=400
             )
 
         # ------------- session pending ----------
         pending = request.session.get("PENDING_APPROVE")
         if not pending:
-            raise PermissionDenied("Pending yo‘q")
+            raise PermissionDenied("Pending yo'q")
 
         role = pending.get("role")
         message = (pending.get("message") or "").strip()
@@ -578,7 +578,7 @@ def sso_exchange_and_finish(request):
         if not employee:
             request.session.pop("PENDING_APPROVE", None)
             return JsonResponse(
-                {"status": "forbidden", "message": "Employee yo‘q", "redirect": redirect_url},
+                {"status": "forbidden", "message": "Employee yo'q", "redirect": redirect_url},
                 status=403
             )
 
@@ -586,7 +586,7 @@ def sso_exchange_and_finish(request):
         token_data = exchange_code_for_token(code, code_verifier, redirect_uri)
         id_token = token_data.get("id_token")
         if not id_token:
-            raise PermissionDenied("id_token yo‘q")
+            raise PermissionDenied("id_token yo'q")
 
         user_data = decode_jwt(id_token) or {}
         sso_pinfl = user_data.get("pinfl")
@@ -601,17 +601,15 @@ def sso_exchange_and_finish(request):
 
         # ==========================================================
         # ✅ sender/receiver: FINAL shartga ko'ra QR uriladi
-        #   - receiver_id None bo'lsa: sender approved bo'lganda QR uriladi
-        #   - receiver bor bo'lsa: sender+receiver ikkalasi approved bo'lganda QR uriladi
         # ==========================================================
         if role in ("sender", "receiver"):
             deed_id = pending.get("deed_id")
             if not deed_id:
-                raise PermissionDenied("Deed yo‘q")
+                raise PermissionDenied("Deed yo'q")
 
             approver_name = employee.full_name
-            now = timezone.now()
 
+            # Avval transaction ichida faqat DB operatsiyalari
             with transaction.atomic():
                 deed = (
                     Deed.objects
@@ -619,29 +617,26 @@ def sso_exchange_and_finish(request):
                     .get(pk=int(deed_id))
                 )
 
-                # ruxsat tekshiruv (join shart emas)
+                # Ruxsat tekshiruv
                 if role == "sender" and deed.sender_id != employee.id:
                     raise PermissionDenied("Sender emassiz")
                 if role == "receiver" and deed.receiver_id != employee.id:
                     raise PermissionDenied("Receiver emassiz")
 
                 if not deed.file:
-                    raise PermissionDenied("PDF yo‘q")
-                pdf_path = deed.file.path
+                    raise PermissionDenied("PDF yo'q")
 
-                # status update
+                # Status update
                 if role == "sender":
                     if deed.status_sender == "approved":
                         request.session.pop("PENDING_APPROVE", None)
                         request.session.modified = True
                         return JsonResponse({"status": "ok", "redirect": redirect_url})
 
-                    Deed.objects.filter(pk=deed.pk).update(
-                        status_sender="approved",
-                        message_sender=message or "",
-                        date_edit=timezone.now(),
-                    )
                     deed.status_sender = "approved"
+                    deed.message_sender = message or ""
+                    deed.date_edit = timezone.now()
+                    deed.save(update_fields=["status_sender", "message_sender", "date_edit"])
 
                 else:  # receiver
                     if deed.status_receiver == "approved":
@@ -649,26 +644,39 @@ def sso_exchange_and_finish(request):
                         request.session.modified = True
                         return JsonResponse({"status": "ok", "redirect": redirect_url})
 
-                    Deed.objects.filter(pk=deed.pk).update(
-                        status_receiver="approved",
-                        message_receiver=message or "",
-                        date_edit=timezone.now(),
-                    )
                     deed.status_receiver = "approved"
+                    deed.message_receiver = message or ""
+                    deed.date_edit = timezone.now()
+                    deed.save(update_fields=["status_receiver", "message_receiver", "date_edit"])
 
-                # FINAL shart (siz aytgandek)
+                # FINAL shartni tekshirish
                 is_final = (
                         (deed.receiver_id is None and deed.status_sender == "approved")
-                        or (deed.receiver_id is not None and deed.status_sender == "approved" and deed.status_receiver == "approved")
+                        or (deed.receiver_id is not None
+                            and deed.status_sender == "approved"
+                            and deed.status_receiver == "approved")
                 )
 
-                if is_final:
+            # Transaction tashqarisida fayl operatsiyasi
+            if is_final:
+                try:
                     sign_pdf_inplace(
-                        pdf_path=pdf_path,
+                        pdf_path=deed.file.path,
                         request=request,
-                        approver_name=employee.full_name,
+                        approver_name=approver_name,
                         deed_id=deed.pk,
                     )
+                except TimeoutError as e:
+                    return JsonResponse({
+                        "status": "error",
+                        "message": str(e),
+                        "redirect": redirect_url
+                    }, status=409)
+                except Exception as e:
+                    # Log qilish kerak
+                    print(f"PDF sign error: {e}")
+                    # PDF sign xatosi bo'lsa ham, DB o'zgarishlari saqlangan
+                    # Shuning uchun foydalanuvchiga xabar berish kerak
 
             request.session.pop("PENDING_APPROVE", None)
             request.session.modified = True
@@ -680,7 +688,7 @@ def sso_exchange_and_finish(request):
         if role == "consent":
             consent_id = pending.get("consent_id")
             if not consent_id:
-                raise PermissionDenied("consent_id yo‘q")
+                raise PermissionDenied("consent_id yo'q")
 
             consent = get_object_or_404(
                 DeedConsent.objects.select_related("employee__user"),
@@ -688,7 +696,7 @@ def sso_exchange_and_finish(request):
             )
 
             if consent.employee.user_id != request.user.id:
-                raise PermissionDenied("Ruxsat yo‘q")
+                raise PermissionDenied("Ruxsat yo'q")
 
             if consent.status != "approved":
                 consent.status = "approved"
@@ -700,16 +708,19 @@ def sso_exchange_and_finish(request):
             request.session.modified = True
             return JsonResponse({"status": "ok", "redirect": redirect_url})
 
-        raise PermissionDenied("Noto‘g‘ri pending turi")
+        raise PermissionDenied("Noto'g'ri pending turi")
 
     except PermissionDenied as e:
-        return JsonResponse({"status": "error", "message": str(e), "redirect": "/"}, status=403)
-    except TimeoutError:
-        return JsonResponse({"status": "error", "message": "PDF band, qayta urinib ko‘ring", "redirect": "/"}, status=409)
+        return JsonResponse(
+            {"status": "error", "message": str(e), "redirect": "/"},
+            status=403
+        )
     except Exception as e:
-        print("SSO ERROR:", e)
-        return JsonResponse({"status": "error", "message": "SSO xatolik", "redirect": "/"}, status=500)
-
+        print(f"SSO ERROR: {e}")
+        return JsonResponse(
+            {"status": "error", "message": "SSO xatolik", "redirect": "/"},
+            status=500
+        )
 
 
 def exchange_code_for_token(code, code_verifier, redirect_uri):
