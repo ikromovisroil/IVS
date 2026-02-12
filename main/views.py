@@ -2913,7 +2913,13 @@ def technics_get(request):
         raise PermissionDenied
 
     employee = getattr(request.user, "employee", None)
-    technics = Technics.objects.filter(employee=employee)
+    if employee.rol.boss:
+        technics = Technics.objects.filter(
+            employee__organization=employee.organization,
+            employee__department=employee.department,
+        )
+    else:
+        technics = Technics.objects.filter(employee=employee)
 
     context = {
         'technics': technics,

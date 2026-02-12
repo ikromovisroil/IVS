@@ -25,6 +25,10 @@
                 <thead>
                   <tr>
                     <th scope="col">#</th>
+                    {% if request.user.employee.rol.bos %}
+                    <th scope="col">F.I.O</th>
+                    <th scope="col">Lavozim</th>
+                    {% endif %}
                     <th scope="col">Nomi</th>
                     <th scope="col">I/N</th>
                     <th scope="col">S/N</th>
@@ -36,6 +40,10 @@
                 {% for tex in technics %}
                   <tr>
                     <th scope="row">{{forloop.counter}}</th>
+                    {% if request.user.employee.rol.bos %}
+                    <th>{{tex.employee.full_name}}</th>
+                    <th>{{tex.employee.rank.name}}</th>
+                    {% endif %}
                     <td>{{tex.category.name}}
 
                         {{ tex.name|default:"-" }}</td>
