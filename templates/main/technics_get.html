@@ -25,7 +25,7 @@
                 <thead>
                   <tr>
                     <th scope="col">#</th>
-                    {% if request.user.employee.rol.bos %}
+                    {% if request.user.employee.rol.boss %}
                     <th scope="col">F.I.O</th>
                     <th scope="col">Lavozim</th>
                     {% endif %}
@@ -40,7 +40,7 @@
                 {% for tex in technics %}
                   <tr>
                     <th scope="row">{{forloop.counter}}</th>
-                    {% if request.user.employee.rol.bos %}
+                    {% if request.user.employee.rol.boss %}
                     <th>{{tex.employee.full_name}}</th>
                     <th>{{tex.employee.rank.name}}</th>
                     {% endif %}
