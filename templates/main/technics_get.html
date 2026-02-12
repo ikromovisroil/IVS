@@ -41,8 +41,8 @@
                   <tr>
                     <th scope="row">{{forloop.counter}}</th>
                     {% if request.user.employee.rol.boss %}
-                    <th>{{tex.employee.full_name}}</th>
-                    <th>{{tex.employee.rank.name}}</th>
+                    <td>{{tex.employee.full_name}}</td>
+                    <td>{{tex.employee.rank.name}}</td>
                     {% endif %}
                     <td>{{tex.category.name}}
 
