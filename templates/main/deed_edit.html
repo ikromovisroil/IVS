@@ -1,13 +1,57 @@
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Word tahrirlash</title>
-  <style>
-    html, body, iframe { height:100%; width:100%; margin:0; border:0; }
-  </style>
-</head>
-<body>
-  <iframe src="{{ collabora_url }}"></iframe>
-</body>
-</html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  <title>Hisobot</title>
+{% endblock title %}
+
+{% block css %}
+{% endblock css %}
+
+{% block content %}
+
+<main id="main" class="main">
+
+  <div class="pagetitle">
+    <h1>Taxrirlash</h1>
+  </div>
+
+  <section class="section">
+    <form class="row" method="post">{% csrf_token %}
+
+      <!-- LEFT: FILTER + SIGN -->
+      <div class="col-lg-4">
+
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Taxrirlash</h5>
+
+              <div class="row g-3">
+                <div class="text-center">
+                  <button type="submit" class="btn btn-primary w-100">Saqlash</button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+      </div>
+
+      <!-- RIGHT: TINYMCE -->
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">TinyMCE Editor</h5>
+              <textarea id="body" name="body" class="tinymce-editor">
+               {{deed.body|safe}}
+              </textarea>
+          </div>
+        </div>
+
+      </div>
+    </form>
+  </section>
+
+</main>
+
+{% endblock content %}

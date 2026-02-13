@@ -23,10 +23,9 @@
   </div>
 
   <section class="section">
-    <div class="row">
+    <form class="row" action="{% url 'document_post' %}" method="post">{% csrf_token %}
 
       <div class="col-lg-4">
-        <form action="{% url 'document_post' %}" method="post">{% csrf_token %}
 
           <div class="card">
             <div class="card-body">
@@ -93,7 +92,7 @@
 
                 <div class="col-12">
                   <label for="receiver" class="form-label">Tashkilot vakili:</label>
-                  <select id="receiver" name="receiver" class="form-select" required>
+                  <select id="receiver" name="receiver" class="form-select">
                     <option value="">Tanlang...</option>
                     {% for emp in emp_bos %}
                       <option value="{{ emp.id }}">{{ emp.full_name }}</option>
@@ -123,135 +122,131 @@
             </div>
           </div>
 
-        </form>
       </div>
 
       <div class="col-lg-8">
-        <div class="card">
-          <div class="card-body m-5">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">TinyMCE Editor</h5>
 
-            <div class="d-flex justify-content-center align-items-center mb-3">
-              <h5 class="text-center"><b>DALOLATNOMA</b></h5>
+              <textarea id="body" name="body" class="tinymce-editor">
+                <div style="text-align:center;">
+                  <b>DALOLATNOMA</b>
+                </div>
+                <div style="text-align:right;">
+                  <span id="doc_date">12.02.2026 y</span>
+                </div>
+                <div style="text-align: justify;">
+                  <span>
+                  Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+                  Davlat byudjeti siyosati departamenti direktori <b>Sh.Muxamedov</b>, va O‘zbekiston Respublikasi Iqtisodiyot
+                  va moliya vazirligi huzuridagi Axborot texnologiyalari markazi direktori vazifasini vaqtincha bajaruvchi
+                  <b>F.Xujamqulov</b>: O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi hamda O‘zbekiston Respublikasi
+                  Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan <b>2025 yil 4-martda
+                  tuzilgan 1-sonli</b> shartnomaga asosan Davlat byudjeti siyosati departamenti bo‘yicha 2025 yil I chorak uchun
+                  quyidagi ishlar va xizmatlar bajarildi. Ishlar texnologik xaritaga muvofiq amalga oshirildi.
+                  </span>
+                </div>
+                <div></div>
+                <div style="text-align:left;">
+                  <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
+                </div>
+                <div></div>
+                <div style="text-align:left;">
+                  <span><b>1.1.</b> Biriktirilgan kompyuterlarga xizmat ko‘rsatish – 52</span>
+                </div>
+                <div style="text-align:left;">
+                  <span><b>1.4.</b> A3 formatli printerlarga xizmat ko‘rsatish – 2 dona.</span>
+                </div>
+                <div></div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi Davlat byudjeti siyosati departamenti</b><br><br>
+                          <b>Sh.Muxamedov</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.</b><br><br>
+                          <b>F.Xujamqulov</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style="page-break-after: always;"></div>
+
+                <div style="text-align:right;">
+                  <span id="doc_date">12.02.2026 y</span>
+                </div>
+                <div style="text-align:center;">
+                  <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
+                </div>
+                <div style="text-align:center;">
+                  <b>DALOLATNOMA</b></br>
+                  <span style="text-align:center;font-size:8pt;">(boshqarma nomi)</span>
+                </div>
+                <div style="text-align:center;">
+                  <b>Biz, <u>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</u></b></br>
+                  <span style="text-align:center;font-size:8pt;">(F.I.Sh.) (lavozimi)</span>
+                </div>
+                <div style="text-align:left;">
+                  <b>Xizmat ko‘rsatilyotgan texnikalarni rusumi seriya raqami:</b>
+                </div>
+                <div style="text-align:left;">
+                  <b>Kompyuterlar (PC/Noutbuk/Planshet/Info-kiosk)</b>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;" border="1">
+                    <colgroup>
+                      <col style="width:10%;">
+                      <col style="width:30%;">
+                      <col style="width:30%;">
+                      <col style="width:30%;">
+                    </colgroup>
+                    <tbody id="materials_tbody">
+                      <tr>
+                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
+                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami:</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div></br>
+                <div style="text-align:left;">
+                  <b>Printerlar (A4/A3/Skanner)</b>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;" border="1">
+                    <colgroup>
+                      <col style="width:20%;">
+                      <col style="width:40%;">
+                      <col style="width:40%;">
+                    </colgroup>
+                    <tbody id="materials_tbody">
+                      <tr>
+                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </textarea>
+
             </div>
-
-            <div class="text-end">
-              <span id="doc_date">—</span> y
-            </div>
-
-
-            <div class="mt-3 text-justify">
-              Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-              <span id="selekt_id_text_1">Davlat byudjeti siyosati departamenti</span>
-              <span id="post_id_text">direktori</span>
-              <b id="fio_id_text_1">Sh.Muxamedov</b>,
-              va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari
-              markazi direktori vazifasini vaqtincha bajaruvchi <b>F.Xujamqulov</b>:
-              O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi hamda O‘zbekiston Respublikasi Iqtisodiyot
-              va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
-              <b><span id="date_id_text">2025 yil 4-martda</span> tuzilgan <span id="namber_id_text">1</span>-sonli</b>
-              shartnomaga asosan
-              <span id="selekt_id_text_2">Davlat byudjeti siyosati departamenti</span>
-              bo‘yicha 2025 yil <span id="rim_id_text">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
-              Ishlar texnologik xaritaga muvofiq amalga oshirildi.
-            </div>
-
-            <div class="mt-5">
-              <b> 1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
-            </div>
-
-            <div class="mt-5">
-              <b>1.1.</b> Biriktirilgan kompyuterlarga xizmat ko‘rsatish – <b id="techkomp">52</b>
-            </div>
-
-            <div class="mt-5">
-              <b>1.4.</b> A3 formatli printerlarga xizmat ko‘rsatish – <b id="techpr">2 dona.</b>
-            </div>
-
-            <div class="row mt-5">
-              <div class="col-6 text-center p-5"><b>
-                O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                <span id="selekt_id_text">Davlat byudjeti siyosati departamenti</span>
-                <br><br><br><br>
-                ________________ <span id="fio_id_text">Sh.Muxamedov</span>
-              </b></div>
-
-              <div class="col-6 text-center p-5"><b>
-                O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.
-                <br><br><br><br>
-                __________________ F.Xujamqulov
-              </b></div>
-            </div>
-
           </div>
+
         </div>
 
-        <div class="card">
-          <div class="card-body m-5">
-
-            <div class="text-end">
-              <span id="doc_date2">—</span> y
-            </div>
-
-            <div class="text-center">
-              <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
-            </div>
-
-            <div class="text-center">
-              <b>DEPARTMENT</b><br>
-              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                (boshqarma nomi)
-              </span>
-            </div>
-
-            <div class="text-center">
-              <span>Biz, </span>
-              <span><ins>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</ins></span><br>
-              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                (F.I.Sh.) (lavozimi)
-              </span>
-            </div>
-
-            <div><b>Xizmat ko‘rsatilyotgan texnikalarni rusumi seriya raqami:</b><br></div>
-            <div><b>Kompyuterlar (PC/Noutbuk/Planshet/Info-kiosk)</b><br></div>
-
-            <div class="text-center">
-              <table class="table table-bordered table-sm text-center align-middle">
-                <thead>
-                  <tr>
-                    <th>№</th>
-                    <th>Rusumi</th>
-                    <th>Kompyuter SR:</th>
-                    <th>Inventar raqami:</th>
-                  </tr>
-                </thead>
-                <tbody id="pc_tbody">
-                  <tr><td colspan="4" class="text-center text-muted">Filtr tanlang</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div><b>Printerlar (A4/A3/Skanner)</b><br></div>
-
-            <div class="text-center">
-              <table class="table table-bordered table-sm text-center align-middle">
-                <thead>
-                  <tr>
-                    <th>№</th>
-                    <th>Rusumi</th>
-                    <th>Kompyuter SR:</th>
-                  </tr>
-                </thead>
-                <tbody id="pr_tbody">
-                  <tr><td colspan="3" class="text-center text-muted">Filtr tanlang</td></tr>
-                </tbody>
-              </table>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-    </div>
+    </form>
   </section>
 
 </main>

@@ -8,7 +8,7 @@ from django.contrib.admin.models import LogEntry
 from .utils import *
 from django.core.files import File
 from io import BytesIO
-from .docx_tables import *
+from .html_pdf import *
 from .ajax_views import *
 import requests
 from PyPDF2 import PdfReader
@@ -20,6 +20,7 @@ from django.contrib.auth.decorators import login_required
 from datetime import datetime, timedelta
 from django.db import transaction
 from .forms import *
+from .models import *
 from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
 import uuid
@@ -30,7 +31,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import date
 import tempfile
 from django.core.files.base import ContentFile
-
+import secrets
 
 def global_data(request):
     return {
@@ -415,107 +416,58 @@ def deed_action(request, pk):
 
 @never_cache
 @login_required
-@transaction.atomic
-def deed_update(request, pk):
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
+def deed_edit(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
 
-    emp = getattr(request.user, "employee", None)
-    if not emp:
-        raise PermissionDenied("Employee yo‘q")
+    deed = get_object_or_404(Deed, pk=pk)
 
-    back_url = request.META.get("HTTP_REFERER", "/")
+    if request.method == "POST":
+        body = request.POST.get("body", "")
 
-    deed = get_object_or_404(
-        Deed.objects.select_related("user", "sender", "receiver"),
-        pk=pk
-    )
-    if getattr(deed, "user_id", None) != emp.id:
-        raise PermissionDenied("Siz bu xabarni tahrirlay olmaysiz")
+        if not body.strip():
+            messages.error(request, "Hujjat matni bo‘sh bo‘lmasin")
+            return redirect("deed_edit", pk=deed.pk)
 
-    sender_id = (request.POST.get("sender_id") or "").strip()
-    receiver_id = (request.POST.get("receiver_id") or "").strip()
-    agreements_ids = request.POST.getlist("agreements[]")
-    message = (request.POST.get("message") or "").strip()
-    upload_file = request.FILES.get("file")  # ixtiyoriy qilsak ham bo‘ladi
+        deed.body = body
+        deed.save()
 
-    if sender_id:
-        deed.sender = get_object_or_404(Employee, pk=sender_id)
-    if receiver_id:
-        deed.receiver = get_object_or_404(Employee, pk=receiver_id)
-    # message update
-    if hasattr(deed, "message_user"):
-        deed.message_user = message
-    deed.date_edit = timezone.now()
-    if upload_file:
-        ext = os.path.splitext(upload_file.name)[1].lower()
-        if ext not in [".docx", ".pdf"]:
-            messages.info(request, "❌ Faqat Word (DOCX) yoki PDF fayl yuklash mumkin")
-            return redirect(back_url)
+        # ✅ Eski PDFni o‘chiramiz (agar mavjud bo‘lsa)
+        if deed.file:
+            deed.file.delete(save=False)
 
-        old_path = deed.file.path if deed.file else None
+        # ✅ Yangi PDF generatsiya qilamiz
+        try:
+            pdf_bytes = deed_to_pdf_bytes(deed)
 
-        if ext == ".pdf":
-            deed.file = upload_file
-            deed.save()
-        else:
-            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp:
-                for chunk in upload_file.chunks():
-                    tmp.write(chunk)
-                tmp_docx_path = tmp.name
+            today_str = timezone.now().strftime("%Y%m%d")
+            alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+            random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+            pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
 
-            pdf_path = None
-            try:
-                pdf_path, debug = convert_docx_to_pdf_libre(tmp_docx_path)
-                if not pdf_path or not os.path.exists(pdf_path):
-                    messages.info(request, "❌ DOCX → PDF konvertatsiya xatosi")
-                    raise Exception(f"DOCX->PDF failed: {debug}")
+            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
-                with open(pdf_path, "rb") as f:
-                    deed.file.save(os.path.basename(pdf_path), File(f), save=True)
+        except HtmlPdfError as e:
+            messages.warning(request, f"PDF yangilanmadi: {e}")
 
-            finally:
-                try:
-                    os.remove(tmp_docx_path)
-                except Exception:
-                    pass
-                if pdf_path:
-                    try:
-                        os.remove(pdf_path)
-                    except Exception:
-                        pass
+        messages.success(request, "Taxrirlandi va PDF yangilandi")
+        return redirect("deed_edit", pk=deed.pk)
 
-        if old_path and os.path.exists(old_path):
-            try:
-                os.remove(old_path)
-            except Exception:
-                pass
+    return render(request, "main/deed_edit.html", {
+        "deed": deed
+    })
 
-    exclude_ids = set(
-        DeedConsent.objects.filter(deed=deed).values_list("employee_id", flat=True)
-    )
-    if deed.sender_id:
-        exclude_ids.add(deed.sender_id)
-    if deed.receiver_id:
-        exclude_ids.add(deed.receiver_id)
 
-    clean_ids = []
-    for x in agreements_ids:
-        x = (x or "").strip()
-        if x.isdigit():
-            clean_ids.append(int(x))
-    clean_ids = list(dict.fromkeys(clean_ids))
+from django.http import FileResponse
+def deed_approve_pdf(request, pk):
+    deed = get_object_or_404(Deed, pk=pk)
 
-    new_ids = [eid for eid in clean_ids if eid not in exclude_ids]
+    pdf_bytes = deed_to_pdf_bytes(request, deed)
+    pdf_name = f"deed/deed_{deed.id}.pdf"
+    deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
-    if new_ids:
-        qs = Employee.objects.filter(id__in=new_ids)
-        bulk = [DeedConsent(deed=deed, employee=e) for e in qs]
-        DeedConsent.objects.bulk_create(bulk)
-
-    deed.save()
-    messages.success(request, "Xabar yangilandi")
-    return redirect(back_url)
+    return FileResponse(deed.file.open("rb"), content_type="application/pdf")
 
 
 @login_required
@@ -1574,172 +1526,66 @@ def document_get(request):
 def document_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
+        messages.error(request, "Employee topilmadi")
+        return redirect("akt_get")
 
-    org_id = (request.POST.get("organization") or "").strip()
-    dep_id = (request.POST.get("department") or "").strip()
-
-    sender_id = (request.POST.get("sender") or "").strip() or None
-    receiver_id = (request.POST.get("receiver") or "").strip() or None  # agar formda bo'lsa
+    # formdan keladiganlar
+    sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
+    agreements = request.POST.getlist("agreements[]")
+    body = request.POST.get("body") or ""
 
-    # ✅ agreements list
-    agreements = request.POST.getlist("agreements[]")  # <select name="agreements[]">
+    # sender obyekt
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
+    if not sender:
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
+        return redirect("akt_get")
 
-    org = Organization.objects.filter(id=org_id).first() if org_id else None
-    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    if not dep:
-        return HttpResponse("Department topilmadi!", status=404)
+    if not body.strip():
+        messages.error(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+        return redirect("akt_get")
 
-    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
-    receiver = Employee.objects.filter(id=receiver_id).first() if receiver_id else None
-
-    # === TEXNIKA QS ===
-    komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
-    prin_names = ["A4 Printer", "Printer", "scaner"]
-
-    # ✅ Technics modelingizga mos (department bor)
-    base_qs = (
-        Technics.objects.filter(department_id=dep_id)
-        .select_related("category")
-        .distinct()
-    )
-
-    counts = (
-        base_qs.filter(category__name__in=komp_names + prin_names)
-        .values("category__name")
-        .annotate(c=Count("id"))
-    )
-    komp_count = sum(x["c"] for x in counts if x["category__name"] in komp_names)
-    prin_count = sum(x["c"] for x in counts if x["category__name"] in prin_names)
-
-    texnikalar_matni = ""
-    if komp_count > 0:
-        texnikalar_matni += f"1.1. Biriktirilgan kompyuterlarga xizmat ko‘rsatish – {komp_count} dona.\n"
-    if prin_count > 0:
-        texnikalar_matni += f"1.2. Printerlarga xizmat ko‘rsatish – {prin_count} dona.\n"
-    if not texnikalar_matni:
-        texnikalar_matni = "Texnikalar mavjud emas."
-
-    kompyuterlar = list(
-        base_qs.filter(category__name__in=komp_names).values("name", "serial", "inventory")
-    )
-    printerlar = list(
-        base_qs.filter(category__name__in=prin_names).values("name", "serial")
-    )
-
-    # === SHABLON ===
-    template_path = os.path.join(settings.MEDIA_ROOT, "document", "dalolatnoma.docx")
-    if not os.path.exists(template_path):
-        return HttpResponse("Shablon fayl topilmadi!", status=404)
-
-    doc = Document(template_path)
-
-    replacements = {
-        "DEPARTMENT": dep.name or "",
-        "FIO": employee.full_name or "",
-        "DATA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": getattr(org, "contract", "") or "",
-        "RIM": (request.POST.get("rim_id") or "1"),      # formdan olsa bo'ladi
-        "TEXNIKALAR": texnikalar_matni,
-    }
-
-    bold_keys = {"FIO", "DATA"}
-
-    # ⚠️ Sizdagi usul run-split bo'lsa ba'zan ishlamaydi, lekin hozircha qoldiryapman.
-    # (xohlasangiz keyin 100% replace funksiyasini qo'yib beraman)
-    for p in doc.paragraphs:
-        for run in p.runs:
-            txt = run.text
-            changed = False
-            for old, new in replacements.items():
-                if old in txt:
-                    txt = txt.replace(old, new)
-                    changed = True
-                    if old in bold_keys:
-                        run.font.bold = True
-            if changed:
-                run.text = txt
-                run.font.name = "Times New Roman"
-                run.font.size = Pt(12)
-
-    # === TABLE joyi ===
-    target_paragraph = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
-    if target_paragraph:
-        target_paragraph.text = ""
-
-    headers_pc = ["№", "Rusumi", "Kompyuter SR:", "Inventar raqami:"]
-    headers_printer = ["№", "Rusumi", "Printer SR:"]
-
-    heading1, table1 = create_table(
-        doc,
-        "Kompyuterlar (PC/Noutbuk/Planshet/Info-kiosk)",
-        kompyuterlar,
-        headers_pc
-    )
-    heading2, table2 = create_table(
-        doc,
-        "Printerlar (A4/A3/Skanner)",
-        printerlar,
-        headers_printer
-    )
-
-    if target_paragraph:
-        if table1:
-            target_paragraph._p.addnext(heading1._p)
-            heading1._p.addnext(table1._tbl)
-            if table2:
-                table1._tbl.addnext(heading2._p)
-                heading2._p.addnext(table2._tbl)
-        elif table2:
-            target_paragraph._p.addnext(heading2._p)
-            heading2._p.addnext(table2._tbl)
-
-    # === DOCX -> PDF ===
-    with tempfile.TemporaryDirectory() as tmpdir:
-        docx_path = os.path.join(tmpdir, "dalolatnoma.docx")
-        doc.save(docx_path)
-
-        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
-        if not pdf_path:
-            return HttpResponse("DOCX -> PDF convert xato!\n\n" + (debug or ""), content_type="text/plain", status=500)
-
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-
-    # === Deed yaratish ===
+    # ✅ Deed yaratamiz
     deed = Deed.objects.create(
-        sender=sender,
-        receiver=receiver,        # ✅ receiver alohida
-        user=employee,
+        sender=sender,  # FK obyekt
+        user=employee,  # FK obyekt
         message_user=message,
+        body=body,
+        file_type=True,
     )
-    deed.file.save("dalolatnoma.pdf", ContentFile(pdf_bytes), save=True)
 
-    # === agreements tozalash ===
+    # ✅ PDF yaratib deed.file ga saqlaymiz
+    try:
+        pdf_bytes = deed_to_pdf_bytes(deed)
+        today_str = timezone.now().strftime("%Y%m%d")
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+        pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+
+    except HtmlPdfError as e:
+        messages.warning(request, f"PDF yaratilmadi: {e}")
+
+    # ✅ kelishuvchilar IDs tozalash
     ids = []
-    for x in agreements:
+    for x in (agreements or []):
         x = (x or "").strip()
         if x.isdigit():
             ids.append(int(x))
-    ids = list(set(ids))
+    ids = list(set(ids))  # uniq
 
-    # sender, receiver, user(employee) ni exclude qilish
-    exclude_ids = set()
-    if sender:
-        exclude_ids.add(sender.id)
-    if receiver:
-        exclude_ids.add(receiver.id)
-    exclude_ids.add(employee.id)
-
+    # ✅ sender va hozirgi employee’ni exclude
+    exclude_ids = {employee.id, sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
+    # ✅ DeedConsent bulk_create
     if ids:
         emps = Employee.objects.filter(id__in=ids).only("id")
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Dalolatnoma yuborildi")
+    messages.success(request, "Akt yuborildi (PDF saqlandi)")
     return redirect("contact_user")
 
 
@@ -1887,98 +1733,6 @@ def order_post(request):
 
 @never_cache
 @login_required
-def order_deed(request, pk):
-    order = get_object_or_404(Order, pk=pk)
-
-    sender = order.sender
-
-    dep = (
-        sender.division.name if sender and sender.division else
-        sender.directorate.name if sender and sender.directorate else
-        sender.department.name if sender and sender.department else
-        sender.organization.name if sender and sender.organization else ""
-    )
-
-    emp_sen = (
-        Employee.objects.filter(
-            Q(organization=sender.organization) &
-            Q(department=sender.department) &
-            Q(directorate=sender.directorate) &
-            Q(division=sender.division),
-            rol__boss=True
-        )
-        .select_related("rank")
-        .first()
-    )
-
-    sender_text = ""
-    if emp_sen:
-        rank = emp_sen.rank.name if emp_sen.rank else ""
-        sender_text = f"{emp_sen.full_name} ({rank})" if rank else emp_sen.full_name
-
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
-
-    ORG_TEXT = {
-        "IVS": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
-        "IMV": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
-        "GAZNA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
-        "PENSIYA": "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
-    }
-
-    org_type = getattr(getattr(sender, "organization", None), "org_type", None)
-    org_name = ORG_TEXT.get(org_type, "")
-
-    replace_text(doc, {
-        "ID": f"№ {order.id}",
-        "ORGANIZATION": org_name,
-        "RECEIVER": (f"{order.receiver.full_name} ({order.receiver.rank.name})"
-                        if order.receiver and order.receiver.rank
-                        else (order.receiver.full_name if order.receiver else "")
-                    ),
-        "SENDER": sender_text,
-        "SANA": date.today().strftime("%d.%m.%Y"),
-        "DEPARTMENT": dep,
-    })
-
-    target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
-    if not target:
-        return HttpResponse("TABLE topilmadi", status=500)
-    target.text = ""
-
-    headers = ["№", "Qurilma Nomi", "Seriya", "Material", "Soni", "Birligi", "F.I.Sh.", "Lavozimi", "Narxi"]
-
-    rows = []
-    for om in order.materials.all():
-        rows.append([
-            order.technics.name if order.technics else "",
-            order.technics.serial if order.technics else "",
-            om.material.name if om.material else "",
-            om.number or "",
-            (om.material.unit if om.material and om.material.unit else "dona"),
-            sender.full_name if sender else "",
-            (sender.rank.name if sender and sender.rank else ""),
-            (f"{om.material.price:,}".replace(",", " ") if om.material and om.material.price else ""),
-        ])
-
-    h, table = create_table_akt(doc, "Biriktirilgan texnika bo‘yicha dalolatnoma", rows, headers)
-
-    target._p.addnext(h._p)
-    h._p.addnext(table._tbl)
-
-    buffer = BytesIO()
-    doc.save(buffer)
-    buffer.seek(0)
-
-    response = HttpResponse(
-        buffer.getvalue(),
-        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    )
-    response["Content-Disposition"] = f'attachment; filename="order_{order.id}.docx"'
-    return response
-
-
-@never_cache
-@login_required
 def order_receiver(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2047,143 +1801,66 @@ def order_receiver_deed(request,pk):
 def order_receiver_deed_post(request,pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
+        messages.error(request, "Employee topilmadi")
+        return redirect("akt_get")
 
-    order = get_object_or_404(Order, pk=pk)
-
-    sender_id = request.POST.get("sender") or None
+    # formdan keladiganlar
+    sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]") or []
+    agreements = request.POST.getlist("agreements[]")
+    body = request.POST.get("body") or ""
 
-    sender = Employee.objects.select_related("rank", "department", "organization").filter(id=sender_id).first()
+    # sender obyekt
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
-        messages.error(request, "Imzolovchi xodim tanlanmagan!")
-        return redirect("order_receiver_deed", pk=order.pk)
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
+        return redirect("akt_get")
 
-    # ✅ OrderMaterial
-    qs = (
-        OrderMaterial.objects
-        .filter(order=order)
-        .select_related("material__unit", "order__technics", "order__sender__rank")
-    )
+    if not body.strip():
+        messages.error(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+        return redirect("akt_get")
 
-    # ✅ Organization/Department (field nomlarini sizdagi modelga mos)
-    dep = getattr(order.sender, "department", None)
-    org = getattr(order.sender, "organization", None)  # agar sizda organizator bo‘lsa, shu yerda moslang
-
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
-
-    ORG_TEXT = {
-        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
-        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
-        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
-        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
-    }
-
-    org_id = getattr(org, "id", None)
-    org_name = ORG_TEXT.get(org_id, "") if org_id else ""
-
-    replace_text(doc, {
-        "ORGANIZATION": org_name,
-        "ID": str(order.id),
-        "SANA": date.today().strftime("%d.%m.%Y"),
-        "RECEIVER": employee.full_name if hasattr(employee, "full_name") else str(employee),
-        "SENDER": sender.full_name,
-        "DEPARTMENT": dep.name if dep else "",
-        "CONTRACT": str(getattr(org, "contract", "") or ""),
-    })
-
-    target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
-    if not target:
-        return HttpResponse("TABLE topilmadi", status=500)
-
-    target.text = ""
-    target.paragraph_format.space_before = Pt(0)
-    target.paragraph_format.space_after = Pt(0)
-    target.paragraph_format.line_spacing = 1
-
-    headers = [
-        "№",
-        "Ish bajarilgan qurilma nomi",
-        "Qurilma seriya raqami",
-        "Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi",
-        "Soni",
-        "O'lchov birligi",
-        "F.I.Sh.",
-        "Lavozimi",
-        "Eslatma*",
-    ]
-
-    rows = []
-    for q in qs:
-        rows.append([
-            q.order.technics.name if q.order.technics else "",
-            q.order.technics.serial if q.order.technics else "",
-            q.material.name if q.material else "",
-            q.number or "",
-            (q.material.unit if q.material and q.material.unit else "dona"),
-            q.order.sender.full_name if q.order and q.order.sender else "",
-            (q.order.sender.rank.name if q.order and q.order.sender and q.order.sender.rank else ""),
-            f"{q.material.price:,}".replace(",", " ") if q.material and q.material.price else "",
-        ])
-
-    h, table = create_table_akt(
-        doc,
-        "Biriktirilgan texnika bo‘yicha dalolatnoma",
-        rows,
-        headers
-    )
-
-    target._p.addnext(h._p)
-    h._p.addnext(table._tbl)
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        docx_path = os.path.join(tmpdir, "order.docx")
-        doc.save(docx_path)
-
-        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
-        if not pdf_path:
-            return HttpResponse(
-                "DOCX -> PDF convert xato!\n\n" + debug,
-                content_type="text/plain",
-                status=500
-            )
-
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-
+    # ✅ Deed yaratamiz
     deed = Deed.objects.create(
-        sender=sender,  # ✅ obyekt
-        user=employee,
+        sender=sender,  # FK obyekt
+        user=employee,  # FK obyekt
         message_user=message,
+        body=body,
+        file_type=False,  # ✅ True/False
     )
-    # ✅ FileField ga saqlash
-    deed.file.save("akt.pdf", ContentFile(pdf_bytes), save=True)
 
-    # ✅ agreements id larini tozalash
-    agreements = agreements or []  # ✅ ekstra xavfsizlik
+    # ✅ PDF yaratib deed.file ga saqlaymiz
+    try:
+        pdf_bytes = deed_to_pdf_bytes(deed)
+        today_str = timezone.now().strftime("%Y%m%d")
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+        pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
+    except HtmlPdfError as e:
+        messages.warning(request, f"PDF yaratilmadi: {e}")
+
+    # ✅ kelishuvchilar IDs tozalash
     ids = []
-    for x in agreements:
+    for x in (agreements or []):
         x = (x or "").strip()
         if x.isdigit():
             ids.append(int(x))
-    ids = list(set(ids))
+    ids = list(set(ids))  # uniq
 
-    # ✅ sender va receiver(employee) ni exclude qilish
-    exclude_ids = set()
-    if sender:
-        exclude_ids.add(sender.id)
-    exclude_ids.add(employee.id)
-
+    # ✅ sender va hozirgi employee’ni exclude
+    exclude_ids = {employee.id, sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
+    # ✅ DeedConsent bulk_create
     if ids:
         emps = Employee.objects.filter(id__in=ids).only("id")
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Ariza yuborildi")
+    messages.success(request, "Akt yuborildi (PDF saqlandi)")
     return redirect("contact_user")
 
 
@@ -2205,7 +1882,6 @@ def order_receiver_activ(request):
     if my_materials.exists():
         materials = my_materials
     else:
-        # 2) bo'limdagi omborchi (shop=True) materiallari
         materials = Material.objects.filter(
             employee__rol__shop=True,
             employee__region=employee.region,
@@ -2345,160 +2021,79 @@ def akt_get(request):
         raise PermissionDenied
 
     context = {
-        "organizations": Organization.objects.all(),
+        "organizations": Organization.objects.all().order_by("id"),
     }
     return render(request, "main/akt.html", context)
+
 
 
 @never_cache
 @login_required
 @require_POST
+@transaction.atomic
 def akt_post(request):
-    if request.method != "POST":
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
+        messages.error(request, "Employee topilmadi")
         return redirect("akt_get")
 
-    employee = getattr(request.user, "employee", None)
-    org_id = request.POST.get("organization") or None
-    dep_id = request.POST.get("department") or None
-    sender_id = request.POST.get("sender") or None
-    message = request.POST.get("message", "").strip() or None
+    # formdan keladiganlar
+    sender_id = (request.POST.get("sender") or "").strip()
+    message = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
+    body = request.POST.get("body") or ""
 
-    date_id1 = request.POST.get("date1")
-    date_id2 = request.POST.get("date2")
+    # sender obyekt
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
+    if not sender:
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
+        return redirect("akt_get")
 
-    # Sana parse
-    date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
-    date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
+    if not body.strip():
+        messages.error(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+        return redirect("akt_get")
 
-    qs = OrderMaterial.objects.filter(
-        order__date_finished__gte=date1,
-        order__date_finished__lt=date2,
-        order__sender__department_id=dep_id,
-        order__receiver__region=request.user.employee.region,
-    )
-
-    org = Organization.objects.filter(id=org_id).first() if org_id else None
-    dep = Department.objects.filter(id=dep_id).first() if dep_id else None
-    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
-
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "akt.docx"))
-
-    ORG_TEXT = {
-        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazining vakillari:",
-        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi tashkiloti vakillari:",
-        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi vakillari:",
-        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi vakillari:",
-    }
-    org_name = ORG_TEXT.get(org.id, "") if org else ""
-
-    replace_text(doc, {
-        "ORGANIZATION": org_name,
-        "ID": "",
-        "SANA": date.today().strftime("%d.%m.%Y"),
-        "RECEIVER": employee.full_name if employee else "",
-        "RANK_R": f"({employee.rank.name})" if employee and employee.rank else "",
-        "SENDER": sender.full_name if sender else "",
-        "RANK_S": f"({sender.rank.name})" if sender and sender.rank else "",
-        "DEPARTMENT": dep.name if dep else "",
-        "CONTRACT": f"{org.contract}ga muvofiq" if org and org.contract else "",
-    })
-
-    target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
-    if not target:
-        return HttpResponse("TABLE topilmadi", status=500)
-
-    target.text = ""
-    target.paragraph_format.space_before = Pt(0)
-    target.paragraph_format.space_after = Pt(0)
-    target.paragraph_format.line_spacing = 1
-
-    headers = [
-        "№",
-        "Ish bajarilgan qurilma nomi",
-        "Qurilma seriya raqami",
-        "Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi",
-        "Soni",
-        "O'lchov birligi",
-        "F.I.Sh.",
-        "Lavozimi",
-        "Eslatma*",
-        "So'rovnoma №",
-        "Materiallarni O'rnatish sanasi",
-    ]
-
-    rows = []
-    for q in qs:
-        rows.append([
-            q.order.technics.name if q.order.technics else "",
-            q.order.technics.serial if q.order.technics else "",
-            q.material.name if q.material else "",
-            q.number or "",
-            (q.material.unit if q.material and q.material.unit else "dona"),
-            q.order.sender.full_name if q.order and q.order.sender else "",
-            (q.order.sender.rank.name if q.order and q.order.sender and q.order.sender.rank else ""),
-            f"{q.material.price:,}".replace(",", " ") if q.material and q.material.price else "",
-            q.order.id if q.id else "",
-            q.order.date_creat.strftime("%d.%m.%Y") if q.order and q.order.date_creat else "",
-        ])
-
-    h, table = create_table_akt_all(
-        doc,
-        "Biriktirilgan texnika bo‘yicha dalolatnoma",
-        rows,
-        headers
-    )
-
-    target._p.addnext(h._p)
-    h._p.addnext(table._tbl)
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        docx_path = os.path.join(tmpdir, "order.docx")
-        doc.save(docx_path)
-
-        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
-        if not pdf_path:
-            return HttpResponse(
-                "DOCX -> PDF convert xato!\n\n" + debug,
-                content_type="text/plain",
-                status=500
-            )
-
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-
+    # ✅ Deed yaratamiz
     deed = Deed.objects.create(
-        sender=sender,  # ✅ obyekt
-        user=employee,
+        sender=sender,          # FK obyekt
+        user=employee,          # FK obyekt
         message_user=message,
+        body=body,
+        file_type=False,    # ✅ True/False
     )
-    # ✅ FileField ga saqlash
-    deed.file.save("akt.pdf", ContentFile(pdf_bytes), save=True)
 
-    # ✅ agreements id larini tozalash
-    agreements = agreements or []  # ✅ ekstra xavfsizlik
+    # ✅ PDF yaratib deed.file ga saqlaymiz
+    try:
+        pdf_bytes = deed_to_pdf_bytes(deed)
+        today_str = timezone.now().strftime("%Y%m%d")
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+        pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
+    except HtmlPdfError as e:
+        messages.warning(request, f"PDF yaratilmadi: {e}")
+
+    # ✅ kelishuvchilar IDs tozalash
     ids = []
-    for x in agreements:
+    for x in (agreements or []):
         x = (x or "").strip()
         if x.isdigit():
             ids.append(int(x))
-    ids = list(set(ids))
+    ids = list(set(ids))  # uniq
 
-    # ✅ sender va receiver(employee) ni exclude qilish
-    exclude_ids = set()
-    if sender:
-        exclude_ids.add(sender.id)
-    exclude_ids.add(employee.id)
-
+    # ✅ sender va hozirgi employee’ni exclude
+    exclude_ids = {employee.id, sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
+    # ✅ DeedConsent bulk_create
     if ids:
         emps = Employee.objects.filter(id__in=ids).only("id")
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Ariza yuborildi")
+    messages.success(request, "Akt yuborildi (PDF saqlandi)")
     return redirect("contact_user")
 
 
@@ -2520,185 +2115,73 @@ def svod_get(request):
     return render(request, 'main/svod.html', context)
 
 
-from collections import OrderedDict
 @never_cache
 @login_required
 def svod_post(request):
-    if request.method != "POST":
-        return redirect("document_get")
-
     employee = getattr(request.user, "employee", None)
-    org_id = request.POST.get("organization") or None
-    sender_id = request.POST.get("sender") or None
-    message = request.POST.get("message", "").strip() or None
+    if not employee:
+        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
+        messages.error(request, "Employee topilmadi")
+        return redirect("akt_get")
+
+    # formdan keladiganlar
+    sender_id = (request.POST.get("sender") or "").strip()
+    message = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
+    body = request.POST.get("body") or ""
 
-    date_id1 = request.POST.get("date1")
-    date_id2 = request.POST.get("date2")
+    file_type = False
 
-    date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
-    date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
+    # sender obyekt
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
+    if not sender:
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
+        return redirect("akt_get")
 
-    qs = OrderMaterial.objects.filter(
-        material__employee=employee,
-        order__date_finished__gte=date1,
-        order__date_finished__lt=date2,
-        order__sender__organization_id=org_id,
-        order__receiver__region=request.user.employee.region,
-    )
+    if not body.strip():
+        messages.error(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+        return redirect("akt_get")
 
-    org = Organization.objects.filter(id=org_id).first() if org_id else None
-    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
-    doc = Document(os.path.join(settings.MEDIA_ROOT, "document", "svod.docx"))
-
-    ORG_TEXT = {
-        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazi",
-        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
-        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
-        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
-    }
-    org_name = ORG_TEXT.get(org.id, "") if org else ""
-    OY_NOMLARI = [
-        "",  # index 0 ishlatilmaydi
-        "yanvar", "fevral", "mart", "aprel", "may", "iyun",
-        "iyul", "avgust", "sentyabr", "oktabr", "noyabr", "dekabr"
-    ]
-    year = date1.year
-    month_name = OY_NOMLARI[date1.month]
-
-    oy_matni = f"{year} yil {month_name} oyi uchun"
-    replace_text(doc, {
-        "DATE": oy_matni,
-        "EMPLOYEE": employee.full_name,
-        "RANK": employee.rank.name,
-        "ORGANIZATION": org_name,
-        "SANA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
-    })
-
-    target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
-    if not target:
-        return HttpResponse("TABLE topilmadi", status=500)
-
-    # TABLE paragrafini tozalaymiz
-    target.text = ""
-    target.paragraph_format.space_before = Pt(0)
-    target.paragraph_format.space_after = Pt(0)
-    target.paragraph_format.line_spacing = 1
-
-    headers = [
-        "№", "Materialning nomi", "O'lchov birligi", "Miqdori",
-        "Birlik narxi", "Umumiy qiymati", "Eslatma", "Kod 1С"
-    ]
-
-    rows_map = OrderedDict()
-
-    for q in qs:
-        if not q.material:
-            continue
-
-        unit_price = q.material.price or 0
-        qty = q.number or 0
-        total = unit_price * qty
-
-        code = getattr(q.material, "code", "") or ""
-        unit = (q.material.unit or "dona")
-        name = q.material.name or ""
-
-        # Guruhlash kaliti: bitta material
-        key = (q.material.id, name, unit, code)
-
-        # Eslatma: Akt №ID ga DD.MM.YYYYy,
-        eslatma_one = ""
-        if q.order and q.order.date_creat:
-            eslatma_one = f"Akt №{q.order.id} ga  {q.order.date_creat.strftime('%d.%m.%Y')} y,\n"
-
-        if key not in rows_map:
-            rows_map[key] = {
-                "name": name,
-                "unit": unit,
-                "qty": 0,
-                "unit_price": unit_price,  # material narxi (doim bir xil deb oldik)
-                "total": 0,
-                "notes": [],
-                "code": code,
-                "order_seen": set(),  # bitta order qayta yozilib qolmasin
-            }
-
-        rows_map[key]["qty"] += qty
-        rows_map[key]["total"] += total
-
-        # Eslatmada order id lar unik bo‘lsin
-        if q.order_id and q.order_id not in rows_map[key]["order_seen"] and eslatma_one:
-            rows_map[key]["notes"].append(eslatma_one)
-            rows_map[key]["order_seen"].add(q.order_id)
-
-    grand_total = sum(int(v.get("total") or 0) for v in rows_map.values())
-
-    rows = []
-    for _, v in rows_map.items():
-        note_text = " ".join(v["notes"])  # uzun bo‘lsa: "\n".join(v["notes"]) qiling
-
-        rows.append([
-            v["name"],
-            v["unit"],
-            v["qty"],  # yig‘indi
-            f"{v['unit_price']:,}".replace(",", " "),
-            f"{v['total']:,}".replace(",", " "),
-            note_text,
-            v["code"],
-        ])
-
-    table = create_table_cols_svod(doc, rows, headers, grand_total=grand_total)
-    target._p.addnext(table._tbl)
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        docx_path = os.path.join(tmpdir, "order.docx")
-        doc.save(docx_path)
-
-        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
-        if not pdf_path:
-            return HttpResponse(
-                "DOCX -> PDF convert xato!\n\n" + debug,
-                content_type="text/plain",
-                status=500
-            )
-
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-
+    # ✅ Deed yaratamiz
     deed = Deed.objects.create(
-        sender=sender,  # ✅ obyekt
-        user=employee,
+        sender=sender,  # FK obyekt
+        user=employee,  # FK obyekt
         message_user=message,
+        body=body,
+        file_type=file_type,  # ✅ True/False
     )
-    # ✅ FileField ga saqlash
-    deed.file.save("akt.pdf", ContentFile(pdf_bytes), save=True)
 
-    # ✅ agreements id larini tozalash
-    agreements = agreements or []  # ✅ ekstra xavfsizlik
+    # ✅ PDF yaratib deed.file ga saqlaymiz
+    try:
+        pdf_bytes = deed_to_pdf_bytes(deed)
+        today_str = timezone.now().strftime("%Y%m%d")
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+        pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
+    except HtmlPdfError as e:
+        messages.warning(request, f"PDF yaratilmadi: {e}")
+
+    # ✅ kelishuvchilar IDs tozalash
     ids = []
-    for x in agreements:
+    for x in (agreements or []):
         x = (x or "").strip()
         if x.isdigit():
             ids.append(int(x))
-    ids = list(set(ids))
+    ids = list(set(ids))  # uniq
 
-    # ✅ sender va receiver(employee) ni exclude qilish
-    exclude_ids = set()
-    if sender:
-        exclude_ids.add(sender.id)
-    exclude_ids.add(employee.id)
-
+    # ✅ sender va hozirgi employee’ni exclude
+    exclude_ids = {employee.id, sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
+    # ✅ DeedConsent bulk_create
     if ids:
         emps = Employee.objects.filter(id__in=ids).only("id")
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Ariza yuborildi")
+    messages.success(request, "Akt yuborildi (PDF saqlandi)")
     return redirect("contact_user")
 
 
@@ -2723,186 +2206,70 @@ def reestr_get(request):
 @never_cache
 @login_required
 def reestr_post(request):
-    if request.method != "POST":
-        return redirect("document_get")
-
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
+        messages.error(request, "Employee topilmadi")
+        return redirect("akt_get")
 
     # formdan keladiganlar
-    org_id = request.POST.get("organization") or None
-    date_id1 = request.POST.get("date1") or ""
-    date_id2 = request.POST.get("date2") or ""
-
-    # agar siz deed yaratishda ishlatsangiz (sizning oldingi akt_post uslubingizga mos)
-    sender_id = request.POST.get("sender") or None
+    sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]")  # select2 bo'lsa
+    agreements = request.POST.getlist("agreements[]")
+    body = request.POST.get("body") or ""
 
-    if not org_id or not date_id1 or not date_id2:
-        return HttpResponse("organization/date1/date2 shart", status=400)
+    file_type = False
 
-    # sana parse
-    try:
-        date1 = timezone.make_aware(datetime.strptime(date_id1, "%Y-%m-%d"))
-        date2 = timezone.make_aware(datetime.strptime(date_id2, "%Y-%m-%d") + timedelta(days=1))
-    except ValueError:
-        return HttpResponse("Sana formati noto'g'ri (YYYY-MM-DD)", status=400)
-
-    org = Organization.objects.filter(id=org_id).first()
-
-    # ✅ N+1 oldini olish
-    qs = (
-        OrderMaterial.objects.filter(
-            material__employee=employee,
-            order__date_finished__gte=date1,
-            order__date_finished__lt=date2,
-            order__sender__organization_id=org_id,
-            order__receiver__region=employee.region,
-        )
-        .select_related(
-            "order",
-            "order__technics",
-            "order__sender",
-            "order__sender__rank",
-            "order__sender__department",
-            "order__receiver",
-            "material",
-        )
-    )
-
-    # ✅ rows va grand_total
-    rows = []
-    grand_total = Decimal("0")
-
-    for q in qs:
-        technics = q.order.technics if (q.order and q.order.technics) else None
-        material = q.material
-
-        # xavfsiz Decimal
-        price = Decimal(str(material.price)) if (material and material.price is not None) else Decimal("0")
-        number = Decimal(str(q.number)) if q.number is not None else Decimal("0")
-        total = price * number
-        grand_total += total
-
-        sender_emp = q.order.sender if q.order else None
-        receiver_emp = q.order.receiver if q.order else None
-
-        rows.append([
-            technics.name if technics else "",
-            technics.serial if technics else "",
-            material.name if material else "",
-            str(number),                    # soni
-            str(price),                     # birlik narx
-            str(total),                     # umumiy
-            (sender_emp.full_name if sender_emp else ""),
-            (sender_emp.rank.name if (sender_emp and sender_emp.rank) else ""),
-            (sender_emp.department.name if (sender_emp and sender_emp.department) else ""),
-            (receiver_emp.full_name if receiver_emp else ""),
-            (q.order.date_creat.strftime("%d.%m.%Y") if (q.order and q.order.date_creat) else ""),
-            (str(q.order.id) if q.order else ""),
-            (q.order.date_finished.strftime("%d.%m.%Y") if (q.order and q.order.date_finished) else ""),
-            (material.code if (material and material.code) else ""),
-        ])
-
-    # ✅ DOCX template
-    template_path = os.path.join(settings.MEDIA_ROOT, "document", "reestr.docx")
-    if not os.path.exists(template_path):
-        return HttpResponse(f"Template topilmadi: {template_path}", status=500)
-
-    doc = Document(template_path)
-
-    ORG_TEXT = {
-        4: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalar markazi",
-        1: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi",
-        2: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi G'aznachilik qo'mitasi",
-        3: "O'zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Budjetdan tashqari pensiya jamg'armasi",
-    }
-    org_name = ORG_TEXT.get(org.id, "") if org else ""
-    OY_NOMLARI = [
-        "",  # index 0 ishlatilmaydi
-        "yanvar", "fevral", "mart", "aprel", "may", "iyun",
-        "iyul", "avgust", "sentyabr", "oktabr", "noyabr", "dekabr"
-    ]
-    year = date1.year
-    month_name = OY_NOMLARI[date1.month]
-
-    oy_matni = f"{year} yil {month_name} oyi uchun"
-    replace_text(doc, {
-        "DATE": oy_matni,
-        "EMPLOYEE": employee.full_name,
-        "RANK": employee.rank.name,
-        "ORGANIZATION": org_name,
-        "SANA": date.today().strftime("%d.%m.%Y"),
-        "CONTRACT": f"{org.contract} ga muvofiq" if org and org.contract else "",
-    })
-
-    # TABLE placeholder paragrafini topamiz
-    target = next((p for p in doc.paragraphs if "TABLE" in p.text), None)
-    if not target:
-        return HttpResponse("DOCX ichidan TABLE placeholder topilmadi", status=500)
-
-    # TABLE paragrafini tozalash
-    target.text = ""
-    target.paragraph_format.space_before = Pt(0)
-    target.paragraph_format.space_after = Pt(0)
-    target.paragraph_format.line_spacing = 1
-
-    # ✅ jadval yaratish + qo'shish
-    table = create_table_cols_reestr(doc, rows, grand_total=grand_total)
-    target._p.addnext(table._tbl)
-
-    # ✅ docx -> pdf
-    with tempfile.TemporaryDirectory() as tmpdir:
-        docx_path = os.path.join(tmpdir, "reestr.docx")
-        doc.save(docx_path)
-
-        pdf_path, debug = convert_docx_to_pdf_libre(docx_path)
-        if not pdf_path:
-            return HttpResponse(
-                "DOCX -> PDF convert xato!\n\n" + (debug or ""),
-                content_type="text/plain",
-                status=500
-            )
-
-        with open(pdf_path, "rb") as f:
-            pdf_bytes = f.read()
-
-    # ✅ sender aniqlash (bo'lmasa employee)
-    sender = Employee.objects.filter(id=sender_id).first() if sender_id else None
+    # sender obyekt
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
-        sender = employee
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
+        return redirect("akt_get")
 
-    # ✅ Deed yaratish va PDF saqlash
+    if not body.strip():
+        messages.error(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+        return redirect("akt_get")
+
+    # ✅ Deed yaratamiz
     deed = Deed.objects.create(
-        sender=sender,
-        user=employee,
+        sender=sender,  # FK obyekt
+        user=employee,  # FK obyekt
         message_user=message,
+        body=body,
+        file_type=file_type,  # ✅ True/False
     )
-    deed.file.save("reestr.pdf", ContentFile(pdf_bytes), save=True)
 
-    # ✅ agreements larni tozalash
-    agreements = agreements or []
+    # ✅ PDF yaratib deed.file ga saqlaymiz
+    try:
+        pdf_bytes = deed_to_pdf_bytes(deed)
+        today_str = timezone.now().strftime("%Y%m%d")
+        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+        random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+        pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+
+    except HtmlPdfError as e:
+        messages.warning(request, f"PDF yaratilmadi: {e}")
+
+    # ✅ kelishuvchilar IDs tozalash
     ids = []
-    for x in agreements:
+    for x in (agreements or []):
         x = (x or "").strip()
         if x.isdigit():
             ids.append(int(x))
-    ids = list(set(ids))
+    ids = list(set(ids))  # uniq
 
-    # sender va employee ni consentdan chiqaramiz
-    exclude_ids = {employee.id}
-    if sender:
-        exclude_ids.add(sender.id)
+    # ✅ sender va hozirgi employee’ni exclude
+    exclude_ids = {employee.id, sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
+    # ✅ DeedConsent bulk_create
     if ids:
         emps = Employee.objects.filter(id__in=ids).only("id")
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Reestr yuborildi")
+    messages.success(request, "Akt yuborildi (PDF saqlandi)")
     return redirect("contact_user")
 
 
@@ -2925,3 +2292,4 @@ def technics_get(request):
         'technics': technics,
     }
     return render(request, 'main/technics_get.html', context)
+

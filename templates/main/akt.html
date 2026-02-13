@@ -6,7 +6,6 @@
 {% endblock title %}
 
 {% block css %}
-  {# Agar Select2 sizning base.html da ulangan bo‘lsa, quyidagi 2 qatorni olib tashlasa ham bo‘ladi #}
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock css %}
 
@@ -19,9 +18,11 @@
   </div>
 
   <section class="section">
-    <div class="row">
+    <form class="row" action="{% url 'akt_post' %}" method="post">{% csrf_token %}
+
+      <!-- LEFT: FILTER + SIGN -->
       <div class="col-lg-4">
-        <form action="{% url 'akt_post' %}" method="post">{% csrf_token %}
+
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Filtrlash</h5>
@@ -77,15 +78,12 @@
                   <label for="sender" class="form-label">Imzolovchi xodim:</label>
                   <select id="sender" name="sender" class="form-select" required>
                     <option value="">Tanlang...</option>
-                    {# Endi buni backenddan to‘ldirish shart emas — department tanlanganda ajax_dep_signatory to‘ldiradi #}
                   </select>
                 </div>
 
                 <div class="col-12">
                   <label for="agreements" class="form-label">Kelishuvchilar :</label>
-                  <select id="agreements" name="agreements[]" class="form-select" multiple>
-                    {# Endi buni backenddan to‘ldirish shart emas — department tanlanganda ajax_dep_negotiator to‘ldiradi #}
-                  </select>
+                  <select id="agreements" name="agreements[]" class="form-select" multiple></select>
                 </div>
 
                 <div class="col-12">
@@ -100,120 +98,169 @@
 
             </div>
           </div>
-        </form>
+
       </div>
 
+      <!-- RIGHT: TINYMCE -->
       <div class="col-lg-8">
         <div class="card">
-          <div class="card-body mt-5">
-            <div class="text-center"><b>Sarf materiallari, ehtiyot qismlar va uskunalar o'rnatish ishlari haqida</b></div>
-            <div class="text-center"><b>DALOLATNOMA</b></div>
+          <div class="card-body">
+            <h5 class="card-title">TinyMCE Editor</h5>
 
-            <div class="text-end">
-              <span id="doc_date">—</span>
-            </div>
+              <textarea id="body" name="body" class="tinymce-editor">
+                <div style="text-align:center;">
+                  <b>Sarf materiallari, ehtiyot qismlar va uskunalarni o‘rnatish ishlari haqida</b>
+                </div>
+                <div style="text-align:center;">
+                  <b>DALOLATNOMA</b>
+                </div>
+                <div style="text-align:right;">
+                  <u id="doc_date">12.02.2026 y</u>
+                </div>
+                <div style="text-align:center;">
+                  Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
+                  “Axborot texnologiyalari markazi” davlat unitar korxonasining vakillari:
+                </div>
+                <div style="text-align:center;">
+                  <b><u>Ikromov Isroil Ilxomovich (2-toifali mutaxassis)</u></b>
+                </div>
+                <div style="text-align:center;font-size:8pt;">
+                  (F.I.Sh., ATM mutaxassisining lavozimi)
+                </div>
 
-            <div class="text-center">
-              Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
-              “Axborot texnalogiyalar markazi” davlat unitar korxonasining vakillari:
-            </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <span>O‘zbekiston Respublikasi <span id="org_id_1">Axborot texnologiyalari markazi</span> tashkiloti vakili:</span><br>
+                          <b id="sender_name1"><u>Ikromov Isroil Ilxomovich (2-toifali mutaxassis)</u></b><br>
+                          <span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <span>Axborot texnologiyalari markazi</span><br>
+                          <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
-            <div class="text-center">
-              <b><ins>{{request.user.employee.full_name}} ({{ request.user.employee.rank.name }})</ins></b><br>
-              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                (FIO, ATM mutaxassisning lavozimi)
-              </span>
-            </div>
+                <div style="text-align:center;margin-top:12px;">
+                  <b><u>Quyida ko‘rsatilgan materiallarni o‘rnatish</u></b><br>
+                  <span style="text-align:center;font-size:8pt;">(ATM mutaxassislari tomonidan bajarilgan ish turlari bo‘yicha tafsilotlar)</span>
+                </div>
 
-            <div class="row text-center">
-              <div class="col-6">
-                <span>O‘zbekiston Respublikasi <span id="org_id_1">—</span> tashkiloti vakili:</span><br>
-                <b><ins id="sender_name1">—</ins></b><br>
-                <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">(FIO, lavozimi)</span>
-              </div>
-              <div class="col-6">
-                <b><ins id="dep_id">—</ins></b><br>
-                <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
-              </div>
-            </div>
+                <div style="margin-top:10px;">
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <strong>Iqtisodiyot va Moliya vazirligi huzuridagi ATM tomonidan</strong><br>
+                          <strong>quyidagi sarf materiallari, ehtiyot qismlar va uskunalar o‘rnatildi:</strong>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <strong>2025-yil 4-martdagi 1-son shartnomaga muvofiq</strong>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
 
-            <div class="text-center">
-              <b><ins>Quyda ko’rsatilgan materiallarni o’rnatish</ins></b><br>
-              <span class="small text-muted d-block" style="font-size:10px; margin-top:-2px;">
-                (ATM mutaxassislari tomonidan bajarilgan ish turlari bo'yicha tafsilotlar)
-              </span>
-            </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;" border="1">
+                    <colgroup>
+                      <col style="width:3%;">
+                      <col style="width:13%;">
+                      <col style="width:10%;">
+                      <col style="width:22%;">
+                      <col style="width:4%;">
+                      <col style="width:6%;">
+                      <col style="width:12%;">
+                      <col style="width:12%;">
+                      <col style="width:8%;">
+                      <col style="width:5%;">
+                      <col style="width:5%;">
+                    </colgroup>
 
-            <div class="row text-center">
-              <div class="col-6">
-                <b>Iqtisodiyot va Moliya vazirligining huzuridagi ATM tomonidan</b><br>
-                <b>quyidagi materiallari, ehtiyot qismlar va uskunalar o'rnatildi:</b>
-              </div>
-              <div class="col-6">
-                <b>4 - mart 2025 yildagi 1 - sonli shartnomaga muvofiq</b>
-              </div>
-            </div>
+                    <!-- ✅ MUHIM: TinyMCE tbody'ni merge qilib yubormasligi uchun
+                         header + data bir xil tbody ichida bo‘lsin -->
+                    <tbody id="materials_tbody">
+                      <tr>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">№</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Ish bajarilgan qurilma nomi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Qurilma seriya raqami</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Sarf materiallari, ehtiyot qismlar, uskunalar nomi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Soni</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">O‘lchov birligi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;" colspan="5">
+                          Kimga o‘rnatildi yoki o‘rnatilganligini tasdiqlovchi mas’ul shaxs (xarajatlar)
+                        </td>
+                      </tr>
 
-            <div class="text-center">
-              <table class="table table-bordered table-sm text-center align-middle" style="font-size:10px;">
-                <thead>
-                  <tr>
-                    <th rowspan="2" class="text-center align-middle">№</th>
-                    <th rowspan="2" class="text-center align-middle">Ish bajarilgan qurilmaning nomi</th>
-                    <th rowspan="2" class="text-center align-middle">Qurilmaning seriya raqami</th>
-                    <th rowspan="2" class="text-center align-middle">Sarf materiallari, ehtiyot qismlar, uskunalar va boshqalar nomi</th>
-                    <th rowspan="2" class="text-center align-middle">Soni</th>
-                    <th rowspan="2" class="text-center align-middle">O‘lchov birligi</th>
-                    <th colspan="5" class="text-center align-middle">
-                      Kimga o‘rnatildi yoki o‘rnatilganligini tasdiqlovchi mas’ul shaxs (xarajatlar)
-                    </th>
-                  </tr>
-                  <tr>
-                    <th class="text-center align-middle">F.I.Sh.</th>
-                    <th class="text-center align-middle">Lavozimi</th>
-                    <th class="text-center align-middle">Eslatma*</th>
-                    <th class="text-center align-middle">So‘rovnoma №</th>
-                    <th class="text-center align-middle">Materiallarni o‘rnatish sanasi</th>
-                  </tr>
-                </thead>
-                <tbody id="materials_tbody">
-                  <tr>
-                    <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+                      <tr>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">F.I.Sh.</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Lavozimi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Eslatma*</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">So‘rovnoma №</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">O‘rnatish sanasi</td>
+                      </tr>
 
-            <div>
-              <b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b>
-              <p>Izoh: o'rnatilgan ehtiyot qismlar yoki asbob-uskunalar birlikdagi narxi, buxgalteriya hisobini yuritish uchun.</p>
-            </div>
+                      <!-- material qatorlari JS orqali shu tbody'ga qo‘shiladi -->
+                    </tbody>
+                  </table>
+                </div>
 
-            <div class="row text-center">
-              <div class="col-6">
-                <b>Xizmat ko'rsatuvchinig vakili:</b><br>
-                <span>{{request.user.employee.full_name}}</span><br>
-              </div>
-              <div class="col-6">
-                <b><span>O‘zbekiston Respublikasi <span id="org_id_2">—</span> tashkiloti vakili:</span></b><br>
-                <span id="sender_name2">—</span><br>
-              </div>
-            </div>
+                <div style="text-align:left;">
+                  <b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b>
+                </div>
+                <div style="text-align:left;">
+                  Izoh: o‘rnatilgan ehtiyot qismlar yoki asbob-uskunalarning birlik narxi buxgalteriya hisobi uchun ko‘rsatiladi.
+                </div>
+
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <b>Xizmat ko‘rsatuvchi vakili:</b><br>
+                          <span>Ikromov Isroil Ilxomovich</span><br>
+                          <span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <b>O‘zbekiston Respublikasi <span id="org_id_2">Axborot texnologiyalari markazi</span> tashkiloti vakili:</b><br>
+                          <span id="sender_name2">Ikromov Isroil Ilxomovich</span><br>
+                          <span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </textarea>
 
           </div>
         </div>
-      </div>
 
-    </div>
+      </div>
+    </form>
   </section>
 
 </main>
 
-
+<!-- jQuery + Select2 -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-{# Agar Select2 sizning base.html da ulangan bo‘lsa, quyidagi 1 qatorni olib tashlasa ham bo‘ladi #}
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 $(function () {
@@ -226,45 +273,70 @@ $(function () {
     return `${d}.${m}.${y}`;
   }
 
+  function initSelect2(){
+    $('#organization, #department, #sender, #agreements').each(function(){
+      const $el = $(this);
+      if ($el.data('select2')) return;
+      $el.select2({ width:'100%', placeholder:'Tanlang...', allowClear:true });
+    });
+  }
+  initSelect2();
+
+  // ✅ TinyMCE ichidagi elementga yozish helperlari
+  function editorGet(){
+    return (window.tinymce && tinymce.get('body')) ? tinymce.get('body') : null;
+  }
+
+  function editorSetText(selector, text){
+    const ed = editorGet();
+    if (!ed) return;
+    const node = ed.getBody().querySelector(selector);
+    if (node) {
+      node.textContent = text;
+      ed.nodeChanged();
+    }
+  }
+
+  function editorSetTbodyRows(rowsHtml){
+    const ed = editorGet();
+    if (!ed) return;
+
+    const body = ed.getBody();
+    const tbody = body.querySelector('#materials_tbody');
+    if (!tbody) {
+      console.log("materials_tbody topilmadi (TinyMCE ichida).");
+      return;
+    }
+
+    // ✅ header 2 qatorini saqlab qolamiz (birinchi 2 ta <tr>)
+    const trs = tbody.querySelectorAll('tr');
+    const header1 = trs[0] ? trs[0].outerHTML : '';
+    const header2 = trs[1] ? trs[1].outerHTML : '';
+
+    tbody.innerHTML = header1 + header2 + (rowsHtml || '');
+    ed.nodeChanged();
+  }
+
   function setLoadingTbody(){
-    $('#materials_tbody').html(`
+    editorSetTbodyRows(`
       <tr>
-        <td colspan="11" class="text-center">
-          <div class="spinner-border spinner-border-sm" role="status"></div>
-          Yuklanmoqda...
-        </td>
+        <td colspan="11" style="text-align:center;">Yuklanmoqda...</td>
       </tr>
     `);
   }
 
   function setEmptyTbody(msg){
-    $('#materials_tbody').html(`
+    editorSetTbodyRows(`
       <tr>
-        <td colspan="11" class="text-center text-muted">${msg}</td>
+        <td colspan="11" style="text-align:center;color:#888;">${msg}</td>
       </tr>
     `);
   }
-
-  // ----------------- Select2 init -----------------
-  function initSelect2(){
-    $('#organization, #department, #sender, #agreements').each(function(){
-      const $el = $(this);
-      if ($el.data('select2')) return;
-
-      $el.select2({
-        width: '100%',
-        placeholder: 'Tanlang...',
-        allowClear: true
-      });
-    });
-  }
-  initSelect2();
 
   // ----------------- Cascade: Org -> Dep -----------------
   function loadDepartments(orgId, selectedDepId=null) {
     $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change');
 
-    // org o‘zgarsa imzolovchi/kelishuvchi bo‘shatsin
     $('#sender').html('<option value=""></option>').trigger('change');
     $('#agreements').html('').trigger('change');
 
@@ -283,6 +355,10 @@ $(function () {
           options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
         });
         $('#department').html(options).trigger('change');
+      },
+      error: function(xhr){
+        console.log(xhr.responseText);
+        $('#department').html('<option value="">Xatolik</option>').trigger('change');
       }
     });
   }
@@ -319,10 +395,7 @@ $(function () {
   function loadNegotiators(depId, selectedConsentIds=[]) {
     $('#agreements').html('').trigger('change');
 
-    if (!depId) {
-      $('#agreements').html('').trigger('change');
-      return;
-    }
+    if (!depId) return;
 
     $.ajax({
       url: "{% url 'ajax_dep_negotiator' %}",
@@ -346,23 +419,20 @@ $(function () {
 
   // ----------------- change handlers -----------------
   $('#organization').on('change', function(){
-    const orgId = $(this).val();
-    loadDepartments(orgId);
+    loadDepartments($(this).val());
   });
 
   $('#department').on('change', function(){
     const depId = $(this).val();
-
-    // dep tanlanganda 2 ta ajax:
     loadSignatories(depId);
     loadNegotiators(depId);
   });
 
-  // ----------------- Sender text update -----------------
+  // ----------------- Sender text update (TinyMCE ichida) -----------------
   $('#sender').on('change', function(){
     const txt = $('#sender option:selected').text() || '';
-    $('#sender_name1').text(txt || '—');
-    $('#sender_name2').text(txt || '—');
+    editorSetText('#sender_name1', txt || '—');
+    editorSetText('#sender_name2', txt || '—');
   });
 
   // ----------------- SEARCH MATERIALS -----------------
@@ -377,64 +447,54 @@ $(function () {
       return;
     }
 
-    // Org/dep nomlarini hujjatga chiqarish
     const orgName = $('#organization option:selected').text();
-    const depName = $('#department option:selected').text();
-    $('#org_id_1, #org_id_2').text(orgName);
-    $('#dep_id').text(depName);
+    editorSetText('#org_id_1', orgName);
+    editorSetText('#org_id_2', orgName);
 
-    // Sana
-    $('#doc_date').text(ymdToDmy(date2) + " y");
+    editorSetText('#doc_date', ymdToDmy(date2) + " y");
 
     setLoadingTbody();
 
     $.ajax({
       url: "{% url 'ajax_akt_materials' %}",
       method: "GET",
-      data: {
-        department: depId,
-        date1: date1,
-        date2: date2
-      },
+      data: { department: depId, date1: date1, date2: date2 },
       success: function(data){
+        console.log("ajax_akt_materials DATA:", data);
+
         if (!data || data.length === 0) {
           setEmptyTbody("Tanlangan sana oralig‘ida ma’lumot topilmadi");
           return;
         }
 
-        let html = "";
+        let rows = "";
         data.forEach(function(item, index){
           const finished = item['order__date_finished'] ? new Date(item['order__date_finished']) : null;
           const formattedDate = finished ? finished.toLocaleDateString('ru-RU') : '-';
 
-          html += `
+          rows += `
             <tr>
-              <td>${index + 1}</td>
-              <td>${item['order__technics__name'] || '-'}</td>
-              <td>${item['order__technics__serial'] || '-'}</td>
-              <td>${item['material__name'] || '-'}</td>
-              <td>${item['number'] || '0'}</td>
-              <td>${item['material__unit__name'] || '-'}</td>
-              <td>${item['full_name'] || '-'}</td>
-              <td>${item['rank_name'] || '-'}</td>
-              <td>${item['material__price'] || '0'}</td>
-              <td>${item['id'] || '-'}</td>
-              <td>${formattedDate}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index + 1}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['order__technics__name'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['order__technics__serial'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['material__name'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['number'] || '0'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['material__unit__name'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['full_name'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['rank_name'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['material__price'] || '0'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['id'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formattedDate}</td>
             </tr>
           `;
         });
 
-        $('#materials_tbody').html(html);
+        // ✅ MUHIM: TinyMCE ichidagi tbody'ga yozamiz
+        editorSetTbodyRows(rows);
       },
       error: function(xhr){
-        $('#materials_tbody').html(`
-          <tr>
-            <td colspan="11" class="text-center text-danger">
-              Xatolik: Server javob bermadi (${xhr.status})
-            </td>
-          </tr>
-        `);
-        console.log(xhr.responseText);
+        console.log("ERROR:", xhr.status, xhr.responseText);
+        setEmptyTbody(`Xatolik: Server javob bermadi (${xhr.status})`);
       }
     });
   }
@@ -464,8 +524,6 @@ $(function () {
     if (initialDep) {
       setTimeout(function(){
         $('#department').val(initialDep).trigger('change');
-
-        // dep tanlangandagi 2 ta ajax restore
         loadSignatories(initialDep, initialSender);
         loadNegotiators(initialDep, initialConsentList);
       }, 250);
@@ -474,16 +532,5 @@ $(function () {
 
 });
 </script>
-<script>
-  (function () {
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    document.getElementById('doc_date').textContent = `${dd}.${mm}.${yyyy}`;
-  })();
-</script>
-{% endblock content %}
 
-{% block js %}
-{% endblock js %}
+{% endblock content %}

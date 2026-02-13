@@ -137,7 +137,7 @@
                             <th>Sana</th>
                             <th>Fayllar</th>
                             <th>Xolati</th>
-<!--                            <th>Taxrirlash</th>-->
+                            <th>Taxrirlash</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -147,8 +147,10 @@
                             <td>{{ d.receiver.full_name }}</td>
                             <td>{{ d.date_creat|date:"d-m-Y H:i" }}</td>
                             <td>
-                                {% if d.file %}
-                                    <a href="{{ d.file.url }}" target="_blank">📄 Ko‘rish</a>
+                                {% if d.file and d.file.url %}
+                                    <a href="{{ d.file.url }}" target="_blank">
+                                        📄 Ko‘rish
+                                    </a>
                                 {% else %}
                                     —
                                 {% endif %}
@@ -302,135 +304,9 @@
                                     </div>
                                 </div>
                             </td>
-<!--                            <td>-->
-<!--                                <a href="{% url 'deed_edit' d.pk %}">Taxrirlash</a>-->
-<!--                                <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-r{{ d.id }}">-->
-<!--                                    Taxrirlash-->
-<!--                                </button>-->
-                                <!-- MODAL -->
-<!--                                {% if d.user == request.user.employee %}-->
-<!--                                  {% if d.status_sender == 'viewed' or d.status_receiver == 'viewed' %}-->
-<!--                                    <div class="modal fade" id="modal-r{{ d.id }}" tabindex="-1">-->
-<!--                                        <div class="modal-dialog modal-dialog-centered modal-lg">-->
-<!--                                            <div class="modal-content">-->
-<!--                                              <form action="{% url 'deed_update' d.pk %}" method="post" enctype="multipart/form-data">-->
-<!--                                                {% csrf_token %}-->
-<!--                                                <div class="modal-header">-->
-<!--                                                  <h5 class="modal-title">#Xabar yuborish</h5>-->
-<!--                                                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>-->
-<!--                                                </div>-->
-
-<!--                                                <div class="modal-body">-->
-
-<!--                                                    <div class="border rounded bg-light p-3">-->
-<!--                                                        <h4>Xizmat ko'rsatuvchining vakili</h4>-->
-<!--                                                        &lt;!&ndash; Imzolovchi &ndash;&gt;-->
-<!--                                                        <div class="row mb-3">-->
-<!--                                                          <label class="col-sm-3 col-form-label">Imzolovchi</label>-->
-<!--                                                          <div class="col-sm-9">-->
-<!--                                                            <select class="form-select js-sender-id" name="sender_id">-->
-<!--                                                              <option value="">Tanlang...</option>-->
-<!--                                                              {% for emp in senders %}-->
-<!--                                                                <option value="{{ emp.id }}">{{ emp.full_name }}</option>-->
-<!--                                                              {% endfor %}-->
-<!--                                                            </select>-->
-<!--                                                            <span>Imzolovchi :</span> <i><b>{{d.sender.full_name}}</b></i>-->
-<!--                                                          </div>-->
-<!--                                                        </div>-->
-<!--                                                    </div>-->
-<!--                                                    {% if d.receiver %}-->
-<!--                                                    <div class="border rounded bg-light p-3 mt-3">-->
-<!--                                                        <h4>Ikkinchi tomon vakili</h4>-->
-<!--                                                        &lt;!&ndash; Imzolovchi &ndash;&gt;-->
-<!--                                                        <div class="row mb-3">-->
-<!--                                                          <label class="col-sm-3 col-form-label">Tashkilot</label>-->
-<!--                                                          <div class="col-sm-9">-->
-<!--                                                            <select class="form-select js-receiver-org" name="receiver_org">-->
-<!--                                                              <option value="">Tanlang...</option>-->
-<!--                                                              {% for org in organization %}-->
-<!--                                                                <option value="{{ org.id }}">{{ org.name }}</option>-->
-<!--                                                              {% endfor %}-->
-<!--                                                            </select>-->
-<!--                                                          </div>-->
-<!--                                                        </div>-->
-<!--                                                        <div class="row mb-3">-->
-<!--                                                          <label class="col-sm-3 col-form-label">Imzolovchi</label>-->
-<!--                                                          <div class="col-sm-9">-->
-<!--                                                            <select class="form-select js-receiver-id" name="receiver_id">-->
-<!--                                                              <option value="">Tanlang...</option>-->
-<!--                                                              {% for emp in employee %}-->
-<!--                                                                <option value="{{ emp.id }}">{{ emp.full_name }}</option>-->
-<!--                                                              {% endfor %}-->
-<!--                                                            </select>-->
-<!--                                                            <span>Imzolovchi :</span> <i><b>{{d.receiver.full_name}}</b></i>-->
-<!--                                                          </div>-->
-<!--                                                        </div>-->
-<!--                                                    </div>-->
-<!--                                                    {% endif %}-->
-<!--                                                    <div class="border rounded bg-light p-3 mt-3">-->
-<!--                                                        <h4>Kelishuvchilar</h4>-->
-
-<!--                                                        <div class="row mb-3">-->
-<!--                                                          <label class="col-sm-3 col-form-label">Kelishuvchilar</label>-->
-<!--                                                          <div class="col-sm-9">-->
-<!--                                                            <select name="agreements[]" class="form-select select2 js-agreements" multiple>-->
-<!--                                                              {% for emp in employee %}-->
-<!--                                                                <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>-->
-<!--                                                              {% endfor %}-->
-<!--                                                            </select>-->
-<!--                                                            {% for i in d.deedconsent_set.all %}-->
-<!--                                                              <div class="d-flex justify-content-between align-items-center border rounded px-2 py-1 mb-1"-->
-<!--                                                                   id="dc-row-{{ i.id }}">-->
-<!--                                                                <div>-->
-<!--                                                                  <span>Kelishuvchi :</span>-->
-<!--                                                                  <i><b>{{ i.employee.full_name }}</b></i>-->
-<!--                                                                </div>-->
-
-<!--                                                                <button type="button"-->
-<!--                                                                        class="btn btn-sm btn-outline-danger py-0 px-2 js-remove-consent"-->
-<!--                                                                        data-dc-id="{{ i.id }}"-->
-<!--                                                                        title="Kelishuvchini o‘chirish">-->
-<!--                                                                  X-->
-<!--                                                                </button>-->
-<!--                                                              </div>-->
-<!--                                                            {% endfor %}-->
-<!--                                                          </div>-->
-<!--                                                        </div>-->
-<!--                                                    </div>-->
-<!--                                                    <div class="border rounded bg-light p-3 mt-3">-->
-<!--                                                        &lt;!&ndash; File &ndash;&gt;-->
-<!--                                                        <div class="row mb-3">-->
-<!--                                                          <label class="col-sm-3 col-form-label">Fayl</label>-->
-<!--                                                          <div class="col-sm-9">-->
-<!--                                                            <input class="form-control" type="file" name="file">-->
-<!--                                                              {% if d.file %}-->
-<!--                                                              <span>File :</span> <i><a href="{{ d.file.url }}">📄 Ko‘rish</a></i><br>-->
-<!--                                                               {% endif %}-->
-<!--                                                          </div>-->
-<!--                                                        </div>-->
-
-<!--                                                        <div class="row mb-3">-->
-<!--                                                          <label class="col-sm-3 col-form-label">Izoh</label>-->
-<!--                                                          <div class="col-sm-9">-->
-<!--                                                          <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing...">{{d.message_user}}</textarea>-->
-<!--                                                          </div>-->
-<!--                                                        </div>-->
-<!--                                                    </div>-->
-
-<!--                                                </div>-->
-
-<!--                                                <div class="modal-footer justify-content-center gap-2">-->
-<!--                                                  <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>-->
-<!--                                                  <button type="submit" class="btn btn-primary">Yuborish</button>-->
-<!--                                                </div>-->
-<!--                                              </form>-->
-<!--                                            </div>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                  {% endif %}-->
-<!--                                {% endif %}-->
-<!--                            </td>-->
-                            <!-- Holat -->
+                            <td>
+                                <a class="btn badge bg-success" href="{% url 'deed_edit' d.pk %}">Taxrirlash</a>
+                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>

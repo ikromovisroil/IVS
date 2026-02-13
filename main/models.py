@@ -444,6 +444,8 @@ class Deed(models.Model):
 
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True,db_index=True)
     message_user = models.TextField(null=True, blank=True)
+    body = models.TextField(null=True, blank=True)
+    file_type = models.BooleanField(default=False)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)

@@ -2,12 +2,13 @@ from django.urls import path
 from .views import *
 from .ajax_views import *
 from .qk_views import *
-from .docx_view import *
+from .html_pdf import *
 urlpatterns = [
     path("", home, name="home"),
     path('profil/', profil, name='profil'),
     path('index/', index, name='index'),
     path('technics_get/', technics_get, name='technics_get'),
+
 
     path('barn_tex/', barn_tex, name='barn_tex'),
     path("barn_tex/technics_create/", technics_create, name="technics_create"),
@@ -39,7 +40,6 @@ urlpatterns = [
 
     # DEEDorder_deed
     path('deed_post/', deed_post, name='deed_post'),
-    path('deed_update/<int:pk>', deed_update, name='deed_update'),
     path("deed/consent/<int:pk>/delete/", deedconsent_delete, name="deedconsent_delete"),
 
 
@@ -92,7 +92,6 @@ urlpatterns = [
     path('order_receiver/order_receiver_deed_post/<int:pk>/', order_receiver_deed_post, name='order_receiver_deed_post'),
     path('order_accepted/<int:pk>/', order_accepted, name='order_accepted'),
     path('order_post/', order_post, name='order_post'),
-    path('order_deed/<int:pk>/', order_deed, name='order_deed'),
     path('ordermaterial_post/', ordermaterial_post, name='ordermaterial_post'),
     path("order/approved/", order_approved, name="order_approved"),
 
@@ -105,6 +104,5 @@ urlpatterns = [
     path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
 
     path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
-    path("wopi/files/<int:pk>/", wopi_file, name="wopi_file"),
-    path("wopi/files/<int:pk>/contents/", wopi_contents, name="wopi_contents"),
+    path("deed/<int:pk>/approve-pdf/", deed_approve_pdf, name="deed_approve_pdf"),
 ]

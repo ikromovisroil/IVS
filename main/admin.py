@@ -9,7 +9,6 @@ class ReadonlyDatesAdmin(admin.ModelAdmin):
     readonly_fields = ("date_creat", "date_edit")
     list_per_page = 50
 
-
 # ----------------------------
 # Organization tree models
 # ----------------------------

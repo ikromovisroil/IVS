@@ -83,75 +83,136 @@
         </div>
 
         <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body mt-5">
-                    <div class="d-flex justify-content-center align-items-center mb-3">
-                        <div class="row text-center">
-                            <div class="col-6">
-                            </div>
-                            <div class="col-6">
-                                <b>
-                                    "Tasdiqlayman"
-                                    Oʻzbekiston Respublikasi Iqtisodiyot va moliya
-                                    vazirligi huzuridagi “Axborot texnalogiyalar markazi”
-                                    direktori vazifasini vaqtincha bajaruvchi
-                                    F.Xujamqulov
-                                </b>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        15.02.2026 y
-                    </div>
-                    <div class="text-center">
-                        <b>Kompyuter va ofis uskunalariga servis xizmat ko'rsatish jarayonida foydalanilgan</b><br>
-                        <b>sarf materiallar, ehtiyot qismlar va uskunalar bo'yicha</b><br>
-                        <b>Y A K U N I Y    H I S O B O T</b><br>
-                        <b>ORGANIZATION </b><br>
-                        <b>2026 yil dekabir oyi uchun</b><br>
-                    </div>
-                    <div class="text-center">
-                        <table class="table table-bordered table-sm text-center align-middle" style="font-size:10px;">
-                            <thead>
-                              <tr>
-                                <th class="text-center align-middle">№</th>
-                                <th class="text-center align-middle">Materialning nomi</th>
-                                <th class="text-center align-middle">O'lchov birligi</th>
-                                <th class="text-center align-middle">Miqdori</th>
-                                <th class="text-center align-middle">Birlik narxi</th>
-                                <th class="text-center align-middle">Umumiy qiymati</th>
-                                <th class="text-center align-middle">Eslatma</th>
-                                <th class="text-center align-middle">Kod 1С</th>
-                              </tr>
-                            </thead>
-                            <tbody id="resultsBody">
-                              <tr>
-                                  <td colspan="11" class="text-center text-muted">Filtr tanlang</td>
-                              </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div>
-                        <b>04 mart 2025 yildagi 1 - sonli;  :shartnomalarga muvofiq</b>
-                    </div>
-                    <div class="container mt-3">
-                        <div class="row mt-3">
-                            <div class="col-6 text-start"><b>Boshqarma boshlig'i</b></div>
-                            <div class="col-6 text-start"><b>Nazrullayev A.</b></div>
-                        </div>
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">TinyMCE Editor</h5>
 
-                        <div class="row mt-3">
-                            <div class="col-6 text-start"><b>Tekshirdi va qabul qildi</b><br><b>Bosh mutaxassis</b></div>
-                            <div class="col-6 text-start"><b>Yakushina E.</b></div>
-                        </div>
-
-                        <div class="row mt-3">
-                            <div class="col-6 text-start"><b>Kelishildi</b><br><b>Bosh hisobchi</b></div>
-                            <div class="col-6 text-start"><b>Mengniyozov F.A.</b></div>
-                        </div>
-                    </div>
+              <textarea id="body" name="body" class="tinymce-editor">
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:center;">
+                        </td>
+                        <td style="border:1px solid #fff;text-align:center;">
+                          <b>"Tasdiqlayman" Oʻzbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi “Axborot texnalogiyalar markazi” direktori vazifasini vaqtincha bajaruvchi F.Xujamqulov</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
+                <div style="text-align:right;">
+                  <b><u id="doc_date">12.02.2026 y</u></b>
+                </div>
+                <div style="text-align:center;">
+                  <b>Kompyuter va ofis uskunalariga servis xizmat ko'rsatish jarayonida foydalanilgan</b>
+                </div>
+                <div style="text-align:center;">
+                  <b>sarf materiallar, ehtiyot qismlar va uskunalar bo'yicha</b>
+                </div>
+                <div style="text-align:center;">
+                  <b>Y A K U N I Y H I S O B O T</b>
+                </div>
+                <div style="text-align:center;">
+                  <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi tashkiloti vakili:</b>
+                </div>
+                <div style="text-align:center;">
+                  <b>2026 yil dekabir oyi uchun</b>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;" border="1">
+                    <colgroup>
+                      <col style="width:5%;">
+                      <col style="width:23%;">
+                      <col style="width:10%;">
+                      <col style="width:10%;">
+                      <col style="width:12%;">
+                      <col style="width:12%;">
+                      <col style="width:18%;">
+                      <col style="width:10%;">
+                    </colgroup>
+                    <tbody id="materials_tbody">
+                      <tr>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">№</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Materialning nomi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">O'lchov birligi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Miqdori</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Birlik narxi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Umumiy qiymati</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Eslatma*</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Kod 1С</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style="text-align:left;">
+                  <b>04 mart 2025 yildagi 1 - sonli; :shartnomalarga muvofiq</b>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Boshqarma boshlig'i</b><br>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Nazrullayev A.</b><br>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Tekshirdi va qabul qildi</b><br>
+                          <b>Bosh mutaxassis</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Yakushina E.</b><br>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Kelishildi</b><br>
+                          <b>Bosh hisobchi</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Mengniyozov F.A.</b><br>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </textarea>
+
             </div>
+          </div>
+
         </div>
       </div>
     </section>
