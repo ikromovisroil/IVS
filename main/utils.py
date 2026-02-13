@@ -1,117 +1,59 @@
 import os
 import shutil
-import subprocess
 import base64
 import json
-from datetime import datetime
-
+import time
+import logging
 from contextlib import contextmanager
-from django.conf import settings
-from django.utils import timezone
+from typing import Optional
+from django.conf import settings  # <-- MUHIM!
 from django.urls import reverse
-
+from django.utils import timezone
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import red
-
+from reportlab.lib.units import mm
 from PyPDF2 import PdfReader, PdfWriter
-
 import qrcode
 from qrcode.constants import ERROR_CORRECT_M
 
-
-# ==========================================================
-# 1) DOCX → PDF (LIBREOFFICE)  → (pdf_path, debug)
-# ==========================================================
-def convert_docx_to_pdf_libre(docx_path: str) -> tuple[str | None, str]:
-    if not os.path.exists(docx_path):
-        return None, f"DOCX topilmadi: {docx_path}"
-
-    output_dir = os.path.dirname(docx_path)
-    expected_pdf = os.path.splitext(docx_path)[0] + ".pdf"
-
-    # soffice aniqlash
-    if os.name == "nt":
-        candidates = [
-            r"C:\Program Files\LibreOffice\program\soffice.exe",
-            r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
-        ]
-        soffice = next((c for c in candidates if os.path.exists(c)), None)
-    else:
-        soffice = shutil.which("soffice") or shutil.which("libreoffice")
-
-    if not soffice:
-        return None, "LibreOffice (soffice) topilmadi. (sudo apt install libreoffice)"
-
-    env = os.environ.copy()
-    env.setdefault("HOME", output_dir)
-
-    cmd = [
-        soffice,
-        "--headless",
-        "--invisible",
-        "--nodefault",
-        "--nologo",
-        "--nofirststartwizard",
-        "--norestore",
-        "--convert-to", "pdf",
-        "--outdir", output_dir,
-        docx_path
-    ]
-
-    try:
-        proc = subprocess.run(
-            cmd,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            env=env,
-            timeout=30
-        )
-    except Exception as e:
-        return None, str(e)
-
-    if proc.returncode != 0:
-        return None, f"LibreOffice returncode={proc.returncode}"
-
-    if os.path.exists(expected_pdf):
-        return expected_pdf, "OK"
-
-    # fallback
-    pdfs = [f for f in os.listdir(output_dir) if f.lower().endswith(".pdf")]
-    if pdfs:
-        return os.path.join(output_dir, pdfs[0]), "OK (fallback)"
-
-    return None, "PDF yaratilmadi"
+logger = logging.getLogger(__name__)
 
 
 # ==========================================================
-# 2) Lock (PDF band bo‘lib qolmasin)
+# 1) Lock (PDF band bo‘lib qolmasin)
 # ==========================================================
 @contextmanager
 def file_lock(lock_path: str, timeout: int = 10):
-    start = timezone.now()
+    """
+    PDF faylni band qilish uchun lock mexanizmi
+    """
+    start = time.time()
     while True:
         try:
             fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
             os.close(fd)
             break
         except FileExistsError:
-            if (timezone.now() - start).total_seconds() > timeout:
-                raise TimeoutError("PDF band (lock timeout)")
+            if time.time() - start > timeout:
+                raise TimeoutError(f"PDF band (lock timeout) - {lock_path}")
+            time.sleep(0.1)
     try:
         yield
     finally:
         try:
             os.remove(lock_path)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Lock faylni o'chirishda xatolik: {e}")
 
 
 # ==========================================================
-# 3) Overlay PDF yaratish (page_w/page_h bo‘yicha)
+# 2) Overlay PDF yaratish
 # ==========================================================
 def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, overlay_path: str):
+
     qr_png = overlay_path.replace(".pdf", "_qr.png")
 
+    # QR kod yaratish
     qr = qrcode.QRCode(
         version=None,
         error_correction=ERROR_CORRECT_M,
@@ -123,6 +65,7 @@ def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, ov
     img = qr.make_image(fill_color="black", back_color="white")
     img.save(qr_png)
 
+    # PDF yaratish
     c = canvas.Canvas(overlay_path, pagesize=(page_w, page_h))
     c.setFillColor(red)
 
@@ -130,92 +73,120 @@ def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, ov
     c.setFont("Helvetica-Bold", 10)
     c.drawString(10, page_h - 15, text)
 
-    # QR (pastki markaz)
+    # QR kod (pastki markaz) - 15mm
     qr_size = 65
     x_center = (page_w - qr_size) / 2
-    c.drawImage(qr_png, x_center, 2, width=qr_size, height=qr_size, mask="auto")
+    y_bottom = 5
 
+    c.drawImage(qr_png, x_center, y_bottom, width=qr_size, height=qr_size, mask="auto")
     c.save()
 
+    # QR kod faylini o'chirish
     try:
         os.remove(qr_png)
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"QR kod faylini o'chirishda xatolik: {e}")
 
 
 # ==========================================================
-# 4) PDF ga imzo (HAR BIR SAHIFAGA) — inplace
+# 3) PDF ga imzo (HAR BIR SAHIFAGA)
 # ==========================================================
-def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -> None:
-    """
-    PDF ning o'zini o'ziga imzolaydi: HAR BIR SAHIFAGA QR + yozuv qo'yadi.
-    QR skaner bo‘lsa: deed_status sahifaga olib boradi.
-    """
+def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -> bool:
 
     if not pdf_path or not os.path.exists(pdf_path):
-        raise FileNotFoundError("PDF topilmadi")
+        logger.error(f"PDF topilmadi: {pdf_path}")
+        raise FileNotFoundError(f"PDF topilmadi: {pdf_path}")
 
     if not pdf_path.lower().endswith(".pdf"):
-        raise ValueError("PDF noto‘g‘ri")
+        logger.error(f"PDF noto‘g‘ri format: {pdf_path}")
+        raise ValueError("PDF noto‘g‘ri format")
 
     abs_pdf = os.path.abspath(pdf_path)
+    logger.info(f"PDF imzolanmoqda: {abs_pdf}")
 
-    # QR link: status sahifa
+    # QR link: deed status sahifasi
     qr_link = request.build_absolute_uri(
         reverse("deed_status", args=[int(deed_id)])
     )
 
     text = (
-        f"Ushbu hujjat {approver_name} tomonidan "
-        f"{timezone.now().strftime('%Y-%m-%d %H:%M')} da tasdiqlandi."
+        f"{approver_name} tomonidan "
+        f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da tasdiqlandi"
     )
 
     lock_path = abs_pdf + ".lock"
-    with file_lock(lock_path, timeout=10):
-        reader = PdfReader(abs_pdf)
-        if not reader.pages:
-            raise ValueError("PDF bo‘sh")
 
-        first = reader.pages[0]
-        w = float(first.mediabox.width)
-        h = float(first.mediabox.height)
+    try:
+        with file_lock(lock_path, timeout=10):
+            # PDF ni o'qish
+            reader = PdfReader(abs_pdf)
+            if not reader.pages:
+                logger.error("PDF bo‘sh")
+                raise ValueError("PDF bo‘sh")
 
-        overlay_path = abs_pdf.replace(".pdf", "_overlay.pdf")
-        tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
+            # Birinchi sahifa o'lchamini olish
+            first = reader.pages[0]
+            w = float(first.mediabox.width)
+            h = float(first.mediabox.height)
 
-        # overlay 1 ta sahifa qilib yaratiladi (o‘lchami PDF bilan bir xil)
-        create_overlay_pdf(w, h, text, qr_link, overlay_path)
+            # Vaqtinchalik fayllar
+            overlay_path = abs_pdf.replace(".pdf", "_overlay.pdf")
+            tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
 
-        overlay_reader = PdfReader(overlay_path)
-        overlay_page = overlay_reader.pages[0]
+            try:
+                # Overlay yaratish
+                create_overlay_pdf(w, h, text, qr_link, overlay_path)
 
-        writer = PdfWriter()
-        for page in reader.pages:
-            page.merge_page(overlay_page)   # har bir sahifaga
-            writer.add_page(page)
+                overlay_reader = PdfReader(overlay_path)
+                overlay_page = overlay_reader.pages[0]
 
-        with open(tmp_out, "wb") as f:
-            writer.write(f)
+                # Har bir sahifaga overlay qo'shish
+                writer = PdfWriter()
+                for i, page in enumerate(reader.pages):
+                    page.merge_page(overlay_page)
+                    writer.add_page(page)
+                    logger.debug(f"Sahifa {i + 1} imzolandi")
 
-        # eski pdf o‘rniga yozish
-        shutil.move(tmp_out, abs_pdf)
+                # Vaqtinchalik faylga yozish
+                with open(tmp_out, "wb") as f:
+                    writer.write(f)
 
-        try:
-            os.remove(overlay_path)
-        except Exception:
-            pass
+                # Asl faylni imzolangan versiya bilan almashtirish
+                shutil.move(tmp_out, abs_pdf)
+                logger.info(f"PDF muvaffaqiyatli imzolandi: {abs_pdf}")
+
+                return True
+
+            finally:
+                # Vaqtinchalik fayllarni tozalash
+                for f in [overlay_path, tmp_out]:
+                    try:
+                        if os.path.exists(f):
+                            os.remove(f)
+                    except Exception as e:
+                        logger.warning(f"Faylni o'chirishda xatolik: {f} - {e}")
+
+    except Exception as e:
+        logger.error(f"PDF imzolashda xatolik: {e}")
+        raise
 
 
 # ==========================================================
-# JWT decode (o‘zingizniki)
+# 4) JWT decode
 # ==========================================================
-def decode_jwt(token):
-    payload = token.split(".")[1]
-    payload += "=" * (-len(payload) % 4)
-    return json.loads(base64.urlsafe_b64decode(payload))
+def decode_jwt(token: str) -> dict:
+
+    try:
+        payload = token.split(".")[1]
+        payload += "=" * (-len(payload) % 4)
+        return json.loads(base64.urlsafe_b64decode(payload))
+    except Exception as e:
+        logger.error(f"JWT dekodlashda xatolik: {e}")
+        raise
 
 
-def get_sso_redirect_uri(request):
+def get_sso_redirect_uri(request) -> str:
+
     host = request.get_host()
     if "localhost" in host or "127.0.0.1" in host:
         return "http://localhost:8000/sso/callback/"

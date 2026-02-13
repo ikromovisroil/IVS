@@ -107,7 +107,7 @@ def ajax_dep_signatory(request):
         .order_by("last_name", "first_name", "father_name")
         .distinct()
     )
-    data = [{"id": e.id, "full_name": e.full_name} for e in qs]
+    data = [{"id": e.id, "full_name": e.full_name, "rank": e.rank.name,} for e in qs]
     return JsonResponse(data, safe=False)
 
 
