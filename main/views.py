@@ -342,6 +342,8 @@ def deed_edit(request, pk):
             pdf_bytes = deed_to_pdf_bytes(deed)
 
             today_str = timezone.now().strftime("%Y%m%d")
+            wm_text = "TASDIQLANMAGAN"
+            pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
             alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
             random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
             pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
@@ -506,6 +508,9 @@ def sso_exchange_and_finish(request):
 
                     # ✅ 1) deed.body dan qayta PDF yaratamiz (watermark YO'Q)
                     pdf_bytes = deed_to_pdf_bytes(deed)
+
+                    if deed.file:
+                        deed.file.delete(save=False)
 
                     # ✅ 2) yangi nom bilan deed.file ga saqlaymiz
                     today_str = timezone.now().strftime("%Y%m%d")
@@ -1468,6 +1473,8 @@ def document_post(request):
     # ✅ PDF yaratib deed.file ga saqlaymiz
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
+        wm_text = "TASDIQLANMAGAN"
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
         today_str = timezone.now().strftime("%Y%m%d")
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
@@ -1975,7 +1982,7 @@ def akt_post(request):
     # ✅ PDF yaratib deed.file ga saqlaymiz
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
-        wm_text = "IMZOLASHGA YUBORILDI"
+        wm_text = "TASDIQLANMAGAN"
         pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
         today_str = timezone.now().strftime("%Y%m%d")
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
@@ -2063,6 +2070,8 @@ def svod_post(request):
     # ✅ PDF yaratib deed.file ga saqlaymiz
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
+        wm_text = "TASDIQLANMAGAN"
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
         today_str = timezone.now().strftime("%Y%m%d")
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
@@ -2151,6 +2160,8 @@ def reestr_post(request):
     # ✅ PDF yaratib deed.file ga saqlaymiz
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
+        wm_text = "TASDIQLANMAGAN"
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
         today_str = timezone.now().strftime("%Y%m%d")
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         random_part = ''.join(secrets.choice(alphabet) for _ in range(6))

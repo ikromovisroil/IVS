@@ -373,22 +373,13 @@ class Order(models.Model):
     date_approved = models.DateTimeField(null=True, blank=True)
     date_rejected = models.DateTimeField(null=True, blank=True)
 
+
     def save(self, *args, **kwargs):
-        # ACCEPTED vaqtini avtomatik saqlash
-        if self.status == "accepted":
-            self.date_accepted = timezone.now()
+        if self.pk:
+            old = Order.objects.filter(pk=self.pk).first()
 
-        # finished uchun
-        if self.status == "finished":
-            self.date_finished = timezone.now()
-
-        # APPROVED uchun
-        if self.status == "approved":
-            self.date_approved = timezone.now()
-
-        # REJECTED uchun
-        if self.status == "rejected":
-            self.date_rejected = timezone.now()
+            if old and self.file and old.file and old.file != self.file:
+                old.file.delete(save=False)
 
         super().save(*args, **kwargs)
 
