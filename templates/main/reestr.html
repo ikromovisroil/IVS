@@ -22,7 +22,7 @@
     <form class="row">
 
       <div class="col-lg-4">
-        <form action="{% url 'reestr_post' %}" method="post">
+        <form class="row" action="{% url 'reestr_post' %}" method="post">
           {% csrf_token %}
 
           <div class="card">
