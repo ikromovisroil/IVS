@@ -200,7 +200,7 @@ def contact_agrement(request):
 @login_required
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
-    deed_sender = (
+    deed_user = (
         Deed.objects
         .filter(user=employee)
         .select_related("sender", "receiver")
@@ -212,7 +212,7 @@ def contact_user(request):
         .order_by("last_name", "first_name", "father_name")
     )
     context = {
-        "deed_sender": deed_sender,
+        "deed_user": deed_user,
         "senders": senders,
         "organization": Organization.objects.all(),
     }
