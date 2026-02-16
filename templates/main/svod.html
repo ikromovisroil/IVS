@@ -513,6 +513,41 @@ $(function () {
   {% endif %}
 });
 </script>
+<script>
+function loadAgreementsByOrg(orgId, selectedIds = []) {
+  $('#agreements').html('').trigger('change');
+  if (!orgId) return;
+
+  $.ajax({
+    url: "{% url 'ajax_agreements_employees' %}",
+    data: { org_id: orgId },   // ✅ view kutayotgan nom
+    success: function (data) {
+      let options = '';
+      const selectedSet = new Set((selectedIds || []).map(String));
+
+      data.forEach(function(emp) {
+        const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
+        options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+      });
+
+      $('#agreements').html(options).trigger('change');
+    },
+    error: function () {
+      $('#agreements').html('').trigger('change');
+    }
+  });
+}
+
+$(function () {
+  $('#organization').on('change', function () {
+    loadAgreementsByOrg($(this).val());
+  });
+
+  const initialOrg = $('#organization').val();
+  if (initialOrg) loadAgreementsByOrg(initialOrg);
+});
+</script>
+
 
 {% endblock content %}
 

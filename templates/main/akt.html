@@ -279,6 +279,40 @@ function ymdToDmy(ymd) {
   return `${d}.${m}.${y}`;
 }
 
+function formatNumber(value) {
+  if (value === null || value === undefined) return '-';
+
+  // string qilib olamiz
+  let s = String(value).trim();
+  if (!s) return '-';
+
+  // bo'shliqlarni olib tashlaymiz (masalan: "100 000,50")
+  s = s.replace(/\s+/g, '');
+
+  // agar kasr ajratgich "," bo'lsa, uni "." ga almashtirib parse qilamiz
+  // "100000,50" -> "100000.50"
+  const normalized = s.replace(',', '.');
+
+  const num = Number(normalized);
+  if (!isFinite(num)) return '-';
+
+  // originalda kasr bormi ("," yoki ".")?
+  const hasFraction = /[,.]\d+/.test(s);
+
+  // 2 xonagacha kasr (agar bo'lsa)
+  let [intPart, fracPart] = (hasFraction ? num.toFixed(2) : Math.trunc(num).toString()).split('.');
+
+  // minusni saqlash
+  const sign = intPart.startsWith('-') ? '-' : '';
+  intPart = intPart.replace('-', '');
+
+  // minglik bo'yicha bo'sh joy qo'yish
+  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+  // kasr bo'lsa, "," bilan qaytaramiz
+  return hasFraction ? `${sign}${intPart},${fracPart}` : `${sign}${intPart}`;
+}
+
 // ----------------- TinyMCE ga yozish funksiyalari -----------------
 function editorGet() {
   return tinymce.get('body');
@@ -512,11 +546,11 @@ $(function () {
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__serial'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['number'] || '0'}</td>
+              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['number']) || '0'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__unit__name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['full_name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['rank_name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__price'] || '0'}</td>
+              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['material__price']) || '0'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['id'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${finishedDate}</td>
             </tr>

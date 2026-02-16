@@ -114,9 +114,16 @@ def ajax_dep_signatory(request):
         .filter(department_id=dep_id)
         .select_related("rank")
         .order_by("last_name", "first_name", "father_name")
-        .distinct()
     )
-    data = [{"id": e.id, "full_name": e.full_name, "rank": e.rank.name,} for e in qs]
+
+    data = []
+    for e in qs:
+        data.append({
+            "id": e.id,
+            "full_name": getattr(e, "full_name", "") or f"{e.last_name} {e.first_name} {e.father_name}".strip(),
+            "rank": (e.rank.name if getattr(e, "rank", None) else ""),
+        })
+
     return JsonResponse(data, safe=False)
 
 @never_cache
@@ -158,27 +165,21 @@ def ajax_employees_org(request):
 @never_cache
 @login_required
 def ajax_agreements_employees(request):
-    org_id = (request.GET.get("org_id") or "").strip()
+    org_id = request.GET.get("org_id")
+
+    if not org_id or not str(org_id).isdigit():
+        return JsonResponse([], safe=False)
+
+    my_dep_id = getattr(request.user.employee, "department_id", None)
 
     qs = Employee.objects.filter(
-        organization__org_type="IVS",
-        # rol__boss=True,
-    )
+        Q(department__organization_id=org_id) | Q(department_id=my_dep_id)
+    ).select_related("rank").order_by(
+        "last_name", "first_name", "father_name"
+    ).distinct()
 
-    if org_id and org_id.isdigit():
-        qs = Employee.objects.filter(
-            Q(organization_id=org_id) | Q(organization__org_type="IVS"),
-            # rol__boss=True,
-        )
-
-    qs = qs.select_related("rank", "organization").distinct().order_by("last_name", "first_name")
-
-    data = [{
-        "id": e.id,
-        "text": f"{e.full_name}",
-    } for e in qs]
-
-    return JsonResponse({"results": data})
+    data = [{"id": e.id, "full_name": e.full_name} for e in qs]
+    return JsonResponse(data, safe=False)
 
 @never_cache
 @login_required
