@@ -153,10 +153,10 @@
                 </div>
                 <div></div>
                 <div style="text-align:left;">
-                  <span><b>1.1.</b> Biriktirilgan kompyuterlarga xizmat ko‘rsatish – 52</span>
+                  <span><b>1.1.</b> Biriktirilgan kompyuterlarga xizmat ko‘rsatish – <b id="komp_count">_</b> dona</span>
                 </div>
                 <div style="text-align:left;">
-                  <span><b>1.4.</b> A3 formatli printerlarga xizmat ko‘rsatish – 2 dona.</span>
+                  <span><b>1.4.</b> A3 formatli printerlarga xizmat ko‘rsatish – <b id="prin_count">_</b> dona.</span>
                 </div>
                 <div></div>
                 <div>
@@ -183,7 +183,7 @@
                 <div style="page-break-after: always;"></div>
 
                 <div style="text-align:right;">
-                  <span id="doc_date">12.02.2026 y</span>
+                  <span id="doc_date2">12.02.2026 y</span>
                 </div>
                 <div style="text-align:center;">
                   <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
@@ -210,7 +210,7 @@
                       <col style="width:30%;">
                       <col style="width:30%;">
                     </colgroup>
-                    <tbody id="materials_tbody">
+                    <tbody id="pc_tbody">
                       <tr>
                         <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
                         <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
@@ -230,7 +230,7 @@
                       <col style="width:40%;">
                       <col style="width:40%;">
                     </colgroup>
-                    <tbody id="materials_tbody">
+                    <tbody id="pr_tbody">
                       <tr>
                         <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
                         <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
@@ -256,68 +256,111 @@
 <script>
 $(function () {
 
-  // ----------------- Select2 init -----------------
-  function initSelect2All() {
-    $('select').each(function () {
+  // -------------------- ESCAPE --------------------
+  function esc(s){
+    if (s === null || s === undefined) return '';
+    return String(s)
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#039;');
+  }
+
+  // -------------------- SELECT2 --------------------
+  function initSelect2(){
+    $('select.form-select').each(function(){
       const $el = $(this);
       if ($el.data('select2')) return;
-      $el.select2({ width: '100%', placeholder: 'Tanlang...', allowClear: true });
+
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
     });
   }
-  initSelect2All();
+  initSelect2();
 
-  // ----------------- HTML escape -----------------
-  function esc(s){
-    return String(s ?? '').replace(/[&<>"']/g, (m) => ({
-      '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
-    }[m]));
+  // -------------------- TINYMCE SAFE --------------------
+  function getEditor(){
+    if (!window.tinymce) return null;
+    const ed = tinymce.get('body');
+    if (!ed) return null;
+    try { ed.getBody(); } catch(e){ return null; }
+    return ed;
   }
 
-  // ----------------- Fill tables -----------------
-  function fillPcTable(items){
-    const $tb = $('#pc_tbody');
-    if (!items || !items.length){
-      $tb.html(`<tr><td colspan="4" class="text-center text-muted">Ma'lumot topilmadi</td></tr>`);
-      return;
-    }
-    let html = '';
-    items.forEach((x, i) => {
-      html += `
-        <tr>
-          <td>${i+1}</td>
-          <td>${esc(x.name)}</td>
-          <td>${esc(x.serial)}</td>
-          <td>${esc(x.inventory)}</td>
-        </tr>`;
-    });
-    $tb.html(html);
+  function setInEditor(selector, text){
+    const ed = getEditor();
+    if (!ed) return false;
+    const root = ed.getBody();
+    const el = root.querySelector(selector);
+    if (!el) return false;
+    el.textContent = text;
+    ed.nodeChanged();
+    return true;
   }
 
-  function fillPrTable(items){
-    const $tb = $('#pr_tbody');
-    if (!items || !items.length){
-      $tb.html(`<tr><td colspan="3" class="text-center text-muted">Ma'lumot topilmadi</td></tr>`);
-      return;
-    }
-    let html = '';
-    items.forEach((x, i) => {
-      html += `
-        <tr>
-          <td>${i+1}</td>
-          <td>${esc(x.name)}</td>
-          <td>${esc(x.serial)}</td>
-        </tr>`;
-    });
-    $tb.html(html);
+  function setTbodyHtml(tbodyId, html){
+    const ed = getEditor();
+    if (!ed) return false;
+    const root = ed.getBody();
+    const tb = root.querySelector('#' + tbodyId);
+    if (!tb) return false;
+    tb.innerHTML = html;
+    ed.nodeChanged();
+    return true;
   }
 
-  // ----------------- Org -> Dep AJAX -----------------
-  function loadDepartmentsByOrg(orgId, selectedDepId=null){
+  // -------------------- BUGUNGI SANA --------------------
+  function todayStr(){
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2,'0');
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const yyyy = now.getFullYear();
+    return `${dd}.${mm}.${yyyy}`;
+  }
+
+  function applyTodayDate(){
+    const d = todayStr();
+
+    // DOM (agar tashqarida bo‘lsa)
+    const d1 = document.getElementById('doc_date');
+    if (d1) d1.textContent = d;
+    const d2 = document.getElementById('doc_date2');
+    if (d2) d2.textContent = d;
+
+    // TinyMCE ichida
+    const ed = getEditor();
+    if (!ed) return;
+    const root = ed.getBody();
+    root.querySelectorAll('#doc_date, #doc_date2').forEach(el => el.textContent = d);
+    ed.nodeChanged();
+  }
+
+  // editor tayyor bo‘lganda sanani yozish
+  (function waitEditorAndSetDate(){
+    let tries = 0;
+    const t = setInterval(function(){
+      tries++;
+      if (getEditor() || tries > 40){ // ~4s
+        clearInterval(t);
+        applyTodayDate();
+      }
+    }, 100);
+  })();
+
+  // -------------------- ORG -> DEP --------------------
+  function loadDepartments(orgId, selectedDepId=null){
     const $dep = $('#department');
-    $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change');
 
-    if (!orgId){
+    $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+    initSelect2();
+
+    if(!orgId){
       $dep.html('<option value="">Tanlang...</option>').trigger('change');
+      initSelect2();
       return;
     }
 
@@ -333,20 +376,25 @@ $(function () {
           opt += `<option value="${d.id}" ${sel}>${esc(d.name)}</option>`;
         });
         $dep.html(opt).trigger('change');
+        initSelect2();
       },
       error: function(){
         $dep.html('<option value="">Xatolik (dep yuklanmadi)</option>').trigger('change');
+        initSelect2();
       }
     });
   }
 
-  // ----------------- Dep -> Sender + Agreements AJAX -----------------
-  function loadSenderByDep(depId){
+  // -------------------- DEP -> SENDER --------------------
+  function loadSender(depId){
     const $sender = $('#sender');
+
     $sender.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+    initSelect2();
 
     if(!depId){
       $sender.html('<option value="">Tanlang...</option>').trigger('change');
+      initSelect2();
       return;
     }
 
@@ -361,20 +409,26 @@ $(function () {
           opt += `<option value="${emp.id}">${esc(emp.full_name)}</option>`;
         });
         $sender.html(opt).trigger('change');
+        initSelect2();
       },
       error: function(xhr){
         console.log("sender ajax error:", xhr.status, xhr.responseText);
         $sender.html('<option value="">Xatolik</option>').trigger('change');
+        initSelect2();
       }
     });
   }
 
-  function loadAgreementsByDep(depId){
+  // -------------------- DEP -> AGREEMENTS --------------------
+  function loadAgreements(depId){
     const $agr = $('#agreements');
+
     $agr.html('').trigger('change');
+    initSelect2();
 
     if(!depId){
       $agr.html('').trigger('change');
+      initSelect2();
       return;
     }
 
@@ -389,94 +443,144 @@ $(function () {
           opt += `<option value="${emp.id}">${esc(emp.full_name)}</option>`;
         });
         $agr.html(opt).trigger('change');
+        initSelect2();
       },
       error: function(xhr){
         console.log("agreements ajax error:", xhr.status, xhr.responseText);
         $agr.html('').trigger('change');
+        initSelect2();
       }
     });
   }
 
-  // ----------------- Eventlar -----------------
-  $('#organization').on('change', function(){
-    const orgId = $(this).val();
-    loadDepartmentsByOrg(orgId);
-
-    // org o‘zgarsa sender/agreements tozalansin
-    $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
-    $('#agreements').html('').trigger('change');
-  });
-
-  $('#department').on('change', function(){
-    const depId = $(this).val();
-    loadSenderByDep(depId);
-    loadAgreementsByDep(depId);
-  });
-
-  // ----------------- Preview -----------------
-  $('#btnSearch').on('click', function () {
-    const depId = $('#department').val();
-    if (!depId){
-      alert("Departmentni tanlang!");
+  // -------------------- TEXNIKALAR -> TINYMCE JADVAL --------------------
+  function fillPc(items){
+    if(!items || !items.length){
+      setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`);
       return;
     }
 
-    $('#pc_tbody').html(`<tr><td colspan="4" class="text-center text-muted">Yuklanmoqda...</td></tr>`);
-    $('#pr_tbody').html(`<tr><td colspan="3" class="text-center text-muted">Yuklanmoqda...</td></tr>`);
+    let rows = '';
+    items.forEach((x,i) => {
+      rows += `
+        <tr>
+          <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+          <td style="border:1px solid #000;">${esc(x.name)}</td>
+          <td style="border:1px solid #000;">${esc(x.serial)}</td>
+          <td style="border:1px solid #000;">${esc(x.inventory)}</td>
+        </tr>`;
+    });
+
+    setTbodyHtml('pc_tbody', rows);
+  }
+
+  function fillPr(items){
+    if(!items || !items.length){
+      setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`);
+      return;
+    }
+
+    let rows = '';
+    items.forEach((x,i) => {
+      rows += `
+        <tr>
+          <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+          <td style="border:1px solid #000;">${esc(x.name)}</td>
+          <td style="border:1px solid #000;">${esc(x.serial)}</td>
+        </tr>`;
+    });
+
+    setTbodyHtml('pr_tbody', rows);
+  }
+
+  function loadTechnicsToEditor(depId){
+    if(!depId){
+      setInEditor('#komp_count', '_');
+      setInEditor('#prin_count', '_');
+      fillPc([]);
+      fillPr([]);
+      return;
+    }
+
+    // loading
+    setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
+    setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
 
     $.ajax({
       url: "{% url 'ajax_document_preview' %}",
       method: "GET",
       dataType: "json",
       data: { department: depId },
-      success: function (res) {
-        $('#selekt_id_text_1').text(res.department_name || '');
-        $('#selekt_id_text_2').text(res.department_name || '');
+      success: function(res){
 
-        $('#techkomp').text(res.komp_count ?? 0);
-        $('#techpr').text((res.prin_count ?? 0) + " dona.");
+        // ✅ sonlari ham TinyMCE ichida yoziladi
+        setInEditor('#komp_count', String(res.komp_count ?? 0));
+        setInEditor('#prin_count', String(res.prin_count ?? 0));
 
-        fillPcTable(res.kompyuterlar || []);
-        fillPrTable(res.printerlar || []);
+        // ✅ jadval to‘ladi
+        fillPc(res.kompyuterlar || []);
+        fillPr(res.printerlar || []);
       },
-      error: function (xhr) {
+      error: function(xhr){
         let msg = "Xatolik yuz berdi";
         try { if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error; } catch(e){}
-        $('#pc_tbody').html(`<tr><td colspan="4" class="text-center text-danger">${esc(msg)}</td></tr>`);
-        $('#pr_tbody').html(`<tr><td colspan="3" class="text-center text-danger">${esc(msg)}</td></tr>`);
+        setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
+        setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
       }
     });
+  }
+
+  // -------------------- EVENTLAR --------------------
+  $('#organization').on('change', function(){
+    const orgId = $(this).val();
+    loadDepartments(orgId);
+
+    // reset
+    $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+    $('#agreements').html('').trigger('change');
+    initSelect2();
+
+    setInEditor('#komp_count', '_');
+    setInEditor('#prin_count', '_');
+    fillPc([]);
+    fillPr([]);
   });
 
-  // ----------------- Restore -----------------
+  $('#department').on('change', function(){
+    const depId = $(this).val();
+
+    loadSender(depId);
+    loadAgreements(depId);
+
+    // ✅ dep tanlansa texnika keladi va jadvalga yozadi
+    loadTechnicsToEditor(depId);
+  });
+
+  $('#btnSearch').on('click', function(){
+    const depId = $('#department').val();
+    if(!depId){ alert("Departmentni tanlang!"); return; }
+    loadTechnicsToEditor(depId);
+  });
+
+  // -------------------- RESTORE (serverdan kelgan selected) --------------------
   const initialOrg = '{{ selected_org|default:"" }}';
   const initialDep = '{{ selected_dep|default:"" }}';
 
   if (initialOrg){
     $('#organization').val(initialOrg).trigger('change');
-    loadDepartmentsByOrg(initialOrg, initialDep);
+    loadDepartments(initialOrg, initialDep);
 
     if (initialDep){
       setTimeout(function(){
         $('#department').val(initialDep).trigger('change');
-        loadSenderByDep(initialDep);
-        loadAgreementsByDep(initialDep);
+        // change event o‘zi qolganlarini chaqiradi
       }, 250);
     }
   }
 
 });
 </script>
-<script>
-  (function () {
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const yyyy = now.getFullYear();
-    document.getElementById('doc_date').textContent = `${dd}.${mm}.${yyyy}`;
-    document.getElementById('doc_date2').textContent = `${dd}.${mm}.${yyyy}`;
-  })();
-</script>
+
 {% endblock content %}
 
 {% block js %}
