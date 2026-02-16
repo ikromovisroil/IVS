@@ -1,19 +1,19 @@
-import os
-import shutil
 import base64
 import json
+from reportlab.lib.units import mm
+import qrcode
+import os
 import time
+import shutil
 import logging
+from io import BytesIO
 from contextlib import contextmanager
-from typing import Optional
-from django.conf import settings  # <-- MUHIM!
 from django.urls import reverse
 from django.utils import timezone
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import red
-from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
-import qrcode
 from qrcode.constants import ERROR_CORRECT_M
 
 logger = logging.getLogger(__name__)
@@ -37,6 +37,7 @@ def file_lock(lock_path: str, timeout: int = 10):
             if time.time() - start > timeout:
                 raise TimeoutError(f"PDF band (lock timeout) - {lock_path}")
             time.sleep(0.1)
+
     try:
         yield
     finally:
@@ -47,13 +48,15 @@ def file_lock(lock_path: str, timeout: int = 10):
 
 
 # ==========================================================
-# 2) Overlay PDF yaratish
+# 2) Overlay PDF (RAM’da) yaratish
 # ==========================================================
-def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, overlay_path: str):
+def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: str) -> bytes:
+    """
+    Berilgan sahifa o‘lchamiga mos overlay PDF ni bytes ko‘rinishida qaytaradi.
+    Diskka hech narsa yozmaydi.
+    """
 
-    qr_png = overlay_path.replace(".pdf", "_qr.png")
-
-    # QR kod yaratish
+    # --- QR kodni PIL image qilib yaratamiz ---
     qr = qrcode.QRCode(
         version=None,
         error_correction=ERROR_CORRECT_M,
@@ -62,34 +65,37 @@ def create_overlay_pdf(page_w: float, page_h: float, text: str, qr_link: str, ov
     )
     qr.add_data(qr_link)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-    img.save(qr_png)
+    img = qr.make_image(fill_color="black", back_color="white")  # PIL Image
 
-    # PDF yaratish
-    c = canvas.Canvas(overlay_path, pagesize=(page_w, page_h))
+    # --- QR ni RAM’da PNG qilib olish ---
+    qr_buf = BytesIO()
+    img.save(qr_buf, format="PNG")
+    qr_buf.seek(0)
+    qr_reader = ImageReader(qr_buf)
+
+    # --- Overlay PDFni RAM’da yaratish ---
+    pdf_buf = BytesIO()
+    c = canvas.Canvas(pdf_buf, pagesize=(page_w, page_h))
     c.setFillColor(red)
 
     # Yozuv (yuqori chap)
     c.setFont("Helvetica-Bold", 10)
     c.drawString(10, page_h - 15, text)
 
-    # QR kod (pastki markaz) - 15mm
+    # QR (pastki markaz)
     qr_size = 65
     x_center = (page_w - qr_size) / 2
     y_bottom = 5
 
-    c.drawImage(qr_png, x_center, y_bottom, width=qr_size, height=qr_size, mask="auto")
+    c.drawImage(qr_reader, x_center, y_bottom, width=qr_size, height=qr_size, mask="auto")
+    c.showPage()
     c.save()
 
-    # QR kod faylini o'chirish
-    try:
-        os.remove(qr_png)
-    except Exception as e:
-        logger.warning(f"QR kod faylini o'chirishda xatolik: {e}")
+    return pdf_buf.getvalue()
 
 
 # ==========================================================
-# 3) PDF ga imzo (HAR BIR SAHIFAGA)
+# 3) PDF ga QK urish (HAR BIR SAHIFAGA, o‘lchamga mos)
 # ==========================================================
 def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -> bool:
 
@@ -102,12 +108,10 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
         raise ValueError("PDF noto‘g‘ri format")
 
     abs_pdf = os.path.abspath(pdf_path)
-    logger.info(f"PDF imzolanmoqda: {abs_pdf}")
+    logger.info(f"PDF QK urilmoqda: {abs_pdf}")
 
     # QR link: deed status sahifasi
-    qr_link = request.build_absolute_uri(
-        reverse("deed_status", args=[int(deed_id)])
-    )
+    qr_link = request.build_absolute_uri(reverse("deed_status", args=[int(deed_id)]))
 
     text = (
         f"{approver_name} tomonidan "
@@ -115,61 +119,51 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
     )
 
     lock_path = abs_pdf + ".lock"
+    tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
 
     try:
         with file_lock(lock_path, timeout=10):
-            # PDF ni o'qish
             reader = PdfReader(abs_pdf)
             if not reader.pages:
-                logger.error("PDF bo‘sh")
                 raise ValueError("PDF bo‘sh")
 
-            # Birinchi sahifa o'lchamini olish
-            first = reader.pages[0]
-            w = float(first.mediabox.width)
-            h = float(first.mediabox.height)
+            writer = PdfWriter()
 
-            # Vaqtinchalik fayllar
-            overlay_path = abs_pdf.replace(".pdf", "_overlay.pdf")
-            tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
+            for i, page in enumerate(reader.pages):
+                # ✅ HAR SAHIFA O‘LCHAMI
+                w = float(page.mediabox.width)
+                h = float(page.mediabox.height)
 
-            try:
-                # Overlay yaratish
-                create_overlay_pdf(w, h, text, qr_link, overlay_path)
+                # ✅ Shu sahifa uchun overlay bytes
+                overlay_bytes = build_overlay_pdf_bytes(w, h, text, qr_link)
 
-                overlay_reader = PdfReader(overlay_path)
+                overlay_reader = PdfReader(BytesIO(overlay_bytes))
                 overlay_page = overlay_reader.pages[0]
 
-                # Har bir sahifaga overlay qo'shish
-                writer = PdfWriter()
-                for i, page in enumerate(reader.pages):
-                    page.merge_page(overlay_page)
-                    writer.add_page(page)
-                    logger.debug(f"Sahifa {i + 1} imzolandi")
+                # ✅ QK urish
+                page.merge_page(overlay_page)
+                writer.add_page(page)
 
-                # Vaqtinchalik faylga yozish
-                with open(tmp_out, "wb") as f:
-                    writer.write(f)
+                logger.debug(f"Sahifa {i + 1} QK urildi")
 
-                # Asl faylni imzolangan versiya bilan almashtirish
-                shutil.move(tmp_out, abs_pdf)
-                logger.info(f"PDF muvaffaqiyatli imzolandi: {abs_pdf}")
+            # ✅ avval tmp ga yozamiz, keyin almashtiramiz (xavfsiz)
+            with open(tmp_out, "wb") as f:
+                writer.write(f)
 
-                return True
-
-            finally:
-                # Vaqtinchalik fayllarni tozalash
-                for f in [overlay_path, tmp_out]:
-                    try:
-                        if os.path.exists(f):
-                            os.remove(f)
-                    except Exception as e:
-                        logger.warning(f"Faylni o'chirishda xatolik: {f} - {e}")
+            shutil.move(tmp_out, abs_pdf)
+            logger.info(f"PDF muvaffaqiyatli QK urildi: {abs_pdf}")
+            return True
 
     except Exception as e:
-        logger.error(f"PDF imzolashda xatolik: {e}")
+        logger.error(f"PDF QK urishda xatolik: {e}")
         raise
-
+    finally:
+        # tmp qolib ketgan bo‘lsa tozalab ketamiz
+        try:
+            if os.path.exists(tmp_out):
+                os.remove(tmp_out)
+        except Exception as e:
+            logger.warning(f"tmp faylni o'chirishda xatolik: {e}")
 
 # ==========================================================
 # 4) JWT decode

@@ -32,7 +32,7 @@ from datetime import date
 import tempfile
 from django.core.files.base import ContentFile
 import secrets
-
+from django.conf import settings
 def global_data(request):
     return {
         "global_organizations": Organization.objects.only("id", "name").order_by("name"),
@@ -225,104 +225,6 @@ def deed_status(request, pk):
     return render(request, "main/deed_status.html", context)
 
 
-@never_cache
-@login_required
-@transaction.atomic
-def deed_post(request):
-    if request.method != "POST":
-        return redirect("contact")
-
-    employee = getattr(request.user, "employee", None)
-    back_url = request.META.get("HTTP_REFERER", "/")
-
-    sender_id = (request.POST.get("sender_id") or "").strip()      # xizmat ko'rsatuvchi vakil (majbur)
-    receiver_id = (request.POST.get("receiver_id") or "").strip()  # imzolovchi org vakil (ixtiyoriy)
-    message = request.POST.get("message", "").strip()
-    agreements = request.POST.getlist("agreements[]")
-
-    # ✅ Sender majburiy
-    if not sender_id:
-        messages.info(request, "Xizmat ko'rsatuvchi tashkilot vakili tanlang")
-        return redirect(back_url)
-    sender = get_object_or_404(Employee.objects.select_related("user"), id=sender_id)
-
-    # ✅ Receiver ixtiyoriy
-    receiver = None
-    if receiver_id:
-        receiver = get_object_or_404(Employee.objects.select_related("user"), id=receiver_id)
-
-    upload_file = request.FILES.get("file")
-    if not upload_file:
-        messages.info(request, "Fayl yuklanmadi")
-        return redirect(back_url)
-
-    ext = os.path.splitext(upload_file.name)[1].lower()
-    if ext not in [".docx", ".pdf"]:
-        messages.info(request, "❌ Faqat Word (DOCX) yoki PDF fayl yuklash mumkin")
-        return redirect(back_url)
-
-    upload_file.name = f"deed_{uuid.uuid4().hex}{ext}"
-
-    # ✅ Statuslar
-    status_sender = "viewed"                      # sender majbur
-    status_receiver = "viewed" if receiver else "not_required"  # receiver bo'lmasa 1ta QR
-
-    deed = Deed.objects.create(
-        user=employee,
-        sender=sender,
-        receiver=receiver,
-        file=upload_file,
-        message_user=message,
-        status_sender=status_sender,
-        status_receiver=status_receiver,
-    )
-
-    file_path = deed.file.path
-
-    # DOCX => PDF
-    if ext == ".docx":
-        pdf_path, debug = convert_docx_to_pdf_libre(file_path)
-        if not pdf_path or not os.path.exists(pdf_path):
-            messages.info(request, "❌ DOCX → PDF konvertatsiya xatosi")
-            raise Exception(f"DOCX->PDF failed: {debug}")
-
-        try:
-            os.remove(file_path)
-        except Exception:
-            pass
-
-        with open(pdf_path, "rb") as f:
-            deed.file.save(os.path.basename(pdf_path), File(f), save=True)
-
-        try:
-            os.remove(pdf_path)
-        except Exception:
-            pass
-
-    # agreements[] -> ids
-    ids = []
-    for x in agreements:
-        x = (x or "").strip()
-        if x.isdigit():
-            ids.append(int(x))
-    ids = list(set(ids))
-
-    # ✅ Exclude: sender va receiver (receiver bo'lmasa qo'shilmaydi)
-    exclude_ids = set()
-    exclude_ids.add(sender.id)
-    if receiver:
-        exclude_ids.add(receiver.id)
-
-    ids = [i for i in ids if i not in exclude_ids]
-
-    if ids:
-        emps = Employee.objects.filter(id__in=ids).only("id")
-        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
-        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
-
-    messages.success(request, "Imzolashga yuborildi")
-    return redirect(back_url)
-
 
 @never_cache
 @login_required
@@ -398,14 +300,12 @@ def deed_action(request, pk):
             messages.info(request, "PDF o‘qilmadi")
             return redirect(back_url)
 
-        after_sso_url = reverse("deed_pdf_view", args=[deed.id]) + "?" + urlencode({"next": back_url})
 
         request.session["PENDING_APPROVE"] = {
             "deed_id": deed.id,
             "role": role,          # sender/receiver
             "message": message,
             "redirect_url": back_url,
-            "after_sso_url": after_sso_url,
         }
         request.session.modified = True
         return redirect("sso_start_page")
@@ -458,16 +358,6 @@ def deed_edit(request, pk):
         "deed": deed
     })
 
-
-from django.http import FileResponse
-def deed_approve_pdf(request, pk):
-    deed = get_object_or_404(Deed, pk=pk)
-
-    pdf_bytes = deed_to_pdf_bytes(request, deed)
-    pdf_name = f"deed/deed_{deed.id}.pdf"
-    deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
-
-    return FileResponse(deed.file.open("rb"), content_type="application/pdf")
 
 
 @login_required
@@ -552,14 +442,14 @@ def sso_exchange_and_finish(request):
             )
 
         # ==========================================================
-        # ✅ sender/receiver: FINAL shartga ko'ra QR uriladi
+        # ✅ sender/receiver: FINAL bo'lganda PDF qayta + QK urish
         # ==========================================================
         if role in ("sender", "receiver"):
             deed_id = pending.get("deed_id")
             if not deed_id:
                 raise PermissionDenied("Deed yo'q")
 
-            approver_name = employee.full_name
+            approver_name = getattr(employee, "full_name", None) or str(employee)
 
             # Avval transaction ichida faqat DB operatsiyalari
             with transaction.atomic():
@@ -574,9 +464,6 @@ def sso_exchange_and_finish(request):
                     raise PermissionDenied("Sender emassiz")
                 if role == "receiver" and deed.receiver_id != employee.id:
                     raise PermissionDenied("Receiver emassiz")
-
-                if not deed.file:
-                    raise PermissionDenied("PDF yo'q")
 
                 # Status update
                 if role == "sender":
@@ -603,32 +490,54 @@ def sso_exchange_and_finish(request):
 
                 # FINAL shartni tekshirish
                 is_final = (
-                        (deed.receiver_id is None and deed.status_sender == "approved")
-                        or (deed.receiver_id is not None
-                            and deed.status_sender == "approved"
-                            and deed.status_receiver == "approved")
+                    (deed.receiver_id is None and deed.status_sender == "approved")
+                    or (deed.receiver_id is not None
+                        and deed.status_sender == "approved"
+                        and deed.status_receiver == "approved")
                 )
+
+                deed_pk = deed.pk  # transactiondan tashqarida ishlatamiz
 
             # Transaction tashqarisida fayl operatsiyasi
             if is_final:
                 try:
+                    # 🔥 deed-ni qayta chaqiramiz (fresh instance)
+                    deed = Deed.objects.get(pk=deed_pk)
+
+                    # ✅ 1) deed.body dan qayta PDF yaratamiz (watermark YO'Q)
+                    pdf_bytes = deed_to_pdf_bytes(deed)
+
+                    # ✅ 2) yangi nom bilan deed.file ga saqlaymiz
+                    today_str = timezone.now().strftime("%Y%m%d")
+                    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                    random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+                    pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+                    deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+
+                    # ✅ 3) endi shu faylga QK/QR uramiz
                     sign_pdf_inplace(
                         pdf_path=deed.file.path,
                         request=request,
                         approver_name=approver_name,
                         deed_id=deed.pk,
                     )
+
+                except HtmlPdfError as e:
+                    return JsonResponse(
+                        {"status": "error", "message": f"PDF yaratilmadi: {e}", "redirect": redirect_url},
+                        status=409
+                    )
                 except TimeoutError as e:
-                    return JsonResponse({
-                        "status": "error",
-                        "message": str(e),
-                        "redirect": redirect_url
-                    }, status=409)
+                    return JsonResponse(
+                        {"status": "error", "message": str(e), "redirect": redirect_url},
+                        status=409
+                    )
                 except Exception as e:
-                    # Log qilish kerak
-                    print(f"PDF sign error: {e}")
-                    # PDF sign xatosi bo'lsa ham, DB o'zgarishlari saqlangan
-                    # Shuning uchun foydalanuvchiga xabar berish kerak
+                    print(f"PDF rebuild/sign error: {e}")
+                    return JsonResponse(
+                        {"status": "error", "message": "PDF imzolashda xatolik", "redirect": redirect_url},
+                        status=500
+                    )
 
             request.session.pop("PENDING_APPROVE", None)
             request.session.modified = True
@@ -673,6 +582,7 @@ def sso_exchange_and_finish(request):
             {"status": "error", "message": "SSO xatolik", "redirect": "/"},
             status=500
         )
+
 
 
 def exchange_code_for_token(code, code_verifier, redirect_uri):
@@ -2065,6 +1975,8 @@ def akt_post(request):
     # ✅ PDF yaratib deed.file ga saqlaymiz
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
+        wm_text = "IMZOLASHGA YUBORILDI"
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
         today_str = timezone.now().strftime("%Y%m%d")
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         random_part = ''.join(secrets.choice(alphabet) for _ in range(6))

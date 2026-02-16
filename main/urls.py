@@ -1,8 +1,7 @@
 from django.urls import path
 from .views import *
 from .ajax_views import *
-from .qk_views import *
-from .html_pdf import *
+
 urlpatterns = [
     path("", home, name="home"),
     path('profil/', profil, name='profil'),
@@ -39,7 +38,6 @@ urlpatterns = [
 
 
     # DEEDorder_deed
-    path('deed_post/', deed_post, name='deed_post'),
     path("deed/consent/<int:pk>/delete/", deedconsent_delete, name="deedconsent_delete"),
 
 
@@ -100,9 +98,5 @@ urlpatterns = [
     path("sso/callback/", sso_callback_page, name="sso_callback"), # JS: code ni olib exchange ga yuboradi
     path("sso/exchange/", sso_exchange_and_finish, name="sso_exchange_and_finish"),
 
-    path("deed/<int:pk>/viewer/", deed_pdf_view, name="deed_pdf_view"),
-    path("deed/<int:pk>/stamp-qr/", deed_stamp_qr, name="deed_stamp_qr"),
-
     path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
-    path("deed/<int:pk>/approve-pdf/", deed_approve_pdf, name="deed_approve_pdf"),
 ]

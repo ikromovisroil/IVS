@@ -14,111 +14,9 @@
 
     <div class="pagetitle">
       <div class="d-flex justify-content-between align-items-center">
-        <h1>Imzolashga yuborish</h1>
-<!--        <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#sendModal">-->
-<!--          Imzolashga yuborish-->
-<!--        </button>-->
+        <h1>Imzolashga yuborilgan</h1>
       </div>
     </div>
-
-    <!-- MODAL -->
-<!--    <div class="modal fade" id="sendModal" tabindex="-1" aria-hidden="true">-->
-<!--      <div class="modal-dialog modal-dialog-scrollable modal-lg modal-dialog-centered">-->
-<!--        <div class="modal-content">-->
-<!--          <form action="{% url 'deed_post' %}" method="post" enctype="multipart/form-data">-->
-<!--            {% csrf_token %}-->
-<!--            <div class="modal-header">-->
-<!--              <h5 class="modal-title">#Xabar yuborish</h5>-->
-<!--              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>-->
-<!--            </div>-->
-
-<!--            <div class="modal-body">-->
-
-<!--                <div class="border rounded bg-light p-3">-->
-<!--                    <h4>Xizmat ko'rsatuvchining vakili</h4>-->
-<!--                    &lt;!&ndash; Imzolovchi &ndash;&gt;-->
-<!--                    <div class="row mb-3">-->
-<!--                      <label class="col-sm-3 col-form-label">Imzolovchi</label>-->
-<!--                      <div class="col-sm-9">-->
-<!--                        <select class="form-select js-sender-id" name="sender_id" required>-->
-<!--                          <option value="">Tanlang...</option>-->
-<!--                          {% for emp in senders %}-->
-<!--                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>-->
-<!--                          {% endfor %}-->
-<!--                        </select>-->
-<!--                      </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-
-<!--                <div class="border rounded bg-light p-3 mt-3">-->
-<!--                    <h4>Ikkinchi tomon vakili</h4>-->
-<!--                    &lt;!&ndash; Imzolovchi &ndash;&gt;-->
-<!--                    <div class="row mb-3">-->
-<!--                      <label class="col-sm-3 col-form-label">Tashkilot</label>-->
-<!--                      <div class="col-sm-9">-->
-<!--                        <select class="form-select js-receiver-org" name="receiver_org">-->
-<!--                          <option value="">Tanlang...</option>-->
-<!--                          {% for org in organization %}-->
-<!--                            <option value="{{ org.id }}">{{ org.name }}</option>-->
-<!--                          {% endfor %}-->
-<!--                        </select>-->
-<!--                      </div>-->
-<!--                    </div>-->
-
-<!--                    <div class="row mb-3">-->
-<!--                      <label class="col-sm-3 col-form-label">Imzolovchi</label>-->
-<!--                      <div class="col-sm-9">-->
-<!--                        <select class="form-select js-receiver-id" name="receiver_id">-->
-<!--                          <option value="">Tanlang...</option>-->
-<!--                          {% for emp in employee %}-->
-<!--                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>-->
-<!--                          {% endfor %}-->
-<!--                        </select>-->
-<!--                      </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-
-<!--                <div class="border rounded bg-light p-3 mt-3">-->
-<!--                    <h4>Kelishuvchilar</h4>-->
-
-<!--                    <div class="row mb-3">-->
-<!--                      <label class="col-sm-3 col-form-label">Kelishuvchilar</label>-->
-<!--                      <div class="col-sm-9">-->
-<!--                        <select name="agreements[]" class="form-select select2 js-agreements" multiple>-->
-<!--                          {% for emp in employee %}-->
-<!--                            <option value="{{ emp.id }}">{{ emp.rank }} - {{ emp.full_name }}</option>-->
-<!--                          {% endfor %}-->
-<!--                        </select>-->
-<!--                      </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-<!--                <div class="border rounded bg-light p-3 mt-3">-->
-<!--                    &lt;!&ndash; File &ndash;&gt;-->
-<!--                    <div class="row mb-3">-->
-<!--                      <label class="col-sm-3 col-form-label">Fayl</label>-->
-<!--                      <div class="col-sm-9">-->
-<!--                        <input class="form-control" type="file" name="file" required>-->
-<!--                      </div>-->
-<!--                    </div>-->
-
-<!--                    <div class="row mb-3">-->
-<!--                      <label class="col-sm-3 col-form-label">Izoh</label>-->
-<!--                      <div class="col-sm-9">-->
-<!--                        <textarea class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>-->
-<!--                      </div>-->
-<!--                    </div>-->
-<!--                </div>-->
-
-<!--            </div>-->
-
-<!--            <div class="modal-footer justify-content-center gap-2">-->
-<!--              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>-->
-<!--              <button type="submit" class="btn btn-primary">Yuborish</button>-->
-<!--            </div>-->
-<!--          </form>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
 
     <section class="section profile">
       <div class="row">
@@ -141,7 +39,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for d in deed_sender %}
+                    {% for d in deed_user %}
                         <tr>
                             <td>{{ d.sender.full_name }}</td>
                             <td>{{ d.receiver.full_name }}</td>
