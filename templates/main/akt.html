@@ -337,11 +337,11 @@ $(function () {
   // Boshlang'ich sanalarni o'rnatish
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekAgoStr = weekAgo.toISOString().split('T')[0];
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  const monthAgoStr = monthAgo.toISOString().split('T')[0];
 
-  if (!$('#date1').val()) $('#date1').val(weekAgoStr);
+  if (!$('#date1').val()) $('#date1').val(monthAgoStr);
   if (!$('#date2').val()) $('#date2').val(todayStr);
 
   // ----------------- Departmentlarni yuklash -----------------

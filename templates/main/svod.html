@@ -17,9 +17,8 @@
     </div><!-- End Page Title -->
 
     <section class="section">
-      <div class="row">
+      <form class="row" action="{% url 'akt_post' %}" method="post">{% csrf_token %}
         <div class="col-lg-4">
-         <form action="{% url 'svod_post' %}" method="post">{% csrf_token %}
           <div class="card">
             <div class="card-body">
               <h5 class="card-title">Filtrlash</h5>
@@ -79,7 +78,6 @@
               </div><!-- Vertical Form -->
             </div>
           </div>
-         </form>
         </div>
 
         <div class="col-lg-8">
@@ -118,7 +116,7 @@
                   <b>Y A K U N I Y H I S O B O T</b>
                 </div>
                 <div style="text-align:center;">
-                  <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi tashkiloti vakili:</b>
+                  <b>O‘zbekiston Respublikasi <span id="org_id">Iqtisodiyot va moliya vazirligi</span> tashkili</b>
                 </div>
                 <div style="text-align:center;">
                   <b>2026 yil dekabir oyi uchun</b>
@@ -136,6 +134,8 @@
                       <col style="width:10%;">
                     </colgroup>
                     <tbody id="materials_tbody">
+                    <!-- ✅ MUHIM: TinyMCE tbody'ni merge qilib yubormasligi uchun
+                         header + data bir xil tbody ichida bo‘lsin -->
                       <tr>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">№</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Materialning nomi</td>
@@ -146,11 +146,12 @@
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Eslatma*</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Kod 1С</td>
                       </tr>
+                  <!-- material qatorlari JS orqali shu tbody'ga qo‘shiladi -->
                     </tbody>
                   </table>
                 </div>
                 <div style="text-align:left;">
-                  <b>04 mart 2025 yildagi 1 - sonli; :shartnomalarga muvofiq</b>
+                  <b>2025-yil 4-martdagi 1-son shartnomaga muvofiq</b>
                 </div>
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
@@ -214,129 +215,302 @@
           </div>
 
         </div>
-      </div>
+      </form>
     </section>
 
   </main><!-- End #main -->
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
-$(function() {
+// ----------------- Helper funksiyalar -----------------
+function todayDmy() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = d.getFullYear();
+  return `${dd}.${mm}.${yy}`;
+}
 
-  // default: oy boshidan bugungacha
-  function pad2(n){ return (n<10?'0':'')+n; }
-  function setDefaultDates() {
-    const now = new Date();
-    const first = new Date(now.getFullYear(), now.getMonth(), 1);
+function ymdToDmy(ymd) {
+  if (!ymd) return '';
+  const [y, m, d] = ymd.split('-');
+  return `${d}.${m}.${y}`;
+}
 
-    if (!$('#date1').val()) $('#date1').val(`${first.getFullYear()}-${pad2(first.getMonth()+1)}-${pad2(first.getDate())}`);
-    if (!$('#date2').val()) $('#date2').val(`${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`);
+function formatNumber(num) {
+  // Sonni formatlash
+  // Misol: 1000 -> "1 000"
+  // Misol: 1000.5 -> "1 000,50"
+  if (num === null || num === undefined || isNaN(num)) return '0';
+
+  // Sonni butun va kasr qismlarga ajratish
+  let numStr = num.toString();
+
+  // Agar nuqta bo'lsa (float son)
+  if (numStr.includes('.')) {
+    let parts = numStr.split('.');
+    let integerPart = parts[0];
+    let fractionalPart = parts[1];
+
+    // Butun qismni mingliklarda bo'lish
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+    // Kasr qismni 2 xonaga to'ldirish
+    if (fractionalPart.length === 1) {
+      fractionalPart = fractionalPart + '0';
+    } else if (fractionalPart.length > 2) {
+      fractionalPart = fractionalPart.substring(0, 2);
+    }
+
+    return integerPart + ',' + fractionalPart;
   }
-  setDefaultDates();
+  // Agar butun son bo'lsa
+  else {
+    // Butun qismni mingliklarda bo'lish
+    return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  }
+}
 
-  $('#btnGenerate').on('click', generateReport);
+// ----------------- TinyMCE ga yozish funksiyalari -----------------
+function editorGet() {
+  return tinymce.get('body');
+}
 
-  function generateReport() {
+function editorSetText(selector, text) {
+  const ed = editorGet();
+  if (!ed) return false;
+
+  try {
+    const node = ed.getBody().querySelector(selector);
+    if (node) {
+      node.textContent = text;
+      ed.nodeChanged();
+      return true;
+    }
+  } catch(e) {
+    console.log("EditorSetText xatosi:", e);
+  }
+  return false;
+}
+
+function editorSetTbodyRows(rowsHtml) {
+  const ed = editorGet();
+  if (!ed) return;
+
+  try {
+    const body = ed.getBody();
+    const tbody = body.querySelector('#materials_tbody');
+    if (!tbody) {
+      console.log("materials_tbody topilmadi");
+      return;
+    }
+
+    // Header qatorini saqlash (TinyMCE ichidagi mavjud header)
+    const existingRows = tbody.querySelectorAll('tr');
+    let headerRow = '';
+
+    // Agar header qatori mavjud bo'lsa, uni saqlaymiz
+    if (existingRows.length > 0) {
+      headerRow = existingRows[0].outerHTML;
+    }
+
+    // Header + yangi ma'lumotlar
+    tbody.innerHTML = headerRow + rowsHtml;
+    ed.nodeChanged();
+  } catch(e) {
+    console.log("EditorSetTbodyRows xatosi:", e);
+  }
+}
+
+// ----------------- jQuery va Select2 -----------------
+$(function () {
+  // TinyMCE initial bo'lishini kutish
+  let tinymceReady = false;
+  const tinymceCheckInterval = setInterval(function() {
+    if (tinymce.get('body')) {
+      tinymceReady = true;
+      clearInterval(tinymceCheckInterval);
+
+      // Boshlang'ich sanani o'rnatish
+      const bugungiSana = todayDmy() + ' y';
+      editorSetText('#doc_date', bugungiSana);
+
+      // Tashkilot nomini o'rnatish (agar tanlangan bo'lsa)
+      const orgName = $('#organization option:selected').text();
+      if (orgName && orgName !== 'Tanlang...') {
+        editorSetText('#org_id', orgName);
+      }
+    }
+  }, 500);
+
+  // Select2 ni ishga tushirish
+  $('#organization, #sender, #agreements').select2({
+    width: '100%',
+    placeholder: 'Tanlang...',
+    allowClear: true
+  });
+
+  // Boshlang'ich sanalarni o'rnatish
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  const monthAgoStr = monthAgo.toISOString().split('T')[0];
+
+  if (!$('#date1').val()) $('#date1').val(monthAgoStr);
+  if (!$('#date2').val()) $('#date2').val(todayStr);
+
+  // ----------------- Tanlangan malumotlarni TinyMCE ga yozish -----------------
+  function updateEditorWithSelections() {
+    if (!tinymceReady) return;
+
+    const orgName = $('#organization option:selected').text();
+    if (orgName && orgName !== 'Tanlang...') {
+      editorSetText('#org_id', orgName);
+    }
+
+    const date1 = $('#date1').val();
+    if (date1) {
+      const monthYear = new Date(date1).toLocaleDateString('uz-UZ', {
+        year: 'numeric',
+        month: 'long'
+      });
+      editorSetText('#date', `${monthYear} oyi uchun`);
+    }
+  }
+
+  // ----------------- Materiallarni qidirish -----------------
+  function searchMaterials() {
     const orgId = $('#organization').val();
     const date1 = $('#date1').val();
     const date2 = $('#date2').val();
 
     if (!orgId || !date1 || !date2) {
-      alert("Iltimos, tashkilot va sanalarni to‘ldiring!");
-      return;
-    }
-    if (new Date(date1) > new Date(date2)) {
-      alert("Boshlanish sanasi tugash sanasidan keyin bo‘lishi mumkin emas!");
+      alert("Iltimos, tashkilot va sanalarni to'liq tanlang!");
       return;
     }
 
-    $('#resultsBody').html(`
+    // Tanlangan ma'lumotlarni editorga yozish
+    updateEditorWithSelections();
+
+    // Yuklanmoqda xabarini ko'rsatish
+    editorSetTbodyRows(`
       <tr>
-        <td colspan="8" class="text-center">
-          <div class="spinner-border text-primary" role="status"></div>
-          <div class="mt-2">Hisobot yuklanmoqda...</div>
+        <td colspan="8" style="text-align:center; padding:20px;">
+          <i>Yuklanmoqda...</i>
         </td>
       </tr>
     `);
 
+    // Materiallarni yuklash
     $.ajax({
       url: "{% url 'ajax_svod_materials' %}",
-      method: 'GET',
-      data: { organization: orgId, date1: date1, date2: date2 },
-      success: function(rows) {
-        renderTable(rows || []);
+      method: "GET",
+      data: {
+        organization: orgId,
+        date1: date1,
+        date2: date2
+      },
+      success: function(data) {
+        if (!data || data.length === 0) {
+          editorSetTbodyRows(`
+            <tr>
+              <td colspan="8" style="text-align:center; color:#888; padding:20px;">
+                Tanlangan sana oralig'ida ma'lumot topilmadi
+              </td>
+            </tr>
+          `);
+          return;
+        }
+
+        let rows = "";
+        let totalSum = 0;
+        let index = 1;
+
+        // Ma'lumotlar qatorlari (header YO'Q, faqat ma'lumotlar)
+        data.forEach(function(item) {
+          const quantity = parseFloat(item.total_number) || 0;
+          const price = parseFloat(item.material__price) || 0;
+          const sum = parseFloat(item.total_sum) || 0;
+
+          totalSum += sum;
+
+          rows += `
+            <tr>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.material__name || ''}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.material__unit__name || ''}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(quantity)}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(price)}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(sum)}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.order_info || ''}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.material__code || ''}</td>
+            </tr>
+          `;
+        });
+
+        // Jami qator
+        rows += `
+          <tr>
+            <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;"><b>JAMI:</b></td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:right;"><b>${formatNumber(totalSum)}</b></td>
+            <td colspan="2" style="border:1px solid #000;font-size:8pt;text-align:right;"></td>
+          </tr>
+        `;
+
+        editorSetTbodyRows(rows);
       },
       error: function(xhr) {
-        $('#resultsBody').html(`
+        console.error("Xatolik:", xhr);
+        editorSetTbodyRows(`
           <tr>
-            <td colspan="8" class="text-center text-danger">
-              Xatolik: ${(xhr.responseJSON && xhr.responseJSON.error) ? xhr.responseJSON.error : xhr.status}
+            <td colspan="8" style="text-align:center; color:red; padding:20px;">
+              Xatolik yuz berdi: ${xhr.status} ${xhr.statusText}
             </td>
           </tr>
         `);
-        console.log(xhr.responseText);
       }
     });
   }
 
-  function renderTable(rows){
-    if(!rows.length){
-      $('#resultsBody').html(`<tr><td colspan="8" class="text-center text-muted">Ma’lumot topilmadi</td></tr>`);
-      return;
+  // ----------------- Event listeners -----------------
+  $('#organization').on('change', function() {
+    updateEditorWithSelections();
+  });
+
+  $('#date1, #date2').on('change', function() {
+    updateEditorWithSelections();
+  });
+
+  $('#btnGenerate').on('click', function(e) {
+    e.preventDefault();
+    searchMaterials();
+  });
+
+  // ----------------- Form submit ni to'g'irlash -----------------
+  $('form').on('submit', function(e) {
+    // Agar TinyMCE ishga tushmagan bo'lsa, davom etish
+    if (!tinymceReady) return true;
+
+    // TinyMCE content ni textarea ga yozish
+    const ed = tinymce.get('body');
+    if (ed) {
+      ed.save();
     }
 
-    let html = "";
-    let total = 0;
+    return true; // Formani yuborish
+  });
 
-    rows.forEach((r, idx) => {
-      const sum = parseFloat(r.total_sum) || 0;
-      total += sum;
+  // ----------------- Initial load -----------------
+  // Agar Django dan kelgan ma'lumotlar bo'lsa
+  {% if selected_org %}
+    $('#organization').val('{{ selected_org }}').trigger('change');
+  {% endif %}
 
-      html += `
-        <tr>
-          <td>${idx + 1}</td>
-          <td>${r.material__name || ''}</td>
-          <td>${r.material__unit__name || ''}</td>
-          <td class="text-end">${(r.total_number ?? '')}</td>
-          <td class="text-end">${(r.material__price ?? '')}</td>
-          <td class="text-end">${(r.total_sum ?? '')}</td>
-          <td>${r.order_info || ''}</td>
-          <td>${r.material__code || ''}</td>
-        </tr>
-      `;
-    });
-
-    html += `
-      <tr>
-        <td colspan="5" class="text-end"><b>JAMI:</b></td>
-        <td class="text-end"><b>${total.toLocaleString('uz-UZ')}</b></td>
-        <td colspan="2"></td>
-      </tr>
-    `;
-
-    $('#resultsBody').html(html);
-  }
-
-});
-</script>
-<script>
-$(function () {
-
-  function initSelect2All() {
-    $('select').each(function () {
-      const $el = $(this);
-      if ($el.data('select2')) return;
-
-      $el.select2({
-        width: '100%',
-        placeholder: 'Tanlang...',
-        allowClear: true
-      });
-    });
-  }
-
-  initSelect2All();
+  {% if selected_sender %}
+    // Sender ni o'rnatish uchun AJAX so'rov kerak
+    // Bu yerda sizning logikangiz bo'yicha
+  {% endif %}
 });
 </script>
 

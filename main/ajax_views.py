@@ -7,8 +7,11 @@ from datetime import datetime, timedelta
 from django.db.models import Sum, F, DecimalField, ExpressionWrapper, Value,CharField
 from django.db.models.functions import Coalesce, Cast,Concat
 from django.http import JsonResponse
+from django.views.decorators.cache import never_cache
+from django.contrib.auth.decorators import login_required
 
-
+@never_cache
+@login_required
 def deed_mark_seen(request):
     if not request.user.is_authenticated:
         return JsonResponse({'status': 'unauth'})
@@ -21,7 +24,8 @@ def deed_mark_seen(request):
 
     return JsonResponse({'status': 'ok'})
 
-
+@never_cache
+@login_required
 def order_mark_seen(request):
     if not request.user.is_authenticated:
         return JsonResponse({'status': 'unauth'})
@@ -34,7 +38,8 @@ def order_mark_seen(request):
 
     return JsonResponse({'status': 'ok'})
 
-
+@never_cache
+@login_required
 def get_department_employees(request):
     emp_id = request.GET.get("employee_id")
 
@@ -55,7 +60,8 @@ def get_department_employees(request):
 
     return JsonResponse({"employees": data})
 
-
+@never_cache
+@login_required
 def ajax_load_departments(request):
     org_id = request.GET.get('organization')
 
@@ -68,7 +74,8 @@ def ajax_load_departments(request):
 
     return JsonResponse(list(departments), safe=False)
 
-
+@never_cache
+@login_required
 def ajax_load_directorate(request):
     dep_id = request.GET.get('department')
 
@@ -81,7 +88,8 @@ def ajax_load_directorate(request):
 
     return JsonResponse(list(directorate), safe=False)
 
-
+@never_cache
+@login_required
 def ajax_load_division(request):
     dir_id = request.GET.get('directorate')
 
@@ -94,7 +102,8 @@ def ajax_load_division(request):
 
     return JsonResponse(list(division), safe=False)
 
-
+@never_cache
+@login_required
 def ajax_dep_signatory(request):
     dep_id = request.GET.get("department")
     if not dep_id:
@@ -110,7 +119,8 @@ def ajax_dep_signatory(request):
     data = [{"id": e.id, "full_name": e.full_name, "rank": e.rank.name,} for e in qs]
     return JsonResponse(data, safe=False)
 
-
+@never_cache
+@login_required
 def ajax_dep_negotiator(request):
     dep_id = request.GET.get("department")
     my_dep_id = request.user.employee.department_id
@@ -127,7 +137,8 @@ def ajax_dep_negotiator(request):
     data = [{"id": e.id, "full_name": e.full_name} for e in qs]
     return JsonResponse(data, safe=False)
 
-
+@never_cache
+@login_required
 def ajax_employees_org(request):
     org_id = (request.GET.get("organization") or "").strip()
     if not org_id:
@@ -144,7 +155,8 @@ def ajax_employees_org(request):
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})
 
-
+@never_cache
+@login_required
 def ajax_agreements_employees(request):
     org_id = (request.GET.get("org_id") or "").strip()
 
@@ -168,7 +180,8 @@ def ajax_agreements_employees(request):
 
     return JsonResponse({"results": data})
 
-
+@never_cache
+@login_required
 def deedconsent_delete(request, pk):
     emp = getattr(request.user, "employee", None)
     if not emp:
@@ -182,7 +195,8 @@ def deedconsent_delete(request, pk):
     obj.delete()
     return JsonResponse({"ok": True})
 
-
+@never_cache
+@login_required
 def ajax_deedconsent_delete(request):
     dc_id = request.POST.get("dc_id")
     if not dc_id:
@@ -198,7 +212,8 @@ def ajax_deedconsent_delete(request):
     dc.delete()
     return JsonResponse({"ok": True, "deleted_id": int(dc_id)})
 
-
+@never_cache
+@login_required
 def ajax_akt_materials(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -248,7 +263,8 @@ def ajax_akt_materials(request):
 
     return JsonResponse(list(qs), safe=False)
 
-
+@never_cache
+@login_required
 def ajax_svod_materials(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -333,7 +349,8 @@ def ajax_svod_materials(request):
         })
     return JsonResponse(data, safe=False)
 
-
+@never_cache
+@login_required
 def ajax_reestr_materials(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -430,7 +447,7 @@ def ajax_reestr_materials(request):
             "material_code": item.get("material__code", ""),
             "material_name": item.get("material__name", ""),
             "number": float(item.get("number") or 0),
-            "material_price": float(item.get("material__price") or 0),
+            "material__price": float(item.get("material__price") or 0),
             "total_sum": float(item.get("total_sum") or 0),
 
             "sender": (item.get("sender_full_name") or "").strip(),
@@ -443,7 +460,8 @@ def ajax_reestr_materials(request):
 
     return JsonResponse(data, safe=False)
 
-
+@never_cache
+@login_required
 def ajax_document_preview(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

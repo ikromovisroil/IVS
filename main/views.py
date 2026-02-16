@@ -2030,7 +2030,6 @@ def akt_get(request):
 @never_cache
 @login_required
 @require_POST
-@transaction.atomic
 def akt_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2117,10 +2116,10 @@ def svod_get(request):
 
 @never_cache
 @login_required
+@require_POST
 def svod_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
         messages.error(request, "Employee topilmadi")
         return redirect("akt_get")
 
@@ -2129,8 +2128,6 @@ def svod_post(request):
     message = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
     body = request.POST.get("body") or ""
-
-    file_type = False
 
     # sender obyekt
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
@@ -2148,7 +2145,7 @@ def svod_post(request):
         user=employee,  # FK obyekt
         message_user=message,
         body=body,
-        file_type=file_type,  # ✅ True/False
+        file_type=False,  # ✅ True/False
     )
 
     # ✅ PDF yaratib deed.file ga saqlaymiz
