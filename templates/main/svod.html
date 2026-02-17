@@ -222,7 +222,7 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-// ----------------- Helper funksiyalar -----------------
+/* ===================== Helper funcs ===================== */
 function todayDmy() {
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, '0');
@@ -231,48 +231,45 @@ function todayDmy() {
   return `${dd}.${mm}.${yy}`;
 }
 
-function ymdToDmy(ymd) {
-  if (!ymd) return '';
-  const [y, m, d] = ymd.split('-');
-  return `${d}.${m}.${y}`;
+function formatNumber(value) {
+  if (value === null || value === undefined) return '0';
+
+  let s = String(value).trim();
+  if (!s) return '0';
+
+  // bo'shliqlarni olib tashlaymiz: "100 000,50"
+  s = s.replace(/\s+/g, '');
+
+  // "," -> "." qilib parse
+  const normalized = s.replace(',', '.');
+  const num = Number(normalized);
+  if (!isFinite(num)) return '0';
+
+  const hasFraction = /[,.]\d+/.test(s);
+  let [intPart, fracPart] = (hasFraction ? num.toFixed(2) : Math.trunc(num).toString()).split('.');
+
+  const sign = intPart.startsWith('-') ? '-' : '';
+  intPart = intPart.replace('-', '');
+  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+
+  return hasFraction ? `${sign}${intPart},${fracPart}` : `${sign}${intPart}`;
 }
 
-function formatNumber(num) {
-  // Sonni formatlash
-  // Misol: 1000 -> "1 000"
-  // Misol: 1000.5 -> "1 000,50"
-  if (num === null || num === undefined || isNaN(num)) return '0';
+/* ===================== ORG normalize (SVOD) ===================== */
+function normalizeOrgName(orgNameRaw){
+  const t = (orgNameRaw || '').trim();
+  if (!t) return t;
 
-  // Sonni butun va kasr qismlarga ajratish
-  let numStr = num.toString();
-
-  // Agar nuqta bo'lsa (float son)
-  if (numStr.includes('.')) {
-    let parts = numStr.split('.');
-    let integerPart = parts[0];
-    let fractionalPart = parts[1];
-
-    // Butun qismni mingliklarda bo'lish
-    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-
-    // Kasr qismni 2 xonaga to'ldirish
-    if (fractionalPart.length === 1) {
-      fractionalPart = fractionalPart + '0';
-    } else if (fractionalPart.length > 2) {
-      fractionalPart = fractionalPart.substring(0, 2);
-    }
-
-    return integerPart + ',' + fractionalPart;
+  // aynan "ivs" bo'lsa (xohlasangiz includes('ivs') ham qilib beraman)
+  if (t.toLowerCase() === 'Axborot texnologiyalari markazi') {
+    return 'Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi';
   }
-  // Agar butun son bo'lsa
-  else {
-    // Butun qismni mingliklarda bo'lish
-    return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-  }
+  return t;
 }
 
-// ----------------- TinyMCE ga yozish funksiyalari -----------------
+/* ===================== TinyMCE helpers ===================== */
 function editorGet() {
+  if (!window.tinymce) return null;
   return tinymce.get('body');
 }
 
@@ -288,69 +285,45 @@ function editorSetText(selector, text) {
       return true;
     }
   } catch(e) {
-    console.log("EditorSetText xatosi:", e);
+    console.log("editorSetText xatosi:", e);
   }
   return false;
 }
 
-function editorSetTbodyRows(rowsHtml) {
+function editorSetTbodyRows(tbodySelector, rowsHtml) {
   const ed = editorGet();
   if (!ed) return;
 
   try {
     const body = ed.getBody();
-    const tbody = body.querySelector('#materials_tbody');
+    const tbody = body.querySelector(tbodySelector);
     if (!tbody) {
-      console.log("materials_tbody topilmadi");
+      console.log("tbody topilmadi:", tbodySelector);
       return;
     }
 
-    // Header qatorini saqlash (TinyMCE ichidagi mavjud header)
+    // SVODda siz 1ta header saqlayapsiz (1-tr)
     const existingRows = tbody.querySelectorAll('tr');
-    let headerRow = '';
+    const headerRow = existingRows[0] ? existingRows[0].outerHTML : '';
 
-    // Agar header qatori mavjud bo'lsa, uni saqlaymiz
-    if (existingRows.length > 0) {
-      headerRow = existingRows[0].outerHTML;
-    }
-
-    // Header + yangi ma'lumotlar
-    tbody.innerHTML = headerRow + rowsHtml;
+    tbody.innerHTML = headerRow + (rowsHtml || '');
     ed.nodeChanged();
   } catch(e) {
-    console.log("EditorSetTbodyRows xatosi:", e);
+    console.log("editorSetTbodyRows xatosi:", e);
   }
 }
 
-// ----------------- jQuery va Select2 -----------------
+/* ===================== Main ===================== */
 $(function () {
-  // TinyMCE initial bo'lishini kutish
-  let tinymceReady = false;
-  const tinymceCheckInterval = setInterval(function() {
-    if (tinymce.get('body')) {
-      tinymceReady = true;
-      clearInterval(tinymceCheckInterval);
 
-      // Boshlang'ich sanani o'rnatish
-      const bugungiSana = todayDmy() + ' y';
-      editorSetText('#doc_date', bugungiSana);
-
-      // Tashkilot nomini o'rnatish (agar tanlangan bo'lsa)
-      const orgName = $('#organization option:selected').text();
-      if (orgName && orgName !== 'Tanlang...') {
-        editorSetText('#org_id', orgName);
-      }
-    }
-  }, 500);
-
-  // Select2 ni ishga tushirish
+  /* ---------- Select2 ---------- */
   $('#organization, #sender, #agreements').select2({
     width: '100%',
     placeholder: 'Tanlang...',
     allowClear: true
   });
 
-  // Boshlang'ich sanalarni o'rnatish
+  /* ---------- Date defaults ---------- */
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const monthAgo = new Date();
@@ -360,26 +333,81 @@ $(function () {
   if (!$('#date1').val()) $('#date1').val(monthAgoStr);
   if (!$('#date2').val()) $('#date2').val(todayStr);
 
-  // ----------------- Tanlangan malumotlarni TinyMCE ga yozish -----------------
+  /* ---------- TinyMCE ready wait ---------- */
+  let tinymceReady = false;
+
+  (function waitTinymce(){
+    let tries = 0;
+    const t = setInterval(function(){
+      tries++;
+      if (editorGet() || tries > 60) { // ~30s max (0.5s interval)
+        clearInterval(t);
+        tinymceReady = !!editorGet();
+
+        if (tinymceReady) {
+          // doc_date bugungi sana
+          editorSetText('#doc_date', todayDmy() + ' y');
+
+          // org_id startda ham yozilsin
+          updateEditorWithSelections();
+
+          // agreements startda ham yuklansin
+          const orgId = $('#organization').val();
+          if (orgId) loadAgreementsByOrg(orgId);
+        }
+      }
+    }, 500);
+  })();
+
+  /* ===================== update editor header ===================== */
   function updateEditorWithSelections() {
     if (!tinymceReady) return;
 
-    const orgName = $('#organization option:selected').text();
+    const orgNameRaw = ($('#organization option:selected').text() || '').trim();
+    const orgName = normalizeOrgName(orgNameRaw);
+
     if (orgName && orgName !== 'Tanlang...') {
       editorSetText('#org_id', orgName);
     }
 
     const date1 = $('#date1').val();
     if (date1) {
-      const monthYear = new Date(date1).toLocaleDateString('uz-UZ', {
-        year: 'numeric',
-        month: 'long'
-      });
+      // oy-yil (uz) -> "2026 yil февраль" kabi chiqishi mumkin,
+      // shuning uchun faqat ".... oyi uchun" qo'shamiz
+      const dt = new Date(date1);
+      const monthYear = dt.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'long' });
       editorSetText('#date', `${monthYear} oyi uchun`);
     }
   }
 
-  // ----------------- Materiallarni qidirish -----------------
+  /* ===================== Agreements (org bo'yicha) ===================== */
+  function loadAgreementsByOrg(orgId, selectedIds = []) {
+    $('#agreements').html('').trigger('change');
+    if (!orgId) return;
+
+    $.ajax({
+      url: "{% url 'ajax_agreements_employees' %}",
+      method: "GET",
+      dataType: "json",
+      data: { org_id: orgId },  // ✅ view kutayotgan nom
+      success: function (data) {
+        let options = '';
+        const selectedSet = new Set((selectedIds || []).map(String));
+
+        (data || []).forEach(function(emp) {
+          const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
+          options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+        });
+
+        $('#agreements').html(options).trigger('change');
+      },
+      error: function () {
+        $('#agreements').html('').trigger('change');
+      }
+    });
+  }
+
+  /* ===================== SVOD materials ===================== */
   function searchMaterials() {
     const orgId = $('#organization').val();
     const date1 = $('#date1').val();
@@ -390,11 +418,10 @@ $(function () {
       return;
     }
 
-    // Tanlangan ma'lumotlarni editorga yozish
     updateEditorWithSelections();
 
-    // Yuklanmoqda xabarini ko'rsatish
-    editorSetTbodyRows(`
+    // loading
+    editorSetTbodyRows('#materials_tbody', `
       <tr>
         <td colspan="8" style="text-align:center; padding:20px;">
           <i>Yuklanmoqda...</i>
@@ -402,18 +429,14 @@ $(function () {
       </tr>
     `);
 
-    // Materiallarni yuklash
     $.ajax({
       url: "{% url 'ajax_svod_materials' %}",
       method: "GET",
-      data: {
-        organization: orgId,
-        date1: date1,
-        date2: date2
-      },
+      dataType: "json",
+      data: { organization: orgId, date1: date1, date2: date2 },
       success: function(data) {
         if (!data || data.length === 0) {
-          editorSetTbodyRows(`
+          editorSetTbodyRows('#materials_tbody', `
             <tr>
               <td colspan="8" style="text-align:center; color:#888; padding:20px;">
                 Tanlangan sana oralig'ida ma'lumot topilmadi
@@ -427,11 +450,10 @@ $(function () {
         let totalSum = 0;
         let index = 1;
 
-        // Ma'lumotlar qatorlari (header YO'Q, faqat ma'lumotlar)
-        data.forEach(function(item) {
+        (data || []).forEach(function(item) {
           const quantity = parseFloat(item.total_number) || 0;
           const price = parseFloat(item.material__price) || 0;
-          const sum = parseFloat(item.total_sum) || 0;
+          const sum = parseFloat(item.total_sum) || (quantity * price) || 0;
 
           totalSum += sum;
 
@@ -449,7 +471,6 @@ $(function () {
           `;
         });
 
-        // Jami qator
         rows += `
           <tr>
             <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;"><b>JAMI:</b></td>
@@ -458,11 +479,11 @@ $(function () {
           </tr>
         `;
 
-        editorSetTbodyRows(rows);
+        editorSetTbodyRows('#materials_tbody', rows);
       },
       error: function(xhr) {
         console.error("Xatolik:", xhr);
-        editorSetTbodyRows(`
+        editorSetTbodyRows('#materials_tbody', `
           <tr>
             <td colspan="8" style="text-align:center; color:red; padding:20px;">
               Xatolik yuz berdi: ${xhr.status} ${xhr.statusText}
@@ -473,80 +494,37 @@ $(function () {
     });
   }
 
-  // ----------------- Event listeners -----------------
+  /* ===================== Events ===================== */
   $('#organization').on('change', function() {
     updateEditorWithSelections();
+    loadAgreementsByOrg($(this).val());
   });
 
   $('#date1, #date2').on('change', function() {
     updateEditorWithSelections();
   });
 
+  // sizda tugma id: btnGenerate (svodda shunaqa bo'lsa)
   $('#btnGenerate').on('click', function(e) {
     e.preventDefault();
     searchMaterials();
   });
 
-  // ----------------- Form submit ni to'g'irlash -----------------
-  $('form').on('submit', function(e) {
-    // Agar TinyMCE ishga tushmagan bo'lsa, davom etish
-    if (!tinymceReady) return true;
-
-    // TinyMCE content ni textarea ga yozish
-    const ed = tinymce.get('body');
-    if (ed) {
-      ed.save();
-    }
-
-    return true; // Formani yuborish
+  /* ===================== Form submit ===================== */
+  $('form').on('submit', function() {
+    const ed = editorGet();
+    if (ed) ed.save();
+    return true;
   });
 
-  // ----------------- Initial load -----------------
-  // Agar Django dan kelgan ma'lumotlar bo'lsa
+  /* ===================== Initial restore ===================== */
   {% if selected_org %}
     $('#organization').val('{{ selected_org }}').trigger('change');
   {% endif %}
 
-  {% if selected_sender %}
-    // Sender ni o'rnatish uchun AJAX so'rov kerak
-    // Bu yerda sizning logikangiz bo'yicha
-  {% endif %}
 });
 </script>
-<script>
-function loadAgreementsByOrg(orgId, selectedIds = []) {
-  $('#agreements').html('').trigger('change');
-  if (!orgId) return;
 
-  $.ajax({
-    url: "{% url 'ajax_agreements_employees' %}",
-    data: { org_id: orgId },   // ✅ view kutayotgan nom
-    success: function (data) {
-      let options = '';
-      const selectedSet = new Set((selectedIds || []).map(String));
-
-      data.forEach(function(emp) {
-        const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-        options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
-      });
-
-      $('#agreements').html(options).trigger('change');
-    },
-    error: function () {
-      $('#agreements').html('').trigger('change');
-    }
-  });
-}
-
-$(function () {
-  $('#organization').on('change', function () {
-    loadAgreementsByOrg($(this).val());
-  });
-
-  const initialOrg = $('#organization').val();
-  if (initialOrg) loadAgreementsByOrg(initialOrg);
-});
-</script>
 
 
 {% endblock content %}

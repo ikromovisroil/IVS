@@ -122,22 +122,21 @@
                                             <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
                                             <div class="col-6 text-muted">Muallif</div>
                                             <div class="col-6">{{ o.sender.full_name }}</div>
-                                            {% if o.sender.organization %}
                                             <div class="col-6 text-muted">Tashkilot</div>
-                                            <div class="col-6">{{ o.sender.organization|default:"" }}</div>
-                                            {% endif %}
-                                            {% if o.sender.department %}
-                                            <div class="col-6 text-muted">Departament</div>
-                                            <div class="col-6">{{ o.sender.department|default:"" }}</div>
-                                            {% endif %}
-                                            {% if o.sender.directorate %}
-                                            <div class="col-6 text-muted">Boshqarma</div>
-                                            <div class="col-6">{{ o.sender.directorate|default:"" }}</div>
-                                            {% endif %}
-                                            {% if o.sender.division %}
-                                            <div class="col-6 text-muted">Bo'lim</div>
-                                            <div class="col-6">{{ o.sender.division|default:"" }}</div>
-                                            {% endif %}
+                                            <div class="col-6">
+                                              {% if o.sender.organization %}
+                                                {{ o.sender.organization|default:"" }}<br>
+                                              {% endif %}
+                                              {% if o.sender.department %}
+                                                {{ o.sender.department|default:"" }}<br>
+                                              {% endif %}
+                                              {% if o.sender.directorate %}
+                                                {{ o.sender.directorate|default:"" }}<br>
+                                              {% endif %}
+                                              {% if o.sender.division %}
+                                                {{ o.sender.division|default:"" }}<br>
+                                              {% endif %}
+                                            </div>
                                             <div class="col-6 text-muted">Ariza Maqsadi</div>
                                             <div class="col-6">{{ o.goal.name }}</div>
                                             <div class="col-6 text-muted">Telefon</div>

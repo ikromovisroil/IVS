@@ -264,7 +264,7 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-// ----------------- Helper funksiyalar -----------------
+/* ===================== Helper funcs ===================== */
 function todayDmy() {
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, '0');
@@ -273,55 +273,35 @@ function todayDmy() {
   return `${dd}.${mm}.${yy}`;
 }
 
-function ymdToDmy(ymd) {
-  if (!ymd) return '';
-  const [y, m, d] = ymd.split('-');
-  return `${d}.${m}.${y}`;
-}
-
 function formatNumber(value) {
   if (value === null || value === undefined) return '-';
-
-  // string qilib olamiz
   let s = String(value).trim();
   if (!s) return '-';
 
-  // bo'shliqlarni olib tashlaymiz (masalan: "100 000,50")
   s = s.replace(/\s+/g, '');
-
-  // agar kasr ajratgich "," bo'lsa, uni "." ga almashtirib parse qilamiz
-  // "100000,50" -> "100000.50"
   const normalized = s.replace(',', '.');
-
   const num = Number(normalized);
   if (!isFinite(num)) return '-';
 
-  // originalda kasr bormi ("," yoki ".")?
   const hasFraction = /[,.]\d+/.test(s);
-
-  // 2 xonagacha kasr (agar bo'lsa)
   let [intPart, fracPart] = (hasFraction ? num.toFixed(2) : Math.trunc(num).toString()).split('.');
 
-  // minusni saqlash
   const sign = intPart.startsWith('-') ? '-' : '';
   intPart = intPart.replace('-', '');
-
-  // minglik bo'yicha bo'sh joy qo'yish
   intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-  // kasr bo'lsa, "," bilan qaytaramiz
   return hasFraction ? `${sign}${intPart},${fracPart}` : `${sign}${intPart}`;
 }
 
-// ----------------- TinyMCE ga yozish funksiyalari -----------------
+/* ===================== TinyMCE helpers ===================== */
 function editorGet() {
+  if (!window.tinymce) return null;
   return tinymce.get('body');
 }
 
 function editorSetText(selector, text) {
   const ed = editorGet();
   if (!ed) return false;
-
   try {
     const node = ed.getBody().querySelector(selector);
     if (node) {
@@ -330,7 +310,7 @@ function editorSetText(selector, text) {
       return true;
     }
   } catch(e) {
-    console.log("EditorSetText xatosi:", e);
+    console.log("editorSetText xatosi:", e);
   }
   return false;
 }
@@ -342,12 +322,8 @@ function editorSetTbodyRows(rowsHtml) {
   try {
     const body = ed.getBody();
     const tbody = body.querySelector('#materials_tbody');
-    if (!tbody) {
-      console.log("materials_tbody topilmadi");
-      return;
-    }
+    if (!tbody) return;
 
-    // Header qatorlarini saqlash (birinchi 2 tr)
     const trs = tbody.querySelectorAll('tr');
     const header1 = trs[0] ? trs[0].outerHTML : '';
     const header2 = trs[1] ? trs[1].outerHTML : '';
@@ -355,20 +331,33 @@ function editorSetTbodyRows(rowsHtml) {
     tbody.innerHTML = header1 + header2 + (rowsHtml || '');
     ed.nodeChanged();
   } catch(e) {
-    console.log("EditorSetTbodyRows xatosi:", e);
+    console.log("editorSetTbodyRows xatosi:", e);
   }
 }
 
-// ----------------- jQuery va Select2 -----------------
+/* ===================== ORG normalize ===================== */
+function normalizeOrgName(orgNameRaw){
+  const t = (orgNameRaw || '').trim();
+  if (!t) return t;
+
+  // org nomi aynan "ivs" bo'lsa
+  if (t.toLowerCase() === 'Axborot texnologiyalari markazi') {
+    return 'Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi';
+  }
+  return t;
+}
+
+/* ===================== Main ===================== */
 $(function () {
-  // Select2 ni ishga tushirish
+
+  // Select2
   $('#organization, #department, #sender, #agreements').select2({
     width: '100%',
     placeholder: 'Tanlang...',
     allowClear: true
   });
 
-  // Boshlang'ich sanalarni o'rnatish
+  // Default date range (1 oy oldin -> bugun)
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const monthAgo = new Date();
@@ -378,10 +367,11 @@ $(function () {
   if (!$('#date1').val()) $('#date1').val(monthAgoStr);
   if (!$('#date2').val()) $('#date2').val(todayStr);
 
-  // ----------------- Departmentlarni yuklash -----------------
+  // ===================== AJAX loaders =====================
   function loadDepartments(orgId, selectedDepId = null) {
     $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-    $('#sender, #agreements').html('<option value=""></option>').trigger('change');
+    $('#sender').html('<option value=""></option>').trigger('change');
+    $('#agreements').html('').trigger('change');
 
     if (!orgId) {
       $('#department').html('<option value="">Tanlang...</option>').trigger('change');
@@ -390,10 +380,12 @@ $(function () {
 
     $.ajax({
       url: "{% url 'ajax_load_departments' %}",
+      method: "GET",
+      dataType: "json",
       data: { organization: orgId },
       success: function (data) {
-        let options = '<option value=""></option>';
-        data.forEach(function(dep) {
+        let options = '<option value="">Tanlang...</option>';
+        (data || []).forEach(function(dep) {
           const selected = (String(selectedDepId) === String(dep.id)) ? 'selected' : '';
           options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
         });
@@ -405,7 +397,6 @@ $(function () {
     });
   }
 
-  // ----------------- Imzolovchilarni yuklash -----------------
   function loadSignatories(depId, selectedSenderId = null) {
     $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
 
@@ -416,15 +407,24 @@ $(function () {
 
     $.ajax({
       url: "{% url 'ajax_dep_signatory' %}",
+      method: "GET",
+      dataType: "json",
       data: { department: depId },
       success: function (data) {
-        let options = '<option value=""></option>';
-        data.forEach(function(emp) {
+        let options = '<option value="">Tanlang...</option>';
+        (data || []).forEach(function(emp) {
           const selected = (String(selectedSenderId) === String(emp.id)) ? 'selected' : '';
-          // Ism va lavozimni birlashtirish
           const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-          options += `<option value="${emp.id}" ${selected} data-fullname="${emp.full_name}" data-rank="${emp.rank || ''}">${fullText}</option>`;
+
+          options += `
+            <option
+              value="${emp.id}"
+              ${selected}
+              data-fullname="${emp.full_name}"
+              data-rank="${emp.rank || ''}"
+            >${fullText}</option>`;
         });
+
         $('#sender').html(options).trigger('change');
       },
       error: function() {
@@ -433,22 +433,24 @@ $(function () {
     });
   }
 
-  // ----------------- Kelishuvchilarni yuklash -----------------
   function loadNegotiators(depId, selectedIds = []) {
     $('#agreements').html('').trigger('change');
-
     if (!depId) return;
 
     $.ajax({
       url: "{% url 'ajax_dep_negotiator' %}",
+      method: "GET",
+      dataType: "json",
       data: { department: depId },
       success: function (data) {
         let options = '';
         const selectedSet = new Set((selectedIds || []).map(String));
-        data.forEach(function(emp) {
+
+        (data || []).forEach(function(emp) {
           const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
           options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
         });
+
         $('#agreements').html(options).trigger('change');
       },
       error: function() {
@@ -457,43 +459,36 @@ $(function () {
     });
   }
 
-  // ----------------- Tanlangan malumotlarni TinyMCE ga yozish -----------------
+  // ===================== TinyMCE ga yozish =====================
   function updateEditorWithSelections() {
-    const orgName = $('#organization option:selected').text();
-    const depName = $('#department option:selected').text();
+    const orgNameRaw = ($('#organization option:selected').text() || '').trim();
+    const depName = ($('#department option:selected').text() || '').trim();
+    const orgName = normalizeOrgName(orgNameRaw);
 
-    // Sender ma'lumotlarini olish
     const selectedSender = $('#sender').select2('data')[0];
 
-    // Tashkilot nomlarini yangilash
+    // org
     if (orgName && orgName !== 'Tanlang...') {
       editorSetText('#org_id_1', orgName);
       editorSetText('#org_id_2', orgName);
     }
 
-    // Departament nomini yangilash
+    // dep
     if (depName && depName !== 'Tanlang...') {
       editorSetText('#dep_id', depName);
     }
 
-    // Imzolovchi nomlarini yangilash
+    // sender
     if (selectedSender) {
-      const fullName = selectedSender.text; // To'liq matn (ism + lavozim)
-      const rank = selectedSender.element ? selectedSender.element.dataset.rank : '';
+      const fullName = selectedSender.text; // ism + (lavozim)
       const nameOnly = selectedSender.element ? selectedSender.element.dataset.fullname : fullName;
 
-      // sender_name1 ga ism + lavozim
       editorSetText('#sender_name1', fullName);
-
-      // sender_name2 ga faqat ism
       editorSetText('#sender_name2', nameOnly);
-
-      console.log("Sender_name1 (to'liq):", fullName);
-      console.log("Sender_name2 (faqat ism):", nameOnly);
     }
   }
 
-  // ----------------- Materiallarni qidirish -----------------
+  // ===================== Search materials =====================
   function searchMaterials() {
     const orgId = $('#organization').val();
     const depId = $('#department').val();
@@ -505,10 +500,9 @@ $(function () {
       return;
     }
 
-    // Tanlangan ma'lumotlarni editorga yozish
     updateEditorWithSelections();
 
-    // Yuklanmoqda xabarini ko'rsatish
+    // Loading row
     editorSetTbodyRows(`
       <tr>
         <td colspan="11" style="text-align:center; padding:20px;">
@@ -517,10 +511,10 @@ $(function () {
       </tr>
     `);
 
-    // Materiallarni yuklash
     $.ajax({
       url: "{% url 'ajax_akt_materials' %}",
       method: "GET",
+      dataType: "json",
       data: { department: depId, date1: date1, date2: date2 },
       success: function(data) {
         if (!data || data.length === 0) {
@@ -546,11 +540,11 @@ $(function () {
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__serial'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['number']) || '0'}</td>
+              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['number'])}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__unit__name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['full_name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['rank_name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['material__price']) || '0'}</td>
+              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['material__price'])}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['id'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${finishedDate}</td>
             </tr>
@@ -572,7 +566,7 @@ $(function () {
     });
   }
 
-  // ----------------- Event listeners -----------------
+  // ===================== Events =====================
   $('#organization').on('change', function() {
     loadDepartments($(this).val());
     updateEditorWithSelections();
@@ -585,15 +579,15 @@ $(function () {
     updateEditorWithSelections();
   });
 
-  $('#sender').on('change', updateEditorWithSelections);
-
-  $('#date2').on('change', function() {
-    console.log('date2 o\'zgardi, lekin doc_date o\'zgarmaydi');
+  $('#sender').on('change', function(){
+    updateEditorWithSelections();
   });
 
-  $('#btnSearch').on('click', searchMaterials);
+  $('#btnSearch').on('click', function(){
+    searchMaterials();
+  });
 
-  // ----------------- Initial load -----------------
+  // ===================== Initial restore =====================
   const initialOrg = '{{ selected_org|default:"" }}';
   const initialDep = '{{ selected_dep|default:"" }}';
   const initialSender = '{{ selected_sender|default:"" }}';
@@ -608,16 +602,25 @@ $(function () {
         $('#department').val(initialDep).trigger('change');
         loadSignatories(initialDep, initialSender);
         loadNegotiators(initialDep, initialConsentList);
-        setTimeout(updateEditorWithSelections, 1500);
-      }, 500);
+        setTimeout(updateEditorWithSelections, 800);
+      }, 300);
     }
   }
 
-  // Sanani bir marta tekshirish
-  setTimeout(function() {
-    const bugungiSana = todayDmy() + ' y';
-    editorSetText('#doc_date', bugungiSana);
-  }, 2000);
+  // ===================== Doc date once editor ready =====================
+  (function waitEditorAndSetDate(){
+    let tries = 0;
+    const t = setInterval(function(){
+      tries++;
+      const ed = editorGet();
+      if (ed || tries > 80) { // ~8s
+        clearInterval(t);
+        editorSetText('#doc_date', todayDmy() + ' y');
+      }
+    }, 100);
+  })();
+
 });
 </script>
+
 {% endblock content %}
