@@ -1430,7 +1430,7 @@ def document_get(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
-        "emp_bos": Employee.objects.filter(id__in=[3470,3469,3468]),
+        "emp_bos_sender": Employee.objects.filter(id__in=[3470,3469,3468]),
     }
     return render(request, "main/document.html", context)
 
@@ -1447,11 +1447,13 @@ def document_post(request):
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
+    receiver_id = (request.POST.get("receiver") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
     body = request.POST.get("body") or ""
 
     # sender obyekt
+    receiver = Employee.objects.filter(id=receiver_id).first() if receiver_id.isdigit() else None
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
         messages.error(request, "Imzolovchi xodim tanlanmadi")
@@ -1464,6 +1466,7 @@ def document_post(request):
     # ✅ Deed yaratamiz
     deed = Deed.objects.create(
         sender=sender,  # FK obyekt
+        receiver=receiver,  # FK obyekt
         user=employee,  # FK obyekt
         message_user=message,
         body=body,
@@ -1493,7 +1496,7 @@ def document_post(request):
     ids = list(set(ids))  # uniq
 
     # ✅ sender va hozirgi employee’ni exclude
-    exclude_ids = {employee.id, sender.id}
+    exclude_ids = {receiver.id, sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
     # ✅ DeedConsent bulk_create
@@ -1768,7 +1771,7 @@ def order_receiver_deed_post(request,pk):
     ids = list(set(ids))  # uniq
 
     # ✅ sender va hozirgi employee’ni exclude
-    exclude_ids = {employee.id, sender.id}
+    exclude_ids = {sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
     # ✅ DeedConsent bulk_create
@@ -2002,7 +2005,7 @@ def akt_post(request):
     ids = list(set(ids))  # uniq
 
     # ✅ sender va hozirgi employee’ni exclude
-    exclude_ids = {employee.id, sender.id}
+    exclude_ids = {sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
     # ✅ DeedConsent bulk_create
@@ -2090,7 +2093,7 @@ def svod_post(request):
     ids = list(set(ids))  # uniq
 
     # ✅ sender va hozirgi employee’ni exclude
-    exclude_ids = {employee.id, sender.id}
+    exclude_ids = {sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
     # ✅ DeedConsent bulk_create
@@ -2180,7 +2183,7 @@ def reestr_post(request):
     ids = list(set(ids))  # uniq
 
     # ✅ sender va hozirgi employee’ni exclude
-    exclude_ids = {employee.id, sender.id}
+    exclude_ids = {sender.id}
     ids = [i for i in ids if i not in exclude_ids]
 
     # ✅ DeedConsent bulk_create

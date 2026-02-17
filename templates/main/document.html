@@ -84,7 +84,7 @@
                   <label for="sender" class="form-label">Xizmat ko'rsatuvchining vakili</label>
                   <select id="sender" name="sender" class="form-select" required>
                     <option value="">Tanlang...</option>
-                    {% for emp in emp_bos %}
+                    {% for emp in emp_bos_sender %}
                       <option value="{{ emp.id }}">{{ emp.full_name }}</option>
                     {% endfor %}
                   </select>
@@ -92,7 +92,7 @@
 
                 <div class="col-12">
                   <label for="receiver" class="form-label">Tashkilot vakili:</label>
-                  <select id="receiver" name="receiver" class="form-select">
+                  <select id="receiver" name="receiver" class="form-select" required>
                     <option value="">Tanlang...</option>
                     {% for emp in emp_bos %}
                       <option value="{{ emp.id }}">{{ emp.full_name }}</option>
@@ -103,7 +103,7 @@
                 <div class="col-12">
                   <label for="agreements" class="form-label">Kelishuvchilar :</label>
                   <select id="agreements" name="agreements[]" class="form-select" multiple>
-                    {% for emp in deedconsent %}
+                    {% for emp in employee %}
                       <option value="{{ emp.id }}">{{ emp.full_name }}</option>
                     {% endfor %}
                   </select>
