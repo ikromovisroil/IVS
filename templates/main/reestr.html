@@ -237,40 +237,29 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-/* ===================== Helpers ===================== */
+// ----------------- Helper funksiyalar -----------------
 function formatNumber(num) {
-  if (num === null || num === undefined) return '0';
+  if (num === null || num === undefined || isNaN(num)) return '0';
 
-  // "100 000,50" kabi string bo'lsa ham ishlasin
-  let s = String(num).trim();
-  if (!s) return '0';
-  s = s.replace(/\s+/g, '').replace(',', '.');
+  let numStr = num.toString();
 
-  const n = Number(s);
-  if (!isFinite(n)) return '0';
+  if (numStr.includes('.')) {
+    let parts = numStr.split('.');
+    let integerPart = parts[0];
+    let fractionalPart = parts[1];
 
-  const hasFraction = /[.]\d+/.test(s);
-  let [intPart, fracPart] = (hasFraction ? n.toFixed(2) : Math.trunc(n).toString()).split('.');
+    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-  const sign = intPart.startsWith('-') ? '-' : '';
-  intPart = intPart.replace('-', '');
-  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    if (fractionalPart.length === 1) fractionalPart = fractionalPart + '0';
+    else if (fractionalPart.length > 2) fractionalPart = fractionalPart.substring(0, 2);
 
-  return hasFraction ? `${sign}${intPart},${fracPart}` : `${sign}${intPart}`;
-}
-
-function normalizeOrgName(orgNameRaw){
-  const t = (orgNameRaw || '').trim();
-  if (!t) return t;
-
-  // faqat "ivs" bo'lsa
-  if (t.toLowerCase() === 'Axborot texnologiyalari markazi') {
-    return 'Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi';
+    return integerPart + ',' + fractionalPart;
+  } else {
+    return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
-  return t;
 }
 
-/* ===================== TinyMCE helpers ===================== */
+// ----------------- TinyMCE bilan ishlash -----------------
 function editorGet() {
   return (window.tinymce ? tinymce.get('body') : null);
 }
@@ -304,61 +293,34 @@ function editorSetTbodyRows(rowsHtml) {
       return;
     }
 
-    // ✅ 2 ta header qatorni saqlab qolamiz (sizning jadvalingizda 2 header bor)
+    // 2 ta header qatorni saqlab qolamiz
     const existingRows = tbody.querySelectorAll('tr');
     let headerHtml = '';
 
     if (existingRows.length >= 2) {
       headerHtml = existingRows[0].outerHTML + existingRows[1].outerHTML;
     } else {
-      headerHtml = tbody.innerHTML; // fallback
+      // fallback: nima bo'lsa shuni qoldiramiz
+      headerHtml = tbody.innerHTML;
     }
 
-    tbody.innerHTML = headerHtml + (rowsHtml || '');
+    tbody.innerHTML = headerHtml + rowsHtml;
     ed.nodeChanged();
   } catch (e) {
     console.log("editorSetTbodyRows xatosi:", e);
   }
 }
 
-/* ===================== Agreements by Org ===================== */
-function loadAgreementsByOrg(orgId, selectedIds = []) {
-  $('#agreements').html('').trigger('change');
-  if (!orgId) return;
-
-  $.ajax({
-    url: "{% url 'ajax_agreements_employees' %}",
-    method: "GET",
-    dataType: "json",
-    data: { org_id: orgId },   // ✅ view kutayotgan nom
-    success: function (data) {
-      let options = '';
-      const selectedSet = new Set((selectedIds || []).map(String));
-
-      (data || []).forEach(function(emp) {
-        const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-        options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
-      });
-
-      $('#agreements').html(options).trigger('change');
-    },
-    error: function () {
-      $('#agreements').html('').trigger('change');
-    }
-  });
-}
-
-/* ===================== Main ===================== */
+// ----------------- jQuery ready -----------------
 $(function () {
-
-  // Select2
+  // Select2 (agar base.html da select2 js ulanmagan bo'lsa, ishlamaydi)
   $('#organization, #sender, #agreements').select2({
     width: '100%',
     placeholder: 'Tanlang...',
     allowClear: true
   });
 
-  // Default date1/date2
+ // Boshlang'ich sanalarni o'rnatish
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
   const monthAgo = new Date();
@@ -368,41 +330,32 @@ $(function () {
   if (!$('#date1').val()) $('#date1').val(monthAgoStr);
   if (!$('#date2').val()) $('#date2').val(todayStr);
 
-  // TinyMCE ready wait
+  // TinyMCE tayyor bo'lishini kutamiz
   let tinymceReady = false;
   const timer = setInterval(function () {
     if (editorGet()) {
       tinymceReady = true;
       clearInterval(timer);
 
-      // start: org_id yozish
-      updateEditorWithSelections();
-
-      // start: org bo'lsa agreements ham yuklansin
-      const initialOrgId = $('#organization').val();
-      if (initialOrgId) loadAgreementsByOrg(initialOrgId);
+      // Boshlang'ich org (agar tanlangan bo'lsa)
+      const orgName = $('#organization option:selected').text();
+      if (orgName && orgName !== 'Tanlang...') {
+        editorSetText('#org_id', orgName);
+      }
     }
-  }, 200);
+  }, 300);
 
-  // Faqat org yozish (sana/oy yo'q!)
+  // Faqat org yozish (sana/oy umuman yo'q!)
   function updateEditorWithSelections() {
     if (!tinymceReady) return;
 
-    const orgNameRaw = $('#organization option:selected').text();
-    const orgName = normalizeOrgName(orgNameRaw);
-
+    const orgName = $('#organization option:selected').text();
     if (orgName && orgName !== 'Tanlang...') {
-      // ✅ REESTR tinymce ichida qaysi id bo'lsa shuni ishlating:
-      // siz yozganingiz: #org_id
       editorSetText('#org_id', orgName);
-
-      // agar reestrda 2 joy bo'lsa (masalan #org_id_1 #org_id_2)
-      // editorSetText('#org_id_1', orgName);
-      // editorSetText('#org_id_2', orgName);
     }
   }
 
-  // Materials search
+  // ----------------- Materiallarni qidirish -----------------
   function searchMaterials() {
     const orgId = $('#organization').val();
     const date1 = $('#date1').val();
@@ -413,9 +366,10 @@ $(function () {
       return;
     }
 
+    // Org nomini editorga yozish
     updateEditorWithSelections();
 
-    // Loading...
+    // Yuklanmoqda...
     editorSetTbodyRows(`
       <tr>
         <td colspan="15" style="border:1px solid #000; text-align:center; padding:14px; font-size:10pt;">
@@ -427,8 +381,11 @@ $(function () {
     $.ajax({
       url: "{% url 'ajax_reestr_materials' %}",
       method: "GET",
-      dataType: "json",
-      data: { organization: orgId, date1: date1, date2: date2 },
+      data: {
+        organization: orgId,
+        date1: date1,
+        date2: date2
+      },
 
       success: function (data) {
         if (!Array.isArray(data) || data.length === 0) {
@@ -473,7 +430,6 @@ $(function () {
           `;
         });
 
-        // JAMI
         rows += `
           <tr>
             <td colspan="6" style="border:1px solid #000; font-size:8pt; text-align:right; font-weight:bold;">JAMI:</td>
@@ -507,11 +463,8 @@ $(function () {
     });
   }
 
-  /* ===================== Events ===================== */
-  $('#organization').on('change', function () {
-    updateEditorWithSelections();
-    loadAgreementsByOrg($(this).val());
-  });
+  // Eventlar
+  $('#organization').on('change', updateEditorWithSelections);
 
   $('#btnGenerate').on('click', function (e) {
     e.preventDefault();
@@ -525,18 +478,47 @@ $(function () {
     return true;
   });
 
-  /* ===================== Django selected restore ===================== */
+  // Django selected_org bo'lsa
   {% if selected_org %}
     $('#organization').val('{{ selected_org }}').trigger('change');
   {% endif %}
-
-  // agar oldin tanlangan agreements bo'lsa:
-  // const initialAgreementIds = {{ selected_employees|default:"[]"|safe }};
-  // const orgId = $('#organization').val();
-  // if (orgId) loadAgreementsByOrg(orgId, initialAgreementIds);
-
 });
 </script>
+<script>
+function loadAgreementsByOrg(orgId, selectedIds = []) {
+  $('#agreements').html('').trigger('change');
+  if (!orgId) return;
+
+  $.ajax({
+    url: "{% url 'ajax_agreements_employees' %}",
+    data: { org_id: orgId },   // ✅ view kutayotgan nom
+    success: function (data) {
+      let options = '';
+      const selectedSet = new Set((selectedIds || []).map(String));
+
+      data.forEach(function(emp) {
+        const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
+        options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+      });
+
+      $('#agreements').html(options).trigger('change');
+    },
+    error: function () {
+      $('#agreements').html('').trigger('change');
+    }
+  });
+}
+
+$(function () {
+  $('#organization').on('change', function () {
+    loadAgreementsByOrg($(this).val());
+  });
+
+  const initialOrg = $('#organization').val();
+  if (initialOrg) loadAgreementsByOrg(initialOrg);
+});
+</script>
+
 
 {% endblock content %}
 

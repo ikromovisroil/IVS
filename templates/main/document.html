@@ -141,10 +141,10 @@
                   Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi <span id="org_id">Iqtisodiyot va moliya vazirligi</span>
                   <span id="dep_id">Davlat byudjeti siyosati departamenti</span> direktori <b>Sh.Muxamedov</b>, va O‘zbekiston Respublikasi Iqtisodiyot
                   va moliya vazirligi huzuridagi Axborot texnologiyalari markazi direktori vazifasini vaqtincha bajaruvchi
-                  <b>F.Xujamqulov</b>: O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi hamda O‘zbekiston Respublikasi
+                  <b>F.Xujamqulov</b>: O‘zbekiston Respublikasi <span id="org_id">Iqtisodiyot va moliya vazirligi</span> hamda O‘zbekiston Respublikasi
                   Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan <b>2025 yil 4-martda
-                  tuzilgan 1-sonli</b> shartnomaga asosan <span id="dep_id2">Davlat byudjeti siyosati departamenti</span>
-                  bo‘yicha 2026 yil <span id="chorak">I</span> chorak uchun
+                  tuzilgan 1-sonli</b> shartnomaga asosan <span id="dep_id2">Davlat byudjeti siyosati departamenti</span> bo‘yicha 2026 yil
+                  <span id="chorak">I</span> chorak uchun
                   quyidagi ishlar va xizmatlar bajarildi. Ishlar texnologik xaritaga muvofiq amalga oshirildi.
                   </span>
                 </div>
@@ -254,10 +254,12 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 $(function () {
 
-  /* ===================== ESCAPE ===================== */
+  // -------------------- ESCAPE --------------------
   function esc(s){
     if (s === null || s === undefined) return '';
     return String(s)
@@ -268,12 +270,12 @@ $(function () {
       .replaceAll("'", '&#039;');
   }
 
-  /* ===================== SELECT2 ===================== */
+  // -------------------- SELECT2 --------------------
   function initSelect2(){
+    if (!$.fn.select2) return;
     $('select.form-select').each(function(){
       const $el = $(this);
       if ($el.data('select2')) return;
-
       $el.select2({
         width: '100%',
         placeholder: 'Tanlang...',
@@ -283,7 +285,7 @@ $(function () {
   }
   initSelect2();
 
-  /* ===================== TINYMCE SAFE ===================== */
+  // -------------------- TINYMCE SAFE --------------------
   function getEditor(){
     if (!window.tinymce) return null;
     const ed = tinymce.get('body');
@@ -303,6 +305,17 @@ $(function () {
     return true;
   }
 
+  function setAllInEditor(selector, text){
+    const ed = getEditor();
+    if (!ed) return false;
+    const root = ed.getBody();
+    const els = root.querySelectorAll(selector);
+    if (!els || !els.length) return false;
+    els.forEach(el => el.textContent = text);
+    ed.nodeChanged();
+    return true;
+  }
+
   function setTbodyHtml(tbodyId, html){
     const ed = getEditor();
     if (!ed) return false;
@@ -314,64 +327,61 @@ $(function () {
     return true;
   }
 
-  /* ===================== SANA ===================== */
+  // -------------------- BUGUNGI SANA --------------------
   function todayStr(){
     const now = new Date();
     const dd = String(now.getDate()).padStart(2,'0');
     const mm = String(now.getMonth()+1).padStart(2,'0');
     const yyyy = now.getFullYear();
-    return `${dd}.${mm}.${yyyy}`;
+    return `${dd}.${mm}.${yyyy} y`;
   }
 
   function applyTodayDate(){
-    const d = todayStr() + ' y';
+    const d = todayStr();
+    // TinyMCE ichida
+    setAllInEditor('#doc_date, #doc_date2', d);
+  }
+
+  // editor tayyor bo‘lganda sanani yozish
+  (function waitEditorAndSetDate(){
+    let tries = 0;
+    const t = setInterval(function(){
+      tries++;
+      if (getEditor() || tries > 50){ // ~5s
+        clearInterval(t);
+        applyTodayDate();
+      }
+    }, 100);
+  })();
+
+  // -------------------- ORG/DEP/CHORAK -> TINYMCE --------------------
+  function applyOrgToEditor(orgText){
+    // sizda org_id 2 marta ishlatilgan (HTML invalid), shuning uchun hammasini yangilaymiz:
     const ed = getEditor();
     if (!ed) return;
-
     const root = ed.getBody();
-    root.querySelectorAll('#doc_date, #doc_date2').forEach(el => el.textContent = d);
+    root.querySelectorAll('#org_id').forEach(el => el.textContent = orgText);
     ed.nodeChanged();
   }
 
-  /* ===================== ORG NAME NORMALIZE ===================== */
-  function normalizeOrgName(orgNameRaw){
-    const t = (orgNameRaw || '').trim();
-    if (!t) return t;
-    if (t.toLowerCase() === 'Axborot texnologiyalari markazi') return 'Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi';
-    return t;
+  function applyDepToEditor(depText){
+    setInEditor('#dep_id', depText);
+    setInEditor('#dep_id2', depText);
   }
 
-  /* ===================== HEADERNI EDITORGA YOZISH ===================== */
-  function updateEditorHeader(){
-    const orgNameRaw = ($('#organization option:selected').text() || '').trim();
-    const depName = ($('#department option:selected').text() || '').trim();
-    const rim = ($('#rim_id').val() || '').trim();
-
-    const orgName = normalizeOrgName(orgNameRaw);
-
-    if (orgName && orgName !== 'Tanlang...'){
-      setInEditor('#org_id', orgName);
-    }
-    if (depName && depName !== 'Tanlang...'){
-      setInEditor('#dep_id', depName);
-      setInEditor('#dep_id2', depName);
-    }
-    if (rim){
-      setInEditor('#chorak', rim);
-    }
-
-    applyTodayDate();
+  function applyChorakToEditor(q){
+    setInEditor('#chorak', q || '');
   }
 
-  /* ===================== ORG -> DEP ===================== */
+  // -------------------- ORG -> DEP --------------------
   function loadDepartments(orgId, selectedDepId=null){
     const $dep = $('#department');
 
-    $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+    $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
     initSelect2();
 
     if(!orgId){
-      $dep.html('<option value="">Tanlang...</option>').trigger('change');
+      $dep.html('<option value="">Tanlang...</option>').trigger('change.select2');
       initSelect2();
       return;
     }
@@ -387,43 +397,113 @@ $(function () {
           const sel = (selectedDepId && String(d.id) === String(selectedDepId)) ? 'selected' : '';
           opt += `<option value="${d.id}" ${sel}>${esc(d.name)}</option>`;
         });
-        $dep.html(opt).trigger('change');
+        $dep.html(opt).trigger('change.select2');
         initSelect2();
+
+        // dep nomini editorga (agar selected bo‘lsa)
+        if (selectedDepId){
+          const depText = $dep.find('option:selected').text() || '';
+          if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
+        }
       },
       error: function(){
-        $dep.html('<option value="">Xatolik (dep yuklanmadi)</option>').trigger('change');
+        $dep.html('<option value="">Xatolik (dep yuklanmadi)</option>').trigger('change.select2');
         initSelect2();
       }
     });
   }
 
-  /* ===================== PC/PR JADVAL (HEADER SAQLANADI) ===================== */
-  function pcHeader(){
-    return `
+  // -------------------- DEP -> EMPLOYEES (SENDER/RECEIVER/AGREEMENTS) --------------------
+  function fillEmployeeSelect($sel, list, selectedId=null, allowEmpty=true){
+    let opt = allowEmpty ? '<option value="">Tanlang...</option>' : '';
+    (list || []).forEach(emp => {
+      const sel = (selectedId && String(emp.id) === String(selectedId)) ? 'selected' : '';
+      // rank ham kelayotgan bo‘lsa: "F.I.Sh (Lavozim)"
+      const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+      opt += `<option value="${emp.id}" ${sel}>${esc(label)}</option>`;
+    });
+    $sel.html(opt).trigger('change.select2');
+    initSelect2();
+  }
+
+  function loadSignatories(depId){
+    const $sender = $('#sender');
+    const $receiver = $('#receiver');
+
+    $sender.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+    $receiver.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+    initSelect2();
+
+    if(!depId){
+      $sender.html('<option value="">Tanlang...</option>').trigger('change.select2');
+      $receiver.html('<option value="">Tanlang...</option>').trigger('change.select2');
+      initSelect2();
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_dep_signatory' %}",
+      method: "GET",
+      dataType: "json",
+      data: { department: depId },
+      success: function(list){
+        fillEmployeeSelect($sender, list, null, true);
+        fillEmployeeSelect($receiver, list, null, true);
+      },
+      error: function(xhr){
+        console.log("signatory ajax error:", xhr.status, xhr.responseText);
+        $sender.html('<option value="">Xatolik</option>').trigger('change.select2');
+        $receiver.html('<option value="">Xatolik</option>').trigger('change.select2');
+        initSelect2();
+      }
+    });
+  }
+
+  function loadAgreements(depId){
+    const $agr = $('#agreements');
+
+    $agr.html('').trigger('change.select2');
+    initSelect2();
+
+    if(!depId){
+      $agr.html('').trigger('change.select2');
+      initSelect2();
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_dep_negotiator' %}",
+      method: "GET",
+      dataType: "json",
+      data: { department: depId },
+      success: function(list){
+        let opt = '';
+        (list || []).forEach(emp => {
+          const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+          opt += `<option value="${emp.id}">${esc(label)}</option>`;
+        });
+        $agr.html(opt).trigger('change.select2');
+        initSelect2();
+      },
+      error: function(xhr){
+        console.log("agreements ajax error:", xhr.status, xhr.responseText);
+        $agr.html('').trigger('change.select2');
+        initSelect2();
+      }
+    });
+  }
+
+  // -------------------- TEXNIKALAR -> TINYMCE JADVAL --------------------
+  function fillPc(items){
+    // header rowni saqlab qolamiz (sizning template'da header ham pc_tbody ichida)
+    let rows = `
       <tr>
         <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
         <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
         <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
         <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami:</td>
-      </tr>`;
-  }
-  function prHeader(){
-    return `
-      <tr>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
-      </tr>`;
-  }
-
-  function fillPc(items){
-    let rows = pcHeader();
-
-    if(items === null){
-      rows += `<tr><td colspan="4" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`;
-      setTbodyHtml('pc_tbody', rows);
-      return;
-    }
+      </tr>
+    `;
 
     if(!items || !items.length){
       rows += `<tr><td colspan="4" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
@@ -445,13 +525,13 @@ $(function () {
   }
 
   function fillPr(items){
-    let rows = prHeader();
-
-    if(items === null){
-      rows += `<tr><td colspan="3" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`;
-      setTbodyHtml('pr_tbody', rows);
-      return;
-    }
+    let rows = `
+      <tr>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
+      </tr>
+    `;
 
     if(!items || !items.length){
       rows += `<tr><td colspan="3" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
@@ -471,7 +551,6 @@ $(function () {
     setTbodyHtml('pr_tbody', rows);
   }
 
-  /* ===================== TEXNIKALARNI AJAXDAN OLISH ===================== */
   function loadTechnicsToEditor(depId){
     if(!depId){
       setInEditor('#komp_count', '_');
@@ -482,8 +561,8 @@ $(function () {
     }
 
     // loading
-    fillPc(null);
-    fillPr(null);
+    setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
+    setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
 
     $.ajax({
       url: "{% url 'ajax_document_preview' %}",
@@ -499,20 +578,28 @@ $(function () {
       error: function(xhr){
         let msg = "Xatolik yuz berdi";
         try { if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error; } catch(e){}
-        const e = esc(msg);
-        setTbodyHtml('pc_tbody', pcHeader() + `<tr><td colspan="4" style="text-align:center;color:red;">${e}</td></tr>`);
-        setTbodyHtml('pr_tbody', prHeader() + `<tr><td colspan="3" style="text-align:center;color:red;">${e}</td></tr>`);
+        setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
+        setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
       }
     });
   }
 
-  /* ===================== EVENTLAR ===================== */
+  // -------------------- EVENTLAR --------------------
   $('#organization').on('change', function(){
     const orgId = $(this).val();
-    loadDepartments(orgId);
-    updateEditorHeader();
+    const orgText = $('#organization option:selected').text() || '';
 
-    // reset texnika
+    loadDepartments(orgId);
+
+    // editorga org nomi
+    if (orgText && orgText !== 'Tanlang...') applyOrgToEditor(orgText);
+
+    // reset
+    $('#sender').html('<option value="">Tanlang...</option>').trigger('change.select2');
+    $('#receiver').html('<option value="">Tanlang...</option>').trigger('change.select2');
+    $('#agreements').html('').trigger('change.select2');
+    initSelect2();
+
     setInEditor('#komp_count', '_');
     setInEditor('#prin_count', '_');
     fillPc([]);
@@ -521,52 +608,46 @@ $(function () {
 
   $('#department').on('change', function(){
     const depId = $(this).val();
-    updateEditorHeader();
+    const depText = $('#department option:selected').text() || '';
+
+    // editorga dep nomi
+    if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
+
+    loadSignatories(depId);
+    loadAgreements(depId);
     loadTechnicsToEditor(depId);
   });
 
   $('#rim_id').on('change', function(){
-    updateEditorHeader();
+    const q = $(this).val(); // I / II / III / IV
+    applyChorakToEditor(q);
   });
 
   $('#btnSearch').on('click', function(){
     const depId = $('#department').val();
     if(!depId){ alert("Departmentni tanlang!"); return; }
-    updateEditorHeader();
     loadTechnicsToEditor(depId);
   });
 
-  /* ===================== INIT (EDITOR READY) ===================== */
-  (function waitEditorReady(){
-    let tries = 0;
-    const t = setInterval(function(){
-      tries++;
-      if (getEditor() || tries > 80){ // ~8s
-        clearInterval(t);
-        applyTodayDate();
-        updateEditorHeader();
-      }
-    }, 100);
-  })();
-
-  /* ===================== RESTORE ===================== */
+  // -------------------- RESTORE (serverdan kelgan selected) --------------------
   const initialOrg = '{{ selected_org|default:"" }}';
   const initialDep = '{{ selected_dep|default:"" }}';
 
   if (initialOrg){
     $('#organization').val(initialOrg).trigger('change');
+
+    // dep larni yuklab, initialDep ni tanlab beramiz
     loadDepartments(initialOrg, initialDep);
 
     if (initialDep){
       setTimeout(function(){
         $('#department').val(initialDep).trigger('change');
-      }, 250);
+      }, 300);
     }
   }
 
 });
 </script>
-
 
 
 {% endblock content %}
