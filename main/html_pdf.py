@@ -1,7 +1,7 @@
 import os
 import pdfkit
 
-WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
+# WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 
 WKHTMLTOPDF_PATH = "/usr/bin/wkhtmltopdf"
 
