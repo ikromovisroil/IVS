@@ -9,6 +9,9 @@ from django.db.models.functions import Coalesce, Cast,Concat
 from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
+from django.db import transaction
+from django.shortcuts import get_object_or_404
+from django.views.decorators.http import require_POST
 
 @never_cache
 @login_required
@@ -181,37 +184,21 @@ def ajax_agreements_employees(request):
     data = [{"id": e.id, "full_name": e.full_name} for e in qs]
     return JsonResponse(data, safe=False)
 
-@never_cache
 @login_required
-def deedconsent_delete(request, pk):
-    emp = getattr(request.user, "employee", None)
-    if not emp:
-        raise PermissionDenied
+@require_POST
+@transaction.atomic
+def ordermaterial_delete(request, pk):
+    om = get_object_or_404(
+        OrderMaterial.objects.select_related("material", "order"),
+        pk=pk
+    )
 
-    obj = get_object_or_404(DeedConsent, pk=pk)
+    material = om.material
+    material.number = (material.number or 0) + (om.number or 0)
+    material.save(update_fields=["number"])
 
-    if obj.deed.user_id != emp.id:
-        raise PermissionDenied
-
-    obj.delete()
-    return JsonResponse({"ok": True})
-
-@never_cache
-@login_required
-def ajax_deedconsent_delete(request):
-    dc_id = request.POST.get("dc_id")
-    if not dc_id:
-        return JsonResponse({"ok": False, "error": "dc_id required"}, status=400)
-
-    dc = get_object_or_404(DeedConsent, id=dc_id)
-
-    # ✅ RUXSAT: faqat deed egasi (jo‘natuvchi) o‘chira olsin
-    # sizda request.user.employee bor
-    if not hasattr(request.user, "employee") or dc.deed.user_id != request.user.employee.id:
-        return JsonResponse({"ok": False, "error": "permission denied"}, status=403)
-
-    dc.delete()
-    return JsonResponse({"ok": True, "deleted_id": int(dc_id)})
+    om.delete()
+    return JsonResponse({"status": "ok"})
 
 @never_cache
 @login_required

@@ -254,10 +254,6 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
 <script>
 $(function () {
 
@@ -281,7 +277,8 @@ $(function () {
       $el.select2({
         width: '100%',
         placeholder: 'Tanlang...',
-        allowClear: true
+        allowClear: true,
+        closeOnSelect: !($el.prop('multiple')) // multi bo‘lsa yopilmasin
       });
     });
   }
@@ -359,7 +356,7 @@ $(function () {
     const ed = getEditor();
     if (!ed) return;
     const root = ed.getBody();
-    // sizda org_id 2 marta ishlatilgan (HTML invalid), shuning uchun hammasini yangilaymiz
+    // sizda org_id 2 marta ishlatilgan, shuning uchun hammasini yangilaymiz
     root.querySelectorAll('#org_id').forEach(el => el.textContent = orgText);
     ed.nodeChanged();
   }
@@ -412,18 +409,27 @@ $(function () {
     });
   }
 
-  // -------------------- DEP -> RECEIVER (FAFAQAT) --------------------
-  function fillEmployeeSelect($sel, list, selectedId=null, allowEmpty=true){
+  // -------------------- EMP SELECT FILL HELPER --------------------
+  function fillEmployeeSelect($sel, list, selectedId=null, allowEmpty=true, keepSelected=false){
+    let currentSelected = [];
+    if (keepSelected){
+      currentSelected = ($sel.val() || []).map(String);
+    }
+
     let opt = allowEmpty ? '<option value="">Tanlang...</option>' : '';
     (list || []).forEach(emp => {
-      const sel = (selectedId && String(emp.id) === String(selectedId)) ? 'selected' : '';
+      const idStr = String(emp.id);
+      const sel1 = (selectedId && idStr === String(selectedId)) ? 'selected' : '';
+      const sel2 = (keepSelected && currentSelected.includes(idStr)) ? 'selected' : '';
       const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-      opt += `<option value="${emp.id}" ${sel}>${esc(label)}</option>`;
+      opt += `<option value="${emp.id}" ${sel1 || sel2}>${esc(label)}</option>`;
     });
+
     $sel.html(opt).trigger('change.select2');
     initSelect2();
   }
 
+  // -------------------- DEP -> RECEIVER --------------------
   function loadReceiverByDepartment(depId){
     const $receiver = $('#receiver');
 
@@ -442,11 +448,42 @@ $(function () {
       dataType: "json",
       data: { department: depId },
       success: function(list){
-        fillEmployeeSelect($receiver, list, null, true);
+        fillEmployeeSelect($receiver, list, null, true, false);
       },
       error: function(xhr){
         console.log("receiver ajax error:", xhr.status, xhr.responseText);
         $receiver.html('<option value="">Xatolik</option>').trigger('change.select2');
+        initSelect2();
+      }
+    });
+  }
+
+  // -------------------- DEP -> AGREEMENTS (tanlangan dep + request.user dep) --------------------
+  function loadAgreementsByDepartment(depId){
+    const $agr = $('#agreements');
+
+    // multi select => yuklanmoqda
+    $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+    initSelect2();
+
+    if(!depId){
+      $agr.html('').trigger('change.select2'); // multi select bo‘sh
+      initSelect2();
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_dep_negotiator' %}",
+      method: "GET",
+      dataType: "json",
+      data: { department: depId },
+      success: function(list){
+        // keepSelected=true => oldin tanlangan agreements yo‘qolib ketmaydi
+        fillEmployeeSelect($agr, list, null, false, true);
+      },
+      error: function(xhr){
+        console.log("agreements ajax error:", xhr.status, xhr.responseText);
+        $agr.html('').trigger('change.select2');
         initSelect2();
       }
     });
@@ -546,6 +583,7 @@ $(function () {
     const orgId = $(this).val();
     const orgText = $('#organization option:selected').text() || '';
 
+    // depni qayta yuklaymiz
     loadDepartments(orgId);
 
     // editorga org nomi
@@ -553,11 +591,9 @@ $(function () {
 
     // receiver reset
     $('#receiver').html('<option value="">Tanlang...</option>').trigger('change.select2');
+    // agreements reset
+    $('#agreements').html('').trigger('change.select2');
     initSelect2();
-
-    // sender va agreements sizda statik bo‘lsa, ularga tegmaymiz:
-    // $('#sender') ... (qoldirildi)
-    // $('#agreements') ... (qoldirildi)
 
     setInEditor('#komp_count', '_');
     setInEditor('#prin_count', '_');
@@ -571,14 +607,14 @@ $(function () {
 
     if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
 
-    // ✅ faqat receiver dep bo‘yicha chiqadi
+    // ✅ receiver dep bo‘yicha
     loadReceiverByDepartment(depId);
 
-    // ✅ texnikalar ham dep bo‘yicha
-    loadTechnicsToEditor(depId);
+    // ✅ agreements dep + my_dep bo‘yicha
+    loadAgreementsByDepartment(depId);
 
-    // ❌ agreements dep bo‘yicha chiqmaydi (OLIB TASHLANDI)
-    // loadAgreements(depId);
+    // ✅ texnikalar dep bo‘yicha
+    loadTechnicsToEditor(depId);
   });
 
   $('#rim_id').on('change', function(){
@@ -599,17 +635,19 @@ $(function () {
   if (initialOrg){
     $('#organization').val(initialOrg).trigger('change');
 
+    // depni selected qilib yuklaymiz
     loadDepartments(initialOrg, initialDep);
 
     if (initialDep){
       setTimeout(function(){
-        $('#department').val(initialDep).trigger('change');
+        $('#department').val(initialDep).trigger('change'); // bu receiver/agreements/technics ni ham chaqiradi
       }, 300);
     }
   }
 
 });
 </script>
+
 
 {% endblock content %}
 

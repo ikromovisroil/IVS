@@ -103,19 +103,20 @@
                                 <div class="col-6 text-muted">Muallif</div>
                                 <div class="col-6">{{ o.sender.full_name }}</div>
                                 <div class="col-6 text-muted">Tashkilot</div>
+
                                 <div class="col-6">
-                                  {% if o.sender.organization %}
-                                    {{ o.sender.organization|default:"" }}<br>
-                                  {% endif %}
-                                  {% if o.sender.department %}
-                                    {{ o.sender.department|default:"" }}<br>
-                                  {% endif %}
-                                  {% if o.sender.directorate %}
-                                    {{ o.sender.directorate|default:"" }}<br>
-                                  {% endif %}
-                                  {% if o.sender.division %}
-                                    {{ o.sender.division|default:"" }}<br>
-                                  {% endif %}
+                                    {% if o.sender.organization %}
+                                      {{ o.sender.organization|default:"" }}<br>
+                                    {% endif %}
+                                    {% if o.sender.department %}
+                                      {{ o.sender.department|default:"" }}<br>
+                                    {% endif %}
+                                    {% if o.sender.directorate %}
+                                      {{ o.sender.directorate|default:"" }}<br>
+                                    {% endif %}
+                                    {% if o.sender.division %}
+                                      {{ o.sender.division|default:"" }}<br>
+                                    {% endif %}
                                 </div>
 
                                 <div class="col-6 text-muted">Ariza Maqsadi</div>
@@ -174,6 +175,7 @@
                                       <th>Material Name</th>
                                       <th>Soni</th>
                                       <th>Narxi</th>
+                                      <th>O'chirish</th>
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -183,6 +185,11 @@
                                         <td>{{ m.material.name }}</td>
                                         <td>{{ m.number|intcomma }}</td>
                                         <td>{{ m.material.price|intcomma }}</td>
+                                        <td><button type="button"
+                                                class="btn btn-danger btn-sm js-delete-om"
+                                                data-url="{% url 'ordermaterial_delete' m.id %}">
+                                          X
+                                        </button></td>
                                       </tr>
                                     {% endfor %}
                                     </tbody>
@@ -323,5 +330,48 @@ document.addEventListener("DOMContentLoaded", function() {
 
 });
 </script>
+<script>
+$(function () {
+
+  // =========================
+  // Materialni AJAX bilan o‘chirish
+  // =========================
+  $(document).on("click", ".js-delete-om", function () {
+
+    const $btn = $(this);
+    const url = $btn.data("url");
+
+    if (!url) {
+      alert("URL topilmadi!");
+      return;
+    }
+
+    if (!confirm("Biriktirilgan materialni o‘chirasizmi?")) return;
+
+    const csrf = $btn.closest("form")
+                     .find('input[name="csrfmiddlewaretoken"]')
+                     .val();
+
+    $btn.prop("disabled", true).text("...");
+
+    $.ajax({
+      url: url,
+      type: "POST",
+      data: { csrfmiddlewaretoken: csrf },
+      success: function () {
+        $btn.closest("tr").remove();
+      },
+      error: function (xhr) {
+        console.log(xhr.responseText);
+        alert("Xatolik! Status: " + xhr.status);
+        $btn.prop("disabled", false).text("X");
+      }
+    });
+
+  });
+
+});
+</script>
+
 
 {% endblock %}

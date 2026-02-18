@@ -8,13 +8,13 @@ urlpatterns = [
     path('index/', index, name='index'),
     path('technics_get/', technics_get, name='technics_get'),
 
-
+    #texnikalar
     path('barn_tex/', barn_tex, name='barn_tex'),
     path("barn_tex/technics_create/", technics_create, name="technics_create"),
     path("barn_tex/delete/", technics_delete, name="technics_delete"),
     path("barn_tex/attach/", technics_attach, name="technics_attach"),
     path("barn_tex/<int:pk>/update/", technics_update, name="technics_update"),
-
+    # materialar
     path('barn_mat/', barn_mat, name='barn_mat'),
     path("barn_mat/material_create/", material_create, name="material_create"),
     path("barn_mat/update/<int:pk>/", material_update, name="material_update"),
@@ -37,9 +37,6 @@ urlpatterns = [
     path("get-dep-employees/", get_department_employees, name="get_dep_employees"),
 
 
-    # DEEDorder_deed
-    path("deed/consent/<int:pk>/delete/", deedconsent_delete, name="deedconsent_delete"),
-
 
     # TECHNICS
     path('technics/', technics, name='technics'),
@@ -51,13 +48,14 @@ urlpatterns = [
     path('ajax/load-division/', ajax_load_division, name='ajax_load_division'),
     path("ajax/employees-org/", ajax_employees_org, name="ajax_employees_org"),
     path("ajax/ajax_agreements_employees/", ajax_agreements_employees, name="ajax_agreements_employees"),
-    path("ajax/deedconsent/delete/", ajax_deedconsent_delete, name="ajax_deedconsent_delete"),
     path("ajax/akt-materials/", ajax_akt_materials, name="ajax_akt_materials"),
     path("ajax/svod_materials/", ajax_svod_materials, name="ajax_svod_materials"),
     path("ajax/reestr_materials/", ajax_reestr_materials, name="ajax_reestr_materials"),
     path("ajax/ajax_document/", ajax_document_preview, name="ajax_document_preview"),
     path("ajax/dep_signatory/", ajax_dep_signatory, name="ajax_dep_signatory"),
     path("ajax/dep_negotiator/", ajax_dep_negotiator, name="ajax_dep_negotiator"),
+    path("ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
+
 
     # ORGANIZATION
     path('organization/<slug:slug>/', organization, name='organization'),
