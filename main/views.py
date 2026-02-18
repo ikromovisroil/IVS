@@ -436,7 +436,7 @@ def deed_edit(request, pk):
                 deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
             messages.success(request, "Hujjat muvaffaqiyatli tahrirlandi")
-            return redirect("contact_user", pk=deed.pk)
+            return redirect("contact_user")
 
         except HtmlPdfError as e:
             messages.warning(request, f"Hujjat yangilanmadi: {e}")
