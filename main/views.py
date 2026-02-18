@@ -225,7 +225,6 @@ def deed_status(request, pk):
     return render(request, "main/deed_status.html", context)
 
 
-
 @never_cache
 @login_required
 def deed_action(request, pk):
@@ -314,52 +313,143 @@ def deed_action(request, pk):
     return redirect(back_url)
 
 
+
 @never_cache
 @login_required
 def deed_edit(request, pk):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
+    emp_me = getattr(request.user, "employee", None)
+    if not emp_me:
         raise PermissionDenied
 
-    deed = get_object_or_404(Deed, pk=pk)
+    deed = get_object_or_404(
+        Deed.objects.select_related("sender", "receiver"),
+        pk=pk
+    )
+
+    # ✅ None bo‘lishi mumkin — shuning uchun organization_id orqali olamiz
+    sender_org_id = deed.sender.organization_id if deed.sender_id else None
+    receiver_org_id = deed.receiver.organization_id if deed.receiver_id else None
+    my_org_id = emp_me.organization_id if emp_me.organization_id else None
+
+    # ✅ selectlarda chiqadigan ro‘yxatlar
+    sender_qs = (
+        Employee.objects.filter(organization_id=sender_org_id)
+        .order_by("last_name", "first_name", "father_name")
+        if sender_org_id else Employee.objects.none()
+    )
+
+    receiver_qs = (
+        Employee.objects.filter(organization_id=receiver_org_id)
+        .order_by("last_name", "first_name", "father_name")
+        if receiver_org_id else Employee.objects.none()
+    )
+
+    org_ids = [x for x in [sender_org_id, receiver_org_id, my_org_id] if x]
+    employee_qs = (
+        Employee.objects.filter(organization_id__in=org_ids)
+        .distinct()
+        .order_by("last_name", "first_name", "father_name")
+        if org_ids else Employee.objects.none()
+    )
+
+    # ✅ agreements tanlangan idlar (related_name kerak emas!)
+    selected_agreement_ids = set(
+        DeedConsent.objects.filter(deed=deed).values_list("employee_id", flat=True)
+    )
 
     if request.method == "POST":
-        body = request.POST.get("body", "")
+        sender_id = (request.POST.get("sender") or "").strip()
+        receiver_id = (request.POST.get("receiver") or "").strip()
+        body = request.POST.get("body") or ""
+        agreements_ids = request.POST.getlist("agreements[]")  # ["12","15",...]
 
         if not body.strip():
             messages.error(request, "Hujjat matni bo‘sh bo‘lmasin")
             return redirect("deed_edit", pk=deed.pk)
 
-        deed.body = body
-        deed.save()
+        # ✅ Sender majburiy (xohlasangiz shartni yumshatishingiz mumkin)
+        if not sender_id.isdigit():
+            messages.error(request, "Imzolovchi xodim tanlanmadi")
+            return redirect("deed_edit", pk=deed.pk)
 
-        # ✅ Eski PDFni o‘chiramiz (agar mavjud bo‘lsa)
-        if deed.file:
-            deed.file.delete(save=False)
+        new_sender = Employee.objects.filter(id=int(sender_id)).first()
+        if not new_sender:
+            messages.error(request, "Imzolovchi topilmadi")
+            return redirect("deed_edit", pk=deed.pk)
 
-        # ✅ Yangi PDF generatsiya qilamiz
+        # ✅ Receiver faqat deed.receiver mavjud bo‘lsa tekshiriladi
+        new_receiver = None
+        if deed.receiver_id:
+            if not receiver_id.isdigit():
+                messages.error(request, "Qabul qiluvchi tanlanmadi")
+                return redirect("deed_edit", pk=deed.pk)
+
+            new_receiver = Employee.objects.filter(id=int(receiver_id)).first()
+            if not new_receiver:
+                messages.error(request, "Qabul qiluvchi topilmadi")
+                return redirect("deed_edit", pk=deed.pk)
+
+        # ✅ agreements tozalash
+        clean_agreement_ids = []
+        for x in agreements_ids:
+            if str(x).isdigit():
+                clean_agreement_ids.append(int(x))
+
         try:
-            pdf_bytes = deed_to_pdf_bytes(deed)
+            with transaction.atomic():
+                # 1) Deed yangilash
+                deed.sender = new_sender
+                if deed.receiver_id:
+                    deed.receiver = new_receiver
+                deed.body = body
+                deed.save()
 
-            today_str = timezone.now().strftime("%Y%m%d")
-            wm_text = "TASDIQLANMAGAN"
-            pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
-            alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-            random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
-            pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+                # 2) Agreements (DeedConsent) ni qayta yozish
+                DeedConsent.objects.filter(deed=deed).delete()
 
-            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+                # sender/receiver kelishuvchi bo‘lib qolmasin desangiz:
+                exclude_ids = {deed.sender_id}
+                if deed.receiver_id:
+                    exclude_ids.add(deed.receiver_id)
+
+                for e_id in clean_agreement_ids:
+                    if e_id in exclude_ids:
+                        continue
+                    DeedConsent.objects.create(deed=deed, employee_id=e_id)
+
+                # 3) Eski PDFni o‘chiramiz
+                if getattr(deed, "file", None):
+                    if deed.file:
+                        deed.file.delete(save=False)
+
+                # 4) Yangi PDF generatsiya
+                pdf_bytes = deed_to_pdf_bytes(deed)
+
+                wm_text = "TASDIQLANMAGAN"
+                pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
+
+                today_str = timezone.now().strftime("%Y%m%d")
+                alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+                random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
+                pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+
+                deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+
+            messages.success(request, "Hujjat muvaffaqiyatli tahrirlandi")
+            return redirect("contact_user", pk=deed.pk)
 
         except HtmlPdfError as e:
-            messages.warning(request, f"PDF yangilanmadi: {e}")
+            messages.warning(request, f"Hujjat yangilanmadi: {e}")
+            return redirect("deed_edit", pk=deed.pk)
 
-        messages.success(request, "Taxrirlandi va PDF yangilandi")
-        return redirect("deed_edit", pk=deed.pk)
-
-    return render(request, "main/deed_edit.html", {
-        "deed": deed
-    })
-
+    context = {
+        "deed": deed,
+        "sender": sender_qs,
+        "receiver": receiver_qs,
+        "employee": employee_qs,
+        "selected_agreement_ids": selected_agreement_ids,
+    }
+    return render(request, "main/deed_edit.html", context)
 
 
 @login_required

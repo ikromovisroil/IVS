@@ -6,6 +6,7 @@
 {% endblock title %}
 
 {% block css %}
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock css %}
 
 {% block content %}
@@ -13,28 +14,65 @@
 <main id="main" class="main">
 
   <div class="pagetitle">
-    <h1>Taxrirlash</h1>
+    <h1>Tahrirlash</h1>
   </div>
 
   <section class="section">
     <form class="row" method="post">{% csrf_token %}
 
-      <!-- LEFT: FILTER + SIGN -->
+      <!-- LEFT -->
       <div class="col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Tahrirlash</h5>
 
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Taxrirlash</h5>
+            <div class="row g-3">
 
-              <div class="row g-3">
-                <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Saqlash</button>
-                </div>
+              <!-- SENDER -->
+              <div class="col-12">
+                <label for="sender" class="form-label">Imzolovchi xodim:</label>
+                <select id="sender" name="sender" class="form-select" required>
+                  {% for emp in sender %}
+                    <option value="{{ emp.id }}" {% if deed.sender_id == emp.id %}selected{% endif %}>
+                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <!-- RECEIVER -->
+              {% if receiver %}
+              <div class="col-12">
+                <label for="receiver" class="form-label">Qabul qiluvchi:</label>
+                <select id="receiver" name="receiver" class="form-select" {% if deed.receiver_id %}required{% endif %}>
+                  {% for emp in receiver %}
+                    <option value="{{ emp.id }}" {% if deed.receiver_id == emp.id %}selected{% endif %}>
+                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+              {% endif %}
+
+              <!-- AGREEMENTS -->
+              <div class="col-12">
+                <label for="agreements" class="form-label">Kelishuvchilar:</label>
+                <select id="agreements" name="agreements[]" class="form-select" multiple>
+                  {% for emp in employee %}
+                    <option value="{{ emp.id }}" {% if emp.id in selected_agreement_ids %}selected{% endif %}>
+                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="text-center">
+                <button type="submit" class="btn btn-primary w-100">Saqlash</button>
               </div>
 
             </div>
           </div>
-
+        </div>
       </div>
 
       <!-- RIGHT: TINYMCE -->
@@ -42,16 +80,27 @@
         <div class="card">
           <div class="card-body">
             <h5 class="card-title">TinyMCE Editor</h5>
-              <textarea id="body" name="body" class="tinymce-editor">
-               {{deed.body|safe}}
-              </textarea>
+            <textarea id="body" name="body" class="tinymce-editor">{{ deed.body|safe }}</textarea>
           </div>
         </div>
-
       </div>
+
     </form>
   </section>
 
 </main>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+$(function () {
+  $('#sender, #receiver, #agreements').select2({
+    width: '100%',
+    placeholder: 'Tanlang...',
+    allowClear: true
+  });
+});
+</script>
 
 {% endblock content %}
