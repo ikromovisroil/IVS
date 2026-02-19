@@ -35,7 +35,7 @@ def order_mark_seen(request):
 
     Order.objects.filter(
         receiver__user=request.user,
-        status_receiver__in=['approved', 'rejected'],
+        status__in=['approved', 'rejected'],
         receiver_seen=False
     ).update(receiver_seen=True)
 

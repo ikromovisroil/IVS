@@ -200,6 +200,10 @@ def contact_agrement(request):
 @login_required
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     deed_user = (
         Deed.objects
         .filter(user=employee)
@@ -321,10 +325,17 @@ def deed_edit(request, pk):
     if not emp_me:
         raise PermissionDenied
 
+    role = getattr(emp_me, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     deed = get_object_or_404(
         Deed.objects.select_related("sender", "receiver"),
         pk=pk
     )
+
+    if deed.user != emp_me:
+        raise PermissionDenied
 
     # ✅ None bo‘lishi mumkin — shuning uchun organization_id orqali olamiz
     sender_org_id = deed.sender.organization_id if deed.sender_id else None
@@ -1531,9 +1542,11 @@ def document_get(request):
 def document_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
-        messages.error(request, "Employee topilmadi")
-        return redirect("akt_get")
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -1640,6 +1653,10 @@ def order_sender(request):
 @login_required
 @require_POST
 def order_decide(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
     order = get_object_or_404(Order, id=pk)
     action = request.POST.get("action")  # approve | reject
 
@@ -1748,6 +1765,10 @@ def order_receiver(request):
     if not employee:
         raise PermissionDenied
 
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     orders_qs = (
         Order.objects
         .filter(sender__region=employee.region,status="viewed",)
@@ -1773,6 +1794,13 @@ def order_receiver(request):
 @require_POST
 def order_accepted(request, pk):
     employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     order = get_object_or_404(Order, pk=pk)
 
     if order.status == "accepted":
@@ -1791,11 +1819,19 @@ def order_accepted(request, pk):
 @login_required
 def order_receiver_deed(request,pk):
     employee = getattr(request.user, "employee", None)
-    order = get_object_or_404(Order, pk=pk)
-    my_dep_id = request.user.employee.department_id
-
     if not employee:
         raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
+    order = get_object_or_404(Order, pk=pk)
+
+    if order.receiver != employee:
+        raise PermissionDenied
+
+    my_dep_id = request.user.employee.department_id
 
     context = {
         'order':order,
@@ -1811,9 +1847,11 @@ def order_receiver_deed(request,pk):
 def order_receiver_deed_post(request,pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
-        messages.error(request, "Employee topilmadi")
-        return redirect("akt_get")
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -1881,6 +1919,10 @@ def order_receiver_activ(request):
     if not employee:
         raise PermissionDenied
 
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     orders_qs = (
         Order.objects
         .filter(sender__region=employee.region,status__in=["accepted", "finished"],)
@@ -1921,6 +1963,10 @@ def order_receiver_arxiv(request):
     if not employee:
         raise PermissionDenied
 
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     orders_qs = (
         Order.objects
         .filter(sender__region=employee.region,status__in=["approved", "rejected",],)
@@ -1944,6 +1990,14 @@ def order_receiver_arxiv(request):
 @never_cache
 @login_required
 def order_approved(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     if request.method != "POST":
         return redirect("/")
 
@@ -1966,6 +2020,14 @@ from django.db.models import F
 @require_POST
 @transaction.atomic
 def ordermaterial_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
     order_id = request.POST.get("order_id")
     technics_id = request.POST.get("technics_id")
     material_ids = request.POST.getlist("material_id[]")
@@ -2030,6 +2092,10 @@ def akt_get(request):
     if not employee:
         raise PermissionDenied
 
+    role = getattr(employee, "rol", None)
+    if role and not role.shop:
+        raise PermissionDenied
+
     context = {
         "organizations": Organization.objects.all().order_by("id"),
     }
@@ -2043,9 +2109,11 @@ def akt_get(request):
 def akt_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
-        messages.error(request, "Employee topilmadi")
-        return redirect("akt_get")
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and not role.shop:
+        raise PermissionDenied
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -2111,11 +2179,12 @@ def akt_post(request):
 @never_cache
 @login_required
 def svod_get(request):
-
-    if not hasattr(request.user, "employee"):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied
 
-    if request.user.employee.rol.client:
+    role = getattr(employee, "rol", None)
+    if role and not role.shop:
         raise PermissionDenied
 
     context = {
@@ -2132,8 +2201,11 @@ def svod_get(request):
 def svod_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        messages.error(request, "Employee topilmadi")
-        return redirect("akt_get")
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and not role.shop:
+        raise PermissionDenied
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -2199,11 +2271,12 @@ def svod_post(request):
 @never_cache
 @login_required
 def reestr_get(request):
-
-    if not hasattr(request.user, "employee"):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied
 
-    if request.user.employee.rol.client:
+    role = getattr(employee, "rol", None)
+    if role and not role.shop:
         raise PermissionDenied
 
     context = {
@@ -2219,9 +2292,11 @@ def reestr_get(request):
 def reestr_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        # siz xohlasangiz PermissionDenied ham qilsa bo'ladi
-        messages.error(request, "Employee topilmadi")
-        return redirect("akt_get")
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and not role.shop:
+        raise PermissionDenied
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -2289,10 +2364,14 @@ def reestr_post(request):
 @never_cache
 @login_required
 def technics_get(request):
-    if not hasattr(request.user, "employee"):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied
 
-    employee = getattr(request.user, "employee", None)
+    role = getattr(employee, "rol", None)
+    if role and not role.client:
+        raise PermissionDenied
+
     if employee.rol.boss:
         technics = Technics.objects.filter(
             employee__organization=employee.organization,

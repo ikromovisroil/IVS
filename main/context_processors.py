@@ -54,27 +54,18 @@ def order_notifications(request):
     # 1) Receiver uchun
     receiver_notes = Order.objects.filter(
         receiver=employee,
-        status__in=['accepted', 'approved', 'rejected'],
+        status__in=['viewed', 'approved', 'rejected'],
         receiver_seen=False
     )
-
-    # 2) Bosslar uchun
-    boss_notes = Order.objects.filter(
-        status="viewed",
-        sender__region=employee.region,
-        receiver_seen=False,
-        receiver__rol__boss=True,
-    ).exclude(receiver=employee)
-
 
     # 3) Sender uchun
     sender_notes = Order.objects.filter(
         sender=employee,
-        status='finished',
+        status__in=['accepted', 'finished'],
         receiver_seen=False
     )
 
-    all_notes = (receiver_notes | boss_notes | sender_notes).order_by('-date_edit')
+    all_notes = (receiver_notes | sender_notes).order_by('-date_edit')
 
     return {
         'order_notifications': all_notes,

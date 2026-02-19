@@ -75,28 +75,28 @@
               {% if o.sender.user.id == request.user.id %}
                 <a href="{% url 'order_sender' %}" class="d-flex align-items-start text-decoration-none">
               {% else %}
-                <a href="{% url 'order_receiver' %}" class="d-flex align-items-start text-decoration-none">
+                {% if o.viewed == "viewed" %}
+                   <a href="{% url 'order_sender' %}" class="d-flex align-items-start text-decoration-none">
+                {% else %}
+                   <a href="{% url 'order_receiver_arxiv' %}" class="d-flex align-items-start text-decoration-none">
+                {% endif %}
               {% endif %}
 
                 <!-- ================= ICON TANLASH ================= -->
-                {% if o.status == 'viewed' and o.receiver.user.id == request.user.id %}
+                {% if o.status == 'viewed' %}
                   <!-- QABUL QILUVCHI UCHUN YANGI ZAYAVKA -->
                   <i class="bi bi-exclamation-circle text-warning"></i>
 
-                {% elif o.status == 'viewed' and request.user.employee.rank.id == 1 and o.sender.region.id == request.user.employee.region.id %}
-                  <!-- BOSS UCHUN YANGI ZAYAVKA -->
-                  <i class="bi bi-exclamation-circle text-warning"></i>
-
-                {% elif o.status == 'accepted' and o.receiver.user.id == request.user.id %}
+                {% elif o.status == 'accepted' %}
                   <i class="bi bi-info-circle text-primary"></i>
 
-                {% elif o.status == 'finished' and o.sender.user.id == request.user.id %}
+                {% elif o.status == 'finished' %}
                   <i class="bi bi-check-circle text-info"></i>
 
-                {% elif o.status == 'approved' and o.receiver.user.id == request.user.id %}
+                {% elif o.status == 'approved' %}
                   <i class="bi bi-check-circle text-success"></i>
 
-                {% elif o.status == 'rejected' and o.receiver.user.id == request.user.id %}
+                {% elif o.status == 'rejected' %}
                   <i class="bi bi-x-circle text-danger"></i>
 
                 {% else %}
@@ -107,39 +107,35 @@
 
                   <!-- ================= ISM KIM KO‘RINADI ================= -->
                   {% if request.user.id == o.sender.user.id %}
-                    <h4 class="mb-1">{{ o.receiver.user.get_full_name }}</h4>
-                  {% else %}
-                    <h4 class="mb-1">{{ o.sender.user.get_full_name }}</h4>
+                    <h4 class="mb-1">{{ o.receiver.full_name }}</h4>
+                  {% elif request.user.id == o.receiver.user.id %}
+                    <h4 class="mb-1">{{ o.sender.full_name }}</h4>
                   {% endif %}
 
                   <!-- ================= STATUSGA QARAB MATN ================= -->
 
                   {% if o.status == 'viewed'%}
-                    <p class="text-warning mb-1">Yangi zayavka keldi</p>
-                    <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
-
-                  {% elif o.status == 'viewed'%}
-                    <p class="text-warning mb-1">Yangi zayavka keldi</p>
+                    <p class="text-warning mb-1">Yangi ariza keldi</p>
                     <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
 
                   {% elif o.status == 'accepted'%}
-                    <p class="text-primary mb-1">Sizga yangi zayavka biriktirildi</p>
+                    <p class="text-primary mb-1">Sizning arizangiz qabul qilindi</p>
                     <p class="small text-muted mb-0">{{ o.date_accepted|timesince }} oldin</p>
 
                   {% elif o.status == 'finished'%}
-                    <p class="text-info mb-1">Sizning zayavkangiz yakunlandi</p>
+                    <p class="text-info mb-1">Sizning arizangiz yakunlandi</p>
                     <p class="small text-muted mb-0">{{ o.date_finished|timesince }} oldin</p>
 
                   {% elif o.status == 'approved'%}
-                    <p class="text-success mb-1">Bajargan zayavkangiz tasdiqlandi</p>
+                    <p class="text-success mb-1">Bajargan arizangiz tasdiqlandi</p>
                     <p class="small text-muted mb-0">{{ o.date_approved|timesince }} oldin</p>
 
                   {% elif o.status == 'rejected' %}
-                    <p class="text-danger mb-1">Bajargan zayavkangiz rad etildi</p>
+                    <p class="text-danger mb-1">Bajargan arizangiz rad etildi</p>
                     <p class="small text-muted mb-0">{{ o.date_rejected|timesince }} oldin</p>
 
                   {% else %}
-                    <p class="mb-1">Zayavka holati yangilandi</p>
+                    <p class="mb-1">Ariza holati yangilandi</p>
                     <p class="small text-muted mb-0">{{ o.date_edit|timesince }} oldin</p>
                   {% endif %}
 
