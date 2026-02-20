@@ -205,13 +205,13 @@
                             <td>
                               {% if d.receiver %}
                                   {% if d.status_sender == "viewed" and d.status_receiver == "viewed" %}
-                                      <a class="btn badge bg-success" href="{% url 'deed_edit' d.pk %}">
+                                      <a class="btn badge btn-primary" href="{% url 'deed_edit' d.pk %}">
                                           Tahrirlash
                                       </a>
                                   {% endif %}
                               {% else %}
                                   {% if d.status_sender == "viewed" %}
-                                      <a class="btn badge bg-success" href="{% url 'deed_edit' d.pk %}">
+                                      <a class="btn badge btn-primary" href="{% url 'deed_edit' d.pk %}">
                                           Tahrirlash
                                       </a>
                                   {% endif %}

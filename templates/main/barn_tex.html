@@ -68,6 +68,10 @@
                     <div class="col-md-3 d-flex align-items-end">
                       <button type="submit" class="btn btn-primary w-100">Qidirish</button>
                     </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                      <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
+                    </div>
+
 
                   </form>
                 </div>
@@ -103,6 +107,7 @@
                     <th scope="col">Nomi</th>
                     <th scope="col">I/N</th>
                     <th scope="col">S/N</th>
+                    <th scope="col">Mac</th>
                     <th scope="col">Yili</th>
                     {% if request.user.employee.rol.material_edit%}
                     <th scope="col">Tafsif</th>
@@ -120,6 +125,7 @@
                       <td>{{ tex.name|default:"-" }}</td>
                       <td>{{ tex.inventory|default:"-" }}</td>
                       <td>{{ tex.serial|default:"-" }}</td>
+                      <td>{{ tex.mac|default:"-" }}</td>
                       <td>{{ tex.year|default:"-" }}</td>
                       {% if request.user.employee.rol.material_edit%}
                       <td>
@@ -575,5 +581,37 @@
     });
   });
 </script>
+<script>
+document.getElementById("btnExcel").addEventListener("click", async () => {
+  // Sizning formdagi select/input name lariga moslab oling:
+  const org = document.querySelector('[name="organization"]')?.value || "";
+  const category = document.querySelector('[name="category"]')?.value || "";
+  const name = document.querySelector('[name="name"]')?.value || "";
 
+  const params = new URLSearchParams();
+  if (org) params.append("organization", org);
+  if (category) params.append("category", category);
+  if (name) params.append("name", name);
+
+  const url = "{% url 'export_technics_xlsx' %}?" + params.toString();
+
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) {
+    alert("Excel eksportda xatolik!");
+    return;
+  }
+
+  const blob = await res.blob();
+  const blobUrl = window.URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = blobUrl;
+  a.download = "technics.xlsx";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  window.URL.revokeObjectURL(blobUrl);
+});
+</script>
 {% endblock content %}

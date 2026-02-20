@@ -28,6 +28,9 @@
   <link href="{% static 'vendor/remixicon/remixicon.css' %}" rel="stylesheet">
   <link href="{% static 'vendor/simple-datatables/style.css' %}" rel="stylesheet">
 
+
+  {% block css %}
+  {% endblock css %}
   <!-- Template Main CSS File -->
   <link href="{% static 'css/style.css' %}" rel="stylesheet">
 </head>
@@ -578,7 +581,7 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-{% block js %}{% endblock %}
+{% block js %}{% endblock js %}
 
 
   <!-- Template Main JS File -->

@@ -219,6 +219,7 @@ def ajax_akt_materials(request):
 
     qs = (
         OrderMaterial.objects.filter(
+            material__employee__department_id=employee.department_id,
             order__date_finished__gte=date1,
             order__date_finished__lt=date2,
             order__sender__department_id=dep_id,

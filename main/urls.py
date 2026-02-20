@@ -1,6 +1,7 @@
 from django.urls import path
 from .views import *
 from .ajax_views import *
+from .ajax_xlsx import *
 
 urlpatterns = [
     path("", home, name="home"),
@@ -97,4 +98,8 @@ urlpatterns = [
     path("sso/exchange/", sso_exchange_and_finish, name="sso_exchange_and_finish"),
 
     path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
+
+    # egzel
+    path("export/technics_xlsx/", export_technics_xlsx, name="export_technics_xlsx"),
+    path("export/material_xlsx/", export_material_xlsx, name="export_material_xlsx"),
 ]

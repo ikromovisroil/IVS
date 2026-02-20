@@ -160,7 +160,8 @@ class EmployeeAdmin(ReadonlyDatesAdmin):
 class RolAdmin(admin.ModelAdmin):
     list_display = (
         "id", "employee",
-        "client", "boss", "shop", "akt",
+        "client", "order",
+        "index", "boss", "shop", "akt",
         "technics", "technics_edit",
         "material", "material_edit",
     )

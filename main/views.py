@@ -1929,7 +1929,6 @@ def order_receiver_activ(request):
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
-    technics = Technics.objects.all()
     my_materials = Material.objects.filter(employee=employee)
     if my_materials.exists():
         materials = my_materials
@@ -1950,7 +1949,6 @@ def order_receiver_activ(request):
         "order": page_obj,          # ✅ for loop shu orqali yuradi
         "page_obj": page_obj,       # ✅ pagination uchun
         "paginator": paginator,     # ✅ pagination uchun
-        'technics': technics,
         'materials': materials,
     }
     return render(request, "main/order_receiver_activ.html", context)
@@ -2384,4 +2382,5 @@ def technics_get(request):
         'technics': technics,
     }
     return render(request, 'main/technics_get.html', context)
+
 
