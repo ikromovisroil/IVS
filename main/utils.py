@@ -15,6 +15,8 @@ from reportlab.lib.colors import red
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
 from qrcode.constants import ERROR_CORRECT_M
+from .models import *
+from django.shortcuts import get_object_or_404
 
 logger = logging.getLogger(__name__)
 
@@ -113,10 +115,19 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
     # QR link: deed status sahifasi
     qr_link = request.build_absolute_uri(reverse("deed_status", args=[int(deed_id)]))
 
-    text = (
-        f"{approver_name} tomonidan "
-        f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da tasdiqlandi"
-    )
+    deed = get_object_or_404(Deed, id=deed_id)
+    if deed.receiver:
+        text = (
+            f"Ushu xujat {deed.sender.full_name} tomonidan "
+            f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da va "
+            f"{deed.receiver.full_name} tomonidan "
+            f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da tasdiqlandi"
+        )
+    else:
+        text = (
+            f"{deed.sender.full_name} tomonidan "
+            f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da tasdiqlandi"
+        )
 
     lock_path = abs_pdf + ".lock"
     tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")

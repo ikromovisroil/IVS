@@ -25,7 +25,7 @@
           <div class="modal-content">
             <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
             <div class="modal-header">
-              <h5 class="modal-title">#Ariza Yuborish</h5>
+              <h5 class="modal-title">Ariza Yuborish</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -45,7 +45,7 @@
 
                     <!-- Izoh -->
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Izoh:</label>
+                        <label class="col-sm-3 col-form-label">Qo‘shimcha ma’lumot:</label>
                         <div class="col-sm-9">
                             <textarea class="form-control" name="body" style="height: 100px"></textarea>
                         </div>
@@ -119,36 +119,58 @@
                                     </div>
                                     <div class="modal-body">
                                         <div class="row g-2">
-                                            <div class="col-6 text-muted">Holati</div>
-                                            <div class="col-6">{{ o.get_status_display }}</div>
-                                            <div class="col-6 text-muted">Kiritilgan sana</div>
-                                            <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
-                                            <div class="col-6 text-muted">Muallif</div>
-                                            <div class="col-6">{{ o.sender.full_name }}</div>
-                                            <div class="col-6 text-muted">Ariza Maqsadi</div>
-                                            <div class="col-6">{{ o.goal.name }}</div>
-                                            <div class="col-6 text-muted">Tashkilot</div>
-                                            <div class="col-6">
-                                              {% if o.sender.organization %}
-                                                {{ o.sender.organization|default:"" }}<br>
-                                              {% endif %}
-                                              {% if o.sender.department %}
-                                                {{ o.sender.department|default:"" }}<br>
-                                              {% endif %}
-                                              {% if o.sender.directorate %}
-                                                {{ o.sender.directorate|default:"" }}<br>
-                                              {% endif %}
-                                              {% if o.sender.division %}
-                                                {{ o.sender.division|default:"" }}<br>
-                                              {% endif %}
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-info-circle me-1"></i> Ariza holati
                                             </div>
-                                            <div class="col-6 text-muted">Telefon</div>
+                                            <div class="col-6">
+                                                <span class="badge
+                                                    {% if o.status == 'viewed' %}bg-warning
+                                                    {% elif o.status == 'accepted' %}bg-primary
+                                                    {% elif o.status == 'finished' %}bg-info
+                                                    {% elif o.status == 'approved' %}bg-success
+                                                    {% elif o.status == 'rejected' %}bg-danger
+                                                    {% else %}bg-secondary
+                                                    {% endif %}">
+                                                    {{ o.get_status_display }}
+                                                </span>
+                                            </div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-calendar-event me-1"></i> Ro‘yxatga olingan sana
+                                            </div>
+                                            <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-person me-1"></i> Ariza muallifi
+                                            </div>
+                                            <div class="col-6">{{ o.sender.full_name }}</div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
+                                            </div>
+                                            <div class="col-6">{{ o.goal.name }}</div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-building me-1"></i> Tashkilot
+                                            </div>
+                                            <div class="col-6">
+                                                {% if o.sender.organization %}{{ o.sender.organization }}<br>{% endif %}
+                                                {% if o.sender.department %}{{ o.sender.department }}<br>{% endif %}
+                                                {% if o.sender.directorate %}{{ o.sender.directorate }}<br>{% endif %}
+                                                {% if o.sender.division %}{{ o.sender.division }}{% endif %}
+                                            </div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-telephone me-1"></i> Telefon raqami
+                                            </div>
                                             <div class="col-6">{{ o.sender.phone }}</div>
-                                            <div class="col-6 text-muted">Izox</div>
-                                            <div class="col-6">{{ o.body }}</div><hr>
-                                            <div class="col-6 text-muted">Bajardi</div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
+                                            </div>
+                                            <div class="col-6">{{ o.body }}</div>
+                                            <hr class="my-3">
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-person-check me-1"></i> Mas’ul xodim
+                                            </div>
                                             <div class="col-6">{{ o.receiver.full_name }}</div>
-                                            <div class="col-6 text-muted">Texnika</div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-cpu me-1"></i> Xizmat ko‘rsatilgan texnika
+                                            </div>
                                             <div class="col-6">{{ o.technics.name }}</div>
                                         </div>
                                          {% if o.materials_all.exists %}
