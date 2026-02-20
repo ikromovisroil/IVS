@@ -53,12 +53,7 @@ def file_lock(lock_path: str, timeout: int = 10):
 # 2) Overlay PDF (RAM’da) yaratish
 # ==========================================================
 def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: str) -> bytes:
-    """
-    Berilgan sahifa o‘lchamiga mos overlay PDF ni bytes ko‘rinishida qaytaradi.
-    Diskka hech narsa yozmaydi.
-    """
-
-    # --- QR kodni PIL image qilib yaratamiz ---
+    # --- QR kod ---
     qr = qrcode.QRCode(
         version=None,
         error_correction=ERROR_CORRECT_M,
@@ -67,33 +62,43 @@ def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: st
     )
     qr.add_data(qr_link)
     qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")  # PIL Image
+    img = qr.make_image(fill_color="black", back_color="white")
 
-    # --- QR ni RAM’da PNG qilib olish ---
     qr_buf = BytesIO()
     img.save(qr_buf, format="PNG")
     qr_buf.seek(0)
     qr_reader = ImageReader(qr_buf)
 
-    # --- Overlay PDFni RAM’da yaratish ---
+    # --- Overlay PDF ---
     pdf_buf = BytesIO()
     c = canvas.Canvas(pdf_buf, pagesize=(page_w, page_h))
+
+    # ✅ matn parametrlari
     c.setFillColor(red)
+    font_name = "Helvetica-Bold"
+    font_size = 10
+    c.setFont(font_name, font_size)
 
-    # Yozuv (yuqori chap)
-    c.setFont("Helvetica-Bold", 10)
-    c.drawString(10, page_h - 15, text)
+    # ✅ matnni line qilib yozamiz (newline ishlaydi)
+    lines = (text or "").splitlines()  # \n bo'lsa bo'lib beradi
+    x = 10
+    y = page_h - 15
+    line_gap = 12  # qator oralig'i
 
-    # QR (pastki markaz)
+    for line in lines:
+        c.drawString(x, y, line)
+        y -= line_gap
+
+    # ✅ QR (pastki markaz)
     qr_size = 65
     x_center = (page_w - qr_size) / 2
     y_bottom = 5
-
     c.drawImage(qr_reader, x_center, y_bottom, width=qr_size, height=qr_size, mask="auto")
+
     c.showPage()
     c.save()
-
     return pdf_buf.getvalue()
+
 
 
 # ==========================================================
@@ -116,18 +121,14 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
     qr_link = request.build_absolute_uri(reverse("deed_status", args=[int(deed_id)]))
 
     deed = get_object_or_404(Deed, id=deed_id)
+    dt = timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M")
     if deed.receiver:
         text = (
-            f"Ushu xujat {deed.sender.full_name} tomonidan "
-            f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da va "
-            f"{deed.receiver.full_name} tomonidan "
-            f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da tasdiqlandi"
+            f"{deed.sender.full_name} tomonidan {dt} da tasdiqlandi\n"
+            f"{deed.receiver.full_name} tomonidan {dt} da tasdiqlandi"
         )
     else:
-        text = (
-            f"{deed.sender.full_name} tomonidan "
-            f"{timezone.now().strftime('%d.%m.%Y %H:%M')} da tasdiqlandi"
-        )
+        text = f"{deed.sender.full_name} tomonidan {dt} da tasdiqlandi"
 
     lock_path = abs_pdf + ".lock"
     tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
