@@ -1925,7 +1925,7 @@ def order_receiver_activ(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender__region=employee.region,status__in=["accepted", "finished"],)
+        .filter(receiver=employee,status__in=["accepted", "finished"],)
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
@@ -1967,7 +1967,7 @@ def order_receiver_arxiv(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender__region=employee.region,status__in=["approved", "rejected",],)
+        .filter(receiver=employee,status__in=["approved", "rejected",],)
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )

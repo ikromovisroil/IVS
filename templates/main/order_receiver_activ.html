@@ -62,7 +62,7 @@
 
                     <td>
                       {% if o.status == "accepted" %}
-                        <i class="bi bi-check-circle me-1"></i>
+                        <i class="bi bi-check2-circle me-1 text-primary"></i>
                         <span type="button"
                               class="badge bg-primary text-white"
                               data-bs-toggle="modal"
@@ -70,7 +70,7 @@
                           Qabul qilindi
                         </span>
                       {% elif o.status == "finished" %}
-                        <i class="bi bi-play-circle me-1"></i>
+                        <i class="bi bi-flag me-1 text-info"></i>
                         <span type="button"
                               class="badge bg-info text-white"
                               data-bs-toggle="modal"
@@ -82,8 +82,7 @@
                       {# ===== MODAL ===== #}
                       <div class="modal fade" id="verticalmodal{{ o.id }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
-
-                          <form class="modal-content" action="{% url 'ordermaterial_post' %}" method="post">
+                            <form class="modal-content" action="{% url 'ordermaterial_post' %}" method="post">
                             {% csrf_token %}
 
                             <div class="modal-header">
@@ -95,7 +94,7 @@
 
                               <div class="row g-2">
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-info-circle me-1"></i> Ariza holati
+                                <i class="bi bi-info-circle me-1"></i> Ariza holati
                                 </div>
                                 <div class="col-6">
                                     <span class="badge
@@ -116,7 +115,7 @@
                                 <div class="col-6 text-muted">
                                     <i class="bi bi-person me-1"></i> Ariza muallifi
                                 </div>
-                                <div class="col-6">{{ o.sender.full_name }}</div>
+                                <div class="col-6">{{ o.sender.full_name }} ({{ o.sender.rank.name|default:"" }})</div>
                                 <div class="col-6 text-muted">
                                     <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
                                 </div>
@@ -134,13 +133,41 @@
                                     <i class="bi bi-telephone me-1"></i> Telefon raqami
                                 </div>
                                 <div class="col-6">{{ o.sender.phone }}</div>
+                                {% if o.technics %}
                                 <div class="col-6 text-muted">
                                     <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
                                 </div>
                                 <div class="col-6">{{ o.body }}</div>
-                              <hr>
+                                {% endif %}
+                                {% if o.technics %}
+                                <div class="col-6 text-muted">
+                                    <i class="bi bi-cpu me-1"></i> Xizmat ko‘rsatilgan texnika
+                                </div>
+                                <div class="col-6">{{ o.technics.name }}</div>
+                                {% endif %}
+                                {% if o.receiver %}
+                                <hr class="my-3">
+                                <div class="col-6 text-muted">
+                                    <i class="bi bi-person-check me-1"></i> Mas’ul xodim
+                                </div>
+                                <div class="col-6">{{ o.receiver.full_name }} ({{ o.receiver.rank.name|default:"" }})</div>
+                                <div class="col-6 text-muted">
+                                    <i class="bi bi-building me-1"></i> Tashkilot
+                                </div>
+                                <div class="col-6">
+                                    {% if o.receiver.organization %}{{ o.receiver.organization }}<br>{% endif %}
+                                    {% if o.receiver.department %}{{ o.receiver.department }}<br>{% endif %}
+                                    {% if o.receiver.directorate %}{{ o.receiver.directorate }}<br>{% endif %}
+                                    {% if o.receiver.division %}{{ o.receiver.division }}{% endif %}
+                                </div>
+                                <div class="col-6 text-muted">
+                                    <i class="bi bi-telephone me-1"></i> Telefon raqami
+                                </div>
+                                <div class="col-6">{{ o.receiver.phone }}</div>
+                                {% endif %}
+                              </div>
 
-                              {# (Optional) Texnika select — siz keyin to‘ldirasiz #}
+                              <hr>
                               <div class="row g-2">
                                 <div class="row mb-12">
                                     <h4>Texnikani tanlang</h4>
@@ -148,7 +175,7 @@
                                     <select
                                       class="form-select js-tech-select" name="technics_id" required>
                                       <option value="">— Tanlang —</option>
-                                      {% for t in o.sender.technics_set.all %}
+                                      {% for i in o.sender.technics_set.all %}
                                         <option value="{{ t.id }}" {% if o.technics_id == t.id %}selected{% endif %}>
                                           {{ t.name|default:"" }} | {{ t.inventory|default:"" }} | {{ t.serial|default:"" }} | {{ t.mac|default:"" }}
                                         </option>
@@ -205,6 +232,78 @@
                                   </table>
                                 {% endif %}
                               </div>
+                              <hr>
+                                <div class="row text-center g-3">
+                                    {% if o.date_creat %}
+                                    <div class="col-md-4 col-lg-3">
+                                        <div class="border rounded p-2 h-100">
+                                            <i class="bi bi-plus-circle text-warning fs-2"></i>
+                                            <div class="small fw-semibold mt-1">
+                                                {{ o.date_creat|date:"d.m.Y, H:i" }}
+                                            </div>
+                                            <div class="text-muted">
+                                                Ariza yaratildi
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if o.date_accepted %}
+                                    <div class="col-md-4 col-lg-3">
+                                        <div class="border rounded p-2 h-100">
+                                            <i class="bi bi-check2-circle text-primary fs-2"></i>
+                                            <div class="small fw-semibold mt-1">
+                                                {{ o.date_accepted|date:"d.m.Y, H:i" }}
+                                            </div>
+                                            <div class="text-muted">
+                                                Qabul qilindi
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if o.date_finished %}
+                                    <div class="col-md-4 col-lg-3">
+                                        <div class="border rounded p-2 h-100">
+                                            <i class="bi bi-flag text-info fs-2"></i>
+                                            <div class="small fw-semibold mt-1">
+                                                {{ o.date_finished|date:"d.m.Y, H:i" }}
+                                            </div>
+                                            <div class="text-muted">
+                                                Yakunlandi
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if o.date_approved %}
+                                    <div class="col-md-4 col-lg-3">
+                                        <div class="border rounded p-2 h-100">
+                                            <i class="bi bi-patch-check text-success fs-2"></i>
+                                            <div class="small fw-semibold mt-1">
+                                                {{ o.date_approved|date:"d.m.Y, H:i" }}
+                                            </div>
+                                            <div class="text-muted">
+                                                Tasdiqlandi
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+
+                                    {% if o.date_rejected %}
+                                    <div class="col-md-4 col-lg-3">
+                                        <div class="border rounded p-2 h-100">
+                                            <i class="bi bi-x-circle text-danger fs-2"></i>
+                                            <div class="small fw-semibold mt-1">
+                                                {{ o.date_rejected|date:"d.m.Y, H:i" }}
+                                            </div>
+                                            <div class="text-muted">
+                                                Rad etildi
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
 
                             </div>
 
