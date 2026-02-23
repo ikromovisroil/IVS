@@ -98,7 +98,7 @@
                   <tbody>
                     <tr>
                       <td style="border:1px solid #fff;text-align:center;">
-                        <span>O‘zbekiston Respublikasi <span id="org_id_1">Tashkilot</span> tashkiloti vakili:</span><br>
+                        <span>O‘zbekiston Respublikasi {{order.sender.organization.name}} tashkiloti vakili:</span><br>
                         <b><u id="sender_name1">__</u></b><br>
                         <span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>
                       </td>
@@ -203,11 +203,11 @@
                     <tr>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>Xizmat ko‘rsatuvchi vakili:</b><br>
-                        <span>Ikromov Isroil Ilxomovich</span><br>
+                        <span>{{ order.receiver.full_name }}</span><br>
                         <span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
-                        <b>O‘zbekiston Respublikasi <span id="org_id_2">Tashkilot</span> tashkiloti vakili:</b><br>
+                        <b>O‘zbekiston Respublikasi {{ order.sender.organization.name }} tashkiloti vakili:</b><br>
                         <span id="sender_name2">__</span><br>
                         <span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>
                       </td>
@@ -273,7 +273,7 @@
       : senderName;
 
     setInEditor(editor, 'sender_name1', fullText);
-    setInEditor(editor, 'sender_name2', fullText);
+    setInEditor(editor, 'sender_name2', senderName);
   }
 
   // ====== TinyMCE tayyorligini kutish ======

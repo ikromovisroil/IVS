@@ -122,7 +122,7 @@
                   “Axborot texnologiyalari markazi” davlat unitar korxonasining vakillari:
                 </div>
                 <div style="text-align:center;">
-                  <b><u>Ikromov Isroil Ilxomovich (2-toifali mutaxassis)</u></b>
+                  <b><u>{{ request.user.employee.full_name }} ({{ request.user.employee.rank.name }})</u></b>
                 </div>
                 <div style="text-align:center;font-size:8pt;">
                   (F.I.Sh., ATM mutaxassisining lavozimi)
@@ -137,12 +137,12 @@
                     <tbody>
                       <tr>
                         <td style="border:1px solid #fff;text-align:center;">
-                          <span>O‘zbekiston Respublikasi <span id="org_id_1">Tashkilot</span> tashkiloti vakili:</span><br>
-                          <b id="sender_name1"><u>Ikromov Isroil Ilxomovich (2-toifali mutaxassis)</u></b><br>
+                          <span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va moliya vazirligi</span> tashkiloti vakili:</span><br>
+                          <b id="sender_name1"><u>_</u></b><br>
                           <span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>
                         </td>
                         <td style="border:1px solid #fff;text-align:center;">
-                          <span id="dep_id">department</span><br>
+                          <span id="dep_id">Muvofiqlashtirish va axborot-tahlil departamenti</span><br>
                           <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
                         </td>
                       </tr>
@@ -236,12 +236,12 @@
                       <tr>
                         <td style="border:1px solid #fff;text-align:center;">
                           <b>Xizmat ko‘rsatuvchi vakili:</b><br>
-                          <span>Ikromov Isroil Ilxomovich</span><br>
+                          <span>{{ request.user.employee.full_name }}</span><br>
                           <span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>
                         </td>
                         <td style="border:1px solid #fff;text-align:center;">
                           <b>O‘zbekiston Respublikasi <span id="org_id_2">Tashkilot</span> tashkiloti vakili:</b><br>
-                          <span id="sender_name2">Ikromov Isroil Ilxomovich</span><br>
+                          <span id="sender_name2">_</span><br>
                           <span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>
                         </td>
                       </tr>
