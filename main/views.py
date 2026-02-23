@@ -1634,7 +1634,7 @@ def order_sender(request):
     goals_qs = (
         Goal.objects
         .only("id", "name",)
-        .order_by("-id")
+        .order_by("id")
     )
 
     # ✅ PAGINATION
