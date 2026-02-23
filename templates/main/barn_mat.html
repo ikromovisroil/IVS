@@ -70,13 +70,12 @@
           <div class="card">
             <div class="card-body">
               <div class="d-flex justify-content-between align-items-center">
-                 <h5 class="card-title">Material<b>|</b>
-                    <i>Umumiy: {{ total_count }}</i> <b>|</b>
-                    <i> Natija: {{ filtered_count }}</i>
+                 <h5 class="card-title">Materiallar: {{ total_count }} ta
                  </h5>
-
+                 <h5>Umumiy narxi:  {{total_suma}} so'm
+                 </h5>
                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#vertical">
-                   Material qo'shish
+                   + Material qo'shish
                  </button>
               </div>
 
@@ -87,6 +86,7 @@
                     <th scope="col">Material Nomi</th>
                     <th scope="col">Soni</th>
                     <th scope="col">Narxi</th>
+                    <th scope="col">Umumiy narxi</th>
                     <th scope="col">Qiymati</th>
                     <th scope="col">1C code</th>
                     {% if request.user.employee.rol.material_edit%}
@@ -102,6 +102,7 @@
                     <td>{{ mat.name|default:"-"|truncatechars:50 }}</td>
                     <td>{{ mat.number|default:"-" }}</td>
                     <td>{{ mat.price|default:"-" }}</td>
+                    <td>{{ mat.total_sum|floatformat:2 }}</td>
                     <td>{{ mat.unit|default:"-" }}</td>
                     <td>{{ mat.code|default:"-" }}</td>
                     {% if request.user.employee.rol.material_edit%}
@@ -199,6 +200,18 @@
           </div>
           <div class="modal-body">
             <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
+              <div class="col-md-8 col-lg-9">
+                  <select name="unit" class="form-select" required>
+                    <option>— Tanlang —</option>
+                    {% for u in unit %}
+                      <option value="{{ u.id }}">{{ u.name }}</option>
+                    {% endfor %}
+                  </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.name }}
@@ -214,12 +227,6 @@
               <label class="col-md-4 col-lg-3 col-form-label">Soni</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.number }}
-              </div>
-            </div>
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
-              <div class="col-md-8 col-lg-9">
-                {{ material_form.unit }}
               </div>
             </div>
             <div class="row mb-3">
@@ -400,6 +407,18 @@
 
           <div class="modal-body">
             <div class="mb-3">
+              <label class="form-label">Birligi</label>
+              <select name="unit" class="form-select" required>
+                <option value="">— Tanlang —</option>
+                {% for u in unit %}
+                  <option value="{{ u.id }}" {% if mat.unit_id == u.id %}selected{% endif %}>
+                    {{ u.name }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <div class="mb-3">
               <label class="form-label">Nomi</label>
               <input type="text" name="name" class="form-control" value="{{ mat.name }}" required>
             </div>
@@ -412,11 +431,6 @@
             <div class="mb-3">
               <label class="form-label">Narxi</label>
               <input type="number" step="0.01" name="price" class="form-control"  value="{{ mat.price|default_if_none:''|stringformat:'s'|cut:',' }}">
-            </div>
-
-            <div class="mb-3">
-              <label class="form-label">Birligi</label>
-              <input type="text" name="unit" class="form-control"  value="{{ mat.unit|default_if_none:'' }}">
             </div>
 
             <div class="mb-3">

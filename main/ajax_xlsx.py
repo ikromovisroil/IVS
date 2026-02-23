@@ -115,7 +115,7 @@ def export_material_xlsx(request):
             getattr(m, "name", "") or "",
             getattr(m, "number", "") or "",
             getattr(m, "price", "") or "",
-            getattr(m, "unit", "") or "",   # siz jadvalda unit ni "Qiymati" qilib chiqaryapsiz
+            (m.unit.name if getattr(m, "unit", None) else ""),
             getattr(m, "code", "") or "",
             getattr(m, "status", "") or "",
         ])

@@ -210,15 +210,8 @@ def contact_user(request):
         .select_related("sender", "receiver")
         .order_by("-id")
     )
-    senders = (
-        Employee.objects.filter(rol__boss=True)
-        .select_related("user", "rank", "organization", "department", "directorate", "division")
-        .order_by("last_name", "first_name", "father_name")
-    )
     context = {
         "deed_user": deed_user,
-        "senders": senders,
-        "organization": Organization.objects.all(),
     }
     return render(request, "main/contact_user.html", context)
 
@@ -804,8 +797,7 @@ def barn_tex(request):
             "qs_params": params.urlencode(),
             "row_start": 0,
 
-            "total_count": 0,       # filter bo‘lmasa ko‘rsatmaymiz
-            "filtered_count": 0,
+            "total_count": 0,
         })
 
     # ✅ Filter bor bo‘lsa — query ishlaydi
@@ -831,10 +823,7 @@ def barn_tex(request):
         )
 
     # ✅ countlar faqat filter bo‘lganda
-    filtered_count = qs.count()
-
-    # total_count ni ko‘rsatish shart bo‘lmasa olib tashlang (katta jadvalda og‘ir)
-    total_count = Technics.objects.count()
+    total_count = qs.count()
 
     paginator = Paginator(qs, 100)
     page_obj = paginator.get_page(page_number)
@@ -850,10 +839,9 @@ def barn_tex(request):
         "page_obj": page_obj,
         "technics": page_obj.object_list,
         "qs_params": params.urlencode(),
-        "row_start": page_obj.start_index() if filtered_count else 0,
+        "row_start": page_obj.start_index() if total_count else 0,
 
         "total_count": total_count,
-        "filtered_count": filtered_count,
     }
     return render(request, "main/barn_tex.html", context)
 
@@ -1050,12 +1038,18 @@ def barn_mat(request):
             "qs_params": params.urlencode(),
             "row_start": 0,
             "total_count": 0,
-            "filtered_count": 0,
+            "total_suma": 0,
         })
 
     qs = (
         Material.objects
         .select_related("employee", "employee__user")
+        .annotate(
+            total_sum=ExpressionWrapper(
+                F("number") * F("price"),
+                output_field=DecimalField(max_digits=18, decimal_places=2)
+            )
+        )
         .order_by("-id")
     )
 
@@ -1072,8 +1066,8 @@ def barn_mat(request):
     if name:
         qs = qs.filter(Q(name__icontains=name) | Q(code__icontains=name))
 
-    filtered_count = qs.count()
-    total_count = Material.objects.count()  # kerak bo‘lmasa olib tashlang
+    total_count = qs.count()
+    total_suma = qs.aggregate(s=Sum("total_sum"))["s"] or 0
 
     paginator = Paginator(qs, 100)
     page_obj = paginator.get_page(page_number)
@@ -1088,9 +1082,10 @@ def barn_mat(request):
         "material": page_obj.object_list,
         "material_form": MaterialForm(),
         "qs_params": qs_params,
-        "row_start": page_obj.start_index() if filtered_count else 0,
+        "row_start": page_obj.start_index() if total_count else 0,
         "total_count": total_count,
-        "filtered_count": filtered_count,
+        "total_suma": total_suma,
+        "unit": Unit.objects.all()
     }
     return render(request, "main/barn_mat.html", context)
 
@@ -1132,10 +1127,19 @@ def material_update(request, pk):
     back_url = request.META.get("HTTP_REFERER", "/")
 
     mat = get_object_or_404(Material, pk=pk)
+    unit_id = (request.POST.get("unit") or "").strip()
+
+    # FK lar
+    if unit_id:
+        if not unit_id.isdigit():
+            messages.info(request, "Birligi noto‘g‘ri")
+            return redirect(back_url)
+        mat.unit = get_object_or_404(Unit, pk=int(unit_id))
+    else:
+        mat.unit = None
 
     mat.name = (request.POST.get("name") or "").strip()
     mat.code = (request.POST.get("code") or "").strip()
-    mat.unit = (request.POST.get("unit") or "").strip()
 
     # number validatsiya (butun son)
     raw_number = (request.POST.get("number") or "").strip()
