@@ -620,6 +620,7 @@ def sso_exchange_and_finish(request):
                         approver_name=approver_name,
                         deed_id=deed.pk,
                     )
+                    messages.success(request, "Xujjat muvaffaqiyatli imzolandi")
 
                 except HtmlPdfError as e:
                     return JsonResponse(
@@ -681,7 +682,6 @@ def sso_exchange_and_finish(request):
             {"status": "error", "message": "SSO xatolik", "redirect": "/"},
             status=500
         )
-
 
 
 def exchange_code_for_token(code, code_verifier, redirect_uri):
@@ -1912,7 +1912,7 @@ def order_receiver_deed_post(request,pk):
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Akt yuborildi (PDF saqlandi)")
+    messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
 
 

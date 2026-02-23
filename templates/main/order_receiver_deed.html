@@ -227,12 +227,10 @@
 </main>
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
 (function () {
 
-  // ====== Sana format ======
   function formatUzDate(d) {
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -240,66 +238,63 @@
     return dd + '.' + mm + '.' + yyyy + ' y';
   }
 
-  // ====== TinyMCE ichiga matn yozish ======
+  function getEditorSafe() {
+    const ed = window.tinymce?.get?.('body');
+    // eng muhim tekshiruv: dom va dom.get bo‘lsin
+    if (!ed || !ed.dom || typeof ed.dom.get !== 'function') return null;
+    return ed;
+  }
+
   function setInEditor(editor, elementId, text) {
-    if (!editor) return;
+    if (!editor || !editor.dom || typeof editor.dom.get !== 'function') return;
 
     const el = editor.dom.get(elementId);
     if (el) {
-      editor.dom.setHTML(el, text);
+      editor.dom.setHTML(el, text ?? '');
       editor.setDirty(true);
-      editor.save(); // textarea ga ham yozadi
+      editor.save();
     }
   }
 
-  // ====== Sana qo‘yish ======
   function applyTodayDate(editor) {
-    const todayText = formatUzDate(new Date());
-    setInEditor(editor, 'doc_date', todayText);
+    setInEditor(editor, 'doc_date', formatUzDate(new Date()));
   }
 
-  // ====== Sender ni hujjatga qo‘yish ======
   function applySenderToDoc(editor) {
-
     const selected = $('#sender_select option:selected');
-
-    const senderName = selected.text().trim();
+    const senderName = (selected.text() || '').trim();
     const senderRank = selected.data('rank');
 
     if (!senderName || senderName === 'Tanlang...') return;
 
-    const fullText = senderRank
-      ? senderName + ' (' + senderRank + ')'
-      : senderName;
+    const fullText = senderRank ? (senderName + ' (' + senderRank + ')') : senderName;
 
     setInEditor(editor, 'sender_name1', fullText);
     setInEditor(editor, 'sender_name2', senderName);
   }
 
-  // ====== TinyMCE tayyorligini kutish ======
-  function waitForEditor(callback) {
+  // TinyMCE init bo‘lishini kutamiz (dom ham tayyor bo‘lsin)
+  function waitForEditorReady(callback) {
     let tries = 0;
-
     const timer = setInterval(function () {
       tries++;
 
-      if (window.tinymce && tinymce.get('body')) {
+      const ed = getEditorSafe();
+      if (ed) {
         clearInterval(timer);
-        callback(tinymce.get('body'));
+        callback(ed);
+        return;
       }
 
-      if (tries > 100) {
+      if (tries > 120) {
         clearInterval(timer);
-        console.warn("TinyMCE topilmadi");
+        console.warn("TinyMCE editor topilmadi yoki to‘liq init bo‘lmadi (body).");
       }
-
     }, 150);
   }
 
-  // ====== Document ready ======
   $(document).ready(function () {
 
-    // Select2
     $('#sender_select').select2({
       width: '100%',
       placeholder: 'Tanlang...',
@@ -311,18 +306,14 @@
       placeholder: 'Kelishuvchilarni tanlang...'
     });
 
-    // TinyMCE yuklangach ishlatish
-    waitForEditor(function (editor) {
+    waitForEditorReady(function (editor) {
 
-      // 1️⃣ Sana qo‘yish
       applyTodayDate(editor);
-
-      // 2️⃣ Agar sender tanlangan bo‘lsa
       applySenderToDoc(editor);
 
-      // 3️⃣ Sender o‘zgarsa
       $('#sender_select').on('change', function () {
-        applySenderToDoc(editor);
+        const ed = getEditorSafe();
+        if (ed) applySenderToDoc(ed);
       });
 
     });
