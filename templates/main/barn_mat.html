@@ -1,5 +1,6 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load humanize %}
 {% load static %}
+
 
 {% block title %}
 <title>Texnikalari</title>
@@ -72,7 +73,7 @@
               <div class="d-flex justify-content-between align-items-center">
                  <h5 class="card-title">Materiallar: {{ total_count }} ta
                  </h5>
-                 <h5>Umumiy narxi:  {{total_suma}} so'm
+                 <h5>Umumiy narxi:  {{ total_suma|intcomma }} so'm
                  </h5>
                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#vertical">
                    + Material qo'shish
@@ -101,8 +102,8 @@
                     <th scope="row">{{ forloop.counter }}</th>
                     <td>{{ mat.name|default:"-"|truncatechars:50 }}</td>
                     <td>{{ mat.number|default:"-" }}</td>
-                    <td>{{ mat.price|default:"-" }}</td>
-                    <td>{{ mat.total_sum|floatformat:2 }}</td>
+                    <td>{{ mat.price|intcomma|default:"-" }}</td>
+                    <td>{{ mat.total_sum|intcomma }}</td>
                     <td>{{ mat.unit|default:"-" }}</td>
                     <td>{{ mat.code|default:"-" }}</td>
                     {% if request.user.employee.rol.material_edit%}
