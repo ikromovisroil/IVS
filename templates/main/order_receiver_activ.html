@@ -124,10 +124,11 @@
                                     <i class="bi bi-building me-1"></i> Tashkilot
                                 </div>
                                 <div class="col-6">
-                                    {% if o.sender.organization %}{{ o.sender.organization }}<br>{% endif %}
-                                    {% if o.sender.department %}{{ o.sender.department }}<br>{% endif %}
-                                    {% if o.sender.directorate %}{{ o.sender.directorate }}<br>{% endif %}
-                                    {% if o.sender.division %}{{ o.sender.division }}{% endif %}
+                                    {% if o.sender.division %} {{ o.sender.division }}
+                                    {% elif o.sender.directorate %} {{ o.sender.directorate }}
+                                    {% elif o.sender.department %} {{ o.sender.department }}
+                                    {% else %} {{ o.sender.organization }}
+                                    {% endif %}
                                 </div>
                                 <div class="col-6 text-muted">
                                     <i class="bi bi-telephone me-1"></i> Telefon raqami
@@ -155,10 +156,11 @@
                                     <i class="bi bi-building me-1"></i> Tashkilot
                                 </div>
                                 <div class="col-6">
-                                    {% if o.receiver.organization %}{{ o.receiver.organization }}<br>{% endif %}
-                                    {% if o.receiver.department %}{{ o.receiver.department }}<br>{% endif %}
-                                    {% if o.receiver.directorate %}{{ o.receiver.directorate }}<br>{% endif %}
-                                    {% if o.receiver.division %}{{ o.receiver.division }}{% endif %}
+                                    {% if o.sender.division %} {{ o.sender.division }}
+                                    {% elif o.sender.directorate %} {{ o.sender.directorate }}
+                                    {% elif o.sender.department %} {{ o.sender.department }}
+                                    {% else %} {{ o.sender.organization }}
+                                    {% endif %}
                                 </div>
                                 <div class="col-6 text-muted">
                                     <i class="bi bi-telephone me-1"></i> Telefon raqami
