@@ -244,6 +244,7 @@ class Technics(models.Model):
     ip = models.CharField(max_length=50,null=True,blank=True)
     price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     year = models.CharField(max_length=50,null=True,blank=True)
+    is_active = models.BooleanField(default=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
@@ -279,6 +280,7 @@ class ExtraTechnics(models.Model):
     serial = models.CharField(max_length=50, null=True, blank=True)
     price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     year = models.CharField(max_length=50, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
@@ -319,6 +321,7 @@ class Material(models.Model):
     code = models.CharField(max_length=10, null=True, blank=True)
     price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     year = models.CharField(max_length=50, null=True, blank=True)
+    is_active = models.BooleanField(default=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 

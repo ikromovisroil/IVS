@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<title>Tashkilot texnikalari</title>
+{% endblock title %}
+
+{% block content %}
+
+<main id="main" class="main">
+    <div class="pagetitle">
+      <h1>Statistika</h1>
+    </div>
+  <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+                <form class="row g-2 mt-1" method="get">
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Region</label>
+                        <select id="status" name="status" class="form-select">
+                          <option value="">Tanlang...</option>
+                          {% for r in region %}
+                          <option value="{{ r.id }}">{{ r.name }}</option>
+                          {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                      <label for="date1" class="form-label">Sana dan</label>
+                      <input id="date1" type="date" name="date1" class="form-control"
+                             value="{{ request.GET.name|default:'' }}"
+                             placeholder="Texnika nomi...">
+                    </div>
+
+                    <div class="col-md-3">
+                      <label for="date2" class="form-label">Sana gacha</label>
+                      <input id="date2" type="date" name="date2" class="form-control"
+                             value="{{ request.GET.name|default:'' }}"
+                             placeholder="Texnika nomi...">
+                    </div>
+
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                    </div>
+                </form>
+            </div>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+
+        <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Status</h5>
+
+              <!-- Default Table -->
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th scope="col">#</th>
+                    {% if request.user.employee.rol.boss %}
+                    <th scope="col">F.I.O</th>
+                    <th scope="col">Lavozim</th>
+                    {% endif %}
+                    <th scope="col">Nomi</th>
+                    <th scope="col">I/N</th>
+                    <th scope="col">S/N</th>
+                    <th scope="col">Mac</th>
+                    <th scope="col">Yili</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {% for tex in technics %}
+                  <tr>
+                    <th scope="row">{{forloop.counter}}</th>
+                    {% if request.user.employee.rol.boss %}
+                    <td>{{tex.employee.full_name}}</td>
+                    <td>{{tex.employee.rank.name}}</td>
+                    {% endif %}
+                    <td>{{tex.category.name}}
+
+                        {{ tex.name|default:"-" }}</td>
+                    <td>{{ tex.inventory|default:"-" }}</td>
+                    <td>{{ tex.serial|default:"-" }}</td>
+                    <td>{{ tex.mac|default:"-" }}</td>
+                    <td>{{ tex.year|default:"-" }}</td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+              <!-- End Default Table Example -->
+            </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</main>
+
+{% endblock content %}

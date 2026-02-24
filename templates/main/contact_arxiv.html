@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block css %}
+
 {% endblock css %}
 
 {% block content %}
@@ -13,10 +14,11 @@
 
     <div class="pagetitle">
       <div class="d-flex justify-content-between align-items-center">
-        <h1>Imzolashga yuborilgan</h1>
+        <h1>Imzolash uchun</h1>
       </div>
     </div>
 
+    <!-- MODAL -->
     <section class="section profile">
       <div class="row">
 
@@ -27,15 +29,16 @@
 
               <ul class="nav nav-pills">
                 <li class="nav-pills">
-                  <a href="{% url 'contact_user' %}" class="nav-link active">Imzolashga yuborilgan</a>
+                  <a href="{% url 'contact' %}" class="nav-link">Imzolash uchun</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'contact_user_arxiv' %}" class="nav-link" >Imzolangan</a>
+                  <a href="{% url 'contact_arxiv' %}" class="nav-link active" >Imzolangan</a>
                 </li>
               </ul>
 
               <div class="tab-content pt-2">
+
                   <table class="table table-bordered align-middle">
                     <thead>
                         <tr>
@@ -44,11 +47,10 @@
                             <th>Sana</th>
                             <th>Fayllar</th>
                             <th>Xolati</th>
-                            <th>Taxrirlash</th>
                         </tr>
                     </thead>
                     <tbody>
-                    {% for d in deed_user %}
+                    {% for d in deed_receiver %}
                         <tr>
                             <td>{{ d.sender.full_name }}</td>
                             <td>{{ d.receiver.full_name }}</td>
@@ -125,7 +127,7 @@
 
                                                 <!-- ================= SENDER ================= -->
                                                 <div class="mb-4 p-3 border rounded bg-light">
-                                                    <h5 class="fw-bold mb-2">Imzolovchi xodim</h5><hr>
+                                                    <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
                                                     <div class="row">
                                                         <div class="col-6"><strong>F.I.O:</strong> {{ d.sender.full_name }}</div>
                                                         <div class="col-3">
@@ -151,7 +153,7 @@
                                                 <!-- ================= RECEIVER ================= -->
                                                 {% if d.receiver %}
                                                 <div class="mb-4 p-3 border rounded bg-light">
-                                                    <h5 class="fw-bold mb-2">Imzolovchi vakil</h5><hr>
+                                                    <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
                                                     <div class="row">
                                                         <div class="col-6"><strong>F.I.O:</strong> {{ d.receiver.full_name }}</div>
                                                         <div class="col-3">
@@ -208,25 +210,11 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>
-                              {% if d.receiver %}
-                                  {% if d.status_sender == "viewed" and d.status_receiver == "viewed" %}
-                                      <a class="btn badge btn-primary" href="{% url 'deed_edit' d.pk %}">
-                                          Tahrirlash
-                                      </a>
-                                  {% endif %}
-                              {% else %}
-                                  {% if d.status_sender == "viewed" %}
-                                      <a class="btn badge btn-primary" href="{% url 'deed_edit' d.pk %}">
-                                          Tahrirlash
-                                      </a>
-                                  {% endif %}
-                              {% endif %}
-                            </td>
                         </tr>
                     {% endfor %}
                     </tbody>
                   </table>
+
               </div>
 
             </div>
@@ -237,6 +225,5 @@
     </section>
 
 </main>
-
 
 {% endblock content %}

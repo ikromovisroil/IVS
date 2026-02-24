@@ -165,16 +165,41 @@ def index(request):
 @login_required
 def contact(request):
     employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
     deed_receiver = (
         Deed.objects
-        .filter(Q(receiver=employee) | Q(sender=employee))
+        .filter(
+            Q(sender=employee, status_sender="viewed") |
+            Q(receiver=employee, status_receiver="viewed")
+        )
+        .select_related("sender", "receiver")
+        .order_by("-id")
+    )
+    return render(request, "main/contact.html", {"deed_receiver": deed_receiver})
+
+
+@never_cache
+@login_required
+def contact_arxiv(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    deed_receiver = (
+        Deed.objects
+        .filter(
+            Q(sender=employee, status_sender__in=["approved", "rejected"]) |
+            Q(receiver=employee, status_receiver__in=["approved", "rejected"])
+        )
         .select_related("sender", "receiver")
         .order_by("-id")
     )
     context = {
         "deed_receiver": deed_receiver,
     }
-    return render(request, "main/contact.html", context)
+    return render(request, "main/contact_arxiv.html", context)
 
 
 @never_cache
@@ -184,7 +209,7 @@ def contact_agrement(request):
 
     deed_consent = (
         Deed.objects
-        .filter(deedconsent__employee=employee)
+        .filter(deedconsent__employee=employee,deedconsent__status="viewed")
         .select_related("sender", "receiver")
         .distinct()              # ✅ dublikat bo‘lmasin
         .order_by("-id")
@@ -198,22 +223,74 @@ def contact_agrement(request):
 
 @never_cache
 @login_required
+def contact_agrement_arxiv(request):
+    employee = getattr(request.user, "employee", None)
+
+    deed_consent = (
+        Deed.objects
+        .filter(deedconsent__employee=employee,deedconsent__status__in=["approved", "rejected"])
+        .select_related("sender", "receiver")
+        .distinct()              # ✅ dublikat bo‘lmasin
+        .order_by("-id")
+    )
+
+    context = {
+        "deed_consent": deed_consent,
+    }
+    return render(request, "main/contact_agrement_arxiv.html", context)
+
+
+@never_cache
+@login_required
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
     role = getattr(employee, "rol", None)
     if role and role.client:
         raise PermissionDenied
 
     deed_user = (
         Deed.objects
-        .filter(user=employee)
-        .select_related("sender", "receiver")
+        .filter(
+            user=employee,
+            status_sender="viewed",
+            status_receiver="viewed",
+        )
+        .select_related("sender", "receiver", "user")
         .order_by("-id")
     )
-    context = {
-        "deed_user": deed_user,
-    }
-    return render(request, "main/contact_user.html", context)
+
+    return render(request, "main/contact_user.html", {"deed_user": deed_user})
+
+
+@never_cache
+@login_required
+def contact_user_arxiv(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if role and role.client:
+        raise PermissionDenied
+
+    done_statuses = ["approved", "rejected"]
+
+    deed_user = (
+        Deed.objects
+        .filter(user=employee)
+        .filter(
+            Q(status_sender__in=done_statuses) |
+            Q(status_receiver__in=done_statuses)
+        )
+        .select_related("sender", "receiver", "user")
+        .order_by("-id")
+    )
+
+    return render(request, "main/contact_user_arxiv.html", {"deed_user": deed_user})
+
 
 
 def deed_status(request, pk):
@@ -802,7 +879,7 @@ def barn_tex(request):
 
     # ✅ Filter bor bo‘lsa — query ishlaydi
     qs = (
-        Technics.objects
+        Technics.objects.filter(is_active=True)
         .select_related("organization", "category", "employee")
         .order_by("-id")
     )
@@ -846,6 +923,7 @@ def barn_tex(request):
     return render(request, "main/barn_tex.html", context)
 
 
+@never_cache
 @login_required
 @require_POST
 def technics_create(request):
@@ -869,27 +947,36 @@ def technics_create(request):
     return redirect(back_url)
 
 
+@never_cache
 @login_required
 @require_POST
+@transaction.atomic
 def technics_delete(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.technics_edit:   # faqat omborchi o‘chirishi mumkin
+    if not role or not role.technics_edit:
         raise PermissionDenied
 
     back_url = request.META.get("HTTP_REFERER", "/")
+    tex_id = request.POST.get("texnika_id")
 
-    tex_id = (request.POST.get("texnika_id") or "").strip()
-    if not tex_id.isdigit():
-        messages.error(request, "Texnika topilmadi")
+    try:
+        tex = Technics.objects.select_for_update().get(pk=int(tex_id))
+    except (Technics.DoesNotExist, TypeError, ValueError):
+        messages.info(request, "Texnika topilmadi")
         return redirect(back_url)
 
-    tex = get_object_or_404(Technics, id=int(tex_id))
-    tex.delete()
-    messages.success(request, "Texnika o‘chirildi")
+    if not tex.is_active:
+        messages.info(request, "Texnika allaqachon o‘chirilgan")
+        return redirect(back_url)
+
+    tex.is_active = False
+    tex.save(update_fields=["is_active"])
+
+    messages.success(request, "Texnika muvaffaqiyatli o‘chirildi")
     return redirect(back_url)
 
 
@@ -1042,7 +1129,7 @@ def barn_mat(request):
         })
 
     qs = (
-        Material.objects
+        Material.objects.filter(is_active=True)
         .select_related("employee", "employee__user")
         .annotate(
             total_sum=ExpressionWrapper(
@@ -1271,29 +1358,36 @@ def material_attach(request):
     return redirect(back_url)
 
 
+@never_cache
 @login_required
 @require_POST
+@transaction.atomic
 def material_delete(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.material_edit:  # faqat omborchi o‘chirishi mumkin
+    if not role or not role.material_edit:
         raise PermissionDenied
 
-    back_url = request.META.get("HTTP_REFERER", "/")
+    back_url = request.META.get("HTTP_REFERER") or "/"
+    material_id = request.POST.get("material_id")
 
-    material_id = (request.POST.get("material_id") or "").strip()
-    if not material_id.isdigit():
+    try:
+        mat = Material.objects.select_for_update().get(pk=int(material_id))
+    except (Material.DoesNotExist, TypeError, ValueError):
         messages.error(request, "Material topilmadi")
         return redirect(back_url)
 
-    mat = get_object_or_404(Material, id=int(material_id))
+    if not mat.is_active:
+        messages.info(request, "Material allaqachon o‘chirilgan")
+        return redirect(back_url)
 
-    mat.delete()
-    messages.success(request, "Material o‘chirildi")
+    mat.is_active = False
+    mat.save(update_fields=["is_active"])
 
+    messages.success(request, "Material muvaffaqiyatli o‘chirildi")
     return redirect(back_url)
 
 
@@ -2386,5 +2480,21 @@ def technics_get(request):
         'technics': technics,
     }
     return render(request, 'main/technics_get.html', context)
+
+
+@never_cache
+@login_required
+def status(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    employee = Employee.objects.filter(rol__client=False)
+
+    context = {
+        "employee": employee,
+        "region": Region.objects.all()
+    }
+    return render(request, 'main/status.html', context)
 
 

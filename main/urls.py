@@ -8,6 +8,7 @@ urlpatterns = [
     path('profil/', profil, name='profil'),
     path('index/', index, name='index'),
     path('technics_get/', technics_get, name='technics_get'),
+    path('status/', status, name='status'),
 
     #texnikalar
     path('barn_tex/', barn_tex, name='barn_tex'),
@@ -33,8 +34,11 @@ urlpatterns = [
 
     # CONTACT
     path('contact/', contact, name='contact'),
+    path('contact/arxiv/', contact_arxiv, name='contact_arxiv'),
     path('contact_user/', contact_user, name='contact_user'),
+    path('contact_user/arxiv/', contact_user_arxiv, name='contact_user_arxiv'),
     path('contact_agrement/', contact_agrement, name='contact_agrement'),
+    path('contact_agrement/arxiv/', contact_agrement_arxiv, name='contact_agrement_arxiv'),
     path("get-dep-employees/", get_department_employees, name="get_dep_employees"),
 
 
