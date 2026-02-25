@@ -173,7 +173,7 @@ def sso_exchange(request):
                 approver_name = getattr(req_emp, "full_name", None) or str(req_emp)
 
                 with transaction.atomic():
-                    deed = Deed.objects.select_for_update().select_related("sender", "receiver").get(pk=int(deed_id))
+                    deed = Deed.objects.select_for_update().get(pk=int(deed_id))
 
                     if role == "sender" and deed.sender_id != req_emp.id:
                         raise PermissionDenied("Sender emassiz")
