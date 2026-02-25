@@ -1,5 +1,6 @@
 <!doctype html>
 <html>
+<head><meta charset="utf-8"><title>SSO callback</title></head>
 <body>
 <script>
 const qs = new URLSearchParams(location.search);
@@ -8,10 +9,14 @@ const err  = qs.get("error");
 
 if (err || !code) {
   alert("SSO xatolik: " + (err || "code kelmadi"));
-  window.location.href = "/";
+  window.location.href = "/sso/login/";
 }
 
 const verifier = localStorage.getItem("pkce_verifier");
+if (!verifier) {
+  alert("PKCE verifier topilmadi. Qaytadan urinib ko‘ring.");
+  window.location.href = "/sso/start/";
+}
 
 fetch("/sso/exchange/", {
   method: "POST",
@@ -25,12 +30,11 @@ fetch("/sso/exchange/", {
 .then(r => r.json().then(j => ({ok:r.ok, data:j})))
 .then(({ok, data}) => {
   localStorage.removeItem("pkce_verifier");
-
   if (ok && data.status === "ok") {
     window.location.href = data.redirect;
   } else {
     alert(data.message || "SSO xatolik");
-    window.location.href = data.redirect || "/";
+    window.location.href = data.redirect || "/sso/login/";
   }
 });
 </script>

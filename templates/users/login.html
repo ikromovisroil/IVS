@@ -1,65 +1,8 @@
-<!DOCTYPE html>{% load static %}
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Login</title>
-    <link rel="stylesheet" href="{% static 'css/login.css' %}">
-        <link href="{% static 'img/favicon.png' %}" rel="icon">
-    <link href="{% static 'img/apple-touch-icon.png' %}" rel="apple-touch-icon">
-</head>
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Login</title></head>
 <body>
-
-<div class="login-wrapper">
-    <div class="login-card">
-
-        <!-- LEFT -->
-        <div class="login-left">
-            <h2>Tizimga kirish</h2>
-
-            <form method="post">
-                {% csrf_token %}
-                {% if messages %}
-                    <div class="alert alert-block alert-danger">
-                        <ul class="m-0">
-                             {% for message in messages  %}
-                               <li>{{message}}</li>
-                             {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-
-                <div class="form-group">
-                    <input type="text" name="username" placeholder="Login" required>
-                </div>
-
-                <div class="form-group">
-                    <input type="password" name="password" placeholder="Password" required>
-                </div>
-
-                <div class="options">
-                    <label>
-                        <input type="checkbox"> Remember me
-                    </label>
-<!--                    <a href="#">Forgot password?</a>-->
-                </div>
-
-                <button type="submit">Login</button>
-
-                <p class="signup">
-                    Murojaat uchun: <a href="#">01755</a>
-                </p>
-            </form>
-        </div>
-
-        <!-- RIGHT -->
-        <div class="login-right">
-            <img src="{% static 'img/logo_ivs.png' %}">
-            <h3>Texnik va tarmoq xizmatlarini qo‘llab-quvvatlash platformasi.</h3>
-            <p class="mt-5">Murojaat uchun: 71-203-50-50  (01755)</p>
-        </div>
-
-    </div>
-</div>
-
+  <h3>SSO orqali kirish</h3>
+  <a href="{% url 'sso_start_login' %}">Tizimga kirish</a>
 </body>
 </html>

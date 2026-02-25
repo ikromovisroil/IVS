@@ -1,15 +1,11 @@
-import base64
-import json
 from reportlab.lib.units import mm
 import qrcode
-import os
 import time
 import shutil
 import logging
 from io import BytesIO
 from contextlib import contextmanager
 from django.urls import reverse
-from django.utils import timezone
 from reportlab.pdfgen import canvas
 from reportlab.lib.colors import red
 from reportlab.lib.utils import ImageReader
@@ -17,6 +13,7 @@ from PyPDF2 import PdfReader, PdfWriter
 from qrcode.constants import ERROR_CORRECT_M
 from .models import *
 from django.shortcuts import get_object_or_404
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +36,6 @@ def file_lock(lock_path: str, timeout: int = 10):
             if time.time() - start > timeout:
                 raise TimeoutError(f"PDF band (lock timeout) - {lock_path}")
             time.sleep(0.1)
-
     try:
         yield
     finally:
@@ -176,24 +172,3 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
                 os.remove(tmp_out)
         except Exception as e:
             logger.warning(f"tmp faylni o'chirishda xatolik: {e}")
-
-# ==========================================================
-# 4) JWT decode
-# ==========================================================
-def decode_jwt(token: str) -> dict:
-
-    try:
-        payload = token.split(".")[1]
-        payload += "=" * (-len(payload) % 4)
-        return json.loads(base64.urlsafe_b64decode(payload))
-    except Exception as e:
-        logger.error(f"JWT dekodlashda xatolik: {e}")
-        raise
-
-
-def get_sso_redirect_uri(request) -> str:
-
-    host = request.get_host()
-    if "localhost" in host or "127.0.0.1" in host:
-        return "http://localhost:8000/sso/callback/"
-    return "https://report.imv.uz/sso/callback/"

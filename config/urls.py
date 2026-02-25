@@ -27,7 +27,6 @@ urlpatterns = [
 
     # MAIN SITE
     path("", include("main.urls")),
-    path("sso/", include("users.urls")),
 
     # API
     path('api/', include('main.api_urls')),

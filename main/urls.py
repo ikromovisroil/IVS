@@ -2,6 +2,7 @@ from django.urls import path
 from .views import *
 from .ajax_views import *
 from .ajax_xlsx import *
+from .sso_views import *
 
 urlpatterns = [
     path("", home, name="home"),
@@ -97,9 +98,13 @@ urlpatterns = [
     path("order/approved/", order_approved, name="order_approved"),
 
     # SSO
-    path("sso/start/", sso_start_page, name="sso_start_page"),     # JS: PKCE va redirect
-    path("sso/callback/", sso_callback_page, name="sso_callback"), # JS: code ni olib exchange ga yuboradi
-    path("sso/exchange/", sso_exchange_and_finish, name="sso_exchange_and_finish"),
+    path("sso/login/", login_page, name="sso_login"),
+    path("sso/start-login/", sso_start_login, name="sso_start_login"),
+    path("sso/start-approve/", sso_start_approve, name="sso_start_approve"),
+    path("sso/start/", sso_start, name="sso_start"),
+    path("sso/callback/", sso_callback, name="sso_callback"),
+    path("sso/exchange/", sso_exchange, name="sso_exchange"),
+    path("sso/logout/", logout, name="logout"),
 
     path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
 

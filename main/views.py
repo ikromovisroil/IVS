@@ -33,6 +33,10 @@ import tempfile
 from django.core.files.base import ContentFile
 import secrets
 from django.conf import settings
+import json
+from .sso_utils import *
+from .sso_views import *
+
 def global_data(request):
     return {
         "global_organizations": Organization.objects.only("id", "name").order_by("name"),
@@ -237,7 +241,7 @@ def contact_agrement_arxiv(request):
     context = {
         "deed_consent": deed_consent,
     }
-    return render(request, "main/contact_agrement_arxiv.html", context)
+    return render(request, "main/contact_agrement.html", context)
 
 
 @never_cache
@@ -381,11 +385,10 @@ def deed_action(request, pk):
             "redirect_url": back_url,
         }
         request.session.modified = True
-        return redirect("sso_start_page")
+        return redirect("sso_start_approve")
 
     messages.error(request, "Noto‘g‘ri amal")
     return redirect(back_url)
-
 
 
 @never_cache
@@ -533,262 +536,6 @@ def deed_edit(request, pk):
     return render(request, "main/deed_edit.html", context)
 
 
-@login_required
-@never_cache
-def sso_start_page(request):
-    pending = request.session.get("PENDING_APPROVE")
-    if not pending:
-        messages.info(request, "Tasdiqlash topilmadi")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
-
-    return render(request, "main/sso.html", {
-        "client_id": settings.SSO_CLIENT_ID,
-        "sso_auth_url": settings.SSO_AUTH_URL,
-        "redirect_uri": get_sso_redirect_uri(request),
-    })
-
-
-@login_required
-@never_cache
-def sso_callback_page(request):
-    return render(request, "main/callback.html", {
-        "redirect_uri": get_sso_redirect_uri(request),
-    })
-
-
-@csrf_exempt
-@never_cache
-@login_required
-@require_POST
-def sso_exchange_and_finish(request):
-    try:
-        # ---------------- JSON ----------------
-        try:
-            body = json.loads(request.body or "{}")
-        except Exception:
-            return JsonResponse(
-                {"status": "error", "message": "JSON noto‘g‘ri", "redirect": "/"},
-                status=400
-            )
-
-        code = body.get("code")
-        code_verifier = body.get("codeVerifier")
-        redirect_uri = body.get("redirectUri")
-        if not code or not code_verifier or not redirect_uri:
-            return JsonResponse(
-                {"status": "error", "message": "SSO parametrlari to'liq emas", "redirect": "/"},
-                status=400
-            )
-
-        # ------------- session pending ----------
-        pending = request.session.get("PENDING_APPROVE")
-        if not pending:
-            raise PermissionDenied("Pending yo'q")
-
-        role = pending.get("role")
-        message = (pending.get("message") or "").strip()
-        redirect_url = pending.get("redirect_url") or "/"
-
-        employee = getattr(request.user, "employee", None)
-        if not employee:
-            request.session.pop("PENDING_APPROVE", None)
-            return JsonResponse(
-                {"status": "forbidden", "message": "Employee yo'q", "redirect": redirect_url},
-                status=403
-            )
-
-        # ---------------- SSO token ----------------
-        token_data = exchange_code_for_token(code, code_verifier, redirect_uri)
-        id_token = token_data.get("id_token")
-        if not id_token:
-            raise PermissionDenied("id_token yo'q")
-
-        user_data = decode_jwt(id_token) or {}
-        sso_pinfl = user_data.get("pinfl")
-        employee_pinfl = getattr(employee, "pinfl", None)
-
-        if not employee_pinfl or not sso_pinfl or employee_pinfl != sso_pinfl:
-            request.session.pop("PENDING_APPROVE", None)
-            return JsonResponse(
-                {"status": "forbidden", "message": "PINFL mos emas", "redirect": redirect_url},
-                status=403
-            )
-
-        # ==========================================================
-        # ✅ sender/receiver: FINAL bo'lganda PDF qayta + QK urish
-        # ==========================================================
-        if role in ("sender", "receiver"):
-            deed_id = pending.get("deed_id")
-            if not deed_id:
-                raise PermissionDenied("Deed yo'q")
-
-            approver_name = getattr(employee, "full_name", None) or str(employee)
-
-            # Avval transaction ichida faqat DB operatsiyalari
-            with transaction.atomic():
-                deed = (
-                    Deed.objects
-                    .select_for_update()
-                    .get(pk=int(deed_id))
-                )
-
-                # Ruxsat tekshiruv
-                if role == "sender" and deed.sender_id != employee.id:
-                    raise PermissionDenied("Sender emassiz")
-                if role == "receiver" and deed.receiver_id != employee.id:
-                    raise PermissionDenied("Receiver emassiz")
-
-                # Status update
-                if role == "sender":
-                    if deed.status_sender == "approved":
-                        request.session.pop("PENDING_APPROVE", None)
-                        request.session.modified = True
-                        return JsonResponse({"status": "ok", "redirect": redirect_url})
-
-                    deed.status_sender = "approved"
-                    deed.message_sender = message or ""
-                    deed.date_edit = timezone.now()
-                    deed.save(update_fields=["status_sender", "message_sender", "date_edit"])
-
-                else:  # receiver
-                    if deed.status_receiver == "approved":
-                        request.session.pop("PENDING_APPROVE", None)
-                        request.session.modified = True
-                        return JsonResponse({"status": "ok", "redirect": redirect_url})
-
-                    deed.status_receiver = "approved"
-                    deed.message_receiver = message or ""
-                    deed.date_edit = timezone.now()
-                    deed.save(update_fields=["status_receiver", "message_receiver", "date_edit"])
-
-                # FINAL shartni tekshirish
-                is_final = (
-                    (deed.receiver_id is None and deed.status_sender == "approved")
-                    or (deed.receiver_id is not None
-                        and deed.status_sender == "approved"
-                        and deed.status_receiver == "approved")
-                )
-
-                deed_pk = deed.pk  # transactiondan tashqarida ishlatamiz
-
-            # Transaction tashqarisida fayl operatsiyasi
-            if is_final:
-                try:
-                    # 🔥 deed-ni qayta chaqiramiz (fresh instance)
-                    deed = Deed.objects.get(pk=deed_pk)
-
-                    # ✅ 1) deed.body dan qayta PDF yaratamiz (watermark YO'Q)
-                    pdf_bytes = deed_to_pdf_bytes(deed)
-
-                    if deed.file:
-                        deed.file.delete(save=False)
-
-                    # ✅ 2) yangi nom bilan deed.file ga saqlaymiz
-                    today_str = timezone.now().strftime("%Y%m%d")
-                    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-                    random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
-                    pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
-                    deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
-
-                    # ✅ 3) endi shu faylga QK/QR uramiz
-                    sign_pdf_inplace(
-                        pdf_path=deed.file.path,
-                        request=request,
-                        approver_name=approver_name,
-                        deed_id=deed.pk,
-                    )
-                    messages.success(request, "Xujjat muvaffaqiyatli imzolandi")
-
-                except HtmlPdfError as e:
-                    return JsonResponse(
-                        {"status": "error", "message": f"PDF yaratilmadi: {e}", "redirect": redirect_url},
-                        status=409
-                    )
-                except TimeoutError as e:
-                    return JsonResponse(
-                        {"status": "error", "message": str(e), "redirect": redirect_url},
-                        status=409
-                    )
-                except Exception as e:
-                    print(f"PDF rebuild/sign error: {e}")
-                    return JsonResponse(
-                        {"status": "error", "message": "PDF imzolashda xatolik", "redirect": redirect_url},
-                        status=500
-                    )
-
-            request.session.pop("PENDING_APPROVE", None)
-            request.session.modified = True
-            return JsonResponse({"status": "ok", "redirect": redirect_url})
-
-        # ==========================================================
-        # ✅ consent: avvalgidek
-        # ==========================================================
-        if role == "consent":
-            consent_id = pending.get("consent_id")
-            if not consent_id:
-                raise PermissionDenied("consent_id yo'q")
-
-            consent = get_object_or_404(
-                DeedConsent.objects.select_related("employee__user"),
-                pk=int(consent_id)
-            )
-
-            if consent.employee.user_id != request.user.id:
-                raise PermissionDenied("Ruxsat yo'q")
-
-            if consent.status != "approved":
-                consent.status = "approved"
-                consent.message = message or ""
-                consent.date_edit = timezone.now()
-                consent.save(update_fields=["status", "message", "date_edit"])
-
-            request.session.pop("PENDING_APPROVE", None)
-            request.session.modified = True
-            return JsonResponse({"status": "ok", "redirect": redirect_url})
-
-        raise PermissionDenied("Noto'g'ri pending turi")
-
-    except PermissionDenied as e:
-        return JsonResponse(
-            {"status": "error", "message": str(e), "redirect": "/"},
-            status=403
-        )
-    except Exception as e:
-        print(f"SSO ERROR: {e}")
-        return JsonResponse(
-            {"status": "error", "message": "SSO xatolik", "redirect": "/"},
-            status=500
-        )
-
-
-def exchange_code_for_token(code, code_verifier, redirect_uri):
-    auth = base64.b64encode(
-        f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
-    ).decode()
-
-    data = {
-        "grant_type": "authorization_code",
-        "code": code,
-        "code_verifier": code_verifier,
-        "redirect_uri": redirect_uri,
-    }
-
-    r = requests.post(
-        settings.SSO_TOKEN_URL,
-        data=data,
-        headers={
-            "Authorization": f"Basic {auth}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        timeout=10,
-    )
-
-    if r.status_code != 200:
-        raise PermissionDenied(f"SSO token olinmadi: {r.text}")
-
-    return r.json()
-
-
 @never_cache
 @login_required
 @require_POST
@@ -832,7 +579,7 @@ def deedconsent_action(request, pk):
             "after_sso_url": back_url,
         }
         request.session.modified = True
-        return redirect("sso_start_page")
+        return redirect("sso_start_approve")
 
     messages.error(request, "Noto‘g‘ri amal")
     return redirect(back_url)

@@ -42,7 +42,6 @@ INSTALLED_APPS = [
 
     'main.apps.MainConfig',
     "core.apps.CoreConfig",
-    'users',
 ]
 
 # REST FRAMEWORK
@@ -200,9 +199,6 @@ CSRF_TRUSTED_ORIGINS = ["https://report.imv.uz"]
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 USE_X_FORWARDED_HOST = True
 
-# OnlyOffice sozlamalari
-ONLYOFFICE_DOCSERVER = "https://report.imv.uz/office"
-ONLYOFFICE_JWT_SECRET = "super_secret_string"
 
 # PROD SECURITY
 if not DEBUG:

@@ -1,10 +1,7 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
-<head>
-    <title>SSO kluch</title>
-</head>
+<head><meta charset="utf-8"><title>SSO start</title></head>
 <body>
-
 <script>
 async function pkce() {
   const a = new Uint8Array(32);
@@ -27,13 +24,12 @@ async function pkce() {
   const p = new URLSearchParams({
     clientId: "{{ client_id }}",
     redirectUri: "{{ redirect_uri }}",
-    codeChallenge: c
+    codeChallenge: c,
+    codeChallengeMethod: "S256"
   });
 
-  window.location.replace("{{ sso_auth_url }}?" + p);
+  window.location.replace("{{ sso_auth_url }}?" + p.toString());
 })();
 </script>
-
-
 </body>
 </html>
