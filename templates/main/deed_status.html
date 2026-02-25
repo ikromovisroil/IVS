@@ -39,15 +39,15 @@
           <a href="{{ d.file.url }}" >📄 Ko‘rish</a>
         </div>
 
-        <div class="card-body">
+        <div class="modal-body">
 
-          <!-- ================= USER ================= -->
+            <!-- ================= USER ================= -->
             <div class="mb-4 p-3 border rounded bg-light">
                 <h5 class="fw-bold mb-2">Jo'natuvchi</h5><hr>
                 <div class="row">
-                    <div class="col-6"><strong>Ismi:</strong> {{ d.user.full_name }}</div>
+                    <div class="col-6"><strong>F.I.O:</strong> {{ d.user.full_name }}</div>
                     <div class="col-3">
-                        <strong>Holati:</strong>
+                        <strong></strong>
                     </div>
                     <div class="col-3"><strong>Sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
                 </div>
@@ -59,10 +59,11 @@
                 {% endif %}
             </div>
 
+            <!-- ================= SENDER ================= -->
             <div class="mb-4 p-3 border rounded bg-light">
-                <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
+                <h5 class="fw-bold mb-2">Imzolovchi xodim</h5><hr>
                 <div class="row">
-                    <div class="col-6"><strong>Ismi:</strong> {{ d.sender.full_name }}</div>
+                    <div class="col-6"><strong>F.I.O:</strong> {{ d.sender.full_name }}</div>
                     <div class="col-3">
                         <strong>Holati:</strong>
                         {% if d.status_sender == 'viewed' %}
@@ -86,9 +87,9 @@
             <!-- ================= RECEIVER ================= -->
             {% if d.receiver %}
             <div class="mb-4 p-3 border rounded bg-light">
-                <h5 class="fw-bold mb-2">Imzolovchi</h5><hr>
+                <h5 class="fw-bold mb-2">Imzolovchi vakil</h5><hr>
                 <div class="row">
-                    <div class="col-6"><strong>Ismi:</strong> {{ d.receiver.full_name }}</div>
+                    <div class="col-6"><strong>F.I.O:</strong> {{ d.receiver.full_name }}</div>
                     <div class="col-3">
                         <strong>Holati:</strong>
                         {% if d.status_receiver == 'viewed' %}
@@ -111,13 +112,12 @@
             {% endif %}
 
             <!-- ================= KELISHUVCHILAR ================= -->
-
             {% if d.deedconsent_set.count %}
                 <div class="mb-4 p-3 border rounded bg-light">
                     <h5 class="fw-bold mb-2">Kelishuvchilar</h5><hr>
                     {% for dc in d.deedconsent_set.all %}
                         <div class="row">
-                            <div class="col-6"><strong>Ismi:</strong> {{ dc.employee.full_name }}</div>
+                            <div class="col-6"><strong>F.I.O:</strong> {{ dc.employee.full_name }}</div>
                             <div class="col-3">
                                 <strong>Holati:</strong>
                                 {% if dc.status == 'viewed' %}
@@ -138,10 +138,7 @@
                         {% endif %}<hr>
                     {% endfor %}
                 </div>
-            {% else %}
-                <p class="text-muted">Kelishuvchilar yo‘q</p>
             {% endif %}
-
         </div>
       </div>
 
