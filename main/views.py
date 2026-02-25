@@ -1,40 +1,13 @@
-from django.shortcuts import render,redirect
-from django.contrib import messages
-from docx import Document
-from django.http import HttpResponse
 from collections import defaultdict
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.admin.models import LogEntry
-from .utils import *
-from django.core.files import File
-from io import BytesIO
-from .html_pdf import *
 from .ajax_views import *
-import requests
-from PyPDF2 import PdfReader
-from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Prefetch
-from django.core.exceptions import PermissionDenied
-from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
-from datetime import datetime, timedelta
-from django.db import transaction
 from .forms import *
-from .models import *
 from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
-import uuid
-from django.urls import reverse
-from urllib.parse import urlencode
-from django.views.decorators.http import require_POST
 from decimal import Decimal, InvalidOperation
-from datetime import date
-import tempfile
-from django.core.files.base import ContentFile
-import secrets
-from django.conf import settings
-import json
-from .sso_utils import *
 from .sso_views import *
 
 def global_data(request):

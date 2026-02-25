@@ -1,25 +1,18 @@
-# main/sso_views.py
-import base64
-import json
-import logging
 import requests
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.core.exceptions import PermissionDenied
 from django.http import JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
-from django.utils import timezone
 from django.db import transaction
-from .sso_utils import decode_jwt, get_sso_redirect_uri
+from .sso_utils import *
 from .utils import *
 from .html_pdf import *
 from django.core.files.base import ContentFile
-import secrets
 
 logger = logging.getLogger(__name__)
 

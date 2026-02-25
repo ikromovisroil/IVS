@@ -1,5 +1,4 @@
 from .models import *
-from django.http import JsonResponse
 
 
 def deed_notifications(request):
