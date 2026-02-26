@@ -214,7 +214,7 @@ def contact_agrement_arxiv(request):
     context = {
         "deed_consent": deed_consent,
     }
-    return render(request, "main/contact_agrement.html", context)
+    return render(request, "main/contact_agrement_arxiv.html", context)
 
 
 @never_cache
