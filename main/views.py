@@ -60,20 +60,21 @@ def index(request):
     if not employee or not getattr(employee, "rol", None) or employee.rol.client:
         raise PermissionDenied
 
-    org_ids = [1, 2, 3]
-
+    # Define org_ids first - you can get all organization IDs or specify specific ones
     orgs = list(
-        Organization.objects.filter(id__in=org_ids).only("id", "name")
+        Organization.objects.all().only("id", "name")
     )
+    org_ids = [org.id for org in orgs]  # Get all organization IDs
 
     cats = list(
         Category.objects.only("id", "name")
     )
+    cat_ids = [cat.id for cat in cats]
 
     # Chart: (category, org) bo‘yicha count
     grouped = (
         Technics.objects
-        .filter(organization_id__in=org_ids, category_id__in=[c.id for c in cats])
+        .filter(organization_id__in=org_ids, category_id__in=cat_ids)
         .values("category_id", "organization_id")
         .annotate(cnt=Count("id"))
     )
