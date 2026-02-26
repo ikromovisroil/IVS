@@ -115,16 +115,16 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {% for i in goal %}
-                      <tr>
-                        <td>{{ forloop.counter }}</td>
-                        <td>{{ i.goal__name }}</td>
-                        <td>{{ i.total }}</td>
-                      </tr>
+                    {% for g in goal %}
+                    <tr>
+                      <td>{{ forloop.counter }}</td>
+                      <td>{{ g.name }}</td>
+                      <td>{{ g.total }}</td>
+                    </tr>
                     {% empty %}
-                      <tr>
-                        <td colspan="7">Ma'lumot topilmadi</td>
-                      </tr>
+                    <tr>
+                      <td colspan="3">Ma'lumot topilmadi</td>
+                    </tr>
                     {% endfor %}
                   </tbody>
               </table>

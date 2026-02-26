@@ -2254,10 +2254,13 @@ def status(request):
     )
 
     goal = (
-        orders
-        .filter(goal__isnull=False)
-        .values("goal_id", "goal__name")
-        .annotate(total=Count("id"))
+        Goal.objects
+        .annotate(
+            total=Count(
+                "order",
+                filter=Q(order__receiver__isnull=False)
+            )
+        )
         .order_by("-total")
     )
     context = {
