@@ -2218,7 +2218,7 @@ def status(request):
         date2 = parse_date(date2_raw)
 
     orders = Order.objects.filter(receiver__isnull=False)
-    goal_orders = Order.objects.filter(sender__isnull=False)
+    goal_orders = Order.objects.filter(receiver__isnull=False)
 
     if region_id.isdigit():
         orders = orders.filter(receiver__region_id=int(region_id))
