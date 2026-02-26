@@ -17,33 +17,32 @@
           <div class="card">
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
-                    <div class="col-md-3">
-                        <label for="status" class="form-label">Region</label>
-                        <select id="status" name="status" class="form-select">
-                          <option value="">Tanlang...</option>
-                          {% for r in region %}
-                          <option value="{{ r.id }}">{{ r.name }}</option>
-                          {% endfor %}
-                        </select>
-                    </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Region</label>
+                    <select name="region" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for r in region %}
+                        <option value="{{ r.id }}"
+                          {% if selected_region == r.id|stringformat:"s" %}selected{% endif %}>
+                          {{ r.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
 
-                    <div class="col-md-3">
-                      <label for="date1" class="form-label">Sana dan</label>
-                      <input id="date1" type="date" name="date1" class="form-control"
-                             value="{{ request.GET.name|default:'' }}"
-                             placeholder="Texnika nomi...">
-                    </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Sana dan</label>
+                    <input type="date" name="date1" class="form-control" value="{{ date1|default:'' }}">
+                  </div>
 
-                    <div class="col-md-3">
-                      <label for="date2" class="form-label">Sana gacha</label>
-                      <input id="date2" type="date" name="date2" class="form-control"
-                             value="{{ request.GET.name|default:'' }}"
-                             placeholder="Texnika nomi...">
-                    </div>
+                  <div class="col-md-3">
+                    <label class="form-label">Sana gacha</label>
+                    <input type="date" name="date2" class="form-control" value="{{ date2|default:'' }}">
+                  </div>
 
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">Qidirish</button>
-                    </div>
+                  <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                  </div>
                 </form>
             </div>
           </div>
@@ -60,39 +59,35 @@
               <h5 class="card-title">Status</h5>
 
               <!-- Default Table -->
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th scope="col">#</th>
-                    {% if request.user.employee.rol.boss %}
-                    <th scope="col">F.I.O</th>
-                    <th scope="col">Lavozim</th>
-                    {% endif %}
-                    <th scope="col">Nomi</th>
-                    <th scope="col">I/N</th>
-                    <th scope="col">S/N</th>
-                    <th scope="col">Mac</th>
-                    <th scope="col">Yili</th>
-                  </tr>
-                </thead>
-                <tbody>
-                {% for tex in technics %}
-                  <tr>
-                    <th scope="row">{{forloop.counter}}</th>
-                    {% if request.user.employee.rol.boss %}
-                    <td>{{tex.employee.full_name}}</td>
-                    <td>{{tex.employee.rank.name}}</td>
-                    {% endif %}
-                    <td>{{tex.category.name}}
-
-                        {{ tex.name|default:"-" }}</td>
-                    <td>{{ tex.inventory|default:"-" }}</td>
-                    <td>{{ tex.serial|default:"-" }}</td>
-                    <td>{{ tex.mac|default:"-" }}</td>
-                    <td>{{ tex.year|default:"-" }}</td>
-                  </tr>
-                {% endfor %}
-                </tbody>
+              <table class="table table-bordered table-hover table-sm">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>F.I.O</th>
+                      <th>Qabul</th>
+                      <th>Yakun</th>
+                      <th>Tasdiq</th>
+                      <th>Rad</th>
+                      <th>Jami</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for q in qs %}
+                      <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ q.full_name }}</td>
+                        <td>{{ q.accepted_count }}</td>
+                        <td>{{ q.finished_count }}</td>
+                        <td>{{ q.approved_count }}</td>
+                        <td>{{ q.rejected_count }}</td>
+                        <td>{{ q.total_count }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="7">Ma'lumot topilmadi</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
               </table>
               <!-- End Default Table Example -->
             </div>

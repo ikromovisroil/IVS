@@ -2005,7 +2005,7 @@ def svod_get(request):
 
     context = {
         "organizations": Organization.objects.all().order_by("id"),
-        "emp_bos": Employee.objects.filter(id__in=[3470, 3469, 3468]).select_related("rank"),
+        "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
     }
     return render(request, 'main/svod.html', context)
@@ -2097,7 +2097,7 @@ def reestr_get(request):
 
     context = {
         "organizations": Organization.objects.all().order_by("id"),
-        "emp_bos": Employee.objects.filter(id__in=[3470, 3469, 3468]).select_related("rank"),
+        "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
     }
     return render(request, 'main/reestr.html', context)
@@ -2202,19 +2202,80 @@ def technics_get(request):
     return render(request, 'main/technics_get.html', context)
 
 
+from django.utils.dateparse import parse_date
 @never_cache
 @login_required
 def status(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
+    emp = getattr(request.user, "employee", None)
+    if not emp:
         raise PermissionDenied
 
-    employee = Employee.objects.filter(rol__client=False)
+    # ---- FILTER PARAMS ----
+    region_id = (request.GET.get("region") or "").strip()
+    date1_raw = (request.GET.get("date1") or "").strip()
+    date2_raw = (request.GET.get("date2") or "").strip()
 
+    date1 = parse_date(date1_raw) if date1_raw else None
+    date2 = parse_date(date2_raw) if date2_raw else None
+
+    # ---- DEFAULT: agar hech narsa kelmasa, shu oy ----
+    has_search = bool(region_id or date1_raw or date2_raw)
+
+    if not has_search:
+        today = timezone.localdate()
+        date1 = today.replace(day=1)  # oyning 1-kuni
+
+        # keyingi oyning 1-kuni (end)
+        if date1.month == 12:
+            next_month = date1.replace(year=date1.year + 1, month=1)
+        else:
+            next_month = date1.replace(month=date1.month + 1)
+
+        # default qiymatlarni inputlarda ko'rsatish uchun
+        date1_raw = date1.isoformat()
+        date2_raw = (next_month - timezone.timedelta(days=1)).isoformat()  # oyning oxirgi kuni
+        date2 = parse_date(date2_raw)
+
+    # ---- BASE QS ----
+    orders = Order.objects.filter(receiver__isnull=False)
+
+    # Region filter
+    if region_id.isdigit():
+        orders = orders.filter(receiver__region_id=int(region_id))
+
+    # Sana filter (date_creat bo'yicha)
+    if date1:
+        orders = orders.filter(date_creat__date__gte=date1)
+    if date2:
+        orders = orders.filter(date_creat__date__lte=date2)
+
+    # ---- GROUP BY receiver + COUNTS ----
+    qs = (
+        orders
+        .values("receiver_id")
+        .annotate(
+            full_name=Concat(
+                Coalesce(F("receiver__last_name"), Value("")),
+                Value(" "),
+                Coalesce(F("receiver__first_name"), Value("")),
+                Value(" "),
+                Coalesce(F("receiver__father_name"), Value("")),
+            ),
+            accepted_count=Count("id", filter=Q(status="accepted")),
+            finished_count=Count("id", filter=Q(status="finished")),
+            approved_count=Count("id", filter=Q(status="approved")),
+            rejected_count=Count("id", filter=Q(status="rejected")),
+            total_count=Count("id"),
+        )
+        .order_by("-finished_count", "-approved_count", "-accepted_count")
+    )
     context = {
-        "employee": employee,
-        "region": Region.objects.all()
+        "qs": qs,
+        "region": Region.objects.all().order_by("id"),
+        "selected_region": region_id,
+        "date1": date1_raw,
+        "date2": date2_raw,
     }
-    return render(request, 'main/status.html', context)
+    return render(request, "main/status.html", context)
 
 
