@@ -1,5 +1,6 @@
 import os
 import pdfkit
+import pymupdf
 
 # WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
 
@@ -69,8 +70,6 @@ def deed_to_pdf_bytes(deed) -> bytes:
 
     return pdf_bytes
 
-
-import pymupdf
 
 def add_text_watermark_pdf_bytes(pdf_bytes: bytes, text: str) -> bytes:
     doc = pymupdf.open(stream=pdf_bytes, filetype="pdf")

@@ -2192,6 +2192,10 @@ def status(request):
     if not emp:
         raise PermissionDenied
 
+    role = getattr(emp, "rol", None)
+    if role and not role.status:
+        raise PermissionDenied
+
     # ---- FILTER PARAMS ----
     region_id = (request.GET.get("region") or "").strip()
     date1_raw = (request.GET.get("date1") or "").strip()

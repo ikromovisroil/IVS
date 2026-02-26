@@ -530,12 +530,14 @@
         </li>
         {% endif %}
 
+        {% if request.user.employee.rol.status %}
         <li class="nav-item">
           <a class="nav-link collapsed" href="{% url 'status' %}">
             <i class="bi bi-bar-chart"></i>
             <span>Statistika</span>
           </a>
         </li>
+        {% endif %}
 
         <!-- LOGOUT -->
         <li class="nav-item">
