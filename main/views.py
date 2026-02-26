@@ -2200,7 +2200,6 @@ def status(request):
     date1 = parse_date(date1_raw) if date1_raw else None
     date2 = parse_date(date2_raw) if date2_raw else None
 
-    # ---- DEFAULT: agar hech narsa kelmasa, shu oy ----
     has_search = bool(region_id or date1_raw or date2_raw)
 
     if not has_search:
@@ -2218,20 +2217,20 @@ def status(request):
         date2_raw = (next_month - timezone.timedelta(days=1)).isoformat()  # oyning oxirgi kuni
         date2 = parse_date(date2_raw)
 
-    # ---- BASE QS ----
     orders = Order.objects.filter(receiver__isnull=False)
+    goal_orders = Order.objects.filter(sender__isnull=False)
 
-    # Region filter
     if region_id.isdigit():
         orders = orders.filter(receiver__region_id=int(region_id))
+        goal_orders = goal_orders.filter(receiver__region_id=int(region_id))
 
-    # Sana filter (date_creat bo'yicha)
     if date1:
         orders = orders.filter(date_creat__date__gte=date1)
+        goal_orders = goal_orders.filter(date_creat__date__gte=date1)
     if date2:
         orders = orders.filter(date_creat__date__lte=date2)
+        goal_orders = goal_orders.filter(date_creat__date__lte=date2)
 
-    # ---- GROUP BY receiver + COUNTS ----
     employee = (
         orders
         .filter(receiver__isnull=False)
@@ -2258,13 +2257,13 @@ def status(request):
         .annotate(
             total=Count(
                 "order",
-                filter=Q(order__receiver__isnull=False)
+                filter=Q(order__in=goal_orders)
             )
         )
         .order_by("-total")
     )
+
     context = {
-        "goals": Goal.objects.all(),
         "goal": goal,
         "employee": employee,
         "region": Region.objects.all().order_by("id"),
