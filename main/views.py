@@ -2249,7 +2249,7 @@ def status(request):
             rejected_count=Count("id", filter=Q(status="rejected")),
             total_count=Count("id"),
         )
-        .order_by("-finished_count", "-approved_count", "-accepted_count")
+        .order_by("-total_count", "-approved_count")
     )
 
     goal = (
