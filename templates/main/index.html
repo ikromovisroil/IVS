@@ -6,9 +6,10 @@
 {% endblock title %}
 
 {% block css %}
-    <link
-      rel="stylesheet"
-      href="/charts/vanilla/pie-series/examples/simple-pie/ag-example-styles.css"/>
+    <!-- Fix 1: Use correct AG Charts CSS from CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-charts-community@12.3.1/styles/ag-charts.css"/>
+    <!-- Alternative: If you need the example styles, use: -->
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-charts-community@12.3.1/styles/ag-theme-quartz.css"/> -->
 {% endblock css %}
 
 {% block content %}
@@ -35,10 +36,11 @@
 
                   <div class="d-flex align-items-center">
                     <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                      <i class="bi bi-people"></i>
+                      <i class="bi bi-cpu"></i>
                     </div>
                     <div class="ps-3">
                       <h6>{{i.technics_count }} ta texnika</h6>
+                      <span class="text-success small pt-1 fw-bold">{{ i.foiz|floatformat:1 }}%</span>
                     </div>
                   </div>
 
@@ -116,73 +118,94 @@
     </section>
 
   </main><!-- End #main -->
+
 <script src="https://cdn.jsdelivr.net/npm/ag-charts-community@12.3.1/dist/umd/ag-charts-community.js"></script>
 
 <script>
-const { AgCharts } = agCharts;
+document.addEventListener('DOMContentLoaded', function() {
+    // Fix 2: Check if agCharts is loaded
+    if (typeof agCharts === 'undefined') {
+        console.error('AG Charts library not loaded');
+        return;
+    }
 
-/* =============================
-   1) AREA CHART — kategoriya bo‘yicha texnika soni
-   ============================= */
-const areaOptions = {
-    container: document.getElementById("chartArea"),
-    title: {
-        text: "Kategoriyalar bo‘yicha texnika soni",
-    },
-    data: JSON.parse('{{ chart_data|escapejs }}'),
-    series: [
-        {% for org in organizations %}
-        {
-            type: "area",
-            xKey: "category",
-            yKey: "org_{{ org.id }}",
-            yName: "{{ org.name|escapejs }}",
-            stacked: true,
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ],
-    axes: [
-        { type: "category", position: "bottom", title: { text: "Kategoriyalar" }},
-        { type: "number", position: "left", title: { text: "Soni" }},
-    ],
-    legend: { position: "top" },
-};
+    const { AgCharts } = agCharts;
 
-AgCharts.create(areaOptions);
+    /* =============================
+       1) AREA CHART — kategoriya bo‘yicha texnika soni
+       ============================= */
 
+    try {
+        const chartData = {{ chart_data|safe }};
 
-/* =============================
-   2) PIE CHART — tashkilotlar bo‘yicha ulush
-   ============================= */
+        const areaOptions = {
+            container: document.getElementById("chartArea"),
+            title: {
+                text: "Kategoriyalar bo‘yicha texnika soni",
+            },
+            data: chartData,
+            series: [
+                {% for org in organizations %}
+                {
+                    type: "area",
+                    xKey: "category",
+                    yKey: "org_{{ org.id }}",
+                    yName: "{{ org.name|escapejs }}",
+                    stacked: true,
+                }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ],
+            axes: [
+                { type: "category", position: "bottom", title: { text: "Kategoriyalar" }},
+                { type: "number", position: "left", title: { text: "Soni" }},
+            ],
+            legend: { position: "top" },
+        };
 
-// Masalan: har bir tashkilotning umumiy texnika soni (viewda hisoblab yuborasiz)
-const pieData = JSON.parse('{{ pie_data|escapejs }}');
+        // Fix 2: Remove .catch() as older versions don't support it
+        AgCharts.create(areaOptions);
 
-const pieOptions = {
-    container: document.getElementById("chartPie"),
-    title: {
-        text: "Tashkilotlar ulushi",
-    },
-    data: pieData,   // [{ name: "IMV", count: 60 }, ...]
-    series: [
-        {
-            type: "pie",
-            angleKey: "count",
-            labelKey: "name",
-            innerRadiusRatio: 0.4,
-            calloutLabelKey: "name",
-            sectorLabelKey: "count",
-            sectorLabel: {
-                renderer: ({ datum }) => `${datum.count}`
-            }
-        }
-    ],
-    legend: { position: "bottom" }
-};
+    } catch (error) {
+        console.error('Area chart error:', error);
+    }
 
-AgCharts.create(pieOptions);
+    /* =============================
+       2) PIE CHART — tashkilotlar bo‘yicha ulush
+       ============================= */
+
+    try {
+        const pieData = {{ pie_data|safe }};
+
+        const pieOptions = {
+            container: document.getElementById("chartPie"),
+            title: {
+                text: "Tashkilotlar ulushi",
+            },
+            data: pieData,
+            series: [
+                {
+                    type: "pie",
+                    angleKey: "count",
+                    labelKey: "name",
+                    innerRadiusRatio: 0.4,
+                    calloutLabelKey: "name",
+                    sectorLabelKey: "count",
+                    sectorLabel: {
+                        renderer: ({ datum }) => `${datum.count}`
+                    }
+                }
+            ],
+            legend: { position: "bottom" }
+        };
+
+        // Fix 2: Remove .catch() as older versions don't support it
+        AgCharts.create(pieOptions);
+
+    } catch (error) {
+        console.error('Pie chart error:', error);
+    }
+});
 </script>
-
 
 {% endblock content %}
 

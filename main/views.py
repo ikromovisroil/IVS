@@ -8,6 +8,7 @@ from .forms import *
 from django.core.paginator import Paginator
 from decimal import Decimal, InvalidOperation
 from .sso_views import *
+from django.db.models import Count, F, FloatField, ExpressionWrapper
 
 def global_data(request):
     return {
@@ -96,10 +97,18 @@ def index(request):
     )
     pie_data = [{"name": p["organization__name"], "count": p["cnt"]} for p in pie_grouped]
 
+    total_technics = Technics.objects.count()
+
     organizations1 = (
         Organization.objects
         .filter(id__in=org_ids)
-        .annotate(technics_count=Count("technics", distinct=True))  # related_name bo‘lmasa: "technics_set"
+        .annotate(
+            technics_count=Count("technics", distinct=True),
+            foiz=ExpressionWrapper(
+                F("technics_count") * 100.0 / total_technics,
+                output_field=FloatField()
+            )
+        )
         .only("id", "name")
     )
 
