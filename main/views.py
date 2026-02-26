@@ -55,29 +55,25 @@ def profil(request):
 
 @never_cache
 @login_required
-@never_cache
-@login_required
 def index(request):
     employee = getattr(request.user, "employee", None)
     if not employee or not getattr(employee, "rol", None) or employee.rol.client:
         raise PermissionDenied
 
-    # Get all organizations
-    orgs = list(
-        Organization.objects.all().only("id", "name")
-    )
-    org_ids = [org.id for org in orgs]
+    org_ids = [1, 2, 3]
 
-    # Get all categories
+    orgs = list(
+        Organization.objects.filter(id__in=org_ids).only("id", "name")
+    )
+
     cats = list(
         Category.objects.only("id", "name")
     )
-    cat_ids = [cat.id for cat in cats]
 
     # Chart: (category, org) bo‘yicha count
     grouped = (
         Technics.objects
-        .filter(organization_id__in=org_ids, category_id__in=cat_ids)
+        .filter(organization_id__in=org_ids, category_id__in=[c.id for c in cats])
         .values("category_id", "organization_id")
         .annotate(cnt=Count("id"))
     )
@@ -101,21 +97,10 @@ def index(request):
     )
     pie_data = [{"name": p["organization__name"], "count": p["cnt"]} for p in pie_grouped]
 
-    total_technics = Technics.objects.count()
-    # Avoid division by zero
-    if total_technics == 0:
-        total_technics = 1
-
     organizations1 = (
         Organization.objects
         .filter(id__in=org_ids)
-        .annotate(
-            technics_count=Count("technics", distinct=True),
-            foiz=ExpressionWrapper(
-                F("technics_count") * 100.0 / total_technics,
-                output_field=FloatField()
-            )
-        )
+        .annotate(technics_count=Count("technics", distinct=True))  # related_name bo‘lmasa: "technics_set"
         .only("id", "name")
     )
 
