@@ -6,7 +6,7 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / '.env')
 
-SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-secret")
+SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = os.getenv("DEBUG") == "True"
 
 ALLOWED_HOSTS = [

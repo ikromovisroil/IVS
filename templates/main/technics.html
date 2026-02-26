@@ -86,7 +86,7 @@
   </section>
 
   <!-- TABLE -->
-  <section class="section dashboard">
+  <section class="section">
     <div class="row">
       <div class="col-lg-12">
 
@@ -94,9 +94,7 @@
           <div class="card-body">
 
             <h5 class="card-title mb-0">
-                Texnikalar <b>|</b>
-                <i>Umumiy: {{ total_count }}</i> <b>|</b>
-                <i> Natija: {{ filtered_count }}</i>
+                Texnikalar {{ filtered_count }} ta</i>
             </h5>
 
             {# ❗ Datatable bo'lsa pagination bilan urishadi. Tavsiya: datatable class olib tashlang #}
@@ -109,9 +107,7 @@
                   <th>Texnika nomi</th>
                   <th>I/N</th>
                   <th>S/N</th>
-                  <th>IP</th>
                   <th>MAC</th>
-                  <th>YIL</th>
                 </tr>
               </thead>
 
@@ -180,34 +176,12 @@
                       {% endfor %}
                     </td>
 
-                    <!-- IP -->
-                    <td>
-                      {% for t in techs %}
-                        {{ t.ip|default:"-" }}
-                        {% for et in t.extratechnics_set.all %}
-                          <br>{{ et.ip|default:"-" }}
-                        {% endfor %}
-                        {% if not forloop.last %}<hr class="my-1">{% endif %}
-                      {% endfor %}
-                    </td>
-
                     <!-- MAC -->
                     <td>
                       {% for t in techs %}
                         {{ t.mac|default:"-" }}
                         {% for et in t.extratechnics_set.all %}
                           <br>{{ et.mac|default:"-" }}
-                        {% endfor %}
-                        {% if not forloop.last %}<hr class="my-1">{% endif %}
-                      {% endfor %}
-                    </td>
-
-                    <!-- YEAR -->
-                    <td>
-                      {% for t in techs %}
-                        {{ t.year|default:"-" }}
-                        {% for et in t.extratechnics_set.all %}
-                          <br>{{ et.year|default:"-" }}
                         {% endfor %}
                         {% if not forloop.last %}<hr class="my-1">{% endif %}
                       {% endfor %}
@@ -364,6 +338,27 @@ $(document).ready(function () {
       }
     }
   }
+});
+</script>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(function () {
+
+  function initSelect2All() {
+    $('select').each(function () {
+      const $el = $(this);
+      if ($el.data('select2')) return;
+
+      $el.select2({
+        width: '100%',
+        placeholder: 'Tanlang...',
+        allowClear: true
+      });
+    });
+  }
+
+  initSelect2All();
 });
 </script>
 

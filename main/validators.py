@@ -4,17 +4,14 @@ from django.core.exceptions import ValidationError
 def validate_file_extension(value):
     # 1) Fayl kengaytmasi
     ext = os.path.splitext(value.name)[1].lower()
-    valid_extensions = ['.pdf', '.docx']
+    valid_extensions = ['.pdf']
 
     if ext not in valid_extensions:
-        raise ValidationError("Faqat PDF, DOCX yoki XLSX yuklash mumkin!")
+        raise ValidationError("Faqat PDF fayl yuklash mumkin!")
 
     # 2) MIME TYPES (haqiqiy fayl turi)
     valid_mime = [
         'application/pdf',
-
-        # DOCX
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     ]
 
     # content_type tekshiramiz
