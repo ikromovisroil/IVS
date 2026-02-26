@@ -5,7 +5,6 @@ from .ajax_views import *
 from django.db.models import Count, Prefetch
 from django.contrib.auth.decorators import login_required
 from .forms import *
-from django.contrib.auth import update_session_auth_hash
 from django.core.paginator import Paginator
 from decimal import Decimal, InvalidOperation
 from .sso_views import *
@@ -31,42 +30,25 @@ def profil(request):
 
     user = request.user
 
-    emp_form = EmployeeProfileForm(instance=employee)
-    email_form = UserEmailForm(instance=user)
-    pwd_form = StyledPasswordChangeForm(user=user)
-
     if request.method == "POST":
-        action = request.POST.get("action")
+        emp_form = EmployeeProfileForm(request.POST, instance=employee)
+        email_form = UserEmailForm(request.POST, instance=user)
 
-        if action == "edit_profile":
-            emp_form = EmployeeProfileForm(request.POST, request.FILES or None, instance=employee)
-            email_form = UserEmailForm(request.POST, instance=user)
-
-            if emp_form.is_valid() and email_form.is_valid():
-                emp_form.save()
-                email_form.save()
-                messages.success(request, "Profil muvaffaqiyatli yangilandi")
-                return redirect("profil")
-            messages.info(request, "Maydonlarda xatolik bor. Qayta tekshiring")
-
-        elif action == "change_password":
-            pwd_form = StyledPasswordChangeForm(user=user, data=request.POST)
-            if pwd_form.is_valid():
-                pwd_form.save()
-                update_session_auth_hash(request, pwd_form.user)
-                messages.success(request, "Parol muvaffaqiyatli o‘zgartirildi")
-                return redirect("profil")
-            messages.info(request, "Parolni o‘zgartirishda xatolik")
-
-        else:
-            messages.info(request, "Noto‘g‘ri so‘rov")
+        if emp_form.is_valid() and email_form.is_valid():
+            emp_form.save()
+            email_form.save()
+            messages.success(request, "Profil muvaffaqiyatli yangilandi")
             return redirect("profil")
+        else:
+            messages.error(request, "Maydonlarda xatolik bor. Qayta tekshiring")
+    else:
+        emp_form = EmployeeProfileForm(instance=employee)
+        email_form = UserEmailForm(instance=user)
 
     return render(request, "main/profil.html", {
-        "employee": employee,
         "emp_form": emp_form,
         "email_form": email_form,
-        "pwd_form": pwd_form,
+        "employee":employee,
     })
 
 
@@ -2250,8 +2232,9 @@ def status(request):
         orders = orders.filter(date_creat__date__lte=date2)
 
     # ---- GROUP BY receiver + COUNTS ----
-    qs = (
+    employee = (
         orders
+        .filter(receiver__isnull=False)
         .values("receiver_id")
         .annotate(
             full_name=Concat(
@@ -2269,8 +2252,18 @@ def status(request):
         )
         .order_by("-finished_count", "-approved_count", "-accepted_count")
     )
+
+    goal = (
+        orders
+        .filter(goal__isnull=False)
+        .values("goal_id", "goal__name")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
     context = {
-        "qs": qs,
+        "goals": Goal.objects.all(),
+        "goal": goal,
+        "employee": employee,
         "region": Region.objects.all().order_by("id"),
         "selected_region": region_id,
         "date1": date1_raw,

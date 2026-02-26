@@ -44,11 +44,6 @@
                   Profilni tahrirlash
                 </button>
               </li>
-              <li class="nav-item">
-                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#profile-change-password">
-                  Parolni o'zgartirish
-                </button>
-              </li>
             </ul>
 
             <div class="tab-content pt-2">
@@ -97,8 +92,6 @@
               <div class="tab-pane fade profile-edit pt-3" id="profile-edit">
                 <form method="post">
                   {% csrf_token %}
-                  <input type="hidden" name="action" value="edit_profile">
-
                   <div class="row mb-3">
                     <label class="col-md-4 col-lg-3 col-form-label">Ism</label>
                     <div class="col-md-8 col-lg-9">
@@ -143,39 +136,6 @@
 
                   <div class="text-center">
                     <button type="submit" class="btn btn-primary">Saqlash</button>
-                  </div>
-                </form>
-              </div>
-
-              <!-- CHANGE PASSWORD -->
-              <div class="tab-pane fade pt-3" id="profile-change-password">
-                <form method="post">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="change_password">
-
-                  <div class="row mb-3">
-                    <label class="col-md-4 col-lg-3 col-form-label">Joriy parol</label>
-                    <div class="col-md-8 col-lg-9">
-                      {{ pwd_form.old_password }}
-                    </div>
-                  </div>
-
-                  <div class="row mb-3">
-                    <label class="col-md-4 col-lg-3 col-form-label ">Yangi parol</label>
-                    <div class="col-md-8 col-lg-9">
-                      {{ pwd_form.new_password1 }}
-                    </div>
-                  </div>
-
-                  <div class="row mb-3">
-                    <label class="col-md-4 col-lg-3 col-form-label">Yangi parolni qayta kiriting</label>
-                    <div class="col-md-8 col-lg-9">
-                      {{ pwd_form.new_password2 }}
-                    </div>
-                  </div>
-
-                  <div class="text-center">
-                    <button type="submit" class="btn btn-primary">Parolni o'zgartirish</button>
                   </div>
                 </form>
               </div>

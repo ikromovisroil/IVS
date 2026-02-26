@@ -72,15 +72,54 @@
                     </tr>
                   </thead>
                   <tbody>
-                    {% for q in qs %}
+                    {% for emp in employee %}
                       <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td>{{ q.full_name }}</td>
-                        <td>{{ q.accepted_count }}</td>
-                        <td>{{ q.finished_count }}</td>
-                        <td>{{ q.approved_count }}</td>
-                        <td>{{ q.rejected_count }}</td>
-                        <td>{{ q.total_count }}</td>
+                        <td>{{ emp.full_name }}</td>
+                        <td>{{ emp.accepted_count }}</td>
+                        <td>{{ emp.finished_count }}</td>
+                        <td>{{ emp.approved_count }}</td>
+                        <td>{{ emp.rejected_count }}</td>
+                        <td>{{ emp.total_count }}</td>
+                      </tr>
+                    {% empty %}
+                      <tr>
+                        <td colspan="7">Ma'lumot topilmadi</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+              </table>
+              <!-- End Default Table Example -->
+            </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+
+        <div class="card">
+            <div class="card-body">
+              <h5 class="card-title">Xodimlar</h5>
+
+              <!-- Default Table -->
+              <table class="table table-bordered table-hover table-sm">
+                  <thead class="table-secondary">
+                    <tr>
+                      <th>#</th>
+                      <th>Ariza turi</th>
+                      <th>soni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for i in goal %}
+                      <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ i.goal__name }}</td>
+                        <td>{{ i.total }}</td>
                       </tr>
                     {% empty %}
                       <tr>
