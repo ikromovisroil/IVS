@@ -6,142 +6,83 @@
 {% endblock title %}
 
 {% block css %}
-    <link
-      rel="stylesheet"
-      href="/charts/vanilla/pie-series/examples/simple-pie/ag-example-styles.css"/>
+    <link rel="stylesheet" href="/charts/vanilla/pie-series/examples/simple-pie/ag-example-styles.css"/>
 {% endblock css %}
 
 {% block content %}
-  <main id="main" class="main">
+<main id="main" class="main">
 
-    <div class="pagetitle">
-      <h1>Dashboard</h1>
-    </div><!-- End Page Title -->
-
-    <section class="section dashboard">
-      <div class="row">
-
-        <!-- Left side columns -->
-        <div class="col-lg-8">
-          <div class="row">
-            {% for i in organizations1 %}
-            <!-- Customers Card -->
-            <div class="col-xxl-4 col-xl-12">
-
-              <div class="card info-card customers-card">
-
-                <div class="card-body">
-                  <h5 class="card-title">{{i.name}}</h5>
-
-                  <div class="d-flex align-items-center">
-                    <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                      <i class="bi bi-people"></i>
-                    </div>
-                    <div class="ps-3">
-                      <h6>{{i.technics_count }} ta texnika</h6>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-            </div><!-- End Customers Card -->
-            {% endfor %}
-            <!-- Reports -->
-            <div class="col-12">
-              <div class="card">
-  <div class="card-body">
-    <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
-    <div id="areaChart"></div>
+  <div class="pagetitle">
+    <h1>Dashboard</h1>
   </div>
-</div>
 
-            </div><!-- End Reports -->
+  <section class="section dashboard">
+    <div class="row">
 
-          </div>
-        </div><!-- End Left side columns -->
-
-        <!-- Right side columns -->
-        <div class="col-lg-4">
-
-          <!-- Recent Activity -->
-          <div class="card">
+      <div class="col-lg-12">
+        <div class="row">
+          {% for i in orgs_qs %}
+          <div class="col-xxl-3 col-xl-6">
+            <div class="card info-card customers-card">
               <div class="card-body">
-                <h5 class="card-title">Oxirgi harakatlar</h5>
+                <h5 class="card-title">{{ i.name }}</h5>
 
-                <div class="activity">
-                    {% for i in logs %}
-                    <div class="activity-item d-flex">
-                        <!-- TIME AGO -->
-                        <div class="activite-label">
-                            {{ i.action_time|timesince }} oldin
-                        </div>
-
-                        <!-- BADGE (rang action_flag bo‘yicha) -->
-                        <i class="bi bi-circle-fill activity-badge
-                            {% if i.action_flag == 1 %} text-primary
-                            {% elif i.action_flag == 2 %} text-success
-                            {% elif i.action_flag == 3 %} text-danger
-                            {% else %} text-muted
-                            {% endif %}
-                            align-self-start">
-                        </i>
-
-                        <!-- CONTENT -->
-                        <div class="activity-content">
-                            <!-- Title -->
-                            <strong>{{ i.object_repr }}</strong>
-                            <!-- Description -->
-                            {% if i.action_flag == 1 %}
-                               qo'shildi
-                            {% elif i.action_flag == 2 %}
-                               taxrirlandi
-                            {% elif i.action_flag == 3 %}
-                               o'chirildi
-                            {% endif %}
-                        </div>
-                    </div><!-- End activity item-->
-                    {% endfor %}
+                <div class="d-flex align-items-center">
+                  <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                    <i class="bi bi-people"></i>
+                  </div>
+                  <div class="ps-3">
+                    <h6>{{ i.technics_count }} ta texnika</h6>
+                    <span class="text-success small pt-1 fw-bold">{{ i.foiz }}%</span>
+                  </div>
                 </div>
+
               </div>
-            </div><!-- End Recent Activity -->
-
-
-          <!-- Website Traffic -->
-          <div class="card">
-           <div id="chartPie"></div>
-          </div><!-- End Website Traffic -->
-
-        </div><!-- End Right side columns -->
-
+            </div>
+          </div>
+          {% endfor %}
+        </div>
       </div>
-    </section>
 
-  </main><!-- End #main -->
+      <div class="col-lg-12">
+        <div class="row">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body">
+                <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
+                <div id="areaChart"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- ✅ JSON data (eng muhim joy) -->
+{{ categories|json_script:"categories-data" }}
+{{ series|json_script:"series-data" }}
+
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const options = {
-    chart: {
-      type: "area",
-      height: 350,
-      toolbar: { show: false }
-    },
+  const categories = JSON.parse(document.getElementById("categories-data").textContent);
+  const series = JSON.parse(document.getElementById("series-data").textContent);
+
+  new ApexCharts(document.querySelector("#areaChart"), {
+    chart: { type: "area", height: 350, toolbar: { show: false } },
     dataLabels: { enabled: false },
     stroke: { curve: "smooth" },
-    xaxis: {
-      categories: {{ categories|safe }}
-    },
-    series: {{ series|safe }}
-  };
-
-  new ApexCharts(document.querySelector("#areaChart"), options).render();
+    xaxis: { categories },
+    series
+  }).render();
 });
 </script>
 
-
 {% endblock content %}
 
-{% block js %}
-{% endblock js %}
+{% block js %}{% endblock js %}

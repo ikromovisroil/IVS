@@ -53,6 +53,11 @@ def profil(request):
     })
 
 
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.cache import never_cache
+from django.core.exceptions import PermissionDenied
+from django.db.models import Count
+
 @never_cache
 @login_required
 def index(request):
@@ -60,57 +65,46 @@ def index(request):
     if not employee or not getattr(employee, "rol", None) or employee.rol.client:
         raise PermissionDenied
 
-    # 🔹 1. KATEGORIYALAR (X-axis)
-    cats_qs = list(
-        Category.objects
-        .all()
-        .order_by("id")
-        .values("id", "name")
-    )
-
-    cat_ids = [c["id"] for c in cats_qs]
-    categories = [c["name"] for c in cats_qs]
-
-    # 🔹 2. HAMMA TASHKILOTLAR
-    orgs_qs = list(
+    # ------------------- CARD: tashkilotlar soni + foiz -------------------
+    orgs = list(
         Organization.objects
         .all()
         .order_by("id")
-        .values("id", "name")
+        .annotate(technics_count=Count("technics", distinct=True))  # related_name bo'lmasa: technics_set
+        .values("id", "name", "technics_count")
     )
 
-    # 🔹 3. GROUP BY (organization, category)
+    total_technics = sum(o["technics_count"] for o in orgs) or 1  # 0 bo'lib qolmasin
+
+    for o in orgs:
+        o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
+
+    # ------------------- CHART: category (x) va organization (series) -------------------
+    cats_qs = list(Category.objects.all().order_by("id").values("id", "name"))
+    cat_ids = [c["id"] for c in cats_qs]
+    categories = [c["name"] for c in cats_qs]
+
+    org_ids = [o["id"] for o in orgs]
+
     grouped = (
         Technics.objects
+        .filter(organization_id__in=org_ids, category_id__in=cat_ids)
         .values("organization_id", "category_id")
         .annotate(cnt=Count("id"))
     )
 
-    # 🔹 4. Lookup dictionary
-    lookup = {
-        (g["organization_id"], g["category_id"]): g["cnt"]
-        for g in grouped
-    }
+    lookup = {(g["organization_id"], g["category_id"]): g["cnt"] for g in grouped}
 
-    # 🔹 5. ApexCharts series tayyorlash
     series = []
-
-    for org in orgs_qs:
-        data = [
-            lookup.get((org["id"], cid), 0)
-            for cid in cat_ids
-        ]
-
-        series.append({
-            "name": org["name"],
-            "data": data
-        })
+    for o in orgs:
+        data = [lookup.get((o["id"], cid), 0) for cid in cat_ids]
+        series.append({"name": o["name"], "data": data})
 
     context = {
+        "orgs_qs": orgs,          # dict list
         "categories": categories,
         "series": series,
     }
-
     return render(request, "main/index.html", context)
 
 @never_cache
