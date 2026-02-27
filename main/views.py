@@ -60,7 +60,7 @@ def index(request):
     if not employee or not getattr(employee, "rol", None) or employee.rol.client:
         raise PermissionDenied
 
-    # CARD: tashkilotlar soni + foiz
+    # ------------------- CARD: tashkilotlar soni + foiz -------------------
     orgs = list(
         Organization.objects
         .all()
@@ -73,11 +73,11 @@ def index(request):
     for o in orgs:
         o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
 
-    # PIE data
+    # ------------------- PIE: tashkilotlar ulushi -------------------
     pie_labels = [o["name"] for o in orgs]
     pie_values = [o["technics_count"] for o in orgs]
 
-    # AREA: category (x) va organization (series)
+    # ------------------- AREA: category (x) va organization (series) -------------------
     cats_qs = list(Category.objects.all().order_by("id").values("id", "name"))
     cat_ids = [c["id"] for c in cats_qs]
     categories = [c["name"] for c in cats_qs]
@@ -98,12 +98,22 @@ def index(request):
         data = [lookup.get((o["id"], cid), 0) for cid in cat_ids]
         series.append({"name": o["name"], "data": data})
 
+    # ------------------- FUNNEL: tashkilotlar bo‘yicha (katta -> kichik) -------------------
+    orgs_sorted = sorted(orgs, key=lambda x: x["technics_count"], reverse=True)
+    # ko'p bo'lsa 8 ta ko'rsatamiz (xohlasangiz [:8] ni olib tashlang)
+    funnel_labels = [o["name"] for o in orgs_sorted[:8]]
+    funnel_values = [o["technics_count"] for o in orgs_sorted[:8]]
+
     context = {
         "orgs_qs": orgs,
         "categories": categories,
         "series": series,
-        "pie_labels": pie_labels,   # ✅ shular yetishmayotgan edi
-        "pie_values": pie_values,   # ✅
+
+        "pie_labels": pie_labels,
+        "pie_values": pie_values,
+
+        "funnel_labels": funnel_labels,
+        "funnel_values": funnel_values,
     }
     return render(request, "main/index.html", context)
 

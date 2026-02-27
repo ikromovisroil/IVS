@@ -2,11 +2,11 @@
 {% load static %}
 
 {% block title %}
-    <title>Index</title>
+<title>Index</title>
 {% endblock title %}
 
 {% block css %}
-    <link rel="stylesheet" href="/charts/vanilla/pie-series/examples/simple-pie/ag-example-styles.css"/>
+<link rel="stylesheet" href="/charts/vanilla/pie-series/examples/simple-pie/ag-example-styles.css"/>
 {% endblock css %}
 
 {% block content %}
@@ -19,6 +19,7 @@
   <section class="section dashboard">
     <div class="row">
 
+      <!-- CARDS -->
       {% for i in orgs_qs %}
       <div class="col-xxl-3 col-xl-6">
         <div class="card info-card customers-card">
@@ -40,16 +41,19 @@
       </div>
       {% endfor %}
 
-      <div class="col-12">
+
+
+      <!-- CHARTS ROW (PIE + FUNNEL) -->
+
+      <div class="col-12 col-lg-6">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
-            <div id="areaChart"></div>
+            <h5 class="card-title">Tashkilotlar bo‘yicha texnika</h5>
+            <div id="funnelChart"></div>
           </div>
         </div>
       </div>
 
-      <!-- PIE -->
       <div class="col-12 col-lg-6">
         <div class="card">
           <div class="card-body">
@@ -59,22 +63,37 @@
         </div>
       </div>
 
+
+      <!-- AREA (FULL WIDTH) -->
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
+            <div id="areaChart"></div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </section>
 
 </main>
 
-<!-- ✅ JSON data (eng muhim joy) -->
+<!-- ✅ JSON data -->
 {{ categories|json_script:"categories-data" }}
 {{ series|json_script:"series-data" }}
 
 {{ pie_labels|json_script:"pie-labels" }}
 {{ pie_values|json_script:"pie-values" }}
 
+{{ funnel_labels|json_script:"funnel-labels" }}
+{{ funnel_values|json_script:"funnel-values" }}
+
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+
   // AREA
   const categories = JSON.parse(document.getElementById("categories-data").textContent);
   const series = JSON.parse(document.getElementById("series-data").textContent);
@@ -97,6 +116,30 @@ document.addEventListener("DOMContentLoaded", function () {
     series: pieValues,
     legend: { position: "bottom" }
   }).render();
+
+  // FUNNEL
+  const funnelLabels = JSON.parse(document.getElementById("funnel-labels").textContent);
+  const funnelValues = JSON.parse(document.getElementById("funnel-values").textContent);
+
+  new ApexCharts(document.querySelector("#funnelChart"), {
+    chart: { type: "bar", height: 350, toolbar: { show: false } },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        isFunnel: true,
+        distributed: true,
+        barHeight: "80%"
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: (val, opt) => opt.w.globals.labels[opt.dataPointIndex] + ": " + val
+    },
+    xaxis: { categories: funnelLabels },
+    series: [{ name: "Texnika", data: funnelValues }],
+    legend: { show: false }
+  }).render();
+
 });
 </script>
 
