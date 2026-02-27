@@ -53,11 +53,6 @@ def profil(request):
     })
 
 
-from django.contrib.auth.decorators import login_required
-from django.views.decorators.cache import never_cache
-from django.core.exceptions import PermissionDenied
-from django.db.models import Count
-
 @never_cache
 @login_required
 def index(request):
@@ -65,21 +60,24 @@ def index(request):
     if not employee or not getattr(employee, "rol", None) or employee.rol.client:
         raise PermissionDenied
 
-    # ------------------- CARD: tashkilotlar soni + foiz -------------------
+    # CARD: tashkilotlar soni + foiz
     orgs = list(
         Organization.objects
         .all()
         .order_by("id")
-        .annotate(technics_count=Count("technics", distinct=True))  # related_name bo'lmasa: technics_set
+        .annotate(technics_count=Count("technics", distinct=True))  # agar ishlamasa -> technics_set
         .values("id", "name", "technics_count")
     )
 
-    total_technics = sum(o["technics_count"] for o in orgs) or 1  # 0 bo'lib qolmasin
-
+    total_technics = sum(o["technics_count"] for o in orgs) or 1
     for o in orgs:
         o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
 
-    # ------------------- CHART: category (x) va organization (series) -------------------
+    # PIE data
+    pie_labels = [o["name"] for o in orgs]
+    pie_values = [o["technics_count"] for o in orgs]
+
+    # AREA: category (x) va organization (series)
     cats_qs = list(Category.objects.all().order_by("id").values("id", "name"))
     cat_ids = [c["id"] for c in cats_qs]
     categories = [c["name"] for c in cats_qs]
@@ -101,11 +99,14 @@ def index(request):
         series.append({"name": o["name"], "data": data})
 
     context = {
-        "orgs_qs": orgs,          # dict list
+        "orgs_qs": orgs,
         "categories": categories,
         "series": series,
+        "pie_labels": pie_labels,   # ✅ shular yetishmayotgan edi
+        "pie_values": pie_values,   # ✅
     }
     return render(request, "main/index.html", context)
+
 
 @never_cache
 @login_required

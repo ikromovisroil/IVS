@@ -19,40 +19,42 @@
   <section class="section dashboard">
     <div class="row">
 
-      <div class="col-lg-12">
-        <div class="row">
-          {% for i in orgs_qs %}
-          <div class="col-xxl-3 col-xl-6">
-            <div class="card info-card customers-card">
-              <div class="card-body">
-                <h5 class="card-title">{{ i.name }}</h5>
+      {% for i in orgs_qs %}
+      <div class="col-xxl-3 col-xl-6">
+        <div class="card info-card customers-card">
+          <div class="card-body">
+            <h5 class="card-title">{{ i.name }}</h5>
 
-                <div class="d-flex align-items-center">
-                  <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
-                    <i class="bi bi-people"></i>
-                  </div>
-                  <div class="ps-3">
-                    <h6>{{ i.technics_count }} ta texnika</h6>
-                    <span class="text-success small pt-1 fw-bold">{{ i.foiz }}%</span>
-                  </div>
-                </div>
-
+            <div class="d-flex align-items-center">
+              <div class="card-icon rounded-circle d-flex align-items-center justify-content-center">
+                <i class="bi bi-people"></i>
+              </div>
+              <div class="ps-3">
+                <h6>{{ i.technics_count }} ta texnika</h6>
+                <span class="text-success small pt-1 fw-bold">{{ i.foiz }}%</span>
               </div>
             </div>
+
           </div>
-          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
+            <div id="areaChart"></div>
+          </div>
         </div>
       </div>
 
-      <div class="col-lg-12">
-        <div class="row">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-body">
-                <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
-                <div id="areaChart"></div>
-              </div>
-            </div>
+      <!-- PIE -->
+      <div class="col-12 col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Tashkilotlar ulushi</h5>
+            <div id="pieChart"></div>
           </div>
         </div>
       </div>
@@ -66,10 +68,14 @@
 {{ categories|json_script:"categories-data" }}
 {{ series|json_script:"series-data" }}
 
+{{ pie_labels|json_script:"pie-labels" }}
+{{ pie_values|json_script:"pie-values" }}
+
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+  // AREA
   const categories = JSON.parse(document.getElementById("categories-data").textContent);
   const series = JSON.parse(document.getElementById("series-data").textContent);
 
@@ -79,6 +85,17 @@ document.addEventListener("DOMContentLoaded", function () {
     stroke: { curve: "smooth" },
     xaxis: { categories },
     series
+  }).render();
+
+  // PIE
+  const pieLabels = JSON.parse(document.getElementById("pie-labels").textContent);
+  const pieValues = JSON.parse(document.getElementById("pie-values").textContent);
+
+  new ApexCharts(document.querySelector("#pieChart"), {
+    chart: { type: "pie", height: 350 },
+    labels: pieLabels,
+    series: pieValues,
+    legend: { position: "bottom" }
   }).render();
 });
 </script>
