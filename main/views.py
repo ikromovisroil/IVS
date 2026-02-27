@@ -60,66 +60,58 @@ def index(request):
     if not employee or not getattr(employee, "rol", None) or employee.rol.client:
         raise PermissionDenied
 
-    org_ids = [1, 2, 3]
-
-    orgs = list(
-        Organization.objects.filter(id__in=org_ids).only("id", "name")
+    # 🔹 1. KATEGORIYALAR (X-axis)
+    cats_qs = list(
+        Category.objects
+        .all()
+        .order_by("id")
+        .values("id", "name")
     )
 
-    cats = list(
-        Category.objects.only("id", "name")
+    cat_ids = [c["id"] for c in cats_qs]
+    categories = [c["name"] for c in cats_qs]
+
+    # 🔹 2. HAMMA TASHKILOTLAR
+    orgs_qs = list(
+        Organization.objects
+        .all()
+        .order_by("id")
+        .values("id", "name")
     )
 
-    # Chart: (category, org) bo‘yicha count
+    # 🔹 3. GROUP BY (organization, category)
     grouped = (
         Technics.objects
-        .filter(organization_id__in=org_ids, category_id__in=[c.id for c in cats])
-        .values("category_id", "organization_id")
+        .values("organization_id", "category_id")
         .annotate(cnt=Count("id"))
     )
 
-    m = {(g["category_id"], g["organization_id"]): g["cnt"] for g in grouped}
+    # 🔹 4. Lookup dictionary
+    lookup = {
+        (g["organization_id"], g["category_id"]): g["cnt"]
+        for g in grouped
+    }
 
-    chart_data = []
-    for cat in cats:
-        row = {"category": cat.name}
-        for org in orgs:
-            row[f"org_{org.id}"] = m.get((cat.id, org.id), 0)
-        chart_data.append(row)
+    # 🔹 5. ApexCharts series tayyorlash
+    series = []
 
-    # Pie: org bo‘yicha count
-    pie_grouped = (
-        Technics.objects
-        .filter(organization_id__in=org_ids)
-        .values("organization_id", "organization__name")
-        .annotate(cnt=Count("id"))
-        .order_by("organization__name")
-    )
-    pie_data = [{"name": p["organization__name"], "count": p["cnt"]} for p in pie_grouped]
+    for org in orgs_qs:
+        data = [
+            lookup.get((org["id"], cid), 0)
+            for cid in cat_ids
+        ]
 
-    organizations1 = (
-        Organization.objects
-        .filter(id__in=org_ids)
-        .annotate(technics_count=Count("technics", distinct=True))  # related_name bo‘lmasa: "technics_set"
-        .only("id", "name")
-    )
-
-    logs = (
-        LogEntry.objects
-        .select_related("user", "content_type")
-        .order_by("-action_time")[:10]
-    )
+        series.append({
+            "name": org["name"],
+            "data": data
+        })
 
     context = {
-        "logs": logs,
-        "organizations1": organizations1,
-        "organizations": orgs,
-        "categorys": cats,
-        "chart_data": json.dumps(chart_data, cls=DjangoJSONEncoder),
-        "pie_data": json.dumps(pie_data, cls=DjangoJSONEncoder),
+        "categories": categories,
+        "series": series,
     }
-    return render(request, "main/index.html", context)
 
+    return render(request, "main/index.html", context)
 
 @never_cache
 @login_required

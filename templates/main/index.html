@@ -50,10 +50,12 @@
             <!-- Reports -->
             <div class="col-12">
               <div class="card">
+  <div class="card-body">
+    <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
+    <div id="areaChart"></div>
+  </div>
+</div>
 
-                <div id="chartArea"></div>
-
-              </div>
             </div><!-- End Reports -->
 
           </div>
@@ -116,71 +118,26 @@
     </section>
 
   </main><!-- End #main -->
-<script src="https://cdn.jsdelivr.net/npm/ag-charts-community@12.3.1/dist/umd/ag-charts-community.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
-const { AgCharts } = agCharts;
-
-/* =============================
-   1) AREA CHART — kategoriya bo‘yicha texnika soni
-   ============================= */
-const areaOptions = {
-    container: document.getElementById("chartArea"),
-    title: {
-        text: "Kategoriyalar bo‘yicha texnika soni",
+document.addEventListener("DOMContentLoaded", function () {
+  const options = {
+    chart: {
+      type: "area",
+      height: 350,
+      toolbar: { show: false }
     },
-    data: JSON.parse('{{ chart_data|escapejs }}'),
-    series: [
-        {% for org in organizations %}
-        {
-            type: "area",
-            xKey: "category",
-            yKey: "org_{{ org.id }}",
-            yName: "{{ org.name|escapejs }}",
-            stacked: true,
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ],
-    axes: [
-        { type: "category", position: "bottom", title: { text: "Kategoriyalar" }},
-        { type: "number", position: "left", title: { text: "Soni" }},
-    ],
-    legend: { position: "top" },
-};
-
-AgCharts.create(areaOptions);
-
-
-/* =============================
-   2) PIE CHART — tashkilotlar bo‘yicha ulush
-   ============================= */
-
-// Masalan: har bir tashkilotning umumiy texnika soni (viewda hisoblab yuborasiz)
-const pieData = JSON.parse('{{ pie_data|escapejs }}');
-
-const pieOptions = {
-    container: document.getElementById("chartPie"),
-    title: {
-        text: "Tashkilotlar ulushi",
+    dataLabels: { enabled: false },
+    stroke: { curve: "smooth" },
+    xaxis: {
+      categories: {{ categories|safe }}
     },
-    data: pieData,   // [{ name: "IMV", count: 60 }, ...]
-    series: [
-        {
-            type: "pie",
-            angleKey: "count",
-            labelKey: "name",
-            innerRadiusRatio: 0.4,
-            calloutLabelKey: "name",
-            sectorLabelKey: "count",
-            sectorLabel: {
-                renderer: ({ datum }) => `${datum.count}`
-            }
-        }
-    ],
-    legend: { position: "bottom" }
-};
+    series: {{ series|safe }}
+  };
 
-AgCharts.create(pieOptions);
+  new ApexCharts(document.querySelector("#areaChart"), options).render();
+});
 </script>
 
 
