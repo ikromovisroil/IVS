@@ -341,25 +341,4 @@ $(document).ready(function () {
 });
 </script>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(function () {
-
-  function initSelect2All() {
-    $('select').each(function () {
-      const $el = $(this);
-      if ($el.data('select2')) return;
-
-      $el.select2({
-        width: '100%',
-        placeholder: 'Tanlang...',
-        allowClear: true
-      });
-    });
-  }
-
-  initSelect2All();
-});
-</script>
-
 {% endblock content %}

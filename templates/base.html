@@ -33,6 +33,7 @@
   {% endblock css %}
   <!-- Template Main CSS File -->
   <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <link href="{% static 'css/select2.css' %}" rel="stylesheet">
 </head>
 
 <body>
@@ -596,14 +597,14 @@
 
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
-<!-- Select2 -->
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 {% block js %}{% endblock js %}
 
 <script src="{% static 'js/main.js' %}"></script>
+<script src="{% static 'js/select2.js' %}"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
