@@ -51,7 +51,7 @@
                         <th scope="col">Muallif</th>
                         <th scope="col">Ariza Maqsadi</th>
                         <th scope="col">Xolati</th>
-                        <th scope="col">Sana</th>
+                        <th scope="col">Yuborilgan sana</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -214,7 +214,7 @@
                                 </div>
                             </div><!-- End Vertically centered Modal-->
                         </td>
-                        <td>{{ o.date_creat }}</td>
+                        <td>{{ o.date_creat|date:"d-m-Y H:i" }}</td>
                       </tr>
                     {% endfor %}
                     </tbody>

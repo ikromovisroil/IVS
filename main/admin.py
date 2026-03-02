@@ -200,7 +200,7 @@ class TechnicsAdmin(ReadonlyDatesAdmin):
 
 @admin.register(ExtraTechnics)
 class ExtraTechnicsAdmin(ReadonlyDatesAdmin):
-    list_display = ("id", "name", "technics", "status", "inventory", "serial", "price", "year", "date_creat")
+    list_display = ("id", "organization", "name", "technics", "status", "inventory", "serial", "price", "year", "date_creat")
     list_filter = ("status", "year")
     search_fields = ("name", "inventory", "serial", "technics__name")
     autocomplete_fields = ("technics",)

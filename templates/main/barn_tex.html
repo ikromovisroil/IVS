@@ -121,11 +121,35 @@
                       <th scope="row">
                         {{ row_start|add:forloop.counter0 }}
                       </th>
-                      <td>{{ tex.name|default:"-" }}</td>
-                      <td>{{ tex.inventory|default:"-" }}</td>
-                      <td>{{ tex.serial|default:"-" }}</td>
+                      <td>{{ tex.name|default:"-" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                          {% for et in tex.extratechnics_set.all %}
+                          <br><i>{{ et.name|default:"-" }}</i>
+                          {% endfor %}
+                          </span>
+                      </td>
+                      <td>{{ tex.inventory|default:"-" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                          {% for et in tex.extratechnics_set.all %}
+                          <br><i>{{ et.inventory|default:"-" }}</i>
+                          {% endfor %}
+                          </span>
+                      </td>
+                      <td>{{ tex.serial|default:"-" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                          {% for et in tex.extratechnics_set.all %}
+                          <br><i>{{ et.inventory|default:"-" }}</i>
+                          {% endfor %}
+                          </span>
+                      </td>
                       <td>{{ tex.mac|default:"-" }}</td>
-                      <td>{{ tex.year|default:"-" }}</td>
+                      <td>{{ tex.year|default:"-" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                          {% for et in tex.extratechnics_set.all %}
+                          <br><i>{{ et.inventory|default:"-" }}</i>
+                          {% endfor %}
+                          </span>
+                      </td>
                       {% if request.user.employee.rol.material_edit%}
                       <td>
                         <div class="filter">
@@ -154,8 +178,14 @@
                             </li>
                             <li>
                               <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
+                                 data-bs-toggle="modal" data-bs-target="#extratex-{{ tex.id }}">
                                 <i class="bi bi-pin-angle"></i>Qo'shimcha texnika biriktirish
+                              </a>
+                            </li>
+                            <li>
+                              <a class="dropdown-item" href="javascript:void(0)"
+                                 data-bs-toggle="modal" data-bs-target="#extratexdetach-{{ tex.id }}">
+                                <i class="bi bi-x-square"></i>Qo'shimcha texnika bekor qilish
                               </a>
                             </li>
                           </ul>
@@ -522,6 +552,134 @@
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
             <button type="submit" class="btn btn-primary">Saqlash</button>
           </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal fade" id="extratex-{{ tex.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" class="modal-content" action="{% url 'extra_tex_attach' %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Texnikani biriktirish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" name="texnika_id" value="{{ tex.id }}">
+
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Texnikalar</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="extra_tex_id" class="form-select">
+                     <option value="">— Tanlang —</option>
+                    {% for i in extratex %}
+                    <option value="{{i.id}}">{{i.name}} | {{i.inventory}} | {{i.serial}}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.name }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Biriktirish</button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+
+    <div class="modal fade" id="extratexdetach-{{ tex.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" class="modal-content" action="{% url 'extra_tex_detach' %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Texnikani biriktirish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" name="texnika_id" value="{{ tex.id }}">
+
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Qo'shimcha texnikalar</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="extra_tex_id" class="form-select">
+                     <option value="">— Tanlang —</option>
+                    {% for i in tex.extratechnics_set.all %}
+                    <option value="{{i.id}}">{{i.name}} | {{i.inventory}} | {{i.serial}}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.name }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+
         </form>
       </div>
     </div>

@@ -17,12 +17,14 @@ urlpatterns = [
     path("barn_tex/delete/", technics_delete, name="technics_delete"),
     path("barn_tex/attach/", technics_attach, name="technics_attach"),
     path("barn_tex/<int:pk>/update/", technics_update, name="technics_update"),
+    path("barn_tex/extra_tex_attach/", extra_tex_attach, name="extra_tex_attach"),
+    path("barn_tex/extra_tex_detach/", extra_tex_detach, name="extra_tex_detach"),
 
     # texnikalar
     path('extra_tex/', extra_tex, name='extra_tex'),
     path("extra_tex/create/", extra_tex_create, name="extra_tex_create"),
     path("extra_tex/delete/", extra_tex_delete, name="extra_tex_delete"),
-    path("barn_tex/attach/", extra_tex_attach, name="extra_tex_attach"),
+    path("extra_tex/attach/", extra_tex_attach, name="extra_tex_attach"),
     path("extra_tex/<int:pk>/update/", extra_tex_update, name="extra_tex_update"),
 
     # materialar

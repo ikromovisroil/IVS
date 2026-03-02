@@ -49,7 +49,7 @@
                   <th>Muallif</th>
                   <th>Ariza Maqsadi</th>
                   <th>Xolati</th>
-                  <th>Sana</th>
+                  <th>Yuborilgan sana</th>
                 </tr>
                 </thead>
 
@@ -324,7 +324,7 @@
                       {# ===== /MODAL ===== #}
                     </td>
 
-                    <td>{{ o.date_creat }}</td>
+                    <td>{{ o.date_creat|date:"d-m-Y H:i" }}</td>
                   </tr>
                 {% endfor %}
                 </tbody>

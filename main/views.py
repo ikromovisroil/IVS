@@ -546,7 +546,7 @@ def barn_tex(request):
         raise PermissionDenied
 
     role = getattr(employee, "rol", None)
-    if not role or not role.technics:
+    if not role or not getattr(role, "technics", False):
         raise PermissionDenied
 
     status = (request.GET.get("status") or "").strip()
@@ -557,37 +557,48 @@ def barn_tex(request):
 
     has_filter = bool(status or organization_id or category_id or name)
 
-    if not has_filter:
-        qs = Technics.objects.none()
-        page_obj = Paginator(qs, 100).get_page(page_number)
+    # --- common data (har doim kerak) ---
+    organizations = Organization.objects.only("id", "name").order_by("name")
+    categories = Category.objects.only("id", "name").order_by("name")
+    technics_form = TechnicsForm()
 
-        params = request.GET.copy()
-        params.pop("page", None)
+    params = request.GET.copy()
+    params.pop("page", None)
+    qs_params = params.urlencode()
+
+    # Filter yo‘q bo‘lsa: hech narsa chiqmasin
+    if not has_filter:
+        empty_qs = Technics.objects.none()
+        page_obj = Paginator(empty_qs, 100).get_page(page_number)
 
         return render(request, "main/barn_tex.html", {
-            "organizations": Organization.objects.only("id", "name").order_by("name"),
-            "categories": Category.objects.only("id", "name").order_by("name"),
-            "technics_form": TechnicsForm(),
+            "organizations": organizations,
+            "categories": categories,
+            "technics_form": technics_form,
 
             "page_obj": page_obj,
             "technics": page_obj.object_list,
-            "qs_params": params.urlencode(),
+            "qs_params": qs_params,
             "row_start": 0,
 
+            "extratex": ExtraTechnics.objects.none(),
             "total_count": 0,
         })
 
-    # ✅ Filter bor bo‘lsa — query ishlaydi
+    # --- Technics query ---
     qs = (
-        Technics.objects.filter(is_active=True)
+        Technics.objects
+        .filter(is_active=True)
         .select_related("organization", "category", "employee")
         .order_by("-id")
     )
 
     if organization_id:
         qs = qs.filter(organization_id=organization_id)
+
     if status:
         qs = qs.filter(status=status)
+
     if category_id:
         qs = qs.filter(category_id=category_id)
 
@@ -599,28 +610,31 @@ def barn_tex(request):
             Q(year__icontains=name)
         )
 
-    # ✅ countlar faqat filter bo‘lganda
     total_count = qs.count()
+    page_obj = Paginator(qs, 100).get_page(page_number)
 
-    paginator = Paginator(qs, 100)
-    page_obj = paginator.get_page(page_number)
+    # --- ExtraTechnics: faqat organization tanlanganda chiqsin ---
+    extratex = ExtraTechnics.objects.none()
+    if organization_id:
+        extratex = ExtraTechnics.objects.filter(
+            organization_id=organization_id,
+            status="free",
+            is_active=True
+        ).order_by("-id")
 
-    params = request.GET.copy()
-    params.pop("page", None)
-
-    context = {
-        "organizations": Organization.objects.only("id", "name").order_by("name"),
-        "categories": Category.objects.only("id", "name").order_by("name"),
-        "technics_form": TechnicsForm(),
+    return render(request, "main/barn_tex.html", {
+        "organizations": organizations,
+        "categories": categories,
+        "technics_form": technics_form,
 
         "page_obj": page_obj,
         "technics": page_obj.object_list,
-        "qs_params": params.urlencode(),
+        "qs_params": qs_params,
         "row_start": page_obj.start_index() if total_count else 0,
 
+        "extratex": extratex,
         "total_count": total_count,
-    }
-    return render(request, "main/barn_tex.html", context)
+    })
 
 
 @never_cache
@@ -931,60 +945,6 @@ def extra_tex_delete(request):
 @login_required
 @require_POST
 @transaction.atomic
-def extra_tex_attach(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics_edit:
-        raise PermissionDenied
-
-    back_url = request.META.get("HTTP_REFERER", "/")
-
-    extra_tex_id = (request.POST.get("extra_tex_id") or "").strip()
-    tex_id = (request.POST.get("texnika_id") or "").strip()
-
-    if not extra_tex_id:
-        messages.error(request, "extra_tex_id kelmadi")
-        return redirect(back_url)
-
-    extra_tex = get_object_or_404(
-        ExtraTechnics.objects.select_for_update(),
-        id=int(extra_tex_id)
-    )
-
-    # Agar tex_id bo‘lsa -> biriktiramiz
-    if tex_id:
-        tex = get_object_or_404(
-            Technics.objects.select_for_update(),
-            id=int(tex_id)
-        )
-
-        # FK biriktirish (ikkalasidan bittasi yetadi)
-        extra_tex.technics = tex          # yoki: extra_tex.technics_id = tex.id
-        extra_tex.status = "active"
-        extra_tex.save(update_fields=["technics", "status"])
-
-        # tex status ham o‘zgarsin (sizning statuslaringizga moslang)
-        tex.status = "busy"   # yoki "active"
-        tex.save(update_fields=["status"])
-
-        messages.success(request, "Texnika biriktirildi")
-        return redirect(back_url)
-
-    # Agar tex_id kelmasa -> bo‘shatish (xohlasangiz)
-    extra_tex.technics = None
-    extra_tex.status = "free"
-    extra_tex.save(update_fields=["technics", "status"])
-    messages.success(request, "Texnika bo‘shatildi")
-
-    return redirect(back_url)
-
-
-@login_required
-@require_POST
-@transaction.atomic
 def extra_tex_update(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1036,6 +996,69 @@ def extra_tex_update(request, pk):
 
     messages.success(request, "Texnika tahrirlandi!")
     return redirect(back_url)
+
+
+@require_POST
+@login_required
+def extra_tex_attach(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not getattr(role, "technics", False):
+        raise PermissionDenied
+
+    texnika_id = (request.POST.get("texnika_id") or "").strip()
+    extra_tex_id = (request.POST.get("extra_tex_id") or "").strip()
+
+    if not texnika_id or not extra_tex_id:
+        messages.error(request, "Tanlash majburiy (texnika va qo‘shimcha texnika).")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    # obyektlarni olish
+    tex = get_object_or_404(Technics, id=texnika_id, is_active=True)
+    extra = get_object_or_404(ExtraTechnics, id=extra_tex_id)
+
+    # biriktirish
+    extra.technics = tex
+    extra.status = "active"
+    extra.save(update_fields=["technics", "status"])  # <-- MUHIM
+
+    messages.success(request, "Qo‘shimcha texnika muvaffaqiyatli biriktirildi.")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@require_POST
+@login_required
+def extra_tex_detach(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not getattr(role, "technics", False):
+        raise PermissionDenied
+
+    texnika_id = (request.POST.get("texnika_id") or "").strip()
+    extra_tex_id = (request.POST.get("extra_tex_id") or "").strip()
+
+    if not texnika_id or not extra_tex_id:
+        messages.error(request, "Tanlash majburiy (texnika va qo‘shimcha texnika).")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    # Asosiy texnika mavjudligini tekshiramiz
+    tex = get_object_or_404(Technics, id=texnika_id, is_active=True)
+
+    # Faqat shu texnikaga biriktirilgan extra texnikani ajratamiz
+    extra = get_object_or_404(ExtraTechnics, id=extra_tex_id, technics=tex)
+
+    extra.technics = None
+    extra.status = "free"
+    extra.save(update_fields=["technics", "status"])
+
+    messages.success(request, "Qo‘shimcha texnika bekor qilindi.")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
 @never_cache
