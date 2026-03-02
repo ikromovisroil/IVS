@@ -180,13 +180,13 @@ def sso_exchange(request):
                             deed.status_sender = "approved"
                             deed.message_sender = message or ""
                             deed.date_sender = now
-                            deed.save(update_fields=["status_sender", "message_sender", "date_edit"])
+                            deed.save(update_fields=["status_sender", "message_sender", "date_sender"])
                     else:
                         if deed.status_receiver != "approved":
                             deed.status_receiver = "approved"
                             deed.message_receiver = message or ""
                             deed.date_receiver = now
-                            deed.save(update_fields=["status_receiver", "message_receiver", "date_edit"])
+                            deed.save(update_fields=["status_receiver", "message_receiver", "date_receiver"])
 
                     is_final = (
                         (deed.receiver_id is None and deed.status_sender == "approved")
