@@ -183,35 +183,35 @@
 
                                                 <!-- ================= KELISHUVCHILAR ================= -->
                                                 {% if d.deedconsent_set.count %}
+                                                    {% for dc in d.deedconsent_set.all %}
                                                     <div class="mb-4 p-3 border rounded bg-light">
-                                                        <h5 class="fw-bold mb-2">Kelishuvchilar</h5><hr>
-                                                        {% for dc in d.deedconsent_set.all %}
-                                                            <div class="row">
-                                                                <div class="col-6"><strong>F.I.O:</strong> {{ dc.employee.full_name }}</div>
-                                                                <div class="col-3">
-                                                                    <strong>Holati:</strong>
-                                                                    {% if dc.status == 'viewed' %}
-                                                                        <span class="badge bg-warning">Kutulmoqda</span>
-                                                                    {% elif dc.status == 'approved' %}
-                                                                        <span class="badge bg-success">Tasdiqlandi</span>
-                                                                    {% elif dc.status == 'rejected' %}
-                                                                        <span class="badge bg-danger">Rad etildi</span>
-                                                                    {% endif %}
-                                                                </div>
-                                                                <div class="col-3"><strong>Sana:</strong>
-                                                                    {% if dc.status == 'approved' or dc.status == 'rejected' %}
-                                                                    {{ dc.date_edit|date:"d.m.Y H:i" }}
-                                                                    {% endif %}
-                                                                </div>
+                                                        <h5 class="fw-bold mb-2">Kelishuvchi {{dc.employee.organization.name}} vakili</h5><hr>
+                                                        <div class="row">
+                                                            <div class="col-6"><strong>F.I.O:</strong> {{ dc.employee.full_name }}</div>
+                                                            <div class="col-3">
+                                                                <strong>Holati:</strong>
+                                                                {% if dc.status == 'viewed' %}
+                                                                    <span class="badge bg-warning">Kutulmoqda</span>
+                                                                {% elif dc.status == 'approved' %}
+                                                                    <span class="badge bg-success">Tasdiqlandi</span>
+                                                                {% elif dc.status == 'rejected' %}
+                                                                    <span class="badge bg-danger">Rad etildi</span>
+                                                                {% endif %}
                                                             </div>
-                                                            {% if dc.message %}
-                                                                <div class="mt-2">
-                                                                    <strong>Izoh:</strong>
-                                                                    <span class="text-muted">{{ dc.message }}</span>
-                                                                </div>
-                                                            {% endif %}<hr>
-                                                        {% endfor %}
+                                                            <div class="col-3"><strong>Sana:</strong>
+                                                                {% if dc.status == 'approved' or dc.status == 'rejected' %}
+                                                                {{ dc.date_edit|date:"d.m.Y H:i" }}
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        {% if dc.message %}
+                                                            <div class="mt-2">
+                                                                <strong>Izoh:</strong>
+                                                                <span class="text-muted">{{ dc.message }}</span>
+                                                            </div>
+                                                        {% endif %}<hr>
                                                     </div>
+                                                    {% endfor %}
                                                 {% endif %}
                                             </div>
                                         </div>
