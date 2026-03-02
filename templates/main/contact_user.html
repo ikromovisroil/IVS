@@ -184,7 +184,10 @@
                                                         <h5 class="fw-bold mb-2">Kelishuvchilar</h5><hr>
                                                         {% for dc in d.deedconsent_set.all %}
                                                             <div class="row">
-                                                                <div class="col-6"><strong>F.I.O:</strong> {{ dc.employee.full_name }}</div>
+                                                                <div class="col-6">
+                                                                    <span>{{dc.organization.name}} vakili</span><br>
+                                                                    <strong>F.I.O:</strong> {{ dc.employee.full_name }}
+                                                                </div>
                                                                 <div class="col-3">
                                                                     <strong>Holati:</strong>
                                                                     {% if dc.status == 'viewed' %}
