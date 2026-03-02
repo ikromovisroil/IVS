@@ -793,6 +793,253 @@ def technics_update(request, pk):
 
 @never_cache
 @login_required
+def extra_tex(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not role.technics:
+        raise PermissionDenied
+
+    status = (request.GET.get("status") or "").strip()
+    organization_id = (request.GET.get("organization") or "").strip()
+    name = (request.GET.get("name") or "").strip()
+    page_number = request.GET.get("page", 1)
+
+    has_filter = bool(status or organization_id or name)
+
+    if not has_filter:
+        qs = ExtraTechnics.objects.none()
+        page_obj = Paginator(qs, 100).get_page(page_number)
+
+        params = request.GET.copy()
+        params.pop("page", None)
+
+        return render(request, "main/extra_tex.html", {
+            "organizations": Organization.objects.only("id", "name").order_by("name"),
+            "technics_form": ExtraTechnicsForm(),
+
+            "page_obj": page_obj,
+            "technics": page_obj.object_list,
+            "qs_params": params.urlencode(),
+            "row_start": 0,
+
+            "total_count": 0,
+        })
+
+    # ✅ Filter bor bo‘lsa — query ishlaydi
+    qs = (
+        ExtraTechnics.objects.filter(is_active=True)
+        .select_related("organization")
+        .order_by("-id")
+    )
+
+    if organization_id:
+        qs = qs.filter(organization_id=organization_id)
+    if status:
+        qs = qs.filter(status=status)
+
+    if name:
+        qs = qs.filter(
+            Q(name__icontains=name) |
+            Q(inventory__icontains=name) |
+            Q(serial__icontains=name) |
+            Q(year__icontains=name)
+        )
+
+    # ✅ countlar faqat filter bo‘lganda
+    total_count = qs.count()
+
+    paginator = Paginator(qs, 100)
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
+    context = {
+        "organizations": Organization.objects.only("id", "name").order_by("name"),
+        "technics_form": ExtraTechnicsForm(),
+
+        "page_obj": page_obj,
+        "technics": page_obj.object_list,
+        "qs_params": params.urlencode(),
+        "row_start": page_obj.start_index() if total_count else 0,
+
+        "total_count": total_count,
+    }
+    return render(request, "main/extra_tex.html", context)
+
+
+@never_cache
+@login_required
+@require_POST
+def extra_tex_create(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not role.technics:
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    form = ExtraTechnicsForm(request.POST)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Texnika qo‘shildi")
+    else:
+        messages.error(request, "Maʼlumotlarda xatolik bor")
+
+    return redirect(back_url)
+
+
+@never_cache
+@login_required
+@require_POST
+@transaction.atomic
+def extra_tex_delete(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not role.technics_edit:
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+    tex_id = request.POST.get("texnika_id")
+
+    try:
+        tex = ExtraTechnics.objects.select_for_update().get(pk=int(tex_id))
+    except (Technics.DoesNotExist, TypeError, ValueError):
+        messages.info(request, "Texnika topilmadi")
+        return redirect(back_url)
+
+    if not tex.is_active:
+        messages.info(request, "Texnika allaqachon o‘chirilgan")
+        return redirect(back_url)
+
+    tex.is_active = False
+    tex.save(update_fields=["is_active"])
+
+    messages.success(request, "Texnika muvaffaqiyatli o‘chirildi")
+    return redirect(back_url)
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def extra_tex_attach(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not role.technics_edit:
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    extra_tex_id = (request.POST.get("extra_tex_id") or "").strip()
+    tex_id = (request.POST.get("texnika_id") or "").strip()
+
+    if not extra_tex_id:
+        messages.error(request, "extra_tex_id kelmadi")
+        return redirect(back_url)
+
+    extra_tex = get_object_or_404(
+        ExtraTechnics.objects.select_for_update(),
+        id=int(extra_tex_id)
+    )
+
+    # Agar tex_id bo‘lsa -> biriktiramiz
+    if tex_id:
+        tex = get_object_or_404(
+            Technics.objects.select_for_update(),
+            id=int(tex_id)
+        )
+
+        # FK biriktirish (ikkalasidan bittasi yetadi)
+        extra_tex.technics = tex          # yoki: extra_tex.technics_id = tex.id
+        extra_tex.status = "active"
+        extra_tex.save(update_fields=["technics", "status"])
+
+        # tex status ham o‘zgarsin (sizning statuslaringizga moslang)
+        tex.status = "busy"   # yoki "active"
+        tex.save(update_fields=["status"])
+
+        messages.success(request, "Texnika biriktirildi")
+        return redirect(back_url)
+
+    # Agar tex_id kelmasa -> bo‘shatish (xohlasangiz)
+    extra_tex.technics = None
+    extra_tex.status = "free"
+    extra_tex.save(update_fields=["technics", "status"])
+    messages.success(request, "Texnika bo‘shatildi")
+
+    return redirect(back_url)
+
+
+@login_required
+@require_POST
+@transaction.atomic
+def extra_tex_update(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    role = getattr(employee, "rol", None)
+    if not role or not role.technics_edit:  # faqat omborchi o‘chirishi mumkin
+        raise PermissionDenied
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    # 🔒 lock (parallel update muammosi bo‘lmasin)
+    tex = get_object_or_404(ExtraTechnics.objects.select_for_update(), pk=pk)
+
+    organization_id = (request.POST.get("organization") or "").strip()
+
+    if organization_id:
+        if not organization_id.isdigit():
+            messages.error(request, "Tashkilot noto‘g‘ri")
+            return redirect(back_url)
+        tex.organization = get_object_or_404(Organization, pk=int(organization_id))
+    else:
+        tex.organization = None
+
+    # Oddiy maydonlar
+    tex.name = (request.POST.get("name") or "").strip()
+    tex.parametr = (request.POST.get("parametr") or "").strip()
+    tex.inventory = (request.POST.get("inventory") or "").strip()
+    tex.serial = (request.POST.get("serial") or "").strip()
+    tex.year = (request.POST.get("year") or "").strip()
+
+    # 💰 Price: 14.45 yoki 14,45 ni qabul qiladi
+    raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
+    raw_price = raw_price.replace(",", ".")  # 14,45 -> 14.45
+
+    try:
+        tex.price = Decimal(raw_price) if raw_price else Decimal("0")
+        if tex.price < 0:
+            raise InvalidOperation
+    except (InvalidOperation, ValueError):
+        messages.error(request, "Narx noto‘g‘ri kiritildi (misol: 14.45 yoki 14,45)")
+        return redirect(back_url)
+
+    # 💾 Minimal saqlash
+    tex.save(update_fields=[
+        "organization",
+        "name", "parametr", "inventory", "serial", "year", "price"
+    ])
+
+    messages.success(request, "Texnika tahrirlandi!")
+    return redirect(back_url)
+
+
+@never_cache
+@login_required
 def barn_mat(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

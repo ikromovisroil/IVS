@@ -41,8 +41,7 @@
                   <table class="table table-bordered table-hover">
                     <thead class="table-secondary">
                         <tr>
-                            <th>Imzolovchi xodim</th>
-                            <th>Imzolovchi vakil</th>
+                            <th>Imzolovchi</th>
                             <th>Sana</th>
                             <th>Fayllar</th>
                             <th>Xolati</th>
@@ -52,8 +51,12 @@
                     <tbody>
                     {% for d in deed_consent %}
                         <tr>
-                            <td>{{ d.sender.full_name }}</td>
-                            <td>{{ d.receiver.full_name }}</td>
+                            <td>
+                                {{ d.sender.full_name }}
+                                {% if receiver %}<br>
+                                {{ d.receiver.full_name }}
+                                {% endif %}
+                            </td>
                             <!-- Sana -->
                             <td>{{ d.date_creat|date:"d-m-Y H:i" }}</td>
 

@@ -66,6 +66,26 @@ class TechnicsForm(forms.ModelForm):
         }
 
 
+class ExtraTechnicsForm(forms.ModelForm):
+    class Meta:
+        model = ExtraTechnics
+        fields = [
+            "organization", "name",
+            "parametr", "inventory", "serial",
+            "year", "price"
+        ]
+        widgets = {
+            "organization": forms.Select(attrs={"class": "form-select", "required": True}),
+
+            "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
+            "parametr": forms.TextInput(attrs={"class": "form-control", "placeholder": "parametr"}),
+            "inventory": forms.TextInput(attrs={"class": "form-control", "placeholder": "inventory"}),
+            "serial": forms.TextInput(attrs={"class": "form-control", "placeholder": "serial"}),
+            "year": forms.TextInput(attrs={"class": "form-control", "placeholder": "yili"}),
+            "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "narxi"}),
+        }
+
+
 class MaterialForm(forms.ModelForm):
     class Meta:
         model = Material

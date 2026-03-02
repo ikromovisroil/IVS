@@ -10,7 +10,7 @@
 <main id="main" class="main">
 
     <div class="pagetitle">
-        <h1>Texnikalar</h1>
+        <h1>Qo'shimcha texnikalar</h1>
     </div>
 
     <!-- FILTER -->
@@ -46,19 +46,6 @@
                     </div>
 
                     <div class="col-md-3">
-                      <label for="category" class="form-label">Kategoriya</label>
-                      <select id="category" name="category" class="form-select">
-                        <option value="">Tanlang...</option>
-                        {% for c in categories %}
-                          <option value="{{ c.id }}"
-                            {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
-                            {{ c.name }}
-                          </option>
-                        {% endfor %}
-                      </select>
-                    </div>
-
-                    <div class="col-md-3">
                       <label for="name" class="form-label">Name</label>
                       <input id="name" type="text" name="name" class="form-control"
                              value="{{ request.GET.name|default:'' }}"
@@ -68,11 +55,6 @@
                     <div class="col-md-3 d-flex align-items-end">
                       <button type="submit" class="btn btn-primary w-100">Qidirish</button>
                     </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                      <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
-                    </div>
-
-
                   </form>
                 </div>
               </div>
@@ -94,7 +76,7 @@
                   </h5>
 
                   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
-                    + Texnika qo'shish
+                    + Qo'shimcah texnika qo'shish
                   </button>
                </div>
 
@@ -106,7 +88,6 @@
                     <th scope="col">Nomi</th>
                     <th scope="col">I/N</th>
                     <th scope="col">S/N</th>
-                    <th scope="col">Mac</th>
                     <th scope="col">Yili</th>
                     {% if request.user.employee.rol.material_edit%}
                     <th scope="col">Tafsif</th>
@@ -124,7 +105,6 @@
                       <td>{{ tex.name|default:"-" }}</td>
                       <td>{{ tex.inventory|default:"-" }}</td>
                       <td>{{ tex.serial|default:"-" }}</td>
-                      <td>{{ tex.mac|default:"-" }}</td>
                       <td>{{ tex.year|default:"-" }}</td>
                       {% if request.user.employee.rol.material_edit%}
                       <td>
@@ -144,18 +124,6 @@
                               <a class="dropdown-item" href="javascript:void(0)"
                                  data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">
                                 <i class="bi bi-brush"></i> Tahrirlash
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
-                                <i class="bi bi-paperclip"></i> Biriktirish
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
-                                <i class="bi bi-pin-angle"></i>Qo'shimcha texnika biriktirish
                               </a>
                             </li>
                           </ul>
@@ -215,20 +183,13 @@
     <!-- TEXNIKA CREATE MODAL -->
     <div class="modal fade" id="verticalycentered" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form class="modal-content" method="post" action="{% url 'technics_create' %}">
+        <form class="modal-content" method="post" action="{% url 'extra_tex_create' %}">
           {% csrf_token %}
           <div class="modal-header">
             <h5 class="modal-title">Texnika qo‘shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.category }}
-              </div>
-            </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
               <div class="col-md-8 col-lg-9">
@@ -265,20 +226,6 @@
             </div>
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Mac</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.mac }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Ip</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.ip }}
-              </div>
-            </div>
-
-            <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
               <div class="col-md-8 col-lg-9">
                 {{ technics_form.year }}
@@ -304,7 +251,7 @@
     {% for tex in technics %}
     <div class="modal fade" id="texdel-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form method="post" class="modal-content" action="{% url 'technics_delete' %}">
+        <form method="post" class="modal-content" action="{% url 'extra_tex_delete' %}">
           {% csrf_token %}
 
           <div class="modal-header">
@@ -355,72 +302,9 @@
       </div>
     </div>
 
-    <div class="modal fade" id="texbir-{{ tex.id }}" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form method="post" class="modal-content" action="{% url 'technics_attach' %}">
-          {% csrf_token %}
-
-          <div class="modal-header">
-            <h5 class="modal-title">Texnikani biriktirish</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-
-          <div class="modal-body">
-            <input type="hidden" name="texnika_id" value="{{ tex.id }}">
-
-            <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
-                <div class="col-md-8 col-lg-9">
-                  <select name="employee_id"
-                          class="form-select employee-select"
-                          data-selected="{{ tex.employee_id|default:'' }}">
-                    <option value="">— Tanlang —</option>
-                  </select>
-                </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
-              <div class="col-md-8 col-lg-9">
-                <input type="text" class="form-control" value="{{ tex.name }}" disabled>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
-              <div class="col-md-8 col-lg-9">
-                <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
-              <div class="col-md-8 col-lg-9">
-                <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
-              <div class="col-md-8 col-lg-9">
-                <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
-              </div>
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary">Biriktirish</button>
-          </div>
-
-        </form>
-      </div>
-    </div>
-
     <div class="modal fade" id="textax-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form method="post" class="modal-content" action="{% url 'technics_update' tex.id %}">
+        <form method="post" class="modal-content" action="{% url 'extra_tex_update' tex.id %}">
           {% csrf_token %}
 
           <div class="modal-header">
@@ -429,20 +313,6 @@
           </div>
 
           <div class="modal-body">
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
-              <div class="col-md-8 col-lg-9">
-                  <select name="category" class="form-select" required>
-                    <option value="">— Tanlang —</option>
-                    {% for c in categories %}
-                      <option value="{{ c.id }}" {% if tex.category_id == c.id %}selected{% endif %}>
-                        {{ c.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
-              </div>
-            </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
@@ -483,20 +353,6 @@
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">
                   <input type="text" name="serial" class="form-control" value="{{ tex.serial|default_if_none:'' }}">
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">MAC</label>
-              <div class="col-md-8 col-lg-9">
-                  <input type="text" name="mac" class="form-control" value="{{ tex.mac|default_if_none:'' }}">
-              </div>
-            </div>
-
-            <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">IP</label>
-              <div class="col-md-8 col-lg-9">
-                  <input type="text" name="ip" class="form-control" value="{{ tex.ip|default_if_none:'' }}">
               </div>
             </div>
 
@@ -586,37 +442,38 @@
     });
   });
 </script>
+
 <script>
-document.getElementById("btnExcel").addEventListener("click", async () => {
-  // Sizning formdagi select/input name lariga moslab oling:
-  const org = document.querySelector('[name="organization"]')?.value || "";
-  const category = document.querySelector('[name="category"]')?.value || "";
-  const name = document.querySelector('[name="name"]')?.value || "";
+  const SEARCH_TEX_URL = "{% url 'ajax_search_tex' %}";
 
-  const params = new URLSearchParams();
-  if (org) params.append("organization", org);
-  if (category) params.append("category", category);
-  if (name) params.append("name", name);
+  function searchTex(extraTexId) {
+    const q = document.getElementById("search-input-" + extraTexId).value.trim();
+    if (!q) return alert("Qidiruv bo‘sh!");
 
-  const url = "{% url 'export_technics_xlsx' %}?" + params.toString();
+    fetch(SEARCH_TEX_URL + "?q=" + encodeURIComponent(q))
+      .then(r => r.json())
+      .then(data => {
+        const results = data.results || [];
+        if (!results.length) {
+          document.getElementById("result-input-" + extraTexId).value = "";
+          document.getElementById("texnika-id-" + extraTexId).value = "";
+          return alert("Texnika topilmadi!");
+        }
 
-  const res = await fetch(url, { method: "GET" });
-  if (!res.ok) {
-    alert("Excel eksportda xatolik!");
-    return;
+        // 1-ta topilganini olamiz (xohlasangiz ro‘yxat qilib beraman)
+        const t = results[0];
+
+        // Ko‘rsatamiz
+        document.getElementById("result-input-" + extraTexId).value =
+          `${t.name} | inv:${t.inventory || "-"} | ser:${t.serial || "-"}`;
+
+        // MUHIM: formga texnika id yozamiz
+        document.getElementById("texnika-id-" + extraTexId).value = t.id;
+      })
+      .catch(err => {
+        console.error(err);
+        alert("Server xatolik!");
+      });
   }
-
-  const blob = await res.blob();
-  const blobUrl = window.URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = "technics.xlsx";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  window.URL.revokeObjectURL(blobUrl);
-});
 </script>
 {% endblock content %}

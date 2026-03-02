@@ -198,6 +198,33 @@ def ordermaterial_delete(request, pk):
     om.delete()
     return JsonResponse({"status": "ok"})
 
+
+
+def ajax_search_tex(request):
+    query = request.GET.get("q", "").strip()
+
+    if not query:
+        return JsonResponse({"results": []})
+
+    texs = Technics.objects.filter(
+        Q(name__icontains=query) |
+        Q(serial__icontains=query) |
+        Q(inventory__icontains=query)
+    )[:10]
+
+    data = [
+        {
+            "id": t.id,
+            "name": t.name,
+            "serial": t.serial,
+            "inventory": t.inventory,
+        }
+        for t in texs
+    ]
+
+    return JsonResponse({"results": data})
+
+
 @never_cache
 @login_required
 def ajax_akt_materials(request):

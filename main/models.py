@@ -268,6 +268,7 @@ class Technics(models.Model):
 
 
 class ExtraTechnics(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('free', "Bo'sh"),

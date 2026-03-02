@@ -13,13 +13,21 @@ urlpatterns = [
 
     #texnikalar
     path('barn_tex/', barn_tex, name='barn_tex'),
-    path("barn_tex/technics_create/", technics_create, name="technics_create"),
+    path("barn_tex/create/", technics_create, name="technics_create"),
     path("barn_tex/delete/", technics_delete, name="technics_delete"),
     path("barn_tex/attach/", technics_attach, name="technics_attach"),
     path("barn_tex/<int:pk>/update/", technics_update, name="technics_update"),
+
+    # texnikalar
+    path('extra_tex/', extra_tex, name='extra_tex'),
+    path("extra_tex/create/", extra_tex_create, name="extra_tex_create"),
+    path("extra_tex/delete/", extra_tex_delete, name="extra_tex_delete"),
+    path("barn_tex/attach/", extra_tex_attach, name="extra_tex_attach"),
+    path("extra_tex/<int:pk>/update/", extra_tex_update, name="extra_tex_update"),
+
     # materialar
     path('barn_mat/', barn_mat, name='barn_mat'),
-    path("barn_mat/material_create/", material_create, name="material_create"),
+    path("barn_mat/create/", material_create, name="material_create"),
     path("barn_mat/update/<int:pk>/", material_update, name="material_update"),
     path("barn_mat/attach/", material_attach, name="material_attach"),
     path("barn_mat/delete/", material_delete, name="material_delete"),
@@ -61,7 +69,7 @@ urlpatterns = [
     path("ajax/dep_signatory/", ajax_dep_signatory, name="ajax_dep_signatory"),
     path("ajax/dep_negotiator/", ajax_dep_negotiator, name="ajax_dep_negotiator"),
     path("ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
-
+    path("ajax/search-tex/", ajax_search_tex, name="ajax_search_tex"),
 
     # ORGANIZATION
     path('organization/<slug:slug>/', organization, name='organization'),

@@ -489,7 +489,7 @@
           <!-- Sklad -->
         {% if request.user.employee.rol.technics or request.user.employee.rol.material %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name not in 'barn_tex barn_mat' %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name not in 'barn_tex barn_mat extra_tex' %}collapsed{% endif %}"
              data-bs-target="#forms-navs" data-bs-toggle="collapse" href="#">
             <i class="bi bi-question-circle"></i>
             <span>Sklad</span>
@@ -497,13 +497,19 @@
           </a>
 
           <ul id="forms-navs"
-              class="nav-content collapse {% if url_name in 'barn_tex barn_mat' %}show{% endif %}"
+              class="nav-content collapse {% if url_name in 'barn_tex barn_mat extra_tex' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
             {% if request.user.employee.rol.technics%}
             <li>
               <a class="{% if url_name == 'barn_tex' %}active{% endif %}"
                  href="{% url 'barn_tex' %}">
                 <i class="bi bi-circle"></i><span>Texnikalar</span>
+              </a>
+            </li>
+            <li>
+              <a class="{% if url_name == 'extra_tex' %}active{% endif %}"
+                 href="{% url 'extra_tex' %}">
+                <i class="bi bi-circle"></i><span>Qo'shimcha texnikalar</span>
               </a>
             </li>
             {% endif %}
