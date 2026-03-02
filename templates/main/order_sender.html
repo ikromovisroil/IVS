@@ -101,10 +101,10 @@
                         <td>
                             {% if o.status == "viewed" %}
                                 <i class="bi bi-clock me-1 text-warning"></i>
-                                <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Kutulmoqda</span>
+                                <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Yangi</span>
                             {% elif o.status == "accepted" %}
                                 <i class="bi bi-check2-circle me-1 text-primary"></i>
-                                <span type="button" class="badge bg-primary text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Qabul qilindi</span>
+                                <span type="button" class="badge bg-primary text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Jarayonda</span>
                             {% elif o.status == "finished" %}
                                 <i class="bi bi-flag me-1 text-info"></i>
                                 <span type="button" class="badge bg-info text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Yakunlandi</span>

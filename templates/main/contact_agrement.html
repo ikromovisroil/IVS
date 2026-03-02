@@ -199,7 +199,11 @@
                                                                         <span class="badge bg-danger">Rad etildi</span>
                                                                     {% endif %}
                                                                 </div>
-                                                                <div class="col-3"><strong>Sana:</strong> {{ dc.date_edit|date:"d.m.Y H:i" }}</div>
+                                                                <div class="col-3"><strong>Sana:</strong>
+                                                                    {% if dc.status == 'approved' or dc.status == 'rejected' %}
+                                                                    {{ dc.date_edit|date:"d.m.Y H:i" }}
+                                                                    {% endif %}
+                                                                </div>
                                                             </div>
                                                             {% if dc.message %}
                                                                 <div class="mt-2">
