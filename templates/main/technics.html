@@ -144,9 +144,11 @@
                           {{ t.name }}
                         {% endif %}
 
-                        {% for et in t.extratechnics_set.all %}
-                          <br>{{ et.name }}
-                        {% endfor %}
+                        <span class="text-secondary small ps-4 ms-2 mt-1">
+                          {% for et in t.extratechnics_set.all %}
+                          <br><i>{{ et.name|default:"-" }}</i>
+                          {% endfor %}
+                        </span>
 
                         {% if not forloop.last %}
                           <hr class="my-1">
@@ -158,9 +160,11 @@
                     <td>
                       {% for t in techs %}
                         {{ t.inventory|default:"-" }}
-                        {% for et in t.extratechnics_set.all %}
-                          <br>{{ et.inventory|default:"-" }}
-                        {% endfor %}
+                        <span class="text-secondary small ps-4 ms-2 mt-1">
+                          {% for et in t.extratechnics_set.all %}
+                          <br><i>{{ et.inventory|default:"-" }}</i>
+                          {% endfor %}
+                        </span>
                         {% if not forloop.last %}<hr class="my-1">{% endif %}
                       {% endfor %}
                     </td>
@@ -169,9 +173,11 @@
                     <td>
                       {% for t in techs %}
                         {{ t.serial|default:"-" }}
-                        {% for et in t.extratechnics_set.all %}
-                          <br>{{ et.serial|default:"-" }}
-                        {% endfor %}
+                        <span class="text-secondary small ps-4 ms-2 mt-1">
+                          {% for et in t.extratechnics_set.all %}
+                          <br><i>{{ et.serial|default:"-" }}</i>
+                          {% endfor %}
+                        </span>
                         {% if not forloop.last %}<hr class="my-1">{% endif %}
                       {% endfor %}
                     </td>
@@ -180,9 +186,6 @@
                     <td>
                       {% for t in techs %}
                         {{ t.mac|default:"-" }}
-                        {% for et in t.extratechnics_set.all %}
-                          <br>{{ et.mac|default:"-" }}
-                        {% endfor %}
                         {% if not forloop.last %}<hr class="my-1">{% endif %}
                       {% endfor %}
                     </td>
