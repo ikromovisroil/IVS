@@ -1409,23 +1409,23 @@ def technics(request, slug=None):
     # id larni isdigit bilan tekshirib olamiz (xavfsiz)
     if org_id and org_id.isdigit():
         qs = qs.filter(
-            Q(employee__isnull=False, employee__organization_id=org_id) |
+            Q(employee__isnull=False, employee__organization_id=org_id),
             Q(employee__isnull=True, organization_id=org_id)
         )
     if dep_id and dep_id.isdigit():
         qs = qs.filter(
-            Q(employee__isnull=False, employee__department_id=dep_id) |
+            Q(employee__isnull=False, employee__department_id=dep_id),
             Q(employee__isnull=True, department_id=dep_id)
         )
     if dir_id and dir_id.isdigit():
         qs = qs.filter(
-            Q(employee__isnull=False, employee__directorate_id=dir_id) |
+            Q(employee__isnull=False, employee__directorate_id=dir_id),
             Q(employee__isnull=True, directorate_id=dir_id)
         )
     if div_id and div_id.isdigit():
         qs = qs.filter(
-            Q(employee__isnull=False, employee__division_id=div_id) |
-            Q(employee__isnull=True, division_id=div_id)
+            Q(employee__isnull=False, employee__division_id=dep_id),
+            Q(employee__isnull=True, division_id=dep_id)
         )
 
     filtered_count = qs.count()
