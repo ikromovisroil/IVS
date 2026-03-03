@@ -1400,6 +1400,7 @@ def technics(request, slug=None):
             "employee__directorate_id",
             "employee__division_id",
         )
+        .order_by("employee__rank__id")
     )
 
     if category:
@@ -1407,13 +1408,25 @@ def technics(request, slug=None):
 
     # id larni isdigit bilan tekshirib olamiz (xavfsiz)
     if org_id and org_id.isdigit():
-        qs = qs.filter(employee__organization_id=int(org_id))
+        qs = qs.filter(
+            Q(employee__isnull=False, employee__organization_id=org_id) |
+            Q(employee__isnull=True, organization_id=org_id)
+        )
     if dep_id and dep_id.isdigit():
-        qs = qs.filter(employee__department_id=int(dep_id))
+        qs = qs.filter(
+            Q(employee__isnull=False, employee__department_id=dep_id) |
+            Q(employee__isnull=True, department_id=dep_id)
+        )
     if dir_id and dir_id.isdigit():
-        qs = qs.filter(employee__directorate_id=int(dir_id))
+        qs = qs.filter(
+            Q(employee__isnull=False, employee__directorate_id=dir_id) |
+            Q(employee__isnull=True, directorate_id=dir_id)
+        )
     if div_id and div_id.isdigit():
-        qs = qs.filter(employee__division_id=int(div_id))
+        qs = qs.filter(
+            Q(employee__isnull=False, employee__division_id=div_id) |
+            Q(employee__isnull=True, division_id=div_id)
+        )
 
     filtered_count = qs.count()
 
