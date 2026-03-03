@@ -1429,7 +1429,7 @@ def technics(request, slug=None):
 
     filtered_count = qs.count()
 
-    ordered_qs = qs
+    ordered_qs = qs.order_by("employee__rank__id")
 
     grouped = defaultdict(list)
     for t in ordered_qs:
