@@ -246,401 +246,401 @@
 
 </main>
 
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-$(function () {
-
-  // -------------------- ESCAPE --------------------
-  function esc(s){
-    if (s === null || s === undefined) return '';
-    return String(s)
-      .replaceAll('&', '&amp;')
-      .replaceAll('<', '&lt;')
-      .replaceAll('>', '&gt;')
-      .replaceAll('"', '&quot;')
-      .replaceAll("'", '&#039;');
+(function () {
+  // Agar jQuery yuklanmagan bo'lsa - umuman ishlamaydi (xato chiqmasin)
+  if (!window.jQuery) {
+    console.error("jQuery yuklanmagan! base.html ichida jquery scriptni tekshiring.");
+    return;
   }
 
-  // -------------------- SELECT2 --------------------
-  function initSelect2(){
-    if (!$.fn.select2) return;
-    $('select.form-select').each(function(){
-      const $el = $(this);
-      if ($el.data('select2')) return;
-      $el.select2({
-        width: '100%',
-        placeholder: 'Tanlang...',
-        allowClear: true,
-        closeOnSelect: !($el.prop('multiple')) // multi bo‘lsa yopilmasin
-      });
-    });
-  }
-  initSelect2();
+  $(function () {
 
-  // -------------------- TINYMCE SAFE --------------------
-  function getEditor(){
-    if (!window.tinymce) return null;
-    const ed = tinymce.get('body');
-    if (!ed) return null;
-    try { ed.getBody(); } catch(e){ return null; }
-    return ed;
-  }
-
-  function setInEditor(selector, text){
-    const ed = getEditor();
-    if (!ed) return false;
-    const root = ed.getBody();
-    const el = root.querySelector(selector);
-    if (!el) return false;
-    el.textContent = text;
-    ed.nodeChanged();
-    return true;
-  }
-
-  function setAllInEditor(selector, text){
-    const ed = getEditor();
-    if (!ed) return false;
-    const root = ed.getBody();
-    const els = root.querySelectorAll(selector);
-    if (!els || !els.length) return false;
-    els.forEach(el => el.textContent = text);
-    ed.nodeChanged();
-    return true;
-  }
-
-  function setTbodyHtml(tbodyId, html){
-    const ed = getEditor();
-    if (!ed) return false;
-    const root = ed.getBody();
-    const tb = root.querySelector('#' + tbodyId);
-    if (!tb) return false;
-    tb.innerHTML = html;
-    ed.nodeChanged();
-    return true;
-  }
-
-  // -------------------- BUGUNGI SANA --------------------
-  function todayStr(){
-    const now = new Date();
-    const dd = String(now.getDate()).padStart(2,'0');
-    const mm = String(now.getMonth()+1).padStart(2,'0');
-    const yyyy = now.getFullYear();
-    return `${dd}.${mm}.${yyyy} y`;
-  }
-
-  function applyTodayDate(){
-    const d = todayStr();
-    setAllInEditor('#doc_date, #doc_date2', d);
-  }
-
-  (function waitEditorAndSetDate(){
-    let tries = 0;
-    const t = setInterval(function(){
-      tries++;
-      if (getEditor() || tries > 50){ // ~5s
-        clearInterval(t);
-        applyTodayDate();
-      }
-    }, 100);
-  })();
-
-  // -------------------- ORG/DEP/CHORAK -> TINYMCE --------------------
-  function applyOrgToEditor(orgText){
-    const ed = getEditor();
-    if (!ed) return;
-    const root = ed.getBody();
-    // sizda org_id 2 marta ishlatilgan, shuning uchun hammasini yangilaymiz
-    root.querySelectorAll('#org_id').forEach(el => el.textContent = orgText);
-    ed.nodeChanged();
-  }
-
-  function applyDepToEditor(depText){
-    setInEditor('#dep_id', depText);
-    setInEditor('#dep_id2', depText);
-  }
-
-  function applyChorakToEditor(q){
-    setInEditor('#chorak', q || '');
-  }
-
-  // -------------------- ORG -> DEP --------------------
-  function loadDepartments(orgId, selectedDepId=null){
-    const $dep = $('#department');
-
-    $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
-    initSelect2();
-
-    if(!orgId){
-      $dep.html('<option value="">Tanlang...</option>').trigger('change.select2');
-      initSelect2();
-      return;
+    // -------------------- ESCAPE --------------------
+    function esc(s){
+      if (s === null || s === undefined) return '';
+      return String(s)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
     }
 
-    $.ajax({
-      url: "{% url 'ajax_load_departments' %}",
-      method: "GET",
-      dataType: "json",
-      data: { organization: orgId },
-      success: function(deps){
-        let opt = '<option value="">Tanlang...</option>';
-        (deps || []).forEach(d => {
-          const sel = (selectedDepId && String(d.id) === String(selectedDepId)) ? 'selected' : '';
-          opt += `<option value="${d.id}" ${sel}>${esc(d.name)}</option>`;
+    // -------------------- SELECT2 INIT (select2.js bor bo‘lsa shuni ishlatadi) --------------------
+    function safeInitSelect2(ctx){
+      // Sizda static/js/select2.js bor: window.initSelect2 e'lon qilingan
+      if (typeof window.initSelect2 === "function") {
+        window.initSelect2(ctx || document);
+        return;
+      }
+
+      // fallback: agar select2.js ulangan bo‘lmasa ham, oddiy init
+      if (!$.fn.select2) return;
+      $('select.form-select').each(function(){
+        const $el = $(this);
+        if ($el.data('select2')) return;
+        $el.select2({
+          width: '100%',
+          placeholder: 'Tanlang...',
+          allowClear: true,
+          closeOnSelect: !($el.prop('multiple'))
         });
-        $dep.html(opt).trigger('change.select2');
-        initSelect2();
+      });
+    }
+    safeInitSelect2(document);
 
-        if (selectedDepId){
-          const depText = $dep.find('option:selected').text() || '';
-          if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
+    // -------------------- TINYMCE SAFE --------------------
+    function getEditor(){
+      if (!window.tinymce) return null;
+      const ed = tinymce.get('body');
+      if (!ed) return null;
+      try { ed.getBody(); } catch(e){ return null; }
+      return ed;
+    }
+
+    function setInEditor(selector, text){
+      const ed = getEditor();
+      if (!ed) return false;
+      const root = ed.getBody();
+      const el = root.querySelector(selector);
+      if (!el) return false;
+      el.textContent = text;
+      ed.nodeChanged();
+      return true;
+    }
+
+    function setAllInEditor(selector, text){
+      const ed = getEditor();
+      if (!ed) return false;
+      const root = ed.getBody();
+      const els = root.querySelectorAll(selector);
+      if (!els || !els.length) return false;
+      els.forEach(el => el.textContent = text);
+      ed.nodeChanged();
+      return true;
+    }
+
+    function setTbodyHtml(tbodyId, html){
+      const ed = getEditor();
+      if (!ed) return false;
+      const root = ed.getBody();
+      const tb = root.querySelector('#' + tbodyId);
+      if (!tb) return false;
+      tb.innerHTML = html;
+      ed.nodeChanged();
+      return true;
+    }
+
+    // -------------------- BUGUNGI SANA --------------------
+    function todayStr(){
+      const now = new Date();
+      const dd = String(now.getDate()).padStart(2,'0');
+      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const yyyy = now.getFullYear();
+      return `${dd}.${mm}.${yyyy} y`;
+    }
+
+    function applyTodayDate(){
+      const d = todayStr();
+      setAllInEditor('#doc_date, #doc_date2', d);
+    }
+
+    (function waitEditorAndSetDate(){
+      let tries = 0;
+      const t = setInterval(function(){
+        tries++;
+        if (getEditor() || tries > 80){ // ~8s
+          clearInterval(t);
+          applyTodayDate();
         }
-      },
-      error: function(){
-        $dep.html('<option value="">Xatolik (dep yuklanmadi)</option>').trigger('change.select2');
-        initSelect2();
+      }, 100);
+    })();
+
+    // -------------------- ORG/DEP/CHORAK -> TINYMCE --------------------
+    function applyOrgToEditor(orgText){
+      const ed = getEditor();
+      if (!ed) return;
+      const root = ed.getBody();
+      root.querySelectorAll('#org_id').forEach(el => el.textContent = orgText);
+      ed.nodeChanged();
+    }
+
+    function applyDepToEditor(depText){
+      setInEditor('#dep_id', depText);
+      setInEditor('#dep_id2', depText);
+    }
+
+    function applyChorakToEditor(q){
+      setInEditor('#chorak', q || '');
+    }
+
+    // -------------------- ORG -> DEP --------------------
+    function loadDepartments(orgId, selectedDepId=null){
+      const $dep = $('#department');
+
+      $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+      safeInitSelect2(document);
+
+      if(!orgId){
+        $dep.html('<option value="">Tanlang...</option>').trigger('change.select2');
+        safeInitSelect2(document);
+        return;
       }
-    });
-  }
 
-  // -------------------- EMP SELECT FILL HELPER --------------------
-  function fillEmployeeSelect($sel, list, selectedId=null, allowEmpty=true, keepSelected=false){
-    let currentSelected = [];
-    if (keepSelected){
-      currentSelected = ($sel.val() || []).map(String);
+      $.ajax({
+        url: "{% url 'ajax_load_departments' %}",
+        method: "GET",
+        dataType: "json",
+        data: { organization: orgId },
+        success: function(deps){
+          let opt = '<option value="">Tanlang...</option>';
+          (deps || []).forEach(d => {
+            const sel = (selectedDepId && String(d.id) === String(selectedDepId)) ? 'selected' : '';
+            opt += `<option value="${d.id}" ${sel}>${esc(d.name)}</option>`;
+          });
+          $dep.html(opt).trigger('change.select2');
+          safeInitSelect2(document);
+
+          if (selectedDepId){
+            const depText = $dep.find('option:selected').text() || '';
+            if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
+          }
+        },
+        error: function(xhr){
+          console.log("departments ajax error:", xhr.status, xhr.responseText);
+          $dep.html('<option value="">Xatolik (dep yuklanmadi)</option>').trigger('change.select2');
+          safeInitSelect2(document);
+        }
+      });
     }
 
-    let opt = allowEmpty ? '<option value="">Tanlang...</option>' : '';
-    (list || []).forEach(emp => {
-      const idStr = String(emp.id);
-      const sel1 = (selectedId && idStr === String(selectedId)) ? 'selected' : '';
-      const sel2 = (keepSelected && currentSelected.includes(idStr)) ? 'selected' : '';
-      const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-      opt += `<option value="${emp.id}" ${sel1 || sel2}>${esc(label)}</option>`;
-    });
-
-    $sel.html(opt).trigger('change.select2');
-    initSelect2();
-  }
-
-  // -------------------- DEP -> RECEIVER --------------------
-  function loadReceiverByDepartment(depId){
-    const $receiver = $('#receiver');
-
-    $receiver.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
-    initSelect2();
-
-    if(!depId){
-      $receiver.html('<option value="">Tanlang...</option>').trigger('change.select2');
-      initSelect2();
-      return;
-    }
-
-    $.ajax({
-      url: "{% url 'ajax_dep_signatory' %}",
-      method: "GET",
-      dataType: "json",
-      data: { department: depId },
-      success: function(list){
-        fillEmployeeSelect($receiver, list, null, true, false);
-      },
-      error: function(xhr){
-        console.log("receiver ajax error:", xhr.status, xhr.responseText);
-        $receiver.html('<option value="">Xatolik</option>').trigger('change.select2');
-        initSelect2();
+    // -------------------- EMP SELECT FILL HELPER --------------------
+    function fillEmployeeSelect($sel, list, selectedId=null, allowEmpty=true, keepSelected=false){
+      let currentSelected = [];
+      if (keepSelected){
+        currentSelected = ($sel.val() || []).map(String);
       }
-    });
-  }
 
-  // -------------------- DEP -> AGREEMENTS (tanlangan dep + request.user dep) --------------------
-  function loadAgreementsByDepartment(depId){
-    const $agr = $('#agreements');
+      let opt = allowEmpty ? '<option value="">Tanlang...</option>' : '';
+      (list || []).forEach(emp => {
+        const idStr = String(emp.id);
+        const sel1 = (selectedId && idStr === String(selectedId)) ? 'selected' : '';
+        const sel2 = (keepSelected && currentSelected.includes(idStr)) ? 'selected' : '';
+        const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+        opt += `<option value="${emp.id}" ${sel1 || sel2}>${esc(label)}</option>`;
+      });
 
-    // multi select => yuklanmoqda
-    $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
-    initSelect2();
-
-    if(!depId){
-      $agr.html('').trigger('change.select2'); // multi select bo‘sh
-      initSelect2();
-      return;
+      $sel.html(opt).trigger('change.select2');
+      safeInitSelect2(document);
     }
 
-    $.ajax({
-      url: "{% url 'ajax_dep_negotiator' %}",
-      method: "GET",
-      dataType: "json",
-      data: { department: depId },
-      success: function(list){
-        // keepSelected=true => oldin tanlangan agreements yo‘qolib ketmaydi
-        fillEmployeeSelect($agr, list, null, false, true);
-      },
-      error: function(xhr){
-        console.log("agreements ajax error:", xhr.status, xhr.responseText);
+    // -------------------- DEP -> RECEIVER --------------------
+    function loadReceiverByDepartment(depId){
+      const $receiver = $('#receiver');
+
+      $receiver.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+      safeInitSelect2(document);
+
+      if(!depId){
+        $receiver.html('<option value="">Tanlang...</option>').trigger('change.select2');
+        safeInitSelect2(document);
+        return;
+      }
+
+      $.ajax({
+        url: "{% url 'ajax_dep_signatory' %}",
+        method: "GET",
+        dataType: "json",
+        data: { department: depId },
+        success: function(list){
+          fillEmployeeSelect($receiver, list, null, true, false);
+        },
+        error: function(xhr){
+          console.log("receiver ajax error:", xhr.status, xhr.responseText);
+          $receiver.html('<option value="">Xatolik</option>').trigger('change.select2');
+          safeInitSelect2(document);
+        }
+      });
+    }
+
+    // -------------------- DEP -> AGREEMENTS --------------------
+    function loadAgreementsByDepartment(depId){
+      const $agr = $('#agreements');
+
+      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
+      safeInitSelect2(document);
+
+      if(!depId){
         $agr.html('').trigger('change.select2');
-        initSelect2();
+        safeInitSelect2(document);
+        return;
       }
-    });
-  }
 
-  // -------------------- TEXNIKALAR -> TINYMCE JADVAL --------------------
-  function fillPc(items){
-    let rows = `
-      <tr>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami:</td>
-      </tr>
-    `;
+      $.ajax({
+        url: "{% url 'ajax_dep_negotiator' %}",
+        method: "GET",
+        dataType: "json",
+        data: { department: depId },
+        success: function(list){
+          fillEmployeeSelect($agr, list, null, false, true); // keepSelected = true
+        },
+        error: function(xhr){
+          console.log("agreements ajax error:", xhr.status, xhr.responseText);
+          $agr.html('').trigger('change.select2');
+          safeInitSelect2(document);
+        }
+      });
+    }
 
-    if(!items || !items.length){
-      rows += `<tr><td colspan="4" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
+    // -------------------- TEXNIKALAR -> TINYMCE JADVAL --------------------
+    function fillPc(items){
+      let rows = `
+        <tr>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami:</td>
+        </tr>
+      `;
+
+      if(!items || !items.length){
+        rows += `<tr><td colspan="4" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
+        setTbodyHtml('pc_tbody', rows);
+        return;
+      }
+
+      items.forEach((x,i) => {
+        rows += `
+          <tr>
+            <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+            <td style="border:1px solid #000;">${esc(x.name)}</td>
+            <td style="border:1px solid #000;">${esc(x.serial)}</td>
+            <td style="border:1px solid #000;">${esc(x.inventory)}</td>
+          </tr>`;
+      });
+
       setTbodyHtml('pc_tbody', rows);
-      return;
     }
 
-    items.forEach((x,i) => {
-      rows += `
+    function fillPr(items){
+      let rows = `
         <tr>
-          <td style="border:1px solid #000;text-align:center;">${i+1}</td>
-          <td style="border:1px solid #000;">${esc(x.name)}</td>
-          <td style="border:1px solid #000;">${esc(x.serial)}</td>
-          <td style="border:1px solid #000;">${esc(x.inventory)}</td>
-        </tr>`;
-    });
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
+        </tr>
+      `;
 
-    setTbodyHtml('pc_tbody', rows);
-  }
+      if(!items || !items.length){
+        rows += `<tr><td colspan="3" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
+        setTbodyHtml('pr_tbody', rows);
+        return;
+      }
 
-  function fillPr(items){
-    let rows = `
-      <tr>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
-      </tr>
-    `;
+      items.forEach((x,i) => {
+        rows += `
+          <tr>
+            <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+            <td style="border:1px solid #000;">${esc(x.name)}</td>
+            <td style="border:1px solid #000;">${esc(x.serial)}</td>
+          </tr>`;
+      });
 
-    if(!items || !items.length){
-      rows += `<tr><td colspan="3" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
       setTbodyHtml('pr_tbody', rows);
-      return;
     }
 
-    items.forEach((x,i) => {
-      rows += `
-        <tr>
-          <td style="border:1px solid #000;text-align:center;">${i+1}</td>
-          <td style="border:1px solid #000;">${esc(x.name)}</td>
-          <td style="border:1px solid #000;">${esc(x.serial)}</td>
-        </tr>`;
-    });
+    function loadTechnicsToEditor(depId){
+      if(!depId){
+        setInEditor('#komp_count', '_');
+        setInEditor('#prin_count', '_');
+        fillPc([]);
+        fillPr([]);
+        return;
+      }
 
-    setTbodyHtml('pr_tbody', rows);
-  }
+      setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
+      setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
 
-  function loadTechnicsToEditor(depId){
-    if(!depId){
+      $.ajax({
+        url: "{% url 'ajax_document_preview' %}",
+        method: "GET",
+        dataType: "json",
+        data: { department: depId },
+        success: function(res){
+          setInEditor('#komp_count', String(res.komp_count ?? 0));
+          setInEditor('#prin_count', String(res.prin_count ?? 0));
+          fillPc(res.kompyuterlar || []);
+          fillPr(res.printerlar || []);
+        },
+        error: function(xhr){
+          let msg = "Xatolik yuz berdi";
+          try { if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error; } catch(e){}
+          setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
+        }
+      });
+    }
+
+    // -------------------- EVENTLAR --------------------
+    $('#organization').on('change', function(){
+      const orgId = $(this).val();
+      const orgText = $('#organization option:selected').text() || '';
+
+      loadDepartments(orgId);
+
+      if (orgText && orgText !== 'Tanlang...') applyOrgToEditor(orgText);
+
+      $('#receiver').html('<option value="">Tanlang...</option>').trigger('change.select2');
+      $('#agreements').html('').trigger('change.select2');
+      safeInitSelect2(document);
+
       setInEditor('#komp_count', '_');
       setInEditor('#prin_count', '_');
       fillPc([]);
       fillPr([]);
-      return;
-    }
-
-    setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
-    setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
-
-    $.ajax({
-      url: "{% url 'ajax_document_preview' %}",
-      method: "GET",
-      dataType: "json",
-      data: { department: depId },
-      success: function(res){
-        setInEditor('#komp_count', String(res.komp_count ?? 0));
-        setInEditor('#prin_count', String(res.prin_count ?? 0));
-        fillPc(res.kompyuterlar || []);
-        fillPr(res.printerlar || []);
-      },
-      error: function(xhr){
-        let msg = "Xatolik yuz berdi";
-        try { if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error; } catch(e){}
-        setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
-        setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
-      }
     });
-  }
 
-  // -------------------- EVENTLAR --------------------
-  $('#organization').on('change', function(){
-    const orgId = $(this).val();
-    const orgText = $('#organization option:selected').text() || '';
+    $('#department').on('change', function(){
+      const depId = $(this).val();
+      const depText = $('#department option:selected').text() || '';
 
-    // depni qayta yuklaymiz
-    loadDepartments(orgId);
+      if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
 
-    // editorga org nomi
-    if (orgText && orgText !== 'Tanlang...') applyOrgToEditor(orgText);
+      loadReceiverByDepartment(depId);
+      loadAgreementsByDepartment(depId);
+      loadTechnicsToEditor(depId);
+    });
 
-    // receiver reset
-    $('#receiver').html('<option value="">Tanlang...</option>').trigger('change.select2');
-    // agreements reset
-    $('#agreements').html('').trigger('change.select2');
-    initSelect2();
+    $('#rim_id').on('change', function(){
+      applyChorakToEditor($(this).val());
+    });
 
-    setInEditor('#komp_count', '_');
-    setInEditor('#prin_count', '_');
-    fillPc([]);
-    fillPr([]);
-  });
+    $('#btnSearch').on('click', function(){
+      const depId = $('#department').val();
+      if(!depId){ alert("Departmentni tanlang!"); return; }
+      loadTechnicsToEditor(depId);
+    });
 
-  $('#department').on('change', function(){
-    const depId = $(this).val();
-    const depText = $('#department option:selected').text() || '';
+    // -------------------- RESTORE --------------------
+    const initialOrg = '{{ selected_org|default:"" }}';
+    const initialDep = '{{ selected_dep|default:"" }}';
 
-    if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
+    if (initialOrg){
+      $('#organization').val(initialOrg).trigger('change');
+      loadDepartments(initialOrg, initialDep);
 
-    // ✅ receiver dep bo‘yicha
-    loadReceiverByDepartment(depId);
-
-    // ✅ agreements dep + my_dep bo‘yicha
-    loadAgreementsByDepartment(depId);
-
-    // ✅ texnikalar dep bo‘yicha
-    loadTechnicsToEditor(depId);
-  });
-
-  $('#rim_id').on('change', function(){
-    const q = $(this).val(); // I / II / III / IV
-    applyChorakToEditor(q);
-  });
-
-  $('#btnSearch').on('click', function(){
-    const depId = $('#department').val();
-    if(!depId){ alert("Departmentni tanlang!"); return; }
-    loadTechnicsToEditor(depId);
-  });
-
-  // -------------------- RESTORE (serverdan kelgan selected) --------------------
-  const initialOrg = '{{ selected_org|default:"" }}';
-  const initialDep = '{{ selected_dep|default:"" }}';
-
-  if (initialOrg){
-    $('#organization').val(initialOrg).trigger('change');
-
-    // depni selected qilib yuklaymiz
-    loadDepartments(initialOrg, initialDep);
-
-    if (initialDep){
-      setTimeout(function(){
-        $('#department').val(initialDep).trigger('change'); // bu receiver/agreements/technics ni ham chaqiradi
-      }, 300);
+      if (initialDep){
+        setTimeout(function(){
+          $('#department').val(initialDep).trigger('change');
+        }, 300);
+      }
     }
-  }
 
-});
+  });
+})();
 </script>
-
-
 {% endblock content %}
 
 {% block js %}
