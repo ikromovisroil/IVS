@@ -228,8 +228,10 @@ class Category(AutoSlugMixin, models.Model):
 # texnika.
 class Technics(models.Model):
     category = models.ForeignKey(Category, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
-    department = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    division = models.ForeignKey(Division, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('free', "Bo'sh"),
