@@ -1423,8 +1423,8 @@ def technics(request, slug=None):
         )
     if div_id and div_id.isdigit():
         qs = qs.filter(
-            Q(employee__isnull=False, employee__division_id=dep_id) |
-            Q(employee__isnull=True, division_id=dep_id)
+            Q(employee__isnull=False, employee__division_id=div_id) |
+            Q(employee__isnull=True, division_id=div_id)
         )
 
     filtered_count = qs.count()
