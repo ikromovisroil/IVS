@@ -558,8 +558,8 @@ def barn_tex(request):
     has_filter = bool(status or organization_id or category_id or name)
 
     # --- common data (har doim kerak) ---
-    organizations = Organization.objects.only("id", "name").order_by("name")
-    categories = Category.objects.only("id", "name").order_by("name")
+    organizations = Organization.objects.only("id", "name").order_by("id")
+    categories = Category.objects.only("id", "name").order_by("id")
     technics_form = TechnicsForm()
 
     params = request.GET.copy()
