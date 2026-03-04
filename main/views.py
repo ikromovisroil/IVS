@@ -1384,8 +1384,52 @@ def technics(request, slug=None):
 
     organizations = Organization.objects.only("id", "name").order_by("name")
 
-    qs = (
-        Technics.objects
+    # 1) Base QS (faqat filtrlar)
+    base_qs = Technics.objects.all()
+
+    if category:
+        base_qs = base_qs.filter(category=category)
+
+    if org_id.isdigit():
+        base_qs = base_qs.filter(
+            Q(employee__isnull=False, employee__organization_id=org_id) |
+            Q(employee__isnull=True, organization_id=org_id)
+        )
+    if dep_id.isdigit():
+        base_qs = base_qs.filter(
+            Q(employee__isnull=False, employee__department_id=dep_id) |
+            Q(employee__isnull=True, department_id=dep_id)
+        )
+    if dir_id.isdigit():
+        base_qs = base_qs.filter(
+            Q(employee__isnull=False, employee__directorate_id=dir_id) |
+            Q(employee__isnull=True, directorate_id=dir_id)
+        )
+    if div_id.isdigit():
+        base_qs = base_qs.filter(
+            Q(employee__isnull=False, employee__division_id=div_id) |
+            Q(employee__isnull=True, division_id=div_id)
+        )
+
+    filtered_count = base_qs.count()
+
+    # 2) Employee gruppalarni paginate qilish (employee_id lar bo‘yicha)
+    #    None (employee yo‘q) ham alohida gruppa bo‘lib qoladi.
+    employee_id_qs = (
+        base_qs
+        .order_by()                       # default order ni olib tashlaydi
+        .values_list("employee_id", flat=True)
+        .distinct()
+    )
+
+    paginator = Paginator(employee_id_qs, 100)  # 100 ta employee-gruppa / sahifa
+    page_obj = paginator.get_page(page_number)
+    page_employee_ids = list(page_obj.object_list)  # [1,2,None,5...]
+
+    # 3) Shu sahifadagi employee lar uchun texnikani bitta marta olib kelamiz
+    tech_qs = (
+        base_qs
+        .filter(employee_id__in=[eid for eid in page_employee_ids if eid is not None])
         .select_related("category", "employee", "employee__user", "employee__rank")
         .prefetch_related("extratechnics_set")
         .only(
@@ -1395,49 +1439,42 @@ def technics(request, slug=None):
             "employee__first_name", "employee__last_name", "employee__father_name",
             "employee__user__username",
             "employee__rank__id", "employee__rank__name",
-            "employee__organization_id",
-            "employee__department_id",
-            "employee__directorate_id",
-            "employee__division_id",
         )
+        .order_by("employee_id", "id")
     )
 
-    if category:
-        qs = qs.filter(category=category)
+    # 4) Grouping (faqat sahifadagi employee lar)
+    grouped_by_id = defaultdict(list)
+    for t in tech_qs:
+        grouped_by_id[t.employee_id].append(t)
 
-    # id larni isdigit bilan tekshirib olamiz (xavfsiz)
-    if org_id and org_id.isdigit():
-        qs = qs.filter(
-            Q(employee__isnull=False, employee__organization_id=org_id) |
-            Q(employee__isnull=True, organization_id=org_id)
+    # 5) None gruppa (employee yo‘q texnikalar) kerak bo‘lsa qo‘shamiz
+    none_techs = []
+    if None in page_employee_ids:
+        none_techs = (
+            base_qs
+            .filter(employee__isnull=True)
+            .select_related("category")
+            .prefetch_related("extratechnics_set")
+            .only("id", "name", "inventory", "serial", "ip", "mac", "year", "category__id", "category__name")
+            .order_by("id")
         )
-    if dep_id and dep_id.isdigit():
-        qs = qs.filter(
-            Q(employee__isnull=False, employee__department_id=dep_id) |
-            Q(employee__isnull=True, department_id=dep_id)
+        grouped_by_id[None] = list(none_techs)
+
+    # 6) Template uchun: (employee_obj, [technics...]) ko‘rinishiga keltiramiz
+    employee_map = {
+        e.id: e for e in (
+            Employee.objects
+            .filter(id__in=[eid for eid in page_employee_ids if eid is not None])
+            .select_related("user", "rank")
+            .only("id", "first_name", "last_name", "father_name", "user__username", "rank__id", "rank__name")
         )
-    if dir_id and dir_id.isdigit():
-        qs = qs.filter(
-            Q(employee__isnull=False, employee__directorate_id=dir_id) |
-            Q(employee__isnull=True, directorate_id=dir_id)
-        )
-    if div_id and div_id.isdigit():
-        qs = qs.filter(
-            Q(employee__isnull=False, employee__division_id=div_id) |
-            Q(employee__isnull=True, division_id=div_id)
-        )
+    }
 
-    filtered_count = qs.count()
-
-    ordered_qs = qs
-
-    grouped = defaultdict(list)
-    for t in ordered_qs:
-        grouped[t.employee].append(t)
-
-    grouped_items = list(grouped.items())
-    paginator = Paginator(grouped_items, 100)
-    page_obj = paginator.get_page(page_number)
+    grouped_items = []
+    for eid in page_employee_ids:
+        emp_obj = employee_map.get(eid) if eid is not None else None
+        grouped_items.append((emp_obj, grouped_by_id.get(eid, [])))
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -1448,7 +1485,7 @@ def technics(request, slug=None):
         "organizations": organizations,
 
         "page_obj": page_obj,
-        "grouped_technics": page_obj.object_list,
+        "grouped_technics": grouped_items,
         "qs_params": qs_params,
 
         "filtered_count": filtered_count,
