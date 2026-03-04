@@ -138,7 +138,7 @@
                       <td>{{ tex.serial|default:"-" }}
                           <span class="text-secondary small ps-4 ms-2 mt-1">
                           {% for et in tex.extratechnics_set.all %}
-                          <br><i>{{ et.inventory|default:"-" }}</i>
+                          <br><i>{{ et.serial|default:"-" }}</i>
                           {% endfor %}
                           </span>
                       </td>
@@ -146,7 +146,7 @@
                       <td>{{ tex.year|default:"-" }}
                           <span class="text-secondary small ps-4 ms-2 mt-1">
                           {% for et in tex.extratechnics_set.all %}
-                          <br><i>{{ et.inventory|default:"-" }}</i>
+                          <br><i>{{ et.year|default:"-" }}</i>
                           {% endfor %}
                           </span>
                       </td>
