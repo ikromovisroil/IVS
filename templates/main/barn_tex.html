@@ -105,8 +105,8 @@
                   <tr>
                     <th scope="col">#</th>
                     <th scope="col">Nomi</th>
-                    <th scope="col">I/N</th>
-                    <th scope="col">S/N</th>
+                    <th scope="col">I/R</th>
+                    <th scope="col">S/R</th>
                     <th scope="col">Mac</th>
                     <th scope="col">Yili</th>
                     {% if request.user.employee.rol.technics_edit %}
@@ -122,6 +122,9 @@
                       <th scope="row">
                         {{ row_start|add:forloop.counter0 }}
                       </th>
+                      <td>
+                          {{ tex.employee.full_name|default:"-" }}
+                      </td>
                       <td>{{ tex.name|default:"-" }}
                           <span class="text-secondary small ps-4 ms-2 mt-1">
                           {% for et in tex.extratechnics_set.all %}
