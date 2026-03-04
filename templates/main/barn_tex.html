@@ -108,7 +108,7 @@
                     <th scope="col">S/N</th>
                     <th scope="col">Mac</th>
                     <th scope="col">Yili</th>
-                    {% if request.user.employee.rol.material_edit%}
+                    {% if request.user.employee.rol.technics_edit %}
                     <th scope="col">Tafsif</th>
                     {% endif %}
                   </tr>
@@ -150,7 +150,7 @@
                           {% endfor %}
                           </span>
                       </td>
-                      {% if request.user.employee.rol.material_edit%}
+                      {% if request.user.employee.rol.technics_edit %}
                       <td>
                         <div class="filter">
                           <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">

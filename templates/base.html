@@ -500,7 +500,7 @@
           <ul id="forms-navs"
               class="nav-content collapse {% if url_name in 'barn_tex barn_mat extra_tex' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
-            {% if request.user.employee.rol.technics%}
+            {% if request.user.employee.rol.technics %}
             <li>
               <a class="{% if url_name == 'barn_tex' %}active{% endif %}"
                  href="{% url 'barn_tex' %}">
