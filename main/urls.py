@@ -73,9 +73,6 @@ urlpatterns = [
     path("ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
     path("ajax/search-tex/", ajax_search_tex, name="ajax_search_tex"),
 
-    # ORGANIZATION
-    path('organization/<slug:slug>/', organization, name='organization'),
-
     # DOCUMENT
     path('document/', document_get, name='document_get'),
     path('document/document_post/', document_post, name='document_post'),

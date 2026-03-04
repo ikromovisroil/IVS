@@ -549,24 +549,57 @@ def barn_tex(request):
     if not role or not getattr(role, "technics", False):
         raise PermissionDenied
 
-    status = (request.GET.get("status") or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
-    category_id = (request.GET.get("category") or "").strip()
-    name = (request.GET.get("name") or "").strip()
-    page_number = request.GET.get("page", 1)
+    department_id   = (request.GET.get("department") or "").strip()
+    directorate_id  = (request.GET.get("directorate") or "").strip()
+    division_id     = (request.GET.get("division") or "").strip()
+    status          = (request.GET.get("status") or "").strip()
+    category_id     = (request.GET.get("category") or "").strip()
+    name            = (request.GET.get("name") or "").strip()
+    page_number     = request.GET.get("page", 1)
 
-    has_filter = bool(status or organization_id or category_id or name)
+    has_filter = bool(
+        organization_id or department_id or directorate_id or division_id or
+        status or category_id or name
+    )
 
-    # --- common data (har doim kerak) ---
-    organizations = Organization.objects.only("id", "name").order_by("id")
-    categories = Category.objects.only("id", "name").order_by("id")
+    organizations = Organization.objects.only("id", "name").order_by("name")
+    categories    = Category.objects.only("id", "name").order_by("name")
     technics_form = TechnicsForm()
+
+    # ✅ Cascading selectlar: faqat tanlangan qiymatlar bo‘yicha to‘ldiramiz
+    departments = Department.objects.none()
+    if organization_id:
+        departments = (
+            Department.objects
+            .filter(organization_id=organization_id)
+            .only("id", "name")
+            .order_by("name")
+        )
+
+    directorates = Directorate.objects.none()
+    if department_id:
+        directorates = (
+            Directorate.objects
+            .filter(department_id=department_id)
+            .only("id", "name")
+            .order_by("name")
+        )
+
+    divisions = Division.objects.none()
+    if directorate_id:
+        divisions = (
+            Division.objects
+            .filter(directorate_id=directorate_id)
+            .only("id", "name")
+            .order_by("name")
+        )
 
     params = request.GET.copy()
     params.pop("page", None)
     qs_params = params.urlencode()
 
-    # Filter yo‘q bo‘lsa: hech narsa chiqmasin
+    # ✅ Filter bo‘lmasa bo‘sh sahifa (siz xohlagandek)
     if not has_filter:
         empty_qs = Technics.objects.none()
         page_obj = Paginator(empty_qs, 100).get_page(page_number)
@@ -575,6 +608,15 @@ def barn_tex(request):
             "organizations": organizations,
             "categories": categories,
             "technics_form": technics_form,
+
+            "departments": departments,
+            "directorates": directorates,
+            "divisions": divisions,
+
+            "selected_org": organization_id,
+            "selected_dep": department_id,
+            "selected_dir": directorate_id,
+            "selected_div": division_id,
 
             "page_obj": page_obj,
             "technics": page_obj.object_list,
@@ -585,47 +627,65 @@ def barn_tex(request):
             "total_count": 0,
         })
 
-    # --- Technics query ---
+    # ✅ filter bor bo‘lsa query
     qs = (
         Technics.objects
         .filter(is_active=True)
         .select_related("organization", "category", "employee")
+        .prefetch_related("extratechnics_set")
         .order_by("-id")
     )
 
     if organization_id:
         qs = qs.filter(organization_id=organization_id)
-
+    if department_id:
+        qs = qs.filter(department_id=department_id)
+    if directorate_id:
+        qs = qs.filter(directorate_id=directorate_id)
+    if division_id:
+        qs = qs.filter(division_id=division_id)
     if status:
         qs = qs.filter(status=status)
-
     if category_id:
         qs = qs.filter(category_id=category_id)
 
     if name:
         qs = qs.filter(
+            Q(employee__last_name__icontains=name) |
+            Q(employee__first_name__icontains=name) |
+            Q(employee__father_name__icontains=name) |
             Q(name__icontains=name) |
             Q(inventory__icontains=name) |
             Q(serial__icontains=name) |
-            Q(year__icontains=name)
+            Q(mac__icontains=name) |
+            Q(ip__icontains=name)
         )
 
     total_count = qs.count()
     page_obj = Paginator(qs, 100).get_page(page_number)
 
-    # --- ExtraTechnics: faqat organization tanlanganda chiqsin ---
     extratex = ExtraTechnics.objects.none()
     if organization_id:
-        extratex = ExtraTechnics.objects.filter(
-            organization_id=organization_id,
-            status="free",
-            is_active=True
-        ).order_by("-id")
+        extratex = (
+            ExtraTechnics.objects
+            .filter(organization_id=organization_id, status="free", is_active=True)
+            .only("id", "name", "inventory", "serial")
+            .order_by("-id")
+        )
 
     return render(request, "main/barn_tex.html", {
         "organizations": organizations,
         "categories": categories,
         "technics_form": technics_form,
+
+        "departments": departments,
+        "directorates": directorates,
+        "divisions": divisions,
+
+        "selected_org": organization_id,
+        "selected_dep": department_id,
+        "selected_dir": directorate_id,
+        "selected_div": division_id,
 
         "page_obj": page_obj,
         "technics": page_obj.object_list,
@@ -635,7 +695,6 @@ def barn_tex(request):
         "extratex": extratex,
         "total_count": total_count,
     })
-
 
 @never_cache
 @login_required
@@ -1496,138 +1555,6 @@ def technics(request, slug=None):
         "selected_div": div_id,
     }
     return render(request, "main/technics.html", context)
-
-
-@never_cache
-@login_required
-def organization(request, slug):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
-
-    tech_prefetch = Prefetch(
-        "technics_set",
-        queryset=(
-            Technics.objects
-            .select_related("category")
-            .only("id", "name", "serial", "inventory", "year", "category__id", "category__name")
-        ),
-        to_attr="tech_list"
-    )
-
-    # 🔷 ORG
-    org = get_object_or_404(
-        Organization.objects
-        .annotate(technics_count=Count("employee__technics", distinct=True))
-        .prefetch_related(
-            Prefetch(
-                "employee_set",
-                queryset=(
-                    Employee.objects
-                    .select_related("rank", "user")
-                    .only(
-                        "id", "first_name", "last_name", "father_name",
-                        "rank__id", "rank__name",
-                        "user__id", "user__username",
-                        "organization_id", "department_id", "directorate_id", "division_id",
-                    )
-                    .prefetch_related(tech_prefetch)
-                )
-            )
-        ),
-        slug=slug
-    )
-
-    # 🟡 DEPARTMENTS (pagination qilinadigan qism)
-    departments_qs = (
-        Department.objects
-        .filter(organization=org)
-        .select_related("organization")
-        .annotate(technics_count=Count("employee__technics", distinct=True))
-        .prefetch_related(
-            Prefetch(
-                "employee_set",
-                queryset=(
-                    Employee.objects
-                    .select_related("rank", "user")
-                    .only(
-                        "id", "first_name", "last_name", "father_name",
-                        "rank__id", "rank__name",
-                        "user__id", "user__username",
-                        "organization_id", "department_id", "directorate_id", "division_id",
-                    )
-                    .prefetch_related(tech_prefetch)
-                )
-            )
-        )
-        .order_by("id")  # ✅ barqaror pagination
-    )
-
-    page_number = request.GET.get("page", 1)
-    paginator = Paginator(departments_qs, 1)  # xohlasangiz 10/20 qiling
-    page_obj = paginator.get_page(page_number)
-
-    # 🔵 DIRECTORATES
-    directorates = (
-        Directorate.objects
-        .filter(department__organization=org)
-        .select_related("department")
-        .annotate(technics_count=Count("employee__technics", distinct=True))
-        .prefetch_related(
-            Prefetch(
-                "employee_set",
-                queryset=(
-                    Employee.objects
-                    .select_related("rank", "user")
-                    .only(
-                        "id", "first_name", "last_name", "father_name",
-                        "rank__id", "rank__name",
-                        "user__id", "user__username",
-                        "organization_id", "department_id", "directorate_id", "division_id",
-                    )
-                    .prefetch_related(tech_prefetch)
-                )
-            )
-        )
-    )
-
-    # 🟣 DIVISIONS
-    divisions = (
-        Division.objects
-        .filter(directorate__department__organization=org)
-        .select_related("directorate")
-        .annotate(technics_count=Count("employee__technics", distinct=True))
-        .prefetch_related(
-            Prefetch(
-                "employee_set",
-                queryset=(
-                    Employee.objects
-                    .select_related("rank", "user")
-                    .only(
-                        "id", "first_name", "last_name", "father_name",
-                        "rank__id", "rank__name",
-                        "user__id", "user__username",
-                        "organization_id", "department_id", "directorate_id", "division_id",
-                    )
-                    .prefetch_related(tech_prefetch)
-                )
-            )
-        )
-    )
-
-    context = {
-        "organization": org,          # nomini ham to'g'rilab qo'ydim (organizations emas)
-        "departments": page_obj,      # ✅ template’da for loop: departments
-        "page_obj": page_obj,         # ✅ pagination blok ishlashi uchun
-        "paginator": paginator,
-        "directorates": directorates,
-        "divisions": divisions,
-    }
-    return render(request, "main/organization.html", context)
 
 
 @never_cache

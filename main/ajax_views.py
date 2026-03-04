@@ -9,7 +9,8 @@ from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
+
 
 @never_cache
 @login_required
@@ -63,45 +64,36 @@ def get_department_employees(request):
 
 @never_cache
 @login_required
+@require_GET
 def ajax_load_departments(request):
-    org_id = request.GET.get('organization')
-
+    org_id = (request.GET.get("organization") or "").strip()
     if not org_id or org_id == "None":
-        return JsonResponse([], safe=False)
+        return JsonResponse({"results": []})
 
-    departments = Department.objects.filter(
-        organization_id=org_id,
-    ).values('id', 'name')
-
-    return JsonResponse(list(departments), safe=False)
+    qs = Department.objects.filter(organization_id=org_id).values("id", "name").order_by("name")
+    return JsonResponse({"results": list(qs)})
 
 @never_cache
 @login_required
+@require_GET
 def ajax_load_directorate(request):
-    dep_id = request.GET.get('department')
-
+    dep_id = (request.GET.get("department") or "").strip()
     if not dep_id or dep_id == "None":
-        return JsonResponse([], safe=False)
+        return JsonResponse({"results": []})
 
-    directorate = Directorate.objects.filter(
-        department_id=dep_id,
-    ).values('id', 'name')
-
-    return JsonResponse(list(directorate), safe=False)
+    qs = Directorate.objects.filter(department_id=dep_id).values("id", "name").order_by("name")
+    return JsonResponse({"results": list(qs)})
 
 @never_cache
 @login_required
+@require_GET
 def ajax_load_division(request):
-    dir_id = request.GET.get('directorate')
-
+    dir_id = (request.GET.get("directorate") or "").strip()
     if not dir_id or dir_id == "None":
-        return JsonResponse([], safe=False)
+        return JsonResponse({"results": []})
 
-    division = Division.objects.filter(
-        directorate_id=dir_id,
-    ).values('id', 'name')
-
-    return JsonResponse(list(division), safe=False)
+    qs = Division.objects.filter(directorate_id=dir_id).values("id", "name").order_by("name")
+    return JsonResponse({"results": list(qs)})
 
 @never_cache
 @login_required
