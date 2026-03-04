@@ -92,10 +92,11 @@
                   <h5 class="card-title mb-0">
                     Texnikalar {{ total_count }} ta</i>
                   </h5>
-
+                  {% if request.user.employee.rol.technics_edit %}
                   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
                     + Texnika qo'shish
                   </button>
+                  {% endif %}
                </div>
 
               <!-- ✅ datatable class olib tashlandi -->

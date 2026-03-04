@@ -75,9 +75,11 @@
                  </h5>
                  <h5>Umumiy narxi:  {{ total_suma|intcomma }} so'm
                  </h5>
+                 {% if request.user.employee.rol.material_edit %}
                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#vertical">
                    + Material qo'shish
                  </button>
+                 {% endif %}
               </div>
 
               <table class="table table-bordered table-hover table-sm">
