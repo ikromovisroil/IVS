@@ -169,7 +169,7 @@
                           <strong>quyidagi sarf materiallari, ehtiyot qismlar va uskunalar o‘rnatildi:</strong>
                         </td>
                         <td style="border:1px solid #fff;text-align:center;">
-                          <strong>2026-yil 3-martdagi 1-son shartnomaga muvofiq</strong>
+                          <strong>2025-yil 4-martdagi 1-son shartnomaga muvofiq</strong>
                         </td>
                       </tr>
                     </tbody>
@@ -260,8 +260,10 @@
 
 </main>
 
+
 <!-- jQuery va Select2 -->
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 // ----------------- Helper funksiyalar -----------------
 function todayDmy() {
@@ -379,30 +381,60 @@ $(function () {
 
   // ----------------- Departmentlarni yuklash -----------------
   function loadDepartments(orgId, selectedDepId = null) {
-    $('#department').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-    $('#sender, #agreements').html('<option value=""></option>').trigger('change');
+      const $dep = $('#department');
+      const $sender = $('#sender');
+      const $agr = $('#agreements');
 
-    if (!orgId) {
-      $('#department').html('<option value="">Tanlang...</option>').trigger('change');
-      return;
-    }
+      // UI reset
+      $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change.select2');
+      $sender.html('<option value=""></option>').val('').trigger('change.select2');
+      $agr.html('').trigger('change.select2');
 
-    $.ajax({
-      url: "{% url 'ajax_load_departments' %}",
-      data: { organization: orgId },
-      success: function (data) {
-        let options = '<option value=""></option>';
-        data.forEach(function(dep) {
-          const selected = (String(selectedDepId) === String(dep.id)) ? 'selected' : '';
-          options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
-        });
-        $('#department').html(options).trigger('change');
-      },
-      error: function() {
-        $('#department').html('<option value="">Xatolik yuz berdi</option>').trigger('change');
+      if (!orgId) {
+        $dep.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
+        return;
       }
-    });
-  }
+
+      $.ajax({
+        url: "{% url 'ajax_load_departments' %}",
+        method: "GET",
+        dataType: "json",
+        data: { organization: orgId },
+
+        success: function (data) {
+          console.log("Departments AJAX data:", data);
+
+          // ✅ data har xil formatda bo‘lishi mumkin
+          const list = Array.isArray(data) ? data : (data.departments || data.results || []);
+
+          if (!Array.isArray(list)) {
+            console.error("Departments format xato. List emas:", list);
+            $dep.html('<option value="">Format xato</option>').val('').trigger('change.select2');
+            return;
+          }
+
+          let options = '<option value=""></option>';
+          list.forEach(function(dep) {
+            options += `<option value="${dep.id}">${dep.name}</option>`;
+          });
+
+          $dep.html(options);
+
+          // ✅ Tanlab qo‘yish
+          if (selectedDepId) $dep.val(String(selectedDepId));
+          else $dep.val('');
+
+          // ✅ Select2 bo‘lsa ham yangilansin
+          $dep.trigger('change');
+        },
+
+        error: function(xhr) {
+          console.error("Departments AJAX error:", xhr.status, xhr.statusText);
+          console.log("Response:", xhr.responseText);
+          $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change.select2');
+        }
+      });
+    }
 
   // ----------------- Imzolovchilarni yuklash -----------------
   function loadSignatories(depId, selectedSenderId = null) {

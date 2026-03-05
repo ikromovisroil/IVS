@@ -1,4 +1,4 @@
-
+// static/js/select2.js
 (function($){
   // Universal init: sahifada ham, modal ichida ham
   function initSelect2(context) {
@@ -29,7 +29,7 @@
 
         $el.select2({
           width: '100%',
-          dropdownParent: $modal, // <<< MODAL uchun shart
+          dropdownParent: $modal, // MODAL uchun shart
           placeholder: $el.data('placeholder') || 'Tanlang...',
           allowClear: true
         });

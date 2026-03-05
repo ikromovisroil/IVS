@@ -1338,7 +1338,7 @@ def document_get(request):
         raise PermissionDenied("Employee yo‘q")
 
     context = {
-        "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
+        "organizations": Organization.objects.only("id", "name", "slug"),
         "emp_bos_sender": Employee.objects.filter(id__in=[3470,3469,3468]),
     }
     return render(request, "main/document.html", context)
@@ -1859,7 +1859,7 @@ def akt_get(request):
         raise PermissionDenied("Employee yo‘q")
 
     context = {
-        "organizations": Organization.objects.all().order_by("id"),
+        "organizations": Organization.objects.all(),
     }
     return render(request, "main/akt.html", context)
 
@@ -1941,7 +1941,7 @@ def svod_get(request):
         raise PermissionDenied("Employee yo‘q")
 
     context = {
-        "organizations": Organization.objects.all().order_by("id"),
+        "organizations": Organization.objects.all(),
         "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
     }
@@ -2025,7 +2025,7 @@ def reestr_get(request):
         raise PermissionDenied("Employee yo‘q")
 
     context = {
-        "organizations": Organization.objects.all().order_by("id"),
+        "organizations": Organization.objects.all(),
         "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
     }

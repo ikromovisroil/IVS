@@ -224,11 +224,12 @@ def ajax_akt_materials(request):
     if not employee:
         raise PermissionDenied
 
-    dep_id = request.GET.get("department")
+    org_id = (request.GET.get("organization") or "").strip()
+    dep_id = (request.GET.get("department") or "").strip()
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
 
-    if not dep_id or not d1 or not d2:
+    if not d1 or not d2:
         return JsonResponse([], safe=False)
 
     date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
@@ -236,38 +237,46 @@ def ajax_akt_materials(request):
 
     qs = (
         OrderMaterial.objects.filter(
-            material__employee__department_id=employee.department_id,
             order__date_finished__gte=date1,
             order__date_finished__lt=date2,
-            order__sender__department_id=dep_id,
             order__receiver__region=employee.region,
         )
         .annotate(
             full_name=Concat(
-                F('order__sender__first_name'),
-                Value(' '),
-                F('order__sender__last_name'),
-                Value(' '),
-                F('order__sender__father_name'),
-                output_field=CharField()
+                F("order__sender__first_name"),
+                Value(" "),
+                F("order__sender__last_name"),
+                Value(" "),
+                F("order__sender__father_name"),
+                output_field=CharField(),
             ),
-            rank_name=F('order__sender__rank__name'),  # rank nomini olish
-        )
-        .values(
-            "order__technics__name",
-            "order__technics__serial",
-            "material__name",
-            "number",
-            "material__unit__name",
-            "full_name",  # endi bu mavjud
-            "rank_name",  # rank nomi
-            "material__price",
-            "id",
-            "order__date_finished",
+            rank_name=F("order__sender__rank__name"),
         )
     )
 
+    # sender bo‘yicha filter (sizning asosiy filteringiz shu)
+    if dep_id:
+        qs = qs.filter(order__sender__department_id=dep_id)
+    elif org_id:
+        qs = qs.filter(order__sender__organization_id=org_id)
+    else:
+        return JsonResponse([], safe=False)
+
+    qs = qs.values(
+        "order__technics__name",
+        "order__technics__serial",
+        "material__name",
+        "number",
+        "material__unit__name",
+        "full_name",
+        "rank_name",
+        "material__price",
+        "id",
+        "order__date_finished",
+    )
+
     return JsonResponse(list(qs), safe=False)
+
 
 @never_cache
 @login_required
