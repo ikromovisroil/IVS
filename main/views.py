@@ -579,22 +579,22 @@ def barn_tex(request):
     )
 
     # Common data
-    organizations = Organization.objects.only("id", "name").order_by("name")
-    categories    = Category.objects.only("id", "name").order_by("name")
+    organizations = Organization.objects.only("id", "name")
+    categories    = Category.objects.only("id", "name")
     technics_form = TechnicsForm()
 
     # Cascading (agar siz buni AJAX bilan tortsangiz — xohlasangiz remove qiling)
     departments = Department.objects.none()
     if organization_id:
-        departments = Department.objects.filter(organization_id=organization_id).only("id", "name").order_by("name")
+        departments = Department.objects.filter(organization_id=organization_id).only("id", "name")
 
     directorates = Directorate.objects.none()
     if department_id:
-        directorates = Directorate.objects.filter(department_id=department_id).only("id", "name").order_by("name")
+        directorates = Directorate.objects.filter(department_id=department_id).only("id", "name")
 
     divisions = Division.objects.none()
     if directorate_id:
-        divisions = Division.objects.filter(directorate_id=directorate_id).only("id", "name").order_by("name")
+        divisions = Division.objects.filter(directorate_id=directorate_id).only("id", "name")
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -690,7 +690,7 @@ def barn_tex(request):
             "category__id", "category__name",
             "employee__id", "employee__first_name", "employee__last_name", "employee__father_name",
         )
-        .order_by("employee_id", "id")
+        .order_by("employee")
     )
 
     # ---------- 3) grouping (itertools.groupby) ----------
