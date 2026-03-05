@@ -306,7 +306,7 @@
               class="nav-content collapse {% if " "|add:url_name|add:" " in deed_urls %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
-            {% if not request.user.employee.rol.client %}
+            {% if request.user.employee.rol.akt %}
             <li>
               <a class="{% if url_name == 'contact_user' or url_name == 'contact_user_arxiv' %}active{% endif %}"
                  href="{% url 'contact_user' %}">
@@ -370,16 +370,6 @@
              href="{% url 'order_sender' %}">
             <i class="bi bi-journal-text"></i>
             <span>Arizalar</span>
-          </a>
-        </li>
-        {% endif %}
-
-        {% if request.user.employee.rol.client %}
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"
-             href="{% url 'technics_get' %}">
-            <i class="bi bi-menu-button-wide"></i>
-            <span>Texnikalarim</span>
           </a>
         </li>
         {% endif %}
@@ -496,6 +486,14 @@
           </ul>
         </li>
         {% endif %}
+
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"
+             href="{% url 'technics_get' %}">
+            <i class="bi bi-mouse2"></i>
+            <span>Texnikalarim</span>
+          </a>
+        </li>
 
         <!-- LOGOUT -->
         <li class="nav-item">

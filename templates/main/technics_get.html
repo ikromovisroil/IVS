@@ -21,7 +21,7 @@
               <h5 class="card-title">{{request.user.employee.full_name}}</h5>
 
               <!-- Default Table -->
-              <table class="table">
+              <table class="table table-bordered table-hover table-sm">
                 <thead>
                   <tr>
                     <th scope="col">#</th>
@@ -30,10 +30,9 @@
                     <th scope="col">Lavozim</th>
                     {% endif %}
                     <th scope="col">Nomi</th>
-                    <th scope="col">I/N</th>
-                    <th scope="col">S/N</th>
+                    <th scope="col">I/R</th>
+                    <th scope="col">S/R</th>
                     <th scope="col">Mac</th>
-                    <th scope="col">Yili</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -45,12 +44,10 @@
                     <td>{{tex.employee.rank.name}}</td>
                     {% endif %}
                     <td>{{tex.category.name}}
-
                         {{ tex.name|default:"-" }}</td>
                     <td>{{ tex.inventory|default:"-" }}</td>
                     <td>{{ tex.serial|default:"-" }}</td>
                     <td>{{ tex.mac|default:"-" }}</td>
-                    <td>{{ tex.year|default:"-" }}</td>
                   </tr>
                 {% endfor %}
                 </tbody>

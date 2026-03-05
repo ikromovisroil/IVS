@@ -9,6 +9,7 @@ from django.core.paginator import Paginator
 from decimal import Decimal, InvalidOperation
 from .sso_views import *
 from django.db.models import Count, F, FloatField, ExpressionWrapper
+from functools import wraps
 
 def global_data(request):
     return {
@@ -17,18 +18,37 @@ def global_data(request):
     }
 
 
+def role_required(permission: str):
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def wrapper(request, *args, **kwargs):
+            employee = getattr(request.user, "employee", None)
+            if not employee:
+                raise PermissionDenied("Employee yo‘q")
+
+            role = getattr(employee, "rol", None)
+            if not role:
+                raise PermissionDenied("Rol biriktirilmagan")
+
+            if not getattr(role, permission, False):
+                raise PermissionDenied("Ruxsat yo‘q")
+
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
+
 @login_required
 def home(request):
     return redirect("profil")
 
 
 @never_cache
-@login_required
 def profil(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
-
     user = request.user
 
     if request.method == "POST":
@@ -54,11 +74,10 @@ def profil(request):
 
 
 @never_cache
-@login_required
 def contact(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     deed_receiver = (
         Deed.objects
@@ -73,11 +92,10 @@ def contact(request):
 
 
 @never_cache
-@login_required
 def contact_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     deed_receiver = (
         Deed.objects
@@ -95,9 +113,10 @@ def contact_arxiv(request):
 
 
 @never_cache
-@login_required
 def contact_agrement(request):
     employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
 
     deed_consent = (
         Deed.objects
@@ -114,9 +133,10 @@ def contact_agrement(request):
 
 
 @never_cache
-@login_required
 def contact_agrement_arxiv(request):
     employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
 
     deed_consent = (
         Deed.objects
@@ -133,15 +153,11 @@ def contact_agrement_arxiv(request):
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     deed_user = (
         Deed.objects
@@ -158,18 +174,13 @@ def contact_user(request):
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def contact_user_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     done_statuses = ["approved", "rejected"]
-
     deed_user = (
         Deed.objects
         .filter(user=employee)
@@ -184,7 +195,6 @@ def contact_user_arxiv(request):
     return render(request, "main/contact_user_arxiv.html", {"deed_user": deed_user})
 
 
-
 def deed_status(request, pk):
     deed = get_object_or_404(Deed, pk=pk)
     context = {"d": deed}
@@ -192,14 +202,14 @@ def deed_status(request, pk):
 
 
 @never_cache
-@login_required
 def deed_action(request, pk):
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
-
     emp = getattr(request.user, "employee", None)
     if not emp:
         raise PermissionDenied("Employee yo‘q")
+
+    if request.method != "POST":
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
 
     back_url = request.META.get("HTTP_REFERER", "/")
     action = (request.POST.get("action") or "").strip()
@@ -280,15 +290,12 @@ def deed_action(request, pk):
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def deed_edit(request, pk):
     emp_me = getattr(request.user, "employee", None)
     if not emp_me:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
-    role = getattr(emp_me, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
 
     deed = get_object_or_404(
         Deed.objects.select_related("sender", "receiver"),
@@ -425,9 +432,11 @@ def deed_edit(request, pk):
 
 
 @never_cache
-@login_required
 @require_POST
 def deedconsent_action(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
     back_url = request.META.get("HTTP_REFERER", "/")
 
     consent = get_object_or_404(
@@ -475,17 +484,12 @@ def deedconsent_action(request, pk):
 
 from itertools import groupby
 @never_cache
-@login_required
+@role_required("technics")
 def barn_tex(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
-    role = getattr(employee, "rol", None)
-    if not role or not getattr(role, "technics", False):
-        raise PermissionDenied
-
-    # ---------- safe parse helpers ----------
     def to_int(v):
         v = (v or "").strip()
         if not v:
@@ -667,19 +671,14 @@ def barn_tex(request):
 
 
 @never_cache
-@login_required
 @require_POST
+@role_required("technics_edit")
 def technics_create(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-
     form = TechnicsForm(request.POST)
     if form.is_valid():
         form.save()
@@ -691,17 +690,13 @@ def technics_create(request):
 
 
 @never_cache
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("technics_edit")
 def technics_delete(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics_edit:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
     tex_id = request.POST.get("texnika_id")
@@ -723,17 +718,13 @@ def technics_delete(request):
     return redirect(back_url)
 
 
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("technics_edit")
 def technics_attach(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics_edit:  # faqat omborchi o‘chirishi mumkin
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
@@ -766,21 +757,15 @@ def technics_attach(request):
     return redirect(back_url)
 
 
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("technics_edit")
 def technics_update(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics_edit:  # faqat omborchi o‘chirishi mumkin
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-
-    # 🔒 lock (parallel update muammosi bo‘lmasin)
     tex = get_object_or_404(Technics.objects.select_for_update(), pk=pk)
 
     category_id = (request.POST.get("category") or "").strip()
@@ -835,15 +820,11 @@ def technics_update(request, pk):
 
 
 @never_cache
-@login_required
+@role_required("technics")
 def extra_tex(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     status = (request.GET.get("status") or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
@@ -915,16 +896,12 @@ def extra_tex(request):
 
 
 @never_cache
-@login_required
 @require_POST
+@role_required("technics_edit")
 def extra_tex_create(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
@@ -934,29 +911,24 @@ def extra_tex_create(request):
         messages.success(request, "Texnika qo‘shildi")
     else:
         messages.error(request, "Maʼlumotlarda xatolik bor")
-
     return redirect(back_url)
 
 
 @never_cache
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("technics_edit")
 def extra_tex_delete(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics_edit:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
     tex_id = request.POST.get("texnika_id")
 
     try:
         tex = ExtraTechnics.objects.select_for_update().get(pk=int(tex_id))
-    except (Technics.DoesNotExist, TypeError, ValueError):
+    except (ExtraTechnics.DoesNotExist, TypeError, ValueError):
         messages.info(request, "Texnika topilmadi")
         return redirect(back_url)
 
@@ -971,21 +943,16 @@ def extra_tex_delete(request):
     return redirect(back_url)
 
 
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("technics_edit")
 def extra_tex_update(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.technics_edit:  # faqat omborchi o‘chirishi mumkin
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
-    # 🔒 lock (parallel update muammosi bo‘lmasin)
     tex = get_object_or_404(ExtraTechnics.objects.select_for_update(), pk=pk)
 
     organization_id = (request.POST.get("organization") or "").strip()
@@ -1028,15 +995,11 @@ def extra_tex_update(request, pk):
 
 
 @require_POST
-@login_required
+@role_required("technics_edit")
 def extra_tex_attach(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not getattr(role, "technics", False):
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     texnika_id = (request.POST.get("texnika_id") or "").strip()
     extra_tex_id = (request.POST.get("extra_tex_id") or "").strip()
@@ -1059,15 +1022,11 @@ def extra_tex_attach(request):
 
 
 @require_POST
-@login_required
+@role_required("technics_edit")
 def extra_tex_detach(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not getattr(role, "technics", False):
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     texnika_id = (request.POST.get("texnika_id") or "").strip()
     extra_tex_id = (request.POST.get("extra_tex_id") or "").strip()
@@ -1091,15 +1050,12 @@ def extra_tex_detach(request):
 
 
 @never_cache
-@login_required
+@role_required("material")
 def barn_mat(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
-    role = getattr(employee, "rol", None)
-    if not role or not role.material:
-        raise PermissionDenied
 
     emp_id = (request.GET.get("employee") or "").strip()
     status = (request.GET.get("status") or "").strip()
@@ -1176,16 +1132,12 @@ def barn_mat(request):
     return render(request, "main/barn_mat.html", context)
 
 
-@login_required
 @require_POST
+@role_required("material_edit")
 def material_create(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.material:  # faqat omborchi o‘chirishi mumkin
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
@@ -1199,16 +1151,12 @@ def material_create(request):
     return redirect(back_url)
 
 
-@login_required
 @require_POST
+@role_required("material_edit")
 def material_update(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.material_edit:  # faqat omborchi o‘chirishi mumkin
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
@@ -1253,17 +1201,13 @@ def material_update(request, pk):
     return redirect(back_url)
 
 
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("material_edit")
 def material_attach(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.material_edit:  # faqat omborchi o‘chirishi mumkin
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
@@ -1358,17 +1302,13 @@ def material_attach(request):
 
 
 @never_cache
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("material_edit")
 def material_delete(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if not role or not role.material_edit:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER") or "/"
     material_id = request.POST.get("material_id")
@@ -1391,15 +1331,11 @@ def material_delete(request):
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def document_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     context = {
         "organizations": Organization.objects.only("id", "name", "slug").order_by("name"),
@@ -1409,17 +1345,12 @@ def document_get(request):
 
 
 @never_cache
-@login_required
 @require_POST
+@role_required("akt")
 def document_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
-
+        raise PermissionDenied("Employee yo‘q")
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
     receiver_id = (request.POST.get("receiver") or "").strip()
@@ -1480,17 +1411,16 @@ def document_post(request):
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Akt yuborildi (PDF saqlandi)")
+    messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
 
 
 # yangi arizalar
 @never_cache
-@login_required
 def order_sender(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     orders_qs = (
         Order.objects
@@ -1522,12 +1452,11 @@ def order_sender(request):
 
 # arizani tasdiqlash yoki bekor qilish
 @never_cache
-@login_required
 @require_POST
 def order_decide(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     order = get_object_or_404(Order, id=pk)
     action = request.POST.get("action")  # approve | reject
@@ -1568,11 +1497,10 @@ def order_decide(request, pk):
 
 # arizalar arxivi
 @never_cache
-@login_required
 def order_sender_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     orders_qs = (
         Order.objects
@@ -1603,20 +1531,19 @@ def order_sender_arxiv(request):
 
 
 @never_cache
-@login_required
 @require_POST
 def order_post(request):
     employee = getattr(request.user, "employee", None)
-    back_url = request.META.get("HTTP_REFERER", "/")
-
     if not employee:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
 
     goal_id = (request.POST.get("goal") or "").strip()
     body = (request.POST.get("body") or "").strip()
 
     if not goal_id.isdigit():
-        messages.error(request, "Ariza turi tanlanmadi yoki noto‘g‘ri.")
+        messages.info(request, "Ariza turi tanlanmadi yoki noto‘g‘ri.")
         return redirect("order_sender")
 
     goal = get_object_or_404(Goal, id=int(goal_id))
@@ -1631,15 +1558,11 @@ def order_post(request):
 
 
 @never_cache
-@login_required
+@role_required("order")
 def order_receiver(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     orders_qs = (
         Order.objects
@@ -1662,16 +1585,12 @@ def order_receiver(request):
 
 
 @never_cache
-@login_required
 @require_POST
+@role_required("order")
 def order_accepted(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     order = get_object_or_404(Order, pk=pk)
 
@@ -1688,15 +1607,11 @@ def order_accepted(request, pk):
 
 
 @never_cache
-@login_required
+@role_required("order")
 def order_receiver_deed(request,pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     order = get_object_or_404(Order, pk=pk)
 
@@ -1714,16 +1629,12 @@ def order_receiver_deed(request,pk):
 
 
 @never_cache
-@login_required
 @require_POST
-def order_receiver_deed_post(request,pk):
+@role_required("order")
+def order_receiver_deed_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -1753,6 +1664,8 @@ def order_receiver_deed_post(request,pk):
     # ✅ PDF yaratib deed.file ga saqlaymiz
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
+        wm_text = "TASDIQLANMAGAN"
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
         today_str = timezone.now().strftime("%Y%m%d")
         alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
@@ -1785,15 +1698,11 @@ def order_receiver_deed_post(request,pk):
 
 
 @never_cache
-@login_required
+@role_required("order")
 def order_receiver_activ(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     orders_qs = (
         Order.objects
@@ -1827,15 +1736,11 @@ def order_receiver_activ(request):
 
 
 @never_cache
-@login_required
+@role_required("order")
 def order_receiver_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     orders_qs = (
         Order.objects
@@ -1858,15 +1763,10 @@ def order_receiver_arxiv(request):
 
 
 @never_cache
-@login_required
 def order_approved(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     if request.method != "POST":
         return redirect("/")
@@ -1886,17 +1786,13 @@ def order_approved(request):
 
 from django.db.models import F
 @never_cache
-@login_required
 @require_POST
 @transaction.atomic
+@role_required("order")
 def ordermaterial_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     order_id = request.POST.get("order_id")
     technics_id = request.POST.get("technics_id")
@@ -1956,15 +1852,11 @@ def ordermaterial_post(request):
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def akt_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and not role.shop:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     context = {
         "organizations": Organization.objects.all().order_by("id"),
@@ -1974,17 +1866,12 @@ def akt_get(request):
 
 
 @never_cache
-@login_required
 @require_POST
+@role_required("akt")
 def akt_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and not role.shop:
-        raise PermissionDenied
-
+        raise PermissionDenied("Employee yo‘q")
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
@@ -2042,20 +1929,16 @@ def akt_post(request):
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Akt yuborildi (PDF saqlandi)")
+    messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def svod_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and not role.shop:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     context = {
         "organizations": Organization.objects.all().order_by("id"),
@@ -2066,16 +1949,12 @@ def svod_get(request):
 
 
 @never_cache
-@login_required
 @require_POST
+@role_required("akt")
 def svod_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and not role.shop:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -2134,20 +2013,16 @@ def svod_post(request):
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Akt yuborildi (PDF saqlandi)")
+    messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def reestr_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and not role.shop:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     context = {
         "organizations": Organization.objects.all().order_by("id"),
@@ -2158,15 +2033,11 @@ def reestr_get(request):
 
 
 @never_cache
-@login_required
+@role_required("akt")
 def reestr_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and not role.shop:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
@@ -2227,20 +2098,15 @@ def reestr_post(request):
         objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
         DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    messages.success(request, "Akt yuborildi (PDF saqlandi)")
+    messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
 
 
 @never_cache
-@login_required
 def technics_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied
-
-    role = getattr(employee, "rol", None)
-    if role and not role.client:
-        raise PermissionDenied
+        raise PermissionDenied("Employee yo‘q")
 
     if employee.rol.boss:
         technics = Technics.objects.filter(
@@ -2258,15 +2124,11 @@ def technics_get(request):
 
 from django.utils.dateparse import parse_date
 @never_cache
-@login_required
+@role_required("status")
 def emp_status(request):
-    emp = getattr(request.user, "employee", None)
-    if not emp:
-        raise PermissionDenied
-
-    role = getattr(emp, "rol", None)
-    if role and not role.status:
-        raise PermissionDenied
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
 
     # ---- FILTER PARAMS ----
     region_id = (request.GET.get("region") or "").strip()
@@ -2351,13 +2213,12 @@ def emp_status(request):
 
 
 @never_cache
-@login_required
+@role_required("status")
 def tex_status(request):
     employee = getattr(request.user, "employee", None)
-    if not employee or not getattr(employee, "rol", None) or employee.rol.client:
-        raise PermissionDenied
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
 
-    # ------------------- CARD: tashkilotlar soni + foiz -------------------
     orgs = list(
         Organization.objects
         .all()
