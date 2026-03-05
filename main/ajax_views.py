@@ -109,8 +109,10 @@ def ajax_dep_signatory(request):
 
     if dep_id:
         qs = qs.filter(department_id=dep_id)
-    else:
+    elif org_id:
         qs = qs.filter(organization_id=org_id)
+    else:
+        return JsonResponse([], safe=False)
 
     qs = qs.order_by("last_name", "first_name", "father_name")
 
@@ -138,9 +140,11 @@ def ajax_dep_negotiator(request):
 
     if dep_id:
         qs = qs.filter(Q(department_id=dep_id) | Q(department_id=my_dep_id))
+    elif org_id:
+        qs = qs.filter(Q(organization_id=org_id) | Q(organization_id=my_dep_id))
     else:
-        qs = qs.filter(Q(organization_id=org_id) | Q(department_id=my_dep_id))
-
+        return JsonResponse([], safe=False)
+    
     qs = qs.order_by("last_name", "first_name", "father_name").distinct()
 
     data = [{"id": e.id, "full_name": getattr(e, "full_name", "")} for e in qs]
