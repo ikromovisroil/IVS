@@ -164,7 +164,10 @@
                         {{ row_start|add:forloop.counter0 }}
                       </th>
                       <td>
-                          {{ tex.employee.full_name|default:"-" }}
+                          {% ifchanged tex.employee_id %}
+                            {{ tex.employee.full_name|default:"Biriktirilmagan" }}
+                          {% else %}
+                          {% endifchanged %}
                       </td>
                       <td>{{ tex.name|default:"-" }}
                           <span class="text-secondary small ps-4 ms-2 mt-1">
