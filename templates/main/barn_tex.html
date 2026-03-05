@@ -160,16 +160,16 @@
                   {% for emp, items in grouped_technics %}
                     {% for tex in items %}
                       <tr>
-                        {# raqam #}
-                        <th scope="row">
-                          {{ row_start|add:forloop.parentloop.counter0|add:forloop.counter0 }}
-                        </th>
-
-                        {# ✅ ISM: rowspan bilan 1 marta #}
                         {% if forloop.first %}
-                          <td rowspan="{{ items|length }}" class="align-middle">
-                            {{ emp.full_name|default:"Biriktirilmagan" }}
-                          </td>
+                        <th scope="row" rowspan="{{ items|length }}" class="align-middle">
+                          {{ forloop.parentloop.counter }}
+                        </th>
+                        {% endif %}
+
+                        {% if forloop.first %}
+                        <td rowspan="{{ items|length }}" class="align-middle">
+                          {{ emp.full_name|default:"Biriktirilmagan" }}
+                        </td>
                         {% endif %}
 
                         <td>{{ tex.name|default:"-" }}
