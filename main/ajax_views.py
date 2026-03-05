@@ -98,43 +98,52 @@ def ajax_load_division(request):
 @never_cache
 @login_required
 def ajax_dep_signatory(request):
-    dep_id = request.GET.get("department")
-    if not dep_id:
+    org_id = (request.GET.get("organization") or "").strip()
+    dep_id = (request.GET.get("department") or "").strip()
+
+    # ikkalasi ham bo'lmasa bo'sh
+    if not org_id and not dep_id:
         return JsonResponse([], safe=False)
 
-    qs = (
-        Employee.objects
-        .filter(department_id=dep_id)
-        .select_related("rank")
-        .order_by("last_name", "first_name", "father_name")
-    )
+    qs = Employee.objects.select_related("rank")
 
-    data = []
-    for e in qs:
-        data.append({
-            "id": e.id,
-            "full_name": getattr(e, "full_name", "") or f"{e.last_name} {e.first_name} {e.father_name}".strip(),
-            "rank": (e.rank.name if getattr(e, "rank", None) else ""),
-        })
+    if dep_id:
+        qs = qs.filter(department_id=dep_id)
+    else:
+        qs = qs.filter(organization_id=org_id)
+
+    qs = qs.order_by("last_name", "first_name", "father_name")
+
+    data = [{
+        "id": e.id,
+        "full_name": getattr(e, "full_name", "") or f"{e.last_name} {e.first_name} {e.father_name}".strip(),
+        "rank": (e.rank.name if getattr(e, "rank", None) else ""),
+    } for e in qs]
 
     return JsonResponse(data, safe=False)
 
 @never_cache
 @login_required
 def ajax_dep_negotiator(request):
-    dep_id = request.GET.get("department")
-    my_dep_id = request.user.employee.department_id
-    if not dep_id:
+    org_id = (request.GET.get("organization") or "").strip()
+    dep_id = (request.GET.get("department") or "").strip()
+
+    employee = getattr(request.user, "employee", None)
+    my_dep_id = getattr(employee, "department_id", None)
+
+    if not org_id and not dep_id:
         return JsonResponse([], safe=False)
 
-    qs = (
-        Employee.objects
-        .filter(Q(department_id=dep_id) | Q(department_id=my_dep_id))
-        .select_related("rank")
-        .order_by("last_name", "first_name", "father_name")
-        .distinct()
-    )
-    data = [{"id": e.id, "full_name": e.full_name} for e in qs]
+    qs = Employee.objects.select_related("rank")
+
+    if dep_id:
+        qs = qs.filter(Q(department_id=dep_id) | Q(department_id=my_dep_id))
+    else:
+        qs = qs.filter(Q(organization_id=org_id) | Q(department_id=my_dep_id))
+
+    qs = qs.order_by("last_name", "first_name", "father_name").distinct()
+
+    data = [{"id": e.id, "full_name": getattr(e, "full_name", "")} for e in qs]
     return JsonResponse(data, safe=False)
 
 @never_cache

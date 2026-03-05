@@ -438,55 +438,81 @@ $(function () {
 
   // ----------------- Imzolovchilarni yuklash -----------------
   function loadSignatories(depId, selectedSenderId = null) {
-    $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
+      const orgId = $('#organization').val();
 
-    if (!depId) {
-      $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
-      return;
+      $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+      // org ham yo'q bo'lsa umuman yuklamaymiz
+      if (!orgId && !depId) {
+        $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
+        return;
+      }
+
+      const payload = {};
+      if (orgId) payload.organization = orgId;
+      if (depId) payload.department = depId;
+
+      $.ajax({
+        url: "{% url 'ajax_dep_signatory' %}",
+        data: payload,
+        success: function (data) {
+          let options = '<option value=""></option>';
+          data.forEach(function(emp) {
+            const selected = (String(selectedSenderId) === String(emp.id)) ? 'selected' : '';
+            const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+            options += `<option value="${emp.id}" ${selected} data-fullname="${emp.full_name}" data-rank="${emp.rank || ''}">${fullText}</option>`;
+          });
+          $('#sender').html(options).trigger('change');
+        },
+        error: function() {
+          $('#sender').html('<option value="">Xatolik</option>').trigger('change');
+        }
+      });
     }
 
-    $.ajax({
-      url: "{% url 'ajax_dep_signatory' %}",
-      data: { department: depId },
-      success: function (data) {
-        let options = '<option value=""></option>';
-        data.forEach(function(emp) {
-          const selected = (String(selectedSenderId) === String(emp.id)) ? 'selected' : '';
-          // Ism va lavozimni birlashtirish
-          const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-          options += `<option value="${emp.id}" ${selected} data-fullname="${emp.full_name}" data-rank="${emp.rank || ''}">${fullText}</option>`;
-        });
-        $('#sender').html(options).trigger('change');
-      },
-      error: function() {
-        $('#sender').html('<option value="">Xatolik</option>').trigger('change');
-      }
-    });
-  }
-
   // ----------------- Kelishuvchilarni yuklash -----------------
-  function loadNegotiators(depId, selectedIds = []) {
-    $('#agreements').html('').trigger('change');
+    function loadNegotiators(depId, selectedIds = []) {
+      const orgId = $('#organization').val();   // ✅ organization ham olamiz
 
-    if (!depId) return;
+      // tozalash
+      const $agr = $('#agreements');
+      $agr.html('').trigger('change');
 
-    $.ajax({
-      url: "{% url 'ajax_dep_negotiator' %}",
-      data: { department: depId },
-      success: function (data) {
-        let options = '';
-        const selectedSet = new Set((selectedIds || []).map(String));
-        data.forEach(function(emp) {
-          const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-          options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
-        });
-        $('#agreements').html(options).trigger('change');
-      },
-      error: function() {
-        $('#agreements').html('').trigger('change');
-      }
-    });
-  }
+      // org ham yo'q, dep ham yo'q bo'lsa — hech narsa yuklamaymiz
+      if (!orgId && !depId) return;
+
+      // ✅ payload: borlarini yuboramiz
+      const payload = {};
+      if (orgId) payload.organization = orgId;
+      if (depId) payload.department = depId;
+
+      // loading holat
+      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+      $.ajax({
+        url: "{% url 'ajax_dep_negotiator' %}",
+        method: "GET",
+        dataType: "json",
+        data: payload,
+
+        success: function (data) {
+          let options = '';
+          const selectedSet = new Set((selectedIds || []).map(String));
+
+          (data || []).forEach(function(emp) {
+            const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
+            options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+          });
+
+          $agr.html(options).trigger('change'); // select2 refresh
+        },
+
+        error: function(xhr) {
+          console.error("Negotiators AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
+          $agr.html('').trigger('change');
+        }
+      });
+    }
 
   // ----------------- Tanlangan malumotlarni TinyMCE ga yozish -----------------
   function updateEditorWithSelections() {
