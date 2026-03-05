@@ -570,15 +570,15 @@ def barn_tex(request):
     # cascading
     departments = Department.objects.none()
     if organization_id:
-        departments = Department.objects.filter(organization_id=organization_id).only("id", "name").order_by("name")
+        departments = Department.objects.filter(organization_id=organization_id).only("id", "name")
 
     directorates = Directorate.objects.none()
     if department_id:
-        directorates = Directorate.objects.filter(department_id=department_id).only("id", "name").order_by("name")
+        directorates = Directorate.objects.filter(department_id=department_id).only("id", "name")
 
     divisions = Division.objects.none()
     if directorate_id:
-        divisions = Division.objects.filter(directorate_id=directorate_id).only("id", "name").order_by("name")
+        divisions = Division.objects.filter(directorate_id=directorate_id).only("id", "name")
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -641,7 +641,7 @@ def barn_tex(request):
         qs = qs.filter(q)
 
     # ✅ employee bo‘yicha tartib (rowspan uchun shart)
-    qs = qs.order_by("employee_id", "id")
+    qs = qs.order_by("employee")
 
     total_count = qs.count()
 
@@ -885,7 +885,7 @@ def extra_tex(request):
         params.pop("page", None)
 
         return render(request, "main/extra_tex.html", {
-            "organizations": Organization.objects.only("id", "name").order_by("name"),
+            "organizations": Organization.objects.only("id", "name"),
             "technics_form": ExtraTechnicsForm(),
 
             "page_obj": page_obj,
@@ -926,7 +926,7 @@ def extra_tex(request):
     params.pop("page", None)
 
     context = {
-        "organizations": Organization.objects.only("id", "name").order_by("name"),
+        "organizations": Organization.objects.only("id", "name"),
         "technics_form": ExtraTechnicsForm(),
 
         "page_obj": page_obj,
