@@ -429,19 +429,18 @@
         {% endif %}
 
           <!-- Sklad -->
-        {% if request.user.employee.rol.technics or request.user.employee.rol.material %}
+        {% if request.user.employee.rol.technics %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name not in 'barn_tex barn_mat extra_tex' %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name not in 'barn_tex extra_tex' %}collapsed{% endif %}"
              data-bs-target="#forms-navs" data-bs-toggle="collapse" href="#">
-            <i class="bi bi-question-circle"></i>
-            <span>Sklad</span>
+            <i class="bi bi-gear"></i>
+            <span>Texnikalar</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
 
           <ul id="forms-navs"
-              class="nav-content collapse {% if url_name in 'barn_tex barn_mat extra_tex' %}show{% endif %}"
+              class="nav-content collapse {% if url_name in 'barn_tex extra_tex' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
-            {% if request.user.employee.rol.technics %}
             <li>
               <a class="{% if url_name == 'barn_tex' %}active{% endif %}"
                  href="{% url 'barn_tex' %}">
@@ -454,37 +453,47 @@
                 <i class="bi bi-circle"></i><span>Qo'shimcha texnikalar</span>
               </a>
             </li>
-            {% endif %}
-            {% if request.user.employee.rol.material %}
-            <li>
-              <a class="{% if url_name == 'barn_mat' %}active{% endif %}"
-                 href="{% url 'barn_mat' %}">
-                <i class="bi bi-circle"></i><span>Materiallar</span>
-              </a>
-            </li>
-            {% endif %}
           </ul>
         </li>
         {% endif %}
 
-        {% if request.user.employee.rol.index %}
+        {% if request.user.employee.rol.material %}
         <!-- DASHBOARD -->
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'index' %}collapsed{% endif %}"
-             href="{% url 'index' %}">
+          <a class="nav-link {% if url_name != 'barn_mat' %}collapsed{% endif %}"
+             href="{% url 'barn_mat' %}">
             <i class="bi bi-grid"></i>
-            <span>Dashboard</span>
+            <span>Materiallar</span>
           </a>
         </li>
         {% endif %}
 
         {% if request.user.employee.rol.status %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'status' %}collapsed{% endif %}"
-             href="{% url 'status' %}">
+          <a class="nav-link {% if url_name not in 'tex_status emp_status' %}collapsed{% endif %}"
+             data-bs-target="#status-navs" data-bs-toggle="collapse" href="#">
             <i class="bi bi-bar-chart"></i>
             <span>Statistika</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
           </a>
+
+          <ul id="status-navs"
+              class="nav-content collapse {% if url_name in 'tex_status emp_status' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+            <li>
+
+              <a class="{% if url_name == 'tex_status' %}active{% endif %}"
+                 href="{% url 'tex_status' %}">
+                <i class="bi bi-circle"></i><span>Texnikalar</span>
+              </a>
+            </li>
+            <li>
+              <a class="{% if url_name == 'emp_status' %}active{% endif %}"
+                 href="{% url 'emp_status' %}">
+                <i class="bi bi-circle"></i><span>Xodimlar</span>
+              </a>
+            </li>
+          </ul>
         </li>
         {% endif %}
 

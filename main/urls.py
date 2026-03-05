@@ -7,9 +7,9 @@ from .sso_views import *
 urlpatterns = [
     path("", home, name="home"),
     path('profil/', profil, name='profil'),
-    path('index/', index, name='index'),
+    path('emp_status/', emp_status, name='emp_status'),
     path('technics_get/', technics_get, name='technics_get'),
-    path('status/', status, name='status'),
+    path('tex_status/', tex_status, name='tex_status'),
 
     #texnikalar
     path('barn_tex/', barn_tex, name='barn_tex'),

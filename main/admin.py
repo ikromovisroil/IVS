@@ -161,7 +161,7 @@ class RolAdmin(admin.ModelAdmin):
     list_display = (
         "id", "employee",
         "client", "order",
-        "index", "boss", "shop", "akt",
+        "boss", "shop", "akt",
         "technics", "technics_edit",
         "material", "material_edit",
     )

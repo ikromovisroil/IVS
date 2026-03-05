@@ -55,71 +55,6 @@ def profil(request):
 
 @never_cache
 @login_required
-def index(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee or not getattr(employee, "rol", None) or employee.rol.client:
-        raise PermissionDenied
-
-    # ------------------- CARD: tashkilotlar soni + foiz -------------------
-    orgs = list(
-        Organization.objects
-        .all()
-        .order_by("id")
-        .annotate(technics_count=Count("technics", distinct=True))  # agar ishlamasa -> technics_set
-        .values("id", "name", "technics_count")
-    )
-
-    total_technics = sum(o["technics_count"] for o in orgs) or 1
-    for o in orgs:
-        o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
-
-    # ------------------- PIE: tashkilotlar ulushi -------------------
-    pie_labels = [o["name"] for o in orgs]
-    pie_values = [o["technics_count"] for o in orgs]
-
-    # ------------------- AREA: category (x) va organization (series) -------------------
-    cats_qs = list(Category.objects.all().order_by("id").values("id", "name"))
-    cat_ids = [c["id"] for c in cats_qs]
-    categories = [c["name"] for c in cats_qs]
-
-    org_ids = [o["id"] for o in orgs]
-
-    grouped = (
-        Technics.objects
-        .filter(organization_id__in=org_ids, category_id__in=cat_ids)
-        .values("organization_id", "category_id")
-        .annotate(cnt=Count("id"))
-    )
-
-    lookup = {(g["organization_id"], g["category_id"]): g["cnt"] for g in grouped}
-
-    series = []
-    for o in orgs:
-        data = [lookup.get((o["id"], cid), 0) for cid in cat_ids]
-        series.append({"name": o["name"], "data": data})
-
-    # ------------------- FUNNEL: tashkilotlar bo‘yicha (katta -> kichik) -------------------
-    orgs_sorted = sorted(orgs, key=lambda x: x["technics_count"], reverse=True)
-    # ko'p bo'lsa 8 ta ko'rsatamiz (xohlasangiz [:8] ni olib tashlang)
-    funnel_labels = [o["name"] for o in orgs_sorted[:8]]
-    funnel_values = [o["technics_count"] for o in orgs_sorted[:8]]
-
-    context = {
-        "orgs_qs": orgs,
-        "categories": categories,
-        "series": series,
-
-        "pie_labels": pie_labels,
-        "pie_values": pie_values,
-
-        "funnel_labels": funnel_labels,
-        "funnel_values": funnel_values,
-    }
-    return render(request, "main/index.html", context)
-
-
-@never_cache
-@login_required
 def contact(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2324,7 +2259,7 @@ def technics_get(request):
 from django.utils.dateparse import parse_date
 @never_cache
 @login_required
-def status(request):
+def emp_status(request):
     emp = getattr(request.user, "employee", None)
     if not emp:
         raise PermissionDenied
@@ -2412,6 +2347,69 @@ def status(request):
         "date1": date1_raw,
         "date2": date2_raw,
     }
-    return render(request, "main/status.html", context)
+    return render(request, "main/emp_status.html", context)
 
 
+@never_cache
+@login_required
+def tex_status(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee or not getattr(employee, "rol", None) or employee.rol.client:
+        raise PermissionDenied
+
+    # ------------------- CARD: tashkilotlar soni + foiz -------------------
+    orgs = list(
+        Organization.objects
+        .all()
+        .order_by("id")
+        .annotate(technics_count=Count("technics", distinct=True))  # agar ishlamasa -> technics_set
+        .values("id", "name", "technics_count")
+    )
+
+    total_technics = sum(o["technics_count"] for o in orgs) or 1
+    for o in orgs:
+        o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
+
+    # ------------------- PIE: tashkilotlar ulushi -------------------
+    pie_labels = [o["name"] for o in orgs]
+    pie_values = [o["technics_count"] for o in orgs]
+
+    # ------------------- AREA: category (x) va organization (series) -------------------
+    cats_qs = list(Category.objects.all().order_by("id").values("id", "name"))
+    cat_ids = [c["id"] for c in cats_qs]
+    categories = [c["name"] for c in cats_qs]
+
+    org_ids = [o["id"] for o in orgs]
+
+    grouped = (
+        Technics.objects
+        .filter(organization_id__in=org_ids, category_id__in=cat_ids)
+        .values("organization_id", "category_id")
+        .annotate(cnt=Count("id"))
+    )
+
+    lookup = {(g["organization_id"], g["category_id"]): g["cnt"] for g in grouped}
+
+    series = []
+    for o in orgs:
+        data = [lookup.get((o["id"], cid), 0) for cid in cat_ids]
+        series.append({"name": o["name"], "data": data})
+
+    # ------------------- FUNNEL: tashkilotlar bo‘yicha (katta -> kichik) -------------------
+    orgs_sorted = sorted(orgs, key=lambda x: x["technics_count"], reverse=True)
+    # ko'p bo'lsa 8 ta ko'rsatamiz (xohlasangiz [:8] ni olib tashlang)
+    funnel_labels = [o["name"] for o in orgs_sorted[:8]]
+    funnel_values = [o["technics_count"] for o in orgs_sorted[:8]]
+
+    context = {
+        "orgs_qs": orgs,
+        "categories": categories,
+        "series": series,
+
+        "pie_labels": pie_labels,
+        "pie_values": pie_values,
+
+        "funnel_labels": funnel_labels,
+        "funnel_values": funnel_values,
+    }
+    return render(request, "main/tex_status.html", context)
