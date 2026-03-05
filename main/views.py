@@ -650,16 +650,21 @@ def barn_tex(request):
         qs = qs.filter(category_id=category_id)
 
     if name:
-        qs = qs.filter(
-            Q(employee__last_name__icontains=name) |
-            Q(employee__first_name__icontains=name) |
-            Q(employee__father_name__icontains=name) |
-            Q(name__icontains=name) |
-            Q(inventory__icontains=name) |
-            Q(serial__icontains=name) |
-            Q(mac__icontains=name) |
-            Q(ip__icontains=name)
-        )
+        words = name.split()
+        q = Q()
+        for w in words:
+            q &= (
+                    Q(employee__last_name__icontains=w) |
+                    Q(employee__first_name__icontains=w) |
+                    Q(employee__father_name__icontains=w) |
+                    Q(name__icontains=w) |
+                    Q(inventory__icontains=w) |
+                    Q(serial__icontains=w) |
+                    Q(mac__icontains=w) |
+                    Q(ip__icontains=w)
+            )
+
+        qs = qs.filter(q)
 
     total_count = qs.count()
     page_obj = Paginator(qs, 100).get_page(page_number)
