@@ -199,9 +199,45 @@
                         <td>{{ tex.mac|default:"-" }}</td>
 
                         {% if request.user.employee.rol.technics_edit %}
-                          <td>
-                            <!-- sizning dropdown/actions kodingiz o‘sha-o‘sha -->
-                          </td>
+                        <td>
+                            <div class="filter">
+                              <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
+                                <i class="bi bi-front" style="font-size: 18px;"></i>
+                              </a>
+                              <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                                <li>
+                                  <a class="dropdown-item" href="javascript:void(0)"
+                                     data-bs-toggle="modal" data-bs-target="#texdel-{{ tex.id }}">
+                                    <i class="bi bi-trash"></i> O'chirish
+                                  </a>
+                                </li>
+                                <li>
+                                  <a class="dropdown-item" href="javascript:void(0)"
+                                     data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">
+                                    <i class="bi bi-brush"></i> Tahrirlash
+                                  </a>
+                                </li>
+                                <li>
+                                  <a class="dropdown-item" href="javascript:void(0)"
+                                     data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
+                                    <i class="bi bi-paperclip"></i> Biriktirish
+                                  </a>
+                                </li>
+                                <li>
+                                  <a class="dropdown-item" href="javascript:void(0)"
+                                     data-bs-toggle="modal" data-bs-target="#extratex-{{ tex.id }}">
+                                    <i class="bi bi-pin-angle"></i>Qo'shimcha texnika biriktirish
+                                  </a>
+                                </li>
+                                <li>
+                                  <a class="dropdown-item" href="javascript:void(0)"
+                                     data-bs-toggle="modal" data-bs-target="#extratexdetach-{{ tex.id }}">
+                                    <i class="bi bi-x-square"></i>Qo'shimcha texnika bekor qilish
+                                  </a>
+                                </li>
+                              </ul>
+                            </div>
+                        </td>
                         {% endif %}
                       </tr>
                     {% endfor %}
