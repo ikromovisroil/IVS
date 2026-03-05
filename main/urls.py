@@ -53,11 +53,6 @@ urlpatterns = [
     path("get-dep-employees/", get_department_employees, name="get_dep_employees"),
 
 
-
-    # TECHNICS
-    path('technics/', technics, name='technics'),
-    path('technics/<slug:slug>/', technics, name='technics'),
-
     # FILTER AJAX
     path('ajax/load-departments/', ajax_load_departments, name='ajax_load_departments'),
     path('ajax/load-directorate/', ajax_load_directorate, name='ajax_load_directorate'),
