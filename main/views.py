@@ -585,7 +585,7 @@ def barn_tex(request):
     qs_params = params.urlencode()
 
     if not has_filter:
-        empty_page = Paginator([], 100).get_page(page_number)
+        empty_page = Paginator([], 50).get_page(page_number)
         return render(request, "main/barn_tex.html", {
             "organizations": organizations,
             "categories": categories,
@@ -879,7 +879,7 @@ def extra_tex(request):
 
     if not has_filter:
         qs = ExtraTechnics.objects.none()
-        page_obj = Paginator(qs, 100).get_page(page_number)
+        page_obj = Paginator(qs, 50).get_page(page_number)
 
         params = request.GET.copy()
         params.pop("page", None)
@@ -919,7 +919,7 @@ def extra_tex(request):
     # ✅ countlar faqat filter bo‘lganda
     total_count = qs.count()
 
-    paginator = Paginator(qs, 100)
+    paginator = Paginator(qs, 50)
     page_obj = paginator.get_page(page_number)
 
     params = request.GET.copy()
@@ -1136,7 +1136,7 @@ def barn_mat(request):
     # ✅ filter bo‘lmasa bo‘sh ko‘rsatamiz (tez)
     if not has_filter:
         qs = Material.objects.none()
-        page_obj = Paginator(qs, 100).get_page(page_number)
+        page_obj = Paginator(qs, 50).get_page(page_number)
 
         params = request.GET.copy()
         params.pop("page", None)
@@ -1180,7 +1180,7 @@ def barn_mat(request):
     total_count = qs.count()
     total_suma = qs.aggregate(s=Sum("total_sum"))["s"] or 0
 
-    paginator = Paginator(qs, 100)
+    paginator = Paginator(qs, 50)
     page_obj = paginator.get_page(page_number)
 
     params = request.GET.copy()
