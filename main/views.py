@@ -633,7 +633,7 @@ def barn_tex(request):
         .filter(is_active=True)
         .select_related("organization", "category", "employee")
         .prefetch_related("extratechnics_set")
-        .order_by("-id")
+        .order_by("employee")
     )
 
     if organization_id:
