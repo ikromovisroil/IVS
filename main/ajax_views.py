@@ -70,7 +70,7 @@ def ajax_load_departments(request):
     if not org_id or org_id == "None":
         return JsonResponse({"results": []})
 
-    qs = Department.objects.filter(organization_id=org_id).values("id", "name").order_by("name")
+    qs = Department.objects.filter(organization_id=org_id).values("id", "name")
     return JsonResponse({"results": list(qs)})
 
 @never_cache
@@ -81,7 +81,7 @@ def ajax_load_directorate(request):
     if not dep_id or dep_id == "None":
         return JsonResponse({"results": []})
 
-    qs = Directorate.objects.filter(department_id=dep_id).values("id", "name").order_by("name")
+    qs = Directorate.objects.filter(department_id=dep_id).values("id", "name")
     return JsonResponse({"results": list(qs)})
 
 @never_cache
@@ -92,7 +92,7 @@ def ajax_load_division(request):
     if not dir_id or dir_id == "None":
         return JsonResponse({"results": []})
 
-    qs = Division.objects.filter(directorate_id=dir_id).values("id", "name").order_by("name")
+    qs = Division.objects.filter(directorate_id=dir_id).values("id", "name")
     return JsonResponse({"results": list(qs)})
 
 @never_cache

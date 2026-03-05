@@ -563,8 +563,8 @@ def barn_tex(request):
         status or category_id or name
     )
 
-    organizations = Organization.objects.only("id", "name").order_by("id")
-    categories    = Category.objects.only("id", "name").order_by("name")
+    organizations = Organization.objects.only("id", "name")
+    categories    = Category.objects.only("id", "name")
     technics_form = TechnicsForm()
 
     # ✅ Cascading selectlar: faqat tanlangan qiymatlar bo‘yicha to‘ldiramiz
