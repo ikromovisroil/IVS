@@ -384,42 +384,6 @@
         </li>
         {% endif %}
 
-        {% if not request.user.employee.rol.client %}
-        <!-- TEXNIKALAR -->
-        <li class="nav-item">
-
-          <a class="nav-link {% if url_name != 'technics' %}collapsed{% endif %}"
-             data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
-            <i class="bi bi-menu-button-wide"></i>
-            <span>Texnikalar ro‘yxati</span>
-            <i class="bi bi-chevron-down ms-auto"></i>
-          </a>
-
-          <ul id="components-nav"
-              class="nav-content collapse {% if url_name == 'technics' %}show{% endif %}"
-              data-bs-parent="#sidebar-nav">
-
-            {% for i in global_categorys %}
-            <li>
-              <a class="{% if request.path == i.get_absolute_url %}active{% endif %}"
-                 href="{% url 'technics' i.slug %}">
-                <i class="bi bi-circle"></i><span>{{ i.name }}</span>
-              </a>
-            </li>
-            {% endfor %}
-
-            <li>
-              <a class="{% if request.path == '/technics/' %}active{% endif %}"
-                 href="{% url 'technics' %}">
-                <i class="bi bi-circle"></i><span>Hammasi</span>
-              </a>
-            </li>
-
-          </ul>
-        </li>
-        <!-- TASHKILOTLAR -->
-        {% endif %}
-
         <!-- Hisobotlar -->
         {% if request.user.employee.rol.akt %}
         <li class="nav-item">
