@@ -531,8 +531,8 @@ $(function () {
     const date1 = $('#date1').val();
     const date2 = $('#date2').val();
 
-    if (!orgId || !depId || !date1 || !date2) {
-      alert("Iltimos, tashkilot, departament va sanalarni to'liq tanlang!");
+    if (!orgId || !date1 || !date2) {
+      alert("Iltimos, tashkilot yoki departament va sanalarni to'liq tanlang!");
       return;
     }
 
@@ -552,7 +552,7 @@ $(function () {
     $.ajax({
       url: "{% url 'ajax_akt_materials' %}",
       method: "GET",
-      data: { department: depId, date1: date1, date2: date2 },
+      data: {organization: orgId, department: depId, date1: date1, date2: date2 },
       success: function(data) {
         if (!data || data.length === 0) {
           editorSetTbodyRows(`
