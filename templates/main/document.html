@@ -249,7 +249,6 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 (function () {
-  // Agar jQuery yuklanmagan bo'lsa - umuman ishlamaydi (xato chiqmasin)
   if (!window.jQuery) {
     console.error("jQuery yuklanmagan! base.html ichida jquery scriptni tekshiring.");
     return;
@@ -268,16 +267,14 @@
         .replaceAll("'", '&#039;');
     }
 
-    // -------------------- SELECT2 INIT (select2.js bor bo‘lsa shuni ishlatadi) --------------------
+    // -------------------- SELECT2 INIT --------------------
     function safeInitSelect2(ctx){
-      // Sizda static/js/select2.js bor: window.initSelect2 e'lon qilingan
       if (typeof window.initSelect2 === "function") {
         window.initSelect2(ctx || document);
         return;
       }
-
-      // fallback: agar select2.js ulangan bo‘lmasa ham, oddiy init
       if (!$.fn.select2) return;
+
       $('select.form-select').each(function(){
         const $el = $(this);
         if ($el.data('select2')) return;
@@ -351,7 +348,7 @@
       let tries = 0;
       const t = setInterval(function(){
         tries++;
-        if (getEditor() || tries > 80){ // ~8s
+        if (getEditor() || tries > 80){
           clearInterval(t);
           applyTodayDate();
         }
@@ -363,7 +360,7 @@
       const ed = getEditor();
       if (!ed) return;
       const root = ed.getBody();
-      root.querySelectorAll('#org_id').forEach(el => el.textContent = orgText);
+      root.querySelectorAll('#org_id, #org_id_1, #org_id_2').forEach(el => el.textContent = orgText);
       ed.nodeChanged();
     }
 
@@ -379,16 +376,15 @@
     // -------------------- ORG -> DEP --------------------
     function loadDepartments(orgId, selectedDepId = null) {
       const $dep = $('#department');
-      const $sender = $('#sender');
+      const $receiver = $('#receiver');
       const $agr = $('#agreements');
 
-      // UI reset
-      $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change.select2');
-      $sender.html('<option value=""></option>').val('').trigger('change.select2');
-      $agr.html('').trigger('change.select2');
+      $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change');
+      $receiver.html('<option value=""></option>').val('').trigger('change');
+      $agr.html('').trigger('change');
 
       if (!orgId) {
-        $dep.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
+        $dep.html('<option value="">Tanlang...</option>').val('').trigger('change');
         return;
       }
 
@@ -399,36 +395,30 @@
         data: { organization: orgId },
 
         success: function (data) {
-          console.log("Departments AJAX data:", data);
-
-          // ✅ data har xil formatda bo‘lishi mumkin
           const list = Array.isArray(data) ? data : (data.departments || data.results || []);
-
           if (!Array.isArray(list)) {
-            console.error("Departments format xato. List emas:", list);
-            $dep.html('<option value="">Format xato</option>').val('').trigger('change.select2');
+            $dep.html('<option value="">Format xato</option>').val('').trigger('change');
             return;
           }
 
           let options = '<option value=""></option>';
           list.forEach(function(dep) {
-            options += `<option value="${dep.id}">${dep.name}</option>`;
+            options += `<option value="${dep.id}">${esc(dep.name)}</option>`;
           });
 
           $dep.html(options);
 
-          // ✅ Tanlab qo‘yish
           if (selectedDepId) $dep.val(String(selectedDepId));
           else $dep.val('');
 
-          // ✅ Select2 bo‘lsa ham yangilansin
           $dep.trigger('change');
+          safeInitSelect2(document);
         },
 
         error: function(xhr) {
-          console.error("Departments AJAX error:", xhr.status, xhr.statusText);
-          console.log("Response:", xhr.responseText);
-          $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change.select2');
+          console.error("Departments AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
+          $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change');
+          safeInitSelect2(document);
         }
       });
     }
@@ -440,72 +430,91 @@
         currentSelected = ($sel.val() || []).map(String);
       }
 
+      // multi-select uchun allowEmpty false bo‘lsa ham bo‘sh option qo‘shmaymiz
       let opt = allowEmpty ? '<option value="">Tanlang...</option>' : '';
+
       (list || []).forEach(emp => {
         const idStr = String(emp.id);
-        const sel1 = (selectedId && idStr === String(selectedId)) ? 'selected' : '';
-        const sel2 = (keepSelected && currentSelected.includes(idStr)) ? 'selected' : '';
+        const isSelectedSingle = selectedId && idStr === String(selectedId);
+        const isSelectedKeep = keepSelected && currentSelected.includes(idStr);
+
         const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-        opt += `<option value="${emp.id}" ${sel1 || sel2}>${esc(label)}</option>`;
+        opt += `<option value="${esc(emp.id)}" ${(isSelectedSingle || isSelectedKeep) ? 'selected' : ''}>${esc(label)}</option>`;
       });
 
-      $sel.html(opt).trigger('change.select2');
+      $sel.html(opt).trigger('change');
       safeInitSelect2(document);
     }
 
-    // -------------------- DEP -> RECEIVER --------------------
-    function loadReceiverByDepartment(depId){
+    // -------------------- DEP/ORG -> RECEIVER --------------------
+    function loadReceiverByDepartment(depId, selectedId = null) {
       const $receiver = $('#receiver');
+      const orgId = $('#organization').val();
 
-      $receiver.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
-      safeInitSelect2(document);
+      $receiver.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change');
 
-      if(!depId){
-        $receiver.html('<option value="">Tanlang...</option>').trigger('change.select2');
-        safeInitSelect2(document);
+      if (!orgId && !depId) {
+        $receiver.html('<option value="">Tanlang...</option>').val('').trigger('change');
         return;
       }
+
+      const payload = {};
+      if (orgId) payload.organization = orgId;
+      if (depId) payload.department = depId;
 
       $.ajax({
         url: "{% url 'ajax_dep_signatory' %}",
         method: "GET",
         dataType: "json",
-        data: { department: depId },
-        success: function(list){
-          fillEmployeeSelect($receiver, list, null, true, false);
+        data: payload,
+
+        success: function(list) {
+          fillEmployeeSelect($receiver, list, selectedId, true, false);
         },
-        error: function(xhr){
-          console.log("receiver ajax error:", xhr.status, xhr.responseText);
-          $receiver.html('<option value="">Xatolik</option>').trigger('change.select2');
+
+        error: function(xhr) {
+          console.log("receiver ajax error:", xhr.status, xhr.statusText, xhr.responseText);
+          $receiver.html('<option value="">Xatolik</option>').val('').trigger('change');
           safeInitSelect2(document);
         }
       });
     }
 
-    // -------------------- DEP -> AGREEMENTS --------------------
-    function loadAgreementsByDepartment(depId){
+    // -------------------- DEP/ORG -> AGREEMENTS --------------------
+    function loadAgreementsByDepartment(depId, selectedIds = []) {
       const $agr = $('#agreements');
+      const orgId = $('#organization').val();
 
-      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change.select2');
-      safeInitSelect2(document);
+      $agr.html('').trigger('change');
 
-      if(!depId){
-        $agr.html('').trigger('change.select2');
-        safeInitSelect2(document);
-        return;
-      }
+      if (!orgId && !depId) return;
+
+      const payload = {};
+      if (orgId) payload.organization = orgId;
+      if (depId) payload.department = depId;
+
+      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
 
       $.ajax({
         url: "{% url 'ajax_dep_negotiator' %}",
         method: "GET",
         dataType: "json",
-        data: { department: depId },
-        success: function(list){
-          fillEmployeeSelect($agr, list, null, false, true); // keepSelected = true
+        data: payload,
+
+        success: function(list) {
+          // keepSelected=true: tanlanganlar saqlanadi
+          // selectedIds hozir kerak bo'lsa, oldindan $agr.val(selectedIds) bilan ham berib yuborish mumkin
+          fillEmployeeSelect($agr, list, null, false, true);
+
+          // agar restore qilish kerak bo‘lsa:
+          if (selectedIds && selectedIds.length) {
+            $agr.val(selectedIds.map(String)).trigger('change');
+          }
         },
-        error: function(xhr){
-          console.log("agreements ajax error:", xhr.status, xhr.responseText);
-          $agr.html('').trigger('change.select2');
+
+        error: function(xhr) {
+          console.log("agreements ajax error:", xhr.status, xhr.statusText, xhr.responseText);
+          $agr.html('').trigger('change');
           safeInitSelect2(document);
         }
       });
@@ -532,9 +541,9 @@
         rows += `
           <tr>
             <td style="border:1px solid #000;text-align:center;">${i+1}</td>
-            <td style="border:1px solid #000;">${esc(x.name)}</td>
-            <td style="border:1px solid #000;">${esc(x.serial)}</td>
-            <td style="border:1px solid #000;">${esc(x.inventory)}</td>
+            <td style="border:1px solid #000;">${esc(x.name || '')}</td>
+            <td style="border:1px solid #000;">${esc(x.serial || '')}</td>
+            <td style="border:1px solid #000;">${esc(x.inventory || '')}</td>
           </tr>`;
       });
 
@@ -560,16 +569,18 @@
         rows += `
           <tr>
             <td style="border:1px solid #000;text-align:center;">${i+1}</td>
-            <td style="border:1px solid #000;">${esc(x.name)}</td>
-            <td style="border:1px solid #000;">${esc(x.serial)}</td>
+            <td style="border:1px solid #000;">${esc(x.name || '')}</td>
+            <td style="border:1px solid #000;">${esc(x.serial || '')}</td>
           </tr>`;
       });
 
       setTbodyHtml('pr_tbody', rows);
     }
 
-    function loadTechnicsToEditor(depId){
-      if(!depId){
+    function loadTechnicsToEditor(depId) {
+      const orgId = $('#organization').val();
+
+      if (!orgId && !depId) {
         setInEditor('#komp_count', '_');
         setInEditor('#prin_count', '_');
         fillPc([]);
@@ -580,18 +591,24 @@
       setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
       setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
 
+      const payload = {};
+      if (orgId) payload.organization = orgId;
+      if (depId) payload.department = depId;
+
       $.ajax({
         url: "{% url 'ajax_document_preview' %}",
         method: "GET",
         dataType: "json",
-        data: { department: depId },
-        success: function(res){
+        data: payload,
+
+        success: function(res) {
           setInEditor('#komp_count', String(res.komp_count ?? 0));
           setInEditor('#prin_count', String(res.prin_count ?? 0));
           fillPc(res.kompyuterlar || []);
           fillPr(res.printerlar || []);
         },
-        error: function(xhr){
+
+        error: function(xhr) {
           let msg = "Xatolik yuz berdi";
           try { if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error; } catch(e){}
           setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
@@ -601,7 +618,7 @@
     }
 
     // -------------------- EVENTLAR --------------------
-    $('#organization').on('change', function(){
+    $('#organization').on('change', function () {
       const orgId = $(this).val();
       const orgText = $('#organization option:selected').text() || '';
 
@@ -609,17 +626,14 @@
 
       if (orgText && orgText !== 'Tanlang...') applyOrgToEditor(orgText);
 
-      $('#receiver').html('<option value="">Tanlang...</option>').trigger('change.select2');
-      $('#agreements').html('').trigger('change.select2');
-      safeInitSelect2(document);
-
-      setInEditor('#komp_count', '_');
-      setInEditor('#prin_count', '_');
-      fillPc([]);
-      fillPr([]);
+      // ✅ org tanlanganda ham ishlasin
+      const depId = $('#department').val();
+      loadReceiverByDepartment(depId);
+      loadAgreementsByDepartment(depId);
+      loadTechnicsToEditor(depId);
     });
 
-    $('#department').on('change', function(){
+    $('#department').on('change', function () {
       const depId = $(this).val();
       const depText = $('#department option:selected').text() || '';
 
@@ -630,26 +644,25 @@
       loadTechnicsToEditor(depId);
     });
 
-    $('#rim_id').on('change', function(){
+    $('#rim_id').on('change', function () {
       applyChorakToEditor($(this).val());
     });
 
-    $('#btnSearch').on('click', function(){
-      const depId = $('#department').val();
-      if(!depId){ alert("Departmentni tanlang!"); return; }
-      loadTechnicsToEditor(depId);
+    // dep majburiy emas
+    $('#btnSearch').on('click', function () {
+      loadTechnicsToEditor($('#department').val());
     });
 
     // -------------------- RESTORE --------------------
     const initialOrg = '{{ selected_org|default:"" }}';
     const initialDep = '{{ selected_dep|default:"" }}';
 
-    if (initialOrg){
+    if (initialOrg) {
       $('#organization').val(initialOrg).trigger('change');
       loadDepartments(initialOrg, initialDep);
 
-      if (initialDep){
-        setTimeout(function(){
+      if (initialDep) {
+        setTimeout(function () {
           $('#department').val(initialDep).trigger('change');
         }, 300);
       }

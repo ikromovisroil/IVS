@@ -144,7 +144,7 @@ def ajax_dep_negotiator(request):
         qs = qs.filter(Q(organization_id=org_id) | Q(organization_id=my_dep_id))
     else:
         return JsonResponse([], safe=False)
-    
+
     qs = qs.order_by("last_name", "first_name", "father_name").distinct()
 
     data = [{"id": e.id, "full_name": getattr(e, "full_name", "")} for e in qs]
@@ -496,31 +496,28 @@ def ajax_document_preview(request):
         raise PermissionDenied
 
     dep_id = (request.GET.get("department") or "").strip()
-    if not dep_id:
-        return JsonResponse({"error": "Department tanlanmagan"}, status=400)
+    org_id = (request.GET.get("organization") or "").strip()
 
-    dep = Department.objects.filter(id=dep_id).first()
-    if not dep:
-        return JsonResponse({"error": "Department topilmadi"}, status=404)
+    # ikkalasi ham bo‘lmasa xato
+    if not dep_id and not org_id:
+        return JsonResponse({"error": "Tashkilot yoki department tanlanmagan"}, status=400)
 
     komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
     prin_names = ["A4 Printer", "Printer", "scaner"]
 
-    # ✅ faqat shu department
-    kompyuter_qs = Technics.objects.filter(
-        employee__department_id=dep_id,
-        category__name__in=komp_names
-    )
-    printer_qs = Technics.objects.filter(
-        employee__department_id=dep_id,
-        category__name__in=prin_names
-    )
-    kompyuterlar = list(
-        kompyuter_qs.values("name", "serial", "inventory")
-    )
-    printerlar = list(
-        printer_qs.values("name", "serial")
-    )
+    kompyuter_qs = Technics.objects.filter(category__name__in=komp_names)
+    printer_qs   = Technics.objects.filter(category__name__in=prin_names)
+
+    # ✅ filter: dep ustun
+    if dep_id:
+        kompyuter_qs = kompyuter_qs.filter(employee__department_id=dep_id)
+        printer_qs   = printer_qs.filter(employee__department_id=dep_id)
+    else:
+        kompyuter_qs = kompyuter_qs.filter(employee__organization_id=org_id)
+        printer_qs   = printer_qs.filter(employee__organization_id=org_id)
+
+    kompyuterlar = list(kompyuter_qs.values("name", "serial", "inventory"))
+    printerlar   = list(printer_qs.values("name", "serial"))
 
     data = {
         "komp_count": kompyuter_qs.count(),
