@@ -157,83 +157,54 @@
                 </thead>
 
                 <tbody id="technicsBody">
-                  {% for tex in technics %}
-                    <tr>
-                      {# page bo‘yicha raqam #}
-                      <th scope="row">
-                        {{ row_start|add:forloop.counter0 }}
-                      </th>
-                      <td>
-                          {% ifchanged tex.employee_id %}
-                            {{ tex.employee.full_name|default:"Biriktirilmagan" }}
-                          {% else %}
-                          {% endifchanged %}
-                      </td>
-                      <td>{{ tex.name|default:"-" }}
-                          <span class="text-secondary small ps-4 ms-2 mt-1">
-                          {% for et in tex.extratechnics_set.all %}
-                          <br><i>{{ et.name|default:"-" }}</i>
-                          {% endfor %}
-                          </span>
-                      </td>
-                      <td>{{ tex.inventory|default:"-" }}
-                          <span class="text-secondary small ps-4 ms-2 mt-1">
-                          {% for et in tex.extratechnics_set.all %}
-                          <br><i>{{ et.inventory|default:"-" }}</i>
-                          {% endfor %}
-                          </span>
-                      </td>
-                      <td>{{ tex.serial|default:"-" }}
-                          <span class="text-secondary small ps-4 ms-2 mt-1">
-                          {% for et in tex.extratechnics_set.all %}
-                          <br><i>{{ et.serial|default:"-" }}</i>
-                          {% endfor %}
-                          </span>
-                      </td>
-                      <td>{{ tex.mac|default:"-" }}</td>
-                      {% if request.user.employee.rol.technics_edit %}
-                      <td>
-                        <div class="filter">
-                          <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
-                            <i class="bi bi-front" style="font-size: 18px;"></i>
-                          </a>
+                  {% for emp, items in grouped_technics %}
+                    {% for tex in items %}
+                      <tr>
+                        {# raqam #}
+                        <th scope="row">
+                          {{ row_start|add:forloop.parentloop.counter0|add:forloop.counter0 }}
+                        </th>
 
-                          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                            <li>
-                              <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#texdel-{{ tex.id }}">
-                                <i class="bi bi-trash"></i> O'chirish
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">
-                                <i class="bi bi-brush"></i> Tahrirlash
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
-                                <i class="bi bi-paperclip"></i> Biriktirish
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#extratex-{{ tex.id }}">
-                                <i class="bi bi-pin-angle"></i>Qo'shimcha texnika biriktirish
-                              </a>
-                            </li>
-                            <li>
-                              <a class="dropdown-item" href="javascript:void(0)"
-                                 data-bs-toggle="modal" data-bs-target="#extratexdetach-{{ tex.id }}">
-                                <i class="bi bi-x-square"></i>Qo'shimcha texnika bekor qilish
-                              </a>
-                            </li>
-                          </ul>
-                        </div>
-                      </td>
-                      {% endif %}
-                    </tr>
+                        {# ✅ ISM: rowspan bilan 1 marta #}
+                        {% if forloop.first %}
+                          <td rowspan="{{ items|length }}" class="align-middle">
+                            {{ emp.full_name|default:"Biriktirilmagan" }}
+                          </td>
+                        {% endif %}
+
+                        <td>{{ tex.name|default:"-" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                            {% for et in tex.extratechnics_set.all %}
+                              <br><i>{{ et.name|default:"-" }}</i>
+                            {% endfor %}
+                          </span>
+                        </td>
+
+                        <td>{{ tex.inventory|default:"-" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                            {% for et in tex.extratechnics_set.all %}
+                              <br><i>{{ et.inventory|default:"-" }}</i>
+                            {% endfor %}
+                          </span>
+                        </td>
+
+                        <td>{{ tex.serial|default:"-" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                            {% for et in tex.extratechnics_set.all %}
+                              <br><i>{{ et.serial|default:"-" }}</i>
+                            {% endfor %}
+                          </span>
+                        </td>
+
+                        <td>{{ tex.mac|default:"-" }}</td>
+
+                        {% if request.user.employee.rol.technics_edit %}
+                          <td>
+                            <!-- sizning dropdown/actions kodingiz o‘sha-o‘sha -->
+                          </td>
+                        {% endif %}
+                      </tr>
+                    {% endfor %}
                   {% endfor %}
                 </tbody>
               </table>

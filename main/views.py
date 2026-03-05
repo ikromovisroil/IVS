@@ -567,73 +567,48 @@ def barn_tex(request):
     categories    = Category.objects.only("id", "name")
     technics_form = TechnicsForm()
 
-    # ✅ Cascading selectlar: faqat tanlangan qiymatlar bo‘yicha to‘ldiramiz
+    # cascading
     departments = Department.objects.none()
     if organization_id:
-        departments = (
-            Department.objects
-            .filter(organization_id=organization_id)
-            .only("id", "name")
-            .order_by("name")
-        )
+        departments = Department.objects.filter(organization_id=organization_id).only("id", "name").order_by("name")
 
     directorates = Directorate.objects.none()
     if department_id:
-        directorates = (
-            Directorate.objects
-            .filter(department_id=department_id)
-            .only("id", "name")
-            .order_by("name")
-        )
+        directorates = Directorate.objects.filter(department_id=department_id).only("id", "name").order_by("name")
 
     divisions = Division.objects.none()
     if directorate_id:
-        divisions = (
-            Division.objects
-            .filter(directorate_id=directorate_id)
-            .only("id", "name")
-            .order_by("name")
-        )
+        divisions = Division.objects.filter(directorate_id=directorate_id).only("id", "name").order_by("name")
 
     params = request.GET.copy()
     params.pop("page", None)
     qs_params = params.urlencode()
 
-    # ✅ Filter bo‘lmasa bo‘sh sahifa (siz xohlagandek)
     if not has_filter:
-        empty_qs = Technics.objects.none()
-        page_obj = Paginator(empty_qs, 100).get_page(page_number)
-
+        empty_page = Paginator([], 100).get_page(page_number)
         return render(request, "main/barn_tex.html", {
             "organizations": organizations,
             "categories": categories,
             "technics_form": technics_form,
-
             "departments": departments,
             "directorates": directorates,
             "divisions": divisions,
-
             "selected_org": organization_id,
             "selected_dep": department_id,
             "selected_dir": directorate_id,
             "selected_div": division_id,
-
-            "page_obj": page_obj,
-            "technics": page_obj.object_list,
+            "page_obj": empty_page,
+            "grouped_technics": [],
             "qs_params": qs_params,
-            "row_start": 0,
-
             "extratex": ExtraTechnics.objects.none(),
             "total_count": 0,
         })
 
-    # ✅ filter bor bo‘lsa query
     qs = (
         Technics.objects
         .filter(is_active=True)
         .select_related("organization", "category", "employee")
         .prefetch_related("extratechnics_set")
-        .order_by("employee")
     )
 
     if organization_id:
@@ -654,20 +629,37 @@ def barn_tex(request):
         q = Q()
         for w in words:
             q &= (
-                    Q(employee__last_name__icontains=w) |
-                    Q(employee__first_name__icontains=w) |
-                    Q(employee__father_name__icontains=w) |
-                    Q(name__icontains=w) |
-                    Q(inventory__icontains=w) |
-                    Q(serial__icontains=w) |
-                    Q(mac__icontains=w) |
-                    Q(ip__icontains=w)
+                Q(employee__last_name__icontains=w) |
+                Q(employee__first_name__icontains=w) |
+                Q(employee__father_name__icontains=w) |
+                Q(name__icontains=w) |
+                Q(inventory__icontains=w) |
+                Q(serial__icontains=w) |
+                Q(mac__icontains=w) |
+                Q(ip__icontains=w)
             )
-
         qs = qs.filter(q)
 
+    # ✅ employee bo‘yicha tartib (rowspan uchun shart)
+    qs = qs.order_by("employee_id", "id")
+
     total_count = qs.count()
-    page_obj = Paginator(qs, 100).get_page(page_number)
+
+    # ✅ grouping: [(employee, [tex, tex, ...]), ...]
+    grouped = []
+    current_emp_id = None
+    bucket = None
+
+    for t in qs:
+        emp_id = t.employee_id  # None bo‘lishi mumkin
+        if emp_id != current_emp_id:
+            bucket = (t.employee, [])
+            grouped.append(bucket)
+            current_emp_id = emp_id
+        bucket[1].append(t)
+
+    paginator = Paginator(grouped, 50)  # 1 sahifada 50 ta xodim guruhi
+    page_obj = paginator.get_page(page_number)
 
     extratex = ExtraTechnics.objects.none()
     if organization_id:
@@ -682,20 +674,17 @@ def barn_tex(request):
         "organizations": organizations,
         "categories": categories,
         "technics_form": technics_form,
-
         "departments": departments,
         "directorates": directorates,
         "divisions": divisions,
-
         "selected_org": organization_id,
         "selected_dep": department_id,
         "selected_dir": directorate_id,
         "selected_div": division_id,
 
         "page_obj": page_obj,
-        "technics": page_obj.object_list,
+        "grouped_technics": page_obj.object_list,  # [(emp, [tex...]), ...]
         "qs_params": qs_params,
-        "row_start": page_obj.start_index() if total_count else 0,
 
         "extratex": extratex,
         "total_count": total_count,
