@@ -20,8 +20,6 @@
               <div class="card">
                 <div class="card-body">
                   <form class="row g-2 mt-1" method="get">
-
-
                       <div class="col-md-3">
                         <label for="organization" class="form-label">Tashkilot</label>
                         <select id="organization" name="organization" class="form-select">
@@ -382,7 +380,8 @@
       </div>
     </div>
 
-    {% for tex in technics %}
+    {% for emp, items in grouped_technics %}
+    {% for tex in items %}
     <div class="modal fade" id="texdel-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'technics_delete' %}">
@@ -734,6 +733,7 @@
         </form>
       </div>
     </div>
+    {% endfor %}
     {% endfor %}
 
 </main>
