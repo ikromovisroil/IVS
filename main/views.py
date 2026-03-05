@@ -563,7 +563,7 @@ def barn_tex(request):
         status or category_id or name
     )
 
-    organizations = Organization.objects.only("id", "name").order_by("name")
+    organizations = Organization.objects.only("id", "name").order_by("id")
     categories    = Category.objects.only("id", "name").order_by("name")
     technics_form = TechnicsForm()
 
