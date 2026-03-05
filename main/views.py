@@ -696,6 +696,7 @@ def barn_tex(request):
         "total_count": total_count,
     })
 
+
 @never_cache
 @login_required
 @require_POST
