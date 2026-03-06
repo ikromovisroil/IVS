@@ -488,6 +488,7 @@ def ajax_reestr_materials(request):
 
     return JsonResponse(data, safe=False)
 
+
 @never_cache
 @login_required
 def ajax_document_preview(request):
@@ -504,11 +505,18 @@ def ajax_document_preview(request):
             status=400
         )
 
-    komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
-    prin_names = ["A4 Printer", "Printer", "scaner"]
+    komp = Liable.objects.filter(
+        employee=employee,
+        contract=1
+    ).values_list("category__name", flat=True)
 
-    kompyuter_qs = Technics.objects.filter(
-        category__name__in=komp_names,
+    prin4 = Liable.objects.filter(
+        employee=employee,
+        contract=2
+    ).values_list("category__name", flat=True)
+
+    kompyuter = Technics.objects.filter(
+        category__name__in=komp,
         is_active=True
     ).select_related(
         "employee", "organization", "department", "category"
@@ -516,26 +524,25 @@ def ajax_document_preview(request):
         "extratechnics_set"
     )
 
-    printer_qs = Technics.objects.filter(
-        category__name__in=prin_names,
+    printer = Technics.objects.filter(
+        category__name__in=prin4,
         is_active=True
     ).select_related(
         "employee", "organization", "department", "category"
     )
 
     if dep_id:
-        kompyuter_qs = kompyuter_qs.filter(department_id=dep_id)
-        printer_qs = printer_qs.filter(department_id=dep_id)
+        kompyuter = kompyuter.filter(department_id=dep_id)
+        printer = printer.filter(department_id=dep_id)
     else:
-        kompyuter_qs = kompyuter_qs.filter(organization_id=org_id)
-        printer_qs = printer_qs.filter(organization_id=org_id)
+        kompyuter = kompyuter.filter(organization_id=org_id)
+        printer = printer.filter(organization_id=org_id)
 
     kompyuterlar = []
-    for tex in kompyuter_qs:
+    for tex in kompyuter:
         extra_serials = list(
             tex.extratechnics_set.filter(is_active=True).values_list("serial", flat=True)
         )
-
         kompyuterlar.append({
             "id": tex.id,
             "name": tex.name or "",
@@ -544,7 +551,7 @@ def ajax_document_preview(request):
         })
 
     printerlar = []
-    for tex in printer_qs:
+    for tex in printer:
         printerlar.append({
             "id": tex.id,
             "name": tex.name or "",
@@ -552,10 +559,10 @@ def ajax_document_preview(request):
         })
 
     data = {
-        "komp_count": len(kompyuterlar),
-        "prin_count": len(printerlar),
-        "kompyuterlar": kompyuterlar,
-        "printerlar": printerlar,
+        "contrac1": kompyuterlar,
+        "contrac1_count": len(kompyuterlar),
+        "contrac2": printerlar,
+        "contrac2_count": len(printerlar),
     }
 
     return JsonResponse(data)

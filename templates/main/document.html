@@ -45,7 +45,7 @@
 
               <div class="col-12">
                 <label for="department" class="form-label">Departament :</label>
-                <select id="department" name="department" class="form-select" required>
+                <select id="department" name="department" class="form-select">
                   <option value="">Tanlang...</option>
                   {% for dep in departments %}
                     <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>
@@ -127,136 +127,144 @@
             <h5 class="card-title">TinyMCE Editor</h5>
 
             <textarea id="body" name="body" class="tinymce-editor">
-                <div style="text-align:center;">
-                  <b>DALOLATNOMA</b>
-                </div>
+<div style="text-align:center;">
+  <b>DALOLATNOMA</b>
+</div>
 
-                <div style="text-align:right;">
-                  <span id="doc_date">12.02.2026 y</span>
-                </div>
+<div style="text-align:right;">
+  <span id="doc_date">12.02.2026 y</span>
+</div>
 
-                <div style="text-align: justify;">
-                  <span>
-                    Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi
-                    <span class="org_id">Iqtisodiyot va moliya vazirligi</span>
-                    <span id="dep_id">Davlat byudjeti siyosati departamenti</span> direktori <b>Sh.Muxamedov</b>,
-                    va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi direktori vazifasini vaqtincha bajaruvchi
-                    <b>F.Xujamqulov</b>:
-                    O‘zbekiston Respublikasi <span class="org_id">Iqtisodiyot va moliya vazirligi</span> hamda
-                    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
-                    <b><span id="date_contract">2025 yil 4-martda tuzilgan 1-sonli shartnoma</span>ga asosan</b>
-                    <span id="dep_id2">Davlat byudjeti siyosati departamenti</span> bo‘yicha
-                    2026 yil <span id="chorak">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
-                    Ishlar texnologik xaritaga muvofiq amalga oshirildi.
-                  </span>
-                </div>
+<div style="text-align: justify;">
+  <span>
+    Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi
+    <span class="org_id">Iqtisodiyot va moliya vazirligi</span>
+    <span id="dep_id">Davlat byudjeti siyosati departamenti</span> direktori <b>Sh.Muxamedov</b>,
+    va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi direktori vazifasini vaqtincha bajaruvchi
+    <b>F.Xujamqulov</b>:
+    O‘zbekiston Respublikasi <span class="org_id">Iqtisodiyot va moliya vazirligi</span> hamda
+    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
+    <b><span id="date_contract">2025 yil 4-martda tuzilgan 1-sonli shartnoma</span>ga asosan</b>
+    <span id="dep_id2">Davlat byudjeti siyosati departamenti</span> bo‘yicha
+    2026 yil <span id="chorak">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
+    Ishlar texnologik xaritaga muvofiq amalga oshirildi.
+  </span>
+</div>
 
-                <div></div>
+<div></div>
 
-                <div style="text-align:left;">
-                  <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
-                </div>
+<div style="text-align:left;">
+  <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
+</div>
 
-                <div></div>
+<div></div>
 
-                {% for l in liable %}
-                <div style="text-align:left;" id="contract_{{l.id}}">
-                  <b><span>{{l.contract.name}}</span> <span id="prin_count">_</span> dona.</b>
-                </div>
-                {% endfor %}
+{% for l in liable %}
+  {% if l.contract.id == 1 %}
+    <div style="text-align:left;">
+      <b><span>{{ l.contract.name }}</span> <span id="komp_count">_</span> dona.</b>
+    </div>
+  {% elif l.contract.id == 2 %}
+    <div style="text-align:left;">
+      <b><span>{{ l.contract.name }}</span> <span id="prin_count">_</span> dona.</b>
+    </div>
+  {% endif %}
+{% endfor %}
 
-                <div></div>
+<div></div>
 
-                <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:50%;">
-                      <col style="width:50%;">
-                    </colgroup>
-                    <tbody>
-                      <tr>
-                        <td style="border:1px solid #fff;text-align:center;">
-                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi <span class="dep_name_text">Davlat byudjeti siyosati departamenti</span></b><br><br>
-                          <b>Sh.Muxamedov</b>
-                        </td>
-                        <td style="border:1px solid #fff;text-align:center;">
-                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.</b><br><br>
-                          <b>F.Xujamqulov</b>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup>
+      <col style="width:50%;">
+      <col style="width:50%;">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;text-align:center;">
+          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi <span class="dep_name_text">Davlat byudjeti siyosati departamenti</span></b><br><br>
+          <b>Sh.Muxamedov</b>
+        </td>
+        <td style="border:1px solid #fff;text-align:center;">
+          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.</b><br><br>
+          <b>F.Xujamqulov</b>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-                <div style="page-break-after: always;"></div>
+<div style="page-break-after: always;"></div>
 
-                <div style="text-align:right;">
-                  <span id="doc_date2">12.02.2026 y</span>
-                </div>
+<div style="text-align:right;">
+  <span id="doc_date2">12.02.2026 y</span>
+</div>
 
-                <div style="text-align:center;">
-                  <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
-                </div>
+<div style="text-align:center;">
+  <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
+</div>
 
-                <div style="text-align:center;">
-                  <b>DALOLATNOMA</b><br>
-                  <span style="text-align:center;font-size:8pt;" class="dep_name_text">(boshqarma nomi)</span>
-                </div>
+<div style="text-align:center;">
+  <b>DALOLATNOMA</b><br>
+  <span style="text-align:center;font-size:8pt;" class="dep_name_text">(boshqarma nomi)</span>
+</div>
 
-                <div style="text-align:center;">
-                  <b>Biz, <u>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</u></b><br>
-                  <span style="text-align:center;font-size:8pt;">(F.I.Sh.) (lavozimi)</span>
-                </div>
+<div style="text-align:center;">
+  <b>Biz, <u>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</u></b><br>
+  <span style="text-align:center;font-size:8pt;">(F.I.Sh.) (lavozimi)</span>
+</div>
 
-                <div style="text-align:left;">
-                  <b>Xizmat ko‘rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
-                </div>
+<div style="text-align:left;">
+  <b>Xizmat ko‘rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
+</div>
 
-                <div style="text-align:left;">
-                  <b>Kompyuterlar (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar)</b>
-                </div>
+{% for l in liable %}
+  {% if l.contract.id == 1 %}
+    <div style="text-align:left;">
+      <b>{{ l.contract.name }}</b>
+    </div>
 
-                <div>
-                  <table style="border-collapse:collapse;width:100%;" border="1">
-                    <colgroup>
-                      <col style="width:10%;">
-                      <col style="width:30%;">
-                      <col style="width:30%;">
-                      <col style="width:30%;">
-                    </colgroup>
-                    <tbody id="pc_tbody">
-                      <tr>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR:</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+    <div>
+      <table style="border-collapse:collapse;width:100%;" border="1">
+        <colgroup>
+          <col style="width:10%;">
+          <col style="width:30%;">
+          <col style="width:30%;">
+          <col style="width:30%;">
+        </colgroup>
+        <tbody id="tbody1">
+          <tr>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>
+          </tr>
+        </tbody>
+      </table>
+    </div><br>
+  {% elif l.contract.id == 2 %}
+    <div style="text-align:left;">
+      <b>{{ l.contract.name }}</b>
+    </div>
 
-                <br>
-
-                <div style="text-align:left;">
-                  <b>Printerlar (A4/A3/Skanner)</b>
-                </div>
-
-                <div>
-                  <table style="border-collapse:collapse;width:100%;" border="1">
-                    <colgroup>
-                      <col style="width:10%;">
-                      <col style="width:45%;">
-                      <col style="width:45%;">
-                    </colgroup>
-                    <tbody id="pr_tbody">
-                      <tr>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+    <div>
+      <table style="border-collapse:collapse;width:100%;" border="1">
+        <colgroup>
+          <col style="width:10%;">
+          <col style="width:45%;">
+          <col style="width:45%;">
+        </colgroup>
+        <tbody id="tbody2">
+          <tr>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
+          </tr>
+        </tbody>
+      </table>
+    </div><br>
+  {% endif %}
+{% endfor %}
             </textarea>
 
           </div>
@@ -314,6 +322,7 @@
 
     function getEditor() {
       if (!window.tinymce) return null;
+
       const ed = tinymce.get('body');
       if (!ed) return null;
 
@@ -358,7 +367,7 @@
         const els = root.querySelectorAll(selector);
         if (!els.length) return false;
 
-        els.forEach(el => {
+        els.forEach(function (el) {
           el.textContent = text;
         });
 
@@ -408,9 +417,12 @@
       const timer = setInterval(function () {
         tries++;
         const ed = getEditor();
+
         if (ed || tries > 100) {
           clearInterval(timer);
-          if (ed && typeof callback === 'function') callback();
+          if (ed && typeof callback === 'function') {
+            callback();
+          }
         }
       }, 150);
     }
@@ -577,13 +589,13 @@
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>
         </tr>
       `;
 
       if (!items || !items.length) {
         rows += `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
-        setTbodyHtml('pc_tbody', rows);
+        setTbodyHtml('tbody1', rows);
         return;
       }
 
@@ -593,12 +605,12 @@
             <td style="border:1px solid #000;text-align:center;">${i + 1}</td>
             <td style="border:1px solid #000;">${esc(x.name || '')}</td>
             <td style="border:1px solid #000;">${esc(x.serial || '')}</td>
-            <td style="border:1px solid #000;">${esc(x.extra_serials || '')}</td>
+            <td style="border:1px solid #000;">${esc((x.extra_serials || []).join(', '))}</td>
           </tr>
         `;
       });
 
-      setTbodyHtml('pc_tbody', rows);
+      setTbodyHtml('tbody1', rows);
     }
 
     function fillPr(items) {
@@ -612,7 +624,7 @@
 
       if (!items || !items.length) {
         rows += `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
-        setTbodyHtml('pr_tbody', rows);
+        setTbodyHtml('tbody2', rows);
         return;
       }
 
@@ -626,7 +638,7 @@
         `;
       });
 
-      setTbodyHtml('pr_tbody', rows);
+      setTbodyHtml('tbody2', rows);
     }
 
     function loadTechnicsToEditor(depId) {
@@ -642,13 +654,13 @@
         return;
       }
 
-      setTbodyHtml('pc_tbody', `
+      setTbodyHtml('tbody1', `
         <tr>
           <td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td>
         </tr>
       `);
 
-      setTbodyHtml('pr_tbody', `
+      setTbodyHtml('tbody2', `
         <tr>
           <td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td>
         </tr>
@@ -664,21 +676,34 @@
         dataType: "json",
         data: payload,
         success: function (res) {
-          setInEditor('#komp_count', String(res.komp_count ?? 0));
-          setInEditor('#prin_count', String(res.prin_count ?? 0));
-          fillPc(res.kompyuterlar || []);
-          fillPr(res.printerlar || []);
+          setInEditor('#komp_count', String(res.contrac1_count ?? 0));
+          setInEditor('#prin_count', String(res.contrac2_count ?? 0));
+          fillPc(res.contrac1 || []);
+          fillPr(res.contrac2 || []);
         },
         error: function (xhr) {
           let msg = "Xatolik yuz berdi";
+
           try {
             if (xhr.responseJSON && xhr.responseJSON.error) {
               msg = xhr.responseJSON.error;
             }
           } catch (e) {}
 
-          setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
-          setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          setInEditor('#komp_count', '_');
+          setInEditor('#prin_count', '_');
+
+          setTbodyHtml('tbody1', `
+            <tr>
+              <td colspan="4" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td>
+            </tr>
+          `);
+
+          setTbodyHtml('tbody2', `
+            <tr>
+              <td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td>
+            </tr>
+          `);
         }
       });
     }
