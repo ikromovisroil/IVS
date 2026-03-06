@@ -1337,14 +1337,8 @@ def document_get(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    liable = Liable.objects.filter(employee=employee).select_related("contract")
-    #.distinct("contract")
+    liable = Liable.objects.filter(employee=employee).select_related("contract").distinct("contract")
 
-    contrac1_category = (Liable.objects.filter(employee=employee, contract=1)
-                         .values_list("category__name", flat=True))
-    contrac2_category = (Liable.objects.filter(employee=employee, contract=2)
-                         .values_list("category__name", flat=True))
-    print(contrac1_category,contrac2_category)
     context = {
         "liable": liable,
         "organizations": Organization.objects.only("id", "name", "slug"),
