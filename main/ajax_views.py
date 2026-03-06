@@ -512,7 +512,17 @@ def ajax_document_preview(request):
 
     prin4 = Liable.objects.filter(
         employee=employee,
-        contract=2
+        contract=3
+    ).values_list("category__name", flat=True)
+
+    prin3 = Liable.objects.filter(
+        employee=employee,
+        contract=4
+    ).values_list("category__name", flat=True)
+
+    skan = Liable.objects.filter(
+        employee=employee,
+        contract=6
     ).values_list("category__name", flat=True)
 
     kompyuter = Technics.objects.filter(
@@ -524,8 +534,22 @@ def ajax_document_preview(request):
         "extratechnics_set"
     )
 
-    printer = Technics.objects.filter(
+    printer4 = Technics.objects.filter(
         category__name__in=prin4,
+        is_active=True
+    ).select_related(
+        "employee", "organization", "department", "category"
+    )
+
+    printer3 = Technics.objects.filter(
+        category__name__in=prin3,
+        is_active=True
+    ).select_related(
+        "employee", "organization", "department", "category"
+    )
+
+    skaner = Technics.objects.filter(
+        category__name__in=skan,
         is_active=True
     ).select_related(
         "employee", "organization", "department", "category"
@@ -533,10 +557,14 @@ def ajax_document_preview(request):
 
     if dep_id:
         kompyuter = kompyuter.filter(department_id=dep_id)
-        printer = printer.filter(department_id=dep_id)
+        printer4 = printer4.filter(department_id=dep_id)
+        printer3 = printer3.filter(department_id=dep_id)
+        skaner = skaner.filter(department_id=dep_id)
     else:
         kompyuter = kompyuter.filter(organization_id=org_id)
-        printer = printer.filter(organization_id=org_id)
+        printer4 = printer4.filter(organization_id=org_id)
+        printer3 = printer3.filter(organization_id=org_id)
+        skaner = skaner.filter(organization_id=org_id)
 
     kompyuterlar = []
     for tex in kompyuter:
@@ -550,9 +578,25 @@ def ajax_document_preview(request):
             "extra_serials": [s for s in extra_serials if s],
         })
 
-    printerlar = []
-    for tex in printer:
-        printerlar.append({
+    printer4lar = []
+    for tex in printer4:
+        printer4lar.append({
+            "id": tex.id,
+            "name": tex.name or "",
+            "serial": tex.serial or "",
+        })
+
+    printer3lar = []
+    for tex in printer3:
+        printer3lar.append({
+            "id": tex.id,
+            "name": tex.name or "",
+            "serial": tex.serial or "",
+        })
+
+    skanerlar = []
+    for tex in skaner:
+        skanerlar.append({
             "id": tex.id,
             "name": tex.name or "",
             "serial": tex.serial or "",
@@ -561,8 +605,12 @@ def ajax_document_preview(request):
     data = {
         "contrac1": kompyuterlar,
         "contrac1_count": len(kompyuterlar),
-        "contrac2": printerlar,
-        "contrac2_count": len(printerlar),
+        "contrac2": printer4lar,
+        "contrac2_count": len(printer4lar),
+        "contrac3": printer3lar,
+        "contrac3_count": len(printer3lar),
+        "contrac4": skanerlar,
+        "contrac4_count": len(skanerlar),
     }
 
     return JsonResponse(data)

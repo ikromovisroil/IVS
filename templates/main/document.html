@@ -164,9 +164,17 @@
     <div style="text-align:left;">
       <b><span>{{ l.contract.name }}</span> <span id="komp_count">_</span> dona.</b>
     </div>
-  {% elif l.contract.id == 2 %}
+  {% elif l.contract.id == 3 %}
     <div style="text-align:left;">
-      <b><span>{{ l.contract.name }}</span> <span id="prin_count">_</span> dona.</b>
+      <b><span>{{ l.contract.name }}</span> <span id="prin4_count">_</span> dona.</b>
+    </div>
+  {% elif l.contract.id == 4 %}
+    <div style="text-align:left;">
+      <b><span>{{ l.contract.name }}</span> <span id="prin3_count">_</span> dona.</b>
+    </div>
+  {% elif l.contract.id == 6 %}
+    <div style="text-align:left;">
+      <b><span>{{ l.contract.name }}</span> <span id="scan_count">_</span> dona.</b>
     </div>
   {% endif %}
 {% endfor %}
@@ -223,7 +231,6 @@
     <div style="text-align:left;">
       <b>{{ l.contract.name }}</b>
     </div>
-
     <div>
       <table style="border-collapse:collapse;width:100%;" border="1">
         <colgroup>
@@ -242,11 +249,11 @@
         </tbody>
       </table>
     </div><br>
-  {% elif l.contract.id == 2 %}
+
+  {% elif l.contract.id == 3 %}
     <div style="text-align:left;">
       <b>{{ l.contract.name }}</b>
     </div>
-
     <div>
       <table style="border-collapse:collapse;width:100%;" border="1">
         <colgroup>
@@ -254,11 +261,53 @@
           <col style="width:45%;">
           <col style="width:45%;">
         </colgroup>
-        <tbody id="tbody2">
+        <tbody id="tbody3">
           <tr>
             <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
             <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
             <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
+          </tr>
+        </tbody>
+      </table>
+    </div><br>
+
+  {% elif l.contract.id == 4 %}
+    <div style="text-align:left;">
+      <b>{{ l.contract.name }}</b>
+    </div>
+    <div>
+      <table style="border-collapse:collapse;width:100%;" border="1">
+        <colgroup>
+          <col style="width:10%;">
+          <col style="width:45%;">
+          <col style="width:45%;">
+        </colgroup>
+        <tbody id="tbody4">
+          <tr>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
+          </tr>
+        </tbody>
+      </table>
+    </div><br>
+
+  {% elif l.contract.id == 6 %}
+    <div style="text-align:left;">
+      <b>{{ l.contract.name }}</b>
+    </div>
+    <div>
+      <table style="border-collapse:collapse;width:100%;" border="1">
+        <colgroup>
+          <col style="width:10%;">
+          <col style="width:45%;">
+          <col style="width:45%;">
+        </colgroup>
+        <tbody id="tbody6">
+          <tr>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Skaner SR</td>
           </tr>
         </tbody>
       </table>
@@ -613,18 +662,18 @@
       setTbodyHtml('tbody1', rows);
     }
 
-    function fillPr(items) {
+    function fillGeneric(tbodyId, items, serialTitle) {
       let rows = `
         <tr>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">${serialTitle}</td>
         </tr>
       `;
 
       if (!items || !items.length) {
         rows += `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
-        setTbodyHtml('tbody2', rows);
+        setTbodyHtml(tbodyId, rows);
         return;
       }
 
@@ -638,7 +687,7 @@
         `;
       });
 
-      setTbodyHtml('tbody2', rows);
+      setTbodyHtml(tbodyId, rows);
     }
 
     function loadTechnicsToEditor(depId) {
@@ -648,22 +697,30 @@
 
       if (!orgId && !depId) {
         setInEditor('#komp_count', '_');
-        setInEditor('#prin_count', '_');
+        setInEditor('#prin4_count', '_');
+        setInEditor('#prin3_count', '_');
+        setInEditor('#scan_count', '_');
         fillPc([]);
-        fillPr([]);
+        fillGeneric('tbody3', [], 'Printer SR');
+        fillGeneric('tbody4', [], 'Printer SR');
+        fillGeneric('tbody6', [], 'Skaner SR');
         return;
       }
 
       setTbodyHtml('tbody1', `
-        <tr>
-          <td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td>
-        </tr>
+        <tr><td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>
       `);
 
-      setTbodyHtml('tbody2', `
-        <tr>
-          <td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td>
-        </tr>
+      setTbodyHtml('tbody3', `
+        <tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>
+      `);
+
+      setTbodyHtml('tbody4', `
+        <tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>
+      `);
+
+      setTbodyHtml('tbody6', `
+        <tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>
       `);
 
       const payload = {};
@@ -677,9 +734,14 @@
         data: payload,
         success: function (res) {
           setInEditor('#komp_count', String(res.contrac1_count ?? 0));
-          setInEditor('#prin_count', String(res.contrac2_count ?? 0));
+          setInEditor('#prin4_count', String(res.contrac2_count ?? 0));
+          setInEditor('#prin3_count', String(res.contrac3_count ?? 0));
+          setInEditor('#scan_count', String(res.contrac4_count ?? 0));
+
           fillPc(res.contrac1 || []);
-          fillPr(res.contrac2 || []);
+          fillGeneric('tbody3', res.contrac2 || [], 'Printer SR');
+          fillGeneric('tbody4', res.contrac3 || [], 'Printer SR');
+          fillGeneric('tbody6', res.contrac4 || [], 'Skaner SR');
         },
         error: function (xhr) {
           let msg = "Xatolik yuz berdi";
@@ -691,19 +753,14 @@
           } catch (e) {}
 
           setInEditor('#komp_count', '_');
-          setInEditor('#prin_count', '_');
+          setInEditor('#prin4_count', '_');
+          setInEditor('#prin3_count', '_');
+          setInEditor('#scan_count', '_');
 
-          setTbodyHtml('tbody1', `
-            <tr>
-              <td colspan="4" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td>
-            </tr>
-          `);
-
-          setTbodyHtml('tbody2', `
-            <tr>
-              <td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td>
-            </tr>
-          `);
+          setTbodyHtml('tbody1', `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          setTbodyHtml('tbody3', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          setTbodyHtml('tbody4', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          setTbodyHtml('tbody6', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
         }
       });
     }
