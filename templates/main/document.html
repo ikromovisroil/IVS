@@ -17,229 +17,253 @@
   </div>
 
   <section class="section">
-    <form class="row" action="{% url 'document_post' %}" method="post">{% csrf_token %}
+    <form class="row" action="{% url 'document_post' %}" method="post">
+      {% csrf_token %}
 
       <div class="col-lg-4">
 
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Filtrlash</h5>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Filtrlash</h5>
 
-              <div class="row g-3">
-                <div class="col-12">
-                  <label for="organization" class="form-label">Tashkilot :</label>
-                  <select id="organization" name="organization" class="form-select" required>
-                    <option value="">Tanlang...</option>
-                    {% for org in organizations %}
-                      <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>
-                        {{ org.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                </div>
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="organization" class="form-label">Tashkilot :</label>
+                <select id="organization" name="organization" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for org in organizations %}
+                    <option
+                      value="{{ org.id }}"
+                      data-contract="{{ org.contract|default:'' }}"
+                      {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}
+                    >
+                      {{ org.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
 
-                <div class="col-12">
-                  <label for="department" class="form-label">Departament :</label>
-                  <select id="department" name="department" class="form-select" required>
-                    <option value="">Tanlang...</option>
-                    {% for dep in departments %}
-                      <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>
-                        {{ dep.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
-                </div>
+              <div class="col-12">
+                <label for="department" class="form-label">Departament :</label>
+                <select id="department" name="department" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for dep in departments %}
+                    <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>
+                      {{ dep.name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
 
-                <div class="col-md-12">
-                  <label for="rim_id" class="form-label">Chorak:</label>
-                  <select id="rim_id" name="rim_id" class="form-select" required>
-                    <option value="">Tanlang...</option>
-                    <option value="I">I</option>
-                    <option value="II">II</option>
-                    <option value="III">III</option>
-                    <option value="IV">IV</option>
-                  </select>
-                </div>
+              <div class="col-md-12">
+                <label for="rim_id" class="form-label">Chorak:</label>
+                <select id="rim_id" name="rim_id" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  <option value="I">I</option>
+                  <option value="II">II</option>
+                  <option value="III">III</option>
+                  <option value="IV">IV</option>
+                </select>
+              </div>
 
-                <div class="text-center">
-                  <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
-                </div>
+              <div class="text-center">
+                <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
               </div>
             </div>
           </div>
+        </div>
 
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Imzolashga yuborish</h5>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Imzolashga yuborish</h5>
 
-              <div class="row g-3">
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="sender" class="form-label">Xizmat ko'rsatuvchining vakili</label>
+                <select id="sender" name="sender" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for emp in emp_bos_sender %}
+                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
 
-                <div class="col-12">
-                  <label for="sender" class="form-label">Xizmat ko'rsatuvchining vakili</label>
-                  <select id="sender" name="sender" class="form-select" required>
-                    <option value="">Tanlang...</option>
-                    {% for emp in emp_bos_sender %}
-                      <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
+              <div class="col-12">
+                <label for="receiver" class="form-label">Tashkilot vakili:</label>
+                <select id="receiver" name="receiver" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for emp in emp_bos %}
+                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
 
-                <div class="col-12">
-                  <label for="receiver" class="form-label">Tashkilot vakili:</label>
-                  <select id="receiver" name="receiver" class="form-select" required>
-                    <option value="">Tanlang...</option>
-                    {% for emp in emp_bos %}
-                      <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
+              <div class="col-12">
+                <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                <select id="agreements" name="agreements[]" class="form-select" multiple>
+                  {% for emp in employee %}
+                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
 
-                <div class="col-12">
-                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
-                  <select id="agreements" name="agreements[]" class="form-select" multiple>
-                    {% for emp in employee %}
-                      <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
+              <div class="col-12">
+                <label for="message" class="form-label">Izox :</label>
+                <textarea class="form-control" id="message" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+              </div>
 
-                <div class="col-12">
-                  <label for="message" class="form-label">Izox :</label>
-                  <textarea class="form-control" id="message" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
-                </div>
-
-                <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
-                </div>
-
+              <div class="text-center">
+                <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
               </div>
             </div>
           </div>
+        </div>
 
       </div>
 
       <div class="col-lg-8">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">TinyMCE Editor</h5>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">TinyMCE Editor</h5>
 
-              <textarea id="body" name="body" class="tinymce-editor">
-                <div style="text-align:center;">
-                  <b>DALOLATNOMA</b>
-                </div>
-                <div style="text-align:right;">
-                  <span id="doc_date">12.02.2026 y</span>
-                </div>
-                <div style="text-align: justify;">
-                  <span>
-                  Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi <span id="org_id">Iqtisodiyot va moliya vazirligi</span>
-                  <span id="dep_id">Davlat byudjeti siyosati departamenti</span> direktori <b>Sh.Muxamedov</b>, va O‘zbekiston Respublikasi Iqtisodiyot
-                  va moliya vazirligi huzuridagi Axborot texnologiyalari markazi direktori vazifasini vaqtincha bajaruvchi
-                  <b>F.Xujamqulov</b>: O‘zbekiston Respublikasi <span id="org_id">Iqtisodiyot va moliya vazirligi</span> hamda O‘zbekiston Respublikasi
-                  Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan <b>2025 yil 4-martda
-                  tuzilgan 1-sonli</b> shartnomaga asosan <span id="dep_id2">Davlat byudjeti siyosati departamenti</span> bo‘yicha 2026 yil
-                  <span id="chorak">I</span> chorak uchun
-                  quyidagi ishlar va xizmatlar bajarildi. Ishlar texnologik xaritaga muvofiq amalga oshirildi.
-                  </span>
-                </div>
-                <div></div>
-                <div style="text-align:left;">
-                  <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
-                </div>
-                <div></div>
-                <div style="text-align:left;">
-                  <span><b>1.1.</b> Biriktirilgan kompyuterlarga (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar)  xizmat ko‘rsatish – <b id="komp_count">_</b> dona</span>
-                </div>
-                <div style="text-align:left;">
-                  <span><b>1.4.</b> A3 formatli printerlarga (lazer, purkovchi (струйный) va ko‘p funksiyali printerlar) xizmat ko‘rastish – <b id="prin_count">_</b> dona.</span>
-                </div>
-                <div></div>
-                <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:50%;">
-                      <col style="width:50%;">
-                    </colgroup>
-                    <tbody>
-                      <tr>
-                        <td style="border:1px solid #fff;text-align:center;">
-                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi Davlat byudjeti siyosati departamenti</b><br><br>
-                          <b>Sh.Muxamedov</b>
-                        </td>
-                        <td style="border:1px solid #fff;text-align:center;">
-                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.</b><br><br>
-                          <b>F.Xujamqulov</b>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+            <textarea id="body" name="body" class="tinymce-editor">
+<div style="text-align:center;">
+  <b>DALOLATNOMA</b>
+</div>
 
-                <div style="page-break-after: always;"></div>
+<div style="text-align:right;">
+  <span id="doc_date">12.02.2026 y</span>
+</div>
 
-                <div style="text-align:right;">
-                  <span id="doc_date2">12.02.2026 y</span>
-                </div>
-                <div style="text-align:center;">
-                  <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
-                </div>
-                <div style="text-align:center;">
-                  <b>DALOLATNOMA</b></br>
-                  <span style="text-align:center;font-size:8pt;">(boshqarma nomi)</span>
-                </div>
-                <div style="text-align:center;">
-                  <b>Biz, <u>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</u></b></br>
-                  <span style="text-align:center;font-size:8pt;">(F.I.Sh.) (lavozimi)</span>
-                </div>
-                <div style="text-align:left;">
-                  <b>Xizmat ko‘rsatilyotgan texnikalarni rusumi seriya raqami:</b>
-                </div>
-                <div style="text-align:left;">
-                  <b>Kompyuterlar (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar)</b>
-                </div>
-                <div>
-                  <table style="border-collapse:collapse;width:100%;" border="1">
-                    <colgroup>
-                      <col style="width:10%;">
-                      <col style="width:30%;">
-                      <col style="width:30%;">
-                      <col style="width:30%;">
-                    </colgroup>
-                    <tbody id="pc_tbody">
-                      <tr>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR:</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div></br>
-                <div style="text-align:left;">
-                  <b>Printerlar (A4/A3/Skanner)</b>
-                </div>
-                <div>
-                  <table style="border-collapse:collapse;width:100%;" border="1">
-                    <colgroup>
-                      <col style="width:10%;">
-                      <col style="width:45%;">
-                      <col style="width:45%;">
-                    </colgroup>
-                    <tbody id="pr_tbody">
-                      <tr>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR:</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </textarea>
+<div style="text-align: justify;">
+  <span>
+    Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi
+    <span class="org_id">Iqtisodiyot va moliya vazirligi</span>
+    <span id="dep_id">Davlat byudjeti siyosati departamenti</span> direktori <b>Sh.Muxamedov</b>,
+    va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi direktori vazifasini vaqtincha bajaruvchi
+    <b>F.Xujamqulov</b>:
+    O‘zbekiston Respublikasi <span class="org_id">Iqtisodiyot va moliya vazirligi</span> hamda
+    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
+    <b><span id="date_contract">2025 yil 4-martda tuzilgan 1-sonli shartnoma</span>ga asosan</b>
+    <span id="dep_id2">Davlat byudjeti siyosati departamenti</span> bo‘yicha
+    2026 yil <span id="chorak">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
+    Ishlar texnologik xaritaga muvofiq amalga oshirildi.
+  </span>
+</div>
 
-            </div>
+<div></div>
+
+<div style="text-align:left;">
+  <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
+</div>
+
+<div></div>
+
+<div style="text-align:left;">
+  <span><b>1.1.</b> Biriktirilgan kompyuterlarga (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar) xizmat ko‘rsatish – <b id="komp_count">_</b> dona</span>
+</div>
+
+<div style="text-align:left;">
+  <span><b>1.4.</b> A3 formatli printerlarga (lazer, purkovchi (струйный) va ko‘p funksiyali printerlar) xizmat ko‘rsatish – <b id="prin_count">_</b> dona.</span>
+</div>
+
+<div></div>
+
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup>
+      <col style="width:50%;">
+      <col style="width:50%;">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;text-align:center;">
+          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi <span class="dep_name_text">Davlat byudjeti siyosati departamenti</span></b><br><br>
+          <b>Sh.Muxamedov</b>
+        </td>
+        <td style="border:1px solid #fff;text-align:center;">
+          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.</b><br><br>
+          <b>F.Xujamqulov</b>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div style="page-break-after: always;"></div>
+
+<div style="text-align:right;">
+  <span id="doc_date2">12.02.2026 y</span>
+</div>
+
+<div style="text-align:center;">
+  <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
+</div>
+
+<div style="text-align:center;">
+  <b>DALOLATNOMA</b><br>
+  <span style="text-align:center;font-size:8pt;" class="dep_name_text">(boshqarma nomi)</span>
+</div>
+
+<div style="text-align:center;">
+  <b>Biz, <u>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</u></b><br>
+  <span style="text-align:center;font-size:8pt;">(F.I.Sh.) (lavozimi)</span>
+</div>
+
+<div style="text-align:left;">
+  <b>Xizmat ko‘rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
+</div>
+
+<div style="text-align:left;">
+  <b>Kompyuterlar (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar)</b>
+</div>
+
+<div>
+  <table style="border-collapse:collapse;width:100%;" border="1">
+    <colgroup>
+      <col style="width:10%;">
+      <col style="width:30%;">
+      <col style="width:30%;">
+      <col style="width:30%;">
+    </colgroup>
+    <tbody id="pc_tbody">
+      <tr>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<br>
+
+<div style="text-align:left;">
+  <b>Printerlar (A4/A3/Skanner)</b>
+</div>
+
+<div>
+  <table style="border-collapse:collapse;width:100%;" border="1">
+    <colgroup>
+      <col style="width:10%;">
+      <col style="width:45%;">
+      <col style="width:45%;">
+    </colgroup>
+    <tbody id="pr_tbody">
+      <tr>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+        <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+            </textarea>
+
           </div>
-
         </div>
+      </div>
 
     </form>
   </section>
@@ -247,17 +271,17 @@
 </main>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
 (function () {
   if (!window.jQuery) {
-    console.error("jQuery yuklanmagan! base.html ichida jquery scriptni tekshiring.");
+    console.error("jQuery yuklanmagan!");
     return;
   }
 
   $(function () {
 
-    // -------------------- ESCAPE --------------------
-    function esc(s){
+    function esc(s) {
       if (s === null || s === undefined) return '';
       return String(s)
         .replaceAll('&', '&amp;')
@@ -267,120 +291,175 @@
         .replaceAll("'", '&#039;');
     }
 
-    // -------------------- SELECT2 INIT --------------------
-    function safeInitSelect2(ctx){
+    function safeInitSelect2() {
       if (typeof window.initSelect2 === "function") {
-        window.initSelect2(ctx || document);
+        window.initSelect2(document);
         return;
       }
+
       if (!$.fn.select2) return;
 
-      $('select.form-select').each(function(){
+      $('#organization, #department, #rim_id, #sender, #receiver, #agreements').each(function () {
         const $el = $(this);
         if ($el.data('select2')) return;
+
         $el.select2({
           width: '100%',
           placeholder: 'Tanlang...',
           allowClear: true,
-          closeOnSelect: !($el.prop('multiple'))
+          closeOnSelect: !$el.prop('multiple')
         });
       });
     }
-    safeInitSelect2(document);
 
-    // -------------------- TINYMCE SAFE --------------------
-    function getEditor(){
+    safeInitSelect2();
+
+    function getEditor() {
       if (!window.tinymce) return null;
       const ed = tinymce.get('body');
       if (!ed) return null;
-      try { ed.getBody(); } catch(e){ return null; }
+
+      try {
+        const body = ed.getBody();
+        if (!body) return null;
+      } catch (e) {
+        return null;
+      }
+
       return ed;
     }
 
-    function setInEditor(selector, text){
+    function setInEditor(selector, text) {
       const ed = getEditor();
       if (!ed) return false;
-      const root = ed.getBody();
-      const el = root.querySelector(selector);
-      if (!el) return false;
-      el.textContent = text;
-      ed.nodeChanged();
-      return true;
+
+      try {
+        const root = ed.getBody();
+        if (!root) return false;
+
+        const el = root.querySelector(selector);
+        if (!el) return false;
+
+        el.textContent = text;
+        ed.nodeChanged();
+        return true;
+      } catch (e) {
+        console.log('setInEditor xatosi:', e);
+        return false;
+      }
     }
 
-    function setAllInEditor(selector, text){
+    function setAllInEditor(selector, text) {
       const ed = getEditor();
       if (!ed) return false;
-      const root = ed.getBody();
-      const els = root.querySelectorAll(selector);
-      if (!els || !els.length) return false;
-      els.forEach(el => el.textContent = text);
-      ed.nodeChanged();
-      return true;
+
+      try {
+        const root = ed.getBody();
+        if (!root) return false;
+
+        const els = root.querySelectorAll(selector);
+        if (!els.length) return false;
+
+        els.forEach(el => {
+          el.textContent = text;
+        });
+
+        ed.nodeChanged();
+        return true;
+      } catch (e) {
+        console.log('setAllInEditor xatosi:', e);
+        return false;
+      }
     }
 
-    function setTbodyHtml(tbodyId, html){
+    function setTbodyHtml(tbodyId, html) {
       const ed = getEditor();
       if (!ed) return false;
-      const root = ed.getBody();
-      const tb = root.querySelector('#' + tbodyId);
-      if (!tb) return false;
-      tb.innerHTML = html;
-      ed.nodeChanged();
-      return true;
+
+      try {
+        const root = ed.getBody();
+        if (!root) return false;
+
+        const tb = root.querySelector('#' + tbodyId);
+        if (!tb) return false;
+
+        tb.innerHTML = html;
+        ed.nodeChanged();
+        return true;
+      } catch (e) {
+        console.log('setTbodyHtml xatosi:', e);
+        return false;
+      }
     }
 
-    // -------------------- BUGUNGI SANA --------------------
-    function todayStr(){
+    function todayStr() {
       const now = new Date();
-      const dd = String(now.getDate()).padStart(2,'0');
-      const mm = String(now.getMonth()+1).padStart(2,'0');
+      const dd = String(now.getDate()).padStart(2, '0');
+      const mm = String(now.getMonth() + 1).padStart(2, '0');
       const yyyy = now.getFullYear();
       return `${dd}.${mm}.${yyyy} y`;
     }
 
-    function applyTodayDate(){
+    function applyTodayDate() {
       const d = todayStr();
       setAllInEditor('#doc_date, #doc_date2', d);
     }
 
-    (function waitEditorAndSetDate(){
+    function waitEditorReady(callback) {
       let tries = 0;
-      const t = setInterval(function(){
+      const timer = setInterval(function () {
         tries++;
-        if (getEditor() || tries > 80){
-          clearInterval(t);
-          applyTodayDate();
+        const ed = getEditor();
+        if (ed || tries > 100) {
+          clearInterval(timer);
+          if (ed && typeof callback === 'function') callback();
         }
-      }, 100);
-    })();
-
-    // -------------------- ORG/DEP/CHORAK -> TINYMCE --------------------
-    function applyOrgToEditor(orgText){
-      const ed = getEditor();
-      if (!ed) return;
-      const root = ed.getBody();
-      root.querySelectorAll('#org_id, #org_id_1, #org_id_2').forEach(el => el.textContent = orgText);
-      ed.nodeChanged();
+      }, 150);
     }
 
-    function applyDepToEditor(depText){
+    function applyOrgToEditor(orgText) {
+      if (!orgText || orgText === 'Tanlang...') orgText = 'Tashkilot';
+      setAllInEditor('.org_id', orgText);
+    }
+
+    function applyDepToEditor(depText) {
+      if (!depText || depText === 'Tanlang...') depText = 'Departament';
       setInEditor('#dep_id', depText);
       setInEditor('#dep_id2', depText);
+      setAllInEditor('.dep_name_text', depText);
     }
 
-    function applyChorakToEditor(q){
+    function applyChorakToEditor(q) {
       setInEditor('#chorak', q || '');
     }
 
-    // -------------------- ORG -> DEP --------------------
+    function applyContractToEditor(contractText) {
+      if (!contractText || !String(contractText).trim()) {
+        contractText = 'Shartnoma ma’lumoti kiritilmagan';
+      }
+      setInEditor('#date_contract', contractText);
+    }
+
+    function syncEditorTexts() {
+      const orgText = $('#organization option:selected').text() || '';
+      const depText = $('#department option:selected').text() || '';
+      const chorak = $('#rim_id').val() || '';
+      const contractText = $('#organization option:selected').attr('data-contract') || '';
+
+      applyTodayDate();
+      applyOrgToEditor(orgText);
+      applyDepToEditor(depText);
+      applyChorakToEditor(chorak);
+      applyContractToEditor(contractText);
+    }
+
     function loadDepartments(orgId, selectedDepId = null) {
       const $dep = $('#department');
       const $receiver = $('#receiver');
       const $agr = $('#agreements');
 
       $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change');
-      $receiver.html('<option value=""></option>').val('').trigger('change');
+      $receiver.html('<option value="">Tanlang...</option>').val('').trigger('change');
       $agr.html('').trigger('change');
 
       if (!orgId) {
@@ -393,68 +472,54 @@
         method: "GET",
         dataType: "json",
         data: { organization: orgId },
-
         success: function (data) {
           const list = Array.isArray(data) ? data : (data.departments || data.results || []);
-          if (!Array.isArray(list)) {
-            $dep.html('<option value="">Format xato</option>').val('').trigger('change');
-            return;
-          }
+          let options = '<option value="">Tanlang...</option>';
 
-          let options = '<option value=""></option>';
-          list.forEach(function(dep) {
-            options += `<option value="${dep.id}">${esc(dep.name)}</option>`;
+          list.forEach(function (dep) {
+            const selected = selectedDepId && String(selectedDepId) === String(dep.id) ? 'selected' : '';
+            options += `<option value="${dep.id}" ${selected}>${esc(dep.name)}</option>`;
           });
 
-          $dep.html(options);
-
-          if (selectedDepId) $dep.val(String(selectedDepId));
-          else $dep.val('');
-
-          $dep.trigger('change');
-          safeInitSelect2(document);
+          $dep.html(options).trigger('change');
+          safeInitSelect2();
         },
-
-        error: function(xhr) {
-          console.error("Departments AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
-          $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change');
-          safeInitSelect2(document);
+        error: function (xhr) {
+          console.error('Departments AJAX error:', xhr.status, xhr.responseText);
+          $dep.html('<option value="">Xatolik yuz berdi</option>').trigger('change');
         }
       });
     }
 
-    // -------------------- EMP SELECT FILL HELPER --------------------
-    function fillEmployeeSelect($sel, list, selectedId=null, allowEmpty=true, keepSelected=false){
+    function fillEmployeeSelect($sel, list, selectedId = null, allowEmpty = true, keepSelected = false) {
       let currentSelected = [];
-      if (keepSelected){
+      if (keepSelected) {
         currentSelected = ($sel.val() || []).map(String);
       }
 
-      // multi-select uchun allowEmpty false bo‘lsa ham bo‘sh option qo‘shmaymiz
-      let opt = allowEmpty ? '<option value="">Tanlang...</option>' : '';
+      let html = allowEmpty ? '<option value="">Tanlang...</option>' : '';
 
-      (list || []).forEach(emp => {
+      (list || []).forEach(function (emp) {
         const idStr = String(emp.id);
-        const isSelectedSingle = selectedId && idStr === String(selectedId);
-        const isSelectedKeep = keepSelected && currentSelected.includes(idStr);
-
+        const selectedSingle = selectedId && String(selectedId) === idStr;
+        const selectedKeep = keepSelected && currentSelected.includes(idStr);
         const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-        opt += `<option value="${esc(emp.id)}" ${(isSelectedSingle || isSelectedKeep) ? 'selected' : ''}>${esc(label)}</option>`;
+
+        html += `<option value="${esc(emp.id)}" ${(selectedSingle || selectedKeep) ? 'selected' : ''}>${esc(label)}</option>`;
       });
 
-      $sel.html(opt).trigger('change');
-      safeInitSelect2(document);
+      $sel.html(html).trigger('change');
+      safeInitSelect2();
     }
 
-    // -------------------- DEP/ORG -> RECEIVER --------------------
     function loadReceiverByDepartment(depId, selectedId = null) {
       const $receiver = $('#receiver');
       const orgId = $('#organization').val();
 
-      $receiver.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change');
+      $receiver.html('<option value="">Yuklanmoqda...</option>').trigger('change');
 
       if (!orgId && !depId) {
-        $receiver.html('<option value="">Tanlang...</option>').val('').trigger('change');
+        $receiver.html('<option value="">Tanlang...</option>').trigger('change');
         return;
       }
 
@@ -467,20 +532,16 @@
         method: "GET",
         dataType: "json",
         data: payload,
-
-        success: function(list) {
+        success: function (list) {
           fillEmployeeSelect($receiver, list, selectedId, true, false);
         },
-
-        error: function(xhr) {
-          console.log("receiver ajax error:", xhr.status, xhr.statusText, xhr.responseText);
-          $receiver.html('<option value="">Xatolik</option>').val('').trigger('change');
-          safeInitSelect2(document);
+        error: function (xhr) {
+          console.log('receiver ajax error:', xhr.status, xhr.responseText);
+          $receiver.html('<option value="">Xatolik</option>').trigger('change');
         }
       });
     }
 
-    // -------------------- DEP/ORG -> AGREEMENTS --------------------
     function loadAgreementsByDepartment(depId, selectedIds = []) {
       const $agr = $('#agreements');
       const orgId = $('#organization').val();
@@ -493,85 +554,78 @@
       if (orgId) payload.organization = orgId;
       if (depId) payload.department = depId;
 
-      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
-
       $.ajax({
         url: "{% url 'ajax_dep_negotiator' %}",
         method: "GET",
         dataType: "json",
         data: payload,
-
-        success: function(list) {
-          // keepSelected=true: tanlanganlar saqlanadi
-          // selectedIds hozir kerak bo'lsa, oldindan $agr.val(selectedIds) bilan ham berib yuborish mumkin
+        success: function (list) {
           fillEmployeeSelect($agr, list, null, false, true);
 
-          // agar restore qilish kerak bo‘lsa:
           if (selectedIds && selectedIds.length) {
             $agr.val(selectedIds.map(String)).trigger('change');
           }
         },
-
-        error: function(xhr) {
-          console.log("agreements ajax error:", xhr.status, xhr.statusText, xhr.responseText);
+        error: function (xhr) {
+          console.log('agreements ajax error:', xhr.status, xhr.responseText);
           $agr.html('').trigger('change');
-          safeInitSelect2(document);
         }
       });
     }
 
-    // -------------------- TEXNIKALAR -> TINYMCE JADVAL --------------------
-    function fillPc(items){
+    function fillPc(items) {
       let rows = `
         <tr>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami:</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Inventar raqami</td>
         </tr>
       `;
 
-      if(!items || !items.length){
-        rows += `<tr><td colspan="4" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
+      if (!items || !items.length) {
+        rows += `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
         setTbodyHtml('pc_tbody', rows);
         return;
       }
 
-      items.forEach((x,i) => {
+      items.forEach(function (x, i) {
         rows += `
           <tr>
-            <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+            <td style="border:1px solid #000;text-align:center;">${i + 1}</td>
             <td style="border:1px solid #000;">${esc(x.name || '')}</td>
             <td style="border:1px solid #000;">${esc(x.serial || '')}</td>
             <td style="border:1px solid #000;">${esc(x.inventory || '')}</td>
-          </tr>`;
+          </tr>
+        `;
       });
 
       setTbodyHtml('pc_tbody', rows);
     }
 
-    function fillPr(items){
+    function fillPr(items) {
       let rows = `
         <tr>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
           <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR:</td>
+          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
         </tr>
       `;
 
-      if(!items || !items.length){
-        rows += `<tr><td colspan="3" style="text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
+      if (!items || !items.length) {
+        rows += `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
         setTbodyHtml('pr_tbody', rows);
         return;
       }
 
-      items.forEach((x,i) => {
+      items.forEach(function (x, i) {
         rows += `
           <tr>
-            <td style="border:1px solid #000;text-align:center;">${i+1}</td>
+            <td style="border:1px solid #000;text-align:center;">${i + 1}</td>
             <td style="border:1px solid #000;">${esc(x.name || '')}</td>
             <td style="border:1px solid #000;">${esc(x.serial || '')}</td>
-          </tr>`;
+          </tr>
+        `;
       });
 
       setTbodyHtml('pr_tbody', rows);
@@ -579,6 +633,8 @@
 
     function loadTechnicsToEditor(depId) {
       const orgId = $('#organization').val();
+
+      syncEditorTexts();
 
       if (!orgId && !depId) {
         setInEditor('#komp_count', '_');
@@ -588,8 +644,17 @@
         return;
       }
 
-      setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
-      setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
+      setTbodyHtml('pc_tbody', `
+        <tr>
+          <td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td>
+        </tr>
+      `);
+
+      setTbodyHtml('pr_tbody', `
+        <tr>
+          <td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td>
+        </tr>
+      `);
 
       const payload = {};
       if (orgId) payload.organization = orgId;
@@ -600,77 +665,84 @@
         method: "GET",
         dataType: "json",
         data: payload,
-
-        success: function(res) {
+        success: function (res) {
           setInEditor('#komp_count', String(res.komp_count ?? 0));
           setInEditor('#prin_count', String(res.prin_count ?? 0));
           fillPc(res.kompyuterlar || []);
           fillPr(res.printerlar || []);
         },
-
-        error: function(xhr) {
+        error: function (xhr) {
           let msg = "Xatolik yuz berdi";
-          try { if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error; } catch(e){}
-          setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
-          setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          try {
+            if (xhr.responseJSON && xhr.responseJSON.error) {
+              msg = xhr.responseJSON.error;
+            }
+          } catch (e) {}
+
+          setTbodyHtml('pc_tbody', `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          setTbodyHtml('pr_tbody', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
         }
       });
     }
 
-    // -------------------- EVENTLAR --------------------
     $('#organization').on('change', function () {
       const orgId = $(this).val();
-      const orgText = $('#organization option:selected').text() || '';
 
+      syncEditorTexts();
       loadDepartments(orgId);
 
-      if (orgText && orgText !== 'Tanlang...') applyOrgToEditor(orgText);
-
-      // ✅ org tanlanganda ham ishlasin
       const depId = $('#department').val();
       loadReceiverByDepartment(depId);
       loadAgreementsByDepartment(depId);
-      loadTechnicsToEditor(depId);
     });
 
     $('#department').on('change', function () {
       const depId = $(this).val();
-      const depText = $('#department option:selected').text() || '';
 
-      if (depText && depText !== 'Tanlang...') applyDepToEditor(depText);
-
+      syncEditorTexts();
       loadReceiverByDepartment(depId);
       loadAgreementsByDepartment(depId);
-      loadTechnicsToEditor(depId);
     });
 
     $('#rim_id').on('change', function () {
-      applyChorakToEditor($(this).val());
+      syncEditorTexts();
     });
 
-    // dep majburiy emas
-    $('#btnSearch').on('click', function () {
+    $('#btnSearch').on('click', function (e) {
+      e.preventDefault();
       loadTechnicsToEditor($('#department').val());
     });
 
-    // -------------------- RESTORE --------------------
+    $('form').on('submit', function () {
+      const ed = getEditor();
+      if (ed) ed.save();
+      return true;
+    });
+
+    waitEditorReady(function () {
+      syncEditorTexts();
+    });
+
     const initialOrg = '{{ selected_org|default:"" }}';
     const initialDep = '{{ selected_dep|default:"" }}';
 
     if (initialOrg) {
-      $('#organization').val(initialOrg).trigger('change');
       loadDepartments(initialOrg, initialDep);
 
-      if (initialDep) {
-        setTimeout(function () {
-          $('#department').val(initialDep).trigger('change');
-        }, 300);
-      }
-    }
+      setTimeout(function () {
+        $('#organization').val(initialOrg).trigger('change');
 
+        if (initialDep) {
+          setTimeout(function () {
+            $('#department').val(initialDep).trigger('change');
+          }, 300);
+        }
+      }, 100);
+    }
   });
 })();
 </script>
+
 {% endblock content %}
 
 {% block js %}
