@@ -498,31 +498,64 @@ def ajax_document_preview(request):
     dep_id = (request.GET.get("department") or "").strip()
     org_id = (request.GET.get("organization") or "").strip()
 
-    # ikkalasi ham bo‘lmasa xato
     if not dep_id and not org_id:
-        return JsonResponse({"error": "Tashkilot yoki department tanlanmagan"}, status=400)
+        return JsonResponse(
+            {"error": "Tashkilot yoki bo'lim tanlanmagan"},
+            status=400
+        )
 
     komp_names = ["Kompyuter", "Planshet", "Noutbook", "Doska"]
     prin_names = ["A4 Printer", "Printer", "scaner"]
 
-    kompyuter_qs = Technics.objects.filter(category__name__in=komp_names)
-    printer_qs   = Technics.objects.filter(category__name__in=prin_names)
+    kompyuter_qs = Technics.objects.filter(
+        category__name__in=komp_names,
+        is_active=True
+    ).select_related(
+        "employee", "organization", "department", "category"
+    ).prefetch_related(
+        "extratechnics_set"
+    )
 
-    # ✅ filter: dep ustun
+    printer_qs = Technics.objects.filter(
+        category__name__in=prin_names,
+        is_active=True
+    ).select_related(
+        "employee", "organization", "department", "category"
+    )
+
     if dep_id:
-        kompyuter_qs = kompyuter_qs.filter(employee__department_id=dep_id)
-        printer_qs   = printer_qs.filter(employee__department_id=dep_id)
+        kompyuter_qs = kompyuter_qs.filter(department_id=dep_id)
+        printer_qs = printer_qs.filter(department_id=dep_id)
     else:
-        kompyuter_qs = kompyuter_qs.filter(employee__organization_id=org_id)
-        printer_qs   = printer_qs.filter(employee__organization_id=org_id)
+        kompyuter_qs = kompyuter_qs.filter(organization_id=org_id)
+        printer_qs = printer_qs.filter(organization_id=org_id)
 
-    kompyuterlar = list(kompyuter_qs.values("name", "serial", "inventory"))
-    printerlar   = list(printer_qs.values("name", "serial"))
+    kompyuterlar = []
+    for tex in kompyuter_qs:
+        extra_serials = list(
+            tex.extratechnics_set.filter(is_active=True).values_list("serial", flat=True)
+        )
+
+        kompyuterlar.append({
+            "id": tex.id,
+            "name": tex.name or "",
+            "serial": tex.serial or "",
+            "extra_serials": [s for s in extra_serials if s],
+        })
+
+    printerlar = []
+    for tex in printer_qs:
+        printerlar.append({
+            "id": tex.id,
+            "name": tex.name or "",
+            "serial": tex.serial or "",
+        })
 
     data = {
-        "komp_count": kompyuter_qs.count(),
-        "prin_count": printer_qs.count(),
+        "komp_count": len(kompyuterlar),
+        "prin_count": len(printerlar),
         "kompyuterlar": kompyuterlar,
         "printerlar": printerlar,
     }
+
     return JsonResponse(data)
