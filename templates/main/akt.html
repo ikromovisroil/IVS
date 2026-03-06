@@ -33,7 +33,9 @@
                   <select id="organization" name="organization" class="form-select">
                     <option value="">Tanlang...</option>
                     {% for org in organizations %}
-                      <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>
+                      <option value="{{ org.id }}"
+                              data-contract="{{ org.contract|default:'' }}"
+                              {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>
                         {{ org.name }}
                       </option>
                     {% endfor %}
@@ -169,7 +171,7 @@
                           <strong>quyidagi sarf materiallari, ehtiyot qismlar va uskunalar o‘rnatildi:</strong>
                         </td>
                         <td style="border:1px solid #fff;text-align:center;">
-                          <strong>2025-yil 4-martdagi 1-son shartnomaga muvofiq</strong>
+                          <strong id="date_contract">2025-yil 4-martdagi 1-son shartnomaga muvofiq</strong>
                         </td>
                       </tr>
                     </tbody>
@@ -265,7 +267,6 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-// ----------------- Helper funksiyalar -----------------
 function todayDmy() {
   const d = new Date();
   const dd = String(d.getDate()).padStart(2, '0');
@@ -283,38 +284,27 @@ function ymdToDmy(ymd) {
 function formatNumber(value) {
   if (value === null || value === undefined) return '-';
 
-  // string qilib olamiz
   let s = String(value).trim();
   if (!s) return '-';
 
-  // bo'shliqlarni olib tashlaymiz (masalan: "100 000,50")
   s = s.replace(/\s+/g, '');
-
-  // agar kasr ajratgich "," bo'lsa, uni "." ga almashtirib parse qilamiz
-  // "100000,50" -> "100000.50"
   const normalized = s.replace(',', '.');
 
   const num = Number(normalized);
   if (!isFinite(num)) return '-';
 
-  // originalda kasr bormi ("," yoki ".")?
   const hasFraction = /[,.]\d+/.test(s);
 
-  // 2 xonagacha kasr (agar bo'lsa)
   let [intPart, fracPart] = (hasFraction ? num.toFixed(2) : Math.trunc(num).toString()).split('.');
 
-  // minusni saqlash
   const sign = intPart.startsWith('-') ? '-' : '';
   intPart = intPart.replace('-', '');
-
-  // minglik bo'yicha bo'sh joy qo'yish
   intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-  // kasr bo'lsa, "," bilan qaytaramiz
   return hasFraction ? `${sign}${intPart},${fracPart}` : `${sign}${intPart}`;
 }
 
-// ----------------- TinyMCE ga yozish funksiyalari -----------------
+// ----------------- TinyMCE helper -----------------
 function editorGet() {
   return tinymce.get('body');
 }
@@ -330,8 +320,8 @@ function editorSetText(selector, text) {
       ed.nodeChanged();
       return true;
     }
-  } catch(e) {
-    console.log("EditorSetText xatosi:", e);
+  } catch (e) {
+    console.log("editorSetText xatosi:", e);
   }
   return false;
 }
@@ -348,30 +338,80 @@ function editorSetTbodyRows(rowsHtml) {
       return;
     }
 
-    // Header qatorlarini saqlash (birinchi 2 tr)
     const trs = tbody.querySelectorAll('tr');
     const header1 = trs[0] ? trs[0].outerHTML : '';
     const header2 = trs[1] ? trs[1].outerHTML : '';
 
     tbody.innerHTML = header1 + header2 + (rowsHtml || '');
     ed.nodeChanged();
-  } catch(e) {
-    console.log("EditorSetTbodyRows xatosi:", e);
+  } catch (e) {
+    console.log("editorSetTbodyRows xatosi:", e);
   }
 }
 
-// ----------------- jQuery va Select2 -----------------
+// ----------------- Editor update funksiyalar -----------------
+function updateContractText() {
+  const selectedOption = $('#organization option:selected');
+  const contract = selectedOption.data('contract');
+
+  if (contract && String(contract).trim() !== '') {
+    editorSetText('#date_contract', contract);
+  } else {
+    editorSetText('#date_contract', '_');
+  }
+}
+
+function updateDocDate() {
+  const bugungiSana = todayDmy() + ' y';
+  editorSetText('#doc_date', bugungiSana);
+}
+
+function updateEditorWithSelections() {
+  const orgName = $('#organization option:selected').text();
+  const depName = $('#department option:selected').text();
+
+  if (orgName && orgName !== 'Tanlang...') {
+    editorSetText('#org_id_1', orgName);
+    editorSetText('#org_id_2', orgName);
+  } else {
+    editorSetText('#org_id_1', 'Tashkilot');
+    editorSetText('#org_id_2', 'Tashkilot');
+  }
+
+  if (depName && depName !== 'Tanlang...') {
+    editorSetText('#dep_id', depName);
+  } else {
+    editorSetText('#dep_id', 'Departament');
+  }
+
+  updateContractText();
+
+  const senderEl = $('#sender option:selected');
+  const senderVal = $('#sender').val();
+
+  if (senderVal) {
+    const fullText = senderEl.text() || '_';
+    const fullName = senderEl.data('fullname') || fullText;
+
+    editorSetText('#sender_name1', fullText);
+    editorSetText('#sender_name2', fullName);
+  } else {
+    editorSetText('#sender_name1', '_');
+    editorSetText('#sender_name2', '_');
+  }
+}
+
+// ----------------- jQuery ready -----------------
 $(function () {
-  // Select2 ni ishga tushirish
   $('#organization, #department, #sender, #agreements').select2({
     width: '100%',
     placeholder: 'Tanlang...',
     allowClear: true
   });
 
-  // Boshlang'ich sanalarni o'rnatish
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
+
   const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
   const monthAgoStr = monthAgo.toISOString().split('T')[0];
@@ -379,178 +419,146 @@ $(function () {
   if (!$('#date1').val()) $('#date1').val(monthAgoStr);
   if (!$('#date2').val()) $('#date2').val(todayStr);
 
-  // ----------------- Departmentlarni yuklash -----------------
   function loadDepartments(orgId, selectedDepId = null) {
-      const $dep = $('#department');
-      const $sender = $('#sender');
-      const $agr = $('#agreements');
+    const $dep = $('#department');
+    const $sender = $('#sender');
+    const $agr = $('#agreements');
 
-      // UI reset
-      $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change.select2');
-      $sender.html('<option value=""></option>').val('').trigger('change.select2');
-      $agr.html('').trigger('change.select2');
+    $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change.select2');
+    $sender.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
+    $agr.html('').trigger('change.select2');
 
-      if (!orgId) {
-        $dep.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
-        return;
+    if (!orgId) {
+      $dep.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
+      return;
+    }
+
+    $.ajax({
+      url: "{% url 'ajax_load_departments' %}",
+      method: "GET",
+      dataType: "json",
+      data: { organization: orgId },
+
+      success: function (data) {
+        console.log("Departments AJAX data:", data);
+
+        const list = Array.isArray(data) ? data : (data.departments || data.results || []);
+
+        if (!Array.isArray(list)) {
+          console.error("Departments format xato:", list);
+          $dep.html('<option value="">Format xato</option>').val('').trigger('change.select2');
+          return;
+        }
+
+        let options = '<option value="">Tanlang...</option>';
+        list.forEach(function(dep) {
+          const selected = selectedDepId && String(selectedDepId) === String(dep.id) ? 'selected' : '';
+          options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
+        });
+
+        $dep.html(options);
+
+        if (selectedDepId) {
+          $dep.val(String(selectedDepId)).trigger('change');
+        } else {
+          $dep.val('').trigger('change');
+        }
+      },
+
+      error: function(xhr) {
+        console.error("Departments AJAX error:", xhr.status, xhr.statusText);
+        console.log(xhr.responseText);
+        $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change.select2');
       }
-
-      $.ajax({
-        url: "{% url 'ajax_load_departments' %}",
-        method: "GET",
-        dataType: "json",
-        data: { organization: orgId },
-
-        success: function (data) {
-          console.log("Departments AJAX data:", data);
-
-          // ✅ data har xil formatda bo‘lishi mumkin
-          const list = Array.isArray(data) ? data : (data.departments || data.results || []);
-
-          if (!Array.isArray(list)) {
-            console.error("Departments format xato. List emas:", list);
-            $dep.html('<option value="">Format xato</option>').val('').trigger('change.select2');
-            return;
-          }
-
-          let options = '<option value=""></option>';
-          list.forEach(function(dep) {
-            options += `<option value="${dep.id}">${dep.name}</option>`;
-          });
-
-          $dep.html(options);
-
-          // ✅ Tanlab qo‘yish
-          if (selectedDepId) $dep.val(String(selectedDepId));
-          else $dep.val('');
-
-          // ✅ Select2 bo‘lsa ham yangilansin
-          $dep.trigger('change');
-        },
-
-        error: function(xhr) {
-          console.error("Departments AJAX error:", xhr.status, xhr.statusText);
-          console.log("Response:", xhr.responseText);
-          $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change.select2');
-        }
-      });
-    }
-
-  // ----------------- Imzolovchilarni yuklash -----------------
-  function loadSignatories(depId, selectedSenderId = null) {
-      const orgId = $('#organization').val();
-
-      $('#sender').html('<option value="">Yuklanmoqda...</option>').trigger('change');
-
-      // org ham yo'q bo'lsa umuman yuklamaymiz
-      if (!orgId && !depId) {
-        $('#sender').html('<option value="">Tanlang...</option>').trigger('change');
-        return;
-      }
-
-      const payload = {};
-      if (orgId) payload.organization = orgId;
-      if (depId) payload.department = depId;
-
-      $.ajax({
-        url: "{% url 'ajax_dep_signatory' %}",
-        data: payload,
-        success: function (data) {
-          let options = '<option value=""></option>';
-          data.forEach(function(emp) {
-            const selected = (String(selectedSenderId) === String(emp.id)) ? 'selected' : '';
-            const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-            options += `<option value="${emp.id}" ${selected} data-fullname="${emp.full_name}" data-rank="${emp.rank || ''}">${fullText}</option>`;
-          });
-          $('#sender').html(options).trigger('change');
-        },
-        error: function() {
-          $('#sender').html('<option value="">Xatolik</option>').trigger('change');
-        }
-      });
-    }
-
-  // ----------------- Kelishuvchilarni yuklash -----------------
-    function loadNegotiators(depId, selectedIds = []) {
-      const orgId = $('#organization').val();   // ✅ organization ham olamiz
-
-      // tozalash
-      const $agr = $('#agreements');
-      $agr.html('').trigger('change');
-
-      // org ham yo'q, dep ham yo'q bo'lsa — hech narsa yuklamaymiz
-      if (!orgId && !depId) return;
-
-      // ✅ payload: borlarini yuboramiz
-      const payload = {};
-      if (orgId) payload.organization = orgId;
-      if (depId) payload.department = depId;
-
-      // loading holat
-      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
-
-      $.ajax({
-        url: "{% url 'ajax_dep_negotiator' %}",
-        method: "GET",
-        dataType: "json",
-        data: payload,
-
-        success: function (data) {
-          let options = '';
-          const selectedSet = new Set((selectedIds || []).map(String));
-
-          (data || []).forEach(function(emp) {
-            const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-            options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
-          });
-
-          $agr.html(options).trigger('change'); // select2 refresh
-        },
-
-        error: function(xhr) {
-          console.error("Negotiators AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
-          $agr.html('').trigger('change');
-        }
-      });
-    }
-
-  // ----------------- Tanlangan malumotlarni TinyMCE ga yozish -----------------
-  function updateEditorWithSelections() {
-    const orgName = $('#organization option:selected').text();
-    const depName = $('#department option:selected').text();
-
-    // Sender ma'lumotlarini olish
-    const selectedSender = $('#sender').select2('data')[0];
-
-    // Tashkilot nomlarini yangilash
-    if (orgName && orgName !== 'Tanlang...') {
-      editorSetText('#org_id_1', orgName);
-      editorSetText('#org_id_2', orgName);
-    }
-
-    // Departament nomini yangilash
-    if (depName && depName !== 'Tanlang...') {
-      editorSetText('#dep_id', depName);
-    }
-
-    // Imzolovchi nomlarini yangilash
-    if (selectedSender) {
-      const fullName = selectedSender.text; // To'liq matn (ism + lavozim)
-      const rank = selectedSender.element ? selectedSender.element.dataset.rank : '';
-      const nameOnly = selectedSender.element ? selectedSender.element.dataset.fullname : fullName;
-
-      // sender_name1 ga ism + lavozim
-      editorSetText('#sender_name1', fullName);
-
-      // sender_name2 ga faqat ism
-      editorSetText('#sender_name2', nameOnly);
-
-      console.log("Sender_name1 (to'liq):", fullName);
-      console.log("Sender_name2 (faqat ism):", nameOnly);
-    }
+    });
   }
 
-  // ----------------- Materiallarni qidirish -----------------
+  function loadSignatories(depId, selectedSenderId = null) {
+    const orgId = $('#organization').val();
+    const $sender = $('#sender');
+
+    $sender.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+    if (!orgId && !depId) {
+      $sender.html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+
+    const payload = {};
+    if (orgId) payload.organization = orgId;
+    if (depId) payload.department = depId;
+
+    $.ajax({
+      url: "{% url 'ajax_dep_signatory' %}",
+      method: "GET",
+      dataType: "json",
+      data: payload,
+
+      success: function(data) {
+        let options = '<option value="">Tanlang...</option>';
+
+        (data || []).forEach(function(emp) {
+          const selected = String(selectedSenderId) === String(emp.id) ? 'selected' : '';
+          const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+
+          options += `
+            <option value="${emp.id}" ${selected}
+                    data-fullname="${emp.full_name || ''}"
+                    data-rank="${emp.rank || ''}">
+              ${fullText}
+            </option>
+          `;
+        });
+
+        $sender.html(options).trigger('change');
+      },
+
+      error: function(xhr) {
+        console.error("Signatory AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
+        $sender.html('<option value="">Xatolik</option>').trigger('change');
+      }
+    });
+  }
+
+  function loadNegotiators(depId, selectedIds = []) {
+    const orgId = $('#organization').val();
+    const $agr = $('#agreements');
+
+    $agr.html('').trigger('change');
+
+    if (!orgId && !depId) return;
+
+    const payload = {};
+    if (orgId) payload.organization = orgId;
+    if (depId) payload.department = depId;
+
+    $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+
+    $.ajax({
+      url: "{% url 'ajax_dep_negotiator' %}",
+      method: "GET",
+      dataType: "json",
+      data: payload,
+
+      success: function(data) {
+        let options = '';
+        const selectedSet = new Set((selectedIds || []).map(String));
+
+        (data || []).forEach(function(emp) {
+          const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
+          options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+        });
+
+        $agr.html(options).trigger('change');
+      },
+
+      error: function(xhr) {
+        console.error("Negotiators AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
+        $agr.html('').trigger('change');
+      }
+    });
+  }
+
   function searchMaterials() {
     const orgId = $('#organization').val();
     const depId = $('#department').val();
@@ -558,14 +566,13 @@ $(function () {
     const date2 = $('#date2').val();
 
     if (!orgId || !date1 || !date2) {
-      alert("Iltimos, tashkilot yoki departament va sanalarni to'liq tanlang!");
+      alert("Iltimos, tashkilot va sanalarni to'liq tanlang!");
       return;
     }
 
-    // Tanlangan ma'lumotlarni editorga yozish
     updateEditorWithSelections();
+    updateDocDate();
 
-    // Yuklanmoqda xabarini ko'rsatish
     editorSetTbodyRows(`
       <tr>
         <td colspan="11" style="text-align:center; padding:20px;">
@@ -574,11 +581,17 @@ $(function () {
       </tr>
     `);
 
-    // Materiallarni yuklash
     $.ajax({
       url: "{% url 'ajax_akt_materials' %}",
       method: "GET",
-      data: {organization: orgId, department: depId, date1: date1, date2: date2 },
+      dataType: "json",
+      data: {
+        organization: orgId,
+        department: depId,
+        date1: date1,
+        date2: date2
+      },
+
       success: function(data) {
         if (!data || data.length === 0) {
           editorSetTbodyRows(`
@@ -591,11 +604,16 @@ $(function () {
           return;
         }
 
-        let rows = "";
+        let rows = '';
+
         data.forEach(function(item, index) {
-          const finishedDate = item['order__date_finished']
-            ? new Date(item['order__date_finished']).toLocaleDateString('ru-RU')
-            : '-';
+          let finishedDate = '-';
+          if (item['order__date_finished']) {
+            const dt = new Date(item['order__date_finished']);
+            if (!isNaN(dt.getTime())) {
+              finishedDate = dt.toLocaleDateString('ru-RU');
+            }
+          }
 
           rows += `
             <tr>
@@ -603,11 +621,11 @@ $(function () {
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__serial'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['number']) || '0'}</td>
+              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['number'])}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__unit__name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['full_name'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['rank_name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['material__price']) || '0'}</td>
+              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['material__price'])}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['id'] || '-'}</td>
               <td style="border:1px solid #000; font-size:8pt; text-align:center;">${finishedDate}</td>
             </tr>
@@ -616,8 +634,10 @@ $(function () {
 
         editorSetTbodyRows(rows);
       },
+
       error: function(xhr) {
-        console.error("Xatolik:", xhr);
+        console.error("Material search error:", xhr.status, xhr.statusText, xhr.responseText);
+
         editorSetTbodyRows(`
           <tr>
             <td colspan="11" style="text-align:center; color:red; padding:20px;">
@@ -629,26 +649,30 @@ $(function () {
     });
   }
 
-  // ----------------- Event listeners -----------------
+  // ----------------- Events -----------------
   $('#organization').on('change', function() {
-    loadDepartments($(this).val());
+    const orgId = $(this).val();
+
+    loadDepartments(orgId);
     updateEditorWithSelections();
+    updateContractText();
   });
 
   $('#department').on('change', function() {
     const depId = $(this).val();
+
     loadSignatories(depId);
     loadNegotiators(depId);
     updateEditorWithSelections();
   });
 
-  $('#sender').on('change', updateEditorWithSelections);
-
-  $('#date2').on('change', function() {
-    console.log('date2 o\'zgardi, lekin doc_date o\'zgarmaydi');
+  $('#sender').on('change', function() {
+    updateEditorWithSelections();
   });
 
-  $('#btnSearch').on('click', searchMaterials);
+  $('#btnSearch').on('click', function() {
+    searchMaterials();
+  });
 
   // ----------------- Initial load -----------------
   const initialOrg = '{{ selected_org|default:"" }}';
@@ -656,25 +680,66 @@ $(function () {
   const initialSender = '{{ selected_sender|default:"" }}';
   const initialConsentList = {{ selected_employees|default:"[]"|safe }};
 
-  if (initialOrg) {
-    $('#organization').val(initialOrg).trigger('change');
-    loadDepartments(initialOrg, initialDep);
-
-    if (initialDep) {
-      setTimeout(function() {
-        $('#department').val(initialDep).trigger('change');
-        loadSignatories(initialDep, initialSender);
-        loadNegotiators(initialDep, initialConsentList);
-        setTimeout(updateEditorWithSelections, 1500);
-      }, 500);
-    }
+  function initAll() {
+    updateDocDate();
+    updateEditorWithSelections();
+    updateContractText();
   }
 
-  // Sanani bir marta tekshirish
+  function waitForTinyMCEAndInit(tries = 0) {
+    const ed = editorGet();
+    if (ed) {
+      initAll();
+      return;
+    }
+
+    if (tries > 30) {
+      console.log("TinyMCE topilmadi");
+      return;
+    }
+
+    setTimeout(function() {
+      waitForTinyMCEAndInit(tries + 1);
+    }, 300);
+  }
+
+  if (initialOrg) {
+    $('#organization').val(initialOrg).trigger('change');
+
+    loadDepartments(initialOrg, initialDep);
+
+    setTimeout(function() {
+      if (initialDep) {
+        $('#department').val(initialDep).trigger('change');
+
+        loadSignatories(initialDep, initialSender);
+        loadNegotiators(initialDep, initialConsentList);
+
+        setTimeout(function() {
+          if (initialSender) {
+            $('#sender').val(initialSender).trigger('change');
+          }
+
+          updateDocDate();
+          updateEditorWithSelections();
+          updateContractText();
+        }, 1000);
+      } else {
+        updateDocDate();
+        updateEditorWithSelections();
+        updateContractText();
+      }
+    }, 700);
+  } else {
+    waitForTinyMCEAndInit();
+  }
+
+  // TinyMCE yuklangandan keyin yana bir marta yangilab qo'yamiz
   setTimeout(function() {
-    const bugungiSana = todayDmy() + ' y';
-    editorSetText('#doc_date', bugungiSana);
-  }, 2000);
+    updateDocDate();
+    updateEditorWithSelections();
+    updateContractText();
+  }, 1500);
 });
 </script>
 {% endblock content %}
