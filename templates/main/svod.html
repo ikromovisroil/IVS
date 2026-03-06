@@ -10,84 +10,98 @@
 
 {% block content %}
 
- <main id="main" class="main">
+<main id="main" class="main">
 
-    <div class="pagetitle">
-      <h1>Yakuniy hisobot</h1>
-    </div><!-- End Page Title -->
+  <div class="pagetitle">
+    <h1>Yakuniy hisobot</h1>
+  </div>
 
-    <section class="section">
-      <form class="row" action="{% url 'svod_post' %}" method="post">{% csrf_token %}
-        <div class="col-lg-4">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Filtrlash</h5>
-              <!-- Vertical Form -->
-              <div class="row g-3">
-                <div class="col-12">
-                  <label for="organization" class="form-label">Tashkilot :</label>
-                    <select id="organization" name="organization" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for org in organizations %}
-                            <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-12">
-                  <label for="date1" class="form-label">Boshlangich sanasi:</label>
-                  <input type="date" name="date1" id="date1" required class="form-control">
-                </div>
+  <section class="section">
+    <form class="row" action="{% url 'svod_post' %}" method="post">
+      {% csrf_token %}
 
-                <div class="col-md-12">
-                  <label for="date2" class="form-label">Tugash sanasi:</label>
-                  <input type="date" name="date2" id="date2" required class="form-control">
-                </div>
-                <div class="text-center">
-                  <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
-                </div>
+      <div class="col-lg-4">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Filtrlash</h5>
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="organization" class="form-label">Tashkilot :</label>
+                <select id="organization" name="organization" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for org in organizations %}
+                    <option
+                      value="{{ org.id }}"
+                      data-contract="{{ org.contract|default:'' }}"
+                      {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}
+                    >
+                      {{ org.name }}
+                    </option>
+                  {% endfor %}
+                </select>
               </div>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">Imzolashga yuborish</h5>
-              <div class="row g-3">
-                <div class="col-12">
-                  <label for="sender" class="form-label">Imzolovchi xodim :</label>
-                    <select id="sender" name="sender" class="form-select" required>
-                        <option value="">Tanlang...</option>
-                        {% for emp in emp_bos %}
-                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12">
-                  <label for="agreements" class="form-label">Kelishuvchilar :</label>
-                    <select id="agreements" name="agreements[]" class="form-select" multiple>
-                        <option value="">Tanlang...</option>
-                        {% for emp in employee %}
-                            <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12">
-                  <label for="message" class="form-label">Izox :</label>
-                  <textarea class="form-control" id="message" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
-                </div>
-                <div class="text-center">
-                  <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
-                </div>
-              </div><!-- Vertical Form -->
+
+              <div class="col-md-12">
+                <label for="date1" class="form-label">Boshlangich sanasi:</label>
+                <input type="date" name="date1" id="date1" required class="form-control">
+              </div>
+
+              <div class="col-md-12">
+                <label for="date2" class="form-label">Tugash sanasi:</label>
+                <input type="date" name="date2" id="date2" required class="form-control">
+              </div>
+
+              <div class="text-center">
+                <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="col-lg-8">
-          <div class="card">
-            <div class="card-body">
-              <h5 class="card-title">TinyMCE Editor</h5>
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Imzolashga yuborish</h5>
 
-              <textarea id="body" name="body" class="tinymce-editor">
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                <select id="sender" name="sender" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for emp in emp_bos %}
+                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                <select id="agreements" name="agreements[]" class="form-select" multiple>
+                  {% for emp in employee %}
+                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label for="message" class="form-label">Izox :</label>
+                <textarea class="form-control" id="message" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+              </div>
+
+              <div class="text-center">
+                <button type="submit" class="btn btn-primary w-100">Imzolashga yuborish</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-8">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">TinyMCE Editor</h5>
+
+            <textarea id="body" name="body" class="tinymce-editor">
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
@@ -96,8 +110,7 @@
                     </colgroup>
                     <tbody>
                       <tr>
-                        <td style="border:1px solid #fff;text-align:center;">
-                        </td>
+                        <td style="border:1px solid #fff;text-align:center;"></td>
                         <td style="border:1px solid #fff;text-align:center;">
                           <b>"Tasdiqlayman" Oʻzbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi “Axborot texnalogiyalar markazi” direktori vazifasini vaqtincha bajaruvchi F.Xujamqulov</b>
                         </td>
@@ -105,9 +118,11 @@
                     </tbody>
                   </table>
                 </div>
+
                 <div style="text-align:right;">
                   <b><u id="doc_date">12.02.2026 y</u></b>
                 </div>
+
                 <div style="text-align:center;">
                   <b>Kompyuter va ofis uskunalariga servis xizmat ko'rsatish jarayonida foydalanilgan</b>
                 </div>
@@ -121,8 +136,9 @@
                   <b>O‘zbekiston Respublikasi <span id="org_id">Iqtisodiyot va moliya vazirligi</span> tashkili</b>
                 </div>
                 <div style="text-align:center;">
-                  <b>2026 yil dekabir oyi uchun</b>
+                  <b id="report_period">2026 yil dekabir oyi uchun</b>
                 </div>
+
                 <div>
                   <table style="border-collapse:collapse;width:100%;" border="1">
                     <colgroup>
@@ -136,8 +152,6 @@
                       <col style="width:10%;">
                     </colgroup>
                     <tbody id="materials_tbody">
-                    <!-- ✅ MUHIM: TinyMCE tbody'ni merge qilib yubormasligi uchun
-                         header + data bir xil tbody ichida bo‘lsin -->
                       <tr>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">№</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Materialning nomi</td>
@@ -146,15 +160,16 @@
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Birlik narxi</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Umumiy qiymati</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Eslatma*</td>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Kod 1С</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Kod 1C</td>
                       </tr>
-                  <!-- material qatorlari JS orqali shu tbody'ga qo‘shiladi -->
                     </tbody>
                   </table>
                 </div>
+
                 <div style="text-align:left;">
-                  <b>2026-yil 3-martdagi 1-son shartnomaga muvofiq</b>
+                  <b><span id="date_contract">_</span>ga muvofiq</b>
                 </div>
+
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
@@ -173,6 +188,7 @@
                     </tbody>
                   </table>
                 </div>
+
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
@@ -192,6 +208,7 @@
                     </tbody>
                   </table>
                 </div>
+
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
@@ -211,70 +228,74 @@
                     </tbody>
                   </table>
                 </div>
-              </textarea>
+            </textarea>
 
-            </div>
           </div>
-
         </div>
-      </form>
-    </section>
+      </div>
+    </form>
+  </section>
 
-  </main><!-- End #main -->
+</main>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
-// ----------------- Helper funksiyalar -----------------
-function todayDmy() {
-  const d = new Date();
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yy = d.getFullYear();
-  return `${dd}.${mm}.${yy}`;
-}
-
-function ymdToDmy(ymd) {
-  if (!ymd) return '';
-  const [y, m, d] = ymd.split('-');
-  return `${d}.${m}.${y}`;
-}
-
 function formatNumber(num) {
-  // Sonni formatlash
-  // Misol: 1000 -> "1 000"
-  // Misol: 1000.5 -> "1 000,50"
   if (num === null || num === undefined || isNaN(num)) return '0';
 
-  // Sonni butun va kasr qismlarga ajratish
   let numStr = num.toString();
 
-  // Agar nuqta bo'lsa (float son)
   if (numStr.includes('.')) {
     let parts = numStr.split('.');
     let integerPart = parts[0];
     let fractionalPart = parts[1];
 
-    // Butun qismni mingliklarda bo'lish
     integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 
-    // Kasr qismni 2 xonaga to'ldirish
-    if (fractionalPart.length === 1) {
-      fractionalPart = fractionalPart + '0';
-    } else if (fractionalPart.length > 2) {
-      fractionalPart = fractionalPart.substring(0, 2);
-    }
+    if (fractionalPart.length === 1) fractionalPart = fractionalPart + '0';
+    else if (fractionalPart.length > 2) fractionalPart = fractionalPart.substring(0, 2);
 
     return integerPart + ',' + fractionalPart;
-  }
-  // Agar butun son bo'lsa
-  else {
-    // Butun qismni mingliklarda bo'lish
+  } else {
     return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   }
 }
 
-// ----------------- TinyMCE ga yozish funksiyalari -----------------
+function todayDmy() {
+  const d = new Date();
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = d.getFullYear();
+  return `${dd}.${mm}.${yy} y`;
+}
+
+function formatMonthYear(dateStr) {
+  if (!dateStr) return '';
+
+  const months = [
+    'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
+  ];
+
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '';
+
+  return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+}
+
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 function editorGet() {
-  return tinymce.get('body');
+  return (window.tinymce ? tinymce.get('body') : null);
 }
 
 function editorSetText(selector, text) {
@@ -288,8 +309,8 @@ function editorSetText(selector, text) {
       ed.nodeChanged();
       return true;
     }
-  } catch(e) {
-    console.log("EditorSetText xatosi:", e);
+  } catch (e) {
+    console.log('editorSetText xatosi:', e);
   }
   return false;
 }
@@ -302,233 +323,70 @@ function editorSetTbodyRows(rowsHtml) {
     const body = ed.getBody();
     const tbody = body.querySelector('#materials_tbody');
     if (!tbody) {
-      console.log("materials_tbody topilmadi");
+      console.log('materials_tbody topilmadi');
       return;
     }
 
-    // Header qatorini saqlash (TinyMCE ichidagi mavjud header)
     const existingRows = tbody.querySelectorAll('tr');
-    let headerRow = '';
+    let headerHtml = '';
 
-    // Agar header qatori mavjud bo'lsa, uni saqlaymiz
-    if (existingRows.length > 0) {
-      headerRow = existingRows[0].outerHTML;
+    if (existingRows.length >= 1) {
+      headerHtml = existingRows[0].outerHTML;
+    } else {
+      headerHtml = tbody.innerHTML;
     }
 
-    // Header + yangi ma'lumotlar
-    tbody.innerHTML = headerRow + rowsHtml;
+    tbody.innerHTML = headerHtml + rowsHtml;
     ed.nodeChanged();
-  } catch(e) {
-    console.log("EditorSetTbodyRows xatosi:", e);
+  } catch (e) {
+    console.log('editorSetTbodyRows xatosi:', e);
   }
 }
 
-// ----------------- jQuery va Select2 -----------------
-$(function () {
-  // TinyMCE initial bo'lishini kutish
-  let tinymceReady = false;
-  const tinymceCheckInterval = setInterval(function() {
-    if (tinymce.get('body')) {
-      tinymceReady = true;
-      clearInterval(tinymceCheckInterval);
+function updateEditorWithSelections() {
+  const ed = editorGet();
+  if (!ed) return;
 
-      // Boshlang'ich sanani o'rnatish
-      const bugungiSana = todayDmy() + ' y';
-      editorSetText('#doc_date', bugungiSana);
+  const selectedOption = $('#organization option:selected');
+  const orgName = selectedOption.text().trim();
+  const contractText = selectedOption.attr('data-contract') || '';
+  const date1 = $('#date1').val();
 
-      // Tashkilot nomini o'rnatish (agar tanlangan bo'lsa)
-      const orgName = $('#organization option:selected').text();
-      if (orgName && orgName !== 'Tanlang...') {
-        editorSetText('#org_id', orgName);
-      }
-    }
-  }, 500);
-
-  // Select2 ni ishga tushirish
-  $('#organization, #sender, #agreements').select2({
-    width: '100%',
-    placeholder: 'Tanlang...',
-    allowClear: true
-  });
-
-  // Boshlang'ich sanalarni o'rnatish
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-  const monthAgo = new Date();
-  monthAgo.setMonth(monthAgo.getMonth() - 1);
-  const monthAgoStr = monthAgo.toISOString().split('T')[0];
-
-  if (!$('#date1').val()) $('#date1').val(monthAgoStr);
-  if (!$('#date2').val()) $('#date2').val(todayStr);
-
-  // ----------------- Tanlangan malumotlarni TinyMCE ga yozish -----------------
-  function updateEditorWithSelections() {
-    if (!tinymceReady) return;
-
-    const orgName = $('#organization option:selected').text();
-    if (orgName && orgName !== 'Tanlang...') {
-      editorSetText('#org_id', orgName);
-    }
-
-    const date1 = $('#date1').val();
-    if (date1) {
-      const monthYear = new Date(date1).toLocaleDateString('uz-UZ', {
-        year: 'numeric',
-        month: 'long'
-      });
-      editorSetText('#date', `${monthYear} oyi uchun`);
-    }
+  if (orgName && orgName !== 'Tanlang...') {
+    editorSetText('#org_id', orgName);
+  } else {
+    editorSetText('#org_id', 'Tashkilot');
   }
 
-  // ----------------- Materiallarni qidirish -----------------
-  function searchMaterials() {
-    const orgId = $('#organization').val();
-    const date1 = $('#date1').val();
-    const date2 = $('#date2').val();
-
-    if (!orgId || !date1 || !date2) {
-      alert("Iltimos, tashkilot va sanalarni to'liq tanlang!");
-      return;
-    }
-
-    // Tanlangan ma'lumotlarni editorga yozish
-    updateEditorWithSelections();
-
-    // Yuklanmoqda xabarini ko'rsatish
-    editorSetTbodyRows(`
-      <tr>
-        <td colspan="8" style="text-align:center; padding:20px;">
-          <i>Yuklanmoqda...</i>
-        </td>
-      </tr>
-    `);
-
-    // Materiallarni yuklash
-    $.ajax({
-      url: "{% url 'ajax_svod_materials' %}",
-      method: "GET",
-      data: {
-        organization: orgId,
-        date1: date1,
-        date2: date2
-      },
-      success: function(data) {
-        if (!data || data.length === 0) {
-          editorSetTbodyRows(`
-            <tr>
-              <td colspan="8" style="text-align:center; color:#888; padding:20px;">
-                Tanlangan sana oralig'ida ma'lumot topilmadi
-              </td>
-            </tr>
-          `);
-          return;
-        }
-
-        let rows = "";
-        let totalSum = 0;
-        let index = 1;
-
-        // Ma'lumotlar qatorlari (header YO'Q, faqat ma'lumotlar)
-        data.forEach(function(item) {
-          const quantity = parseFloat(item.total_number) || 0;
-          const price = parseFloat(item.material__price) || 0;
-          const sum = parseFloat(item.total_sum) || 0;
-
-          totalSum += sum;
-
-          rows += `
-            <tr>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.material__name || ''}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.material__unit__name || ''}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(quantity)}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(price)}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(sum)}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.order_info || ''}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item.material__code || ''}</td>
-            </tr>
-          `;
-        });
-
-        // Jami qator
-        rows += `
-          <tr>
-            <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;"><b>JAMI:</b></td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:right;"><b>${formatNumber(totalSum)}</b></td>
-            <td colspan="2" style="border:1px solid #000;font-size:8pt;text-align:right;"></td>
-          </tr>
-        `;
-
-        editorSetTbodyRows(rows);
-      },
-      error: function(xhr) {
-        console.error("Xatolik:", xhr);
-        editorSetTbodyRows(`
-          <tr>
-            <td colspan="8" style="text-align:center; color:red; padding:20px;">
-              Xatolik yuz berdi: ${xhr.status} ${xhr.statusText}
-            </td>
-          </tr>
-        `);
-      }
-    });
+  if (contractText && contractText.trim() !== '') {
+    editorSetText('#date_contract', contractText);
+  } else {
+    editorSetText('#date_contract', '_');
   }
 
-  // ----------------- Event listeners -----------------
-  $('#organization').on('change', function() {
-    updateEditorWithSelections();
-  });
+  editorSetText('#doc_date', todayDmy());
 
-  $('#date1, #date2').on('change', function() {
-    updateEditorWithSelections();
-  });
+  const periodText = formatMonthYear(date1);
+  if (periodText) {
+    editorSetText('#report_period', periodText);
+  }
+}
 
-  $('#btnGenerate').on('click', function(e) {
-    e.preventDefault();
-    searchMaterials();
-  });
-
-  // ----------------- Form submit ni to'g'irlash -----------------
-  $('form').on('submit', function(e) {
-    // Agar TinyMCE ishga tushmagan bo'lsa, davom etish
-    if (!tinymceReady) return true;
-
-    // TinyMCE content ni textarea ga yozish
-    const ed = tinymce.get('body');
-    if (ed) {
-      ed.save();
-    }
-
-    return true; // Formani yuborish
-  });
-
-  // ----------------- Initial load -----------------
-  // Agar Django dan kelgan ma'lumotlar bo'lsa
-  {% if selected_org %}
-    $('#organization').val('{{ selected_org }}').trigger('change');
-  {% endif %}
-
-  {% if selected_sender %}
-    // Sender ni o'rnatish uchun AJAX so'rov kerak
-    // Bu yerda sizning logikangiz bo'yicha
-  {% endif %}
-});
-</script>
-<script>
 function loadAgreementsByOrg(orgId, selectedIds = []) {
   $('#agreements').html('').trigger('change');
   if (!orgId) return;
 
   $.ajax({
     url: "{% url 'ajax_agreements_employees' %}",
-    data: { org_id: orgId },   // ✅ view kutayotgan nom
+    method: 'GET',
+    data: { org_id: orgId },
     success: function (data) {
       let options = '';
       const selectedSet = new Set((selectedIds || []).map(String));
 
       data.forEach(function(emp) {
         const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-        options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+        options += `<option value="${emp.id}" ${selected}>${escapeHtml(emp.full_name)}</option>`;
       });
 
       $('#agreements').html(options).trigger('change');
@@ -539,16 +397,170 @@ function loadAgreementsByOrg(orgId, selectedIds = []) {
   });
 }
 
+function searchMaterials() {
+  const orgId = $('#organization').val();
+  const date1 = $('#date1').val();
+  const date2 = $('#date2').val();
+
+  if (!orgId || !date1 || !date2) {
+    alert("Iltimos, tashkilot va sanalarni to'liq tanlang!");
+    return;
+  }
+
+  updateEditorWithSelections();
+
+  editorSetTbodyRows(`
+    <tr>
+      <td colspan="8" style="border:1px solid #000; text-align:center; padding:14px; font-size:10pt;">
+        <i>Yuklanmoqda...</i>
+      </td>
+    </tr>
+  `);
+
+  $.ajax({
+    url: "{% url 'ajax_svod_materials' %}",
+    method: 'GET',
+    data: {
+      organization: orgId,
+      date1: date1,
+      date2: date2
+    },
+    success: function (data) {
+      if (!Array.isArray(data) || data.length === 0) {
+        editorSetTbodyRows(`
+          <tr>
+            <td colspan="8" style="border:1px solid #000; text-align:center; color:#888; padding:14px; font-size:10pt;">
+              Tanlangan sana oralig'ida ma'lumot topilmadi
+            </td>
+          </tr>
+        `);
+        return;
+      }
+
+      let rows = '';
+      let totalQty = 0;
+      let totalSum = 0;
+      let index = 1;
+
+      data.forEach(function(item) {
+        const materialName = item.material_name || item.title || item.name || '';
+        const unit = item.unit || item.material_unit || item.size || 'dona';
+        const qty = parseFloat(item.number || item.quantity || item.total_number || 0) || 0;
+        const price = parseFloat(item.price || item.material_price || item.material__price || 0) || 0;
+        const sum = parseFloat(item.total_sum || item.summa || item.total || (qty * price) || 0) || 0;
+        const note = item.note || item.eslatma || item.comment || '';
+        const code = item.material_code || item.code || item.one_c_code || '';
+
+        totalQty += qty;
+        totalSum += sum;
+
+        rows += `
+          <tr>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${index++}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:left;">${escapeHtml(materialName)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(unit)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(qty)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(price)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(sum)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:left;">${escapeHtml(note)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(code)}</td>
+          </tr>
+        `;
+      });
+
+      rows += `
+        <tr>
+          <td colspan="3" style="border:1px solid #000; font-size:8pt; text-align:right; font-weight:bold;">JAMI:</td>
+          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold;">${formatNumber(totalQty)}</td>
+          <td style="border:1px solid #000;"></td>
+          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold;">${formatNumber(totalSum)}</td>
+          <td colspan="2" style="border:1px solid #000;"></td>
+        </tr>
+      `;
+
+      editorSetTbodyRows(rows);
+    },
+    error: function(xhr, status, error) {
+      console.error('Xatolik:', error);
+      console.error('Status:', status);
+      console.error('Response:', xhr.responseText);
+
+      let errorMessage = "Xatolik yuz berdi";
+      if (xhr.status === 404) errorMessage = "So'rov yo'li topilmadi (404)";
+      else if (xhr.status === 500) errorMessage = "Server xatoligi (500)";
+      else if (xhr.status === 403) errorMessage = "Ruxsat yo'q (403)";
+      else if (xhr.status === 400) errorMessage = "Noto'g'ri so'rov (400)";
+
+      editorSetTbodyRows(`
+        <tr>
+          <td colspan="8" style="border:1px solid #000; text-align:center; color:red; padding:14px; font-size:10pt;">
+            ${errorMessage}. Batafsil: ${xhr.status} ${xhr.statusText}
+          </td>
+        </tr>
+      `);
+    }
+  });
+}
+
 $(function () {
+  if ($.fn.select2) {
+    $('#organization, #sender, #agreements').select2({
+      width: '100%',
+      placeholder: 'Tanlang...',
+      allowClear: true
+    });
+  }
+
+  const today = new Date();
+  const todayStr = today.toISOString().split('T')[0];
+  const monthAgo = new Date();
+  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  const monthAgoStr = monthAgo.toISOString().split('T')[0];
+
+  if (!$('#date1').val()) $('#date1').val(monthAgoStr);
+  if (!$('#date2').val()) $('#date2').val(todayStr);
+
+  const timer = setInterval(function () {
+    if (editorGet()) {
+      clearInterval(timer);
+      updateEditorWithSelections();
+    }
+  }, 300);
+
   $('#organization').on('change', function () {
-    loadAgreementsByOrg($(this).val());
+    const orgId = $(this).val();
+    updateEditorWithSelections();
+    loadAgreementsByOrg(orgId);
   });
 
-  const initialOrg = $('#organization').val();
-  if (initialOrg) loadAgreementsByOrg(initialOrg);
+  $('#date1, #date2').on('change', function () {
+    updateEditorWithSelections();
+  });
+
+  $('#btnGenerate').on('click', function (e) {
+    e.preventDefault();
+    searchMaterials();
+  });
+
+  $('form').on('submit', function () {
+    const ed = editorGet();
+    if (ed) ed.save();
+    return true;
+  });
+
+  {% if selected_org %}
+    $('#organization').val('{{ selected_org }}').trigger('change');
+  {% else %}
+    const initialOrg = $('#organization').val();
+    if (initialOrg) {
+      loadAgreementsByOrg(initialOrg);
+      updateEditorWithSelections();
+    } else {
+      updateEditorWithSelections();
+    }
+  {% endif %}
 });
 </script>
-
 
 {% endblock content %}
 
