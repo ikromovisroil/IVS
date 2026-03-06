@@ -214,7 +214,8 @@
 
 <div style="text-align:center;">
   <b>DALOLATNOMA</b><br>
-  <span style="text-align:center;font-size:8pt;" class="dep_name_text">(boshqarma nomi)</span>
+  <b class="dep_name">_</b><br>
+  <span style="text-align:center;font-size:8pt;">(boshqarma nomi)</span>
 </div>
 
 <div style="text-align:center;">
@@ -335,7 +336,6 @@
   }
 
   $(function () {
-
     function esc(s) {
       if (s === null || s === undefined) return '';
       return String(s)
@@ -371,7 +371,6 @@
 
     function getEditor() {
       if (!window.tinymce) return null;
-
       const ed = tinymce.get('body');
       if (!ed) return null;
 
@@ -481,11 +480,15 @@
       setAllInEditor('.org_id', orgText);
     }
 
-    function applyDepToEditor(depText) {
-      if (!depText || depText === 'Tanlang...') depText = 'Departament';
-      setInEditor('#dep_id', depText);
-      setInEditor('#dep_id2', depText);
-      setAllInEditor('.dep_name_text', depText);
+    function applyDepToEditor(depText, orgText) {
+      const cleanDep = (!depText || depText === 'Tanlang...') ? '' : depText;
+      const cleanOrg = (!orgText || orgText === 'Tanlang...') ? '' : orgText;
+      const finalText = cleanDep || cleanOrg || 'Tashkilot / Departament';
+
+      setInEditor('#dep_id', finalText);
+      setInEditor('#dep_id2', finalText);
+      setAllInEditor('.dep_name_text', finalText);
+      setAllInEditor('.dep_name', finalText);
     }
 
     function applyChorakToEditor(q) {
@@ -507,7 +510,7 @@
 
       applyTodayDate();
       applyOrgToEditor(orgText);
-      applyDepToEditor(depText);
+      applyDepToEditor(depText, orgText);
       applyChorakToEditor(chorak);
       applyContractToEditor(contractText);
     }
