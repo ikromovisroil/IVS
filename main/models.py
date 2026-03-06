@@ -505,3 +505,31 @@ class DeedConsent(models.Model):
         db_table = 'deedconsent'
         verbose_name = "Akt_kelishuvchi"
         verbose_name_plural = "Akt_kelishuvchilar"
+
+
+class Contract(models.Model):
+    name = models.CharField(max_length=200, null=True, blank=True)
+    unit = models.CharField(max_length=100, null=True, blank=True)
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'contract'
+        verbose_name = "Kelishuv"
+        verbose_name_plural = "Kelishuvlar"
+
+
+class liable(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+
+    def __str__(self):
+        return f"{self.employee} → {self.contract} → {self.category}"
+
+    class Meta:
+        db_table = 'liable'
+        verbose_name = "Javobgar"
+        verbose_name_plural = "Javobgarlar"
