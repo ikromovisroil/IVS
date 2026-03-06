@@ -21,7 +21,7 @@ class OrganizationAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "contract")
     search_fields = ("name", "contract")
     ordering = ("name",)
-
+    exclude = ("slug",)
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
@@ -30,6 +30,7 @@ class DepartmentAdmin(admin.ModelAdmin):
     search_fields = ("name", "organization__name")
     autocomplete_fields = ("organization",)
     ordering = ("name",)
+    exclude = ("slug",)
 
 
 @admin.register(Directorate)
@@ -39,6 +40,7 @@ class DirectorateAdmin(admin.ModelAdmin):
     search_fields = ("name", "department__name", "department__organization__name")
     autocomplete_fields = ("department",)
     ordering = ("name",)
+    exclude = ("slug",)
 
 
 @admin.register(Division)
@@ -57,6 +59,7 @@ class DivisionAdmin(admin.ModelAdmin):
     )
     autocomplete_fields = ("directorate",)
     ordering = ("name",)
+    exclude = ("slug",)
 
 
 @admin.register(Rank)
@@ -78,6 +81,7 @@ class CategoryAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
     ordering = ("name",)
+    exclude = ("slug",)
 
 
 @admin.register(Unit)
