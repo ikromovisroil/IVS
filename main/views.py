@@ -1337,7 +1337,7 @@ def document_get(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    liable = Liable.objects.filter(employee=employee)
+    liable = Liable.objects.filter(employee=employee).select_related("contract").distinct("contract")
 
     context = {
         "liable": liable,
