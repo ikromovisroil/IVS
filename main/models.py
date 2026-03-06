@@ -521,7 +521,7 @@ class Contract(models.Model):
         verbose_name_plural = "Kelishuvlar"
 
 
-class liable(models.Model):
+class Liable(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
@@ -530,6 +530,6 @@ class liable(models.Model):
         return f"{self.employee} → {self.contract} → {self.category}"
 
     class Meta:
-        db_table = 'liable'
+        db_table = 'Liable'
         verbose_name = "Javobgar"
         verbose_name_plural = "Javobgarlar"

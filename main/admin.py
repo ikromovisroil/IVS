@@ -2,15 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-from .models import (
-    Organization, Department, Directorate, Division,
-    Rank, Region, Rol, Employee,
-    Category, Technics, ExtraTechnics,
-    Unit, Material,
-    Goal, Order, OrderMaterial,
-    Deed, DeedConsent,
-    Contract, liable,
-)
+from .models import *
 
 
 # =========================
@@ -385,7 +377,7 @@ class DeedConsentAdmin(admin.ModelAdmin):
 # =========================
 # LIABLE
 # =========================
-@admin.register(liable)
+@admin.register(Liable)
 class LiableAdmin(admin.ModelAdmin):
     list_display = ("id", "employee", "contract", "category")
     list_filter = ("category", "contract")

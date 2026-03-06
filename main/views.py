@@ -1337,10 +1337,10 @@ def document_get(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    contract = Contract.objects.filter(liable__employee=employee).only("id", "name", "unit", "price")
+    liable = Liable.objects.filter(employee=employee)
 
     context = {
-        "contract": contract,
+        "liable": liable,
         "organizations": Organization.objects.only("id", "name", "slug"),
         "emp_bos_sender": Employee.objects.filter(id__in=[3470,3469,3468]),
     }

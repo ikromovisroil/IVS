@@ -159,9 +159,9 @@
 
                 <div></div>
 
-                {% for c in contract %}
-                <div style="text-align:left;" id="contract_{{c.id}}">
-                  <b><span>{{c.name}}</span> <span id="prin_count">_</span> dona.</b>
+                {% for l in liable %}
+                <div style="text-align:left;" id="contract_{{l.id}}">
+                  <b><span>{{l.contract.name}}</span> <span id="prin_count">_</span> dona.</b>
                 </div>
                 {% endfor %}
 
