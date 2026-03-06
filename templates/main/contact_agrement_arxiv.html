@@ -119,7 +119,7 @@
                                                         <div class="col-3">
                                                             <strong></strong>
                                                         </div>
-                                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
+                                                        <div class="col-3"><strong>Yuborilgan sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_user %}
                                                         <div class="mt-2">
@@ -144,7 +144,7 @@
                                                                 <span class="badge bg-danger">Rad etildi</span>
                                                             {% endif %}
                                                         </div>
-                                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_sender|date:"d.m.Y H:i" }}</div>
+                                                        <div class="col-3"><strong>Imzolangan sana:</strong> {{ d.date_sender|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_sender %}
                                                         <div class="mt-2">
@@ -170,7 +170,7 @@
                                                                 <span class="badge bg-danger">Rad etildi</span>
                                                             {% endif %}
                                                         </div>
-                                                        <div class="col-3"><strong>Sana:</strong> {{ d.date_receiver|date:"d.m.Y H:i" }}</div>
+                                                        <div class="col-3"><strong>Imzolangan sana:</strong> {{ d.date_receiver|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_receiver %}
                                                         <div class="mt-2">
@@ -185,7 +185,7 @@
                                                 {% if d.deedconsent_set.count %}
                                                     {% for dc in d.deedconsent_set.all %}
                                                     <div class="mb-4 p-3 border rounded bg-light">
-                                                        <h5 class="fw-bold mb-2">Kelishuvchi: {{dc.employee.organization.name}} vakili</h5><hr>
+                                                        <h5 class="fw-bold mb-2">Kelishilgan sana: {{dc.employee.organization.name}} vakili</h5><hr>
                                                         <div class="row">
                                                             <div class="col-6"><strong>F.I.O:</strong> {{ dc.employee.full_name }}</div>
                                                             <div class="col-3">
