@@ -159,13 +159,11 @@
 
                 <div></div>
 
-                <div style="text-align:left;">
-                  <span><b>1.1.</b> Biriktirilgan kompyuterlarga (shaxsiy kompyuter, monoblok, noutbuk, planshet va infokioskalar) xizmat ko‘rsatish – <b id="komp_count">_</b> dona</span>
+                {% for c in contract %}
+                <div style="text-align:left;" id="contract_{{c.id}}">
+                  <b><span>{{c.name}}</span> <span id="prin_count">_</span> dona.</b>
                 </div>
-
-                <div style="text-align:left;">
-                  <span><b>1.4.</b> A3 formatli printerlarga (lazer, purkovchi (струйный) va ko‘p funksiyali printerlar) xizmat ko‘rsatish – <b id="prin_count">_</b> dona.</span>
-                </div>
+                {% endfor %}
 
                 <div></div>
 
