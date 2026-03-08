@@ -18,14 +18,15 @@ def global_data(request):
     }
 
 
-def role_required(permission: str):
+def role_required(permission):
     def decorator(view_func):
         @wraps(view_func)
         @login_required
         def wrapper(request, *args, **kwargs):
+
             employee = getattr(request.user, "employee", None)
             if not employee:
-                raise PermissionDenied("Employee yo‘q")
+                return redirect("login")
 
             role = getattr(employee, "rol", None)
             if not role:
@@ -35,6 +36,7 @@ def role_required(permission: str):
                 raise PermissionDenied("Ruxsat yo‘q")
 
             return view_func(request, *args, **kwargs)
+
         return wrapper
     return decorator
 
@@ -45,6 +47,7 @@ def home(request):
 
 
 @never_cache
+@login_required
 def profil(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -74,6 +77,7 @@ def profil(request):
 
 
 @never_cache
+@login_required
 def contact(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -92,6 +96,7 @@ def contact(request):
 
 
 @never_cache
+@login_required
 def contact_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -113,6 +118,7 @@ def contact_arxiv(request):
 
 
 @never_cache
+@login_required
 def contact_agrement(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -133,6 +139,7 @@ def contact_agrement(request):
 
 
 @never_cache
+@login_required
 def contact_agrement_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -153,6 +160,7 @@ def contact_agrement_arxiv(request):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
@@ -174,6 +182,7 @@ def contact_user(request):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def contact_user_arxiv(request):
     employee = getattr(request.user, "employee", None)
@@ -202,6 +211,7 @@ def deed_status(request, pk):
 
 
 @never_cache
+@login_required
 def deed_action(request, pk):
     emp = getattr(request.user, "employee", None)
     if not emp:
@@ -290,6 +300,7 @@ def deed_action(request, pk):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def deed_edit(request, pk):
     emp_me = getattr(request.user, "employee", None)
@@ -433,6 +444,7 @@ def deed_edit(request, pk):
 
 @never_cache
 @require_POST
+@login_required
 def deedconsent_action(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -484,6 +496,7 @@ def deedconsent_action(request, pk):
 
 from itertools import groupby
 @never_cache
+@login_required
 @role_required("technics")
 def barn_tex(request):
     employee = getattr(request.user, "employee", None)
@@ -672,6 +685,7 @@ def barn_tex(request):
 
 @never_cache
 @require_POST
+@login_required
 @role_required("technics_edit")
 def technics_create(request):
     employee = getattr(request.user, "employee", None)
@@ -692,6 +706,7 @@ def technics_create(request):
 @never_cache
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("technics_edit")
 def technics_delete(request):
     employee = getattr(request.user, "employee", None)
@@ -720,6 +735,7 @@ def technics_delete(request):
 
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("technics_edit")
 def technics_attach(request):
     employee = getattr(request.user, "employee", None)
@@ -759,6 +775,7 @@ def technics_attach(request):
 
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("technics_edit")
 def technics_update(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -820,6 +837,7 @@ def technics_update(request, pk):
 
 
 @never_cache
+@login_required
 @role_required("technics")
 def extra_tex(request):
     employee = getattr(request.user, "employee", None)
@@ -897,6 +915,7 @@ def extra_tex(request):
 
 @never_cache
 @require_POST
+@login_required
 @role_required("technics_edit")
 def extra_tex_create(request):
     employee = getattr(request.user, "employee", None)
@@ -917,6 +936,7 @@ def extra_tex_create(request):
 @never_cache
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("technics_edit")
 def extra_tex_delete(request):
     employee = getattr(request.user, "employee", None)
@@ -945,6 +965,7 @@ def extra_tex_delete(request):
 
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("technics_edit")
 def extra_tex_update(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -995,6 +1016,7 @@ def extra_tex_update(request, pk):
 
 
 @require_POST
+@login_required
 @role_required("technics_edit")
 def extra_tex_attach(request):
     employee = getattr(request.user, "employee", None)
@@ -1022,6 +1044,7 @@ def extra_tex_attach(request):
 
 
 @require_POST
+@login_required
 @role_required("technics_edit")
 def extra_tex_detach(request):
     employee = getattr(request.user, "employee", None)
@@ -1050,6 +1073,7 @@ def extra_tex_detach(request):
 
 
 @never_cache
+@login_required
 @role_required("material")
 def barn_mat(request):
     employee = getattr(request.user, "employee", None)
@@ -1133,6 +1157,7 @@ def barn_mat(request):
 
 
 @require_POST
+@login_required
 @role_required("material_edit")
 def material_create(request):
     employee = getattr(request.user, "employee", None)
@@ -1152,6 +1177,7 @@ def material_create(request):
 
 
 @require_POST
+@login_required
 @role_required("material_edit")
 def material_update(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -1203,6 +1229,7 @@ def material_update(request, pk):
 
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("material_edit")
 def material_attach(request):
     employee = getattr(request.user, "employee", None)
@@ -1304,6 +1331,7 @@ def material_attach(request):
 @never_cache
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("material_edit")
 def material_delete(request):
     employee = getattr(request.user, "employee", None)
@@ -1331,6 +1359,7 @@ def material_delete(request):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def document_get(request):
     employee = getattr(request.user, "employee", None)
@@ -1349,6 +1378,7 @@ def document_get(request):
 
 @never_cache
 @require_POST
+@login_required
 @role_required("akt")
 def document_post(request):
     employee = getattr(request.user, "employee", None)
@@ -1420,6 +1450,7 @@ def document_post(request):
 
 # yangi arizalar
 @never_cache
+@login_required
 def order_sender(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1456,6 +1487,7 @@ def order_sender(request):
 # arizani tasdiqlash yoki bekor qilish
 @never_cache
 @require_POST
+@login_required
 def order_decide(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1500,6 +1532,7 @@ def order_decide(request, pk):
 
 # arizalar arxivi
 @never_cache
+@login_required
 def order_sender_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1535,6 +1568,7 @@ def order_sender_arxiv(request):
 
 @never_cache
 @require_POST
+@login_required
 def order_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1561,6 +1595,7 @@ def order_post(request):
 
 
 @never_cache
+@login_required
 @role_required("order")
 def order_receiver(request):
     employee = getattr(request.user, "employee", None)
@@ -1589,6 +1624,7 @@ def order_receiver(request):
 
 @never_cache
 @require_POST
+@login_required
 @role_required("order")
 def order_accepted(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -1610,6 +1646,7 @@ def order_accepted(request, pk):
 
 
 @never_cache
+@login_required
 @role_required("order")
 def order_receiver_deed(request,pk):
     employee = getattr(request.user, "employee", None)
@@ -1633,6 +1670,7 @@ def order_receiver_deed(request,pk):
 
 @never_cache
 @require_POST
+@login_required
 @role_required("order")
 def order_receiver_deed_post(request):
     employee = getattr(request.user, "employee", None)
@@ -1701,6 +1739,7 @@ def order_receiver_deed_post(request):
 
 
 @never_cache
+@login_required
 @role_required("order")
 def order_receiver_activ(request):
     employee = getattr(request.user, "employee", None)
@@ -1739,6 +1778,7 @@ def order_receiver_activ(request):
 
 
 @never_cache
+@login_required
 @role_required("order")
 def order_receiver_arxiv(request):
     employee = getattr(request.user, "employee", None)
@@ -1766,6 +1806,7 @@ def order_receiver_arxiv(request):
 
 
 @never_cache
+@login_required
 def order_approved(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1791,6 +1832,7 @@ from django.db.models import F
 @never_cache
 @require_POST
 @transaction.atomic
+@login_required
 @role_required("order")
 def ordermaterial_post(request):
     employee = getattr(request.user, "employee", None)
@@ -1855,6 +1897,7 @@ def ordermaterial_post(request):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def akt_get(request):
     employee = getattr(request.user, "employee", None)
@@ -1870,6 +1913,7 @@ def akt_get(request):
 
 @never_cache
 @require_POST
+@login_required
 @role_required("akt")
 def akt_post(request):
     employee = getattr(request.user, "employee", None)
@@ -1937,6 +1981,7 @@ def akt_post(request):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def svod_get(request):
     employee = getattr(request.user, "employee", None)
@@ -1953,6 +1998,7 @@ def svod_get(request):
 
 @never_cache
 @require_POST
+@login_required
 @role_required("akt")
 def svod_post(request):
     employee = getattr(request.user, "employee", None)
@@ -2021,6 +2067,7 @@ def svod_post(request):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def reestr_get(request):
     employee = getattr(request.user, "employee", None)
@@ -2036,6 +2083,7 @@ def reestr_get(request):
 
 
 @never_cache
+@login_required
 @role_required("akt")
 def reestr_post(request):
     employee = getattr(request.user, "employee", None)
@@ -2106,6 +2154,7 @@ def reestr_post(request):
 
 
 @never_cache
+@login_required
 def technics_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2127,6 +2176,7 @@ def technics_get(request):
 
 from django.utils.dateparse import parse_date
 @never_cache
+@login_required
 @role_required("status")
 def emp_status(request):
     employee = getattr(request.user, "employee", None)
@@ -2216,6 +2266,7 @@ def emp_status(request):
 
 
 @never_cache
+@login_required
 @role_required("status")
 def tex_status(request):
     employee = getattr(request.user, "employee", None)
