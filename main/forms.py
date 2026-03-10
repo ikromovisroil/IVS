@@ -16,6 +16,15 @@ class EmployeeProfileForm(forms.ModelForm):
         }
 
 
+class UserEmailForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ["email"]
+        widgets = {
+            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "Email"}),
+        }
+
+
 class TechnicsForm(forms.ModelForm):
     class Meta:
         model = Technics
