@@ -1874,11 +1874,8 @@ def ordermaterial_post(request):
     order = get_object_or_404(Order.objects.select_for_update(), id=order_id)
 
     # ✅ Texnika majburiy bo‘lsa: tekshirish
-    if not technics_id:
-        messages.info(request, "Iltimos, texnikani tanlang!")
-        return redirect(request.META.get("HTTP_REFERER", "/"))
-
-    order.technics_id = technics_id
+    if technics_id:
+        order.technics_id = technics_id
 
     # ✅ Materiallar bo‘sh bo‘lishi mumkin (xohlasangiz majburiy qiling)
     pairs = []

@@ -175,7 +175,7 @@
                                     <h4>Texnikani tanlang</h4>
                                     <div class="col-sm-12">
                                     <select
-                                      class="form-select js-tech-select" name="technics_id" required>
+                                      class="form-select js-tech-select" name="technics_id">
                                       <option value="">— Tanlang —</option>
                                       {% for i in o.sender.technics_set.all %}
                                         <option value="{{ t.id }}" {% if o.technics_id == t.id %}selected{% endif %}>
