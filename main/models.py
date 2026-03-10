@@ -280,7 +280,20 @@ class Technics(models.Model):
         verbose_name_plural = "Texnikalar"
 
 
+class ExtraCategory(AutoSlugMixin, models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'extracategory'
+        verbose_name = "Qo'shimcha kategoriya"
+        verbose_name_plural = "Qo'shimcha kategoriyalar"
+
+
 class ExtraTechnics(models.Model):
+    category = models.ForeignKey(ExtraCategory, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
@@ -303,7 +316,7 @@ class ExtraTechnics(models.Model):
         return self.name
 
     class Meta:
-        db_table = 'extratanitor'
+        db_table = 'extratechnics'
         verbose_name = "Qo'shimcha texnika"
         verbose_name_plural = "Qo'shimcha texnikalar"
 

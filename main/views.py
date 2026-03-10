@@ -846,10 +846,11 @@ def extra_tex(request):
 
     status = (request.GET.get("status") or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
+    category_id = (request.GET.get("category") or "").strip()
     name = (request.GET.get("name") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    has_filter = bool(status or organization_id or name)
+    has_filter = bool(category_id or status or organization_id or name)
 
     if not has_filter:
         qs = ExtraTechnics.objects.none()
@@ -860,6 +861,7 @@ def extra_tex(request):
 
         return render(request, "main/extra_tex.html", {
             "organizations": Organization.objects.only("id", "name"),
+            "categories": ExtraCategory.objects.only("id", "name"),
             "technics_form": ExtraTechnicsForm(),
 
             "page_obj": page_obj,
@@ -881,6 +883,8 @@ def extra_tex(request):
         qs = qs.filter(organization_id=organization_id)
     if status:
         qs = qs.filter(status=status)
+    if category_id:
+        qs = qs.filter(category=category_id)
 
     if name:
         qs = qs.filter(
@@ -901,6 +905,7 @@ def extra_tex(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name"),
+        "categories": ExtraCategory.objects.only("id", "name"),
         "technics_form": ExtraTechnicsForm(),
 
         "page_obj": page_obj,
@@ -972,12 +977,18 @@ def extra_tex_update(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    back_url = request.META.get("HTTP_REFERER", "/")
+    back_url = request.META.get("HTTP_REFERER") or "extra_tex"
 
-    tex = get_object_or_404(ExtraTechnics.objects.select_for_update(), pk=pk)
+    tex = get_object_or_404(
+        ExtraTechnics.objects.select_for_update(),
+        pk=pk,
+        is_active=True,
+    )
 
     organization_id = (request.POST.get("organization") or "").strip()
+    category_id = (request.POST.get("category") or "").strip()
 
+    # organization
     if organization_id:
         if not organization_id.isdigit():
             messages.error(request, "Tashkilot noto‘g‘ri")
@@ -986,29 +997,49 @@ def extra_tex_update(request, pk):
     else:
         tex.organization = None
 
-    # Oddiy maydonlar
+    # category
+    if category_id:
+        if not category_id.isdigit():
+            messages.error(request, "Kategoriya noto‘g‘ri")
+            return redirect(back_url)
+        tex.category = get_object_or_404(ExtraCategory, pk=int(category_id))
+    else:
+        tex.category = None
+
+    # oddiy maydonlar
     tex.name = (request.POST.get("name") or "").strip()
     tex.parametr = (request.POST.get("parametr") or "").strip()
     tex.inventory = (request.POST.get("inventory") or "").strip()
     tex.serial = (request.POST.get("serial") or "").strip()
-    tex.year = (request.POST.get("year") or "").strip()
 
-    # 💰 Price: 14.45 yoki 14,45 ni qabul qiladi
+    raw_year = (request.POST.get("year") or "").strip()
+    tex.year = raw_year if raw_year else None
+
+    # price
     raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
-    raw_price = raw_price.replace(",", ".")  # 14,45 -> 14.45
+    raw_price = raw_price.replace(",", ".")
 
     try:
         tex.price = Decimal(raw_price) if raw_price else Decimal("0")
         if tex.price < 0:
             raise InvalidOperation
     except (InvalidOperation, ValueError):
-        messages.error(request, "Narx noto‘g‘ri kiritildi (misol: 14.45 yoki 14,45)")
+        messages.error(request, "Narx noto‘g‘ri kiritildi. Misol: 14.45 yoki 14,45")
         return redirect(back_url)
 
-    # 💾 Minimal saqlash
+    if not tex.name:
+        messages.error(request, "Nomi bo‘sh bo‘lishi mumkin emas")
+        return redirect(back_url)
+
     tex.save(update_fields=[
         "organization",
-        "name", "parametr", "inventory", "serial", "year", "price"
+        "category",
+        "name",
+        "parametr",
+        "inventory",
+        "serial",
+        "year",
+        "price",
     ])
 
     messages.success(request, "Texnika tahrirlandi!")

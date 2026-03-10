@@ -16,33 +16,6 @@ class EmployeeProfileForm(forms.ModelForm):
         }
 
 
-class UserEmailForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = ["email"]
-        widgets = {
-            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "Email"}),
-        }
-
-
-class StyledPasswordChangeForm(PasswordChangeForm):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.fields["old_password"].widget.attrs.update({
-            "class": "form-control",
-            "placeholder": "Joriy parol",
-        })
-        self.fields["new_password1"].widget.attrs.update({
-            "class": "form-control",
-            "placeholder": "Yangi parol",
-        })
-        self.fields["new_password2"].widget.attrs.update({
-            "class": "form-control",
-            "placeholder": "Yangi parolni qayta kiriting",
-        })
-
-
 class TechnicsForm(forms.ModelForm):
     class Meta:
         model = Technics
@@ -70,11 +43,12 @@ class ExtraTechnicsForm(forms.ModelForm):
     class Meta:
         model = ExtraTechnics
         fields = [
-            "organization", "name",
+            "category", "organization", "name",
             "parametr", "inventory", "serial",
             "year", "price"
         ]
         widgets = {
+            "category": forms.Select(attrs={"class": "form-select", "required": True}),
             "organization": forms.Select(attrs={"class": "form-select", "required": True}),
 
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),

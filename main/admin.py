@@ -76,6 +76,14 @@ class CategoryAdmin(admin.ModelAdmin):
     exclude = ("slug",)
 
 
+@admin.register(ExtraCategory)
+class ExtraCategoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
+    ordering = ("name",)
+    exclude = ("slug",)
+
+
 @admin.register(Unit)
 class UnitAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
@@ -228,18 +236,18 @@ class TechnicsAdmin(admin.ModelAdmin):
 @admin.register(ExtraTechnics)
 class ExtraTechnicsAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "technics", "organization", "status",
+        "id", "name", "category", "technics", "organization", "status",
         "inventory", "serial", "price",
         "is_active", "date_creat",
     )
     list_filter = (
-        "status", "is_active", "organization", "date_creat",
+        "category", "status", "is_active", "organization", "date_creat",
     )
     search_fields = (
         "name", "parametr", "inventory", "serial", "year",
-        "technics__name", "organization__name",
+        "category__name", "technics__name", "organization__name",
     )
-    autocomplete_fields = ("organization", "technics")
+    autocomplete_fields = ("category", "organization", "technics")
     readonly_fields = ("date_creat", "date_edit")
     ordering = ("name",)
 

@@ -46,6 +46,19 @@
                     </div>
 
                     <div class="col-md-3">
+                        <label for="category" class="form-label">Kategoriya</label>
+                        <select id="category" name="category" class="form-select">
+                          <option value="">Tanlang...</option>
+                          {% for c in categories %}
+                            <option value="{{ c.id }}"
+                              {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                              {{ c.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
                       <label for="name" class="form-label">Name</label>
                       <input id="name" type="text" name="name" class="form-control"
                              value="{{ request.GET.name|default:'' }}"
@@ -89,7 +102,7 @@
                     <th scope="col">I/N</th>
                     <th scope="col">S/N</th>
                     <th scope="col">Yili</th>
-                    {% if request.user.employee.rol.material_edit%}
+                    {% if request.user.employee.rol.material_edit %}
                     <th scope="col">Tafsif</th>
                     {% endif %}
                   </tr>
@@ -106,7 +119,7 @@
                       <td>{{ tex.inventory|default:"-" }}</td>
                       <td>{{ tex.serial|default:"-" }}</td>
                       <td>{{ tex.year|default:"-" }}</td>
-                      {% if request.user.employee.rol.material_edit%}
+                      {% if request.user.employee.rol.material_edit %}
                       <td>
                         <div class="filter">
                           <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
@@ -194,6 +207,13 @@
               <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
               <div class="col-md-8 col-lg-9">
                 {{ technics_form.organization }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.category }}
               </div>
             </div>
 
@@ -329,6 +349,20 @@
             </div>
 
             <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <div class="col-md-8 col-lg-9">
+                  <select name="category" class="form-select" required>
+                    <option value="">— Tanlang —</option>
+                    {% for c in categories %}
+                      <option value="{{ c.id }}" {% if tex.category_id == c.id %}selected{% endif %}>
+                        {{ c.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
                   <input type="text" name="name" class="form-control" value="{{ tex.name }}" required>
@@ -384,96 +418,4 @@
     {% endfor %}
 
 </main>
-<script>
-  const orgSelect = document.getElementById("organization");
-
-  // org bo'yicha cache
-  const employeesCache = new Map(); // orgId -> [{id,text}]
-
-  async function fetchEmployees(orgId) {
-    if (!orgId) return [];
-    if (employeesCache.has(orgId)) return employeesCache.get(orgId);
-
-    const res = await fetch(`/ajax/employees-org/?organization=${encodeURIComponent(orgId)}`, {
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    });
-
-    // backend {"results":[{"id":..,"text":..}] } bo'lishi kerak
-    const data = await res.json();
-    const list = data.results || [];
-
-    employeesCache.set(orgId, list);
-    return list;
-  }
-
-  async function fillEmployeeSelect(selectEl, orgId) {
-    const selectedId = selectEl.dataset.selected || "";
-
-    selectEl.innerHTML = `<option value="">Yuklanmoqda...</option>`;
-    const employees = await fetchEmployees(orgId);
-
-    let html = `<option value="">— Tanlang —</option>`;
-    for (const e of employees) {
-      const sel = (String(e.id) === String(selectedId)) ? "selected" : "";
-      html += `<option value="${e.id}" ${sel}>${e.text}</option>`;
-    }
-    selectEl.innerHTML = html;
-  }
-
-  // Modal ochilganda xodimlarni yuklash
-  document.addEventListener("shown.bs.modal", async (event) => {
-    const modal = event.target;
-    const selectEl = modal.querySelector(".employee-select");
-    if (!selectEl) return;
-
-    const orgId = (orgSelect?.value || "").trim();
-    if (!orgId) {
-      selectEl.innerHTML = `<option value="">Avval tashkilotni tanlang</option>`;
-      return;
-    }
-
-    await fillEmployeeSelect(selectEl, orgId);
-  });
-
-  // Tashkilot o'zgarsa: hamma modal selectlarini reset
-  orgSelect?.addEventListener("change", () => {
-    document.querySelectorAll(".employee-select").forEach(sel => {
-      sel.innerHTML = `<option value="">— Tanlang —</option>`;
-    });
-  });
-</script>
-
-<script>
-  const SEARCH_TEX_URL = "{% url 'ajax_search_tex' %}";
-
-  function searchTex(extraTexId) {
-    const q = document.getElementById("search-input-" + extraTexId).value.trim();
-    if (!q) return alert("Qidiruv bo‘sh!");
-
-    fetch(SEARCH_TEX_URL + "?q=" + encodeURIComponent(q))
-      .then(r => r.json())
-      .then(data => {
-        const results = data.results || [];
-        if (!results.length) {
-          document.getElementById("result-input-" + extraTexId).value = "";
-          document.getElementById("texnika-id-" + extraTexId).value = "";
-          return alert("Texnika topilmadi!");
-        }
-
-        // 1-ta topilganini olamiz (xohlasangiz ro‘yxat qilib beraman)
-        const t = results[0];
-
-        // Ko‘rsatamiz
-        document.getElementById("result-input-" + extraTexId).value =
-          `${t.name} | inv:${t.inventory || "-"} | ser:${t.serial || "-"}`;
-
-        // MUHIM: formga texnika id yozamiz
-        document.getElementById("texnika-id-" + extraTexId).value = t.id;
-      })
-      .catch(err => {
-        console.error(err);
-        alert("Server xatolik!");
-      });
-  }
-</script>
 {% endblock content %}
