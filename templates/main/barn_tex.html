@@ -428,7 +428,9 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary">O'chirish</button>
+            <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Texnika o\'chirilsinmi?')">
+                O'chirish</button>
           </div>
 
         </form>
@@ -441,7 +443,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Texnikani biriktirish</h5>
+            <h5 class="modal-title">Xodimga biriktirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -491,7 +493,9 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary">Biriktirish</button>
+            <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Texnika xodimga biriktrilsinmi?')">
+                Biriktirish</button>
           </div>
 
         </form>
@@ -600,7 +604,9 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary">Saqlash</button>
+            <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Texnika Tahrirlansinmi?')">
+                Saqlash</button>
           </div>
         </form>
       </div>
@@ -663,7 +669,9 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary">Biriktirish</button>
+            <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Texnika biriktrilsinmi?')">
+                Biriktirish</button>
           </div>
 
         </form>
@@ -676,7 +684,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Texnikani biriktirish</h5>
+            <h5 class="modal-title">Texnikani o'chirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -727,7 +735,9 @@
 
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary">Saqlash</button>
+            <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Qo\'shimcha texnika o\'chirilsinmi?')">
+                Saqlash</button>
           </div>
 
         </form>
