@@ -482,10 +482,10 @@ def deedconsent_action(request, pk):
         consent.message = message
         consent.date_edit = timezone.now()
         consent.save(update_fields=["status", "message", "date_edit"])
-        messages.warning(request, "Hujjat muvaffaqiyatli kelishildi")
+        messages.success(request, "Hujjat muvaffaqiyatli kelishildi")
         return redirect(back_url)
 
-    messages.error(request, "Noto‘g‘ri amal")
+    messages.info(request, "Noto‘g‘ri amal")
     return redirect(back_url)
 
 
@@ -693,7 +693,7 @@ def technics_create(request):
         form.save()
         messages.success(request, "Texnika qo‘shildi")
     else:
-        messages.error(request, "Maʼlumotlarda xatolik bor")
+        messages.info(request, "Maʼlumotlarda xatolik bor")
 
     return redirect(back_url)
 
