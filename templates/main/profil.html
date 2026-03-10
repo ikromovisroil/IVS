@@ -53,10 +53,10 @@
 
                 <h5 class="card-title">Tashkilot nomi</h5>
                 <p class="small fst-italic">
-                    {{ employee.organization.name }} <b>|</b>
-                  {{ employee.department.name }} <b>|</b>
-                  {{ employee.directorate.name }} <b>|</b>
-                  {{ employee.division.name }}
+                  {% if employee.organization %} {{ employee.organization.name }} {% endif %}
+                  {% if employee.department %} | {{ employee.department.name }} {% endif %}
+                  {% if employee.directorate %} | {{ employee.directorate.name }} {% endif %}
+                  {% if employee.division %} | {{ employee.division.name }} {% endif %}
                 </p>
 
                 <h5 class="card-title">Profil tafsilotlari</h5>
