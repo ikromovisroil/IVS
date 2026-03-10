@@ -469,7 +469,6 @@ def deedconsent_action(request, pk):
     action = (request.POST.get("action") or "").strip()
     message = (request.POST.get("message") or "").strip()
 
-    # ❌ reject — SSO shart emas
     if action == "reject":
         consent.status = "rejected"
         consent.message = message
@@ -478,17 +477,13 @@ def deedconsent_action(request, pk):
         messages.warning(request, "Rad etildi!")
         return redirect(back_url)
 
-    # ✅ approve — SSO orqali
     if action == "approve":
-        request.session["PENDING_APPROVE"] = {
-            "role": "consent",
-            "consent_id": consent.id,
-            "message": message,
-            "redirect_url": back_url,
-            "after_sso_url": back_url,
-        }
-        request.session.modified = True
-        return redirect("sso_start_approve")
+        consent.status = "approved"
+        consent.message = message
+        consent.date_edit = timezone.now()
+        consent.save(update_fields=["status", "message", "date_edit"])
+        messages.warning(request, "Hujjat muvaffaqiyatli kelishildi")
+        return redirect(back_url)
 
     messages.error(request, "Noto‘g‘ri amal")
     return redirect(back_url)

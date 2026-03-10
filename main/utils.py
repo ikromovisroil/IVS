@@ -120,11 +120,11 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
     dt = timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M")
     if deed.receiver:
         text = (
-            f"{deed.sender.full_name} tomonidan {dt} da tasdiqlandi\n"
-            f"{deed.receiver.full_name} tomonidan {dt} da tasdiqlandi"
+            f"REPORT.IMV.UZ tizimi orqali ERI bilan {deed.sender.full_name} tomonidan {dt} da tasdiqlandi\n"
+            f"REPORT.IMV.UZ tizimi orqali ERI bilan {deed.receiver.full_name} tomonidan {dt} da tasdiqlandi"
         )
     else:
-        text = f"{deed.sender.full_name} tomonidan {dt} da tasdiqlandi"
+        text = f"REPORT.IMV.UZ tizimi orqali ERI bilan, {deed.sender.full_name} tomonidan {dt} da tasdiqlandi"
 
     lock_path = abs_pdf + ".lock"
     tmp_out = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
