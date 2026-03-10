@@ -221,14 +221,12 @@
                             </td>
                             <!-- Holat -->
                             <td>
-                                {% if d.status_sender in "approved rejected" or d.status_receiver in "approved rejected" %}
                                 <div class="spinner-border spinner-border-sm text-primary" role="status">
                                     <span class="visually-hidden">Loading...</span>
                                 </div>
                                 <button class="btn badge btn-primary" data-bs-toggle="modal" data-bs-target="#modal-c{{ d.id }}">
                                     Kelishish
                                 </button>
-                                {% endif %}
                                 <!-- MODAL -->
                                 {% for dc in d.deedconsent_set.all %}
                                    {% if dc.employee == request.user.employee and dc.status == "viewed" %}
