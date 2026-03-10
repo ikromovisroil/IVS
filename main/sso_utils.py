@@ -25,3 +25,19 @@ def get_sso_redirect_uri(request) -> str:
     if "localhost" in host or "127.0.0.1" in host:
         return "http://localhost:8000/sso/callback/"
     return getattr(settings, "SSO_REDIRECT_URI", "https://report.imv.uz/sso/callback/")
+
+from urllib.parse import urlencode
+
+def get_eimzo_return_uri(request) -> str:
+    host = request.get_host()
+    if "localhost" in host or "127.0.0.1" in host:
+        return "http://localhost:8000/sso/eimzo-return/"
+    return getattr(settings, "EIMZO_RETURN_URL", "https://report.imv.uz/sso/eimzo-return/")
+
+
+def build_eimzo_sign_url(request, doc_value: str) -> str:
+    params = {
+        "redirectUri": get_eimzo_return_uri(request),
+        "doc": doc_value,
+    }
+    return f"{settings.SSO_EIMZO_SIGN_URL}?{urlencode(params)}"

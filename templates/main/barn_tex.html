@@ -175,7 +175,7 @@
                         <td>{{ tex.name|default:"-" }}
                           <span class="text-secondary small ps-4 ms-2 mt-1">
                             {% for et in tex.extratechnics_set.all %}
-                              <br><i>{{et.category.name|default:""}} {{ et.name|default:"-" }}</i>
+                              <br><i>{{et.category.name|default:""}} / {{ et.name|default:"-" }}</i>
                             {% endfor %}
                           </span>
                         </td>

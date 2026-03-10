@@ -100,12 +100,13 @@ urlpatterns = [
     path("order/approved/", order_approved, name="order_approved"),
 
     # SSO
-    path("sso/login/", login_page, name="sso_login"),
-    path("sso/start-login/", sso_start_login, name="sso_start_login"),
-    path("sso/start-approve/", sso_start_approve, name="sso_start_approve"),
+    path("sso/login/", login_page, name="login_page"),
+    path("sso/start/login/", sso_start_login, name="sso_start_login"),
+    path("sso/start/approve/", sso_start_approve, name="sso_start_approve"),
     path("sso/start/", sso_start, name="sso_start"),
     path("sso/callback/", sso_callback, name="sso_callback"),
     path("sso/exchange/", sso_exchange, name="sso_exchange"),
+    path("sso/eimzo-return/", eimzo_return, name="eimzo_return"),
     path("sso/logout/", logout, name="logout"),
 
     path("deed/<int:pk>/edit/", deed_edit, name="deed_edit"),
