@@ -39,6 +39,7 @@
                   <table class="table table-bordered table-hover">
                     <thead class="table-secondary">
                         <tr>
+                            <th>T/r</th>
                             <th>Imzolovchi</th>
                             <th>Yuborilgan sana</th>
                             <th>Fayllar</th>
@@ -48,6 +49,7 @@
                     <tbody>
                     {% for d in deed_user %}
                         <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
                             <td>
                                 {{ d.sender.full_name }}
                                 {% if d.receiver %}<br>

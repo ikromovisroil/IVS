@@ -203,8 +203,7 @@ class RolAdmin(admin.ModelAdmin):
 class TechnicsAdmin(admin.ModelAdmin):
     list_display = (
         "id", "name", "category", "employee", "organization",
-        "department", "directorate", "division",
-        "status", "inventory", "serial", "mac", "is_active", "date_creat",
+        "status", "inventory", "serial", "mac"
     )
     list_filter = (
         "status", "is_active", "category",
@@ -236,9 +235,8 @@ class TechnicsAdmin(admin.ModelAdmin):
 @admin.register(ExtraTechnics)
 class ExtraTechnicsAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "category", "technics", "organization", "status",
-        "inventory", "serial", "price",
-        "is_active", "date_creat",
+        "id", "name", "category", "organization",
+        "status", "inventory", "serial"
     )
     list_filter = (
         "category", "status", "is_active", "organization", "date_creat",
@@ -342,16 +340,12 @@ class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id", "sender", "receiver", "user",
         "status_sender", "status_receiver",
-        "sender_seen", "receiver_seen",
-        "file_type", "date_creat",
+        "date_creat",
     )
     list_filter = (
-        "status_sender", "status_receiver",
-        "sender_seen", "receiver_seen",
-        "file_type", "date_creat", "date_edit",
+        "status_sender", "status_receiver", "date_creat",
     )
     search_fields = (
-        "body", "message_sender", "message_receiver", "message_user",
         "sender__last_name", "sender__first_name", "sender__father_name",
         "receiver__last_name", "receiver__first_name", "receiver__father_name",
         "user__last_name", "user__first_name", "user__father_name",
@@ -359,7 +353,6 @@ class DeedAdmin(admin.ModelAdmin):
     autocomplete_fields = ("sender", "receiver", "user")
     readonly_fields = ("date_creat", "date_edit")
     inlines = (DeedConsentInline,)
-    date_hierarchy = "date_creat"
     ordering = ("-id",)
 
     def get_queryset(self, request):
@@ -371,11 +364,9 @@ class DeedAdmin(admin.ModelAdmin):
 @admin.register(DeedConsent)
 class DeedConsentAdmin(admin.ModelAdmin):
     list_display = ("id", "deed", "employee", "status", "date_creat")
-    list_filter = ("status", "date_creat", "date_edit")
+    list_filter = ("status", "date_creat")
     search_fields = (
-        "message",
         "employee__last_name", "employee__first_name", "employee__father_name",
-        "deed__body",
     )
     autocomplete_fields = ("deed", "employee")
     readonly_fields = ("date_creat", "date_edit")

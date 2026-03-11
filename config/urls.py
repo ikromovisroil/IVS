@@ -10,11 +10,11 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include, re_path
 schema_view = get_schema_view(
     openapi.Info(
         title="IMV API Documentation",
-        default_version='v1',
+        default_version="v1",
         description="IMV API Hujjatlari",
     ),
     public=True,
@@ -32,12 +32,13 @@ urlpatterns = [
     path('api/', include('main.api_urls')),
 
     # JWT TOKEN URL'lari
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
+    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
     # SWAGGER
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='swagger'),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='redoc'),
+    re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),
+    path("swagger/", schema_view.with_ui("swagger", cache_timeout=0), name="schema-swagger-ui"),
+    path("redoc/", schema_view.with_ui("redoc", cache_timeout=0), name="schema-redoc"),
 ]
 
 # STATIC & MEDIA

@@ -387,8 +387,8 @@ class Order(models.Model):
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
 
     status = models.CharField(max_length=20, choices=[
-        ('viewed', 'Kutulmoqda'),
-        ('accepted', 'Qabul qilindi'),
+        ('viewed', 'Yangi'),
+        ('accepted', 'Jarayonda'),
         ('finished', 'Yakunlandi'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
@@ -491,7 +491,7 @@ class Deed(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Dalolatnoma #{self.id} → {self.receiver}"
+        return f"Dalolatnoma #{self.id}"
 
     class Meta:
         db_table = 'deed'

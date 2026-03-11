@@ -1,117 +1,204 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework import viewsets, filters
+from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
 
-from .serializers import *
+from .models import (
+    Organization, Department, Directorate, Division,
+    Rank, Region, Rol, Employee,
+    Category, Technics,
+    ExtraCategory, ExtraTechnics,
+    Unit, Material,
+    Goal, Order, OrderMaterial,
+    Deed, DeedConsent,
+    Contract, Liable
+)
+
+from .serializers import (
+    OrganizationSerializer, DepartmentSerializer, DirectorateSerializer, DivisionSerializer,
+    RankSerializer, RegionSerializer, RolSerializer, EmployeeSerializer,
+    CategorySerializer, TechnicsSerializer,
+    ExtraCategorySerializer, ExtraTechnicsSerializer,
+    UnitSerializer, MaterialSerializer,
+    GoalSerializer, OrderSerializer, OrderMaterialSerializer,
+    DeedSerializer, DeedConsentSerializer,
+    ContractSerializer, LiableSerializer
+)
 
 
-# ---- SIMPLE CRUD ---- #
-class OrganizationViewSet(ModelViewSet):
-    queryset = Organization.objects.all()
+class BaseModelViewSet(viewsets.ModelViewSet):
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+
+
+class OrganizationViewSet(BaseModelViewSet):
+    queryset = Organization.objects.all().order_by("name")
     serializer_class = OrganizationSerializer
+    search_fields = ["name", "contract"]
+    ordering_fields = ["id", "name"]
 
 
-class DepartmentViewSet(ModelViewSet):
-    queryset = Department.objects.select_related("organization")
+class DepartmentViewSet(BaseModelViewSet):
+    queryset = Department.objects.select_related("organization").all().order_by("name")
     serializer_class = DepartmentSerializer
-    filterset_fields = ['organization']
+    filterset_fields = ["organization"]
+    search_fields = ["name", "organization__name"]
+    ordering_fields = ["id", "name"]
 
 
-class DirectorateViewSet(ModelViewSet):
-    queryset = Directorate.objects.select_related("department")
+class DirectorateViewSet(BaseModelViewSet):
+    queryset = Directorate.objects.select_related("department", "department__organization").all().order_by("name")
     serializer_class = DirectorateSerializer
-    filterset_fields = ['department']
+    filterset_fields = ["department"]
+    search_fields = ["name", "department__name"]
+    ordering_fields = ["id", "name"]
 
 
-class DivisionViewSet(ModelViewSet):
-    queryset = Division.objects.select_related("directorate")
+class DivisionViewSet(BaseModelViewSet):
+    queryset = Division.objects.select_related(
+        "directorate", "directorate__department", "directorate__department__organization"
+    ).all().order_by("name")
     serializer_class = DivisionSerializer
-    filterset_fields = ['directorate']
+    filterset_fields = ["directorate"]
+    search_fields = ["name", "directorate__name"]
+    ordering_fields = ["id", "name"]
 
 
-class RankViewSet(ModelViewSet):
-    queryset = Rank.objects.all()
+class RankViewSet(BaseModelViewSet):
+    queryset = Rank.objects.all().order_by("name")
     serializer_class = RankSerializer
+    search_fields = ["name"]
+    ordering_fields = ["id", "name"]
 
 
-class StructureViewSet(ModelViewSet):
-    queryset = Region.objects.all()
+class RegionViewSet(BaseModelViewSet):
+    queryset = Region.objects.all().order_by("name")
     serializer_class = RegionSerializer
+    search_fields = ["name"]
+    ordering_fields = ["id", "name"]
 
 
-# ---- EMPLOYEE ---- #
-class EmployeeViewSet(ModelViewSet):
+class RolViewSet(BaseModelViewSet):
+    queryset = Rol.objects.select_related("employee").all().order_by("id")
+    serializer_class = RolSerializer
+    filterset_fields = [
+        "employee", "client", "order", "boss", "shop", "akt",
+        "status", "technics", "technics_edit", "material", "material_edit"
+    ]
+    ordering_fields = ["id"]
+
+
+class EmployeeViewSet(BaseModelViewSet):
     queryset = Employee.objects.select_related(
-        "user", "division", "directorate", "department", "organization", "rank"
-    )
+        "user", "organization", "department", "directorate", "division", "rank", "region"
+    ).all().order_by("id")
     serializer_class = EmployeeSerializer
-
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    search_fields = ['user__first_name', 'user__last_name', 'phone']
-    ordering_fields = ['id', 'date_creat']
-    ordering = ['-date_creat']
+    filterset_fields = ["organization", "department", "directorate", "division", "rank", "region"]
+    search_fields = ["last_name", "first_name", "father_name", "pinfl", "phone", "user__username"]
+    ordering_fields = ["id", "last_name", "first_name", "date_creat"]
 
 
-# ---- CATEGORY ---- #
-class CategoryViewSet(ModelViewSet):
-    queryset = Category.objects.all()
+class CategoryViewSet(BaseModelViewSet):
+    queryset = Category.objects.all().order_by("name")
     serializer_class = CategorySerializer
+    search_fields = ["name"]
+    ordering_fields = ["id", "name"]
 
 
-# ---- TECHNICS ---- #
-class TechnicsViewSet(ModelViewSet):
+class TechnicsViewSet(BaseModelViewSet):
     queryset = Technics.objects.select_related(
-        "category",
-        "employee",
-        "employee__organization",
-        "employee__department",
-        "employee__directorate",
-        "employee__division",
-    )
+        "category", "organization", "department", "directorate", "division", "employee"
+    ).all().order_by("id")
     serializer_class = TechnicsSerializer
-
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-
-    search_fields = ['name', 'serial', 'inventory', 'ip']
-    ordering_fields = ['name', 'date_creat', 'price']
-    ordering = ['-date_creat']
+    filterset_fields = ["category", "organization", "department", "directorate", "division", "employee", "status", "is_active"]
+    search_fields = ["name", "inventory", "serial", "mac", "ip", "parametr"]
+    ordering_fields = ["id", "name", "date_creat", "date_edit"]
 
 
-# ---- MATERIAL ---- #
-class MaterialViewSet(ModelViewSet):
-    queryset = Material.objects.select_related("employee", "technics")
+class ExtraCategoryViewSet(BaseModelViewSet):
+    queryset = ExtraCategory.objects.all().order_by("name")
+    serializer_class = ExtraCategorySerializer
+    search_fields = ["name"]
+    ordering_fields = ["id", "name"]
+
+
+class ExtraTechnicsViewSet(BaseModelViewSet):
+    queryset = ExtraTechnics.objects.select_related("category", "organization", "technics").all().order_by("id")
+    serializer_class = ExtraTechnicsSerializer
+    filterset_fields = ["category", "organization", "technics", "status", "is_active"]
+    search_fields = ["name", "inventory", "serial", "parametr"]
+    ordering_fields = ["id", "name", "date_creat", "date_edit"]
+
+
+class UnitViewSet(BaseModelViewSet):
+    queryset = Unit.objects.all().order_by("name")
+    serializer_class = UnitSerializer
+    search_fields = ["name"]
+    ordering_fields = ["id", "name"]
+
+
+class MaterialViewSet(BaseModelViewSet):
+    queryset = Material.objects.select_related("employee", "unit").all().order_by("id")
     serializer_class = MaterialSerializer
-    filterset_fields = ['employee', 'technics']
+    filterset_fields = ["employee", "unit", "status", "is_active"]
+    search_fields = ["name", "code"]
+    ordering_fields = ["id", "name", "date_creat", "date_edit"]
 
 
-
-class GoalViewSet(ModelViewSet):
-    queryset = Goal.objects.select_related("topic")
+class GoalViewSet(BaseModelViewSet):
+    queryset = Goal.objects.all().order_by("name")
     serializer_class = GoalSerializer
-    filterset_fields = ['topic']
+    search_fields = ["name"]
+    ordering_fields = ["id", "name"]
 
 
-# ---- ORDER ---- #
-class OrderViewSet(ModelViewSet):
-    queryset = Order.objects.select_related("sender", "receiver", "goal")
+class OrderViewSet(BaseModelViewSet):
+    queryset = Order.objects.select_related(
+        "sender", "receiver", "goal", "technics"
+    ).prefetch_related("materials__material").all().order_by("-id")
     serializer_class = OrderSerializer
-
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['status', 'sender', 'receiver']
-    search_fields = ['body', 'sender__user__first_name', 'receiver__user__last_name']
-    ordering_fields = ['id', 'date_creat']
-    ordering = ['-date_creat']
+    filterset_fields = ["sender", "receiver", "goal", "technics", "status", "receiver_seen"]
+    search_fields = ["body", "sender__last_name", "receiver__last_name", "technics__name"]
+    ordering_fields = ["id", "date_creat", "date_edit", "date_accepted", "date_finished"]
 
 
-class OrderMaterialViewSet(ModelViewSet):
-    queryset = OrderMaterial.objects.all()
+class OrderMaterialViewSet(BaseModelViewSet):
+    queryset = OrderMaterial.objects.select_related("order", "material").all().order_by("id")
     serializer_class = OrderMaterialSerializer
-    filterset_fields = ['order', 'technics', 'material']
+    filterset_fields = ["order", "material"]
+    search_fields = ["material__name"]
+    ordering_fields = ["id"]
 
 
-# ---- DEED ---- #
-class DeedViewSet(ModelViewSet):
-    queryset = Deed.objects.select_related("sender", "receiver")
+class DeedViewSet(BaseModelViewSet):
+    queryset = Deed.objects.select_related("sender", "receiver", "user").all().order_by("-id")
     serializer_class = DeedSerializer
-    filterset_fields = ['sender', 'receiver', 'status']
+    filterset_fields = [
+        "sender", "receiver", "user",
+        "status_sender", "status_receiver",
+        "sender_seen", "receiver_seen", "file_type"
+    ]
+    search_fields = ["body", "message_sender", "message_receiver", "message_user"]
+    ordering_fields = ["id", "date_creat", "date_edit", "date_sender", "date_receiver"]
 
+
+class DeedConsentViewSet(BaseModelViewSet):
+    queryset = DeedConsent.objects.select_related("deed", "employee").all().order_by("-id")
+    serializer_class = DeedConsentSerializer
+    filterset_fields = ["deed", "employee", "status"]
+    search_fields = ["message", "employee__last_name", "employee__first_name"]
+    ordering_fields = ["id", "date_creat", "date_edit"]
+
+
+class ContractViewSet(BaseModelViewSet):
+    queryset = Contract.objects.all().order_by("name")
+    serializer_class = ContractSerializer
+    search_fields = ["name", "unit"]
+    ordering_fields = ["id", "name", "price"]
+
+
+class LiableViewSet(BaseModelViewSet):
+    queryset = Liable.objects.select_related("employee", "contract", "category").all().order_by("id")
+    serializer_class = LiableSerializer
+    filterset_fields = ["employee", "contract", "category"]
+    search_fields = ["employee__last_name", "contract__name", "category__name"]
+    ordering_fields = ["id"]
