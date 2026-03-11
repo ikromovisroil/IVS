@@ -2440,6 +2440,9 @@ def tex_status(request):
                 "foiz": foiz,
             })
 
+        # ko‘pdan kamga saralash
+        category_list = sorted(category_list, key=lambda x: x["soni"], reverse=True)
+
         orgs_qs.append({
             "id": org["id"],
             "name": org["name"],
