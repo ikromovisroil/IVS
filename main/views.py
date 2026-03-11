@@ -1858,7 +1858,7 @@ def order_receiver_activ(request):
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
-    my_materials = Material.objects.filter(employee=employee,is_active=True)
+    my_materials = Material.objects.filter(employee=employee, is_active=True)
     if my_materials.exists():
         materials = my_materials
     else:
