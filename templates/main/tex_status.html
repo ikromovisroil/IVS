@@ -2,10 +2,11 @@
 {% load static %}
 
 {% block title %}
-<title>Index</title>
+<title>Dashboard</title>
 {% endblock title %}
 
 {% block css %}
+
 {% endblock css %}
 
 {% block content %}
@@ -19,20 +20,31 @@
     <div class="row">
 
       <!-- CARDS -->
-      {% for i in orgs_qs %}
-      <div class="col-xxl-3 col-xl-6">
-        <div class="card info-card customers-card">
+      {% for org in orgs_qs %}
+      <div class="col-12 col-md-6 col-xl-4 col-xxl-3 mb-4">
+        <div class="card info-card customers-card org-card shadow-sm">
           <div class="card-body">
-            <h5 class="card-title">{{ i.name }}</h5>
+            <h5 class="card-title">
+              <span>{{ org.name }}</span>
+            </h5>
 
-            <div class="d-flex align-items-center">
-              <div class="card-icon rounded-circle d-flex align-items-center justify-content-center bg-primary text-white">
-                <i class="bi bi-pc-display fs-4"></i>
-              </div>
-              <div class="ps-3">
-                <h6>{{ i.technics_count }} ta texnika</h6>
-                <span class="text-success small pt-1 fw-bold">{{ i.foiz }}%</span>
-              </div>
+            <div class="table-responsive table-sticky-wrap">
+              <table class="table table-sm  table-hover mb-0">
+                <thead>
+                  <tr>
+                    <th scope="col">Kategoriya</th>
+                    <th scope="col" class="text-center" style="width: 90px;">Soni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for cat in org.category_list %}
+                    <tr>
+                      <td>{{ cat.name }}</td>
+                      <td class="text-center">{{ cat.soni }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
             </div>
 
           </div>
@@ -40,9 +52,9 @@
       </div>
       {% endfor %}
 
-      <!-- CHARTS ROW (PIE + FUNNEL) -->
-      <div class="col-12 col-lg-6">
-        <div class="card">
+      <!-- CHARTS ROW -->
+      <div class="col-12 col-lg-6 mb-4">
+        <div class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title">Tashkilotlar bo‘yicha texnika</h5>
             <div id="funnelChart"></div>
@@ -50,8 +62,8 @@
         </div>
       </div>
 
-      <div class="col-12 col-lg-6">
-        <div class="card">
+      <div class="col-12 col-lg-6 mb-4">
+        <div class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title">Tashkilotlar ulushi</h5>
             <div id="pieChart"></div>
@@ -59,9 +71,8 @@
         </div>
       </div>
 
-      <!-- AREA (FULL WIDTH) -->
-      <div class="col-12">
-        <div class="card">
+      <div class="col-12 mb-4">
+        <div class="card shadow-sm">
           <div class="card-body">
             <h5 class="card-title">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
             <div id="areaChart"></div>
@@ -74,13 +85,10 @@
 
 </main>
 
-<!-- ✅ JSON data -->
 {{ categories|json_script:"categories-data" }}
 {{ series|json_script:"series-data" }}
-
 {{ pie_labels|json_script:"pie-labels" }}
 {{ pie_values|json_script:"pie-values" }}
-
 {{ funnel_labels|json_script:"funnel-labels" }}
 {{ funnel_values|json_script:"funnel-values" }}
 
@@ -94,11 +102,20 @@ document.addEventListener("DOMContentLoaded", function () {
   const series = JSON.parse(document.getElementById("series-data").textContent);
 
   new ApexCharts(document.querySelector("#areaChart"), {
-    chart: { type: "area", height: 350, toolbar: { show: false } },
+    chart: {
+      type: "area",
+      height: 350,
+      toolbar: { show: false }
+    },
     dataLabels: { enabled: false },
-    stroke: { curve: "smooth" },
-    xaxis: { categories },
-    series
+    stroke: { curve: "smooth", width: 2 },
+    xaxis: {
+      categories: categories
+    },
+    series: series,
+    legend: {
+      position: "top"
+    }
   }).render();
 
   // PIE
@@ -106,10 +123,15 @@ document.addEventListener("DOMContentLoaded", function () {
   const pieValues = JSON.parse(document.getElementById("pie-values").textContent);
 
   new ApexCharts(document.querySelector("#pieChart"), {
-    chart: { type: "pie", height: 350 },
+    chart: {
+      type: "pie",
+      height: 350
+    },
     labels: pieLabels,
     series: pieValues,
-    legend: { position: "bottom" }
+    legend: {
+      position: "bottom"
+    }
   }).render();
 
   // FUNNEL
@@ -117,7 +139,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const funnelValues = JSON.parse(document.getElementById("funnel-values").textContent);
 
   new ApexCharts(document.querySelector("#funnelChart"), {
-    chart: { type: "bar", height: 350, toolbar: { show: false } },
+    chart: {
+      type: "bar",
+      height: 350,
+      toolbar: { show: false }
+    },
     plotOptions: {
       bar: {
         horizontal: true,
@@ -128,16 +154,24 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     dataLabels: {
       enabled: true,
-      formatter: (val, opt) => opt.w.globals.labels[opt.dataPointIndex] + ": " + val
+      formatter: function (val, opt) {
+        return opt.w.globals.labels[opt.dataPointIndex] + ": " + val;
+      }
     },
-    xaxis: { categories: funnelLabels },
-    series: [{ name: "Texnika", data: funnelValues }],
-    legend: { show: false }
+    xaxis: {
+      categories: funnelLabels
+    },
+    series: [{
+      name: "Texnika",
+      data: funnelValues
+    }],
+    legend: {
+      show: false
+    }
   }).render();
 
 });
 </script>
-
 {% endblock content %}
 
 {% block js %}{% endblock js %}

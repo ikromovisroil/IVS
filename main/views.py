@@ -2376,11 +2376,18 @@ def tex_status(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
+    # ------------------- Tashkilotlar -------------------
     orgs = list(
         Organization.objects
         .all()
         .order_by("id")
-        .annotate(technics_count=Count("technics", distinct=True))  # agar ishlamasa -> technics_set
+        .annotate(
+            technics_count=Count(
+                "technics",
+                filter=Q(technics__is_active=True),
+                distinct=True
+            )
+        )
         .values("id", "name", "technics_count")
     )
 
@@ -2388,45 +2395,75 @@ def tex_status(request):
     for o in orgs:
         o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
 
-    # ------------------- PIE: tashkilotlar ulushi -------------------
-    pie_labels = [o["name"] for o in orgs]
-    pie_values = [o["technics_count"] for o in orgs]
-
-    # ------------------- AREA: category (x) va organization (series) -------------------
-    cats_qs = list(Category.objects.all().order_by("id").values("id", "name"))
+    # ------------------- Kategoriyalar -------------------
+    cats_qs = list(
+        Category.objects
+        .all()
+        .order_by("id")
+        .values("id", "name")
+    )
     cat_ids = [c["id"] for c in cats_qs]
     categories = [c["name"] for c in cats_qs]
 
     org_ids = [o["id"] for o in orgs]
 
-    grouped = (
+    # organization + category bo‘yicha count (faqat active)
+    grouped = list(
         Technics.objects
-        .filter(organization_id__in=org_ids, category_id__in=cat_ids)
+        .filter(
+            organization_id__in=org_ids,
+            category_id__in=cat_ids,
+            is_active=True
+        )
         .values("organization_id", "category_id")
         .annotate(cnt=Count("id"))
     )
 
     lookup = {(g["organization_id"], g["category_id"]): g["cnt"] for g in grouped}
 
-    series = []
-    for o in orgs:
-        data = [lookup.get((o["id"], cid), 0) for cid in cat_ids]
-        series.append({"name": o["name"], "data": data})
+    # ------------------- Card uchun data -------------------
+    orgs_qs = []
+    for org in orgs:
+        category_list = []
+        for cat in cats_qs:
+            count = lookup.get((org["id"], cat["id"]), 0)
+            category_list.append({
+                "name": cat["name"],
+                "soni": count
+            })
 
-    # ------------------- FUNNEL: tashkilotlar bo‘yicha (katta -> kichik) -------------------
+        orgs_qs.append({
+            "id": org["id"],
+            "name": org["name"],
+            "technics_count": org["technics_count"],
+            "foiz": org["foiz"],
+            "category_list": category_list
+        })
+
+    # ------------------- PIE -------------------
+    pie_labels = [o["name"] for o in orgs]
+    pie_values = [o["technics_count"] for o in orgs]
+
+    # ------------------- AREA -------------------
+    series = []
+    for org in orgs:
+        data = [lookup.get((org["id"], cid), 0) for cid in cat_ids]
+        series.append({
+            "name": org["name"],
+            "data": data
+        })
+
+    # ------------------- FUNNEL -------------------
     orgs_sorted = sorted(orgs, key=lambda x: x["technics_count"], reverse=True)
-    # ko'p bo'lsa 8 ta ko'rsatamiz (xohlasangiz [:8] ni olib tashlang)
     funnel_labels = [o["name"] for o in orgs_sorted[:8]]
     funnel_values = [o["technics_count"] for o in orgs_sorted[:8]]
 
     context = {
-        "orgs_qs": orgs,
+        "orgs_qs": orgs_qs,
         "categories": categories,
         "series": series,
-
         "pie_labels": pie_labels,
         "pie_values": pie_values,
-
         "funnel_labels": funnel_labels,
         "funnel_values": funnel_values,
     }
