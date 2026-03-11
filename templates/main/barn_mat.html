@@ -73,7 +73,7 @@
               <div class="d-flex justify-content-between align-items-center">
                  <h5 class="card-title">Materiallar: {{ total_count }} ta
                  </h5>
-                 <h5>Umumiy narxi:  {{ total_suma|intcomma }} so'm
+                 <h5 class="card-title">Umumiy narxi:  {{ total_suma|intcomma }} so'm
                  </h5>
                  {% if request.user.employee.rol.material_edit %}
                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#vertical">

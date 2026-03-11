@@ -83,16 +83,30 @@ def contact(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    deed_receiver = (
+    qs = (
         Deed.objects
         .filter(
             Q(sender=employee, status_sender="viewed") |
             Q(receiver=employee, status_receiver="viewed")
         )
-        .select_related("sender", "receiver")
+        .select_related("user", "sender", "receiver")
+        .prefetch_related("deedconsent_set__employee__organization")
         .order_by("-id")
     )
-    return render(request, "main/contact.html", {"deed_receiver": deed_receiver})
+
+    paginator = Paginator(qs, 50)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
+    context = {
+        "deed_receiver": page_obj,
+        "page_obj": page_obj,
+        "qs_params": params.urlencode(),
+    }
+    return render(request, "main/contact.html", context)
 
 
 @never_cache
@@ -102,17 +116,28 @@ def contact_arxiv(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    deed_receiver = (
+    qs = (
         Deed.objects
         .filter(
             Q(sender=employee, status_sender__in=["approved", "rejected"]) |
             Q(receiver=employee, status_receiver__in=["approved", "rejected"])
         )
-        .select_related("sender", "receiver")
+        .select_related("user", "sender", "receiver")
+        .prefetch_related("deedconsent_set__employee__organization")
         .order_by("-id")
     )
+
+    paginator = Paginator(qs, 50)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
     context = {
-        "deed_receiver": deed_receiver,
+        "deed_receiver": page_obj,
+        "page_obj": page_obj,
+        "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_arxiv.html", context)
 
@@ -124,16 +149,31 @@ def contact_agrement(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    deed_consent = (
+    qs = (
         Deed.objects
-        .filter(deedconsent__employee=employee,deedconsent__status="viewed")
-        .select_related("sender", "receiver")
-        .distinct()              # ✅ dublikat bo‘lmasin
+        .filter(
+            deedconsent__employee=employee,
+            deedconsent__status="viewed"
+        )
+        .select_related("user", "sender", "receiver")
+        .prefetch_related(
+            "deedconsent_set__employee__organization"
+        )
+        .distinct()
         .order_by("-id")
     )
 
+    paginator = Paginator(qs, 50)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
     context = {
-        "deed_consent": deed_consent,
+        "deed_consent": page_obj,
+        "page_obj": page_obj,
+        "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_agrement.html", context)
 
@@ -145,16 +185,29 @@ def contact_agrement_arxiv(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    deed_consent = (
+    qs = (
         Deed.objects
-        .filter(deedconsent__employee=employee,deedconsent__status__in=["approved", "rejected"])
-        .select_related("sender", "receiver")
-        .distinct()              # ✅ dublikat bo‘lmasin
+        .filter(
+            deedconsent__employee=employee,
+            deedconsent__status__in=["approved", "rejected"]
+        )
+        .select_related("user", "sender", "receiver")
+        .prefetch_related("deedconsent_set__employee__organization")
+        .distinct()
         .order_by("-id")
     )
 
+    paginator = Paginator(qs, 50)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
     context = {
-        "deed_consent": deed_consent,
+        "deed_consent": page_obj,
+        "page_obj": page_obj,
+        "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_agrement_arxiv.html", context)
 
@@ -167,18 +220,31 @@ def contact_user(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    deed_user = (
+    qs = (
         Deed.objects
+        .filter(user=employee)
         .filter(
-            user=employee,
-            status_sender="viewed",
-            status_receiver="viewed",
+            Q(receiver__isnull=True, status_sender="viewed") |
+            Q(receiver__isnull=False, status_sender="viewed", status_receiver="viewed")
         )
         .select_related("sender", "receiver", "user")
+        .prefetch_related("deedconsent_set__employee__organization")
         .order_by("-id")
     )
 
-    return render(request, "main/contact_user.html", {"deed_user": deed_user})
+    paginator = Paginator(qs, 50)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
+    context = {
+        "deed_user": page_obj,
+        "page_obj": page_obj,
+        "qs_params": params.urlencode(),
+    }
+    return render(request, "main/contact_user.html", context)
 
 
 @never_cache
@@ -190,7 +256,8 @@ def contact_user_arxiv(request):
         raise PermissionDenied("Employee yo‘q")
 
     done_statuses = ["approved", "rejected"]
-    deed_user = (
+
+    qs = (
         Deed.objects
         .filter(user=employee)
         .filter(
@@ -198,10 +265,23 @@ def contact_user_arxiv(request):
             Q(status_receiver__in=done_statuses)
         )
         .select_related("sender", "receiver", "user")
+        .prefetch_related("deedconsent_set__employee__organization")
         .order_by("-id")
     )
 
-    return render(request, "main/contact_user_arxiv.html", {"deed_user": deed_user})
+    paginator = Paginator(qs, 50)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
+    context = {
+        "deed_user": page_obj,
+        "page_obj": page_obj,
+        "qs_params": params.urlencode(),
+    }
+    return render(request, "main/contact_user_arxiv.html", context)
 
 
 def deed_status(request, pk):
