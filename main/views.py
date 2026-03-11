@@ -2391,6 +2391,7 @@ def tex_status(request):
     )
 
     total_technics = sum(o["technics_count"] for o in orgs) or 1
+
     for o in orgs:
         o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
 
@@ -2405,13 +2406,13 @@ def tex_status(request):
     categories = [c["name"] for c in cats_qs]
     org_ids = [o["id"] for o in orgs]
 
-    # ------------------- Org + Category count -------------------
+    # ------------------- Organization + Category count -------------------
     grouped = list(
         Technics.objects
         .filter(
             is_active=True,
             organization_id__in=org_ids,
-            category_id__in=cat_ids,
+            category_id__in=cat_ids
         )
         .values("organization_id", "category_id")
         .annotate(cnt=Count("id"))
@@ -2423,14 +2424,18 @@ def tex_status(request):
         for g in grouped
     }
 
-    # ------------------- Card data -------------------
+    # ------------------- CARD DATA -------------------
     orgs_qs = []
+
     for org in orgs:
+
         category_list = []
         org_total = org["technics_count"]
 
         for cat in cats_qs:
+
             count = lookup.get((org["id"], cat["id"]), 0)
+
             foiz = round((count * 100) / org_total, 1) if org_total > 0 else 0
 
             category_list.append({
@@ -2440,9 +2445,6 @@ def tex_status(request):
                 "foiz": foiz,
             })
 
-        # ko‘pdan kamga saralash
-        category_list = sorted(category_list, key=lambda x: x["soni"], reverse=True)
-
         orgs_qs.append({
             "id": org["id"],
             "name": org["name"],
@@ -2451,21 +2453,24 @@ def tex_status(request):
             "category_list": category_list,
         })
 
-    # ------------------- PIE -------------------
+    # ------------------- PIE CHART -------------------
     pie_labels = [o["name"] for o in orgs]
     pie_values = [o["technics_count"] for o in orgs]
 
-    # ------------------- AREA -------------------
+    # ------------------- AREA CHART -------------------
     series = []
+
     for org in orgs:
         data = [lookup.get((org["id"], cid), 0) for cid in cat_ids]
+
         series.append({
             "name": org["name"],
             "data": data
         })
 
-    # ------------------- FUNNEL -------------------
+    # ------------------- FUNNEL CHART -------------------
     orgs_sorted = sorted(orgs, key=lambda x: x["technics_count"], reverse=True)
+
     funnel_labels = [o["name"] for o in orgs_sorted[:8]]
     funnel_values = [o["technics_count"] for o in orgs_sorted[:8]]
 
@@ -2478,4 +2483,5 @@ def tex_status(request):
         "funnel_labels": funnel_labels,
         "funnel_values": funnel_values,
     }
+
     return render(request, "main/tex_status.html", context)
