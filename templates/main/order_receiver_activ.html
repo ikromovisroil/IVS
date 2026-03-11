@@ -198,7 +198,7 @@
                                 <template id="material-options-{{ o.id }}">
                                   <option value="">— Tanlang —</option>
                                   {% for mat in materials %}
-                                    <option value="{{ mat.id }}">{{ mat.name }} | {{ mat.code }}</option>
+                                    <option value="{{ mat.id }}">({{ mat.employee.full_name }}) {{ mat.name }} | {{ mat.code }}</option>
                                   {% endfor %}
                                 </template>
 
