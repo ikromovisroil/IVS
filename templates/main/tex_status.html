@@ -24,28 +24,27 @@
         <div class="card shadow-sm h-100 border-0 rounded-4 overflow-hidden">
           <div class="card-body p-0">
 
-            <div class="d-flex justify-content-between align-items-center px-3 px-md-4 border-bottom">
-              <h5 class="card-title mb-0 fw-bold fs-6 text-dark">
+            <div class="d-flex justify-content-between align-items-center px-3 border-bottom">
+              <h5 class="card-title mb-0 fw-bold" style="font-size: 15px;">
                 {{ org.name }}
               </h5>
-              <span class="badge rounded-pill text-primary bg-primary-subtle px-3 py-2">
+              <span class="badge rounded-pill text-primary bg-primary-subtle px-3 py-1" style="font-size: 15px;">
                 {{ org.technics_count }} ta
               </span>
             </div>
 
             {% if org.category_list %}
               {% for cat in org.category_list %}
-              <div class="d-flex align-items-center gap-3 px-3 px-md-4 py-1 border-bottom">
+              <div class="d-flex align-items-center gap-2 px-3 py-1 border-bottom">
 
-                <div class="flex-grow-1 text-secondary fw-medium">
+                <div class="flex-grow-1 text-secondary small" style="font-size: 13px;">
                   {{ cat.name }}
                 </div>
 
-                <div class="d-flex align-items-center gap-2" style="width: 220px;">
-
-                  <div class="progress flex-grow-1" style="height: 10px;">
+                <div class="d-flex align-items-center gap-2" style="width: 150px;">
+                  <div class="progress flex-grow-1" style="height: 8px;">
                     <div
-                      class="progress-bar bg-primary rounded-pill"
+                      class="progress-bar bg-primary"
                       role="progressbar"
                       style="width: {{ cat.foiz|unlocalize }}%;"
                       aria-valuenow="{{ cat.foiz|unlocalize }}"
@@ -53,17 +52,14 @@
                       aria-valuemax="100">
                     </div>
                   </div>
-                  <div class="text-end text-muted fw-semibold" style="width: 24px;">
+
+                  <div class="text-end text-muted small fw-semibold" style="width: 40px;">
                     {{ cat.soni }}
                   </div>
                 </div>
 
               </div>
               {% endfor %}
-            {% else %}
-              <div class="px-4 py-4 text-center text-muted">
-                Ma'lumot yo‘q
-              </div>
             {% endif %}
 
           </div>
