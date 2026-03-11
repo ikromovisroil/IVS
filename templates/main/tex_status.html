@@ -6,7 +6,47 @@
 {% endblock title %}
 
 {% block css %}
+<style>
+  .org-card {
+    height: 100%;
+  }
 
+  .org-card .card-body {
+    padding: 16px;
+  }
+
+  .org-card .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .org-total-badge {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 20px;
+  }
+
+  .table-sticky-wrap {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .table-sm th,
+  .table-sm td {
+    vertical-align: middle;
+    font-size: 13px;
+  }
+
+  #areaChart,
+  #pieChart,
+  #funnelChart {
+    min-height: 350px;
+  }
+</style>
 {% endblock css %}
 
 {% block content %}
@@ -25,12 +65,12 @@
         <div class="card info-card customers-card org-card shadow-sm">
           <div class="card-body">
             <h5 class="card-title">
-              <span>{{ org.name }}</span>
+              {{ org.name }}
             </h5>
 
             <div class="table-responsive table-sticky-wrap">
-              <table class="table table-sm  table-hover mb-0">
-                <thead>
+              <table class="table table-sm table-bordered table-hover mb-0">
+                <thead class="table-light">
                   <tr>
                     <th scope="col">Kategoriya</th>
                     <th scope="col" class="text-center" style="width: 90px;">Soni</th>
@@ -41,6 +81,12 @@
                     <tr>
                       <td>{{ cat.name }}</td>
                       <td class="text-center">{{ cat.soni }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="2" class="text-center text-muted">
+                        Ma'lumot yo‘q
+                      </td>
                     </tr>
                   {% endfor %}
                 </tbody>
