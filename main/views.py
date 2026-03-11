@@ -2379,11 +2379,10 @@ def tex_status(request):
     # ------------------- Tashkilotlar -------------------
     orgs = list(
         Organization.objects
-        .all()
         .order_by("id")
         .annotate(
             technics_count=Count(
-                "technics",
+                "technics__id",
                 filter=Q(technics__is_active=True),
                 distinct=True
             )
@@ -2398,38 +2397,47 @@ def tex_status(request):
     # ------------------- Kategoriyalar -------------------
     cats_qs = list(
         Category.objects
-        .all()
         .order_by("id")
         .values("id", "name")
     )
+
     cat_ids = [c["id"] for c in cats_qs]
     categories = [c["name"] for c in cats_qs]
-
     org_ids = [o["id"] for o in orgs]
 
-    # organization + category bo‘yicha count (faqat active)
+    # ------------------- Org + Category count -------------------
     grouped = list(
         Technics.objects
         .filter(
+            is_active=True,
             organization_id__in=org_ids,
             category_id__in=cat_ids,
-            is_active=True
         )
         .values("organization_id", "category_id")
         .annotate(cnt=Count("id"))
+        .order_by("organization_id", "category_id")
     )
 
-    lookup = {(g["organization_id"], g["category_id"]): g["cnt"] for g in grouped}
+    lookup = {
+        (g["organization_id"], g["category_id"]): g["cnt"]
+        for g in grouped
+    }
 
-    # ------------------- Card uchun data -------------------
+    # ------------------- Card data -------------------
     orgs_qs = []
     for org in orgs:
         category_list = []
+        org_total = org["technics_count"]
+
         for cat in cats_qs:
             count = lookup.get((org["id"], cat["id"]), 0)
+            foiz = round((count * 100) / org_total, 1) if org_total > 0 else 0
+
             category_list.append({
+                "id": cat["id"],
                 "name": cat["name"],
-                "soni": count
+                "soni": count,
+                "foiz": foiz,
             })
 
         orgs_qs.append({
@@ -2437,7 +2445,7 @@ def tex_status(request):
             "name": org["name"],
             "technics_count": org["technics_count"],
             "foiz": org["foiz"],
-            "category_list": category_list
+            "category_list": category_list,
         })
 
     # ------------------- PIE -------------------

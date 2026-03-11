@@ -9,6 +9,8 @@
 <style>
   .org-card {
     height: 100%;
+    border: none;
+    border-radius: 16px;
   }
 
   .org-card .card-body {
@@ -18,27 +20,78 @@
   .org-card .card-title {
     font-size: 16px;
     font-weight: 700;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    color: #1f2937;
   }
 
   .org-total-badge {
     font-size: 12px;
-    padding: 6px 10px;
+    padding: 5px 10px;
     border-radius: 20px;
+    background: #eef2ff;
+    color: #3730a3;
+    font-weight: 600;
   }
 
   .table-sticky-wrap {
-    max-height: 260px;
+    max-height: 300px;
     overflow-y: auto;
+    border-radius: 10px;
   }
 
   .table-sm th,
   .table-sm td {
     vertical-align: middle;
     font-size: 13px;
+  }
+
+  .table-sm thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8f9fa;
+  }
+
+  .cat-name {
+    font-weight: 500;
+    color: #374151;
+  }
+
+  .count-wrap {
+    min-width: 190px;
+  }
+
+  .count-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+  }
+
+  .count-number {
+    font-weight: 700;
+    font-size: 13px;
+    color: #111827;
+  }
+
+  .count-percent {
+    font-size: 12px;
+    color: #6b7280;
+  }
+
+  .progress {
+    height: 8px;
+    border-radius: 999px;
+    background-color: #e9ecef;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    border-radius: 999px;
+    transition: width 0.5s ease;
   }
 
   #areaChart,
@@ -59,34 +112,48 @@
   <section class="section dashboard">
     <div class="row">
 
-      <!-- CARDS -->
       {% for org in orgs_qs %}
       <div class="col-12 col-md-6 col-xl-4 col-xxl-3 mb-4">
         <div class="card info-card customers-card org-card shadow-sm">
           <div class="card-body">
             <h5 class="card-title">
-              {{ org.name }}
+              <span>{{ org.name }}</span>
+              <span class="org-total-badge">{{ org.technics_count }} ta</span>
             </h5>
 
             <div class="table-responsive table-sticky-wrap">
-              <table class="table table-sm table-bordered table-hover mb-0">
+              <table class="table table-sm table-bordered table-hover mb-0 align-middle">
                 <thead class="table-light">
                   <tr>
-                    <th scope="col">Kategoriya</th>
-                    <th scope="col" class="text-center" style="width: 90px;">Soni</th>
+                    <th>Kategoriya</th>
+                    <th style="width: 200px;">Holati</th>
                   </tr>
                 </thead>
                 <tbody>
                   {% for cat in org.category_list %}
                     <tr>
-                      <td>{{ cat.name }}</td>
-                      <td class="text-center">{{ cat.soni }}</td>
+                      <td class="cat-name">{{ cat.name }}</td>
+                      <td class="count-wrap">
+                        <div class="count-top">
+                          <span class="count-number">{{ cat.soni }} ta</span>
+                          <span class="count-percent">{{ cat.foiz }}%</span>
+                        </div>
+
+                        <div class="progress">
+                          <div
+                            class="progress-bar bg-primary"
+                            role="progressbar"
+                            style="width: {{ cat.foiz }}%;"
+                            aria-valuenow="{{ cat.foiz }}"
+                            aria-valuemin="0"
+                            aria-valuemax="100">
+                          </div>
+                        </div>
+                      </td>
                     </tr>
                   {% empty %}
                     <tr>
-                      <td colspan="2" class="text-center text-muted">
-                        Ma'lumot yo‘q
-                      </td>
+                      <td colspan="2" class="text-center text-muted">Ma'lumot yo‘q</td>
                     </tr>
                   {% endfor %}
                 </tbody>
@@ -98,7 +165,6 @@
       </div>
       {% endfor %}
 
-      <!-- CHARTS ROW -->
       <div class="col-12 col-lg-6 mb-4">
         <div class="card shadow-sm">
           <div class="card-body">
@@ -142,10 +208,12 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
-  // AREA
   const categories = JSON.parse(document.getElementById("categories-data").textContent);
   const series = JSON.parse(document.getElementById("series-data").textContent);
+  const pieLabels = JSON.parse(document.getElementById("pie-labels").textContent);
+  const pieValues = JSON.parse(document.getElementById("pie-values").textContent);
+  const funnelLabels = JSON.parse(document.getElementById("funnel-labels").textContent);
+  const funnelValues = JSON.parse(document.getElementById("funnel-values").textContent);
 
   new ApexCharts(document.querySelector("#areaChart"), {
     chart: {
@@ -155,18 +223,10 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     dataLabels: { enabled: false },
     stroke: { curve: "smooth", width: 2 },
-    xaxis: {
-      categories: categories
-    },
+    xaxis: { categories: categories },
     series: series,
-    legend: {
-      position: "top"
-    }
+    legend: { position: "top" }
   }).render();
-
-  // PIE
-  const pieLabels = JSON.parse(document.getElementById("pie-labels").textContent);
-  const pieValues = JSON.parse(document.getElementById("pie-values").textContent);
 
   new ApexCharts(document.querySelector("#pieChart"), {
     chart: {
@@ -175,14 +235,8 @@ document.addEventListener("DOMContentLoaded", function () {
     },
     labels: pieLabels,
     series: pieValues,
-    legend: {
-      position: "bottom"
-    }
+    legend: { position: "bottom" }
   }).render();
-
-  // FUNNEL
-  const funnelLabels = JSON.parse(document.getElementById("funnel-labels").textContent);
-  const funnelValues = JSON.parse(document.getElementById("funnel-values").textContent);
 
   new ApexCharts(document.querySelector("#funnelChart"), {
     chart: {
@@ -204,18 +258,13 @@ document.addEventListener("DOMContentLoaded", function () {
         return opt.w.globals.labels[opt.dataPointIndex] + ": " + val;
       }
     },
-    xaxis: {
-      categories: funnelLabels
-    },
+    xaxis: { categories: funnelLabels },
     series: [{
       name: "Texnika",
       data: funnelValues
     }],
-    legend: {
-      show: false
-    }
+    legend: { show: false }
   }).render();
-
 });
 </script>
 {% endblock content %}
