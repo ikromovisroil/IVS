@@ -199,9 +199,9 @@
                                   <option value="">— Tanlang —</option>
                                   {% for mat in materials %}
                                     <option value="{{ mat.id }}">
-                                        {{ mat.employee.full_name }} |
-                                        {{ mat.name }} |
-                                        {{ mat.code }}
+                                        F.I.O: {{ mat.employee.full_name }} —
+                                        Name: {{ mat.name }} |
+                                        Code: {{ mat.code }}
                                     </option>
                                   {% endfor %}
                                 </template>
@@ -416,12 +416,12 @@ document.addEventListener("DOMContentLoaded", function() {
 
     let $row = $(`
       <div class="row align-items-center mb-2 material-row">
-        <div class="col-6">
+        <div class="col-7">
           <select class="form-select js-material-select" name="material_id[]">
             ${optionsHtml}
           </select>
         </div>
-        <div class="col-4">
+        <div class="col-3">
           <input type="number" class="form-control" name="number[]" value="1" min="1">
         </div>
         <div class="col-2 text-end">
