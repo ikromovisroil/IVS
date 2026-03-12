@@ -1854,32 +1854,61 @@ def order_receiver_activ(request):
 
     orders_qs = (
         Order.objects
-        .filter(receiver=employee,status__in=["accepted", "finished"],)
+        .filter(receiver=employee, status__in=["accepted", "finished"])
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
+
+    # 1) Avval foydalanuvchining o‘zidagi materiallar
     my_materials = Material.objects.filter(employee=employee, is_active=True)
+
     if my_materials.exists():
         materials = my_materials
     else:
-        materials = Material.objects.filter(
-            employee__rol__shop=True,
-            is_active=True,
-            employee__region=employee.region,
-            employee__organization=employee.organization,
-            employee__department=employee.department,
-        )
+        # 2) Shop materiallarini bosqichma-bosqich qidirish
+        filter_levels = [
+            {
+                "employee__region": employee.region,
+                "employee__organization": employee.organization,
+                "employee__department": employee.department,
+                "employee__directorate": employee.directorate,
+                "employee__division": employee.division,
+            },
+            {
+                "employee__region": employee.region,
+                "employee__organization": employee.organization,
+                "employee__department": employee.department,
+                "employee__directorate": employee.directorate,
+            },
+            {
+                "employee__region": employee.region,
+                "employee__organization": employee.organization,
+                "employee__department": employee.department,
+            },
+        ]
 
-    # ✅ PAGINATION
+        materials = Material.objects.none()
+
+        for level_filter in filter_levels:
+            qs = Material.objects.filter(
+                employee__rol__shop=True,
+                is_active=True,
+                **level_filter
+            )
+            if qs.exists():
+                materials = qs
+                break
+
+    # PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 50)
     page_obj = paginator.get_page(page_number)
 
     context = {
-        "order": page_obj,          # ✅ for loop shu orqali yuradi
-        "page_obj": page_obj,       # ✅ pagination uchun
-        "paginator": paginator,     # ✅ pagination uchun
-        'materials': materials,
+        "order": page_obj,
+        "page_obj": page_obj,
+        "paginator": paginator,
+        "materials": materials,
     }
     return render(request, "main/order_receiver_activ.html", context)
 
