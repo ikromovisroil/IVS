@@ -1865,23 +1865,25 @@ def order_receiver_activ(request):
     if my_materials.exists():
         materials = my_materials
     else:
-        # 2) Shop materiallarini bosqichma-bosqich qidirish
+        base_qs = Material.objects.filter(
+            employee__rol__shop=True,
+            employee__region=employee.region,
+            is_active=True,
+        )
+
         filter_levels = [
             {
-                "employee__region": employee.region,
                 "employee__organization": employee.organization,
                 "employee__department": employee.department,
                 "employee__directorate": employee.directorate,
                 "employee__division": employee.division,
             },
             {
-                "employee__region": employee.region,
                 "employee__organization": employee.organization,
                 "employee__department": employee.department,
                 "employee__directorate": employee.directorate,
             },
             {
-                "employee__region": employee.region,
                 "employee__organization": employee.organization,
                 "employee__department": employee.department,
             },
@@ -1890,16 +1892,11 @@ def order_receiver_activ(request):
         materials = Material.objects.none()
 
         for level_filter in filter_levels:
-            qs = Material.objects.filter(
-                employee__rol__shop=True,
-                is_active=True,
-                **level_filter
-            )
+            qs = base_qs.filter(**level_filter)
             if qs.exists():
                 materials = qs
                 break
 
-    # PAGINATION
     page_number = request.GET.get("page", 1)
     paginator = Paginator(orders_qs, 50)
     page_obj = paginator.get_page(page_number)
