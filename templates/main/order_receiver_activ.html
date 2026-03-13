@@ -378,7 +378,7 @@
     </div>
   </section>
 </main>
-
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
 
@@ -443,53 +443,45 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 <script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
 $(function () {
-    $(document).on("click", ".js-delete-om", function () {
-        const $btn = $(this);
-        const url = $btn.data("url");
 
-        if (!url) {
-            alert("URL topilmadi");
-            return;
-        }
+  // =========================
+  // Materialni AJAX bilan o‘chirish
+  // =========================
+  $(document).on("click", ".js-delete-om", function () {
 
-        if (!confirm("Biriktirilgan materialni o‘chirasizmi?")) {
-            return;
-        }
+    const $btn = $(this);
+    const url = $btn.data("url");
 
-        $btn.prop("disabled", true).text("...");
+    if (!url) {
+      alert("URL topilmadi!");
+      return;
+    }
 
-        $.ajax({
-            url: url,
-            type: "POST",
-            headers: {
-                "X-CSRFToken": getCookie("csrftoken")
-            },
-            success: function (response) {
-                $btn.closest("tr").remove();
-            },
-            error: function (xhr) {
-                console.log("Xatolik:", xhr.responseText);
-                alert("O‘chirishda xatolik! Status: " + xhr.status);
-                $btn.prop("disabled", false).text("X");
-            }
-        });
+    if (!confirm("Biriktirilgan materialni o‘chirasizmi?")) return;
+
+    const csrf = $btn.closest("form")
+                     .find('input[name="csrfmiddlewaretoken"]')
+                     .val();
+
+    $btn.prop("disabled", true).text("...");
+
+    $.ajax({
+      url: url,
+      type: "POST",
+      data: { csrfmiddlewaretoken: csrf },
+      success: function () {
+        $btn.closest("tr").remove();
+      },
+      error: function (xhr) {
+        console.log(xhr.responseText);
+        alert("Xatolik! Status: " + xhr.status);
+        $btn.prop("disabled", false).text("X");
+      }
     });
+
+  });
+
 });
 </script>
 
