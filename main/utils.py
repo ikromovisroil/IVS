@@ -101,6 +101,7 @@ def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: st
 # 3) PDF ga QK urish (HAR BIR SAHIFAGA, o‘lchamga mos)
 # ==========================================================
 def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -> bool:
+    deed = get_object_or_404(Deed, id=deed_id)
 
     if not pdf_path or not os.path.exists(pdf_path):
         logger.error(f"PDF topilmadi: {pdf_path}")
@@ -114,9 +115,10 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
     logger.info(f"PDF QK urilmoqda: {abs_pdf}")
 
     # QR link: deed status sahifasi
-    qr_link = request.build_absolute_uri(reverse("deed_status", args=[int(deed_id)]))
+    qr_link = request.build_absolute_uri(
+        reverse("deed_status", args=[deed.code, deed.id])
+    )
 
-    deed = get_object_or_404(Deed, id=deed_id)
     dt = timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M")
     if deed.receiver:
         text = (

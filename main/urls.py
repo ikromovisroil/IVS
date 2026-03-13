@@ -40,7 +40,7 @@ urlpatterns = [
     path('order/seen/', order_mark_seen, name="order_mark_seen"),
     path("deed/<int:pk>/action/", deed_action, name="deed_action"),
     path("deedconsent_action/<int:pk>/action/", deedconsent_action, name="deedconsent_action"),
-    path("deed/status/<str:code>/", deed_status, name="deed_status"),
+    path("deed/status/<str:code>/<int:pk>/", deed_status, name="deed_status"),
 
 
     # CONTACT
