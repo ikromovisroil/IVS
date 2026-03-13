@@ -1,63 +1,155 @@
-<!DOCTYPE html>{% load static %}
+<!DOCTYPE html>
+{% load static %}
 <html lang="uz">
+
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
 
-  <title>Dalolatnoma holati</title>
+  <title>Texnika ma'lumotlari</title>
 
-  <!-- Favicons -->
-  <link href="{% static 'img/favicon.png' %}" rel="icon">
-  <link href="{% static 'img/apple-touch-icon.png' %}" rel="apple-touch-icon">
-
-  <!-- Google Fonts -->
-  <link href="https://fonts.gstatic.com" rel="preconnect">
-  <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,300i,400,400i,600,600i,700,700i|Nunito:300,300i,400,400i,600,600i,700,700i|Poppins:300,300i,400,400i,500,500i,600,600i,700,700i" rel="stylesheet">
-
-  <!-- Vendor CSS Files -->
+  <!-- Bootstrap -->
   <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/boxicons/css/boxicons.min.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/quill/quill.snow.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/quill/quill.bubble.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/remixicon/remixicon.css' %}" rel="stylesheet">
-  <link href="{% static 'vendor/simple-datatables/style.css' %}" rel="stylesheet">
 
-  <!-- Template Main CSS File -->
-  <link href="{% static 'css/style.css' %}" rel="stylesheet">
+  <style>
+    body {
+      background: #f5f6fa;
+    }
+
+    .tech-card {
+      max-width: 600px;
+      margin: auto;
+      border-radius: 15px;
+    }
+
+    .tech-header {
+      background: linear-gradient(135deg, #0d6efd, #0b5ed7);
+      color: white;
+      border-radius: 15px 15px 0 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .tech-info p {
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .qr-box {
+      text-align: center;
+      padding: 20px;
+      background: #fafafa;
+      border-radius: 10px;
+      border: 1px dashed #ddd;
+    }
+
+    .qr-box img {
+      max-width: 160px;
+    }
+  </style>
+
 </head>
 
-<main id="main" class="main">
-  <div class="pagetitle">
-    <h1>Texnika ma'lumotlari</h1>
+<body>
+
+<div class="container py-5">
+
+  <div class="card shadow tech-card">
+
+    <!-- HEADER -->
+    <div class="tech-header">
+      <h4 class="mb-1">
+        <i class="bi bi-pc-display"></i>
+        {{ technics.name }}
+      </h4>
+
+      <small>{{ technics.category }}</small>
+    </div>
+
+    <!-- BODY -->
+    <div class="card-body tech-info">
+
+      <div class="row">
+
+        <div class="col-6">
+          <p><i class="bi bi-cpu"></i> <strong>Parametr:</strong></p>
+        </div>
+        <div class="col-6 text-end">
+          {{ technics.parametr|default:"-" }}
+        </div>
+
+        <div class="col-6">
+          <p><i class="bi bi-upc-scan"></i> <strong>Inventar:</strong></p>
+        </div>
+        <div class="col-6 text-end">
+          {{ technics.inventory|default:"-" }}
+        </div>
+
+        <div class="col-6">
+          <p><i class="bi bi-hdd"></i> <strong>Serial:</strong></p>
+        </div>
+        <div class="col-6 text-end">
+          {{ technics.serial|default:"-" }}
+        </div>
+
+        <div class="col-6">
+          <p><i class="bi bi-router"></i> <strong>MAC:</strong></p>
+        </div>
+        <div class="col-6 text-end">
+          {{ technics.mac|default:"-" }}
+        </div>
+
+        <div class="col-6">
+          <p><i class="bi bi-wifi"></i> <strong>IP:</strong></p>
+        </div>
+        <div class="col-6 text-end">
+          {{ technics.ip|default:"-" }}
+        </div>
+
+        <div class="col-6">
+          <p><i class="bi bi-person"></i> <strong>Xodim:</strong></p>
+        </div>
+        <div class="col-6 text-end">
+          {{ technics.employee|default:"-" }}
+        </div>
+
+        <div class="col-6">
+          <p><i class="bi bi-info-circle"></i> <strong>Holati:</strong></p>
+        </div>
+        <div class="col-6 text-end">
+
+          {% if technics.status == "active" %}
+            <span class="badge bg-success">Aktiv</span>
+          {% elif technics.status == "free" %}
+            <span class="badge bg-primary">Bo'sh</span>
+          {% elif technics.status == "repair" %}
+            <span class="badge bg-warning text-dark">Ta'mirda</span>
+          {% else %}
+            <span class="badge bg-danger">Yaroqsiz</span>
+          {% endif %}
+
+        </div>
+
+      </div>
+
+      <hr>
+
+      <!-- QR -->
+      {% if technics.qr_code %}
+      <div class="qr-box">
+        <p class="mb-2"><strong>QR kod</strong></p>
+        <img src="{{ technics.qr_code.url }}" alt="QR Code">
+      </div>
+      {% endif %}
+
+    </div>
+
   </div>
 
-  <section class="section">
-    <div class="card">
-      <div class="card-body pt-4">
-        <h4>{{ technics.name }}</h4>
-        <hr>
-
-        <p><strong>Kategoriya:</strong> {{ technics.category }}</p>
-        <p><strong>Inventar:</strong> {{ technics.inventory|default:"-" }}</p>
-        <p><strong>Serial:</strong> {{ technics.serial|default:"-" }}</p>
-        <p><strong>MAC:</strong> {{ technics.mac|default:"-" }}</p>
-        <p><strong>IP:</strong> {{ technics.ip|default:"-" }}</p>
-        <p><strong>Parametr:</strong> {{ technics.parametr|default:"-" }}</p>
-        <p><strong>Holati:</strong> {{ technics.get_status_display }}</p>
-        <p><strong>Xodim:</strong> {{ technics.employee|default:"-" }}</p>
-
-        {% if technics.qr_code %}
-          <hr>
-          <img src="{{ technics.qr_code.url }}" alt="QR Code" width="180">
-        {% endif %}
-      </div>
-    </div>
-  </section>
-</main>
+</div>
 
 <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-<script src="{% static 'js/main.js' %}"></script>
 
 </body>
 </html>
