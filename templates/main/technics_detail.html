@@ -8,117 +8,144 @@
 
   <title>Texnika ma'lumotlari</title>
 
-  <!-- Bootstrap -->
   <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
   <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
 
   <style>
     body {
-      background: #f5f6fa;
+      background: #f4f6f9;
     }
 
     .tech-card {
-      max-width: 600px;
+      max-width: 760px;
       margin: auto;
-      border-radius: 15px;
+      border: 0;
+      border-radius: 18px;
+      overflow: hidden;
     }
 
     .tech-header {
       background: linear-gradient(135deg, #0d6efd, #0b5ed7);
-      color: white;
-      border-radius: 15px 15px 0 0;
-      padding: 20px;
+      color: #fff;
+      padding: 24px;
       text-align: center;
     }
 
-    .tech-info p {
-      font-size: 15px;
-      margin-bottom: 8px;
+    .tech-header h4 {
+      margin-bottom: 6px;
+      font-weight: 700;
+    }
+
+    .info-row {
+      padding: 10px 0;
+      border-bottom: 1px solid #eef1f4;
+      align-items: center;
+    }
+
+    .info-row:last-child {
+      border-bottom: 0;
+    }
+
+    .label-text {
+      font-weight: 600;
+      color: #495057;
+    }
+
+    .value-text {
+      text-align: right;
+      color: #212529;
+      word-break: break-word;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: #0d6efd;
+      margin-bottom: 16px;
+    }
+
+    .extra-card {
+      background: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 14px;
+      padding: 16px;
+      margin-bottom: 14px;
     }
 
     .qr-box {
       text-align: center;
       padding: 20px;
       background: #fafafa;
-      border-radius: 10px;
-      border: 1px dashed #ddd;
+      border-radius: 12px;
+      border: 1px dashed #ced4da;
     }
 
     .qr-box img {
-      max-width: 160px;
+      max-width: 180px;
+      width: 100%;
+      height: auto;
+    }
+
+    .empty-box {
+      background: #f8f9fa;
+      border: 1px dashed #dee2e6;
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+      color: #6c757d;
     }
   </style>
-
 </head>
 
 <body>
 
 <div class="container py-5">
+  <div class="card shadow-sm tech-card">
 
-  <div class="card shadow tech-card">
-
-    <!-- HEADER -->
     <div class="tech-header">
-      <h4 class="mb-1">
-        <i class="bi bi-pc-display"></i>
-        {{ technics.name }}
-      </h4>
-
-      <small>{{ technics.category }}</small>
+      <h4><i class="bi bi-pc-display-horizontal me-2"></i>{{ technics.name }}</h4>
+      <div>{{ technics.category|default:"" }}</div>
     </div>
 
-    <!-- BODY -->
-    <div class="card-body tech-info">
+    <div class="card-body p-4">
 
-      <div class="row">
+      <div class="section-title">
+        <i class="bi bi-info-circle me-2"></i>Asosiy ma’lumotlar
+      </div>
 
-        <div class="col-5">
-          <p><i class="bi bi-cpu"></i> <strong>Parametr:</strong></p>
-        </div>
-        <div class="col-7 text-end">
-          {{ technics.parametr|default:"-" }}
-        </div>
+      <div class="row info-row">
+        <div class="col-5 label-text"><i class="bi bi-cpu me-2"></i>Parametr</div>
+        <div class="col-7 value-text">{{ technics.parametr|default:"-" }}</div>
+      </div>
 
-        <div class="col-5">
-          <p><i class="bi bi-upc-scan"></i> <strong>Inventar:</strong></p>
-        </div>
-        <div class="col-7 text-end">
-          {{ technics.inventory|default:"-" }}
-        </div>
+      <div class="row info-row">
+        <div class="col-5 label-text"><i class="bi bi-upc-scan me-2"></i>Inventar</div>
+        <div class="col-7 value-text">{{ technics.inventory|default:"-" }}</div>
+      </div>
 
-        <div class="col-5">
-          <p><i class="bi bi-hdd"></i> <strong>Serial:</strong></p>
-        </div>
-        <div class="col-7 text-end">
-          {{ technics.serial|default:"-" }}
-        </div>
+      <div class="row info-row">
+        <div class="col-5 label-text"><i class="bi bi-hdd me-2"></i>Serial</div>
+        <div class="col-7 value-text">{{ technics.serial|default:"-" }}</div>
+      </div>
 
-        <div class="col-5">
-          <p><i class="bi bi-router"></i> <strong>MAC:</strong></p>
-        </div>
-        <div class="col-7 text-end">
-          {{ technics.mac|default:"-" }}
-        </div>
+      <div class="row info-row">
+        <div class="col-5 label-text"><i class="bi bi-router me-2"></i>MAC</div>
+        <div class="col-7 value-text">{{ technics.mac|default:"-" }}</div>
+      </div>
 
-        <div class="col-5">
-          <p><i class="bi bi-wifi"></i> <strong>IP:</strong></p>
-        </div>
-        <div class="col-7 text-end">
-          {{ technics.ip|default:"-" }}
-        </div>
+      <div class="row info-row">
+        <div class="col-5 label-text"><i class="bi bi-wifi me-2"></i>IP</div>
+        <div class="col-7 value-text">{{ technics.ip|default:"-" }}</div>
+      </div>
 
-        <div class="col-5">
-          <p><i class="bi bi-person"></i> <strong>Xodim:</strong></p>
-        </div>
-        <div class="col-7 text-end">
-          {{ technics.employee|default:"-" }}
-        </div>
+      <div class="row info-row">
+        <div class="col-5 label-text"><i class="bi bi-person me-2"></i>Xodim</div>
+        <div class="col-7 value-text">{{ technics.employee|default:"-" }}</div>
+      </div>
 
-        <div class="col-5">
-          <p><i class="bi bi-info-circle"></i> <strong>Holati:</strong></p>
-        </div>
-        <div class="col-7 text-end">
-
+      <div class="row info-row mb-4">
+        <div class="col-5 label-text"><i class="bi bi-activity me-2"></i>Holati</div>
+        <div class="col-7 value-text">
           {% if technics.status == "active" %}
             <span class="badge bg-success">Aktiv</span>
           {% elif technics.status == "free" %}
@@ -128,28 +155,62 @@
           {% else %}
             <span class="badge bg-danger">Yaroqsiz</span>
           {% endif %}
-
         </div>
-
       </div>
-
       <hr>
-
-      <!-- QR -->
-      {% if technics.qr_code %}
-      <div class="qr-box">
-        <p class="mb-2"><strong>QR kod</strong></p>
-        <img src="{{ technics.qr_code.url }}" alt="QR Code">
+      {% if technics.extratechnics_set.exists %}
+      <div class="section-title">
+        <i class="bi bi-hdd-stack me-2"></i>Qo‘shimcha qurilmalar
       </div>
       {% endif %}
 
+      {% for i in technics.extratechnics_set.all %}
+        <div class="extra-card">
+          <div class="row info-row">
+            <div class="col-5 label-text"><i class="bi bi-pc me-2"></i>Nomi</div>
+            <div class="col-7 value-text">{{ i.name|default:"-" }}</div>
+          </div>
+
+          <div class="row info-row">
+            <div class="col-5 label-text"><i class="bi bi-upc-scan me-2"></i>Inventar</div>
+            <div class="col-7 value-text">{{ i.inventory|default:"-" }}</div>
+          </div>
+
+          <div class="row info-row">
+            <div class="col-5 label-text"><i class="bi bi-hdd me-2"></i>Serial</div>
+            <div class="col-7 value-text">{{ i.serial|default:"-" }}</div>
+          </div>
+
+          <div class="row info-row">
+            <div class="col-5 label-text"><i class="bi bi-activity me-2"></i>Holati</div>
+            <div class="col-7 value-text">
+              {% if i.status == "active" %}
+                <span class="badge bg-success">Aktiv</span>
+              {% elif i.status == "free" %}
+                <span class="badge bg-primary">Bo'sh</span>
+              {% elif i.status == "repair" %}
+                <span class="badge bg-warning text-dark">Ta'mirda</span>
+              {% else %}
+                <span class="badge bg-danger">Yaroqsiz</span>
+              {% endif %}
+            </div>
+          </div>
+        </div><hr>
+      {% endfor %}
+
+      <div class="mt-4">
+        {% if technics.qr_code %}
+          <div class="qr-box">
+            <p class="mb-2 fw-semibold">QR kod</p>
+            <img src="{{ technics.qr_code.url }}" alt="QR Code">
+          </div>
+        {% endif %}
+      </div>
+
     </div>
-
   </div>
-
 </div>
 
 <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
-
 </body>
 </html>
