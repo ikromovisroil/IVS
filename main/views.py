@@ -403,7 +403,7 @@ def deed_edit(request, pk):
 
     # ✅ selectlarda chiqadigan ro‘yxatlar
     sender_qs = (
-        Employee.objects.filter(organization_id=sender_org_id)
+        Employee.objects.filter(organization_id=sender_org_id,rol__boss=True)
         .order_by("last_name", "first_name", "father_name")
         if sender_org_id else Employee.objects.none()
     )
