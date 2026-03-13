@@ -1768,7 +1768,7 @@ def order_receiver_deed(request,pk):
 
     context = {
         'order':order,
-        'emp_bos':Employee.objects.filter(department=order.sender.department),
+        'emp_bos':Employee.objects.filter(organization=order.sender.organization,rol__boss=True),
         'employee': Employee.objects.filter(Q(department=order.sender.department) | Q(department_id=my_dep_id)),
     }
     return render(request, "main/order_receiver_deed.html", context)

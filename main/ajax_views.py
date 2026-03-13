@@ -108,9 +108,9 @@ def ajax_dep_signatory(request):
     qs = Employee.objects.select_related("rank")
 
     if dep_id:
-        qs = qs.filter(department_id=dep_id)
+        qs = qs.filter(department_id=dep_id,rol__boss=True)
     elif org_id:
-        qs = qs.filter(organization_id=org_id)
+        qs = qs.filter(organization_id=org_id,rol__boss=True)
     else:
         return JsonResponse([], safe=False)
 
