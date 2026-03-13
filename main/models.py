@@ -481,7 +481,7 @@ class Deed(models.Model):
     file_type = models.BooleanField(default=False)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
 
-    code = models.CharField(max_length=10, unique=True, blank=True, db_index=True)
+    code = models.CharField(max_length=10, null=True, blank=True, db_index=True)
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
