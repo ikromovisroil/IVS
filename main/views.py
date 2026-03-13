@@ -284,8 +284,8 @@ def contact_user_arxiv(request):
     return render(request, "main/contact_user_arxiv.html", context)
 
 
-def deed_status(request, pk):
-    deed = get_object_or_404(Deed, pk=pk)
+def deed_status(request, code):
+    deed = get_object_or_404(Deed, code=code)
     context = {"d": deed}
     return render(request, "main/deed_status.html", context)
 

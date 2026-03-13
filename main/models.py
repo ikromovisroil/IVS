@@ -3,6 +3,8 @@ from django.db import models
 from django.utils.text import slugify
 from .validators import *
 from django.utils import timezone
+import random
+import string
 
 # Slug.
 class AutoSlugMixin(models.Model):
@@ -462,8 +464,7 @@ class Deed(models.Model):
     date_sender = models.DateTimeField(null=True, blank=True)
     sender_seen = models.BooleanField(default=False, db_index=True)
 
-    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_receiver', null=True,
-                                 blank=True, db_index=True)
+    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_receiver', null=True, blank=True, db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
     status_receiver = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
@@ -473,25 +474,46 @@ class Deed(models.Model):
     date_receiver = models.DateTimeField(null=True, blank=True)
     receiver_seen = models.BooleanField(default=False, db_index=True)
 
-    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True,db_index=True)
+    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True, db_index=True)
     message_user = models.TextField(null=True, blank=True)
     body = models.TextField(null=True, blank=True)
+
     file_type = models.BooleanField(default=False)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
+
+    code = models.CharField(max_length=10, unique=True, blank=True, db_index=True)
+
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        if self.pk:
-            old = Order.objects.filter(pk=self.pk).first()
+    # -------------------
+    # CODE GENERATOR
+    # -------------------
+    def generate_code(self):
+        prefix = "JP"
+        numbers = ''.join(random.choices(string.digits, k=8))
+        return prefix + numbers
 
+    def save(self, *args, **kwargs):
+
+        # FILE DELETE
+        if self.pk:
+            old = Deed.objects.filter(pk=self.pk).first()
             if old and self.file and old.file and old.file != self.file:
                 old.file.delete(save=False)
+
+        # CODE CREATE
+        if not self.code:
+            while True:
+                new_code = self.generate_code()
+                if not Deed.objects.filter(code=new_code).exists():
+                    self.code = new_code
+                    break
 
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Dalolatnoma #{self.id}"
+        return f"Dalolatnoma {self.code}"
 
     class Meta:
         db_table = 'deed'
