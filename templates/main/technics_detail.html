@@ -72,52 +72,52 @@
 
       <div class="row">
 
-        <div class="col-6">
+        <div class="col-5">
           <p><i class="bi bi-cpu"></i> <strong>Parametr:</strong></p>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-7 text-end">
           {{ technics.parametr|default:"-" }}
         </div>
 
-        <div class="col-6">
+        <div class="col-5">
           <p><i class="bi bi-upc-scan"></i> <strong>Inventar:</strong></p>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-7 text-end">
           {{ technics.inventory|default:"-" }}
         </div>
 
-        <div class="col-6">
+        <div class="col-5">
           <p><i class="bi bi-hdd"></i> <strong>Serial:</strong></p>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-7 text-end">
           {{ technics.serial|default:"-" }}
         </div>
 
-        <div class="col-6">
+        <div class="col-5">
           <p><i class="bi bi-router"></i> <strong>MAC:</strong></p>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-7 text-end">
           {{ technics.mac|default:"-" }}
         </div>
 
-        <div class="col-6">
+        <div class="col-5">
           <p><i class="bi bi-wifi"></i> <strong>IP:</strong></p>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-7 text-end">
           {{ technics.ip|default:"-" }}
         </div>
 
-        <div class="col-6">
+        <div class="col-5">
           <p><i class="bi bi-person"></i> <strong>Xodim:</strong></p>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-7 text-end">
           {{ technics.employee|default:"-" }}
         </div>
 
-        <div class="col-6">
+        <div class="col-5">
           <p><i class="bi bi-info-circle"></i> <strong>Holati:</strong></p>
         </div>
-        <div class="col-6 text-end">
+        <div class="col-7 text-end">
 
           {% if technics.status == "active" %}
             <span class="badge bg-success">Aktiv</span>
