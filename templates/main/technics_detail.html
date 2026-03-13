@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+
+{% block title %}
+<title>Texnika</title>
+{% endblock %}
+
+{% block content %}
+<main id="main" class="main">
+  <div class="pagetitle">
+    <h1>Texnika ma'lumotlari</h1>
+  </div>
+
+  <section class="section">
+    <div class="card">
+      <div class="card-body pt-4">
+        <h4>{{ technics.name }}</h4>
+        <hr>
+
+        <p><strong>Kategoriya:</strong> {{ technics.category }}</p>
+        <p><strong>Inventar:</strong> {{ technics.inventory|default:"-" }}</p>
+        <p><strong>Serial:</strong> {{ technics.serial|default:"-" }}</p>
+        <p><strong>MAC:</strong> {{ technics.mac|default:"-" }}</p>
+        <p><strong>IP:</strong> {{ technics.ip|default:"-" }}</p>
+        <p><strong>Parametr:</strong> {{ technics.parametr|default:"-" }}</p>
+        <p><strong>Holati:</strong> {{ technics.get_status_display }}</p>
+        <p><strong>Xodim:</strong> {{ technics.employee|default:"-" }}</p>
+
+        {% if technics.qr_code %}
+          <hr>
+          <img src="{{ technics.qr_code.url }}" alt="QR Code" width="180">
+        {% endif %}
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock %}

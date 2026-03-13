@@ -2512,3 +2512,7 @@ def tex_status(request):
     }
 
     return render(request, "main/tex_status.html", context)
+
+def technics_detail(request, pk):
+    technics = get_object_or_404(Technics, pk=pk, is_active=True)
+    return render(request, "main/technics_detail.html", {"technics": technics})

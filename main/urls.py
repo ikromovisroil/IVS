@@ -10,6 +10,7 @@ urlpatterns = [
     path('emp_status/', emp_status, name='emp_status'),
     path('technics_get/', technics_get, name='technics_get'),
     path('tex_status/', tex_status, name='tex_status'),
+    path("technics/<int:pk>/", technics_detail, name="technics_detail"),
 
     #texnikalar
     path('barn_tex/', barn_tex, name='barn_tex'),

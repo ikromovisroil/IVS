@@ -1,10 +1,14 @@
 from django.contrib.auth.models import User
-from django.db import models
 from django.utils.text import slugify
 from .validators import *
 from django.utils import timezone
 import random
 import string
+import qrcode
+from io import BytesIO
+from django.core.files import File
+from django.db import models
+from django.urls import reverse
 
 # Slug.
 class AutoSlugMixin(models.Model):
@@ -249,11 +253,45 @@ class Technics(models.Model):
     price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     year = models.CharField(max_length=50,null=True,blank=True)
     is_active = models.BooleanField(default=True)
+    qr_code = models.ImageField(upload_to='qk/', blank=True, null=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
+
+    def get_absolute_url(self):
+        return reverse("technics_detail", args=[self.pk])
+
+    def get_qr_data(self):
+        """
+        QR ichiga tushadigan matn/link.
+        Domeningizni shu yerga yozing.
+        """
+        return f"https://report.imv.uz{self.get_absolute_url()}"
+
+    def generate_qr_code(self, save=True):
+        qr_data = self.get_qr_data()
+
+        qr = qrcode.QRCode(
+            version=1,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(qr_data)
+        qr.make(fit=True)
+
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        buffer = BytesIO()
+        img.save(buffer, format="PNG")
+
+        file_name = f"technics_{self.pk}.png"
+        self.qr_code.save(file_name, File(buffer), save=False)
+        buffer.close()
+
+        if save:
+            super().save(update_fields=["qr_code"])
 
     def sync_from_employee(self):
         if self.employee_id:
@@ -270,11 +308,25 @@ class Technics(models.Model):
     def save(self, *args, **kwargs):
         if self.employee:
             self.status = 'active'
+            self.department_id = self.employee.department_id
+            self.directorate_id = self.employee.directorate_id
+            self.division_id = self.employee.division_id
 
-        if self.status == 'free':
+            # xohlasangiz organization ham employee dan sync qilinadi
+            # self.organization_id = self.employee.organization_id
+        elif self.status == 'free':
             self.employee = None
+            self.department = None
+            self.directorate = None
+            self.division = None
+
+        is_new = self.pk is None
 
         super().save(*args, **kwargs)
+
+        # faqat qr_code bo'sh bo‘lsa yaratadi
+        if is_new and not self.qr_code:
+            self.generate_qr_code(save=True)
 
     class Meta:
         db_table = 'technics'
