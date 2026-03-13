@@ -443,45 +443,53 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 <script>
-$(function () {
-
-  // =========================
-  // Materialni AJAX bilan o‘chirish
-  // =========================
-  $(document).on("click", ".js-delete-om", function () {
-
-    const $btn = $(this);
-    const url = $btn.data("url");
-
-    if (!url) {
-      alert("URL topilmadi!");
-      return;
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
     }
+    return cookieValue;
+}
 
-    if (!confirm("Biriktirilgan materialni o‘chirasizmi?")) return;
+$(function () {
+    $(document).on("click", ".js-delete-om", function () {
+        const $btn = $(this);
+        const url = $btn.data("url");
 
-    const csrf = $btn.closest("form")
-                     .find('input[name="csrfmiddlewaretoken"]')
-                     .val();
+        if (!url) {
+            alert("URL topilmadi");
+            return;
+        }
 
-    $btn.prop("disabled", true).text("...");
+        if (!confirm("Biriktirilgan materialni o‘chirasizmi?")) {
+            return;
+        }
 
-    $.ajax({
-      url: url,
-      type: "POST",
-      data: { csrfmiddlewaretoken: csrf },
-      success: function () {
-        $btn.closest("tr").remove();
-      },
-      error: function (xhr) {
-        console.log(xhr.responseText);
-        alert("Xatolik! Status: " + xhr.status);
-        $btn.prop("disabled", false).text("X");
-      }
+        $btn.prop("disabled", true).text("...");
+
+        $.ajax({
+            url: url,
+            type: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            success: function (response) {
+                $btn.closest("tr").remove();
+            },
+            error: function (xhr) {
+                console.log("Xatolik:", xhr.responseText);
+                alert("O‘chirishda xatolik! Status: " + xhr.status);
+                $btn.prop("disabled", false).text("X");
+            }
+        });
     });
-
-  });
-
 });
 </script>
 
