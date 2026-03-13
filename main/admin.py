@@ -193,6 +193,18 @@ class RolAdmin(admin.ModelAdmin):
         "employee__last_name", "employee__first_name",
         "employee__father_name", "employee__user__username",
     )
+    list_editable = (
+        "client",
+        "order",
+        "boss",
+        "shop",
+        "akt",
+        "status",
+        "technics",
+        "technics_edit",
+        "material",
+        "material_edit",
+    )
     autocomplete_fields = ("employee",)
 
 
