@@ -486,23 +486,16 @@ class Deed(models.Model):
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
-    # -------------------
-    # CODE GENERATOR
-    # -------------------
     def generate_code(self):
-        prefix = "JP"
-        numbers = ''.join(random.choices(string.digits, k=8))
-        return prefix + numbers
+        chars = string.ascii_uppercase + string.digits
+        return ''.join(random.choices(chars, k=10))
 
     def save(self, *args, **kwargs):
-
-        # FILE DELETE
         if self.pk:
             old = Deed.objects.filter(pk=self.pk).first()
             if old and self.file and old.file and old.file != self.file:
                 old.file.delete(save=False)
 
-        # CODE CREATE
         if not self.code:
             while True:
                 new_code = self.generate_code()
