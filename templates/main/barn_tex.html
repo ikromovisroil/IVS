@@ -942,9 +942,13 @@
 
             <div class="mb-4 p-3 border rounded bg-light text-center">
                 <h5 class="mb-3 fw-bold">QR kod</h5><hr>
+                {% if tex.qr_code and tex.qr_code.url %}
                 <img src="{{ tex.qr_code.url }}"
                      alt="QR code"
                      style="width:180px;height:180px;object-fit:contain;">
+                {% else %}
+                    —
+                {% endif %}
             </div>
 
           </div>
