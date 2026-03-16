@@ -283,14 +283,45 @@
 
       <ul class="sidebar-nav" id="sidebar-nav">
 
-        <!-- PROFILE -->
+        {% if request.user.employee.rol.order %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'profil' %}collapsed{% endif %}"
-             href="{% url 'profil' %}">
-            <i class="bi bi-person"></i>
-            <span>Profil</span>
+
+          <a class="nav-link {% if url_name not in 'order_sender order_sender_arxiv order_receiver order_receiver_activ order_receiver_arxiv' %}collapsed{% endif %}"
+             data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
+            <i class="bi bi-journal-text"></i>
+            <span>Arizalar</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+          </a>
+
+          <ul id="forms-nav"
+              class="nav-content collapse {% if url_name in 'order_sender order_sender_arxiv order_receiver order_receiver_activ order_receiver_arxiv' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+
+            <li>
+              <a class="{% if url_name in 'order_sender order_sender_arxiv' %}active{% endif %}"
+                 href="{% url 'order_sender' %}">
+                <i class="bi bi-circle"></i><span>Ariza Yuborish</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="{% if url_name in 'order_receiver order_receiver_activ order_receiver_arxiv' %}active{% endif %}"
+                 href="{% url 'order_receiver' %}">
+                <i class="bi bi-circle"></i><span>Ariza Bajarish</span>
+              </a>
+            </li>
+
+          </ul>
+        </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'order_sender' %}collapsed{% endif %}"
+             href="{% url 'order_sender' %}">
+            <i class="bi bi-journal-text"></i>
+            <span>Arizalar</span>
           </a>
         </li>
+        {% endif %}
 
         {% with deed_urls=" contact_user contact_user_arxiv contact contact_arxiv contact_agrement contact_agrement_arxiv " %}
         <li class="nav-item">
@@ -332,47 +363,6 @@
           </ul>
         </li>
         {% endwith %}
-
-
-        {% if request.user.employee.rol.order %}
-        <li class="nav-item">
-
-          <a class="nav-link {% if url_name not in 'order_sender order_sender_arxiv order_receiver order_receiver_activ order_receiver_arxiv' %}collapsed{% endif %}"
-             data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
-            <i class="bi bi-journal-text"></i>
-            <span>Arizalar</span>
-            <i class="bi bi-chevron-down ms-auto"></i>
-          </a>
-
-          <ul id="forms-nav"
-              class="nav-content collapse {% if url_name in 'order_sender order_sender_arxiv order_receiver order_receiver_activ order_receiver_arxiv' %}show{% endif %}"
-              data-bs-parent="#sidebar-nav">
-
-            <li>
-              <a class="{% if url_name in 'order_sender order_sender_arxiv' %}active{% endif %}"
-                 href="{% url 'order_sender' %}">
-                <i class="bi bi-circle"></i><span>Ariza Yuborish</span>
-              </a>
-            </li>
-
-            <li>
-              <a class="{% if url_name in 'order_receiver order_receiver_activ order_receiver_arxiv' %}active{% endif %}"
-                 href="{% url 'order_receiver' %}">
-                <i class="bi bi-circle"></i><span>Ariza Bajarish</span>
-              </a>
-            </li>
-
-          </ul>
-        </li>
-        {% else %}
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'order_sender' %}collapsed{% endif %}"
-             href="{% url 'order_sender' %}">
-            <i class="bi bi-journal-text"></i>
-            <span>Arizalar</span>
-          </a>
-        </li>
-        {% endif %}
 
         <!-- Hisobotlar -->
         {% if request.user.employee.rol.akt %}
@@ -492,6 +482,15 @@
              href="{% url 'technics_get' %}">
             <i class="bi bi-mouse2"></i>
             <span>Texnikalarim</span>
+          </a>
+        </li>
+
+        <!-- PROFILE -->
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'profil' %}collapsed{% endif %}"
+             href="{% url 'profil' %}">
+            <i class="bi bi-person"></i>
+            <span>Profil</span>
           </a>
         </li>
 
