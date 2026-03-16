@@ -5,6 +5,9 @@
 <title>Texnikalari</title>
 {% endblock title %}
 
+{% block css %}
+{% endblock css %}
+
 {% block content %}
 
 <main id="main" class="main">
@@ -172,15 +175,16 @@
                         </td>
                         {% endif %}
 
-                        <td>{{ tex.name|default:"-" }}
-                          <span class="text-secondary small ps-4 ms-2 mt-1">
-                            {% for et in tex.extratechnics_set.all %}
-                              <br><i>{{et.category.name|default:""}} / {{ et.name|default:"-" }}</i>
-                            {% endfor %}
-                          </span>
+                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">
+                            {{ tex.name|default:"-" }}
+                              <span class="text-secondary small ps-4 ms-2 mt-1">
+                                {% for et in tex.extratechnics_set.all %}
+                                  <br><i>{{et.category.name|default:""}} / {{ et.name|default:"-" }}</i>
+                                {% endfor %}
+                              </span>
                         </td>
 
-                        <td>{{ tex.inventory|default:"-" }}
+                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.inventory|default:"-" }}
                           <span class="text-secondary small ps-4 ms-2 mt-1">
                             {% for et in tex.extratechnics_set.all %}
                               <br><i>{{ et.inventory|default:"-" }}</i>
@@ -188,7 +192,7 @@
                           </span>
                         </td>
 
-                        <td>{{ tex.serial|default:"-" }}
+                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.serial|default:"-" }}
                           <span class="text-secondary small ps-4 ms-2 mt-1">
                             {% for et in tex.extratechnics_set.all %}
                               <br><i>{{ et.serial|default:"-" }}</i>
@@ -196,7 +200,7 @@
                           </span>
                         </td>
 
-                        <td>{{ tex.mac|default:"-" }}</td>
+                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.mac|default:"-" }}</td>
 
                         {% if request.user.employee.rol.technics_edit %}
                         <td>
@@ -741,6 +745,217 @@
           </div>
 
         </form>
+      </div>
+    </div>
+
+    <!-- TEXNIKA QK -->
+    <div class="modal fade" id="qkcentered{{ tex.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-cpu me-2"></i>Texnika tafsiloti
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+
+            <!-- TEXNIKA UMUMIY MALUMOT -->
+            <div class="mb-4 p-3 border rounded bg-light">
+              <div>
+                <i class="bi bi-info-circle me-2"></i>Umumiy ma'lumot
+              </div><hr>
+              <div class="card-body">
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Xodim</div>
+                  <div class="col-md-7">
+                    {{ tex.employee.full_name|default:"-" }}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Tashkilot</div>
+                  <div class="col-md-7">
+                    {{ tex.organization.name|default:"-" }}<br>
+                    {% if tex.department %}
+                    {{ tex.department.name|default:"-" }}<br>
+                    {% endif %}
+                    {% if tex.directorate %}
+                    {{ tex.directorate.name|default:"-" }}<br>
+                    {% endif %}
+                    {% if tex.division %}
+                    {{ tex.division.name|default:"-" }}
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Kategoriya</div>
+                  <div class="col-md-7">
+                    {{ tex.category.name|default:"-" }}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Nomi</div>
+                  <div class="col-md-7">
+                    {{ tex.name|default:"-" }}
+                  </div>
+                </div>
+                {% if tex.parametr %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Parametr</div>
+                  <div class="col-md-7">
+                    {{ tex.parametr|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.inventory %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Inventory</div>
+                  <div class="col-md-7">
+                    {{ tex.inventory|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.serial %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Serial</div>
+                  <div class="col-md-7">
+                    {{ tex.serial|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.mac %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Mac</div>
+                  <div class="col-md-7">
+                    {{ tex.mac|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.ip %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Ip</div>
+                  <div class="col-md-7">
+                    {{ tex.ip|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.year %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Yili</div>
+                  <div class="col-md-7">
+                    {{ tex.year|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.price %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Narxi</div>
+                  <div class="col-md-7">
+                    {{ tex.price|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Holati</div>
+                  <div class="col-md-7">
+                    {% if tex.status == "free" %}
+                      <span class="badge bg-secondary">Bo'sh</span>
+                    {% elif tex.status == "active" %}
+                      <span class="badge bg-primary">Aktiv</span>
+                    {% elif tex.status == "repair" %}
+                      <span class="badge bg-warning ">Ta’mirda</span>
+                    {% elif tex.status == "defect" %}
+                      <span class="badge bg-danger">Yaroqsiz</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Noma'lum</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+
+            <!-- QO‘SHIMCHA QURILMALAR -->
+            {% for et in tex.extratechnics_set.all %}
+            <div class="mb-4 p-3 border rounded bg-light">
+              <div>
+                <i class="bi bi-hdd-stack me-2"></i>Qo‘shimcha qurilmalar
+              </div><hr>
+              <div class="card-body">
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Nomi</div>
+                  <div class="col-md-7">
+                    {{ et.category }} {{ et.name|default:"-" }}
+                  </div>
+                </div>
+                {% if et.parametr %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Parametr</div>
+                  <div class="col-md-7">
+                    {{ et.parametr|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if et.inventory %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Inventory</div>
+                  <div class="col-md-7">
+                    {{ et.inventory|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if et.serial %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Serial</div>
+                  <div class="col-md-7">
+                    {{ et.serial|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if et.year %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Yili</div>
+                  <div class="col-md-7">
+                    {{ et.year|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if et.price %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Narxi</div>
+                  <div class="col-md-7">
+                    {{ et.price|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+
+              </div>
+            </div>
+            {% endfor %}
+
+            <div class="mb-4 p-3 border rounded bg-light text-center">
+                <h5 class="mb-3 fw-bold">QR kod</h5><hr>
+                <img src="{{ tex.qr_code.url }}"
+                     alt="QR code"
+                     style="width:180px;height:180px;object-fit:contain;">
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Yopish
+            </button>
+          </div>
+
+        </div>
       </div>
     </div>
     {% endfor %}
