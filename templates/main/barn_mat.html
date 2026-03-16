@@ -90,7 +90,7 @@
                     <th scope="col">Soni</th>
                     <th scope="col">Narxi</th>
                     <th scope="col">Umumiy narxi</th>
-                    <th scope="col">Qiymati</th>
+                    <th scope="col">Birligi</th>
                     <th scope="col">1C code</th>
                     {% if request.user.employee.rol.material_edit%}
                     <th scope="col">Tafsif</th>
@@ -102,12 +102,12 @@
                 {% for mat in material %}
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
-                    <td>{{ mat.name|default:"-"|truncatechars:50 }}</td>
-                    <td>{{ mat.number|default:"-" }}</td>
-                    <td>{{ mat.price|intcomma|default:"-" }}</td>
-                    <td>{{ mat.total_sum|intcomma }}</td>
-                    <td>{{ mat.unit|default:"-" }}</td>
-                    <td>{{ mat.code|default:"-" }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.name|default:"-"|truncatechars:50 }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.number|default:"-" }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.price|intcomma|default:"-" }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.total_sum|intcomma }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.unit|default:"-" }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.code|default:"-" }}</td>
                     {% if request.user.employee.rol.material_edit%}
                     <td>
                       <div class="filter">
@@ -453,6 +453,106 @@
                 Saqlash</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- TEXNIKA QK -->
+    <div class="modal fade" id="qkcentered{{ mat.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-cpu me-2"></i>Material tafsiloti
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+
+            <!-- TEXNIKA UMUMIY MALUMOT -->
+            <div class="p-3 border rounded bg-light">
+              <div>
+                <i class="bi bi-info-circle me-2"></i>Umumiy ma'lumot
+              </div><hr>
+              <div class="card-body">
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Xodim</div>
+                  <div class="col-md-7">
+                    {{ mat.employee.full_name|default:"-" }}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Birligi</div>
+                  <div class="col-md-7">
+                    {{ mat.unit.name|default:"-" }}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Nomi</div>
+                  <div class="col-md-7">
+                    {{ mat.name|default:"-" }}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Soni</div>
+                  <div class="col-md-7">
+                    {{ mat.number|default:"-" }}
+                  </div>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">1C code</div>
+                  <div class="col-md-7">
+                    {{ mat.code|default:"-" }}
+                  </div>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Narxi</div>
+                  <div class="col-md-7">
+                    {{ mat.price|intcomma|default:"-" }}
+                  </div>
+                </div>
+                {% if mat.year %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Yili</div>
+                  <div class="col-md-7">
+                    {{ mat.year|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Holati</div>
+                  <div class="col-md-7">
+                    {% if mat.status == "free" %}
+                      <span class="badge bg-secondary">Bo'sh</span>
+                    {% elif mat.status == "active" %}
+                      <span class="badge bg-primary">Aktiv</span>
+                    {% elif mat.status == "repair" %}
+                      <span class="badge bg-warning ">Ta’mirda</span>
+                    {% elif mat.status == "defect" %}
+                      <span class="badge bg-danger">Yaroqsiz</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Noma'lum</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Yopish
+            </button>
+          </div>
+
+        </div>
       </div>
     </div>
     {% endfor %}

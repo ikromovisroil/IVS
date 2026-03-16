@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load humanize %}
 {% load static %}
 
 {% block title %}
@@ -10,7 +10,7 @@
 <main id="main" class="main">
 
     <div class="pagetitle">
-        <h1>Qo'shimcha texnikalar</h1>
+        <h1>Qo‘shimcha qurilmalar</h1>
     </div>
 
     <!-- FILTER -->
@@ -85,11 +85,11 @@
 
                <div class="d-flex justify-content-between align-items-center">
                   <h5 class="card-title mb-0">
-                    Texnikalar {{ total_count }} ta</i>
+                    Qurilmalar {{ total_count }} ta</i>
                   </h5>
 
                   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
-                    + Qo'shimcah texnika qo'shish
+                    + Qurilma qo'shish
                   </button>
                </div>
 
@@ -115,10 +115,10 @@
                       <th scope="row">
                         {{ row_start|add:forloop.counter0 }}
                       </th>
-                      <td>{{ tex.name|default:"-" }}</td>
-                      <td>{{ tex.inventory|default:"-" }}</td>
-                      <td>{{ tex.serial|default:"-" }}</td>
-                      <td>{{ tex.year|default:"-" }}</td>
+                      <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.name|default:"-" }}</td>
+                      <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.inventory|default:"-" }}</td>
+                      <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.serial|default:"-" }}</td>
+                      <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.year|default:"-" }}</td>
                       {% if request.user.employee.rol.material_edit %}
                       <td>
                         <div class="filter">
@@ -199,7 +199,7 @@
         <form class="modal-content" method="post" action="{% url 'extra_tex_create' %}">
           {% csrf_token %}
           <div class="modal-header">
-            <h5 class="modal-title">Texnika qo‘shish</h5>
+            <h5 class="modal-title">Qurilma qo‘shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
@@ -275,7 +275,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Texnika o'chirish</h5>
+            <h5 class="modal-title">Qurilmani o'chirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -330,7 +330,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Texnikani tahrirlash</h5>
+            <h5 class="modal-title">Qurilmani tahrirlash</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -417,6 +417,118 @@
                 Saqlash</button>
           </div>
         </form>
+      </div>
+    </div>
+
+    <!-- TEXNIKA QK -->
+    <div class="modal fade" id="qkcentered{{ tex.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+
+          <div class="modal-header">
+            <h5 class="modal-title">
+              <i class="bi bi-cpu me-2"></i>Qurilma tafsiloti
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <!-- TEXNIKA UMUMIY MALUMOT -->
+            <div class="mb-4 p-3 border rounded bg-light">
+              <div>
+                <i class="bi bi-info-circle me-2"></i>Umumiy ma'lumot
+              </div><hr>
+              <div class="card-body">
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Texnika</div>
+                  <div class="col-md-7">
+                    {{ tex.technics.name|default:"-" }}<br>
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Tashkilot</div>
+                  <div class="col-md-7">
+                    {{ tex.organization.name|default:"-" }}<br>
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Nomi</div>
+                  <div class="col-md-7">
+                    {{ tex.category.name }} {{ tex.name|default:"-" }}
+                  </div>
+                </div>
+                {% if tex.parametr %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Parametr</div>
+                  <div class="col-md-7">
+                    {{ tex.parametr|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.inventory %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Inventory</div>
+                  <div class="col-md-7">
+                    {{ tex.inventory|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.serial %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Serial</div>
+                  <div class="col-md-7">
+                    {{ tex.serial|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.year %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Yili</div>
+                  <div class="col-md-7">
+                    {{ tex.year|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.price %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Narxi</div>
+                  <div class="col-md-7">
+                    {{ tex.price|intcomma|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Holati</div>
+                  <div class="col-md-7">
+                    {% if tex.status == "free" %}
+                      <span class="badge bg-secondary">Bo'sh</span>
+                    {% elif tex.status == "active" %}
+                      <span class="badge bg-primary">Aktiv</span>
+                    {% elif tex.status == "repair" %}
+                      <span class="badge bg-warning ">Ta’mirda</span>
+                    {% elif tex.status == "defect" %}
+                      <span class="badge bg-danger">Yaroqsiz</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Noma'lum</span>
+                    {% endif %}
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Yopish
+            </button>
+          </div>
+
+        </div>
       </div>
     </div>
     {% endfor %}
