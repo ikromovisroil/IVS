@@ -643,7 +643,7 @@ def barn_tex(request):
             "page_obj": empty_page,
             "grouped_technics": [],
             "qs_params": qs_params,
-            "extratex": ExtraTechnics.objects.none(),
+            "extratex": Structure.objects.none(),
             "total_count": 0,
         })
 
@@ -700,7 +700,7 @@ def barn_tex(request):
     # ---------- 2) faqat shu sahifadagi xodim texnikalari ----------
     extratech_prefetch = Prefetch(
         "extratechnics_set",
-        queryset=ExtraTechnics.objects.only("id", "name", "inventory", "serial").order_by("id")
+        queryset=Structure.objects.only("id", "name", "inventory", "serial").order_by("id")
     )
 
     page_tech_qs = (
@@ -728,10 +728,10 @@ def barn_tex(request):
         grouped_technics.append((emp_obj, items_list))
 
     # Extratex (organization bo‘yicha)
-    extratex = ExtraTechnics.objects.none()
+    extratex = Structure.objects.none()
     if organization_id:
         extratex = (
-            ExtraTechnics.objects
+            Structure.objects
             .filter(organization_id=organization_id, status="free", is_active=True)
             .only("id", "name", "inventory", "serial")
             .order_by("-id")
@@ -928,7 +928,7 @@ def extra_tex(request):
     has_filter = bool(category_id or status or organization_id or name)
 
     if not has_filter:
-        qs = ExtraTechnics.objects.none()
+        qs = Structure.objects.none()
         page_obj = Paginator(qs, 50).get_page(page_number)
 
         params = request.GET.copy()
@@ -936,7 +936,7 @@ def extra_tex(request):
 
         return render(request, "main/extra_tex.html", {
             "organizations": Organization.objects.only("id", "name"),
-            "categories": ExtraCategory.objects.only("id", "name"),
+            "categories": Structure.objects.only("id", "name"),
             "technics_form": ExtraTechnicsForm(),
 
             "page_obj": page_obj,
@@ -949,7 +949,7 @@ def extra_tex(request):
 
     # ✅ Filter bor bo‘lsa — query ishlaydi
     qs = (
-        ExtraTechnics.objects.filter(is_active=True)
+        Structure.objects.filter(is_active=True)
         .select_related("organization")
         .order_by("-id")
     )
@@ -980,7 +980,7 @@ def extra_tex(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name"),
-        "categories": ExtraCategory.objects.only("id", "name"),
+        "categories": StructureCategory.objects.only("id", "name"),
         "technics_form": ExtraTechnicsForm(),
 
         "page_obj": page_obj,
@@ -1027,8 +1027,8 @@ def extra_tex_delete(request):
     tex_id = request.POST.get("texnika_id")
 
     try:
-        tex = ExtraTechnics.objects.select_for_update().get(pk=int(tex_id))
-    except (ExtraTechnics.DoesNotExist, TypeError, ValueError):
+        tex = Structure.objects.select_for_update().get(pk=int(tex_id))
+    except (Structure.DoesNotExist, TypeError, ValueError):
         messages.info(request, "Texnika topilmadi")
         return redirect(back_url)
 
@@ -1055,7 +1055,7 @@ def extra_tex_update(request, pk):
     back_url = request.META.get("HTTP_REFERER") or "extra_tex"
 
     tex = get_object_or_404(
-        ExtraTechnics.objects.select_for_update(),
+        Structure.objects.select_for_update(),
         pk=pk,
         is_active=True,
     )
@@ -1077,7 +1077,7 @@ def extra_tex_update(request, pk):
         if not category_id.isdigit():
             messages.error(request, "Kategoriya noto‘g‘ri")
             return redirect(back_url)
-        tex.category = get_object_or_404(ExtraCategory, pk=int(category_id))
+        tex.category = get_object_or_404(Structure, pk=int(category_id))
     else:
         tex.category = None
 
@@ -1138,7 +1138,7 @@ def extra_tex_attach(request):
 
     # obyektlarni olish
     tex = get_object_or_404(Technics, id=texnika_id, is_active=True)
-    extra = get_object_or_404(ExtraTechnics, id=extra_tex_id)
+    extra = get_object_or_404(Structure, id=extra_tex_id)
 
     # biriktirish
     extra.technics = tex
@@ -1168,7 +1168,7 @@ def extra_tex_detach(request):
     tex = get_object_or_404(Technics, id=texnika_id, is_active=True)
 
     # Faqat shu texnikaga biriktirilgan extra texnikani ajratamiz
-    extra = get_object_or_404(ExtraTechnics, id=extra_tex_id, technics=tex)
+    extra = get_object_or_404(Structure, id=extra_tex_id, technics=tex)
 
     extra.technics = None
     extra.status = "free"
