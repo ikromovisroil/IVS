@@ -218,7 +218,21 @@ class Employee(models.Model):
 
 
 # Category.
+class Group(models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'group'
+        verbose_name = "Turi"
+        verbose_name_plural = "Turlar"
+
+
+# Category.
 class Category(AutoSlugMixin, models.Model):
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -388,9 +402,22 @@ class Unit(models.Model):
         verbose_name_plural = "birligi"
 
 
+class MaterialCategory(models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'materialcategory'
+        verbose_name = "MaterialCategory"
+        verbose_name_plural = "MaterialCategorylat"
+
+
 # material.
 class Material(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('free', "Bo'sh"),
