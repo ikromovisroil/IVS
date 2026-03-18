@@ -50,7 +50,7 @@ class TechnicsForm(forms.ModelForm):
 
 class ExtraTechnicsForm(forms.ModelForm):
     class Meta:
-        model = ExtraTechnics
+        model = Structure
         fields = [
             "category", "organization", "name",
             "parametr", "inventory", "serial",

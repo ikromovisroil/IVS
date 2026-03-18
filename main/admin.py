@@ -76,8 +76,8 @@ class CategoryAdmin(admin.ModelAdmin):
     exclude = ("slug",)
 
 
-@admin.register(ExtraCategory)
-class ExtraCategoryAdmin(admin.ModelAdmin):
+@admin.register(StructureCategory)
+class StructureCategoryAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
     ordering = ("name",)
@@ -115,8 +115,8 @@ class RolInline(admin.StackedInline):
     extra = 0
 
 
-class ExtraTechnicsInline(admin.TabularInline):
-    model = ExtraTechnics
+class StructureInline(admin.TabularInline):
+    model = Structure
     extra = 0
     autocomplete_fields = ("organization",)
     fields = (
@@ -234,7 +234,7 @@ class TechnicsAdmin(admin.ModelAdmin):
         "directorate", "division", "employee",
     )
     readonly_fields = ("date_creat", "date_edit")
-    inlines = (ExtraTechnicsInline,)
+    inlines = (StructureInline,)
     ordering = ("name",)
 
     def get_queryset(self, request):
@@ -244,7 +244,7 @@ class TechnicsAdmin(admin.ModelAdmin):
         )
 
 
-@admin.register(ExtraTechnics)
+@admin.register(Structure)
 class ExtraTechnicsAdmin(admin.ModelAdmin):
     list_display = (
         "id", "name", "category", "organization",

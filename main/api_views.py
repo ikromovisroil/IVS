@@ -2,16 +2,7 @@ from rest_framework import viewsets, filters
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 
-from .models import (
-    Organization, Department, Directorate, Division,
-    Rank, Region, Rol, Employee,
-    Category, Technics,
-    ExtraCategory, ExtraTechnics,
-    Unit, Material,
-    Goal, Order, OrderMaterial,
-    Deed, DeedConsent,
-    Contract, Liable
-)
+from .models import *
 
 from .serializers import (
     OrganizationSerializer, DepartmentSerializer, DirectorateSerializer, DivisionSerializer,
@@ -115,14 +106,14 @@ class TechnicsViewSet(BaseModelViewSet):
 
 
 class ExtraCategoryViewSet(BaseModelViewSet):
-    queryset = ExtraCategory.objects.all().order_by("name")
+    queryset = StructureCategory.objects.all().order_by("name")
     serializer_class = ExtraCategorySerializer
     search_fields = ["name"]
     ordering_fields = ["id", "name"]
 
 
 class ExtraTechnicsViewSet(BaseModelViewSet):
-    queryset = ExtraTechnics.objects.select_related("category", "organization", "technics").all().order_by("id")
+    queryset = Structure.objects.select_related("category", "organization", "technics").all().order_by("id")
     serializer_class = ExtraTechnicsSerializer
     filterset_fields = ["category", "organization", "technics", "status", "is_active"]
     search_fields = ["name", "inventory", "serial", "parametr"]

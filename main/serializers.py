@@ -1,15 +1,5 @@
 from rest_framework import serializers
-from .models import (
-    Organization, Department, Directorate, Division,
-    Rank, Region, Rol, Employee,
-    Category, Technics,
-    ExtraCategory, ExtraTechnics,
-    Unit, Material,
-    Goal, Order, OrderMaterial,
-    Deed, DeedConsent,
-    Contract, Liable
-)
-
+from .models import *
 
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -124,7 +114,7 @@ class TechnicsSerializer(serializers.ModelSerializer):
 
 class ExtraCategorySerializer(serializers.ModelSerializer):
     class Meta:
-        model = ExtraCategory
+        model = StructureCategory
         fields = ["id", "name", "slug"]
 
 
@@ -134,7 +124,7 @@ class ExtraTechnicsSerializer(serializers.ModelSerializer):
     technics_name = serializers.CharField(source="technics.name", read_only=True)
 
     class Meta:
-        model = ExtraTechnics
+        model = Structure
         fields = [
             "id",
             "category", "category_name",

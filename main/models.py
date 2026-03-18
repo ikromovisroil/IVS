@@ -1,5 +1,4 @@
 from django.contrib.auth.models import User
-from django.utils.text import slugify
 from .validators import *
 from django.utils import timezone
 import random
@@ -10,60 +9,9 @@ from django.core.files import File
 from django.db import models
 from django.urls import reverse
 
-# Slug.
-class AutoSlugMixin(models.Model):
-    slug = models.SlugField(unique=True, blank=True, null=True, max_length=200)
-
-    class Meta:
-        abstract = True
-
-    def get_slug_source(self):
-        """
-        Har bir modelda slug qaysi maydondan olinadi.
-        default → name
-        Agar name yo‘q bo‘lsa → full_name
-        """
-        if hasattr(self, "name"):
-            return self.name
-        if hasattr(self, "full_name"):
-            return self.full_name
-        return None
-
-    def save(self, *args, **kwargs):
-        # Obyekt mavjud bo‘lsa eski slugni olish
-        old_slug = None
-        if self.pk:
-            try:
-                old_slug = self.__class__.objects.get(pk=self.pk).slug
-            except self.__class__.DoesNotExist:
-                pass
-
-        source = self.get_slug_source()
-
-        if source:
-            base_slug = slugify(source)
-
-            # Agar slug yo‘q bo‘lsa yoki value o‘zgargan bo‘lsa
-            if not self.slug or old_slug != base_slug:
-                slug = base_slug
-                counter = 1
-
-                # To‘qnashuvlarni bartaraf qilish
-                while (
-                    self.__class__.objects.filter(slug=slug)
-                    .exclude(pk=self.pk)
-                    .exists()
-                ):
-                    slug = f"{base_slug}-{counter}"
-                    counter += 1
-
-                self.slug = slug
-
-        super().save(*args, **kwargs)
-
 
 # Organizator.
-class Organization(AutoSlugMixin, models.Model):
+class Organization(models.Model):
     name = models.CharField(max_length=200)
     contract = models.CharField(max_length=200, null=True, blank=True)
 
@@ -73,12 +21,10 @@ class Organization(AutoSlugMixin, models.Model):
 
     class Meta:
         db_table = 'organization'
-        verbose_name = "Tashkilot"
-        verbose_name_plural = "Tashkilotlar"
 
 
 # Departament.
-class Department(AutoSlugMixin, models.Model):
+class Department(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
@@ -87,12 +33,10 @@ class Department(AutoSlugMixin, models.Model):
 
     class Meta:
         db_table = 'department'
-        verbose_name = "Departament"
-        verbose_name_plural = "Departamentlar"
 
 
 # Boshqarma.
-class Directorate(AutoSlugMixin, models.Model):
+class Directorate(models.Model):
     department = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
@@ -101,12 +45,10 @@ class Directorate(AutoSlugMixin, models.Model):
 
     class Meta:
         db_table = 'directorate'
-        verbose_name = "Boshqarma"
-        verbose_name_plural = "Boshqarmalar"
 
 
 # Bo'lim.
-class Division(AutoSlugMixin, models.Model):
+class Division(models.Model):
     directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
@@ -115,9 +57,6 @@ class Division(AutoSlugMixin, models.Model):
 
     class Meta:
         db_table = 'division'
-        verbose_name = "Bo'lim"
-        verbose_name_plural = "Bo'limlar"
-
 
 
 # Lavozim.
@@ -129,8 +68,6 @@ class Rank(models.Model):
 
     class Meta:
         db_table = 'rank'
-        verbose_name = "Lavozim"
-        verbose_name_plural = "Lavozimlar"
 
 
 # viloyat.
@@ -142,8 +79,6 @@ class Region(models.Model):
 
     class Meta:
         db_table = 'region'
-        verbose_name = "Mintaqa"
-        verbose_name_plural = "Mintaqalar"
 
 
 class Rol(models.Model):
@@ -165,8 +100,6 @@ class Rol(models.Model):
 
     class Meta:
         db_table = 'rol'
-        verbose_name = "rol"
-        verbose_name_plural = "rol"
 
 
 # Xodim.
@@ -199,7 +132,6 @@ class Employee(models.Model):
         if self.department and self.department.organization:
             self.organization = self.department.organization
 
-
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -213,8 +145,6 @@ class Employee(models.Model):
 
     class Meta:
         db_table = 'employee'
-        verbose_name = "Xodim"
-        verbose_name_plural = "Xodimlar"
 
 
 # Category.
@@ -226,12 +156,10 @@ class Group(models.Model):
 
     class Meta:
         db_table = 'group'
-        verbose_name = "Turi"
-        verbose_name_plural = "Turlar"
 
 
 # Category.
-class Category(AutoSlugMixin, models.Model):
+class Category(models.Model):
     group = models.ForeignKey(Group, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
@@ -240,12 +168,11 @@ class Category(AutoSlugMixin, models.Model):
 
     class Meta:
         db_table = 'category'
-        verbose_name = "Kategoriya"
-        verbose_name_plural = "Kategoriyalar"
 
 
 # texnika.
 class Technics(models.Model):
+    group = models.ForeignKey(Group, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
@@ -278,10 +205,6 @@ class Technics(models.Model):
         return reverse("technics_detail", args=[self.pk])
 
     def get_qr_data(self):
-        """
-        QR ichiga tushadigan matn/link.
-        Domeningizni shu yerga yozing.
-        """
         return f"https://report.imv.uz{self.get_absolute_url()}"
 
     def generate_qr_code(self, save=True):
@@ -344,24 +267,20 @@ class Technics(models.Model):
 
     class Meta:
         db_table = 'technics'
-        verbose_name = "Texnika"
-        verbose_name_plural = "Texnikalar"
 
 
-class ExtraCategory(AutoSlugMixin, models.Model):
+class StructureCategory(models.Model):
     name = models.CharField(max_length=200)
 
     def __str__(self):
         return self.name
 
     class Meta:
-        db_table = 'extracategory'
-        verbose_name = "Qo'shimcha kategoriya"
-        verbose_name_plural = "Qo'shimcha kategoriyalar"
+        db_table = 'structurecategory'
 
 
-class ExtraTechnics(models.Model):
-    category = models.ForeignKey(ExtraCategory, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+class Structure(models.Model):
+    category = models.ForeignKey(StructureCategory, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
@@ -384,9 +303,7 @@ class ExtraTechnics(models.Model):
         return self.name
 
     class Meta:
-        db_table = 'extratechnics'
-        verbose_name = "Qo'shimcha texnika"
-        verbose_name_plural = "Qo'shimcha texnikalar"
+        db_table = 'structure'
 
 
 # birligi
@@ -398,8 +315,6 @@ class Unit(models.Model):
 
     class Meta:
         db_table = 'unit'
-        verbose_name = "birligi"
-        verbose_name_plural = "birligi"
 
 
 class MaterialCategory(models.Model):
@@ -410,8 +325,6 @@ class MaterialCategory(models.Model):
 
     class Meta:
         db_table = 'materialcategory'
-        verbose_name = "MaterialCategory"
-        verbose_name_plural = "MaterialCategorylat"
 
 
 # material.
@@ -439,9 +352,6 @@ class Material(models.Model):
 
     class Meta:
         db_table = 'material'
-        verbose_name = "material"
-        verbose_name_plural = "materiallar"
-
 
 
 # maqsad.
@@ -453,8 +363,6 @@ class Goal(models.Model):
 
     class Meta:
         db_table = 'goal'
-        verbose_name = "Maqsad"
-        verbose_name_plural = "Maqsadlar"
 
 
 # zayafka.
@@ -513,8 +421,6 @@ class Order(models.Model):
 
     class Meta:
         db_table = 'order'
-        verbose_name = "Zayafka"
-        verbose_name_plural = "Zayafkalar"
 
 
 # zayafkadan soralgan materiali.
@@ -528,8 +434,6 @@ class OrderMaterial(models.Model):
 
     class Meta:
         db_table = 'ordermaterial'
-        verbose_name = "Zayafka_material"
-        verbose_name_plural = "Zayafka_materiallar"
 
 
 class Deed(models.Model):
@@ -559,7 +463,6 @@ class Deed(models.Model):
 
     file_type = models.BooleanField(default=False)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
-
     code = models.CharField(max_length=10, null=True, blank=True, db_index=True)
 
     date_creat = models.DateTimeField(auto_now_add=True)
@@ -589,8 +492,6 @@ class Deed(models.Model):
 
     class Meta:
         db_table = 'deed'
-        verbose_name = "Akt"
-        verbose_name_plural = "Aktlar"
 
 
 class DeedConsent(models.Model):
@@ -610,8 +511,6 @@ class DeedConsent(models.Model):
 
     class Meta:
         db_table = 'deedconsent'
-        verbose_name = "Akt_kelishuvchi"
-        verbose_name_plural = "Akt_kelishuvchilar"
 
 
 class Contract(models.Model):
@@ -624,8 +523,6 @@ class Contract(models.Model):
 
     class Meta:
         db_table = 'contract'
-        verbose_name = "Kelishuv"
-        verbose_name_plural = "Kelishuvlar"
 
 
 class Liable(models.Model):
@@ -638,5 +535,3 @@ class Liable(models.Model):
 
     class Meta:
         db_table = 'Liable'
-        verbose_name = "Javobgar"
-        verbose_name_plural = "Javobgarlar"
