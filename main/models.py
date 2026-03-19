@@ -329,6 +329,7 @@ class MaterialCategory(models.Model):
 
 # material.
 class Material(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
