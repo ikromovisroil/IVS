@@ -699,7 +699,7 @@ def barn_tex(request):
 
     # ---------- 2) faqat shu sahifadagi xodim texnikalari ----------
     extratech_prefetch = Prefetch(
-        "extratechnics_set",
+        "structure_set",
         queryset=Structure.objects.only("id", "name", "inventory", "serial").order_by("id")
     )
 

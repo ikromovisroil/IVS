@@ -1,28 +1,50 @@
 from django.contrib import admin
-from django.contrib.auth.models import User
-from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-
-from .models import *
+from .models import (
+    Organization, Department, Directorate, Division, Rank, Region,
+    Rol, Employee, Group, Category, Technics,
+    StructureCategory, Structure,
+    Unit, MaterialCategory, Material,
+    Goal, Order, OrderMaterial,
+    Deed, DeedConsent,
+    Contract, Liable
+)
 
 
 # =========================
-# SIMPLE MODELS
+# Inlines
 # =========================
+
+class RolInline(admin.StackedInline):
+    model = Rol
+    extra = 0
+    can_delete = False
+
+
+class OrderMaterialInline(admin.TabularInline):
+    model = OrderMaterial
+    extra = 1
+
+
+class DeedConsentInline(admin.TabularInline):
+    model = DeedConsent
+    extra = 1
+
+
+# =========================
+# Simple models
+# =========================
+
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "contract")
     search_fields = ("name", "contract")
-    ordering = ("name",)
-    exclude = ("slug",)
+
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "organization")
     list_filter = ("organization",)
     search_fields = ("name", "organization__name")
-    autocomplete_fields = ("organization",)
-    ordering = ("name",)
-    exclude = ("slug",)
 
 
 @admin.register(Directorate)
@@ -30,72 +52,62 @@ class DirectorateAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "department")
     list_filter = ("department", "department__organization")
     search_fields = ("name", "department__name", "department__organization__name")
-    autocomplete_fields = ("department",)
-    ordering = ("name",)
-    exclude = ("slug",)
 
 
 @admin.register(Division)
 class DivisionAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "directorate")
-    list_filter = (
-        "directorate",
-        "directorate__department",
-        "directorate__department__organization",
-    )
-    search_fields = (
-        "name",
-        "directorate__name",
-        "directorate__department__name",
-        "directorate__department__organization__name",
-    )
-    autocomplete_fields = ("directorate",)
-    ordering = ("name",)
-    exclude = ("slug",)
+    list_filter = ("directorate", "directorate__department")
+    search_fields = ("name", "directorate__name")
 
 
 @admin.register(Rank)
 class RankAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
-    ordering = ("name",)
 
 
 @admin.register(Region)
 class RegionAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
-    ordering = ("name",)
+
+
+@admin.register(Group)
+class GroupAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
-    ordering = ("name",)
-    exclude = ("slug",)
-
-
-@admin.register(StructureCategory)
-class StructureCategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
-    ordering = ("name",)
-    exclude = ("slug",)
+    list_display = ("id", "name", "group")
+    list_filter = ("group",)
+    search_fields = ("name", "group__name")
 
 
 @admin.register(Unit)
 class UnitAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
-    ordering = ("name",)
+
+
+@admin.register(MaterialCategory)
+class MaterialCategoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
 
 
 @admin.register(Goal)
 class GoalAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
-    ordering = ("name",)
+
+
+@admin.register(StructureCategory)
+class StructureCategoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
 
 
 @admin.register(Contract)
@@ -103,274 +115,176 @@ class ContractAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "unit", "price")
     search_fields = ("name", "unit")
     list_filter = ("unit",)
-    ordering = ("name",)
 
 
 # =========================
-# INLINEs
+# Employee / Role
 # =========================
-class RolInline(admin.StackedInline):
-    model = Rol
-    fk_name = "employee"
-    extra = 0
 
-
-class StructureInline(admin.TabularInline):
-    model = Structure
-    extra = 0
-    autocomplete_fields = ("organization",)
-    fields = (
-        "name", "organization", "status", "parametr",
-        "inventory", "serial", "price", "year", "is_active"
-    )
-
-
-class OrderMaterialInline(admin.TabularInline):
-    model = OrderMaterial
-    extra = 1
-    autocomplete_fields = ("material",)
-
-
-class DeedConsentInline(admin.TabularInline):
-    model = DeedConsent
-    extra = 1
-    autocomplete_fields = ("employee",)
-
-
-# =========================
-# EMPLOYEE / ROLE
-# =========================
 @admin.register(Employee)
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = (
         "id", "full_name", "user", "organization", "department",
         "directorate", "division", "rank", "region", "phone", "pinfl",
-        "date_creat",
+        "date_creat"
     )
     list_filter = (
         "organization", "department", "directorate", "division",
-        "rank", "region", "date_creat",
+        "rank", "region", "date_creat"
     )
     search_fields = (
         "last_name", "first_name", "father_name",
-        "user__username", "pinfl", "phone",
-        "organization__name", "department__name",
-        "directorate__name", "division__name",
+        "user__username", "phone", "pinfl"
     )
     autocomplete_fields = (
-        "user", "organization", "department",
-        "directorate", "division", "rank", "region",
+        "user", "organization", "department", "directorate",
+        "division", "rank", "region"
     )
-    readonly_fields = ("date_creat", "date_edit")
-    inlines = (RolInline,)
-    ordering = ("last_name", "first_name", "father_name")
+    inlines = [RolInline]
 
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "user", "organization", "department",
-            "directorate", "division", "rank", "region"
-        )
-
-    @admin.display(description="F.I.Sh")
     def full_name(self, obj):
         return obj.full_name
+    full_name.short_description = "F.I.SH"
 
 
 @admin.register(Rol)
 class RolAdmin(admin.ModelAdmin):
     list_display = (
         "id", "employee",
-        "client", "order", "boss", "shop",
-        "akt", "status", "technics", "technics_edit",
-        "material", "material_edit",
+        "client", "order", "boss", "shop", "akt", "status",
+        "technics", "technics_edit", "material", "material_edit"
     )
     list_filter = (
-        "client", "order", "boss", "shop",
-        "akt", "status", "technics", "technics_edit",
-        "material", "material_edit",
+        "client", "order", "boss", "shop", "akt", "status",
+        "technics", "technics_edit", "material", "material_edit"
     )
     search_fields = (
-        "employee__last_name", "employee__first_name",
-        "employee__father_name", "employee__user__username",
-    )
-    list_editable = (
-        "client",
-        "order",
-        "boss",
-        "shop",
-        "akt",
-        "status",
-        "technics",
-        "technics_edit",
-        "material",
-        "material_edit",
+        "employee__last_name",
+        "employee__first_name",
+        "employee__father_name",
+        "employee__user__username",
     )
     autocomplete_fields = ("employee",)
 
 
 # =========================
-# TECHNICS
+# Technics / Structure / Material
 # =========================
+
 @admin.register(Technics)
 class TechnicsAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "category", "employee", "organization",
-        "status", "inventory", "serial", "mac"
+        "id", "name", "group", "category", "employee", "organization",
+        "status", "inventory", "serial", "ip", "price", "year", "is_active"
     )
     list_filter = (
-        "status", "is_active", "category",
-        "organization", "department", "directorate", "division",
-        "date_creat",
+        "group", "category", "organization", "department",
+        "directorate", "division", "status", "is_active", "year"
     )
     search_fields = (
-        "name", "parametr", "inventory", "serial", "mac", "ip", "year",
-        "employee__last_name", "employee__first_name", "employee__father_name",
-        "category__name",
-        "organization__name", "department__name",
-        "directorate__name", "division__name",
+        "name", "parametr", "inventory", "serial", "mac", "ip",
+        "employee__last_name", "employee__first_name",
+        "organization__name", "category__name"
     )
     autocomplete_fields = (
-        "category", "organization", "department",
-        "directorate", "division", "employee",
+        "group", "category", "organization", "department",
+        "directorate", "division", "employee"
     )
-    readonly_fields = ("date_creat", "date_edit")
-    inlines = (StructureInline,)
-    ordering = ("name",)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "category", "organization", "department",
-            "directorate", "division", "employee"
-        )
+    readonly_fields = ("qr_code", "date_creat", "date_edit")
 
 
 @admin.register(Structure)
-class ExtraTechnicsAdmin(admin.ModelAdmin):
+class StructureAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "category", "organization",
-        "status", "inventory", "serial"
+        "id", "name", "category", "organization", "technics",
+        "status", "inventory", "serial", "price", "year", "is_active"
     )
-    list_filter = (
-        "category", "status", "is_active", "organization", "date_creat",
-    )
+    list_filter = ("category", "organization", "status", "is_active", "year")
     search_fields = (
-        "name", "parametr", "inventory", "serial", "year",
-        "category__name", "technics__name", "organization__name",
+        "name", "parametr", "inventory", "serial",
+        "organization__name", "category__name", "technics__name"
     )
     autocomplete_fields = ("category", "organization", "technics")
-    readonly_fields = ("date_creat", "date_edit")
-    ordering = ("name",)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "organization", "technics"
-        )
 
 
-# =========================
-# MATERIAL
-# =========================
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "employee", "unit", "status",
-        "number", "code", "price",
-        "is_active", "date_creat",
+        "id", "name", "employee", "category", "unit",
+        "status", "number", "code", "price", "year", "is_active"
     )
-    list_filter = (
-        "status", "is_active", "unit", "date_creat"
-    )
+    list_filter = ("category", "unit", "status", "is_active", "year")
     search_fields = (
-        "name", "code", "year",
-        "employee__last_name", "employee__first_name", "employee__father_name",
+        "name", "code",
+        "employee__last_name", "employee__first_name",
+        "category__name", "unit__name"
     )
-    autocomplete_fields = ("employee", "unit")
-    ordering = ("name",)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related("employee", "unit")
+    autocomplete_fields = ("employee", "category", "unit")
 
 
 # =========================
-# ORDER
+# Order
 # =========================
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id", "sender", "receiver", "goal", "technics",
-        "status", "receiver_seen", "rating",
+        "status", "rating", "receiver_seen",
         "date_creat", "date_accepted", "date_finished",
-        "date_approved", "date_rejected",
+        "date_approved", "date_rejected"
     )
     list_filter = (
         "status", "receiver_seen", "goal",
-        "date_creat", "date_edit",
-        "date_accepted", "date_finished",
-        "date_approved", "date_rejected",
+        "date_creat", "date_accepted", "date_finished",
+        "date_approved", "date_rejected"
     )
     search_fields = (
         "body",
-        "sender__last_name", "sender__first_name", "sender__father_name",
-        "receiver__last_name", "receiver__first_name", "receiver__father_name",
-        "goal__name",
-        "technics__name",
+        "sender__last_name", "sender__first_name",
+        "receiver__last_name", "receiver__first_name",
+        "technics__name"
     )
     autocomplete_fields = ("sender", "receiver", "goal", "technics")
+    inlines = [OrderMaterialInline]
     readonly_fields = (
-        "date_creat", "date_edit",
-        "date_accepted", "date_finished",
-        "date_approved", "date_rejected",
+        "date_creat", "date_edit", "date_accepted",
+        "date_finished", "date_approved", "date_rejected"
     )
-    inlines = (OrderMaterialInline,)
-    date_hierarchy = "date_creat"
-    ordering = ("-id",)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "sender", "receiver", "goal", "technics"
-        )
 
 
 @admin.register(OrderMaterial)
 class OrderMaterialAdmin(admin.ModelAdmin):
     list_display = ("id", "order", "material", "number")
-    list_filter = ("material",)
-    search_fields = (
-        "order__body",
-        "material__name",
-        "order__sender__last_name", "order__sender__first_name",
-        "order__receiver__last_name", "order__receiver__first_name",
-    )
+    list_filter = ("material__category",)
+    search_fields = ("order__body", "material__name", "material__code")
     autocomplete_fields = ("order", "material")
 
 
 # =========================
-# DEED
+# Deed
 # =========================
+
 @admin.register(Deed)
 class DeedAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "sender", "receiver", "user",
-        "status_sender", "status_receiver",
-        "date_creat",
+        "id", "code", "sender", "receiver", "user",
+        "status_sender", "status_receiver", "file_type",
+        "sender_seen", "receiver_seen", "date_creat"
     )
     list_filter = (
-        "status_sender", "status_receiver", "date_creat",
+        "status_sender", "status_receiver",
+        "file_type", "sender_seen", "receiver_seen", "date_creat"
     )
     search_fields = (
-        "sender__last_name", "sender__first_name", "sender__father_name",
-        "receiver__last_name", "receiver__first_name", "receiver__father_name",
-        "user__last_name", "user__first_name", "user__father_name",
+        "code", "body", "message_sender", "message_receiver", "message_user",
+        "sender__last_name", "sender__first_name",
+        "receiver__last_name", "receiver__first_name",
+        "user__last_name", "user__first_name"
     )
     autocomplete_fields = ("sender", "receiver", "user")
-    readonly_fields = ("date_creat", "date_edit")
-    inlines = (DeedConsentInline,)
-    ordering = ("-id",)
-
-    def get_queryset(self, request):
-        return super().get_queryset(request).select_related(
-            "sender", "receiver", "user"
-        )
+    readonly_fields = ("code", "date_creat", "date_edit")
+    inlines = [DeedConsentInline]
 
 
 @admin.register(DeedConsent)
@@ -378,47 +292,22 @@ class DeedConsentAdmin(admin.ModelAdmin):
     list_display = ("id", "deed", "employee", "status", "date_creat")
     list_filter = ("status", "date_creat")
     search_fields = (
-        "employee__last_name", "employee__first_name", "employee__father_name",
+        "deed__code", "message",
+        "employee__last_name", "employee__first_name"
     )
     autocomplete_fields = ("deed", "employee")
-    readonly_fields = ("date_creat", "date_edit")
-    ordering = ("-id",)
 
 
 # =========================
-# LIABLE
+# Liable
 # =========================
+
 @admin.register(Liable)
 class LiableAdmin(admin.ModelAdmin):
     list_display = ("id", "employee", "contract", "category")
     list_filter = ("category", "contract")
     search_fields = (
-        "employee__last_name", "employee__first_name", "employee__father_name",
-        "contract__name", "category__name",
+        "employee__last_name", "employee__first_name",
+        "contract__name", "category__name"
     )
     autocomplete_fields = ("employee", "contract", "category")
-
-
-# =========================
-# USER ichida Employee ko‘rsatish
-# =========================
-class EmployeeInline(admin.StackedInline):
-    model = Employee
-    fk_name = "user"
-    extra = 0
-
-
-class UserAdmin(BaseUserAdmin):
-    inlines = (EmployeeInline,)
-
-
-try:
-    admin.site.unregister(User)
-except admin.sites.NotRegistered:
-    pass
-
-admin.site.register(User, UserAdmin)
-
-admin.site.site_header = "IVS Admin"
-admin.site.site_title = "IVS Admin Panel"
-admin.site.index_title = "Boshqaruv paneli"
