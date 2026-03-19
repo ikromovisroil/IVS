@@ -71,7 +71,7 @@ coverage.xml
 *.log
 local_settings.py
 db.sqlite3
-media/deed
+media/
 staticfiles/
 
 # ===============================

@@ -268,7 +268,7 @@ def eimzo_return(request):
                     today_str = timezone.now().strftime("%Y%m%d")
                     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
                     random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
-                    pdf_name = f"deed/akt_{today_str}_{random_part}.pdf"
+                    pdf_name = f"akt_{today_str}_{random_part}.pdf"
 
                     deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
