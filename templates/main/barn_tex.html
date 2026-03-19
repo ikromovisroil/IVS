@@ -472,7 +472,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Xodimga biriktirish</h5>
+            <h5 class="modal-title">Uskunani biriktirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -485,6 +485,46 @@
                   <select name="employee_id"
                           class="form-select employee-select"
                           data-selected="{{ tex.employee_id|default:'' }}">
+                    <option value="">— Tanlang —</option>
+                  </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Department</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="department_id"
+                          class="form-select department-select"
+                          data-selected="{{ tex.department_id|default:'' }}">
+                      <option value="">— Tanlang —</option>
+                      {% if tex.organization %}
+                        {% for i in tex.organization.department_set.all %}
+                          <option value="{{ i.id }}" {% if tex.department_id == i.id %}selected{% endif %}>
+                            {{ i.name }}
+                          </option>
+                        {% endfor %}
+                      {% endif %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Boshqarma</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="directorate_id"
+                          class="form-select directorate-select"
+                          data-selected="{{ tex.directorate_id|default:'' }}">
+                    <option value="">— Tanlang —</option>
+                  </select>
+                </div>
+            </div>
+
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Bo‘lim</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="division_id"
+                          class="form-select division-select"
+                          data-selected="{{ tex.division_id|default:'' }}">
                     <option value="">— Tanlang —</option>
                   </select>
                 </div>
@@ -1001,6 +1041,158 @@
 
 </main>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+(function () {
+  const urlDirectorate = "{% url 'ajax_load_directorate' %}";
+  const urlDivision = "{% url 'ajax_load_division' %}";
+
+  function initModalAttachAjax(modalEl) {
+    const $modal = $(modalEl);
+    const $department = $modal.find(".department-select");
+    const $directorate = $modal.find(".directorate-select");
+    const $division = $modal.find(".division-select");
+
+    if (!$department.length || !$directorate.length || !$division.length) {
+      console.log("department/directorate/division select topilmadi");
+      return;
+    }
+
+    $department.off("change.modalAttach");
+    $directorate.off("change.modalAttach");
+
+    if (!$department.hasClass("select2-hidden-accessible")) {
+      $department.select2({
+        width: "100%",
+        dropdownParent: $modal,
+        placeholder: "Tanlang...",
+        allowClear: true
+      });
+    }
+
+    if (!$directorate.hasClass("select2-hidden-accessible")) {
+      $directorate.select2({
+        width: "100%",
+        dropdownParent: $modal,
+        placeholder: "Tanlang...",
+        allowClear: true
+      });
+    }
+
+    if (!$division.hasClass("select2-hidden-accessible")) {
+      $division.select2({
+        width: "100%",
+        dropdownParent: $modal,
+        placeholder: "Tanlang...",
+        allowClear: true
+      });
+    }
+
+    function loadDirectorates(departmentId, selectedDirectorateId = "") {
+      $directorate.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
+      $division.empty().append('<option value="">Avval boshqarma tanlang</option>').trigger("change");
+
+      if (!departmentId) {
+        $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        return;
+      }
+
+      $.ajax({
+        url: urlDirectorate,
+        type: "GET",
+        data: { department: departmentId },
+        success: function (data) {
+          $directorate.empty();
+          $directorate.append('<option value="">Tanlang...</option>');
+
+          $.each(data.results || [], function (_, item) {
+            $directorate.append(
+              $("<option>", {
+                value: item.id,
+                text: item.name,
+                selected: String(item.id) === String(selectedDirectorateId)
+              })
+            );
+          });
+
+          $directorate.trigger("change");
+
+          if (selectedDirectorateId) {
+            loadDivisions(selectedDirectorateId, $division.data("selected") || "");
+          }
+        },
+        error: function (xhr, status, error) {
+          console.log("Directorate yuklashda xato:", error);
+          $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
+          $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        }
+      });
+    }
+
+    function loadDivisions(directorateId, selectedDivisionId = "") {
+      $division.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
+
+      if (!directorateId) {
+        $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        return;
+      }
+
+      $.ajax({
+        url: urlDivision,
+        type: "GET",
+        data: { directorate: directorateId },
+        success: function (data) {
+          $division.empty();
+          $division.append('<option value="">Tanlang...</option>');
+
+          $.each(data.results || [], function (_, item) {
+            $division.append(
+              $("<option>", {
+                value: item.id,
+                text: item.name,
+                selected: String(item.id) === String(selectedDivisionId)
+              })
+            );
+          });
+
+          $division.trigger("change");
+        },
+        error: function (xhr, status, error) {
+          console.log("Division yuklashda xato:", error);
+          $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        }
+      });
+    }
+
+    $department.on("change.modalAttach", function () {
+      const departmentId = $(this).val();
+      $directorate.attr("data-selected", "");
+      $division.attr("data-selected", "");
+      loadDirectorates(departmentId);
+    });
+
+    $directorate.on("change.modalAttach", function () {
+      const directorateId = $(this).val();
+      $division.attr("data-selected", "");
+      loadDivisions(directorateId);
+    });
+
+    const selectedDepartment = $department.val() || "";
+    const selectedDirectorate = $directorate.data("selected") || "";
+
+    if (selectedDepartment) {
+      loadDirectorates(selectedDepartment, selectedDirectorate);
+    }
+  }
+
+  document.querySelectorAll('.modal[id^="texbir-"]').forEach(function (modalEl) {
+    modalEl.addEventListener("shown.bs.modal", function () {
+      initModalAttachAjax(modalEl);
+    });
+  });
+})();
+</script>
 
 <script>
 (function () {

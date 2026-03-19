@@ -230,38 +230,18 @@ class Technics(models.Model):
         if save:
             super().save(update_fields=["qr_code"])
 
-    def sync_from_employee(self):
-        if self.employee_id:
-            self.department_id = self.employee.department_id
-            self.directorate_id = self.employee.directorate_id
-            self.division_id = self.employee.division_id
-            self.status = "active"
-        else:
-            self.department_id = None
-            self.directorate_id = None
-            self.division_id = None
-            self.status = "free"
-
     def save(self, *args, **kwargs):
+        is_new = self.pk is None
+
         if self.employee:
             self.status = 'active'
+            self.organization_id = self.employee.organization_id
             self.department_id = self.employee.department_id
             self.directorate_id = self.employee.directorate_id
             self.division_id = self.employee.division_id
-
-            # xohlasangiz organization ham employee dan sync qilinadi
-            # self.organization_id = self.employee.organization_id
-        elif self.status == 'free':
-            self.employee = None
-            self.department = None
-            self.directorate = None
-            self.division = None
-
-        is_new = self.pk is None
 
         super().save(*args, **kwargs)
 
-        # faqat qr_code bo'sh bo‘lsa yaratadi
         if is_new and not self.qr_code:
             self.generate_qr_code(save=True)
 

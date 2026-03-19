@@ -837,31 +837,99 @@ def technics_attach(request):
     back_url = request.META.get("HTTP_REFERER", "/")
 
     tex_id = (request.POST.get("texnika_id") or "").strip()
+    dep_id = (request.POST.get("department_id") or "").strip()
+    dir_id = (request.POST.get("directorate_id") or "").strip()
+    div_id = (request.POST.get("division_id") or "").strip()
     emp_id = (request.POST.get("employee_id") or "").strip()
 
     if not tex_id.isdigit():
         messages.error(request, "Uskuna topilmadi")
         return redirect(back_url)
 
-    # ✅ lock: parallel bosishlar muammo qilmasin
+    if dep_id and not dep_id.isdigit():
+        messages.error(request, "Bo‘lim noto‘g‘ri tanlandi")
+        return redirect(back_url)
+
+    if dir_id and not dir_id.isdigit():
+        messages.error(request, "Boshqarma noto‘g‘ri tanlandi")
+        return redirect(back_url)
+
+    if div_id and not div_id.isdigit():
+        messages.error(request, "Bo‘linma noto‘g‘ri tanlandi")
+        return redirect(back_url)
+
+    if emp_id and not emp_id.isdigit():
+        messages.error(request, "Xodim noto‘g‘ri tanlandi")
+        return redirect(back_url)
+
     tex = get_object_or_404(Technics.objects.select_for_update(), id=int(tex_id))
 
     if emp_id:
-        if not emp_id.isdigit():
-            messages.error(request, "Xodim noto‘g‘ri tanlandi")
-            return redirect(back_url)
+        emp = get_object_or_404(
+            Employee.objects.select_related("organization", "region"),
+            id=int(emp_id)
+        )
 
-        emp = get_object_or_404(Employee.objects.select_related("organization", "region"), id=int(emp_id))
-        tex.employee_id = emp.id
+        tex.employee = emp
+        tex.department = None
+        tex.directorate = None
+        tex.division = None
         tex.status = "active"
-        tex.save(update_fields=["employee", "status", "date_edit"] if hasattr(tex, "date_edit") else ["employee", "status"])
-        messages.success(request, "Uskuna xodimga biriktirildi")
-    else:
-        tex.employee = None
-        tex.status = "free"
-        tex.save(update_fields=["employee", "status", "date_edit"] if hasattr(tex, "date_edit") else ["employee", "status"])
-        messages.success(request, "Uskuna bo‘shatildi")
 
+        update_fields = ["employee", "department", "directorate", "division", "status"]
+        if hasattr(tex, "date_edit"):
+            update_fields.append("date_edit")
+
+        tex.save(update_fields=update_fields)
+        messages.success(request, "Uskuna xodimga biriktirildi")
+        return redirect(back_url)
+
+    if dep_id or dir_id or div_id:
+        department_obj = None
+        directorate_obj = None
+        division_obj = None
+
+        if dep_id:
+            department_obj = get_object_or_404(Department, id=int(dep_id))
+
+        if dir_id:
+            directorate_obj = get_object_or_404(Directorate, id=int(dir_id))
+            if department_obj and directorate_obj.department_id != department_obj.id:
+                messages.error(request, "Boshqarma tanlangan bo‘limga tegishli emas")
+                return redirect(back_url)
+
+        if div_id:
+            division_obj = get_object_or_404(Division, id=int(div_id))
+            if directorate_obj and division_obj.directorate_id != directorate_obj.id:
+                messages.error(request, "Bo‘linma tanlangan boshqarmaga tegishli emas")
+                return redirect(back_url)
+
+        tex.employee = None
+        tex.department = department_obj
+        tex.directorate = directorate_obj
+        tex.division = division_obj
+        tex.status = "active"
+
+        update_fields = ["employee", "department", "directorate", "division", "status"]
+        if hasattr(tex, "date_edit"):
+            update_fields.append("date_edit")
+
+        tex.save(update_fields=update_fields)
+        messages.success(request, "Uskuna strukturaga biriktirildi")
+        return redirect(back_url)
+
+    tex.employee = None
+    tex.department = None
+    tex.directorate = None
+    tex.division = None
+    tex.status = "free"
+
+    update_fields = ["employee", "department", "directorate", "division", "status"]
+    if hasattr(tex, "date_edit"):
+        update_fields.append("date_edit")
+
+    tex.save(update_fields=update_fields)
+    messages.success(request, "Uskuna bo‘shatildi")
     return redirect(back_url)
 
 
