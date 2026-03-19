@@ -20,6 +20,7 @@ urlpatterns = [
     path("barn_tex/<int:pk>/update/", technics_update, name="technics_update"),
     path("barn_tex/extra_tex_attach/", extra_tex_attach, name="extra_tex_attach"),
     path("barn_tex/extra_tex_detach/", extra_tex_detach, name="extra_tex_detach"),
+    path("barn_tex/download/<int:pk>/", technics_download, name="technics_download"),
 
     # texnikalar
     path('extra_tex/', extra_tex, name='extra_tex'),

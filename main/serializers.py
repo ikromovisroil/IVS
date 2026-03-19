@@ -1,10 +1,11 @@
 from rest_framework import serializers
-from .models import *
+from main.models import *
+
 
 class OrganizationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organization
-        fields = ["id", "name", "contract", "slug"]
+        fields = "__all__"
 
 
 class DepartmentSerializer(serializers.ModelSerializer):
@@ -12,7 +13,7 @@ class DepartmentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Department
-        fields = ["id", "organization", "organization_name", "name", "slug"]
+        fields = "__all__"
 
 
 class DirectorateSerializer(serializers.ModelSerializer):
@@ -20,7 +21,7 @@ class DirectorateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Directorate
-        fields = ["id", "department", "department_name", "name", "slug"]
+        fields = "__all__"
 
 
 class DivisionSerializer(serializers.ModelSerializer):
@@ -28,19 +29,19 @@ class DivisionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Division
-        fields = ["id", "directorate", "directorate_name", "name", "slug"]
+        fields = "__all__"
 
 
 class RankSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rank
-        fields = ["id", "name"]
+        fields = "__all__"
 
 
 class RegionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Region
-        fields = ["id", "name"]
+        fields = "__all__"
 
 
 class RolSerializer(serializers.ModelSerializer):
@@ -48,121 +49,115 @@ class RolSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Rol
-        fields = [
-            "id", "employee", "employee_name",
-            "client", "order", "boss", "shop", "akt", "status",
-            "technics", "technics_edit", "material", "material_edit",
-        ]
+        fields = "__all__"
 
 
 class EmployeeSerializer(serializers.ModelSerializer):
-    full_name = serializers.CharField(read_only=True)
+    user_username = serializers.CharField(source="user.username", read_only=True)
     organization_name = serializers.CharField(source="organization.name", read_only=True)
     department_name = serializers.CharField(source="department.name", read_only=True)
     directorate_name = serializers.CharField(source="directorate.name", read_only=True)
     division_name = serializers.CharField(source="division.name", read_only=True)
     rank_name = serializers.CharField(source="rank.name", read_only=True)
     region_name = serializers.CharField(source="region.name", read_only=True)
-    username = serializers.CharField(source="user.username", read_only=True)
+    full_name = serializers.CharField(read_only=True)
 
     class Meta:
         model = Employee
-        fields = [
-            "id", "user", "username",
-            "last_name", "first_name", "father_name", "full_name",
-            "organization", "organization_name",
-            "department", "department_name",
-            "directorate", "directorate_name",
-            "division", "division_name",
-            "rank", "rank_name",
-            "region", "region_name",
-            "phone", "pinfl",
-            "date_creat", "date_edit",
-        ]
+        fields = "__all__"
+        read_only_fields = ("date_creat", "date_edit", "full_name")
+
+
+class GroupSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Group
+        fields = "__all__"
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    group_name = serializers.CharField(source="group.name", read_only=True)
+
     class Meta:
         model = Category
-        fields = ["id", "name", "slug"]
+        fields = "__all__"
 
 
 class TechnicsSerializer(serializers.ModelSerializer):
+    group_name = serializers.CharField(source="group.name", read_only=True)
     category_name = serializers.CharField(source="category.name", read_only=True)
     organization_name = serializers.CharField(source="organization.name", read_only=True)
     department_name = serializers.CharField(source="department.name", read_only=True)
     directorate_name = serializers.CharField(source="directorate.name", read_only=True)
     division_name = serializers.CharField(source="division.name", read_only=True)
     employee_name = serializers.CharField(source="employee.full_name", read_only=True)
+    qr_code_url = serializers.SerializerMethodField()
+    absolute_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Technics
-        fields = [
-            "id",
-            "category", "category_name",
-            "organization", "organization_name",
-            "department", "department_name",
-            "directorate", "directorate_name",
-            "division", "division_name",
-            "employee", "employee_name",
-            "status",
-            "name", "parametr", "inventory", "serial", "mac", "ip",
-            "price", "year", "is_active",
-            "date_creat", "date_edit",
-        ]
+        fields = "__all__"
+        read_only_fields = ("date_creat", "date_edit", "qr_code")
+
+    def get_qr_code_url(self, obj):
+        request = self.context.get("request")
+        if obj.qr_code and request:
+            return request.build_absolute_uri(obj.qr_code.url)
+        elif obj.qr_code:
+            return obj.qr_code.url
+        return None
+
+    def get_absolute_url(self, obj):
+        request = self.context.get("request")
+        if request:
+            return request.build_absolute_uri(obj.get_absolute_url())
+        return obj.get_absolute_url()
 
 
-class ExtraCategorySerializer(serializers.ModelSerializer):
+class StructureCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = StructureCategory
-        fields = ["id", "name", "slug"]
+        fields = "__all__"
 
 
-class ExtraTechnicsSerializer(serializers.ModelSerializer):
+class StructureSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source="category.name", read_only=True)
     organization_name = serializers.CharField(source="organization.name", read_only=True)
     technics_name = serializers.CharField(source="technics.name", read_only=True)
 
     class Meta:
         model = Structure
-        fields = [
-            "id",
-            "category", "category_name",
-            "organization", "organization_name",
-            "technics", "technics_name",
-            "status",
-            "name", "parametr", "inventory", "serial",
-            "price", "year", "is_active",
-            "date_creat", "date_edit",
-        ]
+        fields = "__all__"
+        read_only_fields = ("date_creat", "date_edit")
 
 
 class UnitSerializer(serializers.ModelSerializer):
     class Meta:
         model = Unit
-        fields = ["id", "name"]
+        fields = "__all__"
+
+
+class MaterialCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MaterialCategory
+        fields = "__all__"
 
 
 class MaterialSerializer(serializers.ModelSerializer):
+    organization_name = serializers.CharField(source="organization.name", read_only=True)
     employee_name = serializers.CharField(source="employee.full_name", read_only=True)
+    category_name = serializers.CharField(source="category.name", read_only=True)
     unit_name = serializers.CharField(source="unit.name", read_only=True)
 
     class Meta:
         model = Material
-        fields = [
-            "id",
-            "employee", "employee_name",
-            "unit", "unit_name",
-            "status",
-            "name", "number", "code", "price", "year",
-            "is_active", "date_creat", "date_edit",
-        ]
+        fields = "__all__"
+        read_only_fields = ("date_creat", "date_edit")
 
 
 class GoalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Goal
-        fields = ["id", "name"]
+        fields = "__all__"
 
 
 class OrderMaterialSerializer(serializers.ModelSerializer):
@@ -170,7 +165,7 @@ class OrderMaterialSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderMaterial
-        fields = ["id", "order", "material", "material_name", "number"]
+        fields = "__all__"
 
 
 class OrderSerializer(serializers.ModelSerializer):
@@ -182,57 +177,47 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = [
-            "id",
-            "sender", "sender_name",
-            "goal", "goal_name",
-            "body", "rating",
-            "receiver", "receiver_name",
-            "technics", "technics_name",
-            "status", "receiver_seen",
+        fields = "__all__"
+        read_only_fields = (
             "date_creat", "date_edit",
-            "date_accepted", "date_finished", "date_approved", "date_rejected",
-            "materials",
-        ]
+            "date_accepted", "date_finished", "date_approved", "date_rejected"
+        )
 
 
 class DeedSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source="sender.full_name", read_only=True)
     receiver_name = serializers.CharField(source="receiver.full_name", read_only=True)
     user_name = serializers.CharField(source="user.full_name", read_only=True)
+    file_url = serializers.SerializerMethodField()
 
     class Meta:
         model = Deed
-        fields = [
-            "id",
-            "sender", "sender_name",
-            "message_sender", "status_sender", "date_sender", "sender_seen",
-            "receiver", "receiver_name",
-            "message_receiver", "status_receiver", "date_receiver", "receiver_seen",
-            "user", "user_name",
-            "message_user", "body", "file_type", "file",
-            "date_creat", "date_edit",
-        ]
+        fields = "__all__"
+        read_only_fields = ("date_creat", "date_edit", "code")
+
+    def get_file_url(self, obj):
+        request = self.context.get("request")
+        if obj.file and request:
+            return request.build_absolute_uri(obj.file.url)
+        elif obj.file:
+            return obj.file.url
+        return None
 
 
 class DeedConsentSerializer(serializers.ModelSerializer):
-    deed_name = serializers.CharField(source="deed.__str__", read_only=True)
+    deed_code = serializers.CharField(source="deed.code", read_only=True)
     employee_name = serializers.CharField(source="employee.full_name", read_only=True)
 
     class Meta:
         model = DeedConsent
-        fields = [
-            "id", "deed", "deed_name",
-            "employee", "employee_name",
-            "message", "status",
-            "date_creat", "date_edit",
-        ]
+        fields = "__all__"
+        read_only_fields = ("date_creat", "date_edit")
 
 
 class ContractSerializer(serializers.ModelSerializer):
     class Meta:
         model = Contract
-        fields = ["id", "name", "unit", "price"]
+        fields = "__all__"
 
 
 class LiableSerializer(serializers.ModelSerializer):
@@ -242,9 +227,4 @@ class LiableSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Liable
-        fields = [
-            "id",
-            "employee", "employee_name",
-            "contract", "contract_name",
-            "category", "category_name",
-        ]
+        fields = "__all__"

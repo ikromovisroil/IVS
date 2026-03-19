@@ -928,6 +928,21 @@ def technics_update(request, pk):
     return redirect(back_url)
 
 
+from django.http import FileResponse, Http404
+@login_required
+def technics_download(request, pk):
+    tex = get_object_or_404(Technics, pk=pk, is_active=True)
+
+    if not tex.qr_code:
+        raise Http404("Fayl topilmadi")
+
+    return FileResponse(
+        tex.qr_code.open("rb"),
+        as_attachment=True,
+        filename=tex.qr_code.name.split("/")[-1]
+    )
+
+
 @never_cache
 @login_required
 @role_required("technics")
