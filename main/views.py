@@ -605,33 +605,33 @@ def barn_tex(request):
         status or category_id or group_id or name
     )
 
-    organizations = Organization.objects.only("id", "name").order_by("name")
-    groups = Group.objects.only("id", "name").order_by("name")
+    organizations = Organization.objects.only("id", "name")
+    groups = Group.objects.only("id", "name")
     technics_form = TechnicsForm()
 
     departments = Department.objects.none()
     if organization_id:
         departments = Department.objects.filter(
             organization_id=organization_id
-        ).only("id", "name").order_by("name")
+        ).only("id", "name")
 
     directorates = Directorate.objects.none()
     if department_id:
         directorates = Directorate.objects.filter(
             department_id=department_id
-        ).only("id", "name").order_by("name")
+        ).only("id", "name")
 
     divisions = Division.objects.none()
     if directorate_id:
         divisions = Division.objects.filter(
             directorate_id=directorate_id
-        ).only("id", "name").order_by("name")
+        ).only("id", "name")
 
     categories = Category.objects.none()
     if group_id:
         categories = Category.objects.filter(
             group_id=group_id
-        ).only("id", "name").order_by("name")
+        ).only("id", "name")
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -752,7 +752,6 @@ def barn_tex(request):
             Structure.objects
             .filter(organization_id=organization_id, status="free", is_active=True)
             .only("id", "name", "inventory", "serial")
-            .order_by("-id")
         )
 
     return render(request, "main/barn_tex.html", {
