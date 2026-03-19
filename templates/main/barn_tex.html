@@ -151,7 +151,7 @@
                   </h5>
                   {% if request.user.employee.rol.technics_edit %}
                   <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
-                    + Texnika qo'shish
+                    + Uskuna qo'shish
                   </button>
                   {% endif %}
                </div>
@@ -314,14 +314,29 @@
         <form class="modal-content" method="post" action="{% url 'technics_create' %}">
           {% csrf_token %}
           <div class="modal-header">
-            <h5 class="modal-title">Texnika qo‘shish</h5>
+            <h5 class="modal-title">Uskuna qo‘shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Turi</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="group" id="id_group" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for g in groups %}
+                    <option value="{{ g.id }}">{{ g.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
               <div class="col-md-8 col-lg-9">
-                {{ technics_form.category }}
+                <select name="category" id="id_category" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                </select>
               </div>
             </div>
 
@@ -525,7 +540,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Texnikani tahrirlash</h5>
+            <h5 class="modal-title">Uskunani tahrirlash</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -536,7 +551,7 @@
               <div class="col-md-8 col-lg-9">
                   <select name="category" class="form-select" required>
                     <option value="">— Tanlang —</option>
-                    {% for c in categories %}
+                    {% for c in tex.group.category_set.all %}
                       <option value="{{ c.id }}" {% if tex.category_id == c.id %}selected{% endif %}>
                         {{ c.name }}
                       </option>
@@ -635,7 +650,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Texnikani biriktirish</h5>
+            <h5 class="modal-title">Qurilmani biriktirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -643,7 +658,7 @@
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Texnikalar</label>
+                <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
                 <div class="col-md-8 col-lg-9">
                   <select name="extra_tex_id" class="form-select">
                      <option value="">— Tanlang —</option>
@@ -701,7 +716,7 @@
           {% csrf_token %}
 
           <div class="modal-header">
-            <h5 class="modal-title">Texnikani o'chirish</h5>
+            <h5 class="modal-title">Qurulma o'chirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
@@ -709,7 +724,7 @@
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Qo'shimcha texnikalar</label>
+                <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
                 <div class="col-md-8 col-lg-9">
                   <select name="extra_tex_id" class="form-select">
                      <option value="">— Tanlang —</option>
@@ -980,6 +995,93 @@
 
 </main>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+(function () {
+  const modalEl = document.getElementById("verticalycentered");
+  const url = "{% url 'ajax_load_categories' %}";
+
+  function initModalCategoryAjax() {
+    const $group = $("#id_group");
+    const $category = $("#id_category");
+
+    if (!$group.length || !$category.length) {
+      console.log("id_group yoki id_category topilmadi");
+      return;
+    }
+
+    // oldingi eventlarni tozalab, qayta ulaymiz
+    $group.off("change.modalCategory");
+
+    // select2 faqat bir marta ishga tushsin
+    if (!$group.hasClass("select2-hidden-accessible")) {
+      $group.select2({
+        width: "100%",
+        dropdownParent: $("#verticalycentered"),
+        placeholder: "Tanlang...",
+        allowClear: true
+      });
+    }
+
+    if (!$category.hasClass("select2-hidden-accessible")) {
+      $category.select2({
+        width: "100%",
+        dropdownParent: $("#verticalycentered"),
+        placeholder: "Tanlang...",
+        allowClear: true
+      });
+    }
+
+    $group.on("change.modalCategory", function () {
+      const groupId = $(this).val();
+
+      $category.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
+
+      if (!groupId) {
+        $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        return;
+      }
+
+      $.ajax({
+        url: url,
+        type: "GET",
+        data: { group: groupId },
+        success: function (data) {
+          $category.empty();
+          $category.append('<option value="">Tanlang...</option>');
+
+          $.each(data.results || [], function (_, item) {
+            $category.append(
+              $("<option>", {
+                value: item.id,
+                text: item.name
+              })
+            );
+          });
+
+          $category.val("").trigger("change");
+        },
+        error: function (xhr, status, error) {
+          console.log("Kategoriya yuklashda xato:", error);
+          $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        }
+      });
+    });
+  }
+
+  // modal ochilganda init qilinadi
+  if (modalEl) {
+    modalEl.addEventListener("shown.bs.modal", function () {
+      initModalCategoryAjax();
+    });
+  }
+
+  // sahifa yuklanganda ham init
+  $(document).ready(function () {
+    initModalCategoryAjax();
+  });
+})();
+</script>
 
 <script>
 /**

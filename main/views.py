@@ -673,7 +673,7 @@ def barn_tex(request):
     if status:
         base_qs = base_qs.filter(status=status)
     if group_id:
-        base_qs = base_qs.filter(category__group_id=group_id)   # ✅ group filter shu bo‘lishi kerak
+        base_qs = base_qs.filter(group_id=group_id)   # ✅ group filter shu bo‘lishi kerak
     if category_id:
         base_qs = base_qs.filter(category_id=category_id)
 
@@ -789,10 +789,9 @@ def technics_create(request):
     form = TechnicsForm(request.POST)
     if form.is_valid():
         form.save()
-        messages.success(request, "Texnika qo‘shildi")
+        messages.success(request, "Uskuna qo‘shildi")
     else:
-        messages.info(request, "Maʼlumotlarda xatolik bor")
-
+        messages.info(request, f"Xatolik: {form.errors}")
     return redirect(back_url)
 
 
@@ -812,17 +811,17 @@ def technics_delete(request):
     try:
         tex = Technics.objects.select_for_update().get(pk=int(tex_id))
     except (Technics.DoesNotExist, TypeError, ValueError):
-        messages.info(request, "Texnika topilmadi")
+        messages.info(request, "Uskuna topilmadi")
         return redirect(back_url)
 
     if not tex.is_active:
-        messages.info(request, "Texnika allaqachon o‘chirilgan")
+        messages.info(request, "Uskuna allaqachon o‘chirilgan")
         return redirect(back_url)
 
     tex.is_active = False
     tex.save(update_fields=["is_active"])
 
-    messages.success(request, "Texnika muvaffaqiyatli o‘chirildi")
+    messages.success(request, "Uskuna muvaffaqiyatli o‘chirildi")
     return redirect(back_url)
 
 
@@ -841,7 +840,7 @@ def technics_attach(request):
     emp_id = (request.POST.get("employee_id") or "").strip()
 
     if not tex_id.isdigit():
-        messages.error(request, "Texnika topilmadi")
+        messages.error(request, "Uskuna topilmadi")
         return redirect(back_url)
 
     # ✅ lock: parallel bosishlar muammo qilmasin
@@ -856,12 +855,12 @@ def technics_attach(request):
         tex.employee_id = emp.id
         tex.status = "active"
         tex.save(update_fields=["employee", "status", "date_edit"] if hasattr(tex, "date_edit") else ["employee", "status"])
-        messages.success(request, "Texnika xodimga biriktirildi")
+        messages.success(request, "Uskuna xodimga biriktirildi")
     else:
         tex.employee = None
         tex.status = "free"
         tex.save(update_fields=["employee", "status", "date_edit"] if hasattr(tex, "date_edit") else ["employee", "status"])
-        messages.success(request, "Texnika bo‘shatildi")
+        messages.success(request, "Uskuna bo‘shatildi")
 
     return redirect(back_url)
 
@@ -925,7 +924,7 @@ def technics_update(request, pk):
         "name", "parametr", "inventory", "serial", "mac", "ip", "year", "price"
     ])
 
-    messages.success(request, "Texnika tahrirlandi!")
+    messages.success(request, "Uskuna tahrirlandi!")
     return redirect(back_url)
 
 

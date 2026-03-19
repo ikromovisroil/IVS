@@ -29,11 +29,12 @@ class TechnicsForm(forms.ModelForm):
     class Meta:
         model = Technics
         fields = [
-            "category", "organization", "name",
+            "group", "category", "organization", "name",
             "parametr", "inventory", "serial",
             "mac", "ip", "year", "price"
         ]
         widgets = {
+            "group": forms.Select(attrs={"class": "form-select", "required": True}),
             "category": forms.Select(attrs={"class": "form-select", "required": True}),
             "organization": forms.Select(attrs={"class": "form-select", "required": True}),
 
