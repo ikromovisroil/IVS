@@ -1576,7 +1576,7 @@ def document_get(request):
 
     context = {
         "liable": liable,
-        "organizations": Organization.objects.only("id", "name", "slug"),
+        "organizations": Organization.objects.only("id", "name"),
         "emp_bos_sender": Employee.objects.filter(id__in=[3470,3469,3468]),
     }
     return render(request, "main/document.html", context)
