@@ -25,7 +25,7 @@
                   <form class="row g-2 mt-1" method="get">
                       <div class="col-md-3">
                           <label for="groups" class="form-label">Turi</label>
-                          <select id="groups" name="groups" class="form-select">
+                          <select id="groups" name="groups" class="form-select" required>
                               <option value="">Tanlang...</option>
                               {% for g in groups %}
                                 <option value="{{ g.id }}"
@@ -72,7 +72,7 @@
 
                       <div class="col-md-3">
                         <label for="organization" class="form-label">Tashkilot</label>
-                        <select id="organization" name="organization" class="form-select">
+                        <select id="organization" name="organization" class="form-select" required>
                           <option value="">Tanlang...</option>
                           {% for org in organizations %}
                             <option value="{{ org.id }}"
