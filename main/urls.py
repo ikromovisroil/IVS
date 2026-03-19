@@ -66,8 +66,9 @@ urlpatterns = [
     path("ajax/ajax_document/", ajax_document_preview, name="ajax_document_preview"),
     path("ajax/dep_signatory/", ajax_dep_signatory, name="ajax_dep_signatory"),
     path("ajax/dep_negotiator/", ajax_dep_negotiator, name="ajax_dep_negotiator"),
-    path("ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
+    path("ajax/ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
     path("ajax/search-tex/", ajax_search_tex, name="ajax_search_tex"),
+    path("ajax/load-categories/", ajax_load_categories, name="ajax_load_categories"),
 
     # DOCUMENT
     path('document/', document_get, name='document_get'),

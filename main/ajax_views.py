@@ -11,6 +11,18 @@ from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
 
+@never_cache
+@login_required
+def ajax_load_categories(request):
+    group_id = request.GET.get("group")
+    qs = Category.objects.none()
+
+    if group_id:
+        qs = Category.objects.filter(group_id=group_id).only("id", "name").order_by("name")
+
+    return JsonResponse({
+        "results": [{"id": c.id, "name": c.name} for c in qs]
+    })
 
 @never_cache
 @login_required

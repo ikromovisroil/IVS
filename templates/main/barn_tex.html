@@ -24,6 +24,53 @@
                 <div class="card-body">
                   <form class="row g-2 mt-1" method="get">
                       <div class="col-md-3">
+                          <label for="groups" class="form-label">Turi</label>
+                          <select id="groups" name="groups" class="form-select">
+                              <option value="">Tanlang...</option>
+                              {% for g in groups %}
+                                <option value="{{ g.id }}"
+                                  {% if request.GET.groups|stringformat:"s" == g.id|stringformat:"s" %}selected{% endif %}>
+                                  {{ g.name }}
+                                </option>
+                              {% endfor %}
+                          </select>
+                      </div>
+
+                      <div class="col-md-3">
+                          <label for="category" class="form-label">Kategoriya</label>
+                          <select id="category" name="category" class="form-select">
+                              <option value="">Tanlang...</option>
+                              {% for c in categories %}
+                                <option value="{{ c.id }}"
+                                  {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                                  {{ c.name }}
+                                </option>
+                              {% endfor %}
+                          </select>
+                      </div>
+
+                      <div class="col-md-3">
+                          <label for="status" class="form-label">Xolati</label>
+                          <select id="status" name="status" class="form-select">
+                              <option value="">Tanlang...</option>
+                              <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
+                              <option value="free" {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
+                              <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                              <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
+                          </select>
+                      </div>
+
+                      <div class="col-md-3">
+                      <label for="name" class="form-label">Name</label>
+                      <input id="name"
+                       type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{ request.GET.name|default:'' }}"
+                       placeholder="F.I.O. Texnika nomi, I/R, S/R, MAC ...">
+                    </div>
+
+                      <div class="col-md-3">
                         <label for="organization" class="form-label">Tashkilot</label>
                         <select id="organization" name="organization" class="form-select">
                           <option value="">Tanlang...</option>
@@ -74,40 +121,6 @@
                           {% endfor %}
                         </select>
                       </div>
-
-                    <div class="col-md-3">
-                      <label for="status" class="form-label">Xolati</label>
-                      <select id="status" name="status" class="form-select">
-                          <option value="">Tanlang...</option>
-                          <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
-                          <option value="free" {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
-                          <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
-                          <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
-                      </select>
-                    </div>
-
-                    <div class="col-md-3">
-                      <label for="category" class="form-label">Kategoriya</label>
-                      <select id="category" name="category" class="form-select">
-                          <option value="">Tanlang...</option>
-                          {% for c in categories %}
-                            <option value="{{ c.id }}"
-                              {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
-                              {{ c.name }}
-                            </option>
-                          {% endfor %}
-                      </select>
-                    </div>
-
-                    <div class="col-md-3">
-                      <label for="name" class="form-label">Name</label>
-                      <input id="name"
-                       type="text"
-                       name="name"
-                       class="form-control"
-                       value="{{ request.GET.name|default:'' }}"
-                       placeholder="F.I.O. Texnika nomi, I/R, S/R, MAC ...">
-                    </div>
 
                     <div class="col-md-3 d-flex align-items-end">
                       <button type="submit" class="btn btn-primary w-100">Qidirish</button>
@@ -1120,6 +1133,105 @@
   window.addEventListener("load", () => {
     closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
     document.activeElement && document.activeElement.blur();
+  });
+})();
+</script>
+
+<script>
+(() => {
+  const groupSel = document.getElementById("groups");
+  const categorySel = document.getElementById("category");
+  const URL_CATEGORIES = "{% url 'ajax_load_categories' %}";
+  const selectedCategory = "{{ request.GET.category|default:'' }}";
+
+  function isSelect2(el) {
+    return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible");
+  }
+
+  function refreshUI(el) {
+    if (isSelect2(el)) {
+      window.jQuery(el).trigger("change");
+    }
+  }
+
+  function closeSelect2(el) {
+    if (isSelect2(el)) {
+      try { window.jQuery(el).select2("close"); } catch (e) {}
+    }
+  }
+
+  function setLoading(selectEl, text = "Yuklanmoqda...") {
+    selectEl.innerHTML = `<option value="">${text}</option>`;
+    selectEl.disabled = true;
+    refreshUI(selectEl);
+    closeSelect2(selectEl);
+  }
+
+  function setEmpty(selectEl, text = "Tanlang...") {
+    selectEl.innerHTML = `<option value="">${text}</option>`;
+    selectEl.disabled = false;
+    refreshUI(selectEl);
+    closeSelect2(selectEl);
+  }
+
+  function fillOptions(selectEl, items, placeholder = "Tanlang...", selectedValue = "") {
+    let html = `<option value="">${placeholder}</option>`;
+
+    for (const item of items) {
+      const selected = String(item.id) === String(selectedValue) ? "selected" : "";
+      html += `<option value="${item.id}" ${selected}>${item.name}</option>`;
+    }
+
+    selectEl.innerHTML = html;
+    selectEl.disabled = false;
+    refreshUI(selectEl);
+    closeSelect2(selectEl);
+  }
+
+  async function getJSON(url) {
+    const res = await fetch(url, {
+      headers: { "X-Requested-With": "XMLHttpRequest" }
+    });
+
+    const ct = res.headers.get("content-type") || "";
+    if (!res.ok || !ct.includes("application/json")) {
+      return { results: [] };
+    }
+
+    return await res.json();
+  }
+
+  async function loadCategories(groupId, preselect = "") {
+    setEmpty(categorySel, "Tanlang...");
+
+    if (!groupId) return;
+
+    setLoading(categorySel);
+
+    const data = await getJSON(`${URL_CATEGORIES}?group=${encodeURIComponent(groupId)}`);
+    console.log("CATEGORY AJAX:", data); // debug uchun
+
+    fillOptions(categorySel, data.results || [], "Tanlang...", preselect);
+  }
+
+  function bindSelectEvents(el, cb) {
+    el?.addEventListener("change", cb);
+    if (window.jQuery) {
+      window.jQuery(el).on("select2:select select2:clear", cb);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    bindSelectEvents(groupSel, async () => {
+      await loadCategories((groupSel.value || "").trim());
+    });
+
+    (async () => {
+      const groupId = (groupSel?.value || "").trim();
+      if (groupId) {
+        await loadCategories(groupId, selectedCategory);
+      }
+    })();
   });
 })();
 </script>

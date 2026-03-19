@@ -592,36 +592,46 @@ def barn_tex(request):
     directorate_id  = to_int(request.GET.get("directorate"))
     division_id     = to_int(request.GET.get("division"))
     category_id     = to_int(request.GET.get("category"))
+    group_id        = to_int(request.GET.get("groups"))   # ✅ shu joy muhim
     status          = (request.GET.get("status") or "").strip() or None
     name            = (request.GET.get("name") or "").strip() or None
     page_number     = request.GET.get("page", 1)
 
-    # inputni haddan oshirmaslik (perf + xavfsizlik)
     if name:
         name = name[:120]
 
     has_filter = bool(
         organization_id or department_id or directorate_id or division_id or
-        status or category_id or name
+        status or category_id or group_id or name
     )
 
-    # Common data
-    organizations = Organization.objects.only("id", "name")
-    categories    = Category.objects.only("id", "name")
+    organizations = Organization.objects.only("id", "name").order_by("name")
+    groups = Group.objects.only("id", "name").order_by("name")
     technics_form = TechnicsForm()
 
-    # Cascading (agar siz buni AJAX bilan tortsangiz — xohlasangiz remove qiling)
     departments = Department.objects.none()
     if organization_id:
-        departments = Department.objects.filter(organization_id=organization_id).only("id", "name")
+        departments = Department.objects.filter(
+            organization_id=organization_id
+        ).only("id", "name").order_by("name")
 
     directorates = Directorate.objects.none()
     if department_id:
-        directorates = Directorate.objects.filter(department_id=department_id).only("id", "name")
+        directorates = Directorate.objects.filter(
+            department_id=department_id
+        ).only("id", "name").order_by("name")
 
     divisions = Division.objects.none()
     if directorate_id:
-        divisions = Division.objects.filter(directorate_id=directorate_id).only("id", "name")
+        divisions = Division.objects.filter(
+            directorate_id=directorate_id
+        ).only("id", "name").order_by("name")
+
+    categories = Category.objects.none()
+    if group_id:
+        categories = Category.objects.filter(
+            group_id=group_id
+        ).only("id", "name").order_by("name")
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -631,6 +641,7 @@ def barn_tex(request):
         empty_page = Paginator([], 50).get_page(page_number)
         return render(request, "main/barn_tex.html", {
             "organizations": organizations,
+            "groups": groups,
             "categories": categories,
             "technics_form": technics_form,
             "departments": departments,
@@ -640,6 +651,8 @@ def barn_tex(request):
             "selected_dep": department_id,
             "selected_dir": directorate_id,
             "selected_div": division_id,
+            "selected_group": group_id,
+            "selected_category": category_id,
             "page_obj": empty_page,
             "grouped_technics": [],
             "qs_params": qs_params,
@@ -647,7 +660,6 @@ def barn_tex(request):
             "total_count": 0,
         })
 
-    # ---------- base filtered queryset (HECH QACHON full loop qilmaymiz) ----------
     base_qs = Technics.objects.filter(is_active=True)
 
     if organization_id:
@@ -660,6 +672,8 @@ def barn_tex(request):
         base_qs = base_qs.filter(division_id=division_id)
     if status:
         base_qs = base_qs.filter(status=status)
+    if group_id:
+        base_qs = base_qs.filter(category__group_id=group_id)   # ✅ group filter shu bo‘lishi kerak
     if category_id:
         base_qs = base_qs.filter(category_id=category_id)
 
@@ -680,27 +694,27 @@ def barn_tex(request):
                 )
             base_qs = base_qs.filter(q)
 
-    # Umumiy texnika soni (kerak bo‘lsa)
     total_count = base_qs.count()
 
-    # ---------- 1) faqat employee_id larni topamiz (GROUP PAGINATION) ----------
     emp_ids_qs = (
         base_qs.order_by("employee_id")
         .values_list("employee_id", flat=True)
         .distinct()
     )
 
-    paginator = Paginator(emp_ids_qs, 50)  # 1 sahifada 50 ta xodim (group)
+    paginator = Paginator(emp_ids_qs, 50)
     page_obj = paginator.get_page(page_number)
 
-    page_emp_ids = list(page_obj.object_list)  # [1,2,3,None,...] bo‘lishi mumkin
+    page_emp_ids = list(page_obj.object_list)
     include_null = any(e is None for e in page_emp_ids)
     page_emp_ids_no_null = [e for e in page_emp_ids if e is not None]
 
-    # ---------- 2) faqat shu sahifadagi xodim texnikalari ----------
-    extratech_prefetch = Prefetch(
+    structure_prefetch = Prefetch(
         "structure_set",
-        queryset=Structure.objects.only("id", "name", "inventory", "serial").order_by("id")
+        queryset=Structure.objects.select_related("category").only(
+            "id", "name", "inventory", "serial", "parametr", "year", "price",
+            "category__id", "category__name"
+        ).order_by("id")
     )
 
     page_tech_qs = (
@@ -709,25 +723,29 @@ def barn_tex(request):
             Q(employee_id__in=page_emp_ids_no_null) |
             (Q(employee__isnull=True) if include_null else Q(pk__in=[]))
         )
-        .select_related("organization", "category", "employee")
-        .prefetch_related(extratech_prefetch)
+        .select_related(
+            "organization", "department", "directorate", "division", "category", "employee"
+        )
+        .prefetch_related(structure_prefetch)
         .only(
-            "id", "name", "inventory", "serial", "ip", "mac", "status",
+            "id", "name", "parametr", "inventory", "serial", "ip", "mac",
+            "status", "year", "price", "employee_id",
             "organization__id", "organization__name",
+            "department__id", "department__name",
+            "directorate__id", "directorate__name",
+            "division__id", "division__name",
             "category__id", "category__name",
             "employee__id", "employee__first_name", "employee__last_name", "employee__father_name",
         )
-        .order_by("employee")
+        .order_by("employee_id", "id")
     )
 
-    # ---------- 3) grouping (itertools.groupby) ----------
     grouped_technics = []
     for emp_id, items in groupby(page_tech_qs, key=lambda t: t.employee_id):
         items_list = list(items)
-        emp_obj = items_list[0].employee  # None bo‘lishi mumkin
+        emp_obj = items_list[0].employee
         grouped_technics.append((emp_obj, items_list))
 
-    # Extratex (organization bo‘yicha)
     extratex = Structure.objects.none()
     if organization_id:
         extratex = (
@@ -739,6 +757,7 @@ def barn_tex(request):
 
     return render(request, "main/barn_tex.html", {
         "organizations": organizations,
+        "groups": groups,
         "categories": categories,
         "technics_form": technics_form,
         "departments": departments,
@@ -748,11 +767,11 @@ def barn_tex(request):
         "selected_dep": department_id,
         "selected_dir": directorate_id,
         "selected_div": division_id,
-
+        "selected_group": group_id,
+        "selected_category": category_id,
         "page_obj": page_obj,
-        "grouped_technics": grouped_technics,  # [(emp, [tex...]), ...]
+        "grouped_technics": grouped_technics,
         "qs_params": qs_params,
-
         "extratex": extratex,
         "total_count": total_count,
     })
