@@ -7,7 +7,6 @@
 {% endblock title %}
 
 {% block css %}
-  {# Select2 CSS #}
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 {% endblock css %}
 
@@ -44,13 +43,13 @@
 
               <table class="table table-bordered table-hover">
                 <thead class="table-secondary">
-                <tr>
-                  <th>T/r</th>
-                  <th>Muallif</th>
-                  <th>Ariza Maqsadi</th>
-                  <th>Xolati</th>
-                  <th>Yuborilgan sana</th>
-                </tr>
+                  <tr>
+                    <th>T/r</th>
+                    <th>Muallif</th>
+                    <th>Ariza Maqsadi</th>
+                    <th>Xolati</th>
+                    <th>Yuborilgan sana</th>
+                  </tr>
                 </thead>
 
                 <tbody>
@@ -79,10 +78,9 @@
                         </span>
                       {% endif %}
 
-                      {# ===== MODAL ===== #}
                       <div class="modal fade" id="verticalmodal{{ o.id }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-xl">
-                            <form class="modal-content" action="{% url 'ordermaterial_post' %}" method="post">
+                          <form class="modal-content order-material-form" action="{% url 'ordermaterial_post' %}" method="post">
                             {% csrf_token %}
 
                             <div class="modal-header">
@@ -94,112 +92,133 @@
 
                               <div class="row g-2">
                                 <div class="col-6 text-muted">
-                                <i class="bi bi-info-circle me-1"></i> Ariza holati
+                                  <i class="bi bi-info-circle me-1"></i> Ariza holati
                                 </div>
                                 <div class="col-6">
-                                    <span class="badge
-                                        {% if o.status == 'viewed' %}bg-warning
-                                        {% elif o.status == 'accepted' %}bg-primary
-                                        {% elif o.status == 'finished' %}bg-info
-                                        {% elif o.status == 'approved' %}bg-success
-                                        {% elif o.status == 'rejected' %}bg-danger
-                                        {% else %}bg-secondary
-                                        {% endif %}">
-                                        {{ o.get_status_display }}
-                                    </span>
+                                  <span class="badge
+                                    {% if o.status == 'viewed' %}bg-warning
+                                    {% elif o.status == 'accepted' %}bg-primary
+                                    {% elif o.status == 'finished' %}bg-info
+                                    {% elif o.status == 'approved' %}bg-success
+                                    {% elif o.status == 'rejected' %}bg-danger
+                                    {% else %}bg-secondary
+                                    {% endif %}">
+                                    {{ o.get_status_display }}
+                                  </span>
                                 </div>
+
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-calendar-event me-1"></i> Ro‘yxatga olingan sana
+                                  <i class="bi bi-calendar-event me-1"></i> Ro‘yxatga olingan sana
                                 </div>
                                 <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-person me-1"></i> Ariza muallifi
+                                  <i class="bi bi-person me-1"></i> Ariza muallifi
                                 </div>
                                 <div class="col-6">{{ o.sender.full_name }} ({{ o.sender.rank.name|default:"" }})</div>
+
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
+                                  <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
                                 </div>
                                 <div class="col-6">{{ o.goal.name }}</div>
+
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-building me-1"></i> Tashkilot
+                                  <i class="bi bi-building me-1"></i> Tashkilot
                                 </div>
                                 <div class="col-6">
-                                    {% if o.sender.division %} {{ o.sender.division }}
-                                    {% elif o.sender.directorate %} {{ o.sender.directorate }}
-                                    {% elif o.sender.department %} {{ o.sender.department }}
-                                    {% else %} {{ o.sender.organization }}
-                                    {% endif %}
+                                  {% if o.sender.division %} {{ o.sender.division }}
+                                  {% elif o.sender.directorate %} {{ o.sender.directorate }}
+                                  {% elif o.sender.department %} {{ o.sender.department }}
+                                  {% else %} {{ o.sender.organization }}
+                                  {% endif %}
                                 </div>
+
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-telephone me-1"></i> Telefon raqami
+                                  <i class="bi bi-telephone me-1"></i> Telefon raqami
                                 </div>
                                 <div class="col-6">{{ o.sender.phone }}</div>
-                                {% if o.technics %}
+
+                                {% if o.body %}
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
+                                  <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
                                 </div>
                                 <div class="col-6">{{ o.body }}</div>
                                 {% endif %}
+
                                 {% if o.technics %}
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-cpu me-1"></i> Xizmat ko‘rsatilgan texnika
+                                  <i class="bi bi-cpu me-1"></i> Xizmat ko‘rsatilgan texnika
                                 </div>
                                 <div class="col-6">{{ o.technics.name }}</div>
                                 {% endif %}
+
                                 {% if o.receiver %}
                                 <hr class="my-3">
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-person-check me-1"></i> Mas’ul xodim
+                                  <i class="bi bi-person-check me-1"></i> Mas’ul xodim
                                 </div>
                                 <div class="col-6">{{ o.receiver.full_name }} ({{ o.receiver.rank.name|default:"" }})</div>
+
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-building me-1"></i> Tashkilot
+                                  <i class="bi bi-building me-1"></i> Tashkilot
                                 </div>
                                 <div class="col-6">
-                                    {% if o.sender.division %} {{ o.sender.division }}
-                                    {% elif o.sender.directorate %} {{ o.sender.directorate }}
-                                    {% elif o.sender.department %} {{ o.sender.department }}
-                                    {% else %} {{ o.sender.organization }}
-                                    {% endif %}
+                                  {% if o.sender.division %} {{ o.sender.division }}
+                                  {% elif o.sender.directorate %} {{ o.sender.directorate }}
+                                  {% elif o.sender.department %} {{ o.sender.department }}
+                                  {% else %} {{ o.sender.organization }}
+                                  {% endif %}
                                 </div>
+
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-telephone me-1"></i> Telefon raqami
+                                  <i class="bi bi-telephone me-1"></i> Telefon raqami
                                 </div>
                                 <div class="col-6">{{ o.receiver.phone }}</div>
                                 {% endif %}
                               </div>
 
                               <hr>
+
                               <div class="row g-2">
                                 <div class="row mb-12">
-                                    <h4>Texnikani tanlang</h4>
-                                    <div class="col-sm-12">
+                                  <h4>Texnikani tanlang</h4>
+                                  <div class="col-sm-12">
                                     <select
                                       class="form-select js-tech-select"
                                       name="technics_id"
+                                      data-order-id="{{ o.id }}"
                                       data-sender-id="{{ o.sender.id }}"
                                       data-selected-id="{{ o.technics_id|default:'' }}">
                                       <option value="">— Tanlang —</option>
                                     </select>
+                                    <div class="form-text text-danger js-tech-warning d-none">
+                                      Avval texnikani tanlang
+                                    </div>
                                   </div>
                                 </div>
-                              </div><hr>
+                              </div>
+
+                              <hr>
+
                               <div>
                                 <div class="d-flex justify-content-between align-items-center mb-2">
                                   <h4 class="m-0">Materiallar</h4>
-                                  <button type="button" class="btn btn-success" onclick="addMaterialRow({{ o.id }})">
+
+                                  <button type="button"
+                                          class="btn btn-success js-add-material-btn"
+                                          data-order-id="{{ o.id }}"
+                                          disabled>
                                     + Material qo‘shish
                                   </button>
                                 </div>
+
                                 <input type="hidden" name="order_id" value="{{ o.id }}">
-                                {# JS options manbai #}
+
                                 <template id="material-options-{{ o.id }}">
                                   <option value="">— Tanlang —</option>
                                   {% for mat in materials %}
                                     <option value="{{ mat.id }}">
-                                        F.I.O: {{ mat.employee.full_name }} —
-                                        Name: {{ mat.name }} |
-                                        Code: {{ mat.code }}
+                                      F.I.O: {{ mat.employee.full_name }} — Name: {{ mat.name }} | Code: {{ mat.code }}
                                     </option>
                                   {% endfor %}
                                 </template>
@@ -210,104 +229,98 @@
                                   <hr>
                                   <table class="table">
                                     <thead>
-                                    <tr>
-                                      <th>T/r</th>
-                                      <th>Material Name</th>
-                                      <th>Soni</th>
-                                      <th>Narxi</th>
-                                      <th>O'chirish</th>
-                                    </tr>
+                                      <tr>
+                                        <th>T/r</th>
+                                        <th>Material Name</th>
+                                        <th>Soni</th>
+                                        <th>Narxi</th>
+                                        <th>O'chirish</th>
+                                      </tr>
                                     </thead>
                                     <tbody>
-                                    {% for m in o.materials_all %}
-                                      <tr>
-                                        <th scope="row">{{ forloop.counter }}</th>
-                                        <td>{{ m.material.name }}</td>
-                                        <td>{{ m.number|intcomma }}</td>
-                                        <td>{{ m.material.price|intcomma }}</td>
-                                        <td><button type="button"
-                                                class="btn btn-danger btn-sm js-delete-om"
-                                                data-url="{% url 'ordermaterial_delete' m.id %}">
-                                          X
-                                        </button></td>
-                                      </tr>
-                                    {% endfor %}
+                                      {% for m in o.materials_all %}
+                                        <tr>
+                                          <th scope="row">{{ forloop.counter }}</th>
+                                          <td>{{ m.material.name }}</td>
+                                          <td>{{ m.number|intcomma }}</td>
+                                          <td>{{ m.material.price|intcomma }}</td>
+                                          <td>
+                                            <button type="button"
+                                                    class="btn btn-danger btn-sm js-delete-om"
+                                                    data-url="{% url 'ordermaterial_delete' m.id %}">
+                                              X
+                                            </button>
+                                          </td>
+                                        </tr>
+                                      {% endfor %}
                                     </tbody>
                                   </table>
                                 {% endif %}
                               </div>
+
                               <hr>
-                                <div class="row text-center g-3">
-                                    {% if o.date_creat %}
-                                    <div class="col-md-4 col-lg-3">
-                                        <div class="border rounded p-2 h-100">
-                                            <i class="bi bi-plus-circle text-warning fs-2"></i>
-                                            <div class="small fw-semibold mt-1">
-                                                {{ o.date_creat|date:"d.m.Y, H:i" }}
-                                            </div>
-                                            <div class="text-muted">
-                                                Ariza yaratildi
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
 
-                                    {% if o.date_accepted %}
-                                    <div class="col-md-4 col-lg-3">
-                                        <div class="border rounded p-2 h-100">
-                                            <i class="bi bi-check2-circle text-primary fs-2"></i>
-                                            <div class="small fw-semibold mt-1">
-                                                {{ o.date_accepted|date:"d.m.Y, H:i" }}
-                                            </div>
-                                            <div class="text-muted">
-                                                Qabul qilindi
-                                            </div>
-                                        </div>
+                              <div class="row text-center g-3">
+                                {% if o.date_creat %}
+                                <div class="col-md-4 col-lg-3">
+                                  <div class="border rounded p-2 h-100">
+                                    <i class="bi bi-plus-circle text-warning fs-2"></i>
+                                    <div class="small fw-semibold mt-1">
+                                      {{ o.date_creat|date:"d.m.Y, H:i" }}
                                     </div>
-                                    {% endif %}
-
-                                    {% if o.date_finished %}
-                                    <div class="col-md-4 col-lg-3">
-                                        <div class="border rounded p-2 h-100">
-                                            <i class="bi bi-flag text-info fs-2"></i>
-                                            <div class="small fw-semibold mt-1">
-                                                {{ o.date_finished|date:"d.m.Y, H:i" }}
-                                            </div>
-                                            <div class="text-muted">
-                                                Yakunlandi
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_approved %}
-                                    <div class="col-md-4 col-lg-3">
-                                        <div class="border rounded p-2 h-100">
-                                            <i class="bi bi-patch-check text-success fs-2"></i>
-                                            <div class="small fw-semibold mt-1">
-                                                {{ o.date_approved|date:"d.m.Y, H:i" }}
-                                            </div>
-                                            <div class="text-muted">
-                                                Tasdiqlandi
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_rejected %}
-                                    <div class="col-md-4 col-lg-3">
-                                        <div class="border rounded p-2 h-100">
-                                            <i class="bi bi-x-circle text-danger fs-2"></i>
-                                            <div class="small fw-semibold mt-1">
-                                                {{ o.date_rejected|date:"d.m.Y, H:i" }}
-                                            </div>
-                                            <div class="text-muted">
-                                                Rad etildi
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
+                                    <div class="text-muted">Ariza yaratildi</div>
+                                  </div>
                                 </div>
+                                {% endif %}
+
+                                {% if o.date_accepted %}
+                                <div class="col-md-4 col-lg-3">
+                                  <div class="border rounded p-2 h-100">
+                                    <i class="bi bi-check2-circle text-primary fs-2"></i>
+                                    <div class="small fw-semibold mt-1">
+                                      {{ o.date_accepted|date:"d.m.Y, H:i" }}
+                                    </div>
+                                    <div class="text-muted">Qabul qilindi</div>
+                                  </div>
+                                </div>
+                                {% endif %}
+
+                                {% if o.date_finished %}
+                                <div class="col-md-4 col-lg-3">
+                                  <div class="border rounded p-2 h-100">
+                                    <i class="bi bi-flag text-info fs-2"></i>
+                                    <div class="small fw-semibold mt-1">
+                                      {{ o.date_finished|date:"d.m.Y, H:i" }}
+                                    </div>
+                                    <div class="text-muted">Yakunlandi</div>
+                                  </div>
+                                </div>
+                                {% endif %}
+
+                                {% if o.date_approved %}
+                                <div class="col-md-4 col-lg-3">
+                                  <div class="border rounded p-2 h-100">
+                                    <i class="bi bi-patch-check text-success fs-2"></i>
+                                    <div class="small fw-semibold mt-1">
+                                      {{ o.date_approved|date:"d.m.Y, H:i" }}
+                                    </div>
+                                    <div class="text-muted">Tasdiqlandi</div>
+                                  </div>
+                                </div>
+                                {% endif %}
+
+                                {% if o.date_rejected %}
+                                <div class="col-md-4 col-lg-3">
+                                  <div class="border rounded p-2 h-100">
+                                    <i class="bi bi-x-circle text-danger fs-2"></i>
+                                    <div class="small fw-semibold mt-1">
+                                      {{ o.date_rejected|date:"d.m.Y, H:i" }}
+                                    </div>
+                                    <div class="text-muted">Rad etildi</div>
+                                  </div>
+                                </div>
+                                {% endif %}
+                              </div>
 
                             </div>
 
@@ -316,7 +329,7 @@
                                 Etiborsiz qoldirish
                               </button>
                               <button type="submit" class="btn btn-primary"
-                              onclick="return confirm('Yakunlashni tasdiqlang?')">
+                                      onclick="return confirm('Yakunlashni tasdiqlang?')">
                                 Yakunlash
                               </button>
                             </div>
@@ -324,7 +337,6 @@
                           </form>
                         </div>
                       </div>
-                      {# ===== /MODAL ===== #}
                     </td>
 
                     <td>{{ o.date_creat|date:"d-m-Y H:i" }}</td>
@@ -333,7 +345,6 @@
                 </tbody>
               </table>
 
-              {# ===== PAGINATION ===== #}
               {% if page_obj.paginator.num_pages > 1 %}
                 <nav aria-label="Order pagination" class="mt-3">
                   <ul class="pagination justify-content-center">
@@ -365,10 +376,8 @@
                   </ul>
                 </nav>
               {% endif %}
-              {# ===== /PAGINATION ===== #}
 
-            </div><!-- End tab-content -->
-
+            </div>
           </div>
         </div>
 
@@ -376,39 +385,110 @@
     </div>
   </section>
 </main>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 <script>
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener("DOMContentLoaded", function () {
+  const TECH_URL = "{% url 'ajax_sender_technics' %}";
 
   function initSelect2($selectElem, orderId) {
+    if ($selectElem.hasClass("select2-hidden-accessible")) {
+      $selectElem.select2("destroy");
+    }
+
     $selectElem.select2({
       dropdownParent: $("#verticalmodal" + orderId),
-      width: "100%",
+      width: "100%"
     });
   }
 
-  // ✅ Modal ochilganda ichidagi selectlarni init qilamiz
-  $(document).on("shown.bs.modal", ".modal", function () {
-    const modalId = $(this).attr("id");              // verticalmodal12
-    const orderId = modalId.replace("verticalmodal", "");
+  function setAddButtonState(orderId, enabled) {
+    const $modal = $("#verticalmodal" + orderId);
+    const $btn = $modal.find(".js-add-material-btn");
 
-    // Tech select
-    const $tech = $(this).find(".js-tech-select");
-    if ($tech.length && !$tech.hasClass("select2-hidden-accessible")) {
-      initSelect2($tech, orderId);
+    $btn.prop("disabled", !enabled);
+  }
+
+  function toggleTechWarning(orderId, show) {
+    const $modal = $("#verticalmodal" + orderId);
+    const $warning = $modal.find(".js-tech-warning");
+
+    if (show) {
+      $warning.removeClass("d-none");
+    } else {
+      $warning.addClass("d-none");
+    }
+  }
+
+  function getTechValue(orderId) {
+    const $modal = $("#verticalmodal" + orderId);
+    return $modal.find(".js-tech-select").val();
+  }
+
+  function clearMaterials(orderId) {
+    $("#materials-container-" + orderId).html("");
+  }
+
+  function updateButtonByTech(orderId) {
+    const techVal = getTechValue(orderId);
+
+    if (techVal) {
+      setAddButtonState(orderId, true);
+      toggleTechWarning(orderId, false);
+    } else {
+      setAddButtonState(orderId, false);
+      clearMaterials(orderId);
+    }
+  }
+
+  function loadTechnics($selectElem, senderId, selectedId, orderId) {
+    if (!senderId) {
+      $selectElem.html('<option value="">— Tanlang —</option>');
+      setAddButtonState(orderId, false);
+      return;
     }
 
-    // Material selectlar (agar oldin qo‘shilgan bo‘lsa)
-    $(this).find(".js-material-select").each(function () {
-      const $mat = $(this);
-      if (!$mat.hasClass("select2-hidden-accessible")) {
-        initSelect2($mat, orderId);
+    $selectElem.prop("disabled", true);
+    $selectElem.html('<option value="">Yuklanmoqda...</option>');
+
+    $.ajax({
+      url: TECH_URL,
+      type: "GET",
+      data: { sender_id: senderId },
+      success: function (resp) {
+        let html = '<option value="">— Tanlang —</option>';
+
+        if (resp.results && resp.results.length) {
+          resp.results.forEach(function (item) {
+            const selected = String(selectedId) === String(item.id) ? "selected" : "";
+            html += `<option value="${item.id}" ${selected}>${item.text}</option>`;
+          });
+        }
+
+        $selectElem.html(html);
+        $selectElem.prop("disabled", false);
+
+        initSelect2($selectElem, orderId);
+        updateButtonByTech(orderId);
+      },
+      error: function () {
+        $selectElem.html('<option value="">Xatolik yuz berdi</option>');
+        $selectElem.prop("disabled", false);
+        setAddButtonState(orderId, false);
       }
     });
-  });
+  }
 
-  // ✅ Material qator qo‘shish
-  window.addMaterialRow = function(orderId) {
+  window.addMaterialRow = function (orderId) {
+    const techVal = getTechValue(orderId);
+
+    if (!techVal) {
+      toggleTechWarning(orderId, true);
+      alert("Avval texnikani tanlang!");
+      return;
+    }
+
     let tpl = document.querySelector("#material-options-" + orderId);
     let optionsHtml = tpl ? tpl.innerHTML : '<option value="">— Tanlang —</option>';
 
@@ -420,7 +500,7 @@ document.addEventListener("DOMContentLoaded", function() {
           </select>
         </div>
         <div class="col-3">
-          <input type="number" class="form-control" name="number[]" value="1" min="1">
+          <input type="number" class="form-control" name="number[]" value="1" min="1" required>
         </div>
         <div class="col-2 text-end">
           <button type="button" class="btn btn-danger w-100 remove-btn">X</button>
@@ -434,20 +514,58 @@ document.addEventListener("DOMContentLoaded", function() {
     initSelect2($newSelect, orderId);
   };
 
+  $(document).on("shown.bs.modal", ".modal", function () {
+    const modalId = $(this).attr("id");
+    const orderId = modalId.replace("verticalmodal", "");
+
+    const $tech = $(this).find(".js-tech-select");
+    const senderId = $tech.data("sender-id");
+    const selectedId = $tech.data("selected-id");
+
+    setAddButtonState(orderId, false);
+    toggleTechWarning(orderId, false);
+
+    loadTechnics($tech, senderId, selectedId, orderId);
+
+    $(this).find(".js-material-select").each(function () {
+      initSelect2($(this), orderId);
+    });
+  });
+
+  $(document).on("change", ".js-tech-select", function () {
+    const orderId = $(this).data("order-id");
+    toggleTechWarning(orderId, false);
+    updateButtonByTech(orderId);
+  });
+
+  $(document).on("click", ".js-add-material-btn", function () {
+    const orderId = $(this).data("order-id");
+    addMaterialRow(orderId);
+  });
+
   $(document).on("click", ".remove-btn", function () {
     $(this).closest(".material-row").remove();
   });
 
+  $(document).on("submit", ".order-material-form", function (e) {
+    const $form = $(this);
+    const $tech = $form.find(".js-tech-select");
+    const orderId = $tech.data("order-id");
+    const techVal = $tech.val();
+
+    if (!techVal) {
+      e.preventDefault();
+      toggleTechWarning(orderId, true);
+      alert("Avval texnikani tanlang!");
+      return false;
+    }
+  });
 });
 </script>
+
 <script>
 $(function () {
-
-  // =========================
-  // Materialni AJAX bilan o‘chirish
-  // =========================
   $(document).on("click", ".js-delete-om", function () {
-
     const $btn = $(this);
     const url = $btn.data("url");
 
@@ -458,9 +576,7 @@ $(function () {
 
     if (!confirm("Biriktirilgan materialni o‘chirasizmi?")) return;
 
-    const csrf = $btn.closest("form")
-                     .find('input[name="csrfmiddlewaretoken"]')
-                     .val();
+    const csrf = $btn.closest("form").find('input[name="csrfmiddlewaretoken"]').val();
 
     $btn.prop("disabled", true).text("...");
 
@@ -477,111 +593,8 @@ $(function () {
         $btn.prop("disabled", false).text("X");
       }
     });
-
   });
-
 });
 </script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
 
-  const TECH_URL = "{% url 'ajax_sender_technics' %}";
-
-  function initSelect2($selectElem, orderId) {
-    $selectElem.select2({
-      dropdownParent: $("#verticalmodal" + orderId),
-      width: "100%",
-    });
-  }
-
-  function loadTechnics($selectElem, senderId, selectedId, orderId) {
-    if (!senderId) {
-      $selectElem.html('<option value="">— Tanlang —</option>');
-      return;
-    }
-
-    $selectElem.prop("disabled", true);
-    $selectElem.html('<option value="">Yuklanmoqda...</option>');
-
-    $.ajax({
-      url: TECH_URL,
-      type: "GET",
-      data: { sender_id: senderId },
-      success: function(resp) {
-        let html = '<option value="">— Tanlang —</option>';
-
-        if (resp.results && resp.results.length) {
-          resp.results.forEach(function(item) {
-            const selected = String(selectedId) === String(item.id) ? "selected" : "";
-            html += `<option value="${item.id}" ${selected}>${item.text}</option>`;
-          });
-        }
-
-        $selectElem.html(html);
-        $selectElem.prop("disabled", false);
-
-        if ($selectElem.hasClass("select2-hidden-accessible")) {
-          $selectElem.trigger("change.select2");
-        } else {
-          initSelect2($selectElem, orderId);
-        }
-      },
-      error: function() {
-        $selectElem.html('<option value="">Xatolik yuz berdi</option>');
-        $selectElem.prop("disabled", false);
-      }
-    });
-  }
-
-  $(document).on("shown.bs.modal", ".modal", function () {
-    const modalId = $(this).attr("id");
-    const orderId = modalId.replace("verticalmodal", "");
-
-    const $tech = $(this).find(".js-tech-select");
-    if ($tech.length) {
-      const senderId = $tech.data("sender-id");
-      const selectedId = $tech.data("selected-id");
-      loadTechnics($tech, senderId, selectedId, orderId);
-    }
-
-    $(this).find(".js-material-select").each(function () {
-      const $mat = $(this);
-      if (!$mat.hasClass("select2-hidden-accessible")) {
-        initSelect2($mat, orderId);
-      }
-    });
-  });
-
-  window.addMaterialRow = function(orderId) {
-    let tpl = document.querySelector("#material-options-" + orderId);
-    let optionsHtml = tpl ? tpl.innerHTML : '<option value="">— Tanlang —</option>';
-
-    let $row = $(`
-      <div class="row align-items-center mb-2 material-row">
-        <div class="col-7">
-          <select class="form-select js-material-select" name="material_id[]">
-            ${optionsHtml}
-          </select>
-        </div>
-        <div class="col-3">
-          <input type="number" class="form-control" name="number[]" value="1" min="1">
-        </div>
-        <div class="col-2 text-end">
-          <button type="button" class="btn btn-danger w-100 remove-btn">X</button>
-        </div>
-      </div>
-    `);
-
-    $("#materials-container-" + orderId).append($row);
-
-    let $newSelect = $row.find(".js-material-select");
-    initSelect2($newSelect, orderId);
-  };
-
-  $(document).on("click", ".remove-btn", function () {
-    $(this).closest(".material-row").remove();
-  });
-
-});
-</script>
 {% endblock %}
