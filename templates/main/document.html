@@ -194,11 +194,11 @@
       <tr>
         <td style="border:1px solid #fff;text-align:center;">
           <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi <span class="dep_name_text">Davlat byudjeti siyosati departamenti</span></b><br><br>
-          <b>Sh.Muxamedov</b>
+          <b class="sender_name">__</b>
         </td>
         <td style="border:1px solid #fff;text-align:center;">
-          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.v.b.</b><br><br>
-          <b>F.Xujamqulov</b>
+          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.b.</b><br><br>
+          <b class="receiver_name">__</b>
         </td>
       </tr>
     </tbody>
@@ -505,6 +505,23 @@
       setInEditor('#date_contract', contractText);
     }
 
+    function applySenderToEditor() {
+      let senderText = $('#sender option:selected').text() || '';
+      if (!senderText || senderText === 'Tanlang...') senderText = '__';
+      setAllInEditor('.sender_name', senderText);
+    }
+
+    function applyReceiverToEditor() {
+      let receiverText = $('#receiver option:selected').text() || '';
+      if (!receiverText || receiverText === 'Tanlang...') receiverText = '__';
+      setAllInEditor('.receiver_name', receiverText);
+    }
+
+    function applySenderReceiver() {
+      applySenderToEditor();
+      applyReceiverToEditor();
+    }
+
     function syncEditorTexts() {
       const orgText = $('#organization option:selected').text() || '';
       const depText = $('#department option:selected').text() || '';
@@ -516,6 +533,7 @@
       applyDepToEditor(depText, orgText);
       applyChorakToEditor(chorak);
       applyContractToEditor(contractText);
+      applySenderReceiver();
     }
 
     function loadDepartments(orgId, selectedDepId = null) {
@@ -529,6 +547,7 @@
 
       if (!orgId) {
         $dep.html('<option value="">Tanlang...</option>').val('').trigger('change');
+        applyReceiverToEditor();
         return;
       }
 
@@ -582,9 +601,11 @@
       const orgId = $('#organization').val();
 
       $receiver.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+      applyReceiverToEditor();
 
       if (!orgId && !depId) {
         $receiver.html('<option value="">Tanlang...</option>').trigger('change');
+        applyReceiverToEditor();
         return;
       }
 
@@ -599,10 +620,12 @@
         data: payload,
         success: function (list) {
           fillEmployeeSelect($receiver, list, selectedId, true, false);
+          applyReceiverToEditor();
         },
         error: function (xhr) {
           console.log('receiver ajax error:', xhr.status, xhr.responseText);
           $receiver.html('<option value="">Xatolik</option>').trigger('change');
+          applyReceiverToEditor();
         }
       });
     }
@@ -794,6 +817,14 @@
       syncEditorTexts();
     });
 
+    $('#sender').on('change', function () {
+      applySenderToEditor();
+    });
+
+    $('#receiver').on('change', function () {
+      applyReceiverToEditor();
+    });
+
     $('#btnSearch').on('click', function (e) {
       e.preventDefault();
       loadTechnicsToEditor($('#department').val());
@@ -807,6 +838,7 @@
 
     waitEditorReady(function () {
       syncEditorTexts();
+      applySenderReceiver();
     });
 
     const initialOrg = '{{ selected_org|default:"" }}';
@@ -825,6 +857,10 @@
         }
       }, 100);
     }
+
+    setTimeout(function () {
+      applySenderReceiver();
+    }, 500);
   });
 })();
 </script>
