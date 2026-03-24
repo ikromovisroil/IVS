@@ -194,11 +194,11 @@
       <tr>
         <td style="border:1px solid #fff;text-align:center;">
           <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi <span class="dep_name_text">Davlat byudjeti siyosati departamenti</span></b><br><br>
-          <b class="sender_name">__</b>
+          <b class="receiver_name">__</b>
         </td>
         <td style="border:1px solid #fff;text-align:center;">
           <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.b.</b><br><br>
-          <b class="receiver_name">__</b>
+          <b class="sender_name">__</b>
         </td>
       </tr>
     </tbody>
@@ -587,7 +587,9 @@
         const idStr = String(emp.id);
         const selectedSingle = selectedId && String(selectedId) === idStr;
         const selectedKeep = keepSelected && currentSelected.includes(idStr);
-        const label = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+
+        // ❌ rank olib tashlandi
+        const label = emp.full_name;
 
         html += `<option value="${esc(emp.id)}" ${(selectedSingle || selectedKeep) ? 'selected' : ''}>${esc(label)}</option>`;
       });
