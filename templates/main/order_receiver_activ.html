@@ -393,6 +393,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const TECH_URL = "{% url 'ajax_sender_technics' %}";
 
   function initSelect2($selectElem, orderId) {
+    if (!$selectElem.length) return;
+
     if ($selectElem.hasClass("select2-hidden-accessible")) {
       $selectElem.select2("destroy");
     }
@@ -403,16 +405,54 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function setAddButtonState(orderId, enabled) {
-    const $modal = $("#verticalmodal" + orderId);
-    const $btn = $modal.find(".js-add-material-btn");
-
-    $btn.prop("disabled", !enabled);
+  function getModal(orderId) {
+    return $("#verticalmodal" + orderId);
   }
 
-  function toggleTechWarning(orderId, show) {
-    const $modal = $("#verticalmodal" + orderId);
-    const $warning = $modal.find(".js-tech-warning");
+  function getTechSelect(orderId) {
+    return getModal(orderId).find(".js-tech-select");
+  }
+
+  function getAddBtn(orderId) {
+    return getModal(orderId).find(".js-add-material-btn");
+  }
+
+  function getWarning(orderId) {
+    return getModal(orderId).find(".js-tech-warning");
+  }
+
+  function getContainer(orderId) {
+    return $("#materials-container-" + orderId);
+  }
+
+  function getTechValue(orderId) {
+    return getTechSelect(orderId).val();
+  }
+
+  function hasAnyMaterialRow(orderId) {
+    return getContainer(orderId).find(".material-row").length > 0;
+  }
+
+  function hasSelectedMaterial(orderId) {
+    let found = false;
+
+    getContainer(orderId).find('select[name="material_id[]"]').each(function () {
+      if ($(this).val()) {
+        found = true;
+        return false;
+      }
+    });
+
+    return found;
+  }
+
+  function toggleTechWarning(orderId, show, message) {
+    const $warning = getWarning(orderId);
+    if (!$warning.length) return;
+
+    if (message) {
+      $warning.text(message);
+    }
 
     if (show) {
       $warning.removeClass("d-none");
@@ -421,16 +461,17 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function getTechValue(orderId) {
-    const $modal = $("#verticalmodal" + orderId);
-    return $modal.find(".js-tech-select").val();
+  function setAddButtonState(orderId, enabled) {
+    const $btn = getAddBtn(orderId);
+    if (!$btn.length) return;
+    $btn.prop("disabled", !enabled);
   }
 
   function clearMaterials(orderId) {
-    $("#materials-container-" + orderId).html("");
+    getContainer(orderId).html("");
   }
 
-  function updateButtonByTech(orderId) {
+  function updateAddButtonState(orderId) {
     const techVal = getTechValue(orderId);
 
     if (techVal) {
@@ -438,14 +479,14 @@ document.addEventListener("DOMContentLoaded", function () {
       toggleTechWarning(orderId, false);
     } else {
       setAddButtonState(orderId, false);
-      clearMaterials(orderId);
     }
   }
 
   function loadTechnics($selectElem, senderId, selectedId, orderId) {
     if (!senderId) {
       $selectElem.html('<option value="">— Tanlang —</option>');
-      setAddButtonState(orderId, false);
+      $selectElem.prop("disabled", false);
+      updateAddButtonState(orderId);
       return;
     }
 
@@ -470,7 +511,7 @@ document.addEventListener("DOMContentLoaded", function () {
         $selectElem.prop("disabled", false);
 
         initSelect2($selectElem, orderId);
-        updateButtonByTech(orderId);
+        updateAddButtonState(orderId);
       },
       error: function () {
         $selectElem.html('<option value="">Xatolik yuz berdi</option>');
@@ -484,15 +525,15 @@ document.addEventListener("DOMContentLoaded", function () {
     const techVal = getTechValue(orderId);
 
     if (!techVal) {
-      toggleTechWarning(orderId, true);
-      alert("Avval texnikani tanlang!");
+      toggleTechWarning(orderId, true, "Material qo‘shish uchun avval texnikani tanlang");
+      alert("Material qo‘shish uchun avval texnikani tanlang!");
       return;
     }
 
-    let tpl = document.querySelector("#material-options-" + orderId);
-    let optionsHtml = tpl ? tpl.innerHTML : '<option value="">— Tanlang —</option>';
+    const tpl = document.querySelector("#material-options-" + orderId);
+    const optionsHtml = tpl ? tpl.innerHTML : '<option value="">— Tanlang —</option>';
 
-    let $row = $(`
+    const $row = $(`
       <div class="row align-items-center mb-2 material-row">
         <div class="col-7">
           <select class="form-select js-material-select" name="material_id[]">
@@ -508,17 +549,23 @@ document.addEventListener("DOMContentLoaded", function () {
       </div>
     `);
 
-    $("#materials-container-" + orderId).append($row);
+    getContainer(orderId).append($row);
 
-    let $newSelect = $row.find(".js-material-select");
+    const $newSelect = $row.find(".js-material-select");
     initSelect2($newSelect, orderId);
+
+    toggleTechWarning(orderId, false);
   };
 
   $(document).on("shown.bs.modal", ".modal", function () {
     const modalId = $(this).attr("id");
-    const orderId = modalId.replace("verticalmodal", "");
+    if (!modalId || !modalId.startsWith("verticalmodal")) return;
 
+    const orderId = modalId.replace("verticalmodal", "");
     const $tech = $(this).find(".js-tech-select");
+
+    if (!$tech.length) return;
+
     const senderId = $tech.data("sender-id");
     const selectedId = $tech.data("selected-id");
 
@@ -534,8 +581,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
   $(document).on("change", ".js-tech-select", function () {
     const orderId = $(this).data("order-id");
-    toggleTechWarning(orderId, false);
-    updateButtonByTech(orderId);
+    const techVal = $(this).val();
+
+    if (techVal) {
+      setAddButtonState(orderId, true);
+      toggleTechWarning(orderId, false);
+      return;
+    }
+
+    setAddButtonState(orderId, false);
+
+    if (hasAnyMaterialRow(orderId) || hasSelectedMaterial(orderId)) {
+      toggleTechWarning(orderId, true, "Materiallar bilan ishlash uchun texnika tanlanishi kerak");
+    } else {
+      toggleTechWarning(orderId, false);
+    }
   });
 
   $(document).on("click", ".js-add-material-btn", function () {
@@ -544,7 +604,27 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   $(document).on("click", ".remove-btn", function () {
-    $(this).closest(".material-row").remove();
+    const $row = $(this).closest(".material-row");
+    const $modal = $(this).closest(".modal");
+    const orderId = ($modal.attr("id") || "").replace("verticalmodal", "");
+
+    $row.remove();
+
+    if (!hasAnyMaterialRow(orderId)) {
+      toggleTechWarning(orderId, false);
+    }
+  });
+
+  $(document).on("change", 'select[name="material_id[]"]', function () {
+    const $modal = $(this).closest(".modal");
+    const orderId = ($modal.attr("id") || "").replace("verticalmodal", "");
+    const techVal = getTechValue(orderId);
+
+    if ($(this).val() && !techVal) {
+      toggleTechWarning(orderId, true, "Material tanlash uchun avval texnikani tanlang");
+    } else if (techVal) {
+      toggleTechWarning(orderId, false);
+    }
   });
 
   $(document).on("submit", ".order-material-form", function (e) {
@@ -553,18 +633,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const orderId = $tech.data("order-id");
     const techVal = $tech.val();
 
-    if (!techVal) {
+    let hasMaterial = false;
+    $form.find('select[name="material_id[]"]').each(function () {
+      if ($(this).val()) {
+        hasMaterial = true;
+        return false;
+      }
+    });
+
+    if (hasMaterial && !techVal) {
       e.preventDefault();
-      toggleTechWarning(orderId, true);
-      alert("Avval texnikani tanlang!");
+      toggleTechWarning(orderId, true, "Material qo‘shish uchun avval texnikani tanlang");
+      alert("Material qo‘shish uchun avval texnikani tanlang!");
       return false;
     }
   });
-});
-</script>
 
-<script>
-$(function () {
+  // =========================
+  // Materialni AJAX bilan o‘chirish
+  // =========================
   $(document).on("click", ".js-delete-om", function () {
     const $btn = $(this);
     const url = $btn.data("url");
