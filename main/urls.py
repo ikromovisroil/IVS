@@ -87,6 +87,7 @@ urlpatterns = [
     path("ajax/ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
     path("ajax/search-tex/", ajax_search_tex, name="ajax_search_tex"),
     path("ajax/check-new/", order_check_new, name="order_check_new"),
+    path("ajax/sender-technics/", ajax_sender_technics, name="ajax_sender_technics"),
 
     # =========================
     # HUJJATLAR

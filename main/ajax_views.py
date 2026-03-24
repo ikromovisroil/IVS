@@ -24,6 +24,53 @@ def ajax_load_categories(request):
         "results": [{"id": c.id, "name": c.name} for c in qs]
     })
 
+
+@never_cache
+@login_required
+def ajax_sender_technics(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    sender_id = request.GET.get("sender_id")
+    sender = Employee.objects.filter(id=sender_id).first()
+
+    if not sender:
+        return JsonResponse({"results": []})
+
+    filters = {
+        "is_active": True,
+    }
+
+    if sender.organization_id:
+        filters["organization_id"] = sender.organization_id
+    if sender.department_id:
+        filters["department_id"] = sender.department_id
+    if sender.directorate_id:
+        filters["directorate_id"] = sender.directorate_id
+    if sender.division_id:
+        filters["division_id"] = sender.division_id
+
+    technics = (
+        Technics.objects
+        .filter(
+            Q(employee_id=sender.id) |
+            Q(employee__isnull=True, status="free"),
+            **filters
+        )
+        .order_by("name")
+        .values("id", "name", "inventory", "serial", "mac")
+    )
+
+    results = []
+    for t in technics:
+        results.append({
+            "id": t["id"],
+            "text": f'{t["name"] or ""} | {t["inventory"] or ""} | {t["serial"] or ""} | {t["mac"] or ""}'
+        })
+
+    return JsonResponse({"results": results})
+
 @never_cache
 @login_required
 def deed_mark_seen(request):

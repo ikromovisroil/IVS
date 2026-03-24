@@ -175,13 +175,11 @@
                                     <h4>Texnikani tanlang</h4>
                                     <div class="col-sm-12">
                                     <select
-                                      class="form-select js-tech-select" name="technics_id">
+                                      class="form-select js-tech-select"
+                                      name="technics_id"
+                                      data-sender-id="{{ o.sender.id }}"
+                                      data-selected-id="{{ o.technics_id|default:'' }}">
                                       <option value="">— Tanlang —</option>
-                                      {% for t in o.sender.technics_set.all %}
-                                        <option value="{{ t.id }}" {% if o.technics_id == t.id %}selected{% endif %}>
-                                          {{ t.name|default:"" }} | {{ t.inventory|default:"" }} | {{ t.serial|default:"" }} | {{ t.mac|default:"" }}
-                                        </option>
-                                      {% endfor %}
                                     </select>
                                   </div>
                                 </div>
@@ -484,5 +482,106 @@ $(function () {
 
 });
 </script>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
 
+  const TECH_URL = "{% url 'ajax_sender_technics' %}";
+
+  function initSelect2($selectElem, orderId) {
+    $selectElem.select2({
+      dropdownParent: $("#verticalmodal" + orderId),
+      width: "100%",
+    });
+  }
+
+  function loadTechnics($selectElem, senderId, selectedId, orderId) {
+    if (!senderId) {
+      $selectElem.html('<option value="">— Tanlang —</option>');
+      return;
+    }
+
+    $selectElem.prop("disabled", true);
+    $selectElem.html('<option value="">Yuklanmoqda...</option>');
+
+    $.ajax({
+      url: TECH_URL,
+      type: "GET",
+      data: { sender_id: senderId },
+      success: function(resp) {
+        let html = '<option value="">— Tanlang —</option>';
+
+        if (resp.results && resp.results.length) {
+          resp.results.forEach(function(item) {
+            const selected = String(selectedId) === String(item.id) ? "selected" : "";
+            html += `<option value="${item.id}" ${selected}>${item.text}</option>`;
+          });
+        }
+
+        $selectElem.html(html);
+        $selectElem.prop("disabled", false);
+
+        if ($selectElem.hasClass("select2-hidden-accessible")) {
+          $selectElem.trigger("change.select2");
+        } else {
+          initSelect2($selectElem, orderId);
+        }
+      },
+      error: function() {
+        $selectElem.html('<option value="">Xatolik yuz berdi</option>');
+        $selectElem.prop("disabled", false);
+      }
+    });
+  }
+
+  $(document).on("shown.bs.modal", ".modal", function () {
+    const modalId = $(this).attr("id");
+    const orderId = modalId.replace("verticalmodal", "");
+
+    const $tech = $(this).find(".js-tech-select");
+    if ($tech.length) {
+      const senderId = $tech.data("sender-id");
+      const selectedId = $tech.data("selected-id");
+      loadTechnics($tech, senderId, selectedId, orderId);
+    }
+
+    $(this).find(".js-material-select").each(function () {
+      const $mat = $(this);
+      if (!$mat.hasClass("select2-hidden-accessible")) {
+        initSelect2($mat, orderId);
+      }
+    });
+  });
+
+  window.addMaterialRow = function(orderId) {
+    let tpl = document.querySelector("#material-options-" + orderId);
+    let optionsHtml = tpl ? tpl.innerHTML : '<option value="">— Tanlang —</option>';
+
+    let $row = $(`
+      <div class="row align-items-center mb-2 material-row">
+        <div class="col-7">
+          <select class="form-select js-material-select" name="material_id[]">
+            ${optionsHtml}
+          </select>
+        </div>
+        <div class="col-3">
+          <input type="number" class="form-control" name="number[]" value="1" min="1">
+        </div>
+        <div class="col-2 text-end">
+          <button type="button" class="btn btn-danger w-100 remove-btn">X</button>
+        </div>
+      </div>
+    `);
+
+    $("#materials-container-" + orderId).append($row);
+
+    let $newSelect = $row.find(".js-material-select");
+    initSelect2($newSelect, orderId);
+  };
+
+  $(document).on("click", ".remove-btn", function () {
+    $(this).closest(".material-row").remove();
+  });
+
+});
+</script>
 {% endblock %}
