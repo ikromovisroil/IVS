@@ -1601,7 +1601,7 @@ def document_get(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    liable = Liable.objects.filter(employee=employee).select_related("contract").distinct("contract")
+    liable = Liable.objects.filter(employee=employee).select_related("contract")
 
     context = {
         "liable": liable,
@@ -2646,6 +2646,7 @@ def tex_status(request):
     }
 
     return render(request, "main/tex_status.html", context)
+
 
 def technics_detail(request, pk):
     technics = get_object_or_404(Technics, pk=pk, is_active=True)

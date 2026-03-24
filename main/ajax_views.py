@@ -563,7 +563,7 @@ def ajax_document_preview(request):
     ).select_related(
         "employee", "organization", "department", "category"
     ).prefetch_related(
-        "extratechnics_set"
+        "structure_set"
     )
 
     printer4 = Technics.objects.filter(
@@ -601,7 +601,7 @@ def ajax_document_preview(request):
     kompyuterlar = []
     for tex in kompyuter:
         extra_serials = list(
-            tex.extratechnics_set.filter(is_active=True).values_list("serial", flat=True)
+            tex.structure_set.filter(is_active=True).values_list("serial", flat=True)
         )
         kompyuterlar.append({
             "id": tex.id,
