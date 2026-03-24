@@ -52,6 +52,26 @@ def order_mark_seen(request):
 
     return JsonResponse({'status': 'ok'})
 
+
+@login_required
+def order_check_new(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return JsonResponse({"error": "Employee yo‘q"}, status=400)
+
+    latest_order = (
+        Order.objects
+        .filter(sender__region=employee.region, status="viewed")
+        .order_by("-id")
+        .values("id")
+        .first()
+    )
+
+    return JsonResponse({
+        "latest_id": latest_order["id"] if latest_order else 0,
+    })
+
+
 @never_cache
 @login_required
 def get_department_employees(request):

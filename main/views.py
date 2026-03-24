@@ -1286,15 +1286,16 @@ def barn_mat(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-
+    category_id = (request.GET.get("category") or "").strip()
+    unit_id = (request.GET.get("unit") or "").strip()
     emp_id = (request.GET.get("employee") or "").strip()
     status = (request.GET.get("status") or "").strip()
     name = (request.GET.get("name") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    has_filter = bool(emp_id or status or name)
+    has_filter = bool(category_id or unit_id or emp_id or status or name)
 
-    # ✅ filter bo‘lmasa bo‘sh ko‘rsatamiz (tez)
+    # filter bo‘lmasa bo‘sh ko‘rsatamiz
     if not has_filter:
         qs = Material.objects.none()
         page_obj = Paginator(qs, 50).get_page(page_number)
@@ -1303,7 +1304,9 @@ def barn_mat(request):
         params.pop("page", None)
 
         return render(request, "main/barn_mat.html", {
-            "employees_boss": Employee.objects.filter(rol__client=False, rol__boss=True),
+            "employees_boss": Employee.objects.filter(rol__shop=True),
+            "category": MaterialCategory.objects.all(),
+            "unit": Unit.objects.all(),
             "page_obj": page_obj,
             "material": page_obj.object_list,
             "material_form": MaterialForm(),
@@ -1314,29 +1317,36 @@ def barn_mat(request):
         })
 
     qs = (
-        Material.objects.filter(is_active=True)
-        .select_related("employee", "employee__user")
+        Material.objects.filter(
+            is_active=True,
+            organization=employee.organization
+        )
+        .select_related("employee", "category", "unit")
         .annotate(
             total_sum=ExpressionWrapper(
                 F("number") * F("price"),
                 output_field=DecimalField(max_digits=18, decimal_places=2)
             )
         )
-        .order_by("-id")
     )
+
+    if category_id:
+        qs = qs.filter(category_id=int(category_id))
+
+    if unit_id:
+        qs = qs.filter(unit_id=int(unit_id))
 
     if status:
         qs = qs.filter(status=status)
 
     if emp_id:
-        # id bo‘lmasa ignore (xohlasangiz error ham qilamiz)
-        if emp_id.isdigit():
-            qs = qs.filter(employee_id=int(emp_id))
-        else:
-            qs = Material.objects.none()
+        qs = qs.filter(employee_id=int(emp_id))
 
     if name:
-        qs = qs.filter(Q(name__icontains=name) | Q(code__icontains=name))
+        qs = qs.filter(
+            Q(name__icontains=name) |
+            Q(code__icontains=name)
+        )
 
     total_count = qs.count()
     total_suma = qs.aggregate(s=Sum("total_sum"))["s"] or 0
@@ -1350,6 +1360,8 @@ def barn_mat(request):
 
     context = {
         "employees_boss": Employee.objects.filter(rol__client=False, rol__boss=True),
+        "category": MaterialCategory.objects.all(),
+        "unit": Unit.objects.all(),
         "page_obj": page_obj,
         "material": page_obj.object_list,
         "material_form": MaterialForm(),
@@ -1357,7 +1369,6 @@ def barn_mat(request):
         "row_start": page_obj.start_index() if total_count else 0,
         "total_count": total_count,
         "total_suma": total_suma,
-        "unit": Unit.objects.all()
     }
     return render(request, "main/barn_mat.html", context)
 
@@ -1371,13 +1382,14 @@ def material_create(request):
         raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-
     form = MaterialForm(request.POST)
     if form.is_valid():
-        form.save()
+        material = form.save(commit=False)
+        material.organization = employee.organization
+        material.save()
         messages.success(request, "Material qo‘shildi!")
     else:
-        messages.error(request, "Maʼlumotlarda xatolik bor")
+        messages.error(request, f"Maʼlumotlarda xatolik bor: {form.errors}")
 
     return redirect(back_url)
 
@@ -1391,14 +1403,24 @@ def material_update(request, pk):
         raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-
     mat = get_object_or_404(Material, pk=pk)
+
+    category_id = (request.POST.get("category") or "").strip()
     unit_id = (request.POST.get("unit") or "").strip()
 
-    # FK lar
+    # category
+    if category_id:
+        if not category_id.isdigit():
+            messages.info(request, "Kategoriya noto‘g‘ri tanlangan")
+            return redirect(back_url)
+        mat.category = get_object_or_404(MaterialCategory, pk=int(category_id))
+    else:
+        mat.category = None
+
+    # unit
     if unit_id:
         if not unit_id.isdigit():
-            messages.info(request, "Birligi noto‘g‘ri")
+            messages.info(request, "Birligi noto‘g‘ri tanlangan")
             return redirect(back_url)
         mat.unit = get_object_or_404(Unit, pk=int(unit_id))
     else:
@@ -1407,28 +1429,35 @@ def material_update(request, pk):
     mat.name = (request.POST.get("name") or "").strip()
     mat.code = (request.POST.get("code") or "").strip()
 
-    # number validatsiya (butun son)
+    if not mat.name:
+        messages.info(request, "Nomi kiritilishi shart")
+        return redirect(back_url)
+
+    if not mat.code:
+        messages.info(request, "1C kodi kiritilishi shart")
+        return redirect(back_url)
+
+    # number
     raw_number = (request.POST.get("number") or "").strip()
     try:
-        mat.number = int(raw_number) if raw_number else 0
+        mat.number = int(raw_number)
         if mat.number < 0:
             raise ValueError
-    except ValueError:
+    except (TypeError, ValueError):
         messages.error(request, "Soni noto‘g‘ri kiritildi")
         return redirect(back_url)
 
-    # price validatsiya (14.45 yoki 14,45)
-    raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
-    raw_price = raw_price.replace(",", ".")
+    # price
+    raw_price = (request.POST.get("price") or "").strip().replace(" ", "").replace(",", ".")
     try:
         mat.price = Decimal(raw_price) if raw_price else Decimal("0")
         if mat.price < 0:
-            raise InvalidOperation
+            raise ValueError
     except (InvalidOperation, ValueError):
-        messages.error(request, "Narx noto‘g‘ri (misol: 14.45 yoki 14,45)")
+        messages.info(request, "Narx noto‘g‘ri kiritildi. Masalan: 14.45 yoki 14,45")
         return redirect(back_url)
 
-    mat.save(update_fields=["name", "number", "price", "code", "unit"])
+    mat.save(update_fields=["category", "unit", "name", "code", "number", "price"])
     messages.success(request, "Material tahrirlandi!")
     return redirect(back_url)
 
@@ -1810,21 +1839,25 @@ def order_receiver(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender__region=employee.region,status="viewed",)
+        .filter(sender__region=employee.region, status="viewed")
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
-    # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 50)
     page_obj = paginator.get_page(page_number)
 
     context = {
-        "order": page_obj,          # ✅ for loop shu orqali yuradi
-        "page_obj": page_obj,       # ✅ pagination uchun
-        "paginator": paginator,     # ✅ pagination uchun
+        "order": page_obj,
+        "page_obj": page_obj,
+        "paginator": paginator,
     }
+
+    # AJAX bo‘lsa faqat rowlarni qaytaramiz
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return render(request, "main/partials/order_receiver_rows.html", context)
+
     return render(request, "main/order_receiver.html", context)
 
 
@@ -1968,6 +2001,7 @@ def order_receiver_activ(request):
         base_qs = Material.objects.filter(
             employee__rol__shop=True,
             employee__region=employee.region,
+            organization=employee.organization,
             is_active=True,
         )
 

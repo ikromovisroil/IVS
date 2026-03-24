@@ -20,43 +20,78 @@
           <div class="card">
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
+
+                    <!-- CATEGORY -->
                     <div class="col-md-3">
-                        <label for="status" class="form-label">Xolati</label>
-                        <select id="status" name="status" class="form-select">
-                          <option value="">Tanlang...</option>
-                          <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
-                          <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
-                          <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
-                          <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
+                        <label class="form-label">Kategoriya</label>
+                        <select name="category" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for c in category %}
+                                <option value="{{ c.id }}"
+                                    {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ c.name }}
+                                </option>
+                            {% endfor %}
                         </select>
                     </div>
 
+                    <!-- UNIT -->
                     <div class="col-md-3">
-                        <label for="employee" class="form-label">Xodim</label>
-                        <select id="employee" name="employee" class="form-select">
-                          <option value="">Tanlang...</option>
-                          {% for emp in employees_boss %}
-                            <option value="{{ emp.id }}"
-                              {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
-                              {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
-                            </option>
-                          {% endfor %}
+                        <label class="form-label">Birligi</label>
+                        <select name="unit" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for u in unit %}
+                                <option value="{{ u.id }}"
+                                    {% if request.GET.unit|stringformat:"s" == u.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ u.name }}
+                                </option>
+                            {% endfor %}
                         </select>
                     </div>
 
+                    <!-- STATUS -->
                     <div class="col-md-3">
-                      <label for="name" class="form-label">Name</label>
-                      <input id="name" type="text" name="name" class="form-control"
-                             value="{{ request.GET.name|default:'' }}"
-                             placeholder="Texnika nomi...">
+                        <label class="form-label">Holati</label>
+                        <select name="status" class="form-select">
+                            <option value="">Tanlang...</option>
+                            <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
+                            <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
+                            <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                            <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
+                        </select>
                     </div>
 
+                    <!-- EMPLOYEE -->
+                    <div class="col-md-3">
+                        <label class="form-label">Xodim</label>
+                        <select name="employee" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for emp in employees_boss %}
+                                <option value="{{ emp.id }}"
+                                    {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- NAME -->
+                    <div class="col-md-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" name="name" class="form-control"
+                               value="{{ request.GET.name|default:'' }}"
+                               placeholder="Nomi, 1C code ...">
+                    </div>
+
+                    <!-- BUTTONS -->
                     <div class="col-md-3 d-flex align-items-end">
                         <button type="submit" class="btn btn-primary w-100">Qidirish</button>
                     </div>
+
                     <div class="col-md-3 d-flex align-items-end">
-                      <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
+                        <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
                     </div>
+
                 </form>
             </div>
           </div>
@@ -203,14 +238,16 @@
           </div>
           <div class="modal-body">
             <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.category }}
+              </div>
+            </div>
+
+            <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
               <div class="col-md-8 col-lg-9">
-                  <select name="unit" class="form-select" required>
-                    <option>— Tanlang —</option>
-                    {% for u in unit %}
-                      <option value="{{ u.id }}">{{ u.name }}</option>
-                    {% endfor %}
-                  </select>
+                {{ material_form.unit }}
               </div>
             </div>
 
@@ -413,36 +450,60 @@
           </div>
 
           <div class="modal-body">
-            <div class="mb-3">
-              <label class="form-label">Birligi</label>
-              <select name="unit" class="form-select" required>
-                <option value="">— Tanlang —</option>
-                {% for u in unit %}
-                  <option value="{{ u.id }}" {% if mat.unit_id == u.id %}selected{% endif %}>
-                    {{ u.name }}
-                  </option>
-                {% endfor %}
-              </select>
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="category" class="form-select" required>
+                    <option value="">— Tanlang —</option>
+                    {% for c in category %}
+                      <option value="{{ c.id }}" {% if mat.category_id == c.id %}selected{% endif %}>
+                        {{ c.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Nomi</label>
-              <input type="text" name="name" class="form-control" value="{{ mat.name }}" required>
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="unit" class="form-select" required>
+                    <option value="">— Tanlang —</option>
+                    {% for u in unit %}
+                      <option value="{{ u.id }}" {% if mat.unit_id == u.id %}selected{% endif %}>
+                        {{ u.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Soni</label>
-              <input type="number" name="number" class="form-control" value="{{ mat.number }}" required>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="name" class="form-control" value="{{ mat.name }}" required>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">Narxi</label>
-              <input type="number" step="0.01" name="price" class="form-control"  value="{{ mat.price|default_if_none:''|stringformat:'s'|cut:',' }}">
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form">Soni</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" name="number" class="form-control" value="{{ mat.number }}" required>
+              </div>
             </div>
 
-            <div class="mb-3">
-              <label class="form-label">1C kodi</label>
-              <input type="text" name="code" class="form-control" value="{{ mat.code }}" required>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" step="0.01" name="price" class="form-control"  value="{{ mat.price|default_if_none:''|stringformat:'s'|cut:',' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form">1C kodi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="code" class="form-control" value="{{ mat.code }}" required>
+              </div>
             </div>
           </div>
 
@@ -456,105 +517,6 @@
       </div>
     </div>
 
-    <!-- TEXNIKA QK -->
-    <div class="modal fade" id="qkcentered{{ mat.id }}" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-
-          <div class="modal-header">
-            <h5 class="modal-title">
-              <i class="bi bi-cpu me-2"></i>Material tafsiloti
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-
-          <div class="modal-body">
-
-            <!-- TEXNIKA UMUMIY MALUMOT -->
-            <div class="p-3 border rounded bg-light">
-              <div>
-                <i class="bi bi-info-circle me-2"></i>Umumiy ma'lumot
-              </div><hr>
-              <div class="card-body">
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">Xodim</div>
-                  <div class="col-md-7">
-                    {{ mat.employee.full_name|default:"-" }}
-                  </div>
-                </div>
-
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">Birligi</div>
-                  <div class="col-md-7">
-                    {{ mat.unit.name|default:"-" }}
-                  </div>
-                </div>
-
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">Nomi</div>
-                  <div class="col-md-7">
-                    {{ mat.name|default:"-" }}
-                  </div>
-                </div>
-
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">Soni</div>
-                  <div class="col-md-7">
-                    {{ mat.number|default:"-" }}
-                  </div>
-                </div>
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">1C code</div>
-                  <div class="col-md-7">
-                    {{ mat.code|default:"-" }}
-                  </div>
-                </div>
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">Narxi</div>
-                  <div class="col-md-7">
-                    {{ mat.price|intcomma|default:"-" }}
-                  </div>
-                </div>
-                {% if mat.year %}
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">Yili</div>
-                  <div class="col-md-7">
-                    {{ mat.year|default:"-" }}
-                  </div>
-                </div>
-                {% endif %}
-
-                <div class="row mb-2">
-                  <div class="col-md-5 text-muted">Holati</div>
-                  <div class="col-md-7">
-                    {% if mat.status == "free" %}
-                      <span class="badge bg-secondary">Bo'sh</span>
-                    {% elif mat.status == "active" %}
-                      <span class="badge bg-primary">Aktiv</span>
-                    {% elif mat.status == "repair" %}
-                      <span class="badge bg-warning ">Ta’mirda</span>
-                    {% elif mat.status == "defect" %}
-                      <span class="badge bg-danger">Yaroqsiz</span>
-                    {% else %}
-                      <span class="badge bg-secondary">Noma'lum</span>
-                    {% endif %}
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Yopish
-            </button>
-          </div>
-
-        </div>
-      </div>
-    </div>
     {% endfor %}
 
 </main>
