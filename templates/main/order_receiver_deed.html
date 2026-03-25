@@ -41,7 +41,7 @@
                 <label for="agreements_select" class="form-label">Kelishuvchilar:</label>
                 <select id="agreements_select" name="agreements[]" class="form-select" multiple>
                   {% for i in employee %}
-                    <option value="{{ i.id }}">{{ i.full_name }}</option>
+                    <option value="{{ i.id }}">{{ i.full_name }} ({{i.rank.name}})</option>
                   {% endfor %}
                 </select>
               </div>
