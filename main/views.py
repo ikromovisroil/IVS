@@ -2544,7 +2544,7 @@ def tex_status(request):
         .annotate(
             technics_count=Count(
                 "technics__id",
-                filter=Q(technics__is_active=True),
+                filter=Q(technics__is_active=True,technics__group_id=1),
                 distinct=True
             )
         )
@@ -2559,6 +2559,7 @@ def tex_status(request):
     # ------------------- Kategoriyalar -------------------
     cats_qs = list(
         Category.objects
+        .filter(group_id=1)
         .order_by("id")
         .values("id", "name")
     )
@@ -2573,7 +2574,8 @@ def tex_status(request):
         .filter(
             is_active=True,
             organization_id__in=org_ids,
-            category_id__in=cat_ids
+            category_id__in=cat_ids,
+            group_id = 1
         )
         .values("organization_id", "category_id")
         .annotate(cnt=Count("id"))
