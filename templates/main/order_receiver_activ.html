@@ -69,9 +69,9 @@
                           Jarayonda
                         </span>
                       {% elif o.status == "finished" %}
-                        <i class="bi bi-flag me-1 text-info"></i>
+                        <i class="bi bi-flag me-1 text-primary"></i>
                         <span type="button"
-                              class="badge bg-info text-white"
+                              class="badge bg-primary text-white"
                               data-bs-toggle="modal"
                               data-bs-target="#verticalmodal{{ o.id }}">
                           Yakunlandi
@@ -98,7 +98,7 @@
                                   <span class="badge
                                     {% if o.status == 'viewed' %}bg-warning
                                     {% elif o.status == 'accepted' %}bg-warning
-                                    {% elif o.status == 'finished' %}bg-info
+                                    {% elif o.status == 'finished' %}bg-primary
                                     {% elif o.status == 'approved' %}bg-success
                                     {% elif o.status == 'rejected' %}bg-danger
                                     {% else %}bg-secondary
