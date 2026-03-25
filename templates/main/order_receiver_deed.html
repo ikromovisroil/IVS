@@ -32,7 +32,7 @@
                 <select id="sender_select" name="sender" class="form-select" required>
                   <option value="">Tanlang...</option>
                   {% for i in emp_bos %}
-                    <option value="{{ i.id }}" data-rank="{{ i.rank.name }}">{{ i.full_name }}</option>
+                    <option value="{{ i.id }}" data-rank="{{ i.rank.name }}">{{ i.full_name }} ({{i.rank.name}})</option>
                   {% endfor %}
                 </select>
               </div>
@@ -41,7 +41,7 @@
                 <label for="agreements_select" class="form-label">Kelishuvchilar:</label>
                 <select id="agreements_select" name="agreements[]" class="form-select" multiple>
                   {% for i in employee %}
-                    <option value="{{ i.id }}">{{ i.full_name }}</option>
+                    <option value="{{ i.id }}">{{ i.full_name }} ({{i.rank.name}})</option>
                   {% endfor %}
                 </select>
               </div>

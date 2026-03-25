@@ -33,7 +33,7 @@
                 <select id="sender" name="sender" class="form-select" required>
                   {% for emp in sender %}
                     <option value="{{ emp.id }}" {% if deed.sender_id == emp.id %}selected{% endif %}>
-                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }} ({{emp.rank.name}})
                     </option>
                   {% endfor %}
                 </select>
@@ -46,7 +46,7 @@
                 <select id="receiver" name="receiver" class="form-select" {% if deed.receiver_id %}required{% endif %}>
                   {% for emp in receiver %}
                     <option value="{{ emp.id }}" {% if deed.receiver_id == emp.id %}selected{% endif %}>
-                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }} ({{emp.rank.name}})
                     </option>
                   {% endfor %}
                 </select>
@@ -59,7 +59,7 @@
                 <select id="agreements" name="agreements[]" class="form-select" multiple>
                   {% for emp in employee %}
                     <option value="{{ emp.id }}" {% if emp.id in selected_agreement_ids %}selected{% endif %}>
-                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }} ({{emp.rank.name}})
                     </option>
                   {% endfor %}
                 </select>
