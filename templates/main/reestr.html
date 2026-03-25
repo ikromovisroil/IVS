@@ -347,17 +347,27 @@ function loadAgreementsByOrg(orgId, selectedIds = []) {
     url: "{% url 'ajax_agreements_employees' %}",
     method: 'GET',
     data: { org_id: orgId },
+
     success: function (data) {
       let options = '';
       const selectedSet = new Set((selectedIds || []).map(String));
 
       data.forEach(function (emp) {
         const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-        options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
+        const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+
+        options += `
+          <option value="${emp.id}" ${selected}
+                  data-fullname="${emp.full_name || ''}"
+                  data-rank="${emp.rank || ''}">
+            ${fullText}
+          </option>
+        `;
       });
 
       $('#agreements').html(options).trigger('change');
     },
+
     error: function () {
       $('#agreements').html('').trigger('change');
     }

@@ -511,8 +511,11 @@
       setAllInEditor('.sender_name', senderText);
     }
 
+    // ✅ receiver_name ga faqat fullname yoziladi
     function applyReceiverToEditor() {
-      let receiverText = $('#receiver option:selected').text() || '';
+      const $selected = $('#receiver option:selected');
+      let receiverText = $selected.attr('data-fullname') || '';
+
       if (!receiverText || receiverText === 'Tanlang...') receiverText = '__';
       setAllInEditor('.receiver_name', receiverText);
     }
@@ -575,6 +578,8 @@
       });
     }
 
+    // ✅ Select ichida ism + lavozim
+    // ✅ data-fullname ichida faqat ism
     function fillEmployeeSelect($sel, list, selectedId = null, allowEmpty = true, keepSelected = false) {
       let currentSelected = [];
       if (keepSelected) {
@@ -588,10 +593,18 @@
         const selectedSingle = selectedId && String(selectedId) === idStr;
         const selectedKeep = keepSelected && currentSelected.includes(idStr);
 
-        // ❌ rank olib tashlandi
-        const label = emp.full_name;
+        const fullName = emp.full_name || '';
+        const rank = emp.rank || '';
+        const label = rank ? `${fullName} (${rank})` : fullName;
 
-        html += `<option value="${esc(emp.id)}" ${(selectedSingle || selectedKeep) ? 'selected' : ''}>${esc(label)}</option>`;
+        html += `
+          <option value="${esc(emp.id)}"
+                  ${(selectedSingle || selectedKeep) ? 'selected' : ''}
+                  data-fullname="${esc(fullName)}"
+                  data-rank="${esc(rank)}">
+            ${esc(label)}
+          </option>
+        `;
       });
 
       $sel.html(html).trigger('change');

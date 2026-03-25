@@ -80,7 +80,7 @@
                 <a href="{% url 'order_sender' %}" class="d-flex align-items-start text-decoration-none">
               {% else %}
                 {% if o.viewed == "viewed" %}
-                   <a href="{% url 'order_sender' %}" class="d-flex align-items-start text-decoration-none">
+                   <a href="{% url 'order_receiver' %}" class="d-flex align-items-start text-decoration-none">
                 {% else %}
                    <a href="{% url 'order_receiver_arxiv' %}" class="d-flex align-items-start text-decoration-none">
                 {% endif %}

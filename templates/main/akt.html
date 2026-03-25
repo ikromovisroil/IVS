@@ -524,42 +524,50 @@ $(function () {
   }
 
   function loadNegotiators(depId, selectedIds = []) {
-    const orgId = $('#organization').val();
-    const $agr = $('#agreements');
+      const orgId = $('#organization').val();
+      const $agr = $('#agreements');
 
-    $agr.html('').trigger('change');
+      $agr.html('').trigger('change');
 
-    if (!orgId && !depId) return;
+      if (!orgId && !depId) return;
 
-    const payload = {};
-    if (orgId) payload.organization = orgId;
-    if (depId) payload.department = depId;
+      const payload = {};
+      if (orgId) payload.organization = orgId;
+      if (depId) payload.department = depId;
 
-    $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
 
-    $.ajax({
-      url: "{% url 'ajax_dep_negotiator' %}",
-      method: "GET",
-      dataType: "json",
-      data: payload,
+      $.ajax({
+        url: "{% url 'ajax_dep_negotiator' %}",
+        method: "GET",
+        dataType: "json",
+        data: payload,
 
-      success: function(data) {
-        let options = '';
-        const selectedSet = new Set((selectedIds || []).map(String));
+        success: function(data) {
+          let options = '';
+          const selectedSet = new Set((selectedIds || []).map(String));
 
-        (data || []).forEach(function(emp) {
-          const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-          options += `<option value="${emp.id}" ${selected}>${emp.full_name}</option>`;
-        });
+          (data || []).forEach(function(emp) {
+            const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
+            const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
 
-        $agr.html(options).trigger('change');
-      },
+            options += `
+              <option value="${emp.id}" ${selected}
+                      data-fullname="${emp.full_name || ''}"
+                      data-rank="${emp.rank || ''}">
+                ${fullText}
+              </option>
+            `;
+          });
 
-      error: function(xhr) {
-        console.error("Negotiators AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
-        $agr.html('').trigger('change');
-      }
-    });
+          $agr.html(options).trigger('change');
+        },
+
+        error: function(xhr) {
+          console.error("Negotiators AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
+          $agr.html('').trigger('change');
+        }
+      });
   }
 
   function searchMaterials() {

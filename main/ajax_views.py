@@ -226,7 +226,11 @@ def ajax_dep_negotiator(request):
 
     qs = qs.order_by("last_name", "first_name", "father_name").distinct()
 
-    data = [{"id": e.id, "full_name": getattr(e, "full_name", "")} for e in qs]
+    data = [{
+        "id": e.id,
+        "full_name": getattr(e, "full_name", "") or f"{e.last_name} {e.first_name} {e.father_name}".strip(),
+        "rank": (e.rank.name if getattr(e, "rank", None) else ""),
+    } for e in qs]
     return JsonResponse(data, safe=False)
 
 @never_cache
@@ -263,7 +267,11 @@ def ajax_agreements_employees(request):
         "last_name", "first_name", "father_name"
     ).distinct()
 
-    data = [{"id": e.id, "full_name": e.full_name} for e in qs]
+    data = [{
+        "id": e.id,
+        "full_name": getattr(e, "full_name", "") or f"{e.last_name} {e.first_name} {e.father_name}".strip(),
+        "rank": (e.rank.name if getattr(e, "rank", None) else ""),
+    } for e in qs]
     return JsonResponse(data, safe=False)
 
 @login_required
