@@ -122,7 +122,7 @@
                                             <div class="col-6">
                                                 <span class="badge
                                                     {% if o.status == 'viewed' %}bg-warning
-                                                    {% elif o.status == 'accepted' %}bg-primary
+                                                    {% elif o.status == 'accepted' %}bg-warning
                                                     {% elif o.status == 'finished' %}bg-info
                                                     {% elif o.status == 'approved' %}bg-success
                                                     {% elif o.status == 'rejected' %}bg-danger
@@ -188,7 +188,7 @@
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-telephone me-1"></i> Telefon raqami
                                             </div>
-                                            <div class="col-6">{{ o.receiver.phone }}</div>
+                                            <div class="col-6">{{ o.receiver.phone|default:"-" }}</div>
                                             {% endif %}
                                         </div>
                                         {% if o.materials_all.exists %}

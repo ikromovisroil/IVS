@@ -214,7 +214,7 @@ def contact_agrement_arxiv(request):
 
 @never_cache
 @login_required
-@role_required("akt")
+@role_required("order")
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -249,7 +249,7 @@ def contact_user(request):
 
 @never_cache
 @login_required
-@role_required("akt")
+@role_required("order")
 def contact_user_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

@@ -103,8 +103,8 @@
                                 <i class="bi bi-clock me-1 text-warning"></i>
                                 <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Yangi</span>
                             {% elif o.status == "accepted" %}
-                                <i class="bi bi-check2-circle me-1 text-primary"></i>
-                                <span type="button" class="badge bg-primary text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Jarayonda</span>
+                                <i class="bi bi-check2-circle me-1 text-warning"></i>
+                                <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Jarayonda</span>
                             {% elif o.status == "finished" %}
                                 <i class="bi bi-flag me-1 text-info"></i>
                                 <span type="button" class="badge bg-info text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Yakunlandi</span>
@@ -125,7 +125,7 @@
                                             <div class="col-6">
                                                 <span class="badge
                                                     {% if o.status == 'viewed' %}bg-warning
-                                                    {% elif o.status == 'accepted' %}bg-primary
+                                                    {% elif o.status == 'accepted' %}bg-warning
                                                     {% elif o.status == 'finished' %}bg-info
                                                     {% elif o.status == 'approved' %}bg-success
                                                     {% elif o.status == 'rejected' %}bg-danger
@@ -159,7 +159,7 @@
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-telephone me-1"></i> Telefon raqami
                                             </div>
-                                            <div class="col-6">{{ o.sender.phone }}</div>
+                                            <div class="col-6">{{ o.sender.phone|default:"-" }}</div>
                                             {% if o.technics %}
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
@@ -191,7 +191,7 @@
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-telephone me-1"></i> Telefon raqami
                                             </div>
-                                            <div class="col-6">{{ o.receiver.phone }}</div>
+                                            <div class="col-6">{{ o.receiver.phone|default:"-" }}</div>
                                             {% endif %}
                                         </div>
                                          {% if o.materials_all.exists %}

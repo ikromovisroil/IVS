@@ -61,9 +61,9 @@
 
                     <td>
                       {% if o.status == "accepted" %}
-                        <i class="bi bi-check2-circle me-1 text-primary"></i>
+                        <i class="bi bi-check2-circle me-1 text-warning"></i>
                         <span type="button"
-                              class="badge bg-primary text-white"
+                              class="badge bg-warning text-white"
                               data-bs-toggle="modal"
                               data-bs-target="#verticalmodal{{ o.id }}">
                           Jarayonda
@@ -97,7 +97,7 @@
                                 <div class="col-6">
                                   <span class="badge
                                     {% if o.status == 'viewed' %}bg-warning
-                                    {% elif o.status == 'accepted' %}bg-primary
+                                    {% elif o.status == 'accepted' %}bg-warning
                                     {% elif o.status == 'finished' %}bg-info
                                     {% elif o.status == 'approved' %}bg-success
                                     {% elif o.status == 'rejected' %}bg-danger

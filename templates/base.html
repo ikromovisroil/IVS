@@ -337,7 +337,7 @@
               class="nav-content collapse {% if " "|add:url_name|add:" " in deed_urls %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
-            {% if request.user.employee.rol.akt %}
+            {% if request.user.employee.rol.order %}
             <li>
               <a class="{% if url_name == 'contact_user' or url_name == 'contact_user_arxiv' %}active{% endif %}"
                  href="{% url 'contact_user' %}">
