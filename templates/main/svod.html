@@ -298,7 +298,7 @@ function escapeHtml(value) {
 }
 
 function editorGet() {
-  return (window.tinymce ? tinymce.get('body') : null);
+  return window.tinymce ? tinymce.get('body') : null;
 }
 
 function editorSetText(selector, text) {
@@ -325,6 +325,7 @@ function editorSetTbodyRows(rowsHtml) {
   try {
     const body = ed.getBody();
     const tbody = body.querySelector('#materials_tbody');
+
     if (!tbody) {
       console.log('materials_tbody topilmadi');
       return;
@@ -372,40 +373,51 @@ function updateEditorWithSelections() {
   const periodText = formatMonthYear(date1);
   if (periodText) {
     editorSetText('#report_period', periodText);
+  } else {
+    editorSetText('#report_period', '');
   }
 }
 
 function loadAgreementsByOrg(orgId, selectedIds = []) {
-  $('#agreements').html('').trigger('change');
-  if (!orgId) return;
+  const $agreements = $('#agreements');
+
+  $agreements.html('').trigger('change');
+
+  if (!orgId) {
+    return;
+  }
 
   $.ajax({
     url: "{% url 'ajax_agreements_employees' %}",
     method: 'GET',
+    dataType: 'json',
     data: { org_id: orgId },
 
     success: function (data) {
       let options = '';
       const selectedSet = new Set((selectedIds || []).map(String));
 
-      data.forEach(function (emp) {
+      (data || []).forEach(function (emp) {
         const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-        const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+        const fullName = emp.full_name || '';
+        const rank = emp.rank || '';
+        const fullText = rank ? `${fullName} (${rank})` : fullName;
 
         options += `
-          <option value="${emp.id}" ${selected}
-                  data-fullname="${emp.full_name || ''}"
-                  data-rank="${emp.rank || ''}">
-            ${fullText}
+          <option value="${escapeHtml(emp.id)}" ${selected}
+                  data-fullname="${escapeHtml(fullName)}"
+                  data-rank="${escapeHtml(rank)}">
+            ${escapeHtml(fullText)}
           </option>
         `;
       });
 
-      $('#agreements').html(options).trigger('change');
+      $agreements.html(options).trigger('change');
     },
 
-    error: function () {
-      $('#agreements').html('').trigger('change');
+    error: function (xhr) {
+      console.error('Kelishuvchilar AJAX xatosi:', xhr.status, xhr.statusText, xhr.responseText);
+      $agreements.html('').trigger('change');
     }
   });
 }
@@ -433,11 +445,13 @@ function searchMaterials() {
   $.ajax({
     url: "{% url 'ajax_svod_materials' %}",
     method: 'GET',
+    dataType: 'json',
     data: {
       organization: orgId,
       date1: date1,
       date2: date2
     },
+
     success: function (data) {
       if (!Array.isArray(data) || data.length === 0) {
         editorSetTbodyRows(`
@@ -493,6 +507,7 @@ function searchMaterials() {
 
       editorSetTbodyRows(rows);
     },
+
     error: function(xhr, status, error) {
       console.error('Xatolik:', error);
       console.error('Status:', status);
@@ -526,6 +541,7 @@ $(function () {
 
   const today = new Date();
   const todayStr = today.toISOString().split('T')[0];
+
   const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
   const monthAgoStr = monthAgo.toISOString().split('T')[0];
@@ -542,7 +558,14 @@ $(function () {
 
   $('#organization').on('change', function () {
     const orgId = $(this).val();
+
     updateEditorWithSelections();
+
+    if (!orgId) {
+      $('#agreements').html('').trigger('change');
+      return;
+    }
+
     loadAgreementsByOrg(orgId);
   });
 
@@ -564,13 +587,8 @@ $(function () {
   {% if selected_org %}
     $('#organization').val('{{ selected_org }}').trigger('change');
   {% else %}
-    const initialOrg = $('#organization').val();
-    if (initialOrg) {
-      loadAgreementsByOrg(initialOrg);
-      updateEditorWithSelections();
-    } else {
-      updateEditorWithSelections();
-    }
+    $('#agreements').html('').trigger('change');
+    updateEditorWithSelections();
   {% endif %}
 });
 </script>
