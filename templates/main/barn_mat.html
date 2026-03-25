@@ -126,7 +126,7 @@
                     <th scope="col">Narxi</th>
                     <th scope="col">Umumiy narxi</th>
                     <th scope="col">Birligi</th>
-                    <th scope="col">1C code</th>
+                    <th scope="col">Code</th>
                     {% if request.user.employee.rol.material_edit%}
                     <th scope="col">Tafsif</th>
                     {% endif %}
@@ -258,7 +258,7 @@
               </div>
             </div>
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">1C code</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Code</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.code }}
               </div>
@@ -337,7 +337,7 @@
             </div>
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">1C code</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Code</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ mat.code|default_if_none:'' }}" disabled>
               </div>
@@ -420,7 +420,7 @@
             </div>
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">1C code</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Code</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ mat.code|default_if_none:'' }}" disabled>
               </div>
@@ -500,7 +500,7 @@
             </div>
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form">1C kodi</label>
+              <label class="col-md-4 col-lg-3 col-form">Codi</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" name="code" class="form-control" value="{{ mat.code }}" required>
               </div>
