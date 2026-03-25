@@ -5,8 +5,7 @@ def deed_notifications(request):
     if not request.user.is_authenticated:
         return {}
 
-    user = request.user
-    employee = getattr(user, "employee", None)
+    employee = getattr(request.user, "employee", None)
 
     # RECEIVER uchun: yangi kelgan dalolatnoma (status viewed)
     receiver_notes = Deed.objects.filter(
@@ -43,12 +42,7 @@ def order_notifications(request):
     if not request.user.is_authenticated:
         return {}
 
-    user = request.user
-
-    try:
-        employee = user.employee
-    except Employee.DoesNotExist:
-        return {}
+    employee = getattr(request.user, "employee", None)
 
     # 1) Receiver uchun
     receiver_notes = Order.objects.filter(

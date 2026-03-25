@@ -291,7 +291,6 @@ def ordermaterial_delete(request, pk):
     return JsonResponse({"status": "ok"})
 
 
-
 def ajax_search_tex(request):
     query = request.GET.get("q", "").strip()
 

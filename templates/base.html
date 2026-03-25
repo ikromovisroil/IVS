@@ -119,23 +119,23 @@
                   <!-- ================= STATUSGA QARAB MATN ================= -->
 
                   {% if o.status == 'viewed'%}
-                    <p class="text-warning mb-1">Yangi ariza keldi</p>
+                    <p class="text-warning mb-1">Yangi ariza yubordi</p>
                     <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
 
                   {% elif o.status == 'accepted'%}
-                    <p class="text-primary mb-1">Sizning arizangiz qabul qilindi</p>
+                    <p class="text-primary mb-1">Sizning arizangizni qabul qilindi</p>
                     <p class="small text-muted mb-0">{{ o.date_accepted|timesince }} oldin</p>
 
                   {% elif o.status == 'finished'%}
-                    <p class="text-info mb-1">Sizning arizangiz yakunlandi</p>
+                    <p class="text-info mb-1">Sizning arizangizni yakunlandi</p>
                     <p class="small text-muted mb-0">{{ o.date_finished|timesince }} oldin</p>
 
                   {% elif o.status == 'approved'%}
-                    <p class="text-success mb-1">Bajargan arizangiz tasdiqlandi</p>
+                    <p class="text-success mb-1">Bajargan arizangizni tasdiqlandi</p>
                     <p class="small text-muted mb-0">{{ o.date_approved|timesince }} oldin</p>
 
                   {% elif o.status == 'rejected' %}
-                    <p class="text-danger mb-1">Bajargan arizangiz rad etildi</p>
+                    <p class="text-danger mb-1">Bajargan arizangizni rad etildi</p>
                     <p class="small text-muted mb-0">{{ o.date_rejected|timesince }} oldin</p>
 
                   {% else %}
