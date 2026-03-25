@@ -340,36 +340,45 @@ function updateEditorWithSelections() {
 }
 
 function loadAgreementsByOrg(orgId, selectedIds = []) {
-  $('#agreements').html('').trigger('change');
-  if (!orgId) return;
+  const $agreements = $('#agreements');
+
+  $agreements.html('').trigger('change');
+
+  if (!orgId) {
+    return;
+  }
 
   $.ajax({
     url: "{% url 'ajax_agreements_employees' %}",
     method: 'GET',
+    dataType: 'json',
     data: { org_id: orgId },
 
     success: function (data) {
       let options = '';
       const selectedSet = new Set((selectedIds || []).map(String));
 
-      data.forEach(function (emp) {
+      (data || []).forEach(function (emp) {
         const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-        const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+        const fullName = emp.full_name || '';
+        const rank = emp.rank || '';
+        const fullText = rank ? `${fullName} (${rank})` : fullName;
 
         options += `
           <option value="${emp.id}" ${selected}
-                  data-fullname="${emp.full_name || ''}"
-                  data-rank="${emp.rank || ''}">
+                  data-fullname="${fullName}"
+                  data-rank="${rank}">
             ${fullText}
           </option>
         `;
       });
 
-      $('#agreements').html(options).trigger('change');
+      $agreements.html(options).trigger('change');
     },
 
-    error: function () {
-      $('#agreements').html('').trigger('change');
+    error: function (xhr) {
+      console.error('Kelishuvchilar AJAX xatosi:', xhr.status, xhr.statusText, xhr.responseText);
+      $agreements.html('').trigger('change');
     }
   });
 }
@@ -397,11 +406,13 @@ function searchMaterials() {
   $.ajax({
     url: "{% url 'ajax_reestr_materials' %}",
     method: 'GET',
+    dataType: 'json',
     data: {
       organization: orgId,
       date1: date1,
       date2: date2
     },
+
     success: function (data) {
       if (!Array.isArray(data) || data.length === 0) {
         editorSetTbodyRows(`
@@ -456,6 +467,7 @@ function searchMaterials() {
 
       editorSetTbodyRows(rows);
     },
+
     error: function (xhr, status, error) {
       console.error('Xatolik:', error);
       console.error('Status:', status);
@@ -506,7 +518,14 @@ $(function () {
 
   $('#organization').on('change', function () {
     const orgId = $(this).val();
+
     updateEditorWithSelections();
+
+    if (!orgId) {
+      $('#agreements').html('').trigger('change');
+      return;
+    }
+
     loadAgreementsByOrg(orgId);
   });
 
@@ -524,11 +543,8 @@ $(function () {
   {% if selected_org %}
     $('#organization').val('{{ selected_org }}').trigger('change');
   {% else %}
-    const initialOrg = $('#organization').val();
-    if (initialOrg) {
-      loadAgreementsByOrg(initialOrg);
-      updateEditorWithSelections();
-    }
+    $('#agreements').html('').trigger('change');
+    updateEditorWithSelections();
   {% endif %}
 });
 </script>
