@@ -325,20 +325,29 @@ def ajax_akt_materials(request):
 
     org_id = (request.GET.get("organization") or "").strip()
     dep_id = (request.GET.get("department") or "").strip()
-    d1 = request.GET.get("date1")
-    d2 = request.GET.get("date2")
+    d1 = (request.GET.get("date1") or "").strip()
+    d2 = (request.GET.get("date2") or "").strip()
 
     if not d1 or not d2:
         return JsonResponse([], safe=False)
 
-    date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
-    date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
+    try:
+        date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
+        date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
+    except ValueError:
+        return JsonResponse([], safe=False)
+
+    # Hozirgi userga bog'langan barcha senderlar
+    sender_ids = MaterialUser.objects.filter(
+        receiver=employee
+    ).values_list("sender_id", flat=True)
 
     qs = (
         OrderMaterial.objects.filter(
             order__date_finished__gte=date1,
             order__date_finished__lt=date2,
             order__receiver__region=employee.region,
+            material__employee_id__in=sender_ids,
         )
         .annotate(
             full_name=Concat(
@@ -353,7 +362,6 @@ def ajax_akt_materials(request):
         )
     )
 
-    # sender bo‘yicha filter (sizning asosiy filteringiz shu)
     if dep_id:
         qs = qs.filter(order__sender__department_id=dep_id)
     elif org_id:
@@ -362,17 +370,17 @@ def ajax_akt_materials(request):
         return JsonResponse([], safe=False)
 
     qs = qs.values(
+        "id",
+        "order__date_finished",
         "order__technics__name",
         "order__technics__serial",
         "material__name",
         "number",
         "material__unit__name",
+        "material__price",
         "full_name",
         "rank_name",
-        "material__price",
-        "id",
-        "order__date_finished",
-    )
+    ).order_by("-order__date_finished", "-id")
 
     return JsonResponse(list(qs), safe=False)
 

@@ -417,6 +417,12 @@ class OrderMaterial(models.Model):
         db_table = 'ordermaterial'
 
 
+class MaterialUser(models.Model):
+    sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='sender', null=True, blank=True ,db_index=True)
+    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='receiver', null=True, blank=True, db_index=True)
+
+
+
 class Deed(models.Model):
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_sender', null=True, blank=True ,db_index=True)
     message_sender = models.TextField(null=True, blank=True)

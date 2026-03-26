@@ -1992,44 +1992,22 @@ def order_receiver_activ(request):
         .order_by("-id")
     )
 
-    # 1) Avval foydalanuvchining o‘zidagi materiallar
-    my_materials = Material.objects.filter(employee=employee, is_active=True)
+    own_materials = Material.objects.filter(
+        employee=employee,
+        is_active=True
+    )
 
-    if my_materials.exists():
-        materials = my_materials
+    if own_materials.exists():
+        materials = own_materials
     else:
-        base_qs = Material.objects.filter(
-            employee__rol__shop=True,
-            employee__region=employee.region,
-            organization=employee.organization,
+        sender_ids = MaterialUser.objects.filter(
+            receiver=employee
+        ).values_list("sender_id", flat=True)
+
+        materials = Material.objects.filter(
+            employee_id__in=sender_ids,
             is_active=True,
         )
-
-        filter_levels = [
-            {
-                "employee__organization": employee.organization,
-                "employee__department": employee.department,
-                "employee__directorate": employee.directorate,
-                "employee__division": employee.division,
-            },
-            {
-                "employee__organization": employee.organization,
-                "employee__department": employee.department,
-                "employee__directorate": employee.directorate,
-            },
-            {
-                "employee__organization": employee.organization,
-                "employee__department": employee.department,
-            },
-        ]
-
-        materials = Material.objects.none()
-
-        for level_filter in filter_levels:
-            qs = base_qs.filter(**level_filter)
-            if qs.exists():
-                materials = qs
-                break
 
     page_number = request.GET.get("page", 1)
     paginator = Paginator(orders_qs, 50)

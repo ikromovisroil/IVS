@@ -1,14 +1,5 @@
 from django.contrib import admin
-from .models import (
-    Organization, Department, Directorate, Division, Rank, Region,
-    Rol, Employee, Group, Category, Technics,
-    StructureCategory, Structure,
-    Unit, MaterialCategory, Material,
-    Goal, Order, OrderMaterial,
-    Deed, DeedConsent,
-    Contract, Liable
-)
-
+from .models import *
 
 # =========================
 # Inlines
@@ -220,6 +211,11 @@ class MaterialAdmin(admin.ModelAdmin):
         "category__name", "unit__name"
     )
     autocomplete_fields = ("employee", "category", "unit")
+
+
+@admin.register(MaterialUser)
+class MaterialUserAdmin(admin.ModelAdmin):
+    list_display = ("id", "sender", "receiver")
 
 
 # =========================
