@@ -21,6 +21,8 @@ class Organization(models.Model):
 
     class Meta:
         db_table = 'organization'
+        verbose_name = "Tashkilot"
+        verbose_name_plural = "Tashkilotlar"
 
 
 # Departament.
@@ -33,6 +35,8 @@ class Department(models.Model):
 
     class Meta:
         db_table = 'department'
+        verbose_name = "Departament"
+        verbose_name_plural = "Departamentlar"
 
 
 # Boshqarma.
@@ -45,6 +49,8 @@ class Directorate(models.Model):
 
     class Meta:
         db_table = 'directorate'
+        verbose_name = "Boshqarma"
+        verbose_name_plural = "Boshqarmalar"
 
 
 # Bo'lim.
@@ -57,6 +63,8 @@ class Division(models.Model):
 
     class Meta:
         db_table = 'division'
+        verbose_name = "Bo'lim"
+        verbose_name_plural = "Bo'limlar"
 
 
 # Lavozim.
@@ -68,6 +76,8 @@ class Rank(models.Model):
 
     class Meta:
         db_table = 'rank'
+        verbose_name = "Bo'lim"
+        verbose_name_plural = "Bo'limlar"
 
 
 # viloyat.
@@ -79,6 +89,8 @@ class Region(models.Model):
 
     class Meta:
         db_table = 'region'
+        verbose_name = "Xudud"
+        verbose_name_plural = "Xududlar"
 
 
 class Rol(models.Model):
@@ -100,6 +112,8 @@ class Rol(models.Model):
 
     class Meta:
         db_table = 'rol'
+        verbose_name = "Rol"
+        verbose_name_plural = "Rollar"
 
 
 # Xodim.
@@ -145,6 +159,8 @@ class Employee(models.Model):
 
     class Meta:
         db_table = 'employee'
+        verbose_name = "Xodim"
+        verbose_name_plural = "Xodimlar"
 
 
 # Category.
@@ -156,6 +172,8 @@ class Group(models.Model):
 
     class Meta:
         db_table = 'group'
+        verbose_name = "Uskuna turi"
+        verbose_name_plural = "Uskuna turlari"
 
 
 # Category.
@@ -168,6 +186,8 @@ class Category(models.Model):
 
     class Meta:
         db_table = 'category'
+        verbose_name = "Uskuna kategoriyasi"
+        verbose_name_plural = "Uskuna kategoriyalari"
 
 
 # texnika.
@@ -247,6 +267,8 @@ class Technics(models.Model):
 
     class Meta:
         db_table = 'technics'
+        verbose_name = "Uskuna"
+        verbose_name_plural = "Uskunalar"
 
 
 class StructureCategory(models.Model):
@@ -257,6 +279,8 @@ class StructureCategory(models.Model):
 
     class Meta:
         db_table = 'structurecategory'
+        verbose_name = "Qurulma kategoriyasi"
+        verbose_name_plural = "Qurulma kategoriyalari"
 
 
 class Structure(models.Model):
@@ -284,6 +308,8 @@ class Structure(models.Model):
 
     class Meta:
         db_table = 'structure'
+        verbose_name = "Qurulma"
+        verbose_name_plural = "Qurulmalar"
 
 
 # birligi
@@ -295,6 +321,8 @@ class Unit(models.Model):
 
     class Meta:
         db_table = 'unit'
+        verbose_name = "Material birligi"
+        verbose_name_plural = "Material birliglari"
 
 
 class MaterialCategory(models.Model):
@@ -305,6 +333,8 @@ class MaterialCategory(models.Model):
 
     class Meta:
         db_table = 'materialcategory'
+        verbose_name = "Material kategoriyasi"
+        verbose_name_plural = "Material kategoriyalari"
 
 
 # material.
@@ -333,6 +363,8 @@ class Material(models.Model):
 
     class Meta:
         db_table = 'material'
+        verbose_name = "Material"
+        verbose_name_plural = "Materiallar"
 
 
 # maqsad.
@@ -344,6 +376,8 @@ class Goal(models.Model):
 
     class Meta:
         db_table = 'goal'
+        verbose_name = "Ariza kategoriyasi"
+        verbose_name_plural = "Ariza kategoriyalari"
 
 
 # zayafka.
@@ -402,6 +436,8 @@ class Order(models.Model):
 
     class Meta:
         db_table = 'order'
+        verbose_name = "Ariza"
+        verbose_name_plural = "Arizalar"
 
 
 # zayafkadan soralgan materiali.
@@ -415,12 +451,21 @@ class OrderMaterial(models.Model):
 
     class Meta:
         db_table = 'ordermaterial'
+        verbose_name = "Ariza materiali"
+        verbose_name_plural = "Arizalar materiallari"
 
 
 class MaterialUser(models.Model):
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='sender', null=True, blank=True ,db_index=True)
     receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='receiver', null=True, blank=True, db_index=True)
 
+    def __str__(self):
+        return f"{self.sender} - {self.receiver}"
+
+    class Meta:
+        db_table = 'materialuser'
+        verbose_name = "Material user"
+        verbose_name_plural = "Material userlar"
 
 
 class Deed(models.Model):
@@ -479,6 +524,8 @@ class Deed(models.Model):
 
     class Meta:
         db_table = 'deed'
+        verbose_name = "Xujat"
+        verbose_name_plural = "Xujatlar"
 
 
 class DeedConsent(models.Model):
@@ -498,6 +545,8 @@ class DeedConsent(models.Model):
 
     class Meta:
         db_table = 'deedconsent'
+        verbose_name = "Xujat kelishuvchisi"
+        verbose_name_plural = "Xujat kelishuvchilari"
 
 
 class Contract(models.Model):
@@ -510,6 +559,8 @@ class Contract(models.Model):
 
     class Meta:
         db_table = 'contract'
+        verbose_name = "Shartnoma"
+        verbose_name_plural = "Shartnomalar"
 
 
 class Liable(models.Model):
@@ -522,3 +573,5 @@ class Liable(models.Model):
 
     class Meta:
         db_table = 'Liable'
+        verbose_name = "Shartnomaga javobgar shaxs"
+        verbose_name_plural = "Shartnomaga javobgar shaxslar"
