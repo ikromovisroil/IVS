@@ -38,25 +38,12 @@ def ajax_sender_technics(request):
     if not sender:
         return JsonResponse({"results": []})
 
-    filters = {
-        "is_active": True,
-    }
-
-    if sender.organization_id:
-        filters["organization_id"] = sender.organization_id
-    if sender.department_id:
-        filters["department_id"] = sender.department_id
-    if sender.directorate_id:
-        filters["directorate_id"] = sender.directorate_id
-    if sender.division_id:
-        filters["division_id"] = sender.division_id
-
     technics = (
         Technics.objects
         .filter(
             Q(employee_id=sender.id) |
-            Q(employee__isnull=True, status="free"),
-            **filters
+            Q(employee__isnull=True, department=employee.department),
+            is_active=True,
         )
         .order_by("name")
         .values("id", "name", "inventory", "serial", "mac")
