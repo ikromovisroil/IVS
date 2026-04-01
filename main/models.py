@@ -96,6 +96,7 @@ class Region(models.Model):
 class Rol(models.Model):
     employee = models.OneToOneField("Employee", on_delete=models.CASCADE, null=True, blank=True)
     client = models.BooleanField(default=False, db_index=True)
+    confirm = models.BooleanField(default=False, db_index=True)
     order = models.BooleanField(default=False, db_index=True)
     boss = models.BooleanField(default=False, db_index=True)
     shop = models.BooleanField(default=False, db_index=True)
