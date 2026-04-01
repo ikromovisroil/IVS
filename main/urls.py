@@ -1,9 +1,8 @@
 from django.urls import path
+from .views import *
 from .ajax_views import *
 from .ajax_xlsx import *
 from .sso_views import *
-from .order_views import *
-from .views import *
 
 urlpatterns = [
     # =========================
@@ -60,10 +59,10 @@ urlpatterns = [
     # =========================
     path("contact/", contact, name="contact"),
     path("contact/arxiv/", contact_arxiv, name="contact_arxiv"),
-    path("contact/user/", contact_user, name="contact_user"),
-    path("contact/user/arxiv/", contact_user_arxiv, name="contact_user_arxiv"),
-    path("contact/agrement/", contact_agrement, name="contact_agrement"),
-    path("contact/agrement/arxiv/", contact_agrement_arxiv, name="contact_agrement_arxiv"),
+    path("contact_user/", contact_user, name="contact_user"),
+    path("contact_user/arxiv/", contact_user_arxiv, name="contact_user_arxiv"),
+    path("contact_agrement/", contact_agrement, name="contact_agrement"),
+    path("contact_agrement/arxiv/", contact_agrement_arxiv, name="contact_agrement_arxiv"),
 
     # =========================
     # AJAX / FILTER / DINAMIK
@@ -88,59 +87,42 @@ urlpatterns = [
     path("ajax/ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
     path("ajax/search-tex/", ajax_search_tex, name="ajax_search_tex"),
     path("ajax/check-new/", order_check_new, name="order_check_new"),
-    path("ajax/check-all/", order_check_all, name="order_check_all"),
     path("ajax/sender-technics/", ajax_sender_technics, name="ajax_sender_technics"),
 
     # =========================
     # HUJJATLAR
     # =========================
     path("document/", document_get, name="document_get"),
-    path("document/post/", document_post, name="document_post"),
+    path("document/document_post/", document_post, name="document_post"),
 
     # AKT
     path("akt/", akt_get, name="akt_get"),
-    path("akt/post/", akt_post, name="akt_post"),
+    path("akt/akt_post/", akt_post, name="akt_post"),
 
     # SVOD
     path("svod/", svod_get, name="svod_get"),
-    path("svod/post/", svod_post, name="svod_post"),
+    path("svod/akt_post/", svod_post, name="svod_post"),
 
     # REESTR
     path("reestr/", reestr_get, name="reestr_get"),
-    path("reestr/post/", reestr_post, name="reestr_post"),
+    path("reestr/reestr_post/", reestr_post, name="reestr_post"),
 
     # =========================
     # ZAYAVKA / ORDER
     # =========================
-    path("order/sender/", order_sender, name="order_sender"),
-    path("order/sender/decide/<int:pk>/", order_decide, name="order_decide"),
-    path("order/sender/arxiv/", order_sender_arxiv, name="order_sender_arxiv"),
+    path("order_sender/", order_sender, name="order_sender"),
+    path("order_sender/decide/<int:pk>/", order_decide, name="order_decide"),
+    path("order_sender_arxiv/", order_sender_arxiv, name="order_sender_arxiv"),
 
-    path("order/sender/all/", order_sender_all, name="order_sender_all"),
-    path("order/sender/arxiv/all/", order_sender_arxiv_all, name="order_sender_arxiv_all"),
+    path("order_receiver/", order_receiver, name="order_receiver"),
+    path("order_receiver/accepted/<int:pk>/", order_accepted, name="order_accepted"),
+    path("order_receiver_activ/", order_receiver_activ, name="order_receiver_activ"),
+    path("order_receiver_arxiv/", order_receiver_arxiv, name="order_receiver_arxiv"),
+    path("order_receiver/order_receiver_deed/<int:pk>/", order_receiver_deed, name="order_receiver_deed"),
+    path("order_receiver/order_receiver_deed_post/", order_receiver_deed_post, name="order_receiver_deed_post"),
 
-    path("order/agrement/", order_agrement, name="order_agrement"),
-    path("order/agrement/material/", order_agrement_material, name="order_agrement_material"),
-    path("order/agrement/arxiv/", order_agrement_arxiv, name="order_agrement_arxiv"),
-    path("order/agrement/deed/<int:pk>/", order_agrement_deed, name="order_agrement_deed"),
-    path("order/agrement/post/", order_agrement_deed_post, name="order_agrement_deed_post"),
-
-    path("order/receiver/all/", order_receiver_all, name="order_receiver_all"),
-    path("order/receiver/accepted/all/<int:pk>/", order_accepted_all, name="order_accepted_all"),
-    path("order/receiver/activ/all/", order_receiver_activ_all, name="order_receiver_activ_all"),
-    path("order/receiver/arxiv/all/", order_receiver_arxiv_all, name="order_receiver_arxiv_all"),
-    path("order/receiver/material/all/", order_material_all, name="order_material_all"),
-
-    path("order/receiver/", order_receiver, name="order_receiver"),
-    path("order/receiver/accepted/<int:pk>/", order_accepted, name="order_accepted"),
-    path("order/receiver/activ/", order_receiver_activ, name="order_receiver_activ"),
-    path("order/receiver/arxiv/", order_receiver_arxiv, name="order_receiver_arxiv"),
-    path("order/receiver/deed/<int:pk>/", order_receiver_deed, name="order_receiver_deed"),
-    path("order/receiver/post/", order_receiver_deed_post, name="order_receiver_deed_post"),
-
-    path("order/post/", order_post, name="order_post"),
-    path("order/post/all", order_post_all, name="order_post_all"),
-    path("order/material/", ordermaterial_post, name="ordermaterial_post"),
+    path("order_post/", order_post, name="order_post"),
+    path("ordermaterial_post/", ordermaterial_post, name="ordermaterial_post"),
     path("order/approved/", order_approved, name="order_approved"),
 
     # =========================

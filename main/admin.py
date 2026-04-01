@@ -141,12 +141,12 @@ class EmployeeAdmin(admin.ModelAdmin):
 @admin.register(Rol)
 class RolAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "employee", "full",
-        "confirm", "order", "boss", "shop", "akt", "status",
+        "id", "employee",
+        "client", "order", "boss", "shop", "akt", "status",
         "technics", "technics_edit", "material", "material_edit"
     )
     list_filter = (
-        "full", "confirm", "order", "boss", "shop", "akt", "status",
+        "client", "order", "boss", "shop", "akt", "status",
         "technics", "technics_edit", "material", "material_edit"
     )
     search_fields = (
@@ -236,6 +236,7 @@ class OrderAdmin(admin.ModelAdmin):
         "date_approved", "date_rejected"
     )
     search_fields = (
+        "body",
         "sender__last_name", "sender__first_name",
         "receiver__last_name", "receiver__first_name",
         "technics__name"

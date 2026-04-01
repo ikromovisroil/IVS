@@ -95,8 +95,7 @@ class Region(models.Model):
 
 class Rol(models.Model):
     employee = models.OneToOneField("Employee", on_delete=models.CASCADE, null=True, blank=True)
-    full = models.BooleanField(default=False, db_index=True)
-    confirm = models.BooleanField(default=False, db_index=True)
+    client = models.BooleanField(default=False, db_index=True)
     order = models.BooleanField(default=False, db_index=True)
     boss = models.BooleanField(default=False, db_index=True)
     shop = models.BooleanField(default=False, db_index=True)
@@ -370,7 +369,6 @@ class Material(models.Model):
 
 # maqsad.
 class Goal(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -384,9 +382,6 @@ class Goal(models.Model):
 
 # zayafka.
 class Order(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
-    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_user', null=True, blank=True, db_index=True)
-
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_sender', null=True, blank=True, db_index=True)
     goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     body = models.TextField(null=True, blank=True)
@@ -437,7 +432,7 @@ class Order(models.Model):
         return self.materials.select_related('material').all()
 
     def __str__(self):
-        return f"Order #{self.id}"
+        return self.body or f"Order #{self.id}"
 
     class Meta:
         db_table = 'order'
@@ -450,13 +445,6 @@ class OrderMaterial(models.Model):
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="materials", db_index=True)
     material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     number = models.PositiveIntegerField(default=1)
-    given = models.PositiveIntegerField(null=True, blank=True)
-
-    @property
-    def given_summa(self):
-        qty = self.given if self.given is not None else self.number
-        price = self.material.price if self.material and self.material.price else 0
-        return qty * price
 
     def __str__(self):
         return f"{self.order} → {self.material or self.technics} x {self.number}"
