@@ -283,7 +283,6 @@
 
       <ul class="sidebar-nav" id="sidebar-nav">
 
-        {% if request.user.employee.rol.order %}
         <li class="nav-item">
 
           <a class="nav-link {% if url_name != 'order_agrement_arxiv' and url_name != 'order_agrement' and url_name != 'order_receiver_arxiv_all' and url_name != 'order_receiver_all' and url_name != 'order_receiver_activ_all' and url_name != 'order_sender_all' and url_name != 'order_sender_arxiv_all' and url_name != 'order_sender' and url_name != 'order_sender_arxiv' and url_name != 'order_receiver' and url_name != 'order_receiver_activ' and url_name != 'order_receiver_arxiv' %}collapsed{% endif %}"
@@ -297,6 +296,12 @@
               class="nav-content collapse {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
+            <li>
+              <a class="{% if url_name == 'order_sender' or url_name == 'order_sender_arxiv' %}active{% endif %}"
+                 href="{% url 'order_sender' %}">
+                <i class="bi bi-circle"></i><span>ATMga Ariza Yuborish</span>
+              </a>
+            </li>
             {% if request.user.employee.rol.client %}
             <li>
               <a class="{% if url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' %}active{% endif %}"
@@ -334,7 +339,6 @@
 
           </ul>
         </li>
-        {% endif %}
 
         {% with deed_urls=" contact_user contact_user_arxiv contact contact_arxiv contact_agrement contact_agrement_arxiv " %}
         <li class="nav-item">
