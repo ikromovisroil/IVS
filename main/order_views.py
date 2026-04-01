@@ -764,18 +764,15 @@ def order_agrement_material(request):
         return redirect("order_agrement")
 
     order = get_object_or_404(
-        Order.objects.select_for_update().select_related("receiver", "sender"),
+        Order.objects.select_for_update(),
         id=order_id
     )
-
-    # if order.receiver and order.receiver != employee:
-    #     raise PermissionDenied("Siz bu arizani tasdiqlay olmaysiz.")
 
     try:
         if not ordermaterial_ids:
             order.status = "approved"
             order.user = employee
-            order.save(update_fields=["status", "user", ])
+            order.save(update_fields=["status", "user"])
             messages.success(request, "Ariza muvaffaqiyatli tasdiqlandi.")
             return redirect("order_agrement_arxiv")
 
@@ -804,7 +801,7 @@ def order_agrement_material(request):
 
         order.status = "approved"
         order.user = employee
-        order.save(update_fields=["status","user",])
+        order.save(update_fields=["status", "user"])
 
         messages.success(request, "Ariza muvaffaqiyatli tasdiqlandi.")
 
