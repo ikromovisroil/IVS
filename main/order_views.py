@@ -850,7 +850,7 @@ def order_agrement_deed(request,pk):
 
     order = get_object_or_404(Order, pk=pk)
 
-    if order.receiver != employee:
+    if order.user != employee:
         raise PermissionDenied
 
     my_dep_id = request.user.employee.department_id
