@@ -106,7 +106,6 @@ class Rol(models.Model):
     technics_edit = models.BooleanField(default=False, db_index=True)
     material = models.BooleanField(default=False, db_index=True)
     material_edit = models.BooleanField(default=False, db_index=True)
-    temp_fix = models.BooleanField(default=False, null=True, blank=True)
 
     def __str__(self):
         return str(self.id)
