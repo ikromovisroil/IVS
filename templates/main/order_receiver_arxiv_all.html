@@ -30,15 +30,15 @@
             <ul class="nav nav-pills">
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver' %}" class="nav-link">Arizalar</a>
+                <a href="{% url 'order_receiver_all' %}" class="nav-link">Arizalar</a>
               </li>
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_activ' %}" class="nav-link">Bajarish</a>
+                <a href="{% url 'order_receiver_activ_all' %}" class="nav-link">Bajarish</a>
               </li>
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_arxiv' %}" class="nav-link active">Tarix</a>
+                <a href="{% url 'order_receiver_arxiv_all' %}" class="nav-link active">Tarix</a>
               </li>
 
             </ul>
@@ -54,7 +54,6 @@
                     <th scope="col">Xolati</th>
                     <th scope="col">Baho</th>
                     <th scope="col">Yuborilgan sana</th>
-                    <th scope="col">Imzolashga yuborish</th>
                   </tr>
                 </thead>
 
@@ -178,7 +177,8 @@
                                       <tr>
                                         <th>T/r</th>
                                         <th>Material Name</th>
-                                        <th>Soni</th>
+                                        <th>So'ralgan</th>
+                                        <th>Berildi</th>
                                         <th>Narxi</th>
                                       </tr>
                                     </thead>
@@ -188,13 +188,14 @@
                                           <th scope="row">{{ forloop.counter }}</th>
                                           <td>{{ m.material.name }}</td>
                                           <td>{{ m.number|intcomma }}</td>
+                                          <td>{{ m.given|intcomma }}</td>
                                           <td>{{ m.material.price|intcomma }}</td>
                                         </tr>
                                       {% endfor %}
                                     </tbody>
                                   </table>
                                 {% endif %}
-                                 <hr>
+                                <hr>
                                 <div class="row text-center g-3">
                                     {% if o.date_creat %}
                                     <div class="col-md-4 col-lg-3">
@@ -266,14 +267,6 @@
                                     </div>
                                     {% endif %}
                                 </div>
-                                {% if o.rating %}
-                                <hr>
-                                <div class="text-center">
-                                    {% for i in ""|center:o.rating %}
-                                        <i class="bi bi-star-fill text-warning fs-2"></i>
-                                    {% endfor %}
-                                </div>
-                                {% endif %}
                               </div>
                             </div>
                           </div>
@@ -289,14 +282,6 @@
                           {% endif %}
                       </td>
                       <td>{{ o.date_creat|date:"d.m.Y, H:i" }}</td>
-
-                      <td>
-                        {% if o.materials_all.exists %}
-                          <i class="bi bi-telegram me-1"></i><a  class="badge bg-success text-white" href="{% url 'order_receiver_deed' o.pk %}">Yuborish</a>
-                        {% else %}
-                          <span class="text-muted">-</span>
-                        {% endif %}
-                      </td>
 
                     </tr>
                   {% endfor %}

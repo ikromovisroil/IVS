@@ -207,7 +207,7 @@
                             Etiborsiz qoldirish
                         </button>
 
-                        <form action="{% url 'order_accepted' o.pk %}" method="post" style="display:inline;">
+                        <form action="{% url 'order_accepted_all' o.pk %}" method="post" style="display:inline;">
                             {% csrf_token %}
                             <button
                                 type="submit"

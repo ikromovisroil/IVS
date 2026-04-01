@@ -30,15 +30,11 @@
             <ul class="nav nav-pills">
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver' %}" class="nav-link">Arizalar</a>
+                <a href="{% url 'order_agrement' %}" class="nav-link">Arizalar</a>
               </li>
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_activ' %}" class="nav-link">Bajarish</a>
-              </li>
-
-              <li class="nav-pills">
-                <a href="{% url 'order_receiver_arxiv' %}" class="nav-link active">Tarix</a>
+                <a href="{% url 'order_agrement_arxiv' %}" class="nav-link active">Tarix</a>
               </li>
 
             </ul>
@@ -52,7 +48,6 @@
                     <th scope="col">Muallif</th>
                     <th scope="col">Ariza Maqsadi</th>
                     <th scope="col">Xolati</th>
-                    <th scope="col">Baho</th>
                     <th scope="col">Yuborilgan sana</th>
                     <th scope="col">Imzolashga yuborish</th>
                   </tr>
@@ -178,7 +173,8 @@
                                       <tr>
                                         <th>T/r</th>
                                         <th>Material Name</th>
-                                        <th>Soni</th>
+                                        <th>So'ralgan</th>
+                                        <th>Berildi</th>
                                         <th>Narxi</th>
                                       </tr>
                                     </thead>
@@ -188,6 +184,7 @@
                                           <th scope="row">{{ forloop.counter }}</th>
                                           <td>{{ m.material.name }}</td>
                                           <td>{{ m.number|intcomma }}</td>
+                                          <td>{{ m.given|intcomma }}</td>
                                           <td>{{ m.material.price|intcomma }}</td>
                                         </tr>
                                       {% endfor %}
@@ -281,18 +278,11 @@
                         <!-- End Modal -->
 
                       </td>
-                      <td>
-                          {% if o.rating %}
-                          5/{{ o.rating }} ⭐
-                          {% else %}
-                          -
-                          {% endif %}
-                      </td>
                       <td>{{ o.date_creat|date:"d.m.Y, H:i" }}</td>
 
                       <td>
                         {% if o.materials_all.exists %}
-                          <i class="bi bi-telegram me-1"></i><a  class="badge bg-success text-white" href="{% url 'order_receiver_deed' o.pk %}">Yuborish</a>
+                          <i class="bi bi-telegram me-1"></i><a  class="badge bg-success text-white" href="{% url 'order_agrement_deed' o.pk %}">Yuborish</a>
                         {% else %}
                           <span class="text-muted">-</span>
                         {% endif %}
