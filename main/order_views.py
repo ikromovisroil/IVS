@@ -563,7 +563,7 @@ def order_receiver_all(request):
 
     orders_qs = (
         Order.objects
-        .filter(organization=employee.organization,status="viewed")
+        .filter(sender__region=employee.region,organization=employee.organization,status="viewed")
         .select_related("receiver", "sender")
         .order_by("-id")
     )
@@ -728,7 +728,7 @@ def order_agrement(request):
 
     orders_qs = (
         Order.objects
-        .filter(organization=employee.organization, status__in=["finished"])
+        .filter(sender__region=employee.region,organization=employee.organization, status__in=["finished"])
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
