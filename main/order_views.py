@@ -728,7 +728,7 @@ def order_agrement(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender__region=employee.region,organization=employee.organization, status__in=["finished"])
+        .filter(receiver__region=employee.region,organization=employee.organization, status__in=["finished"])
         .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
@@ -774,7 +774,8 @@ def order_agrement_material(request):
     try:
         if not ordermaterial_ids:
             order.status = "approved"
-            order.save(update_fields=["status"])
+            order.user = employee
+            order.save(update_fields=["status", "user", ])
             messages.success(request, "Ariza muvaffaqiyatli tasdiqlandi.")
             return redirect("order_agrement_arxiv")
 
