@@ -95,7 +95,26 @@ def order_check_new(request):
 
     latest_order = (
         Order.objects
-        .filter(sender__region=employee.region, status="viewed")
+        .filter(sender__region=employee.region,organization_id=4, status="viewed")
+        .order_by("-id")
+        .values("id")
+        .first()
+    )
+
+    return JsonResponse({
+        "latest_id": latest_order["id"] if latest_order else 0,
+    })
+
+
+@login_required
+def order_check_all(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return JsonResponse({"error": "Employee yo‘q"}, status=400)
+
+    latest_order = (
+        Order.objects
+        .filter(sender__region=employee.region,organization=employee.organization, status="viewed")
         .order_by("-id")
         .values("id")
         .first()

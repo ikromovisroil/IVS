@@ -23,9 +23,9 @@
     <div class="modal fade" id="modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content">
-            <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
+            <form action="{% url 'order_post_all' %}" method="post">{% csrf_token %}
             <div class="modal-header">
-              <h5 class="modal-title">#Ariza Yuborish</h5>
+              <h5 class="modal-title">Ariza Yuborish</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -45,7 +45,7 @@
 
                     <!-- Izoh -->
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Izoh:</label>
+                        <label class="col-sm-3 col-form-label">Qo‘shimcha ma’lumot:</label>
                         <div class="col-sm-9">
                             <textarea class="form-control" name="body" style="height: 100px"></textarea>
                         </div>
@@ -53,8 +53,8 @@
 
                 </div>
                 <div class="modal-footer d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
-                        <button type="submit" class="btn btn-primary">Yuborish</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary">Yuborish</button>
                 </div>
             </div>
             </form>
@@ -72,11 +72,11 @@
               <ul class="nav nav-pills">
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender' %}" class="nav-link">Arizalar</a>
+                  <a href="{% url 'order_sender_all' %}" class="nav-link active">Arizalar</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_arxiv' %}" class="nav-link active" >Tarix</a>
+                  <a href="{% url 'order_sender_arxiv_all' %}" class="nav-link" >Tarix</a>
                 </li>
 
               </ul>
@@ -118,7 +118,7 @@
 
                             <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">
                                 <div class="modal-dialog modal-dialog-centered modal-xl">
-                                  <div class="modal-content">
+                                  <form class="modal-content" action="{% url 'order_decide' o.id %}" method="post">{% csrf_token %}
                                     <div class="modal-header">
                                       <h5 class="modal-title">Ariza tafsilotlari</h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -295,16 +295,14 @@
                                             </div>
                                             {% endif %}
                                         </div>
-                                        {% if o.rating %}
-                                        <hr>
-                                        <div class="text-center">
-                                            {% for i in ""|center:o.rating %}
-                                                <i class="bi bi-star-fill text-warning fs-2"></i>
-                                            {% endfor %}
-                                        </div>
+                                    </div>
+                                    <div class="modal-footer d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Etiborsiz qoldirish</button>
+                                        {% if o.status in 'viewed accepted finished' %}
+                                        <button type="submit" name="action" value="rejected" class="btn btn-danger">Bekor qilish</button>
                                         {% endif %}
                                     </div>
-                                  </div>
+                                  </form>
                                 </div>
                             </div><!-- End Vertically centered Modal-->
                         </td>

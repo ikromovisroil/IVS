@@ -286,7 +286,7 @@
         {% if request.user.employee.rol.order %}
         <li class="nav-item">
 
-          <a class="nav-link {% if url_name not in 'order_sender order_sender_arxiv order_receiver order_receiver_activ order_receiver_arxiv' %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name != 'order_agrement_arxiv' and url_name != 'order_agrement' and url_name != 'order_receiver_arxiv_all' and url_name != 'order_receiver_all' and url_name != 'order_receiver_activ_all' and url_name != 'order_sender_all' and url_name != 'order_sender_arxiv_all' and url_name != 'order_sender' and url_name != 'order_sender_arxiv' and url_name != 'order_receiver' and url_name != 'order_receiver_activ' and url_name != 'order_receiver_arxiv' %}collapsed{% endif %}"
              data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
             <i class="bi bi-journal-text"></i>
             <span>Arizalar</span>
@@ -294,32 +294,45 @@
           </a>
 
           <ul id="forms-nav"
-              class="nav-content collapse {% if url_name in 'order_sender order_sender_arxiv order_receiver order_receiver_activ order_receiver_arxiv' %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
             <li>
-              <a class="{% if url_name in 'order_sender order_sender_arxiv' %}active{% endif %}"
+              <a class="{% if url_name == 'order_sender' or url_name == 'order_sender_arxiv' %}active{% endif %}"
                  href="{% url 'order_sender' %}">
-                <i class="bi bi-circle"></i><span>Ariza Yuborish</span>
+                <i class="bi bi-circle"></i><span>ATMga Ariza Yuborish</span>
               </a>
             </li>
 
             <li>
-              <a class="{% if url_name in 'order_receiver order_receiver_activ order_receiver_arxiv' %}active{% endif %}"
+              <a class="{% if url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' %}active{% endif %}"
+                 href="{% url 'order_sender_all' %}">
+                <i class="bi bi-circle"></i><span>IMVga Ariza Yuborish</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="{% if url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% endif %}"
                  href="{% url 'order_receiver' %}">
                 <i class="bi bi-circle"></i><span>Ariza Bajarish</span>
               </a>
             </li>
 
+            <li>
+              <a class="{% if url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_receiver_arxiv_all' %}active{% endif %}"
+                 href="{% url 'order_receiver_all' %}">
+                <i class="bi bi-circle"></i><span>Ariza Bajarish IMV</span>
+              </a>
+            </li>
+
+            <li>
+              <a class="{% if url_name == 'order_agrement' or url_name == 'order_agrement_arxiv' %}active{% endif %}"
+                 href="{% url 'order_agrement' %}">
+                <i class="bi bi-circle"></i><span>Arizani Tasdiqlash</span>
+              </a>
+            </li>
+
           </ul>
-        </li>
-        {% else %}
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'order_sender' %}collapsed{% endif %}"
-             href="{% url 'order_sender' %}">
-            <i class="bi bi-journal-text"></i>
-            <span>Arizalar</span>
-          </a>
         </li>
         {% endif %}
 
@@ -339,7 +352,7 @@
 
             {% if request.user.employee.rol.order %}
             <li>
-              <a class="{% if url_name == 'contact_user' or url_name == 'contact_user_arxiv' %}active{% endif %}"
+              <a class="{% if " "|add:url_name|add:" " in ' contact_user contact_user_arxiv ' %}active{% endif %}"
                  href="{% url 'contact_user' %}">
                 <i class="bi bi-circle"></i><span>Imzolashga yuborish</span>
               </a>
@@ -347,14 +360,14 @@
             {% endif %}
 
             <li>
-              <a class="{% if url_name == 'contact' or url_name == 'contact_arxiv' %}active{% endif %}"
+              <a class="{% if " "|add:url_name|add:" " in ' contact contact_arxiv ' %}active{% endif %}"
                  href="{% url 'contact' %}">
                 <i class="bi bi-circle"></i><span>Imzolash uchun</span>
               </a>
             </li>
 
             <li>
-              <a class="{% if url_name == 'contact_agrement' or url_name == 'contact_agrement_arxiv' %}active{% endif %}"
+              <a class="{% if " "|add:url_name|add:" " in ' contact_agrement contact_agrement_arxiv ' %}active{% endif %}"
                  href="{% url 'contact_agrement' %}">
                 <i class="bi bi-circle"></i><span>Kelishish uchun</span>
               </a>
