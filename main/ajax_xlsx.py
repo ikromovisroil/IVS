@@ -11,6 +11,10 @@ from .models import *
 @login_required
 def export_technics_xlsx(request):
     org_id = (request.GET.get("organization") or "").strip()
+    dep_id = (request.GET.get("department") or "").strip()
+    dir_id = (request.GET.get("directorate") or "").strip()
+    div_id = (request.GET.get("division") or "").strip()
+    group_id = (request.GET.get("group") or "").strip()
     category_id = (request.GET.get("category") or "").strip()
     status = (request.GET.get("status") or "").strip()
     name = (request.GET.get("name") or "").strip()
@@ -25,6 +29,18 @@ def export_technics_xlsx(request):
     if org_id.isdigit():
         qs = qs.filter(organization_id=int(org_id))
 
+    if dep_id.isdigit():
+        qs = qs.filter(department_id=int(dep_id))
+
+    if dir_id.isdigit():
+        qs = qs.filter(directorate_id=int(dir_id))
+
+    if div_id.isdigit():
+        qs = qs.filter(division_id=int(div_id))
+
+    if group_id.isdigit():
+        qs = qs.filter(group_id=int(group_id))
+
     if category_id.isdigit():
         qs = qs.filter(category_id=int(category_id))
 
@@ -38,11 +54,13 @@ def export_technics_xlsx(request):
     ws = wb.active
     ws.title = "Technics"
 
-    headers = ["Category", "Name", "Parametr", "I/N", "S/N", "Mac", "Status"]
+    headers = ["F.I.O", "Group", "Category", "Name", "Parametr", "I/N", "S/N", "Mac", "Status"]
     ws.append(headers)
 
     for t in qs:
         ws.append([
+            (t.employee.full_name if getattr(t, "employee", None) else ""),
+            (t.group.name if getattr(t, "group", None) else ""),
             (t.category.name if getattr(t, "category", None) else ""),
             (getattr(t, "name", "") or ""),
             (getattr(t, "parametr", "") or ""),

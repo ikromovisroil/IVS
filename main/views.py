@@ -596,7 +596,7 @@ def barn_tex(request):
         status or category_id or group_id or name
     )
 
-    organizations = Organization.objects.only("id", "name")
+    organizations = Organization.objects.only("id", "name").order_by("id")
     if not employee.rol.full:
         organizations = organizations.filter(id=employee.organization_id)
 

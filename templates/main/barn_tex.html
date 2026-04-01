@@ -1624,7 +1624,7 @@
  * ✅ 3) Excel export
  */
 document.getElementById("btnExcel")?.addEventListener("click", async () => {
-  const fields = ["organization", "department", "directorate", "division", "status", "category", "name"];
+  const fields = ["organization", "department", "directorate", "division", "group", "status", "category", "name"];
   const params = new URLSearchParams();
 
   for (const f of fields) {
