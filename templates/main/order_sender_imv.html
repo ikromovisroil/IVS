@@ -23,16 +23,29 @@
     <div class="modal fade" id="modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content">
-            <form action="{% url 'order_post_all' %}" method="post">{% csrf_token %}
+            <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
             <div class="modal-header">
-              <h5 class="modal-title">#Ariza Yuborish</h5>
+              <h5 class="modal-title">Ariza Yuborish</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="">
+                    <!-- Mavzu -->
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Arizaning Maqsadi:</label>
+                        <div class="col-sm-9">
+                            <select class="form-select" name="goal" id="topic-select" required>
+                                <option value="">tanlang</option>
+                                {% for t in goal %}
+                                    <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
                     <!-- Izoh -->
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Izoh:</label>
+                        <label class="col-sm-3 col-form-label">Qo‘shimcha ma’lumot:</label>
                         <div class="col-sm-9">
                             <textarea class="form-control" name="body" style="height: 100px"></textarea>
                         </div>
@@ -40,8 +53,8 @@
 
                 </div>
                 <div class="modal-footer d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
-                        <button type="submit" class="btn btn-primary">Yuborish</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary">Yuborish</button>
                 </div>
             </div>
             </form>
@@ -59,11 +72,11 @@
               <ul class="nav nav-pills">
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_all' %}" class="nav-link">Arizalar</a>
+                  <a href="{% url 'order_sender' %}" class="nav-link active">Arizalar</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_arxiv_all' %}" class="nav-link active" >Tarix</a>
+                  <a href="{% url 'order_sender_arxiv' %}" class="nav-link" >Tarix</a>
                 </li>
 
               </ul>
@@ -93,19 +106,13 @@
                                 <i class="bi bi-check2-circle me-1 text-warning"></i>
                                 <span type="button" class="badge bg-warning text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Jarayonda</span>
                             {% elif o.status == "finished" %}
-                                <i class="bi bi-flag me-1 text-primary"></i>
-                                <span type="button" class="badge bg-primary text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Tasdiqlash kutulmoqda</span>
-                            {% elif o.status == "approved" %}
-                                <i class="bi bi-patch-check me-1 text-success"></i>
-                                <span type="button" class="badge bg-success text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Tasdiqlandi</span>
-                            {% elif o.status == "rejected" %}
-                                <i class="bi bi-x-circle me-1 text-danger"></i>
-                                <span type="button" class="badge bg-danger text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Rad etildi</span>
+                                <i class="bi bi-flag me-1 text-info"></i>
+                                <span type="button" class="badge bg-info text-white" data-bs-toggle="modal" data-bs-target="#verticalmodal{{o.id}}">Yakunlandi</span>
                             {% endif %}
 
                             <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">
                                 <div class="modal-dialog modal-dialog-centered modal-xl">
-                                  <div class="modal-content">
+                                  <form class="modal-content" action="{% url 'order_decide' o.id %}" method="post">{% csrf_token %}
                                     <div class="modal-header">
                                       <h5 class="modal-title">Ariza tafsilotlari</h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -119,7 +126,7 @@
                                                 <span class="badge
                                                     {% if o.status == 'viewed' %}bg-warning
                                                     {% elif o.status == 'accepted' %}bg-warning
-                                                    {% elif o.status == 'finished' %}bg-primary
+                                                    {% elif o.status == 'finished' %}bg-info
                                                     {% elif o.status == 'approved' %}bg-success
                                                     {% elif o.status == 'rejected' %}bg-danger
                                                     {% else %}bg-secondary
@@ -134,7 +141,7 @@
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-person me-1"></i> Ariza muallifi
                                             </div>
-                                            <div class="col-6">{{ o.sender.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
+                                            <div class="col-6">{{ o.sender.full_name }} ({{ o.sender.rank.name|default:"" }})</div>
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
                                             </div>
@@ -152,25 +159,25 @@
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-telephone me-1"></i> Telefon raqami
                                             </div>
-                                            <div class="col-6">{{ o.sender.phone|default:"" }}</div>
+                                            <div class="col-6">{{ o.sender.phone|default:"-" }}</div>
+                                            {% if o.technics %}
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
+                                            </div>
+                                            <div class="col-6">{{ o.body }}</div>
+                                            {% endif %}
                                             {% if o.technics %}
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-cpu me-1"></i> Xizmat ko‘rsatilgan texnika
                                             </div>
                                             <div class="col-6">{{ o.technics.name }}</div>
                                             {% endif %}
-                                            {% if o.body %}
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
-                                            </div>
-                                            <div class="col-6">{{ o.body }}</div>
-                                            {% endif %}
                                             {% if o.receiver %}
                                             <hr class="my-3">
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-person-check me-1"></i> Mas’ul xodim
                                             </div>
-                                            <div class="col-6">{{ o.receiver.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
+                                            <div class="col-6">{{ o.receiver.full_name }} ({{ o.receiver.rank.name|default:"" }})</div>
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-building me-1"></i> Tashkilot
                                             </div>
@@ -184,10 +191,10 @@
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-telephone me-1"></i> Telefon raqami
                                             </div>
-                                            <div class="col-6">{{ o.receiver.phone|default:"" }}</div>
+                                            <div class="col-6">{{ o.receiver.phone|default:"-" }}</div>
                                             {% endif %}
                                         </div>
-                                        {% if o.materials_all.exists %}
+                                         {% if o.materials_all.exists %}
                                           <hr>
                                           <table class="table">
                                             <thead>
@@ -282,16 +289,38 @@
                                             </div>
                                             {% endif %}
                                         </div>
-                                        {% if o.rating %}
+                                        {% if o.status == 'finished' %}
                                         <hr>
-                                        <div class="text-center">
-                                            {% for i in ""|center:o.rating %}
-                                                <i class="bi bi-star-fill text-warning fs-2"></i>
-                                            {% endfor %}
+                                        <div>
+                                           <div class="rating text-center">
+                                                <input type="radio" name="rating" id="star1-{{ or.id }}" value="1">
+                                                <label for="star1-{{ or.id }}">1⭐</label>
+
+                                                <input type="radio" name="rating" id="star2-{{ or.id }}" value="2">
+                                                <label for="star2-{{ or.id }}">2⭐</label>
+
+                                                <input type="radio" name="rating" id="star3-{{ or.id }}" value="3">
+                                                <label for="star3-{{ or.id }}">3⭐</label>
+
+                                                <input type="radio" name="rating" id="star4-{{ or.id }}" value="4">
+                                                <label for="star4-{{ or.id }}">4⭐</label>
+
+                                                <input type="radio" name="rating" id="star5-{{ or.id }}" value="5" required>
+                                                <label for="star5-{{ or.id }}">5⭐</label>
+                                           </div>
                                         </div>
                                         {% endif %}
                                     </div>
-                                  </div>
+                                    <div class="modal-footer d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Etiborsiz qoldirish</button>
+                                        {% if o.status in 'viewed accepted' %}
+                                        <button type="submit" name="action" value="rejected" class="btn btn-danger">Bekor qilish</button>
+                                        {% endif %}
+                                        {% if o.status == 'finished' %}
+                                        <button type="submit" name="action" value="approved" class="btn btn-primary">Tasdiqlash</button>
+                                        {% endif %}
+                                    </div>
+                                  </form>
                                 </div>
                             </div><!-- End Vertically centered Modal-->
                         </td>
@@ -346,3 +375,4 @@
 </main>
 
 {% endblock %}
+
