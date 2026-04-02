@@ -118,6 +118,7 @@ urlpatterns = [
 
     path("order/sender/all/", order_sender_all, name="order_sender_all"),
     path("order/sender/arxiv/all/", order_sender_arxiv_all, name="order_sender_arxiv_all"),
+    path("order/sender/decide/all/<int:pk>/", order_decide_all, name="order_decide_all"),
 
     path("order/agrement/", order_agrement, name="order_agrement"),
     path("order/agrement/material/", order_agrement_material, name="order_agrement_material"),
@@ -140,8 +141,7 @@ urlpatterns = [
 
     path("order/post/", order_post, name="order_post"),
     path("order/post/all", order_post_all, name="order_post_all"),
-    path("order/material/", ordermaterial_post, name="ordermaterial_post"),
-    path("order/approved/", order_approved, name="order_approved"),
+    path("order/material/", order_material_post, name="order_material_post"),
 
     # =========================
     # SSO

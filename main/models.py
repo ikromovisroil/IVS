@@ -397,9 +397,11 @@ class Order(models.Model):
 
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Yangi'),
-        ('accepted', 'Jarayonda'),
-        ('finished', 'Yakunlandi'),
+        ('process', 'Jarayonda'),
+        ('finished', 'Tayyorlandi'),
         ('approved', 'Tasdiqlandi'),
+        ('accepted', 'Qabul qilindi'),
+        ('canceled', 'Bekor qilindi'),
         ('rejected', 'Rad etildi'),
     ], default='viewed',db_index=True)
     receiver_seen = models.BooleanField(default=False)
@@ -408,27 +410,47 @@ class Order(models.Model):
     date_edit = models.DateTimeField(auto_now=True)
 
     # Har bir status uchun alohida vaqt
-    date_accepted = models.DateTimeField(null=True, blank=True)
+    date_process = models.DateTimeField(null=True, blank=True)
     date_finished = models.DateTimeField(null=True, blank=True)
     date_approved = models.DateTimeField(null=True, blank=True)
+    date_accepted = models.DateTimeField(null=True, blank=True)
+    date_canceled = models.DateTimeField(null=True, blank=True)
     date_rejected = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # ACCEPTED vaqtini avtomatik saqlash
-        if self.status == "accepted":
-            self.date_accepted = timezone.now()
+        update_fields = kwargs.get("update_fields", None)
 
-        # finished uchun
+        now = timezone.now()
+
+        if self.status == "process":
+            self.date_process = now
+            if update_fields:
+                update_fields.append("date_process")
+
         if self.status == "finished":
-            self.date_finished = timezone.now()
+            self.date_finished = now
+            if update_fields:
+                update_fields.append("date_finished")
 
-        # APPROVED uchun
         if self.status == "approved":
-            self.date_approved = timezone.now()
+            self.date_approved = now
+            if update_fields:
+                update_fields.append("date_approved")
 
-        # REJECTED uchun
+        if self.status == "accepted":
+            self.date_accepted = now
+            if update_fields:
+                update_fields.append("date_accepted")
+
+        if self.status == "canceled":
+            self.date_canceled = now
+            if update_fields:
+                update_fields.append("date_canceled")
+
         if self.status == "rejected":
-            self.date_rejected = timezone.now()
+            self.date_rejected = now
+            if update_fields:
+                update_fields.append("date_rejected")
 
         super().save(*args, **kwargs)
 

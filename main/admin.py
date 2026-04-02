@@ -243,8 +243,8 @@ class OrderAdmin(admin.ModelAdmin):
     autocomplete_fields = ("sender", "receiver", "goal", "technics")
     inlines = [OrderMaterialInline]
     readonly_fields = (
-        "date_creat", "date_edit", "date_accepted",
-        "date_finished", "date_approved", "date_rejected"
+        "date_creat", "date_edit", "date_process", "date_finished",
+        "date_approved", "date_accepted", "date_canceled", "date_rejected"
     )
 
 
