@@ -7,29 +7,49 @@ from decimal import Decimal, InvalidOperation
 from main.sso_views import *
 from django.db.models import Count, F, ExpressionWrapper
 from functools import wraps
+from django.shortcuts import render
 
+
+from django.contrib import messages
+from django.shortcuts import redirect
+from functools import wraps
+from django.contrib.auth.decorators import login_required
 
 def role_required(permission):
     def decorator(view_func):
         @wraps(view_func)
         @login_required
         def wrapper(request, *args, **kwargs):
-
             employee = getattr(request.user, "employee", None)
             if not employee:
+                messages.info(request, "Employee topilmadi")
                 return redirect("login")
 
             role = getattr(employee, "rol", None)
             if not role:
-                raise PermissionDenied("Rol biriktirilmagan")
+                messages.info(request, "Rol biriktirilmagan")
+                return redirect("profil")
 
             if not getattr(role, permission, False):
-                raise PermissionDenied("Ruxsat yo‘q")
+                messages.info(request, "Sizda bu sahifaga kirish ruxsati yo‘q")
+                return redirect("profil")
 
             return view_func(request, *args, **kwargs)
 
         return wrapper
     return decorator
+
+
+def error_403(request, exception=None):
+    return render(request, "errors/403.html", status=403)
+
+
+def error_404(request, exception=None):
+    return render(request, "errors/404.html", status=404)
+
+
+def error_500(request):
+    return render(request, "errors/500.html", status=500)
 
 
 @login_required
@@ -55,7 +75,7 @@ def profil(request):
             messages.success(request, "Profil muvaffaqiyatli yangilandi")
             return redirect("profil")
         else:
-            messages.error(request, "Maydonlarda xatolik bor. Qayta tekshiring")
+            messages.info(request, "Maydonlarda xatolik bor. Qayta tekshiring")
     else:
         emp_form = EmployeeProfileForm(instance=employee)
         email_form = UserEmailForm(instance=user)
@@ -283,14 +303,11 @@ def deed_status(request, code, pk):
 
 @never_cache
 @login_required
+@require_POST
 def deed_action(request, pk):
     emp = getattr(request.user, "employee", None)
     if not emp:
         raise PermissionDenied("Employee yo‘q")
-
-    if request.method != "POST":
-        return redirect(request.META.get("HTTP_REFERER", "/"))
-
 
     back_url = request.META.get("HTTP_REFERER", "/")
     action = (request.POST.get("action") or "").strip()
@@ -300,17 +317,15 @@ def deed_action(request, pk):
         pk=pk
     )
 
-    # kim bosdi?
+    message = (request.POST.get("message") or "").strip()
+
     if deed.receiver_id == emp.id:
         role = "receiver"
-        message = (request.POST.get("message") or "").strip()
     elif deed.sender_id == emp.id:
         role = "sender"
-        message = (request.POST.get("message") or "").strip()
     else:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
-    # ❌ Reject
     if action == "reject":
         now = timezone.now()
         update_fields = ["date_edit"]
@@ -330,7 +345,6 @@ def deed_action(request, pk):
         messages.info(request, "Dalolatnoma rad etildi")
         return redirect(back_url)
 
-    # ✅ Approve → SSO → Viewer
     if action == "approve":
         if not deed.file:
             messages.info(request, "PDF yo‘q")
@@ -356,17 +370,16 @@ def deed_action(request, pk):
             messages.info(request, "PDF o‘qilmadi")
             return redirect(back_url)
 
-
         request.session["PENDING_APPROVE"] = {
             "deed_id": deed.id,
-            "role": role,          # sender/receiver
+            "role": role,
             "message": message,
             "redirect_url": back_url,
         }
         request.session.modified = True
         return redirect("sso_start_approve")
 
-    messages.error(request, "Noto‘g‘ri amal")
+    messages.info(request, "Noto‘g‘ri amal")
     return redirect(back_url)
 
 
@@ -385,7 +398,7 @@ def deed_edit(request, pk):
     )
 
     if deed.user != emp_me:
-        raise PermissionDenied
+        raise PermissionDenied("Sizga ruxsat yo‘q")
 
     # ✅ None bo‘lishi mumkin — shuning uchun organization_id orqali olamiz
     sender_org_id = deed.sender.organization_id if deed.sender_id else None
@@ -779,6 +792,9 @@ def technics_create(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
+    if employee.roll__full:
+        messages.info(request, "Sizga ruxsat yo‘q")
+
     back_url = request.META.get("HTTP_REFERER", "/")
     form = TechnicsForm(request.POST)
     if form.is_valid():
@@ -945,7 +961,7 @@ def technics_update(request, pk):
     # FK lar
     if category_id:
         if not category_id.isdigit():
-            messages.error(request, "Kategoriya noto‘g‘ri")
+            messages.info(request, "Kategoriya noto‘g‘ri")
             return redirect(back_url)
         tex.category = get_object_or_404(Category, pk=int(category_id))
     else:
@@ -953,7 +969,7 @@ def technics_update(request, pk):
 
     if organization_id:
         if not organization_id.isdigit():
-            messages.error(request, "Tashkilot noto‘g‘ri")
+            messages.info(request, "Tashkilot noto‘g‘ri")
             return redirect(back_url)
         tex.organization = get_object_or_404(Organization, pk=int(organization_id))
     else:
@@ -977,7 +993,7 @@ def technics_update(request, pk):
         if tex.price < 0:
             raise InvalidOperation
     except (InvalidOperation, ValueError):
-        messages.error(request, "Narx noto‘g‘ri kiritildi (misol: 14.45 yoki 14,45)")
+        messages.info(request, "Narx noto‘g‘ri kiritildi (misol: 14.45 yoki 14,45)")
         return redirect(back_url)
 
     # 💾 Minimal saqlash

@@ -3,6 +3,11 @@ from django.conf.urls.static import static
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
+from main.views import error_403, error_404, error_500
+
+handler403 = error_403
+handler404 = error_404
+handler500 = error_500
 
 # JWT Token Views
 from rest_framework_simplejwt.views import (

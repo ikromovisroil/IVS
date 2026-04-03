@@ -12,7 +12,6 @@ class EmployeeProfileForm(forms.ModelForm):
             "last_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Familiya"}),
             "father_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Otasining ismi"}),
             "phone": forms.TextInput(attrs={"class": "form-control", "placeholder": "Telefon"}),
-            "pinfl": forms.TextInput(attrs={"class": "form-control", "placeholder": "Pinfl"}),
         }
 
 
