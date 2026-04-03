@@ -1,11 +1,15 @@
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+import shutil
 import os
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
+WKHTMLTOPDF_PATH = os.getenv("WKHTMLTOPDF_PATH", "")
+if not WKHTMLTOPDF_PATH:
+    WKHTMLTOPDF_PATH = shutil.which("wkhtmltopdf") or ""
 
 # =========================================================
 # HELPERS

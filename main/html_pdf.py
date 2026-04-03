@@ -1,19 +1,28 @@
 import os
 import pdfkit
 import pymupdf
-
-# WKHTMLTOPDF_PATH = r"C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe"
-
-WKHTMLTOPDF_PATH = "/usr/bin/wkhtmltopdf"
+from django.conf import settings
 
 
 class HtmlPdfError(Exception):
     pass
 
 
+def _get_wkhtmltopdf_path():
+    path = getattr(settings, "WKHTMLTOPDF_PATH", "") or ""
+    return path.strip()
+
+
 def _ensure_wkhtmltopdf():
-    if not WKHTMLTOPDF_PATH or not os.path.exists(WKHTMLTOPDF_PATH):
-        raise HtmlPdfError(f'wkhtmltopdf topilmadi: "{WKHTMLTOPDF_PATH}"')
+    path = _get_wkhtmltopdf_path()
+
+    if not path:
+        raise HtmlPdfError("WKHTMLTOPDF_PATH env yoki settingsda berilmagan.")
+
+    if not os.path.exists(path):
+        raise HtmlPdfError(f'wkhtmltopdf topilmadi: "{path}"')
+
+    return path
 
 
 def deed_to_pdf_bytes(deed) -> bytes:
@@ -21,34 +30,31 @@ def deed_to_pdf_bytes(deed) -> bytes:
     if not body:
         raise HtmlPdfError("Body bo‘sh — PDF qilib bo‘lmaydi.")
 
-    _ensure_wkhtmltopdf()
+    wkhtmltopdf_path = _ensure_wkhtmltopdf()
 
-    # ✅ False = Portrait, True = Landscape
+    # False = Landscape, True = Portrait
     ft = bool(getattr(deed, "file_type", False))
     orientation = "Portrait" if ft else "Landscape"
 
-    config = pdfkit.configuration(wkhtmltopdf=WKHTMLTOPDF_PATH)
+    config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
-    # ✅ Hech qanday CSS qo‘shmaymiz — deed.body qanday bo‘lsa, shunday ketadi
     html = (
         "<!doctype html>"
-        "<html><head><meta charset='utf-8'></head>"
-        f"<body>{body}</body></html>"
+        "<html>"
+        "<head><meta charset='utf-8'></head>"
+        f"<body>{body}</body>"
+        "</html>"
     )
 
     options = {
         "encoding": "UTF-8",
         "page-size": "A4",
         "orientation": orientation,
-
-        # PDF “kichrayib ketmasin” uchun tavsiya
         "disable-smart-shrinking": "",
         "zoom": "1.0",
         "dpi": "150",
-
         "print-media-type": "",
         "enable-local-file-access": "",
-
         "margin-top": "10mm",
         "margin-right": "10mm",
         "margin-bottom": "25mm",
@@ -77,7 +83,7 @@ def add_text_watermark_pdf_bytes(pdf_bytes: bytes, text: str) -> bytes:
     for page in doc:
         rect = page.rect
 
-        diagonal = (rect.width**2 + rect.height**2) ** 0.5
+        diagonal = (rect.width ** 2 + rect.height ** 2) ** 0.5
         fontsize = int(diagonal / 18)
 
         text_width = pymupdf.get_text_length(text, fontsize=fontsize)
@@ -92,9 +98,9 @@ def add_text_watermark_pdf_bytes(pdf_bytes: bytes, text: str) -> bytes:
             (x, y),
             text,
             fontsize=fontsize,
-            color=(0.3, 0.3, 0.3),   # to‘q kulrang
+            color=(0.3, 0.3, 0.3),
             overlay=True,
-            fill_opacity=0.12,      # 🔥 juda shaffof
+            fill_opacity=0.12,
             morph=(center, matrix),
         )
 
