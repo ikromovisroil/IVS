@@ -514,7 +514,6 @@ class Deed(models.Model):
         ('rejected', 'Rad etildi'),
     ], default='viewed', db_index=True)
     date_sender = models.DateTimeField(null=True, blank=True)
-    sender_seen = models.BooleanField(default=False, db_index=True)
 
     receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_receiver', null=True, blank=True, db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
@@ -524,7 +523,6 @@ class Deed(models.Model):
         ('rejected', 'Rad etildi'),
     ], default='viewed', db_index=True)
     date_receiver = models.DateTimeField(null=True, blank=True)
-    receiver_seen = models.BooleanField(default=False, db_index=True)
 
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True, db_index=True)
     message_user = models.TextField(null=True, blank=True)

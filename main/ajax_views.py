@@ -58,20 +58,6 @@ def ajax_sender_technics(request):
 
     return JsonResponse({"results": results})
 
-@never_cache
-@login_required
-def deed_mark_seen(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({'status': 'unauth'})
-
-    Deed.objects.filter(
-        sender__user=request.user,
-        status_sender__in=['approved', 'rejected'],
-        sender_seen=False
-    ).update(sender_seen=True)
-
-    return JsonResponse({'status': 'ok'})
-
 
 @never_cache
 @login_required

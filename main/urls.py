@@ -48,7 +48,6 @@ urlpatterns = [
     # =========================
     # NOTIFIKATSIYA / STATUS
     # =========================
-    path("deed/seen/", deed_mark_seen, name="deed_mark_seen"),
     path("order/seen/", order_mark_seen, name="order_mark_seen"),
     path("deed/<int:pk>/action/", deed_action, name="deed_action"),
     path("deedconsent_action/<int:pk>/action/", deedconsent_action, name="deedconsent_action"),

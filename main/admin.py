@@ -265,11 +265,11 @@ class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id", "code", "sender", "receiver", "user",
         "status_sender", "status_receiver", "file_type",
-        "sender_seen", "receiver_seen", "date_creat"
+        "date_creat"
     )
     list_filter = (
         "status_sender", "status_receiver",
-        "file_type", "sender_seen", "receiver_seen", "date_creat"
+        "file_type", "date_creat"
     )
     search_fields = (
         "code", "body", "message_sender", "message_receiver", "message_user",

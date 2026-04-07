@@ -233,7 +233,7 @@
                        class="text-decoration-none notification-card d-block px-3 py-3">
 
                         <div class="fw-bold text-dark">
-                            {{ d.sender.full_name }}
+                            {{ d.user.full_name }} dan
                         </div>
 
                         <div class="small text-warning mt-1">
@@ -253,9 +253,7 @@
                        class="text-decoration-none notification-card d-block px-3 py-3">
 
                         <div class="fw-bold text-dark">
-                             {{ d.sender.full_name }}
-                            <span class="text-muted">→</span>
-                             {{ d.receiver.full_name }}
+                              {{ d.user.full_name }} dan
                         </div>
 
                         <div class="small text-info mt-1">
@@ -621,13 +619,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (orderBell) {
         orderBell.addEventListener("shown.bs.dropdown", function () {
             fetch("{% url 'order_mark_seen' %}");
-        });
-    }
-
-    const deedBell = document.getElementById("deed-bell");
-    if (deedBell) {
-        deedBell.addEventListener("shown.bs.dropdown", function () {
-            fetch("{% url 'deed_mark_seen' %}");
         });
     }
 });

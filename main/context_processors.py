@@ -3,9 +3,17 @@ from django.db.models import Q
 
 def deed_notifications(request):
     if not request.user.is_authenticated:
-        return {}
+        return {
+            "deed_notifications": Order.objects.none(),
+            "deed_notification_count": 0,
+        }
 
     employee = getattr(request.user, "employee", None)
+    if not employee:
+        return {
+            "deed_notifications": Order.objects.none(),
+            "deed_notification_count": 0,
+        }
 
     # RECEIVER uchun: yangi kelgan dalolatnoma (status viewed)
     receiver_notes = Deed.objects.filter(
@@ -16,9 +24,9 @@ def deed_notifications(request):
     # SENDER uchun: tasdiqlangan yoki rad etilgan, hali ko‘rilmagan
     sender_notes = Deed.objects.filter(
         sender=employee,
-        sender_seen=False,
-        status_sender__in=["approved", "rejected"]
+        status_sender="viewed"
     )
+
     # 3️⃣ KUZATUVCHI: kelishuv talab qilinayotgan yoki o‘zgargan
     watcher_notes = Deed.objects.filter(
         deedconsent__employee=employee,
@@ -30,15 +38,13 @@ def deed_notifications(request):
             sender_notes |
             watcher_notes
     ).distinct().order_by("-date_edit")
-    count = all_notes.count()
 
     return {
-        "deed_notifications": all_notes,
-        "deed_notification_count": count
+        "deed_notifications": all_notes[:10],
+        "deed_notification_count": all_notes.count(),
     }
 
 
-from django.db.models import Q
 def order_notifications(request):
     if not request.user.is_authenticated:
         return {
