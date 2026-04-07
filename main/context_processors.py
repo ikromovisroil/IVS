@@ -1,5 +1,5 @@
 from .models import *
-
+from django.db.models import Q
 
 def deed_notifications(request):
     if not request.user.is_authenticated:
@@ -38,34 +38,84 @@ def deed_notifications(request):
     }
 
 
+from django.db.models import Q
 def order_notifications(request):
     if not request.user.is_authenticated:
-        return {}
+        return {
+            "order_notifications": Order.objects.none(),
+            "order_notification_count": 0,
+        }
 
     employee = getattr(request.user, "employee", None)
+    if not employee:
+        return {
+            "order_notifications": Order.objects.none(),
+            "order_notification_count": 0,
+        }
 
-    # 1) Receiver uchun
-    receiver_notes = Order.objects.filter(
-        receiver=employee,
-        status__in=['viewed', 'approved', 'rejected'],
-        receiver_seen=False
-    )
+    rol = getattr(employee, "rol", None)
+    if not rol:
+        return {
+            "order_notifications": Order.objects.none(),
+            "order_notification_count": 0,
+        }
 
-    # 3) Sender uchun
-    sender_notes = Order.objects.filter(
-        sender=employee,
-        status__in=['accepted', 'finished'],
-        receiver_seen=False
-    )
+    receiver_notes = Order.objects.none()
+    sender_notes = Order.objects.none()
+    sender_notes_all = Order.objects.none()
+    user_notes = Order.objects.none()
 
-    all_notes = (receiver_notes | sender_notes).order_by('-date_edit')
+    if getattr(rol, "client", False):
+        receiver_notes = Order.objects.filter(
+            receiver=employee,
+            status__in=["approved", "canceled"],
+            receiver_seen=False,
+        )
+
+        # IVS ga yuborilgan arizalar
+        sender_notes = Order.objects.filter(
+            organization_id=4,
+            sender=employee,
+            status__in=["process", "finished", "rejected"],
+            sender_seen=False,
+        )
+
+        # O'z tashkilotiga yuborilgan arizalar
+        if employee.organization_id:
+            sender_notes_all = Order.objects.filter(
+                organization_id=employee.organization_id,
+                sender=employee,
+                status__in=["process", "finished", "rejected", "approved"],
+                sender_seen=False,
+            )
+
+        user_notes = Order.objects.filter(
+            user=employee,
+            status="accepted",
+            user_seen=False,
+        )
+
+    else:
+        receiver_notes = Order.objects.filter(
+            receiver=employee,
+            status__in=["approved", "canceled"],
+            receiver_seen=False,
+        )
+
+        sender_notes = Order.objects.filter(
+            sender=employee,
+            status__in=["process", "finished", "rejected"],
+            sender_seen=False,
+        )
+
+    all_notes = (
+        receiver_notes
+        | sender_notes
+        | sender_notes_all
+        | user_notes
+    ).distinct().order_by("-date_edit")
 
     return {
-        'order_notifications': all_notes,
-        'order_notification_count': all_notes.count()
+        "order_notifications": all_notes[:10],
+        "order_notification_count": all_notes.count(),
     }
-
-
-
-
-

@@ -405,6 +405,9 @@ class Order(models.Model):
         ('rejected', 'Rad etildi'),
     ], default='viewed',db_index=True)
     receiver_seen = models.BooleanField(default=False)
+    sender_seen = models.BooleanField(default=False)
+    user_seen = models.BooleanField(default=False)
+
     # --- Sana maydonlari ---
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)

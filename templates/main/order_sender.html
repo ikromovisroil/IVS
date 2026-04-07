@@ -309,7 +309,7 @@
                                     </div>
                                     <div class="modal-footer d-flex justify-content-center gap-2">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Etiborsiz qoldirish</button>
-                                        {% if o.status in 'viewed accepted' %}
+                                        {% if o.status in 'viewed process' %}
                                         <button type="submit" name="action" value="canceled" class="btn btn-danger">Bekor qilish</button>
                                         {% endif %}
                                         {% if o.status == 'finished' %}

@@ -72,19 +72,58 @@ def deed_mark_seen(request):
 
     return JsonResponse({'status': 'ok'})
 
+
 @never_cache
 @login_required
 def order_mark_seen(request):
-    if not request.user.is_authenticated:
-        return JsonResponse({'status': 'unauth'})
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return JsonResponse({"status": "no_employee"}, status=400)
 
+    rol = getattr(employee, "rol", None)
+    if not rol:
+        return JsonResponse({"status": "no_role"}, status=400)
+
+    # receiver notificationlari
     Order.objects.filter(
-        receiver__user=request.user,
-        status__in=['approved', 'rejected'],
-        receiver_seen=False
+        receiver=employee,
+        status__in=["approved", "canceled"],
+        receiver_seen=False,
     ).update(receiver_seen=True)
 
-    return JsonResponse({'status': 'ok'})
+    if getattr(rol, "client", False):
+        # IVS bo'yicha sender notificationlari
+        Order.objects.filter(
+            organization_id=4,
+            sender=employee,
+            status="rejected",
+            sender_seen=False,
+        ).update(sender_seen=True)
+
+        # O'z tashkiloti bo'yicha sender notificationlari
+        if employee.organization_id and employee.organization_id != 4:
+            Order.objects.filter(
+                organization_id=employee.organization_id,
+                sender=employee,
+                status="rejected",
+                sender_seen=False,
+            ).update(sender_seen=True)
+
+        # user notificationlari
+        Order.objects.filter(
+            user=employee,
+            status="accepted",
+            user_seen=False,
+        ).update(user_seen=True)
+
+    else:
+        Order.objects.filter(
+            sender=employee,
+            status="rejected",
+            sender_seen=False,
+        ).update(sender_seen=True)
+
+    return JsonResponse({"status": "ok"})
 
 
 @login_required

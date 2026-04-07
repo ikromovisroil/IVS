@@ -64,6 +64,7 @@
 
           <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" style="width: 360px;">
 
+            <!-- HEADER -->
             <li class="dropdown-header d-flex justify-content-between align-items-center px-3">
               <span class="fw-bold">Zayavka xabarlari</span>
               <span class="badge bg-primary">{{ order_notification_count }}</span>
@@ -75,30 +76,65 @@
 
             <li class="notification-item">
 
-              {# LINK — sender bo‘lsa order_sender, aks holda order_receiver #}
-              {% if o.sender.user.id == request.user.id %}
-                <a href="{% url 'order_sender' %}" class="d-flex align-items-start text-decoration-none">
-              {% else %}
-                {% if o.viewed == "viewed" %}
-                   <a href="{% url 'order_receiver' %}" class="d-flex align-items-start text-decoration-none">
-                {% else %}
-                   <a href="{% url 'order_receiver_arxiv' %}" class="d-flex align-items-start text-decoration-none">
-                {% endif %}
-              {% endif %}
+              {# ================= LINK LOGIC (TO‘G‘RILANGAN) ================= #}
+                {% if request.user.employee.rol.client %}
 
-                <!-- ================= ICON TANLASH ================= -->
+                    {% if o.sender and o.sender.user_id == request.user.id %}
+                        {% if o.organization_id == 4 %}
+                            {% if o.status == "process" or o.status == "finished" %}
+                                {% url 'order_sender' as link %}
+                            {% else %}
+                                {% url 'order_sender_arxiv' as link %}
+                            {% endif %}
+                        {% else %}
+                            {% if o.status == "process" or o.status == "finished" or o.status == "approved" %}
+                                {% url 'order_sender_all' as link %}
+                            {% else %}
+                                {% url 'order_sender_arxiv_all' as link %}
+                            {% endif %}
+                        {% endif %}
+
+                    {% elif o.receiver and o.receiver.user_id == request.user.id %}
+                        {% url 'order_receiver_arxiv_all' as link %}
+
+                    {% else %}
+                        {% url 'order_agrement_arxiv' as link %}
+                    {% endif %}
+
+                {% else %}
+
+                    {% if o.sender and o.sender.user_id == request.user.id %}
+                        {% if o.status == "process" or o.status == "finished" or o.status == "rejected" %}
+                            {% url 'order_sender' as link %}
+                        {% else %}
+                            {% url 'order_sender_arxiv' as link %}
+                        {% endif %}
+                    {% else %}
+                        {% url 'order_receiver_arxiv' as link %}
+                    {% endif %}
+
+                {% endif %}
+
+                <a href="{{ link }}" class="d-flex align-items-start text-decoration-none">
+
+                <!-- ================= ICON ================= -->
                 {% if o.status == 'viewed' %}
-                  <!-- QABUL QILUVCHI UCHUN YANGI ZAYAVKA -->
                   <i class="bi bi-exclamation-circle text-warning"></i>
 
-                {% elif o.status == 'accepted' %}
-                  <i class="bi bi-info-circle text-primary"></i>
+                {% elif o.status == 'process' %}
+                  <i class="bi bi-exclamation-circle text-warning"></i>
 
                 {% elif o.status == 'finished' %}
                   <i class="bi bi-check-circle text-info"></i>
 
                 {% elif o.status == 'approved' %}
                   <i class="bi bi-check-circle text-success"></i>
+
+                {% elif o.status == 'accepted' %}
+                  <i class="bi bi-exclamation-circle text-warning"></i>
+
+                {% elif o.status == 'canceled' %}
+                  <i class="bi bi-x-circle text-danger"></i>
 
                 {% elif o.status == 'rejected' %}
                   <i class="bi bi-x-circle text-danger"></i>
@@ -109,33 +145,41 @@
 
                 <div class="ms-2">
 
-                  <!-- ================= ISM KIM KO‘RINADI ================= -->
+                  <!-- ================= NAME ================= -->
                   {% if request.user.id == o.sender.user.id %}
                     <h4 class="mb-1">{{ o.receiver.full_name }}</h4>
                   {% elif request.user.id == o.receiver.user.id %}
                     <h4 class="mb-1">{{ o.sender.full_name }}</h4>
                   {% endif %}
 
-                  <!-- ================= STATUSGA QARAB MATN ================= -->
+                  <!-- ================= TEXT ================= -->
 
-                  {% if o.status == 'viewed'%}
-                    <p class="text-warning mb-1">Yangi ariza yubordi</p>
-                    <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
+                  {% if o.status == 'viewed' %}
+                    <p class="text-warning mb-1">Yangi ariza yuborildi</p>
+                    <p class="small text-muted mb-0">{{ o.date_create|timesince }} oldin</p>
 
-                  {% elif o.status == 'accepted'%}
-                    <p class="text-primary mb-1">Sizning arizangizni qabul qilindi</p>
-                    <p class="small text-muted mb-0">{{ o.date_accepted|timesince }} oldin</p>
+                  {% elif o.status == 'process' %}
+                    <p class="text-warning mb-1">Arizangiz ish jarayonida</p>
+                    <p class="small text-muted mb-0">{{ o.date_process|timesince }} oldin</p>
 
-                  {% elif o.status == 'finished'%}
-                    <p class="text-info mb-1">Sizning arizangizni yakunlandi</p>
+                  {% elif o.status == 'finished' %}
+                    <p class="text-primary mb-1">Arizangiz Tayyorlandi</p>
                     <p class="small text-muted mb-0">{{ o.date_finished|timesince }} oldin</p>
 
-                  {% elif o.status == 'approved'%}
-                    <p class="text-success mb-1">Bajargan arizangizni tasdiqlandi</p>
+                  {% elif o.status == 'approved' %}
+                    <p class="text-primary mb-1">Arizangiz Tasdiqlandi</p>
                     <p class="small text-muted mb-0">{{ o.date_approved|timesince }} oldin</p>
 
+                  {% elif o.status == 'accepted' %}
+                    <p class="text-primary mb-1">Arizangiz qabul qilindi</p>
+                    <p class="small text-muted mb-0">{{ o.date_accepted|timesince }} oldin</p>
+
+                  {% elif o.status == 'canceled' %}
+                    <p class="text-danger mb-1">Arizangiz bekor qilindi</p>
+                    <p class="small text-muted mb-0">{{ o.date_canceled|timesince }} oldin</p>
+
                   {% elif o.status == 'rejected' %}
-                    <p class="text-danger mb-1">Bajargan arizangizni rad etildi</p>
+                    <p class="text-danger mb-1">Arizangiz rad etildi</p>
                     <p class="small text-muted mb-0">{{ o.date_rejected|timesince }} oldin</p>
 
                   {% else %}
@@ -149,6 +193,12 @@
             </li>
 
             <li><hr class="dropdown-divider"></li>
+
+            {% empty %}
+
+            <li class="text-center p-3 text-muted">
+              Hech qanday xabar yo‘q
+            </li>
 
             {% endfor %}
 
@@ -277,22 +327,21 @@
   </header><!-- End Header -->
 
   {% with url_name=request.resolver_match.url_name %}
-
-    <!-- ======= Sidebar ======= -->
     <aside id="sidebar" class="sidebar">
-
       <ul class="sidebar-nav" id="sidebar-nav">
 
+        <!-- Arizalar -->
         <li class="nav-item">
-
-          <a class="nav-link {% if url_name != 'order_agrement_arxiv' and url_name != 'order_agrement' and url_name != 'order_receiver_arxiv_all' and url_name != 'order_receiver_all' and url_name != 'order_receiver_activ_all' and url_name != 'order_sender_all' and url_name != 'order_sender_arxiv_all' and url_name != 'order_sender' and url_name != 'order_sender_arxiv' and url_name != 'order_receiver' and url_name != 'order_receiver_activ' and url_name != 'order_receiver_arxiv' %}collapsed{% endif %}"
-             data-bs-target="#forms-nav" data-bs-toggle="collapse" href="#">
+          <a class="nav-link {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% else %}collapsed{% endif %}"
+             data-bs-target="#forms-nav-order"
+             data-bs-toggle="collapse"
+             href="#">
             <i class="bi bi-journal-text"></i>
             <span>Arizalar</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
 
-          <ul id="forms-nav"
+          <ul id="forms-nav-order"
               class="nav-content collapse {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
@@ -302,6 +351,7 @@
                 <i class="bi bi-circle"></i><span>ATMga Ariza Yuborish</span>
               </a>
             </li>
+
             {% if request.user.employee.rol.client %}
             <li>
               <a class="{% if url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' %}active{% endif %}"
@@ -310,24 +360,27 @@
               </a>
             </li>
             {% endif %}
+
             {% if request.user.employee.rol.order %}
               {% if not request.user.employee.rol.client %}
-            <li>
-              <a class="{% if url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% endif %}"
-                 href="{% url 'order_receiver' %}">
-                <i class="bi bi-circle"></i><span>Arizalarni Bajarish</span>
-              </a>
-            </li>
+              <li>
+                <a class="{% if url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% endif %}"
+                   href="{% url 'order_receiver' %}">
+                  <i class="bi bi-circle"></i><span>Arizalarni Bajarish</span>
+                </a>
+              </li>
               {% endif %}
+
               {% if request.user.employee.rol.client %}
-            <li>
-              <a class="{% if url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_receiver_arxiv_all' %}active{% endif %}"
-                 href="{% url 'order_receiver_all' %}">
-                <i class="bi bi-circle"></i><span>Arizalarni Bajarish</span>
-              </a>
-            </li>
+              <li>
+                <a class="{% if url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_receiver_arxiv_all' %}active{% endif %}"
+                   href="{% url 'order_receiver_all' %}">
+                  <i class="bi bi-circle"></i><span>Arizalarni Bajarish</span>
+                </a>
+              </li>
               {% endif %}
             {% endif %}
+
             {% if request.user.employee.rol.confirm %}
             <li>
               <a class="{% if url_name == 'order_agrement' or url_name == 'order_agrement_arxiv' %}active{% endif %}"
@@ -336,27 +389,27 @@
               </a>
             </li>
             {% endif %}
-
           </ul>
         </li>
 
-        {% with deed_urls=" contact_user contact_user_arxiv contact contact_arxiv contact_agrement contact_agrement_arxiv " %}
+        <!-- Xabarlar -->
         <li class="nav-item">
-
-          <a class="nav-link {% if not " "|add:url_name|add:" " in deed_urls %}collapsed{% endif %}"
-             data-bs-target="#forms-nav-deed" data-bs-toggle="collapse" href="#">
+          <a class="nav-link {% if url_name != 'contact_user' and url_name != 'contact_user_arxiv' and url_name != 'contact' and url_name != 'contact_arxiv' and url_name != 'contact_agrement' and url_name != 'contact_agrement_arxiv' %}collapsed{% endif %}"
+             data-bs-target="#forms-nav-deed"
+             data-bs-toggle="collapse"
+             href="#">
             <i class="bi bi-envelope"></i>
             <span>Xabarlar</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
 
           <ul id="forms-nav-deed"
-              class="nav-content collapse {% if " "|add:url_name|add:" " in deed_urls %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'contact_user' or url_name == 'contact_user_arxiv' or url_name == 'contact' or url_name == 'contact_arxiv' or url_name == 'contact_agrement' or url_name == 'contact_agrement_arxiv' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
             {% if request.user.employee.rol.order %}
             <li>
-              <a class="{% if " "|add:url_name|add:" " in ' contact_user contact_user_arxiv ' %}active{% endif %}"
+              <a class="{% if url_name == 'contact_user' or url_name == 'contact_user_arxiv' %}active{% endif %}"
                  href="{% url 'contact_user' %}">
                 <i class="bi bi-circle"></i><span>Imzolashga yuborish</span>
               </a>
@@ -364,89 +417,87 @@
             {% endif %}
 
             <li>
-              <a class="{% if " "|add:url_name|add:" " in ' contact contact_arxiv ' %}active{% endif %}"
+              <a class="{% if url_name == 'contact' or url_name == 'contact_arxiv' %}active{% endif %}"
                  href="{% url 'contact' %}">
                 <i class="bi bi-circle"></i><span>Imzolash uchun</span>
               </a>
             </li>
 
             <li>
-              <a class="{% if " "|add:url_name|add:" " in ' contact_agrement contact_agrement_arxiv ' %}active{% endif %}"
+              <a class="{% if url_name == 'contact_agrement' or url_name == 'contact_agrement_arxiv' %}active{% endif %}"
                  href="{% url 'contact_agrement' %}">
                 <i class="bi bi-circle"></i><span>Kelishish uchun</span>
               </a>
             </li>
-
           </ul>
         </li>
-        {% endwith %}
 
         <!-- Hisobotlar -->
         {% if request.user.employee.rol.akt %}
         <li class="nav-item">
-          <a class="nav-link
-             {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' %}
-               collapsed
-             {% endif %}"
-             data-bs-target="#charts-nav" data-bs-toggle="collapse" href="#">
-            <i class="bi bi-file-earmark"></i> <span>Hisobotlar</span>
+          <a class="nav-link {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' %}collapsed{% endif %}"
+             data-bs-target="#charts-nav"
+             data-bs-toggle="collapse"
+             href="#">
+            <i class="bi bi-file-earmark"></i>
+            <span>Hisobotlar</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
 
           <ul id="charts-nav"
-              class="nav-content collapse
-              {% if url_name == 'document_get' or url_name == 'svod_get' or url_name == 'reestr_get' or url_name == 'akt_get' %}
-                show
-              {% endif %}"
+              class="nav-content collapse {% if url_name == 'document_get' or url_name == 'svod_get' or url_name == 'reestr_get' or url_name == 'akt_get' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
-              <li>
-                <a class="{% if url_name == 'document_get' %}active{% endif %}" href="{% url 'document_get' %}">
-                  <i class="bi bi-circle"></i><span>Dalolatnoma</span>
-                </a>
-              </li>
-              {% if request.user.employee.rol.shop %}
-              <li>
-                <a class="{% if url_name == 'svod_get' %}active{% endif %}" href="{% url 'svod_get' %}">
-                  <i class="bi bi-circle"></i><span>Yakuniy hisobot</span>
-                </a>
-              </li>
-              <li>
-                <a class="{% if url_name == 'reestr_get' %}active{% endif %}" href="{% url 'reestr_get' %}">
-                  <i class="bi bi-circle"></i><span>Reestr</span>
-                </a>
-              </li>
-              {% endif %}
-              <li>
-                <a class="{% if url_name == 'akt_get' %}active{% endif %}" href="{% url 'akt_get' %}">
-                  <i class="bi bi-circle"></i><span>Akt</span>
-                </a>
-              </li>
-            </ul>
-        </li><!-- End Charts Nav -->
+
+            <li>
+              <a class="{% if url_name == 'document_get' %}active{% endif %}" href="{% url 'document_get' %}">
+                <i class="bi bi-circle"></i><span>Dalolatnoma</span>
+              </a>
+            </li>
+
+            {% if request.user.employee.rol.shop %}
+            <li>
+              <a class="{% if url_name == 'svod_get' %}active{% endif %}" href="{% url 'svod_get' %}">
+                <i class="bi bi-circle"></i><span>Yakuniy hisobot</span>
+              </a>
+            </li>
+            <li>
+              <a class="{% if url_name == 'reestr_get' %}active{% endif %}" href="{% url 'reestr_get' %}">
+                <i class="bi bi-circle"></i><span>Reestr</span>
+              </a>
+            </li>
+            {% endif %}
+
+            <li>
+              <a class="{% if url_name == 'akt_get' %}active{% endif %}" href="{% url 'akt_get' %}">
+                <i class="bi bi-circle"></i><span>Akt</span>
+              </a>
+            </li>
+          </ul>
+        </li>
         {% endif %}
 
-          <!-- Sklad -->
+        <!-- Texnika va Uskunalar -->
         {% if request.user.employee.rol.technics %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name not in 'barn_tex extra_tex' %}collapsed{% endif %}"
-             data-bs-target="#forms-navs" data-bs-toggle="collapse" href="#">
+          <a class="nav-link {% if url_name != 'barn_tex' and url_name != 'extra_tex' %}collapsed{% endif %}"
+             data-bs-target="#forms-nav-technics"
+             data-bs-toggle="collapse"
+             href="#">
             <i class="bi bi-gear"></i>
             <span>Texnika va Uskunalar</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
 
-          <ul id="forms-navs"
-              class="nav-content collapse {% if url_name in 'barn_tex extra_tex' %}show{% endif %}"
+          <ul id="forms-nav-technics"
+              class="nav-content collapse {% if url_name == 'barn_tex' or url_name == 'extra_tex' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
             <li>
-              <a class="{% if url_name == 'barn_tex' %}active{% endif %}"
-                 href="{% url 'barn_tex' %}">
+              <a class="{% if url_name == 'barn_tex' %}active{% endif %}" href="{% url 'barn_tex' %}">
                 <i class="bi bi-circle"></i><span>Texnika va Uskunalar</span>
               </a>
             </li>
             <li>
-              <a class="{% if url_name == 'extra_tex' %}active{% endif %}"
-                 href="{% url 'extra_tex' %}">
+              <a class="{% if url_name == 'extra_tex' %}active{% endif %}" href="{% url 'extra_tex' %}">
                 <i class="bi bi-circle"></i><span>Qo‘shimcha qurilmalar</span>
               </a>
             </li>
@@ -454,8 +505,8 @@
         </li>
         {% endif %}
 
+        <!-- Materiallar -->
         {% if request.user.employee.rol.material %}
-        <!-- DASHBOARD -->
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'barn_mat' %}collapsed{% endif %}"
              href="{% url 'barn_mat' %}">
@@ -465,28 +516,28 @@
         </li>
         {% endif %}
 
+        <!-- Statistika -->
         {% if request.user.employee.rol.status %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name not in 'tex_status emp_status' %}collapsed{% endif %}"
-             data-bs-target="#status-navs" data-bs-toggle="collapse" href="#">
+          <a class="nav-link {% if url_name != 'tex_status' and url_name != 'emp_status' %}collapsed{% endif %}"
+             data-bs-target="#status-navs"
+             data-bs-toggle="collapse"
+             href="#">
             <i class="bi bi-graph-up"></i>
             <span>Statistika</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
 
           <ul id="status-navs"
-              class="nav-content collapse {% if url_name in 'tex_status emp_status' %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'tex_status' or url_name == 'emp_status' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
             <li>
-
-              <a class="{% if url_name == 'tex_status' %}active{% endif %}"
-                 href="{% url 'tex_status' %}">
+              <a class="{% if url_name == 'tex_status' %}active{% endif %}" href="{% url 'tex_status' %}">
                 <i class="bi bi-circle"></i><span>Texnikalar</span>
               </a>
             </li>
             <li>
-              <a class="{% if url_name == 'emp_status' %}active{% endif %}"
-                 href="{% url 'emp_status' %}">
+              <a class="{% if url_name == 'emp_status' %}active{% endif %}" href="{% url 'emp_status' %}">
                 <i class="bi bi-circle"></i><span>Xodimlar</span>
               </a>
             </li>
@@ -502,7 +553,6 @@
           </a>
         </li>
 
-        <!-- PROFILE -->
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'profil' %}collapsed{% endif %}"
              href="{% url 'profil' %}">
@@ -511,7 +561,6 @@
           </a>
         </li>
 
-        <!-- LOGOUT -->
         <li class="nav-item">
           <a class="nav-link collapsed" href="{% url 'logout' %}">
             <i class="bi bi-box-arrow-in-right"></i>
@@ -520,11 +569,8 @@
         </li>
 
       </ul>
-
     </aside>
-
   {% endwith %}
-
 
   {% block content %}
 
@@ -571,8 +617,6 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
-    // 🟦 ORDER BELL
     const orderBell = document.getElementById("order-bell");
     if (orderBell) {
         orderBell.addEventListener("shown.bs.dropdown", function () {
@@ -580,14 +624,12 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 🟨 DEED BELL
     const deedBell = document.getElementById("deed-bell");
     if (deedBell) {
         deedBell.addEventListener("shown.bs.dropdown", function () {
             fetch("{% url 'deed_mark_seen' %}");
         });
     }
-
 });
 </script>
 </body>
