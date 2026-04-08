@@ -119,7 +119,7 @@ class Rol(models.Model):
 
 # Xodim.
 class Employee(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='employee',db_index=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=False, blank=True, related_name='employee',db_index=True)
     last_name = models.CharField(max_length=100, null=True, blank=True)
     first_name = models.CharField(max_length=100, null=True, blank=True)
     father_name = models.CharField(max_length=100, null=True, blank=True)
@@ -265,6 +265,7 @@ class Technics(models.Model):
 
         if is_new and not self.qr_code:
             self.generate_qr_code(save=True)
+
 
     class Meta:
         db_table = 'technics'
@@ -472,8 +473,8 @@ class Order(models.Model):
 
 # zayafkadan soralgan materiali.
 class OrderMaterial(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True, related_name="materials", db_index=True)
-    material = models.ForeignKey(Material, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True, related_name="materials", db_index=True)
+    material = models.ForeignKey(Material, on_delete=models.PROTECT, null=True, blank=True,db_index=True)
     number = models.PositiveIntegerField(default=1)
     given = models.PositiveIntegerField(null=True, blank=True)
 
@@ -490,6 +491,7 @@ class OrderMaterial(models.Model):
         db_table = 'ordermaterial'
         verbose_name = "Ariza materiali"
         verbose_name_plural = "Arizalar materiallari"
+
 
 
 class MaterialUser(models.Model):
@@ -530,7 +532,7 @@ class Deed(models.Model):
 
     file_type = models.BooleanField(default=False)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
-    code = models.CharField(max_length=10, null=True, blank=True, db_index=True)
+    code = models.CharField(max_length=10, null=True, blank=True, unique=True, db_index=True)
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)

@@ -194,27 +194,34 @@ def order_accepted(request, pk):
 
     back_url = request.META.get("HTTP_REFERER") or "/"
 
-    with transaction.atomic():
-        order = (
-            Order.objects
-            .select_for_update()
-            .filter(pk=pk)
-            .first()
-        )
+    try:
+        with transaction.atomic():
+            order = (
+                Order.objects
+                .select_for_update()
+                .select_related("receiver", "sender", "organization")
+                .filter(pk=pk)
+                .first()
+            )
 
-        if not order:
-            messages.info(request, "Ariza topilmadi")
-            return redirect(back_url)
+            if not order:
+                messages.info(request, "Ariza topilmadi")
+                return redirect(back_url)
 
-        if order.status != "viewed":
-            messages.warning(request, "Bu ariza allaqachon jarayonda yoki qabul qilingan")
-            return redirect(back_url)
+            # Faqat hali hech kim olmagan va viewed holatdagi ariza olinadi
+            if order.status != "viewed" or order.receiver_id is not None:
+                messages.info(request, "Bu ariza boshqa xodim tomonidan allaqachon qabul qilingan")
+                return redirect(back_url)
 
-        order.status = "process"
-        order.receiver = employee
-        order.save(update_fields=["status", "receiver", "date_edit"])
+            order.status = "process"
+            order.receiver = employee
+            order.save(update_fields=["status", "receiver", "date_edit"])
 
-    messages.success(request, "✅ Ariza qabul qilindi!")
+    except Exception as e:
+        messages.info(request, f"Xatolik yuz berdi: {e}")
+        return redirect(back_url)
+
+    messages.success(request, "Ariza muvaffaqiyatli qabul qilindi")
     return redirect("order_receiver_activ")
 
 
@@ -257,9 +264,9 @@ def order_receiver_activ(request):
 
 @never_cache
 @require_POST
-@transaction.atomic
 @login_required
 @role_required("order")
+@transaction.atomic
 def order_material_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -276,74 +283,116 @@ def order_material_post(request):
         messages.info(request, "Ariza ID topilmadi!")
         return redirect(back_url)
 
-    # Order ni lock qilamiz
+    # 1) Order ni lock qilamiz
     order = get_object_or_404(
         Order.objects.select_for_update().select_related("receiver"),
-        id=order_id
+        pk=order_id
     )
 
-    # Faqat qabul qilingan/jarayondagi arizani yakunlash mumkin
-    if order.status not in ["process", "finished"]:
-        messages.success(request, "Bu arizani yakunlab bo‘lmaydi")
+    # 3) Faqat shu arizani qabul qilgan odam yakunlay oladi
+    if not order.receiver_id:
+        messages.info(request, "Ariza hali hech kimga biriktirilmagan.")
         return redirect(back_url)
 
-    # Xohlasa shu usernikiligini ham tekshirsa bo'ladi
-    if order.receiver and order.receiver != employee:
-        messages.success(request, "Bu ariza sizga biriktirilmagan")
+    if order.receiver_id != employee.id:
+        messages.info(request, "Bu arizani faqat uni qabul qilgan xodim yakunlay oladi.")
         return redirect(back_url)
 
-    # Texnika tanlanmasa ham faqat statusni finished qilamiz
+    # 4) Texnika bo‘lmasa faqat orderni finished qilamiz
+    # xohlasang buni majburiy ham qilsa bo‘ladi
     if not technics_id:
         order.status = "finished"
         order.save(update_fields=["status", "date_edit"])
         messages.success(request, "Ariza yakunlandi!")
         return redirect(back_url)
 
-    order.technics_id = technics_id
-
+    # 5) Materiallar ro‘yxatini tozalab olamiz
     pairs = []
+    seen_materials = set()
+
     for m_id, num in zip(material_ids, numbers):
         if not m_id:
             continue
 
         try:
+            m_id = int(m_id)
             n = int(num or 1)
         except (ValueError, TypeError):
-            messages.info(request, "Material soni noto‘g‘ri kiritilgan!")
+            messages.info(request, "Material yoki son noto‘g‘ri kiritilgan.")
             return redirect(back_url)
 
         if n <= 0:
-            messages.info(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
+            messages.info(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas.")
             return redirect(back_url)
 
+        # Bir xil material formda 2 marta kelib qolsa oldini olamiz
+        if m_id in seen_materials:
+            messages.info(request, "Bir xil materialni bir necha marta kiritmang.")
+            return redirect(back_url)
+
+        seen_materials.add(m_id)
         pairs.append((m_id, n))
 
+    # 6) Orderga texnika saqlaymiz
+    order.technics_id = technics_id
+    order.save(update_fields=["technics_id", "date_edit"])
+
+    # 7) Material tanlanmagan bo‘lsa ham finished qilamiz
+    if not pairs:
+        order.status = "finished"
+        order.save(update_fields=["status", "date_edit"])
+        messages.success(request, "Ariza yakunlandi!")
+        return redirect(back_url)
+
+    material_id_list = [m_id for m_id, _ in pairs]
+
+    # 8) Deadlock bo‘lmasligi uchun materiallarni bir xil tartibda lock qilamiz
+    materials = list(
+        Material.objects
+        .select_for_update()
+        .filter(id__in=material_id_list, is_active=True)
+        .order_by("id")
+    )
+
+    materials_map = {m.id: m for m in materials}
+
+    # 9) Avval hamma material yetarliligini tekshirib chiqamiz
     for m_id, n in pairs:
-        material = Material.objects.select_for_update().filter(id=m_id, is_active=True).first()
+        material = materials_map.get(m_id)
         if not material:
-            messages.info(request, "Material topilmadi!")
+            messages.info(request, "Material topilmadi yoki faol emas.")
             return redirect(back_url)
 
         current_number = material.number or 0
         if current_number < n:
             messages.info(
                 request,
-                f"{material.name} yetarli emas! Omborda {current_number} dona bor."
+                f'"{material.name}" yetarli emas. Omborda {current_number} dona bor.'
             )
             return redirect(back_url)
 
-        OrderMaterial.objects.create(
-            order=order,
-            material=material,
-            number=n
+    # 10) Hammasi joyida bo‘lsa, keyin yozamiz va kamaytiramiz
+    order_materials = []
+    for m_id, n in pairs:
+        material = materials_map[m_id]
+
+        order_materials.append(
+            OrderMaterial(
+                order=order,
+                material=material,
+                number=n
+            )
         )
 
         Material.objects.filter(pk=material.pk).update(number=F("number") - n)
 
-    order.status = "finished"
-    order.save(update_fields=["technics_id", "status", "date_edit"])
+    OrderMaterial.objects.bulk_create(order_materials)
 
-    messages.success(request, "Ariza yakunlandi!")
+    # 11) Oxirida orderni finished qilamiz
+    order.status = "finished"
+    order.save(update_fields=["status", "date_edit"])
+
+    messages.success(request, "Ariza muvaffaqiyatli yakunlandi!")
     return redirect(back_url)
 
 
