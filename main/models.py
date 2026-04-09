@@ -327,23 +327,10 @@ class Unit(models.Model):
         verbose_name_plural = "Material birliglari"
 
 
-class MaterialCategory(models.Model):
-    name = models.CharField(max_length=200)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = 'materialcategory'
-        verbose_name = "Material kategoriyasi"
-        verbose_name_plural = "Material kategoriyalari"
-
-
 # material.
 class Material(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
-    category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('free', "Bo'sh"),

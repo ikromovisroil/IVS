@@ -83,12 +83,6 @@ class UnitAdmin(admin.ModelAdmin):
     search_fields = ("name",)
 
 
-@admin.register(MaterialCategory)
-class MaterialCategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
-
-
 @admin.register(Goal)
 class GoalAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
@@ -201,16 +195,16 @@ class StructureAdmin(admin.ModelAdmin):
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "employee", "category", "unit",
+        "id", "name", "employee", "unit",
         "status", "number", "code", "price", "year", "is_active"
     )
-    list_filter = ("category", "unit", "status", "is_active", "year")
+    list_filter = ("unit", "status", "is_active", "year")
     search_fields = (
         "name", "code",
         "employee__last_name", "employee__first_name",
-        "category__name", "unit__name"
+        "unit__name"
     )
-    autocomplete_fields = ("employee", "category", "unit")
+    autocomplete_fields = ("employee", "unit")
 
 
 @admin.register(MaterialUser)
@@ -251,7 +245,7 @@ class OrderAdmin(admin.ModelAdmin):
 @admin.register(OrderMaterial)
 class OrderMaterialAdmin(admin.ModelAdmin):
     list_display = ("id", "order", "material", "number")
-    list_filter = ("material__category",)
+    list_filter = ("material__unit",)
     search_fields = ("order__body", "material__name", "material__code")
     autocomplete_fields = ("order", "material")
 

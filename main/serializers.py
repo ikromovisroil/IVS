@@ -136,16 +136,9 @@ class UnitSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
 
-class MaterialCategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = MaterialCategory
-        fields = "__all__"
-
-
 class MaterialSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(source="organization.name", read_only=True)
     employee_name = serializers.CharField(source="employee.full_name", read_only=True)
-    category_name = serializers.CharField(source="category.name", read_only=True)
     unit_name = serializers.CharField(source="unit.name", read_only=True)
 
     class Meta:

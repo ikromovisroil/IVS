@@ -9,7 +9,7 @@ from .serializers import (
     DivisionSerializer, RankSerializer, RegionSerializer,
     RolSerializer, EmployeeSerializer, GroupSerializer, CategorySerializer,
     TechnicsSerializer, StructureCategorySerializer, StructureSerializer,
-    UnitSerializer, MaterialCategorySerializer, MaterialSerializer,
+    UnitSerializer, MaterialSerializer,
     GoalSerializer, OrderSerializer, OrderMaterialSerializer,
     DeedSerializer, DeedConsentSerializer, ContractSerializer, LiableSerializer
 )
@@ -160,27 +160,20 @@ class UnitViewSet(BaseModelViewSet):
     filterset_fields = ["name"]
 
 
-class MaterialCategoryViewSet(BaseModelViewSet):
-    queryset = MaterialCategory.objects.all().order_by("-id")
-    serializer_class = MaterialCategorySerializer
-    search_fields = ["name"]
-    ordering_fields = "__all__"
-    filterset_fields = ["name"]
-
 
 class MaterialViewSet(BaseModelViewSet):
     queryset = Material.objects.select_related(
-        "organization", "employee", "category", "unit"
+        "organization", "employee", "unit"
     ).all().order_by("-id")
     serializer_class = MaterialSerializer
     search_fields = [
         "name", "code", "year", "organization__name",
         "employee__last_name", "employee__first_name",
-        "category__name", "unit__name"
+        "unit__name"
     ]
     ordering_fields = "__all__"
     filterset_fields = [
-        "organization", "employee", "category", "unit", "status", "is_active"
+        "organization", "employee", "unit", "status", "is_active"
     ]
 
 
