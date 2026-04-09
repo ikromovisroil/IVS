@@ -1475,6 +1475,7 @@ def barn_mat(request):
                 output_field=DecimalField(max_digits=18, decimal_places=2)
             )
         )
+        .order_by("-id")
     )
 
     if unit_id:
@@ -1581,7 +1582,7 @@ def material_update(request, pk):
         if mat.number < 0:
             raise ValueError
     except (TypeError, ValueError):
-        messages.error(request, "Soni noto‘g‘ri kiritildi")
+        messages.INFO(request, "Soni noto‘g‘ri kiritildi")
         return redirect(back_url)
 
     # price
