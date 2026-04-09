@@ -221,7 +221,8 @@ def order_accepted(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
+    rol = getattr(employee, "rol", None)
+    if not employee.rol or rol.client:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
     back_url = request.META.get("HTTP_REFERER") or "/"
