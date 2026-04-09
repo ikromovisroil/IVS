@@ -221,6 +221,9 @@ def order_accepted(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
+    if employee.rol.client:
+        raise PermissionDenied("Sizga ruxsat yo‘q")
+
     back_url = request.META.get("HTTP_REFERER") or "/"
 
     try:
@@ -228,7 +231,6 @@ def order_accepted(request, pk):
             order = (
                 Order.objects
                 .select_for_update()
-                .select_related("receiver", "sender", "organization")
                 .filter(pk=pk)
                 .first()
             )
