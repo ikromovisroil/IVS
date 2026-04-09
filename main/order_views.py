@@ -221,10 +221,6 @@ def order_accepted(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    rol = getattr(employee, "rol", None)
-    if not employee.rol or rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER") or "/"
 
     try:
@@ -238,15 +234,12 @@ def order_accepted(request, pk):
             )
 
             if not order:
-                messages.error(request, "Ariza topilmadi")
+                messages.info(request, "Ariza topilmadi")
                 return redirect(back_url)
 
-            if order.status != "viewed":
-                messages.warning(request, "Bu ariza allaqachon qabul qilingan yoki holati o‘zgargan")
-                return redirect(back_url)
-
-            if order.receiver_id is not None:
-                messages.warning(request, "Bu ariza boshqa xodim tomonidan allaqachon qabul qilingan")
+            # Faqat hali hech kim olmagan va viewed holatdagi ariza olinadi
+            if order.status != "viewed" or order.receiver_id is not None:
+                messages.info(request, "Bu ariza boshqa xodim tomonidan allaqachon qabul qilingan")
                 return redirect(back_url)
 
             order.status = "process"
@@ -254,7 +247,7 @@ def order_accepted(request, pk):
             order.save(update_fields=["status", "receiver", "date_edit"])
 
     except Exception as e:
-        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko‘ring")
+        messages.info(request, f"Xatolik yuz berdi: {e}")
         return redirect(back_url)
 
     messages.success(request, "Ariza muvaffaqiyatli qabul qilindi")
