@@ -199,7 +199,6 @@ def order_accepted(request, pk):
             order = (
                 Order.objects
                 .select_for_update()
-                .select_related("receiver", "sender", "organization")
                 .filter(pk=pk)
                 .first()
             )
@@ -285,7 +284,7 @@ def order_material_post(request):
 
     # 1) Order ni lock qilamiz
     order = get_object_or_404(
-        Order.objects.select_for_update().select_related("receiver"),
+        Order.objects.select_for_update(),
         pk=order_id
     )
 
