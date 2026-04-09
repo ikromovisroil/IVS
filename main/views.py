@@ -589,41 +589,43 @@ def deedconsent_action(request, pk):
     action = (request.POST.get("action") or "").strip().lower()
     message = (request.POST.get("message") or "").strip()
 
-    if action not in ["approve", "reject"]:
-        messages.info(request, "Noto‘g‘ri amal")
+    if action not in {"approve", "reject"}:
+        messages.error(request, "Noto‘g‘ri amal")
         return redirect(back_url)
 
-    with transaction.atomic():
-        consent = get_object_or_404(
-            DeedConsent.objects.select_for_update(),
-            pk=pk
-        )
+    try:
+        with transaction.atomic():
+            consent = get_object_or_404(
+                DeedConsent.objects.select_for_update(),
+                pk=pk
+            )
 
-        # faqat egasi
-        if consent.employee_id != employee.id:
-            raise PermissionDenied("Sizga ruxsat yo‘q")
+            if consent.employee_id != employee.id:
+                raise PermissionDenied("Sizga ruxsat yo‘q")
 
-        # qayta bosishni bloklash
-        if consent.status != "viewed":
-            messages.info(request, "Bu kelishuv allaqachon ko‘rib chiqilgan")
-            return redirect(back_url)
+            if consent.status != "viewed":
+                messages.info(request, "Bu kelishuv allaqachon ko‘rib chiqilgan")
+                return redirect(back_url)
 
-        # reject bo‘lsa message majburiy
-        if action == "reject" and not message:
-            messages.info(request, "Rad etish uchun izoh yozing")
-            return redirect(back_url)
+            if action == "reject" and not message:
+                messages.info(request, "Rad etish uchun izoh yozing")
+                return redirect(back_url)
 
-        # status set qilish
-        consent.status = "approved" if action == "approve" else "rejected"
-        consent.message = message
-        consent.date_edit = timezone.now()
-        consent.save(update_fields=["status", "message", "date_edit"])
+            consent.status = "approved" if action == "approve" else "rejected"
+            consent.message = message
+            consent.date_edit = timezone.now()
+            consent.save(update_fields=["status", "message", "date_edit"])
 
-    # message
+    except PermissionDenied:
+        raise
+    except Exception as e:
+        messages.info(request, f"Kutilmagan xatolik: {e}")
+        return redirect(back_url)
+
     if action == "approve":
         messages.success(request, "Hujjat muvaffaqiyatli kelishildi")
     else:
-        messages.warning(request, "Rad etildi!")
+        messages.success(request, "Hujjat rad etildi")
 
     return redirect(back_url)
 
@@ -1017,7 +1019,7 @@ def technics_update(request, pk):
         raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    tex = get_object_or_404(Technics.objects.select_for_update(), pk=pk)
+    tex = get_object_or_404(Technics, pk=pk)
 
     if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
         raise PermissionDenied("Sizga ruxsat yo‘q")
@@ -1251,11 +1253,7 @@ def extra_tex_update(request, pk):
 
     back_url = request.META.get("HTTP_REFERER") or "extra_tex"
 
-    tex = get_object_or_404(
-        Structure.objects.select_for_update(),
-        pk=pk,
-        is_active=True,
-    )
+    tex = get_object_or_404(Structure,pk=pk,is_active=True)
 
     if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
         raise PermissionDenied("Sizga ruxsat yo‘q")
