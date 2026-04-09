@@ -412,10 +412,7 @@ def deed_edit(request, pk):
     if not emp_me:
         raise PermissionDenied("Employee yo‘q")
 
-    deed = get_object_or_404(
-        Deed.objects.select_for_update(),
-        pk=pk,
-    )
+    deed = get_object_or_404(Deed, pk=pk)
 
     if deed.user_id != emp_me.id:
         raise PermissionDenied("Sizga ruxsat yo‘q")
