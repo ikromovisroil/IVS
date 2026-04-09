@@ -3,11 +3,10 @@ from main.ajax_views import *
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from main.sso_views import *
-from django.db import transaction, DatabaseError
+
 
 # yangi arizalar
 @never_cache
-@require_GET
 @login_required
 def order_sender(request):
     employee = getattr(request.user, "employee", None)
@@ -17,13 +16,13 @@ def order_sender(request):
     orders_qs = (
         Order.objects
         .filter(sender=employee,organization_id=4,status__in=["viewed", "process", "finished",],)
-        .select_related("goal", "technics", "user", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
     goals_qs = (
         Goal.objects
-        .filter(organization_id=4)
+        .filter(organization=4)
         .order_by("id")
     )
 
@@ -42,6 +41,7 @@ def order_sender(request):
     return render(request, "main/order_sender.html", context)
 
 
+# arizani tasdiqlash yoki bekor qilish
 @never_cache
 @require_POST
 @login_required
@@ -50,64 +50,45 @@ def order_decide(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    back_url = request.META.get("HTTP_REFERER", "/")
-    action = (request.POST.get("action") or "").strip()
+    order = get_object_or_404(Order, id=pk)
+    action = request.POST.get("action")  # approve | reject
 
-    if action not in {"approved", "canceled"}:
-        messages.info(request, "Noma’lum amal!")
-        return redirect(back_url)
+    if action == "canceled":
+        order.status = "canceled"
+        order.save()
 
-    try:
-        with transaction.atomic():
-            order = get_object_or_404(
-                Order.objects.select_for_update(),
-                pk=pk,
-            )
+        messages.success(request, "Ariza bekor qilindi!")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
 
-            if not order:
-                messages.info(request, "Ariza topilmadi!")
-                return redirect(back_url)
+    if action == "approved":
+        rating = request.POST.get("rating")
 
-            if order.sender_id != employee.id:
-                raise PermissionDenied("Sizda bu arizani o‘zgartirish huquqi yo‘q")
+        if not rating:
+            messages.error(request, "Iltimos, baho (yulduz) tanlang!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
-            if order.status != "finished":
-                messages.info(request, "Faqat bajarilgan arizani tasdiqlash yoki bekor qilish mumkin.")
-                return redirect(back_url)
+        try:
+            rating = int(rating)
+        except ValueError:
+            messages.error(request, "Baho noto‘g‘ri!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
-            if action == "canceled":
-                order.status = "canceled"
-                order.save(update_fields=["status", "date_edit"])
-                messages.success(request, "Ariza bekor qilindi!")
-                return redirect(back_url)
+        if rating < 1 or rating > 5:
+            messages.error(request, "Baho 1 dan 5 gacha bo‘lishi kerak!")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
 
-            rating_raw = (request.POST.get("rating") or "").strip()
+        order.rating = rating
+        order.status = "approved"
+        order.save()
+        messages.success(request, "Ariza tasdiqlandi va baholandi!")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
 
-            try:
-                rating = int(rating_raw)
-            except (TypeError, ValueError):
-                messages.info(request, "Baho noto‘g‘ri!")
-                return redirect(back_url)
-
-            if rating not in {1, 2, 3, 4, 5}:
-                messages.info(request, "Baho 1 dan 5 gacha bo‘lishi kerak!")
-                return redirect(back_url)
-
-            order.rating = rating
-            order.status = "approved"
-            order.save(update_fields=["rating", "status", "date_edit"])
-
-    except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko‘ring.")
-        return redirect(back_url)
-
-    messages.info(request, "Amal bajarilmadi.")
-    return redirect(back_url)
+    messages.error(request, "Noma’lum amal!")
+    return redirect(request.META.get("HTTP_REFERER", "/"))
 
 
 # arizalar arxivi
 @never_cache
-@require_GET
 @login_required
 def order_sender_arxiv(request):
     employee = getattr(request.user, "employee", None)
@@ -117,13 +98,13 @@ def order_sender_arxiv(request):
     orders_qs = (
         Order.objects
         .filter(sender=employee,organization_id=4,status__in=["approved", "accepted", "canceled", "rejected",],)
-        .select_related("goal", "technics", "user", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
     goals_qs = (
         Goal.objects
-        .filter(organization_id=4)
+        .filter(organization=4)
         .order_by("id")
     )
 
@@ -159,26 +140,19 @@ def order_post(request):
         messages.info(request, "Ariza turi tanlanmadi yoki noto‘g‘ri.")
         return redirect("order_sender")
 
-    with transaction.atomic():
-        goal = get_object_or_404(
-            Goal.objects.select_related("organization"),
-            pk=int(goal_id)
-        )
+    goal = get_object_or_404(Goal, id=int(goal_id))
 
-        Order.objects.create(
-            organization_id=goal.organization.id,
-            sender_id=employee.id,
-            goal_id=goal.id,
-            body=body,
-            status="viewed",
-        )
-
+    Order.objects.create(
+        organization=goal.organization,
+        sender=employee,
+        goal=goal,
+        body=body,
+    )
     messages.success(request, "Ariza yuborildi")
     return redirect(back_url)
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("order")
 def order_receiver(request):
@@ -186,13 +160,10 @@ def order_receiver(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     orders_qs = (
         Order.objects
         .filter(sender__region=employee.region,organization_id=4, status="viewed")
-        .select_related("goal", "technics", "user", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -221,9 +192,6 @@ def order_accepted(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER") or "/"
 
     try:
@@ -231,6 +199,7 @@ def order_accepted(request, pk):
             order = (
                 Order.objects
                 .select_for_update()
+                .select_related("receiver", "sender", "organization")
                 .filter(pk=pk)
                 .first()
             )
@@ -257,16 +226,12 @@ def order_accepted(request, pk):
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("order")
 def order_receiver_activ(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
-
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
 
     orders_qs = (
         Order.objects
@@ -307,9 +272,6 @@ def order_material_post(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER") or "/"
 
     order_id = request.POST.get("order_id")
@@ -324,7 +286,7 @@ def order_material_post(request):
     # 1) Order ni lock qilamiz
     order = get_object_or_404(
         Order.objects.select_for_update().select_related("receiver"),
-        id=order_id
+        pk=order_id
     )
 
     # 3) Faqat shu arizani qabul qilgan odam yakunlay oladi
@@ -435,7 +397,6 @@ def order_material_post(request):
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("order")
 def order_receiver_arxiv(request):
@@ -443,13 +404,10 @@ def order_receiver_arxiv(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     orders_qs = (
         Order.objects
         .filter(receiver=employee,organization_id=4,status__in=["approved", "accepted", "canceled", "rejected",],)
-        .select_related("goal", "organization", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -467,45 +425,24 @@ def order_receiver_arxiv(request):
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("order")
-def order_receiver_deed(request, pk):
+def order_receiver_deed(request,pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
+    order = get_object_or_404(Order, pk=pk)
 
-    order = get_object_or_404(
-        Order.objects.select_related(
-            "sender","sender__organization","sender__department","receiver",),
-        pk=pk,
-    )
+    if order.receiver != employee:
+        raise PermissionDenied
 
-    if order.receiver_id != employee.id:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
-    my_dep_id = employee.department_id
-
-    emp_bos = (
-        Employee.objects
-        .filter(organization=order.sender.organization,rol__boss=True,)
-        .select_related("organization")
-    )
-
-    employees = (
-        Employee.objects
-        .filter(Q(department=order.sender.department) | Q(department_id=my_dep_id))
-        .select_related("organization")
-        .distinct()
-    )
+    my_dep_id = request.user.employee.department_id
 
     context = {
-        "order": order,
-        "emp_bos": emp_bos,
-        "employee": employees,
+        'order':order,
+        'emp_bos':Employee.objects.filter(organization=order.sender.organization,rol__boss=True),
+        'employee': Employee.objects.filter(Q(department=order.sender.department) | Q(department_id=my_dep_id)),
     }
     return render(request, "main/order_receiver_deed.html", context)
 
@@ -519,9 +456,6 @@ def order_receiver_deed_post(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
@@ -531,17 +465,17 @@ def order_receiver_deed_post(request):
     # sender obyekt
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
-        messages.info(request, "Imzolovchi xodim tanlanmadi")
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
         return redirect("akt_get")
 
     if not body.strip():
-        messages.info(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+        messages.error(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
         return redirect("akt_get")
 
     # ✅ Deed yaratamiz
     deed = Deed.objects.create(
-        sender_id=sender.id,  # FK obyekt
-        user_id=employee.id,  # FK obyekt
+        sender=sender,  # FK obyekt
+        user=employee,  # FK obyekt
         message_user=message,
         body=body,
         file_type=False,  # ✅ True/False
@@ -559,7 +493,7 @@ def order_receiver_deed_post(request):
         deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
     except HtmlPdfError as e:
-        messages.info(request, f"PDF yaratilmadi: {e}")
+        messages.warning(request, f"PDF yaratilmadi: {e}")
 
     # ✅ kelishuvchilar IDs tozalash
     ids = []
@@ -586,20 +520,16 @@ def order_receiver_deed_post(request):
 
 # yangi arizalar imv
 @never_cache
-@require_GET
 @login_required
 def order_sender_all(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     orders_qs = (
         Order.objects
         .filter(sender=employee,organization=employee.organization,status__in=["viewed", "process", "finished", "approved"],)
-        .select_related("goal", "receiver", "sender")
+        .select_related("receiver", "sender")
         .order_by("-id")
     )
 
@@ -618,6 +548,7 @@ def order_sender_all(request):
         "order": page_obj,          # ✅ for loop shu orqali yuradi
         "page_obj": page_obj,       # ✅ pagination uchun
         "paginator": paginator,     # ✅ pagination uchun
+
         "goal": goals_qs,
     }
     return render(request, "main/order_sender_all.html", context)
@@ -631,9 +562,6 @@ def order_post_all(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER") or "order_sender_all"
 
     goal_id = (request.POST.get("goal") or "").strip()
@@ -644,14 +572,15 @@ def order_post_all(request):
         return redirect("order_sender_all")
 
     goal = get_object_or_404(
-        Goal, id=int(goal_id),
-        organization_id=employee.organization.id
+        Goal,
+        id=int(goal_id),
+        organization=employee.organization
     )
 
     Order.objects.create(
-        organization_id=employee.organization_id,
-        sender_id=employee.id,
-        goal_id=goal.id,
+        organization=employee.organization,
+        sender=employee,
+        goal=goal,
         body=body,
         status="viewed",
     )
@@ -667,87 +596,57 @@ def order_decide_all(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER", "/")
     action = (request.POST.get("action") or "").strip()
+    order = get_object_or_404(Order.objects.select_for_update(), id=pk)
 
-    if action not in {"canceled", "accepted"}:
-        messages.warning(request, "Noma’lum amal!")
+    if order.sender != employee:
+        messages.info(request, "Ariza sizga tegishli emas.")
         return redirect(back_url)
 
-    try:
-        with transaction.atomic():
-            order = get_object_or_404(
-                Order.objects.select_for_update(),
-                pk=pk,
-            )
+    if action == "canceled":
+        if order.status in ["accepted", "approved", "canceled", "rejected"]:
+            messages.info(request, "Bu ariza bo‘yicha amal bajarilgan.")
+            return redirect(back_url)
 
-            if not order:
-                messages.info(request, "Ariza topilmadi!")
-                return redirect(back_url)
-
-            if order.sender_id != employee.id:
-                messages.info(request, "Ariza sizga tegishli emas.")
-                return redirect(back_url)
-
-            if action == "canceled":
-                # Faqat hali yakuniy bosqichga o'tmagan arizani bekor qilish
-                if order.status in {"accepted", "approved", "canceled", "rejected"}:
-                    messages.info(request, "Bu ariza bo‘yicha amal bajarilgan.")
-                    return redirect(back_url)
-
-                order.status = "canceled"
-                order.save(update_fields=["status", "date_edit"])
-                messages.success(request, "Ariza bekor qilindi!")
-                return redirect(back_url)
-
-            if action == "accepted":
-                # Client faqat approved bo'lgan arizani yakuniy qabul qiladi
-                if order.status != "approved":
-                    messages.info(request, "Bu ariza hozir qabul qilinmaydi.")
-                    return redirect(back_url)
-
-                order.status = "accepted"
-                order.save(update_fields=["status", "date_edit"])
-                messages.success(
-                    request,
-                    "Ariza yakunlandi, materiallarni ombordan olishingiz mumkin."
-                )
-                return redirect(back_url)
-
-    except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko‘ring.")
+        order.status = "canceled"
+        order.save(update_fields=["status", "date_edit"])
+        messages.success(request, "Ariza bekor qilindi!")
         return redirect(back_url)
 
-    messages.info(request, "Amal bajarilmadi.")
+    if action == "accepted":
+        if order.status != "approved":
+            messages.info(request, "Bu ariza hozir qabul qilinmaydi.")
+            return redirect(back_url)
+
+        order.status = "accepted"
+        order.save(update_fields=["status", "date_edit"])
+        messages.success(request, "Ariza yakunlandi, materiallar ombordan olishingiz mumkin.")
+        return redirect(back_url)
+
+    messages.info(request, "Noma’lum amal!")
     return redirect(back_url)
 
 
 # arizalar arxivi
 @never_cache
-@require_GET
 @login_required
 def order_sender_arxiv_all(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     orders_qs = (
         Order.objects
         .filter(sender=employee,organization=employee.organization,status__in=["accepted", "canceled", "rejected",],)
-        .select_related("goal", "organization", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
     goals_qs = (
         Goal.objects
-        .filter(organization=employee.organization)
-        .order_by("id")
+        .only("id", "name",)
+        .order_by("-id")
     )
 
     # ✅ PAGINATION
@@ -766,16 +665,12 @@ def order_sender_arxiv_all(request):
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("order")
 def order_receiver_all(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
 
     orders_qs = (
         Order.objects
@@ -809,52 +704,46 @@ def order_accepted_all(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER") or "/"
-    action = (request.POST.get("action") or "").strip()
+    action = request.POST.get("action")
 
-    if action not in {"process", "rejected"}:
-        messages.info(request, "Noto‘g‘ri amal tanlandi.")
-        return redirect(back_url)
+    with transaction.atomic():
+        order = (
+            Order.objects
+            .select_for_update()
+            .filter(pk=pk)
+            .first()
+        )
 
-    try:
-        with transaction.atomic():
-            order = (
-                Order.objects
-                .select_for_update()
-                .filter(
-                    pk=pk,
-                    sender_id=employee.id,
-                    organization_id=employee.organization_id,
-                    status="viewed",
-                )
-                .first()
-            )
-
-            if not order:
-                messages.info(request, "Ariza topilmadi yoki allaqachon ko‘rib chiqilgan.")
-                return redirect(back_url)
-
-            if action == "process":
-                order.status = "process"
-                order.save(update_fields=["status", "date_edit"])
-                messages.success(request, "Ariza qabul qilindi.")
-                return redirect("order_receiver_activ_all")
-
-            order.status = "rejected"
-            order.save(update_fields=["status", "date_edit"])
-            messages.success(request, "Ariza rad etildi.")
+        if not order:
+            messages.info(request, "Ariza topilmadi")
             return redirect(back_url)
 
-    except DatabaseError:
-        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko‘ring.")
-        return redirect(back_url)
+        # faqat yangi ariza ustida amal bajarilsin
+        if order.status != "viewed":
+            messages.warning(request, "Bu ariza allaqachon jarayonda yoki ko‘rib chiqilgan")
+            return redirect(back_url)
+
+        if action == "process":
+            order.status = "process"
+            order.receiver = employee
+            order.save()
+            messages.success(request, "Ariza qabul qilindi!")
+            return redirect("order_receiver_activ_all")
+
+        elif action == "rejected":
+            order.status = "rejected"
+            order.receiver = employee
+            order.save()
+            messages.success(request, "Ariza rad etildi!")
+            return redirect(back_url)
+
+        else:
+            messages.warning(request, "Noto‘g‘ri amal tanlandi")
+            return redirect(back_url)
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("order")
 def order_receiver_activ_all(request):
@@ -862,18 +751,15 @@ def order_receiver_activ_all(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     orders_qs = (
         Order.objects
         .filter(receiver=employee, organization=employee.organization, status__in=["process", "finished"])
-        .select_related("goal", "organization", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
     materials = Material.objects.filter(
-        organization_id=employee.organization.id,
+        organization=employee.organization,
         is_active=True
     )
 
@@ -900,17 +786,11 @@ def order_material_all(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     order_id = request.POST.get("order_id")
     material_ids = request.POST.getlist("material_id[]")
     numbers = request.POST.getlist("number[]")
 
-    order = get_object_or_404(
-        Order.objects.select_for_update(),
-        id=order_id,
-    )
+    order = get_object_or_404(Order, id=order_id)
 
     # ✅ Materiallar bo‘sh bo‘lishi mumkin (xohlasangiz majburiy qiling)
     pairs = []
@@ -946,7 +826,6 @@ def order_material_all(request):
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("order")
 def order_receiver_arxiv_all(request):
@@ -954,13 +833,10 @@ def order_receiver_arxiv_all(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     orders_qs = (
         Order.objects
         .filter(receiver=employee,organization=employee.organization,status__in=["approved", "accepted", "canceled", "rejected",],)
-        .select_related("goal", "organization", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -977,8 +853,8 @@ def order_receiver_arxiv_all(request):
     return render(request, "main/order_receiver_arxiv_all.html", context)
 
 
+
 @never_cache
-@require_GET
 @login_required
 @role_required("confirm")
 def order_agrement(request):
@@ -986,13 +862,10 @@ def order_agrement(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     orders_qs = (
         Order.objects
         .filter(receiver__region=employee.region,organization=employee.organization, status__in=["finished"])
-        .select_related("goal", "organization", "receiver", "sender")
+        .select_related("goal", "technics", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -1011,14 +884,10 @@ def order_agrement(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("confirm")
 def order_agrement_material(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
@@ -1146,16 +1015,12 @@ def order_agrement_material(request):
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("confirm")
 def order_agrement_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
 
     orders_qs = (
         Order.objects
@@ -1179,16 +1044,12 @@ def order_agrement_arxiv(request):
 
 
 @never_cache
-@require_GET
 @login_required
 @role_required("confirm")
 def order_agrement_deed(request,pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
 
     order = get_object_or_404(Order, pk=pk)
 
@@ -1214,10 +1075,6 @@ def order_agrement_deed_post(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
@@ -1227,17 +1084,17 @@ def order_agrement_deed_post(request):
     # sender obyekt
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
-        messages.info(request, "Imzolovchi xodim tanlanmadi")
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
         return redirect("akt_get")
 
     if not body.strip():
-        messages.info(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+        messages.error(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
         return redirect("akt_get")
 
     # ✅ Deed yaratamiz
     deed = Deed.objects.create(
-        sender_id=sender.id,  # FK obyekt
-        user_id=employee.id,  # FK obyekt
+        sender=sender,  # FK obyekt
+        user=employee,  # FK obyekt
         message_user=message,
         body=body,
         file_type=False,  # ✅ True/False
