@@ -1333,18 +1333,17 @@ def extra_tex_attach(request):
     extra_tex_id = (request.POST.get("extra_tex_id") or "").strip()
 
     if not texnika_id or not extra_tex_id:
-        messages.error(request, "Tanlash majburiy (texnika va qo‘shimcha texnika).")
+        messages.info(request, "Tanlash majburiy (texnika va qo‘shimcha texnika).")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
     # obyektlarni olish
     tex = get_object_or_404(
-        Technics.objects.select_for_update().only("id", "organization_id", "is_active"),
+        Technics.objects.select_for_update(),
         pk=int(texnika_id), is_active=True,
     )
 
     extra = get_object_or_404(
-        Structure.objects.select_for_update().only(
-            "id", "organization_id", "technics_id", "status", "is_active"),
+        Structure.objects.select_for_update(),
         pk=int(extra_tex_id), is_active=True,
     )
 

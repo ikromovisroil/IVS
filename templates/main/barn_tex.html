@@ -765,7 +765,7 @@
                 <div class="col-md-8 col-lg-9">
                   <select name="extra_tex_id" class="form-select">
                      <option value="">— Tanlang —</option>
-                    {% for i in tex.extratechnics_set.all %}
+                    {% for i in tex.structure_set.all %}
                     <option value="{{i.id}}">{{i.name}} | {{i.inventory}} | {{i.serial}}</option>
                     {% endfor %}
                   </select>
