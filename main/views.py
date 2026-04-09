@@ -1552,7 +1552,6 @@ def material_update(request, pk):
     if mat.organization_id != employee.organization_id:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
-    category_id = (request.POST.get("category") or "").strip()
     unit_id = (request.POST.get("unit") or "").strip()
 
     # unit
@@ -1595,7 +1594,7 @@ def material_update(request, pk):
         messages.info(request, "Narx noto‘g‘ri kiritildi. Masalan: 14.45 yoki 14,45")
         return redirect(back_url)
 
-    mat.save(update_fields=["category", "unit", "name", "code", "number", "price"])
+    mat.save(update_fields=["unit", "name", "code", "number", "price"])
     messages.success(request, "Material tahrirlandi!")
     return redirect(back_url)
 
