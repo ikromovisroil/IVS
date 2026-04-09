@@ -2214,8 +2214,7 @@ def emp_status(request):
 @require_GET
 @login_required
 @role_required("status")
-def tex_status(
-        request):
+def tex_status(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")

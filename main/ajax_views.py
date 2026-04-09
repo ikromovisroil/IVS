@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404
 from django.views.decorators.http import require_POST, require_GET
 
 @never_cache
+@require_GET
 @login_required
 def ajax_load_categories(request):
     group_id = request.GET.get("group")
@@ -26,6 +27,7 @@ def ajax_load_categories(request):
 
 
 @never_cache
+@require_GET
 @login_required
 def ajax_sender_technics(request):
     employee = getattr(request.user, "employee", None)
@@ -60,6 +62,7 @@ def ajax_sender_technics(request):
 
 
 @never_cache
+@require_GET
 @login_required
 def order_mark_seen(request):
     employee = getattr(request.user, "employee", None)
@@ -112,6 +115,8 @@ def order_mark_seen(request):
     return JsonResponse({"status": "ok"})
 
 
+@never_cache
+@require_GET
 @login_required
 def order_check_new(request):
     employee = getattr(request.user, "employee", None)
@@ -131,6 +136,8 @@ def order_check_new(request):
     })
 
 
+@never_cache
+@require_GET
 @login_required
 def order_check_all(request):
     employee = getattr(request.user, "employee", None)
@@ -151,6 +158,7 @@ def order_check_all(request):
 
 
 @never_cache
+@require_GET
 @login_required
 def get_department_employees(request):
     emp_id = request.GET.get("employee_id")
@@ -173,8 +181,8 @@ def get_department_employees(request):
     return JsonResponse({"employees": data})
 
 @never_cache
-@login_required
 @require_GET
+@login_required
 def ajax_load_departments(request):
     org_id = (request.GET.get("organization") or "").strip()
     if not org_id or org_id == "None":
@@ -184,8 +192,8 @@ def ajax_load_departments(request):
     return JsonResponse({"results": list(qs)})
 
 @never_cache
-@login_required
 @require_GET
+@login_required
 def ajax_load_directorate(request):
     dep_id = (request.GET.get("department") or "").strip()
     if not dep_id or dep_id == "None":
@@ -194,9 +202,10 @@ def ajax_load_directorate(request):
     qs = Directorate.objects.filter(department_id=dep_id).values("id", "name")
     return JsonResponse({"results": list(qs)})
 
+
 @never_cache
-@login_required
 @require_GET
+@login_required
 def ajax_load_division(request):
     dir_id = (request.GET.get("directorate") or "").strip()
     if not dir_id or dir_id == "None":
@@ -205,7 +214,9 @@ def ajax_load_division(request):
     qs = Division.objects.filter(directorate_id=dir_id).values("id", "name")
     return JsonResponse({"results": list(qs)})
 
+
 @never_cache
+@require_GET
 @login_required
 def ajax_dep_signatory(request):
     org_id = (request.GET.get("organization") or "").strip()
@@ -234,7 +245,9 @@ def ajax_dep_signatory(request):
 
     return JsonResponse(data, safe=False)
 
+
 @never_cache
+@require_GET
 @login_required
 def ajax_dep_negotiator(request):
     org_id = (request.GET.get("organization") or "").strip()
@@ -264,7 +277,9 @@ def ajax_dep_negotiator(request):
     } for e in qs]
     return JsonResponse(data, safe=False)
 
+
 @never_cache
+@require_GET
 @login_required
 def ajax_employees_org(request):
     org_id = (request.GET.get("organization") or "").strip()
@@ -282,7 +297,9 @@ def ajax_employees_org(request):
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})
 
+
 @never_cache
+@require_GET
 @login_required
 def ajax_agreements_employees(request):
     org_id = request.GET.get("org_id")
@@ -322,6 +339,9 @@ def ordermaterial_delete(request, pk):
     return JsonResponse({"status": "ok"})
 
 
+@never_cache
+@require_GET
+@login_required
 def ajax_search_tex(request):
     query = request.GET.get("q", "").strip()
 
@@ -348,6 +368,7 @@ def ajax_search_tex(request):
 
 
 @never_cache
+@require_GET
 @login_required
 def ajax_akt_materials(request):
     employee = getattr(request.user, "employee", None)
@@ -417,6 +438,7 @@ def ajax_akt_materials(request):
 
 
 @never_cache
+@require_GET
 @login_required
 def ajax_svod_materials(request):
     employee = getattr(request.user, "employee", None)
@@ -502,7 +524,9 @@ def ajax_svod_materials(request):
         })
     return JsonResponse(data, safe=False)
 
+
 @never_cache
+@require_GET
 @login_required
 def ajax_reestr_materials(request):
     employee = getattr(request.user, "employee", None)
@@ -615,6 +639,7 @@ def ajax_reestr_materials(request):
 
 
 @never_cache
+@require_GET
 @login_required
 def ajax_document_preview(request):
     employee = getattr(request.user, "employee", None)

@@ -3,7 +3,7 @@ import json
 import logging
 import secrets
 import requests
-
+from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
@@ -36,6 +36,7 @@ def login_page(request):
 # -----------------------
 # 2) Start flow
 # -----------------------
+@never_cache
 def sso_start_login(request):
     # Login uchun umumiy SSO sahifa chiqadi
     request.session["SSO_FLOW"] = {"purpose": "login"}
@@ -43,6 +44,8 @@ def sso_start_login(request):
     return redirect("sso_start")
 
 
+@never_cache
+@login_required
 def sso_start_approve(request):
     """
     Approve uchun umumiy SSO sahifaga emas,
@@ -96,6 +99,7 @@ def sso_start_approve(request):
 # -----------------------
 # 3) Login uchun PKCE + redirect page
 # -----------------------
+@never_cache
 def sso_start(request):
     return render(request, "users/sso.html", {
         "client_id": settings.SSO_CLIENT_ID,
@@ -107,6 +111,7 @@ def sso_start(request):
 # -----------------------
 # 4) Login callback page
 # -----------------------
+@never_cache
 def sso_callback(request):
     return render(request, "users/callback.html", {
         "redirect_uri": get_sso_redirect_uri(request),
@@ -188,6 +193,7 @@ def sso_exchange(request):
 # 6) E-IMZO return (approve uchun)
 # -----------------------
 @never_cache
+@login_required
 def eimzo_return(request):
     try:
         pending = request.session.get("PENDING_APPROVE")
@@ -363,6 +369,8 @@ def exchange_code_for_token(code: str, code_verifier: str, redirect_uri: str) ->
     return r.json()
 
 
+@never_cache
+@login_required
 def logout(request):
     auth_logout(request)
     return redirect("/sso/login/")

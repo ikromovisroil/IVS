@@ -5,8 +5,10 @@ from django.views.decorators.http import require_GET
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from .models import *
+from django.views.decorators.cache import never_cache
 
 
+@never_cache
 @require_GET
 @login_required
 def export_technics_xlsx(request):
@@ -86,6 +88,7 @@ def export_technics_xlsx(request):
     return resp
 
 
+@never_cache
 @require_GET
 @login_required
 def export_material_xlsx(request):
