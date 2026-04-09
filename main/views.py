@@ -1242,6 +1242,7 @@ def extra_tex_delete(request):
 
 
 @never_cache
+@require_POST
 @login_required
 @role_required("technics_edit")
 @transaction.atomic
@@ -1274,7 +1275,7 @@ def extra_tex_update(request, pk):
         if not category_id.isdigit():
             messages.info(request, "Kategoriya noto‘g‘ri")
             return redirect(back_url)
-        tex.category = get_object_or_404(Structure, pk=int(category_id))
+        tex.category = get_object_or_404(StructureCategory, pk=int(category_id))
     else:
         tex.category = None
 
