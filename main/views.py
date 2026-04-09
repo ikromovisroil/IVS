@@ -1435,14 +1435,13 @@ def barn_mat(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    category_id = (request.GET.get("category") or "").strip()
     unit_id = (request.GET.get("unit") or "").strip()
     emp_id = (request.GET.get("employee") or "").strip()
     status = (request.GET.get("status") or "").strip()
     name = (request.GET.get("name") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    has_filter = bool(category_id or unit_id or emp_id or status or name)
+    has_filter = bool(unit_id or emp_id or status or name)
 
     # filter bo‘lmasa bo‘sh ko‘rsatamiz
     if not has_filter:
@@ -1469,7 +1468,7 @@ def barn_mat(request):
             is_active=True,
             organization=employee.organization
         )
-        .select_related("employee", "category", "unit")
+        .select_related("employee", "unit")
         .annotate(
             total_sum=ExpressionWrapper(
                 F("number") * F("price"),
@@ -1477,9 +1476,6 @@ def barn_mat(request):
             )
         )
     )
-
-    if category_id:
-        qs = qs.filter(category_id=int(category_id))
 
     if unit_id:
         qs = qs.filter(unit_id=int(unit_id))

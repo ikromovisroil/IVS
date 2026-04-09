@@ -21,20 +21,6 @@
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
 
-                    <!-- CATEGORY -->
-                    <div class="col-md-3">
-                        <label class="form-label">Kategoriya</label>
-                        <select name="category" class="form-select">
-                            <option value="">Tanlang...</option>
-                            {% for c in category %}
-                                <option value="{{ c.id }}"
-                                    {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ c.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
                     <!-- UNIT -->
                     <div class="col-md-3">
                         <label class="form-label">Birligi</label>
@@ -443,7 +429,7 @@
             <h5 class="modal-title">Materialni tahrirlash</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
+          <div class="modal-body">
             <div class="row mb-3">
                 <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
                 <div class="col-md-8 col-lg-9">
@@ -486,7 +472,6 @@
               </div>
             </div>
           </div>
-
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
             <button type="submit" class="btn btn-primary"
