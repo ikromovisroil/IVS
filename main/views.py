@@ -1253,7 +1253,7 @@ def extra_tex_update(request, pk):
 
     back_url = request.META.get("HTTP_REFERER") or "extra_tex"
 
-    tex = get_object_or_404(Structure,pk=pk,is_active=True)
+    tex = get_object_or_404(Structure.objects.select_for_update(),pk=pk,is_active=True)
 
     if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
         raise PermissionDenied("Sizga ruxsat yo‘q")
