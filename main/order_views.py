@@ -101,7 +101,7 @@ def order_decide(request, pk):
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko‘ring.")
         return redirect(back_url)
 
-    messages.info(request, "Amal bajarilmadi.")
+    messages.success(request, "Amal muvaffaqiyatli tasdiqlandi.")
     return redirect(back_url)
 
 
@@ -826,7 +826,6 @@ def order_accepted_all(request, pk):
                 .select_for_update()
                 .filter(
                     pk=pk,
-                    sender_id=employee.id,
                     organization_id=employee.organization_id,
                     status="viewed",
                 )
@@ -839,17 +838,19 @@ def order_accepted_all(request, pk):
 
             if action == "process":
                 order.status = "process"
-                order.save(update_fields=["status", "date_edit"])
+                order.receiver = employee
+                order.save(update_fields=["status", "receiver", "date_edit"])
                 messages.success(request, "Ariza qabul qilindi.")
                 return redirect("order_receiver_activ_all")
 
+            order.receiver = employee
             order.status = "rejected"
-            order.save(update_fields=["status", "date_edit"])
+            order.save(update_fields=["status", "receiver", "date_edit"])
             messages.success(request, "Ariza rad etildi.")
             return redirect(back_url)
 
     except DatabaseError:
-        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko‘ring.")
+        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko‘ring.")
         return redirect(back_url)
 
 
