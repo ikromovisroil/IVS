@@ -126,7 +126,7 @@
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.name|default:"-"|truncatechars:50 }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.number|default:"-" }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.number }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.price|intcomma|default:"-" }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.total_sum|intcomma }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.unit|default:"-" }}</td>
