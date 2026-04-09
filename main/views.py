@@ -346,7 +346,7 @@ def deed_action(request, pk):
     message = (request.POST.get("message") or "").strip()
 
     deed = get_object_or_404(
-        Deed.objects.select_for_update().select_related("sender", "receiver"),
+        Deed.objects.select_for_update(),
         pk=pk
     )
 
@@ -413,7 +413,7 @@ def deed_edit(request, pk):
         raise PermissionDenied("Employee yo‘q")
 
     deed = get_object_or_404(
-        Deed.objects.select_related("user","sender","receiver",),
+        Deed.objects.select_for_update(),
         pk=pk,
     )
 
@@ -598,7 +598,7 @@ def deedconsent_action(request, pk):
 
     with transaction.atomic():
         consent = get_object_or_404(
-            DeedConsent.objects.select_for_update().select_related("employee"),
+            DeedConsent.objects.select_for_update(),
             pk=pk
         )
 
