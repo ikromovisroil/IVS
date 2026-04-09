@@ -1454,7 +1454,6 @@ def barn_mat(request):
 
         return render(request, "main/barn_mat.html", {
             "employees_boss": Employee.objects.filter(rol__shop=True),
-            "category": MaterialCategory.objects.all(),
             "unit": Unit.objects.all(),
             "page_obj": page_obj,
             "material": page_obj.object_list,
@@ -1509,7 +1508,6 @@ def barn_mat(request):
 
     context = {
         "employees_boss": Employee.objects.filter(rol__client=False, rol__boss=True),
-        "category": MaterialCategory.objects.all(),
         "unit": Unit.objects.all(),
         "page_obj": page_obj,
         "material": page_obj.object_list,
@@ -1560,15 +1558,6 @@ def material_update(request, pk):
 
     category_id = (request.POST.get("category") or "").strip()
     unit_id = (request.POST.get("unit") or "").strip()
-
-    # category
-    if category_id:
-        if not category_id.isdigit():
-            messages.info(request, "Kategoriya noto‘g‘ri tanlangan")
-            return redirect(back_url)
-        mat.category = get_object_or_404(MaterialCategory, pk=int(category_id))
-    else:
-        mat.category = None
 
     # unit
     if unit_id:
