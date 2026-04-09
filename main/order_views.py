@@ -237,20 +237,23 @@ def order_accepted(request, pk):
             )
 
             if not order:
-                messages.info(request, "Ariza topilmadi")
+                messages.error(request, "Ariza topilmadi")
                 return redirect(back_url)
 
-            # Faqat hali hech kim olmagan va viewed holatdagi ariza olinadi
-            if order.status != "viewed" or order.receiver_id is not None:
-                messages.info(request, "Bu ariza boshqa xodim tomonidan allaqachon qabul qilingan")
+            if order.status != "viewed":
+                messages.warning(request, "Bu ariza allaqachon qabul qilingan yoki holati o‘zgargan")
+                return redirect(back_url)
+
+            if order.receiver_id is not None:
+                messages.warning(request, "Bu ariza boshqa xodim tomonidan allaqachon qabul qilingan")
                 return redirect(back_url)
 
             order.status = "process"
             order.receiver = employee
             order.save(update_fields=["status", "receiver", "date_edit"])
 
-    except Exception:
-        messages.info(request, f"Xatolik yuz berdi qayta urunib ko'ring")
+    except Exception as e:
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko‘ring")
         return redirect(back_url)
 
     messages.success(request, "Ariza muvaffaqiyatli qabul qilindi")
