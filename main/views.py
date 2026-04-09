@@ -1242,7 +1242,6 @@ def extra_tex_delete(request):
 
 
 @never_cache
-@require_POST
 @login_required
 @role_required("technics_edit")
 @transaction.atomic
@@ -1251,7 +1250,7 @@ def extra_tex_update(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    back_url = request.META.get("HTTP_REFERER") or "extra_tex"
+    back_url = request.META.get("HTTP_REFERER") or "/"
 
     tex = get_object_or_404(Structure.objects.select_for_update(),pk=pk,is_active=True)
 
