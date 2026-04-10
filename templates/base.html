@@ -379,7 +379,7 @@
               {% endif %}
             {% endif %}
 
-            {% if request.user.employee.rol.confirm %}
+            {% if request.user.employee.rol.confirm and request.user.employee.rol.client %}
             <li>
               <a class="{% if url_name == 'order_agrement' or url_name == 'order_agrement_arxiv' %}active{% endif %}"
                  href="{% url 'order_agrement' %}">
