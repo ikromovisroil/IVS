@@ -1,14 +1,12 @@
 # core/middlewares/security_headers.py
 
 class SecurityHeadersMiddleware:
-
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
         response = self.get_response(request)
 
-        # Restrict powerful browser features
         response["Permissions-Policy"] = (
             "accelerometer=(), "
             "autoplay=(), "
@@ -25,31 +23,30 @@ class SecurityHeadersMiddleware:
             "publickey-credentials-get=(self), "
             "usb=(), "
             "web-share=(self), "
-            "xr-spatial-tracking=()"
+            "xr-spatial-tracking=(), "
+            "browsing-topics=()"
         )
 
-        csp = (
+        response["Content-Security-Policy"] = (
             "default-src 'self'; "
             "base-uri 'self'; "
             "object-src 'none'; "
-            "frame-ancestors 'none'; "
-            "form-action 'self'; "
+            "frame-ancestors 'self'; "
+            "form-action 'self' https://sso.mf.uz; "
             "img-src 'self' data: blob: https:; "
             "font-src 'self' data: https:; "
             "style-src 'self' 'unsafe-inline' https:; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; "
-            "connect-src 'self' https: wss:; "
+            "script-src 'self' 'unsafe-inline' https:; "
+            "connect-src 'self' https://sso.mf.uz https: wss:; "
             "media-src 'self' blob: https:; "
             "worker-src 'self' blob:; "
             "manifest-src 'self'; "
-            "frame-src 'self' https:;"
+            "frame-src 'self' https://sso.mf.uz https:;"
         )
-        response["Content-Security-Policy"] = csp
 
-        # Helpful extra hardening headers
+        response["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response["X-Content-Type-Options"] = "nosniff"
+        response["X-Frame-Options"] = "DENY"
         response["X-Permitted-Cross-Domain-Policies"] = "none"
-
-        # Disable FLoC / similar cohorting
-        response["Permissions-Policy"] += ", browsing-topics=()"
 
         return response
