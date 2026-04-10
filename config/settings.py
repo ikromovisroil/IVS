@@ -81,6 +81,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
     "core.middlewares.audit.AuditMiddleware",
+    "core.middlewares.security_headers.SecurityHeadersMiddleware",
 ]
 
 
@@ -349,11 +350,10 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-# Django 5+ da bu eski setting amalda kerak emas
-# SECURE_BROWSER_XSS_FILTER = True
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_RESOURCE_POLICY = "same-origin"
 
 if DEBUG:
-    # ================= LOCAL =================
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
@@ -364,11 +364,19 @@ if DEBUG:
 
     SECURE_PROXY_SSL_HEADER = None
     USE_X_FORWARDED_HOST = False
+
+    SECURE_REDIRECT_EXEMPT = []
 else:
-    # ================= PRODUCTION =================
     SECURE_SSL_REDIRECT = True
+
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = "Lax"
+
+    CSRF_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_HTTPONLY = False
 
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
@@ -377,8 +385,8 @@ else:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
 
-    SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
-    SECURE_CROSS_ORIGIN_RESOURCE_POLICY = "same-origin"
+    SECURE_REDIRECT_EXEMPT = []
+
 
 
 # =========================================================
