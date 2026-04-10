@@ -145,7 +145,7 @@ urlpatterns = [
     # =========================
     # SSO
     # =========================
-    path("sso/login/", login_page, name="login_page"),
+    path("sso/login/", login_page, name="login"),
     path("sso/start/login/", sso_start_login, name="sso_start_login"),
     path("sso/start/approve/", sso_start_approve, name="sso_start_approve"),
     path("sso/start/", sso_start, name="sso_start"),
