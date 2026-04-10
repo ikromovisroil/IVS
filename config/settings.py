@@ -42,6 +42,7 @@ ALLOWED_HOSTS = env_list(
 # =========================================================
 INSTALLED_APPS = [
     "jazzmin",
+    "csp",
 
     "django.contrib.admin",
     "django.contrib.auth",
@@ -67,6 +68,7 @@ INSTALLED_APPS = [
 # MIDDLEWARE
 # =========================================================
 MIDDLEWARE = [
+    "csp.middleware.CSPMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
