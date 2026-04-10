@@ -116,7 +116,7 @@ def contact(request):
         .order_by("-id")
     )
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -149,7 +149,7 @@ def contact_arxiv(request):
         .order_by("-id")
     )
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -182,7 +182,7 @@ def contact_agrement(request):
         .order_by("-id")
     )
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -214,7 +214,7 @@ def contact_agrement_arxiv(request):
         .order_by("-id")
     )
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -249,7 +249,7 @@ def contact_user(request):
         .order_by("-id")
     )
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -284,7 +284,7 @@ def contact_user_arxiv(request):
         .order_by("-id")
     )
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -703,7 +703,7 @@ def barn_tex(request):
     qs_params = params.urlencode()
 
     if not has_filter:
-        empty_page = Paginator([], 50).get_page(page_number)
+        empty_page = Paginator([], 20).get_page(page_number)
         return render(request, "main/barn_tex.html", {
             "organizations": organizations,
             "groups": groups,
@@ -767,7 +767,7 @@ def barn_tex(request):
         .distinct()
     )
 
-    paginator = Paginator(emp_ids_qs, 50)
+    paginator = Paginator(emp_ids_qs, 20)
     page_obj = paginator.get_page(page_number)
 
     page_emp_ids = list(page_obj.object_list)
@@ -1124,7 +1124,7 @@ def extra_tex(request):
 
     if not has_filter:
         qs = Structure.objects.none()
-        page_obj = Paginator(qs, 50).get_page(page_number)
+        page_obj = Paginator(qs, 20).get_page(page_number)
 
         params = request.GET.copy()
         params.pop("page", None)
@@ -1167,7 +1167,7 @@ def extra_tex(request):
     # ✅ countlar faqat filter bo‘lganda
     total_count = qs.count()
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(page_number)
 
     params = request.GET.copy()
@@ -1446,7 +1446,7 @@ def barn_mat(request):
     # filter bo‘lmasa bo‘sh ko‘rsatamiz
     if not has_filter:
         qs = Material.objects.none()
-        page_obj = Paginator(qs, 50).get_page(page_number)
+        page_obj = Paginator(qs, 20).get_page(page_number)
 
         params = request.GET.copy()
         params.pop("page", None)
@@ -1496,7 +1496,7 @@ def barn_mat(request):
     total_count = qs.count()
     total_suma = qs.aggregate(s=Sum("total_sum"))["s"] or 0
 
-    paginator = Paginator(qs, 50)
+    paginator = Paginator(qs, 20)
     page_obj = paginator.get_page(page_number)
 
     params = request.GET.copy()

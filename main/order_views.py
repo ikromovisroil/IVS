@@ -29,7 +29,7 @@ def order_sender(request):
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -129,7 +129,7 @@ def order_sender_arxiv(request):
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -197,7 +197,7 @@ def order_receiver(request):
     )
 
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)
+    paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -285,7 +285,7 @@ def order_receiver_activ(request):
     )
 
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)
+    paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -455,7 +455,7 @@ def order_receiver_arxiv(request):
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -611,7 +611,7 @@ def order_sender_all(request):
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -752,7 +752,7 @@ def order_sender_arxiv_all(request):
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -785,7 +785,7 @@ def order_receiver_all(request):
     )
 
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)
+    paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -879,7 +879,7 @@ def order_receiver_activ_all(request):
     )
 
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)
+    paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -967,7 +967,7 @@ def order_receiver_arxiv_all(request):
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -998,7 +998,7 @@ def order_agrement(request):
     )
 
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)
+    paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
 
     context = {
@@ -1166,7 +1166,7 @@ def order_agrement_arxiv(request):
 
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 50)   # har sahifada 4 ta
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
     page_obj = paginator.get_page(page_number)
 
     context = {
