@@ -5,9 +5,7 @@ from .models import *
 
 @receiver(post_save, sender=User)
 def create_employee(sender, instance, created, **kwargs):
-    """
-    Yangi User yaratilsa → avtomatik Employee yaratamiz.
-    """
+
     if created:
         emp = Employee.objects.create(user=instance)
-        Rol.objects.create(employee=emp)
+        Rol.objects.create(employee=emp,index=0)
