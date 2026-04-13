@@ -1,11 +1,10 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth.models import User
-from .models import *
+from django.conf import settings
+from .models import Employee, Rol
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_employee(sender, instance, created, **kwargs):
-
     if created:
         emp = Employee.objects.create(user=instance)
-        Rol.objects.create(employee=emp,index=0)
+        Rol.objects.create(employee=emp)
