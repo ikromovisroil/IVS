@@ -179,6 +179,7 @@ def contact_agrement(request):
             deedconsent__status="viewed"
         )
         .select_related("user", "sender", "receiver")
+        .prefetch_related("deedconsent_set")
         .order_by("-id")
     )
 
@@ -211,6 +212,7 @@ def contact_agrement_arxiv(request):
             deedconsent__status__in=["approved", "rejected"]
         )
         .select_related("user", "sender", "receiver")
+        .prefetch_related("deedconsent_set")
         .order_by("-id")
     )
 
