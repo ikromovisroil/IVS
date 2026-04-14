@@ -852,9 +852,6 @@ def technics_create(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.roll__full:
-        messages.info(request, "Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER", "/")
     form = TechnicsForm(request.POST)
     if form.is_valid():
