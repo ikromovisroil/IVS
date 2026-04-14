@@ -76,8 +76,8 @@ class Rank(models.Model):
 
     class Meta:
         db_table = 'rank'
-        verbose_name = "Bo'lim"
-        verbose_name_plural = "Bo'limlar"
+        verbose_name = "Lavozim"
+        verbose_name_plural = "Lavozim"
 
 
 # viloyat.
