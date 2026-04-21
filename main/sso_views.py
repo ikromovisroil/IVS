@@ -170,6 +170,12 @@ def sso_exchange(request):
                 status=403
             )
 
+        if not employee.organization:
+            return JsonResponse(
+                {"status": "forbidden", "message": "Sizga tashkilot biriktirilmagan", "redirect": "/sso/login/"},
+                status=403
+            )
+
         if not employee.user.is_active:
             return JsonResponse(
                 {"status": "forbidden", "message": "Foydalanuvchi bloklangan (active emas)", "redirect": "/sso/login/"},
