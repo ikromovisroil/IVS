@@ -1051,6 +1051,7 @@ def technics_update(request, pk):
     tex.mac = (request.POST.get("mac") or "").strip()
     tex.ip = (request.POST.get("ip") or "").strip()
     tex.year = (request.POST.get("year") or "").strip()
+    tex.address = (request.POST.get("address") or "").strip()
 
     # 💰 Price: 14.45 yoki 14,45 ni qabul qiladi
     raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
@@ -1067,7 +1068,7 @@ def technics_update(request, pk):
     # 💾 Minimal saqlash
     tex.save(update_fields=[
         "category", "organization",
-        "name", "parametr", "inventory", "serial", "mac", "ip", "year", "price"
+        "name", "parametr", "inventory", "serial", "mac", "ip", "year", "price", "address"
     ])
 
     messages.success(request, "Uskuna tahrirlandi!")

@@ -400,6 +400,13 @@
               </div>
             </div>
 
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Joylashuvi</label>
+              <div class="col-md-8 col-lg-9">
+                {{ technics_form.address }}
+              </div>
+            </div>
+
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -656,7 +663,7 @@
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="number" name="year" class="form-control" value="{{ tex.year|default_if_none:'' }}">
+                  <input type="text" name="year" class="form-control" value="{{ tex.year|default_if_none:'' }}">
               </div>
             </div>
 
@@ -666,6 +673,13 @@
                   <input type="number" step="0.01" name="price"
                      class="form-control"
                      value="{{ tex.price|default_if_none:''|stringformat:'s'|cut:',' }}">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Joylashuvi</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="address" class="form-control" value="{{ tex.address|default_if_none:'' }}">
               </div>
             </div>
 
@@ -929,6 +943,14 @@
                   <div class="col-md-5 text-muted">Narxi</div>
                   <div class="col-md-7">
                     {{ tex.price|default:"-" }}
+                  </div>
+                </div>
+                {% endif %}
+                {% if tex.address %}
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Joylashuvi</div>
+                  <div class="col-md-7">
+                    {{ tex.address|default:"-" }}
                   </div>
                 </div>
                 {% endif %}

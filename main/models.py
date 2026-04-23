@@ -136,6 +136,7 @@ class Employee(models.Model):
 
     def save(self, *args, **kwargs):
         # Agar division tanlangan bo‘lsa → directorate avtomatik to‘lsin
+
         if self.division and self.division.directorate:
             self.directorate = self.division.directorate
 
@@ -214,6 +215,7 @@ class Technics(models.Model):
     ip = models.CharField(max_length=50,null=True,blank=True)
     price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     year = models.CharField(max_length=50,null=True,blank=True)
+    address = models.CharField(max_length=100, null=True, blank=True)
     is_active = models.BooleanField(default=True)
     qr_code = models.ImageField(upload_to='qk/', blank=True, null=True)
     date_creat = models.DateTimeField(auto_now_add=True)

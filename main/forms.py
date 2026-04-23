@@ -30,7 +30,7 @@ class TechnicsForm(forms.ModelForm):
         fields = [
             "group", "category", "organization", "name",
             "parametr", "inventory", "serial",
-            "mac", "ip", "year", "price"
+            "mac", "ip", "year", "price", "address"
         ]
         widgets = {
             "group": forms.Select(attrs={"class": "form-select", "required": True}),
@@ -44,6 +44,7 @@ class TechnicsForm(forms.ModelForm):
             "mac": forms.TextInput(attrs={"class": "form-control", "placeholder": "mac"}),
             "ip": forms.TextInput(attrs={"class": "form-control", "placeholder": "ip"}),
             "year": forms.TextInput(attrs={"class": "form-control", "placeholder": "yili"}),
+            "address": forms.TextInput(attrs={"class": "form-control", "placeholder": "joylashuv"}),
             "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "narxi"}),
         }
 
