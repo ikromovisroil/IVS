@@ -854,8 +854,20 @@ def technics_create(request):
 
     back_url = request.META.get("HTTP_REFERER", "/")
     form = TechnicsForm(request.POST)
+
     if form.is_valid():
-        form.save()
+        technics = form.save(commit=False)
+        serial = (technics.serial or "").strip()
+        organization = technics.organization
+
+        if serial and Technics.objects.filter(
+            serial__iexact=serial,
+            organization=organization
+        ).exists():
+            messages.info(request, f"Bu texnika allaqachon mavjud!")
+            return redirect(back_url)
+
+        technics.save()
         messages.success(request, "Uskuna qo‘shildi")
     else:
         messages.info(request, f"Xatolik: {form.errors}")
@@ -1057,6 +1069,13 @@ def technics_update(request, pk):
     raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
     raw_price = raw_price.replace(",", ".")  # 14,45 -> 14.45
 
+    if tex.serial and tex.organization and Technics.objects.filter(
+        serial__exact=tex.serial,
+        organization=tex.organization
+    ).exclude(pk=tex.pk).exists():
+        messages.warning(request, f"Bu serial raqamli uskuna allaqachon mavjud, Serial: {tex.serial}")
+        return redirect(back_url)
+
     try:
         tex.price = Decimal(raw_price) if raw_price else Decimal("0")
         if tex.price < 0:
@@ -1198,13 +1217,26 @@ def extra_tex_create(request):
         raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-
     form = ExtraTechnicsForm(request.POST)
+
     if form.is_valid():
-        form.save()
-        messages.success(request, "Texnika qo‘shildi")
+        technics = form.save(commit=False)
+        serial = (technics.serial or "").strip()
+        organization = technics.organization
+
+        if serial and organization and Structure.objects.filter(
+            serial__iexact=serial,
+            organization=organization
+        ).exists():
+            messages.warning(request, "Bu qurilma allaqachon mavjud!")
+            return redirect(back_url)
+
+        technics.serial = serial
+        technics.save()
+        messages.success(request, "Qurilma qo‘shildi")
     else:
-        messages.error(request, "Maʼlumotlarda xatolik bor")
+        messages.info(request, f"Maʼlumotlarda xatolik bor!")
+
     return redirect(back_url)
 
 
@@ -1297,11 +1329,19 @@ def extra_tex_update(request, pk):
         if tex.price < 0:
             raise InvalidOperation
     except (InvalidOperation, ValueError):
-        messages.error(request, "Narx noto‘g‘ri kiritildi. Misol: 14.45 yoki 14,45")
+        messages.info(request, "Narx noto‘g‘ri kiritildi. Misol: 14.45 yoki 14,45")
         return redirect(back_url)
 
     if not tex.name:
-        messages.error(request, "Nomi bo‘sh bo‘lishi mumkin emas")
+        messages.info(request, "Nomi bo‘sh bo‘lishi mumkin emas")
+        return redirect(back_url)
+
+    if tex.serial and tex.organization and Structure.objects.filter(
+            serial__iexact=tex.serial,
+            organization=tex.organization,
+            is_active=True
+    ).exclude(pk=tex.pk).exists():
+        messages.warning(request, f"Bu serial raqamli qurilma allaqachon mavjud Serial: {tex.serial}")
         return redirect(back_url)
 
     tex.save(update_fields=[
