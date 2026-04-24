@@ -58,7 +58,7 @@ def deed_to_pdf_bytes(deed) -> bytes:
         "margin-top": "10mm",
         "margin-right": "10mm",
         "margin-bottom": "25mm",
-        "margin-left": "15mm",
+        "margin-left": "17mm",
     }
 
     try:
