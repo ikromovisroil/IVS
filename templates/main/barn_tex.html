@@ -165,6 +165,7 @@
                     <th scope="col">Texnika nomi</th>
                     <th scope="col">I/R</th>
                     <th scope="col">S/R</th>
+                    <th scope="col">Joylashuvi</th>
                     {% if request.user.employee.rol.technics_edit %}
                     <th scope="col">Tafsif</th>
                     {% endif %}
@@ -184,6 +185,11 @@
                         {% if forloop.first %}
                         <td rowspan="{{ items|length }}" class="align-middle">
                           {{ emp.full_name|default:"Biriktirilmagan" }}
+                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                              {% if emp.rank %}
+                              " {{ emp.rank.name|default:"" }} "
+                              {% endif %}
+                          </span>
                         </td>
                         {% endif %}
 
@@ -210,6 +216,9 @@
                               <br><i>{{ et.serial|default:"-" }}</i>
                             {% endfor %}
                           </span>
+                        </td>
+
+                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.address|default:"-" }}
                         </td>
 
                         {% if request.user.employee.rol.technics_edit %}
@@ -851,6 +860,13 @@
                   <div class="col-md-5 text-muted">Xodim</div>
                   <div class="col-md-7">
                     {{ tex.employee.full_name|default:"-" }}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Lavozim</div>
+                  <div class="col-md-7">
+                    {{ tex.employee.rank.name|default:"-" }}
                   </div>
                 </div>
 
