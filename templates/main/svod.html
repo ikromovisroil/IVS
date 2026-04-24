@@ -115,15 +115,16 @@
                       <tr>
                         <td style="border:1px solid #fff;text-align:center;"></td>
                         <td style="border:1px solid #fff;text-align:center;">
-                          <b>"Tasdiqlayman" Oʻzbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi “Axborot texnalogiyalar markazi” direktori vazifasini vaqtincha bajaruvchi F.Xujamqulov</b>
+                          <b>"Tasdiqlayman"<br>
+                             Oʻzbekiston Respublikasi Iqtisodiyot va moliya<br>
+                             vazirligi huzuridagi“Axborot texnalogiyalar markazi”<br>
+                             direktori vazifasini vaqtincha bajaruvchi F.Xujamqulov<br>
+                          </b>
+                          <b><u id="doc_date">12.02.2026 y</u></b>
                         </td>
                       </tr>
                     </tbody>
                   </table>
-                </div>
-
-                <div style="text-align:right;">
-                  <b><u id="doc_date">12.02.2026 y</u></b>
                 </div>
 
                 <div style="text-align:center;">
@@ -154,7 +155,7 @@
                       <col style="width:18%;">
                       <col style="width:10%;">
                     </colgroup>
-                    <tbody id="materials_tbody">
+                    <thead>
                       <tr>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">№</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Materialning nomi</td>
@@ -165,6 +166,21 @@
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Eslatma*</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Kod 1C</td>
                       </tr>
+                      <tr>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">1</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">2</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">3</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">4</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">5</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">6</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">7</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">8</td>
+                      </tr>
+                      <tr>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center; background-color: rgb(191, 237, 210);" colspan="8">{{ request.user.employee.region.name }}</td>
+                      </tr>
+                    </thead>
+                    <tbody id="materials_tbody">
                     </tbody>
                   </table>
                 </div>
@@ -277,8 +293,8 @@ function formatMonthYear(dateStr) {
   if (!dateStr) return '';
 
   const months = [
-    'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
+    'fevral', 'mart', 'aprel', 'may', 'iyun',
+    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr', 'yanvar'
   ];
 
   const d = new Date(dateStr);
@@ -319,32 +335,23 @@ function editorSetText(selector, text) {
 }
 
 function editorSetTbodyRows(rowsHtml) {
-  const ed = editorGet();
-  if (!ed) return;
+    const ed = editorGet();
+    if (!ed) return;
 
-  try {
-    const body = ed.getBody();
-    const tbody = body.querySelector('#materials_tbody');
+    try {
+        const tbody = ed.getBody().querySelector('#materials_tbody');
 
-    if (!tbody) {
-      console.log('materials_tbody topilmadi');
-      return;
+        if (!tbody) {
+            console.log('materials_tbody topilmadi');
+            return;
+        }
+
+        tbody.innerHTML = rowsHtml;
+        ed.nodeChanged();
+
+    } catch (e) {
+        console.log('editorSetTbodyRows xatosi:', e);
     }
-
-    const existingRows = tbody.querySelectorAll('tr');
-    let headerHtml = '';
-
-    if (existingRows.length >= 1) {
-      headerHtml = existingRows[0].outerHTML;
-    } else {
-      headerHtml = tbody.innerHTML;
-    }
-
-    tbody.innerHTML = headerHtml + rowsHtml;
-    ed.nodeChanged();
-  } catch (e) {
-    console.log('editorSetTbodyRows xatosi:', e);
-  }
 }
 
 function updateEditorWithSelections() {
@@ -470,13 +477,13 @@ function searchMaterials() {
       let index = 1;
 
       data.forEach(function(item) {
-        const materialName = item.material_name || item.title || item.name || '';
-        const unit = item.unit || item.material_unit || item.size || 'dona';
-        const qty = parseFloat(item.number || item.quantity || item.total_number || 0) || 0;
-        const price = parseFloat(item.price || item.material_price || item.material__price || 0) || 0;
-        const sum = parseFloat(item.total_sum || item.summa || item.total || (qty * price) || 0) || 0;
-        const note = item.note || item.eslatma || item.comment || '';
-        const code = item.material_code || item.code || item.one_c_code || '';
+         const materialName = item.material__name || '';
+        const unit = item.material__unit__name || 'dona';
+        const qty = parseFloat(item.total_number || 0) || 0;
+        const price = parseFloat(item.material__price || 0) || 0;
+        const sum = parseFloat(item.total_sum || 0) || 0;
+        const note = item.order_info || '';
+        const code = item.material__code || '';
 
         totalQty += qty;
         totalSum += sum;
@@ -484,12 +491,12 @@ function searchMaterials() {
         rows += `
           <tr>
             <td style="border:1px solid #000; font-size:8pt; text-align:center;">${index++}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:left;">${escapeHtml(materialName)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(materialName)}</td>
             <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(unit)}</td>
             <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(qty)}</td>
             <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(price)}</td>
             <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(sum)}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:left;">${escapeHtml(note)}</td>
+            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(note)}</td>
             <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(code)}</td>
           </tr>
         `;
@@ -497,11 +504,9 @@ function searchMaterials() {
 
       rows += `
         <tr>
-          <td colspan="3" style="border:1px solid #000; font-size:8pt; text-align:right; font-weight:bold;">JAMI:</td>
-          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold;">${formatNumber(totalQty)}</td>
-          <td style="border:1px solid #000;"></td>
-          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold;">${formatNumber(totalSum)}</td>
-          <td colspan="2" style="border:1px solid #000;"></td>
+          <td colspan="5" style="border:1px solid #000; font-size:8pt; text-align:right; font-weight:bold; background-color: rgb(251, 238, 184);">JAMI:</td>
+          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold; background-color: rgb(251, 238, 184);">${formatNumber(totalSum)}</td>
+          <td colspan="2" style="border:1px solid #000; background-color: rgb(251, 238, 184);"></td>
         </tr>
       `;
 

@@ -1667,7 +1667,7 @@ def material_attach(request):
         # price/unit bo‘sh bo‘lsa src dan ko‘chirib qo‘yamiz
         if (dst.price in [None, 0, "0"]) and src.price not in [None, 0, "0"]:
             dst.price = src.price
-        if not (dst.unit or "").strip() and (src.unit or "").strip():
+        if not dst.unit_id and src.unit_id:
             dst.unit = src.unit
 
         # status active bo‘lsin (ixtiyoriy)
@@ -1686,6 +1686,7 @@ def material_attach(request):
     else:
         # yo‘q bo‘lsa yaratamiz
         Material.objects.create(
+            organization=emp.organization,
             employee=emp,
             status="active",
             name=src.name,

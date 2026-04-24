@@ -147,7 +147,7 @@
                       <col style="width:4%;">
                     </colgroup>
 
-                    <tbody id="materials_tbody">
+                    <thead>
                       <tr>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">№</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Qurilma nomi</td>
@@ -168,6 +168,13 @@
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">F.I.Sh.</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Lavozimi</td>
                       </tr>
+                      <tr>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center; background-color: rgb(191, 237, 210);" colspan="15">{{ request.user.employee.region.name }}</td>
+                      </tr>
+
+                    </thead>
+                    <tbody id="materials_tbody">
+
                     </tbody>
                   </table>
                 </div>
@@ -290,32 +297,23 @@ function editorSetText(selector, text) {
 }
 
 function editorSetTbodyRows(rowsHtml) {
-  const ed = editorGet();
-  if (!ed) return;
+    const ed = editorGet();
+    if (!ed) return;
 
-  try {
-    const body = ed.getBody();
-    const tbody = body.querySelector('#materials_tbody');
+    try {
+        const tbody = ed.getBody().querySelector('#materials_tbody');
 
-    if (!tbody) {
-      console.log('materials_tbody topilmadi');
-      return;
+        if (!tbody) {
+            console.log('materials_tbody topilmadi');
+            return;
+        }
+
+        tbody.innerHTML = rowsHtml;
+        ed.nodeChanged();
+
+    } catch (e) {
+        console.log('editorSetTbodyRows xatosi:', e);
     }
-
-    const existingRows = tbody.querySelectorAll('tr');
-    let headerHtml = '';
-
-    if (existingRows.length >= 2) {
-      headerHtml = existingRows[0].outerHTML + existingRows[1].outerHTML;
-    } else {
-      headerHtml = tbody.innerHTML;
-    }
-
-    tbody.innerHTML = headerHtml + rowsHtml;
-    ed.nodeChanged();
-  } catch (e) {
-    console.log('editorSetTbodyRows xatosi:', e);
-  }
 }
 
 function updateEditorWithSelections() {
@@ -459,9 +457,9 @@ function searchMaterials() {
 
       rows += `
         <tr>
-          <td colspan="6" style="border:1px solid #000; font-size:8pt; text-align:right; font-weight:bold;">JAMI:</td>
-          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold;">${formatNumber(totalSum)}</td>
-          <td colspan="8" style="border:1px solid #000;"></td>
+          <td colspan="6" style="border:1px solid #000; font-size:8pt; text-align:right; font-weight:bold; background-color: rgb(251, 238, 184);">JAMI:</td>
+          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold; background-color: rgb(251, 238, 184);">${formatNumber(totalSum)}</td>
+          <td colspan="8" style="border:1px solid #000; background-color: rgb(251, 238, 184);"></td>
         </tr>
       `;
 
