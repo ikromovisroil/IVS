@@ -85,7 +85,7 @@ class UnitAdmin(admin.ModelAdmin):
 
 @admin.register(Goal)
 class GoalAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
+    list_display = ("id","organization", "name")
     search_fields = ("name",)
 
 
