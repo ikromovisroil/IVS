@@ -41,7 +41,7 @@
                         <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
                         <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
                         <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
-                        <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
+                        <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Yaroqsiz</option>
                       </select>
                     </div>
 
@@ -361,6 +361,19 @@
                       </option>
                     {% endfor %}
                   </select>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Xolati</label>
+              <div class="col-md-8 col-lg-9">
+                  <select name="status" class="form-select" required>
+                  <option value="">— Tanlang —</option>
+                  <option value="active" {% if tex.status == "active" %}selected{% endif %}>Aktiv</option>
+                  <option value="free" {% if tex.status == "free" %}selected{% endif %}>Bo'sh</option>
+                  <option value="repair" {% if tex.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                  <option value="defect" {% if tex.status == "defect" %}selected{% endif %}>Yaroqsiz</option>
+                </select>
               </div>
             </div>
 

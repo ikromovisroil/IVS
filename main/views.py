@@ -1030,7 +1030,7 @@ def technics_update(request, pk):
         raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    tex = get_object_or_404(Technics, pk=pk)
+    tex = get_object_or_404(Technics.objects.select_for_update(), pk=pk)
 
     if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
         raise PermissionDenied("Sizga ruxsat yo‘q")
@@ -1055,6 +1055,7 @@ def technics_update(request, pk):
     else:
         tex.organization = None
 
+    allowed_status = ["free", "active", "repair", "defect"]
     # Oddiy maydonlar
     tex.name = (request.POST.get("name") or "").strip()
     tex.parametr = (request.POST.get("parametr") or "").strip()
@@ -1064,6 +1065,10 @@ def technics_update(request, pk):
     tex.ip = (request.POST.get("ip") or "").strip()
     tex.year = (request.POST.get("year") or "").strip()
     tex.address = (request.POST.get("address") or "").strip()
+    tex.status = (request.POST.get("status") or "").strip()
+    if tex.status not in allowed_status:
+        messages.info(request, "Holat noto‘g‘ri")
+        return redirect(back_url)
 
     # 💰 Price: 14.45 yoki 14,45 ni qabul qiladi
     raw_price = (request.POST.get("price") or "").strip().replace(" ", "")
@@ -1087,7 +1092,8 @@ def technics_update(request, pk):
     # 💾 Minimal saqlash
     tex.save(update_fields=[
         "category", "organization",
-        "name", "parametr", "inventory", "serial", "mac", "ip", "year", "price", "address"
+        "name", "parametr", "inventory", "serial",
+        "mac", "ip", "year", "price", "address", "status"
     ])
 
     messages.success(request, "Uskuna tahrirlandi!")
@@ -1311,11 +1317,16 @@ def extra_tex_update(request, pk):
     else:
         tex.category = None
 
+    allowed_status = ["free", "active", "repair", "defect"]
     # oddiy maydonlar
     tex.name = (request.POST.get("name") or "").strip()
     tex.parametr = (request.POST.get("parametr") or "").strip()
     tex.inventory = (request.POST.get("inventory") or "").strip()
     tex.serial = (request.POST.get("serial") or "").strip()
+    tex.status = (request.POST.get("status") or "").strip()
+    if tex.status not in allowed_status:
+        messages.info(request, "Holat noto‘g‘ri")
+        return redirect(back_url)
 
     raw_year = (request.POST.get("year") or "").strip()
     tex.year = raw_year if raw_year else None
@@ -1345,16 +1356,10 @@ def extra_tex_update(request, pk):
         return redirect(back_url)
 
     tex.save(update_fields=[
-        "organization",
-        "category",
-        "name",
-        "parametr",
-        "inventory",
-        "serial",
-        "year",
-        "price",
+        "organization", "category", "name",
+        "parametr", "inventory", "serial",
+        "year", "price", "status",
     ])
-
     messages.success(request, "Texnika tahrirlandi!")
     return redirect(back_url)
 

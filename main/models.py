@@ -1,4 +1,6 @@
 from django.contrib.auth.models import User
+from traits.trait_types import false
+
 from .validators import *
 from django.utils import timezone
 import random
@@ -463,6 +465,7 @@ class Order(models.Model):
 # zayafkadan soralgan materiali.
 class OrderMaterial(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True, related_name="materials", db_index=True)
+    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='ordermaterial_user', null=True, blank=True, db_index=True)
     material = models.ForeignKey(Material, on_delete=models.PROTECT, null=True, blank=True,db_index=True)
     number = models.PositiveIntegerField(default=1)
     given = models.PositiveIntegerField(null=True, blank=True)
