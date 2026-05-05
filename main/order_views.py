@@ -768,6 +768,136 @@ def order_sender_arxiv_all(request):
 @never_cache
 @require_GET
 @login_required
+def order_sender_material_all(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    if not getattr(employee.rol, "client", False):
+        raise PermissionDenied("Sizga ruxsat yo‘q")
+
+    orders_qs = (
+        Material.objects
+        .filter(
+            organization=employee.organization,
+            status="free"
+        )
+        .select_related("organization", "unit")
+        .order_by("-id")
+    )
+
+    goals_qs = (
+        Goal.objects
+        .filter(organization=employee.organization)
+        .order_by("id")
+    )
+
+    cart_material_ids = set(
+        OrderMaterial.objects.filter(
+            order__isnull=True,
+            user=employee,
+            material__isnull=False
+        ).values_list("material_id", flat=True)
+    )
+
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 20)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "material": page_obj,
+        "page_obj": page_obj,
+        "paginator": paginator,
+        "goal": goals_qs,
+        "cart_material_ids": cart_material_ids,
+    }
+
+    return render(request, "main/order_sender_material_all.html", context)
+
+
+@never_cache
+@require_GET
+@login_required
+def order_sender_basket_all(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    if not employee.rol.client:
+        raise PermissionDenied("Sizga ruxsat yo‘q")
+
+    orders_qs = (
+        OrderMaterial.objects
+        .filter(order__isnull=True,user=employee, material__isnull=False)
+        .select_related("order", "user", "material")
+        .order_by("-id")
+    )
+
+    goals_qs = (
+        Goal.objects
+        .filter(organization=employee.organization)
+        .order_by("id")
+    )
+
+    # ✅ PAGINATION
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "ordermaterial": page_obj,          # ✅ for loop shu orqali yuradi
+        "page_obj": page_obj,       # ✅ pagination uchun
+        "paginator": paginator,     # ✅ pagination uchun
+        "goal": goals_qs,
+    }
+    return render(request, "main/order_sender_basket_all.html", context)
+
+@require_POST
+@login_required
+@transaction.atomic
+def create_order_sender_from(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    goal_id = request.POST.get("goal")
+    body = request.POST.get("body")
+
+    if not goal_id:
+        messages.warning(request, "Maqsad tanlanmagan")
+        return redirect("order_sender_basket_all")
+
+    goal = get_object_or_404(Goal, id=goal_id)
+
+    # 🟢 1. Order yaratamiz
+    order = Order.objects.create(
+        user=employee,
+        sender=employee,
+        goal=goal,
+        body=body,
+        status="viewed"
+    )
+
+    # 🟢 2. Savatdagi materiallarni olamiz
+    materials = OrderMaterial.objects.select_for_update().filter(
+        user=employee,
+        order__isnull=True
+    )
+
+    if not materials.exists():
+        messages.warning(request, "Savat bo‘sh")
+        return redirect("order_sender_basket_all")
+
+    # 🟢 3. Orderga biriktiramiz
+    materials.update(order=order)
+
+    messages.success(request, "Ariza yuborildi ✅")
+    return redirect("order_sender_all")
+
+
+@never_cache
+@require_GET
+@login_required
 @role_required("order")
 def order_receiver_all(request):
     employee = getattr(request.user, "employee", None)

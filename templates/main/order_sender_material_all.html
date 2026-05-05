@@ -1,10 +1,196 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}
+<title>Arizalar</title>
+{% endblock title %}
+
+{% block css %}
+{% endblock css %}
+
+
+{% block content %}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <div class="d-flex justify-content-between align-items-center">
+             <h1>Materiallar</h1>
+             <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">+ Ariza Yuborish</button>
+        </div>
+    </div>
+    <div class="modal fade" id="modal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+          <div class="modal-content">
+            <form action="{% url 'order_post_all' %}" method="post">{% csrf_token %}
+            <div class="modal-header">
+              <h5 class="modal-title">Ariza Yuborish</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="">
+                    <!-- Mavzu -->
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Arizaning Maqsadi:</label>
+                        <div class="col-sm-9">
+                            <select class="form-select" name="goal" id="topic-select" required>
+                                <option value="">tanlang</option>
+                                {% for t in goal %}
+                                    <option value="{{ t.id }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Izoh -->
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Qo‘shimcha ma’lumot:</label>
+                        <div class="col-sm-9">
+                            <textarea class="form-control" name="body" style="height: 100px"></textarea>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary">Yuborish</button>
+                </div>
+            </div>
+            </form>
+          </div>
+        </div>
+    </div>
+
+    <section class="section profile">
+      <div class="row">
+        <div class="col-xl-12">
+
+          <div class="card">
+            <div class="card-body pt-3">
+              <!-- Bordered Tabs -->
+              <ul class="nav nav-pills">
+
+                <li class="nav-pills">
+                  <a href="{% url 'order_sender_all' %}" class="nav-link" >Arizalar</a>
+                </li>
+
+                <li class="nav-pills">
+                  <a href="{% url 'order_sender_arxiv_all' %}" class="nav-link" >Tarix</a>
+                </li>
+
+                <li class="nav-pills">
+                  <a href="{% url 'order_sender_material_all' %}" class="nav-link active" >Material</a>
+                </li>
+
+                <li class="nav-pills">
+                  <a href="{% url 'order_sender_basket_all' %}" class="nav-link" >Savat</a>
+                </li>
+
+              </ul>
+              <div class="tab-content pt-2">
+
+                <table class="table table-bordered table-hover">
+                    <thead class="table-secondary">
+                      <tr>
+                        <th scope="col">T/r</th>
+                        <th scope="col">Nomi</th>
+                        <th scope="col">Birligi</th>
+                        <th scope="col">Xolati</th>
+                        <th scope="col">Savatga Saqlash</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    {% for m in material %}
+                      <tr>
+                        <th scope="row">{{ forloop.counter }}</th>
+                        <td>{{ m.name }}</td>
+                        <td>{{ m.unit.name }}</td>
+                        <td>{{ m.unit.name }}</td>
+                        <td>
+                            <button type="button"
+                                    class="btn p-0 border-0 bg-transparent add-cart-btn"
+                                    data-material-id="{{ m.id }}">
+                                {% if m.id in cart_material_ids %}
+                                    <i class="bi bi-bookmark-check-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-bookmark"></i>
+                                {% endif %}
+                            </button>
+                        </td>
+                      </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+
+                 {% if page_obj.paginator.num_pages > 1 %}
+                    <nav aria-label="Order pagination" class="mt-3">
+                      <ul class="pagination justify-content-center">
+
+                        {# Oldingi #}
+                        {% if page_obj.has_previous %}
+                          <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled"><span class="page-link">‹</span></li>
+                        {% endif %}
+
+                        {# Sahifa raqamlari (atrofida 2 tadan) #}
+                        {% for num in page_obj.paginator.page_range %}
+                          {% if num == page_obj.number %}
+                            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                          {% elif num >= page_obj.number|add:-3 and num <= page_obj.number|add:3 %}
+                            <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                          {% endif %}
+                        {% endfor %}
+
+                        {# Keyingi #}
+                        {% if page_obj.has_next %}
+                          <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+                          </li>
+                        {% else %}
+                          <li class="page-item disabled"><span class="page-link">›</span></li>
+                        {% endif %}
+
+                      </ul>
+                    </nav>
+                 {% endif %}
+
+              </div><!-- End Bordered Tabs -->
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+</main>
+
+<script>
+document.querySelectorAll(".add-cart-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+        let materialId = this.dataset.materialId;
+        let icon = this.querySelector("i");
+
+        fetch("{% url 'add_material_to_cart' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: "material_id=" + materialId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                icon.className = "bi bi-bookmark-check-fill";
+                icon.style.color = "black";
+            } else {
+                alert(data.message);
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -632,7 +632,6 @@ def deedconsent_action(request, pk):
     return redirect(back_url)
 
 
-
 @never_cache
 @require_GET
 @login_required
@@ -652,82 +651,86 @@ def barn_tex(request):
             return None
 
     organization_id = to_int(request.GET.get("organization"))
-    department_id   = to_int(request.GET.get("department"))
-    directorate_id  = to_int(request.GET.get("directorate"))
-    division_id     = to_int(request.GET.get("division"))
-    category_id     = to_int(request.GET.get("category"))
-    group_id        = to_int(request.GET.get("groups"))   # ✅ shu joy muhim
-    status          = (request.GET.get("status") or "").strip() or None
-    name            = (request.GET.get("name") or "").strip() or None
-    page_number     = request.GET.get("page", 1)
+    department_id = to_int(request.GET.get("department"))
+    directorate_id = to_int(request.GET.get("directorate"))
+    division_id = to_int(request.GET.get("division"))
+    category_id = to_int(request.GET.get("category"))
+    group_id = to_int(request.GET.get("groups"))
+    status = (request.GET.get("status") or "").strip() or None
+    name = (request.GET.get("name") or "").strip() or None
+    page_number = request.GET.get("page", 1)
 
     if name:
         name = name[:120]
 
     has_filter = bool(
-        organization_id or department_id or directorate_id or division_id or
-        status or category_id or group_id or name
+        organization_id or department_id or directorate_id or division_id
+        or status or category_id or group_id or name
     )
 
     organizations = Organization.objects.only("id", "name").order_by("id")
-    if not employee.rol.full:
+    if not getattr(employee.rol, "full", False):
         organizations = organizations.filter(id=employee.organization_id)
 
-    groups = Group.objects.only("id", "name")
+    groups = Group.objects.only("id", "name").order_by("id")
     technics_form = TechnicsForm()
 
     departments = Department.objects.none()
     if organization_id:
         departments = Department.objects.filter(
             organization_id=organization_id
-        ).only("id", "name")
+        ).only("id", "name").order_by("id")
 
     directorates = Directorate.objects.none()
     if department_id:
         directorates = Directorate.objects.filter(
             department_id=department_id
-        ).only("id", "name")
+        ).only("id", "name").order_by("id")
 
     divisions = Division.objects.none()
     if directorate_id:
         divisions = Division.objects.filter(
             directorate_id=directorate_id
-        ).only("id", "name")
+        ).only("id", "name").order_by("id")
 
     categories = Category.objects.none()
     if group_id:
         categories = Category.objects.filter(
             group_id=group_id
-        ).only("id", "name")
+        ).only("id", "name").order_by("id")
 
     params = request.GET.copy()
     params.pop("page", None)
     qs_params = params.urlencode()
 
+    empty_context = {
+        "organizations": organizations,
+        "groups": groups,
+        "categories": categories,
+        "technics_form": technics_form,
+        "departments": departments,
+        "directorates": directorates,
+        "divisions": divisions,
+        "selected_org": organization_id,
+        "selected_dep": department_id,
+        "selected_dir": directorate_id,
+        "selected_div": division_id,
+        "selected_group": group_id,
+        "selected_category": category_id,
+        "page_obj": Paginator([], 20).get_page(page_number),
+        "grouped_technics": [],
+        "qs_params": qs_params,
+        "extratex": Structure.objects.none(),
+        "total_count": 0,
+    }
+
     if not has_filter:
-        empty_page = Paginator([], 20).get_page(page_number)
-        return render(request, "main/barn_tex.html", {
-            "organizations": organizations,
-            "groups": groups,
-            "categories": categories,
-            "technics_form": technics_form,
-            "departments": departments,
-            "directorates": directorates,
-            "divisions": divisions,
-            "selected_org": organization_id,
-            "selected_dep": department_id,
-            "selected_dir": directorate_id,
-            "selected_div": division_id,
-            "selected_group": group_id,
-            "selected_category": category_id,
-            "page_obj": empty_page,
-            "grouped_technics": [],
-            "qs_params": qs_params,
-            "extratex": Structure.objects.none(),
-            "total_count": 0,
-        })
+        return render(request, "main/barn_tex.html", empty_context)
 
     base_qs = Technics.objects.filter(is_active=True)
+
+    if not getattr(employee.rol, "full", False):
+        base_qs = base_qs.filter(organization_id=employee.organization_id)
 
     if organization_id:
         base_qs = base_qs.filter(organization_id=organization_id)
@@ -740,85 +743,76 @@ def barn_tex(request):
     if status:
         base_qs = base_qs.filter(status=status)
     if group_id:
-        base_qs = base_qs.filter(group_id=group_id)   # ✅ group filter shu bo‘lishi kerak
+        base_qs = base_qs.filter(group_id=group_id)
     if category_id:
         base_qs = base_qs.filter(category_id=category_id)
 
     if name:
         words = [w for w in name.split() if w]
-        if words:
-            q = Q()
-            for w in words:
-                q &= (
-                    Q(employee__last_name__icontains=w) |
-                    Q(employee__first_name__icontains=w) |
-                    Q(employee__father_name__icontains=w) |
-                    Q(name__icontains=w) |
-                    Q(inventory__icontains=w) |
-                    Q(serial__icontains=w) |
-                    Q(mac__icontains=w) |
-                    Q(ip__icontains=w)
-                )
-            base_qs = base_qs.filter(q)
+        q = Q()
+
+        for w in words:
+            q &= (
+                Q(employee__last_name__icontains=w) |
+                Q(employee__first_name__icontains=w) |
+                Q(employee__father_name__icontains=w) |
+                Q(name__icontains=w) |
+                Q(inventory__icontains=w) |
+                Q(serial__icontains=w) |
+                Q(mac__icontains=w) |
+                Q(ip__icontains=w)
+            )
+
+        base_qs = base_qs.filter(q)
 
     total_count = base_qs.count()
 
-    emp_ids_qs = (
-        base_qs.order_by("employee_id")
-        .values_list("employee_id", flat=True)
-        .distinct()
-    )
-
-    paginator = Paginator(emp_ids_qs, 20)
-    page_obj = paginator.get_page(page_number)
-
-    page_emp_ids = list(page_obj.object_list)
-    include_null = any(e is None for e in page_emp_ids)
-    page_emp_ids_no_null = [e for e in page_emp_ids if e is not None]
-
-    structure_prefetch = Prefetch(
-        "structure_set",
-        queryset=Structure.objects.select_related("category").only(
-            "id", "name", "inventory", "serial", "parametr", "year", "price",
-            "category__id", "category__name"
-        ).order_by("id")
-    )
-
-    page_tech_qs = (
+    tech_qs = (
         base_qs
-        .filter(
-            Q(employee_id__in=page_emp_ids_no_null) |
-            (Q(employee__isnull=True) if include_null else Q(pk__in=[]))
-        )
         .select_related(
-            "organization", "department", "directorate", "division", "category", "employee"
+            "organization",
+            "department",
+            "directorate",
+            "division",
+            "category",
+            "employee",
         )
-        .prefetch_related(structure_prefetch)
         .only(
-            "id", "name", "parametr", "inventory", "serial", "ip", "mac",
-            "status", "year", "price", "employee_id",
-            "organization__id", "organization__name",
-            "department__id", "department__name",
-            "directorate__id", "directorate__name",
-            "division__id", "division__name",
-            "category__id", "category__name",
-            "employee__id", "employee__first_name", "employee__last_name", "employee__father_name",
+            "id","name","parametr","inventory","serial",
+            "ip","mac","status","year","price","employee_id",
+            "organization__id","organization__name",
+            "department__id","department__name",
+            "directorate__id","directorate__name",
+            "division__id","division__name",
+            "category__id","category__name",
+            "employee__id","employee__first_name",
+            "employee__last_name","employee__father_name",
         )
         .order_by("employee_id", "id")
     )
 
+    paginator = Paginator(tech_qs, 20)
+    page_obj = paginator.get_page(page_number)
+
     grouped_technics = []
-    for emp_id, items in groupby(page_tech_qs, key=lambda t: t.employee_id):
+    for emp_id, items in groupby(page_obj.object_list, key=lambda t: t.employee_id):
         items_list = list(items)
-        emp_obj = items_list[0].employee
-        grouped_technics.append((emp_obj, items_list))
+
+        if items_list:
+            emp_obj = items_list[0].employee
+            grouped_technics.append((emp_obj, items_list))
 
     extratex = Structure.objects.none()
     if organization_id:
         extratex = (
             Structure.objects
-            .filter(organization_id=organization_id, status="free", is_active=True)
+            .filter(
+                organization_id=organization_id,
+                status="free",
+                is_active=True,
+            )
             .only("id", "name", "inventory", "serial")
+            .order_by("id")[:50]
         )
 
     return render(request, "main/barn_tex.html", {
@@ -841,7 +835,6 @@ def barn_tex(request):
         "extratex": extratex,
         "total_count": total_count,
     })
-
 
 @never_cache
 @require_POST

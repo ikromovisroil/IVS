@@ -764,3 +764,30 @@ def ajax_document_preview(request):
     }
 
     return JsonResponse(data)
+
+
+@require_POST
+@login_required
+def add_material_to_cart(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return JsonResponse({"ok": False, "message": "Employee topilmadi"}, status=403)
+
+    material_id = request.POST.get("material_id")
+
+    material = get_object_or_404(Material, id=material_id)
+
+    obj, created = OrderMaterial.objects.get_or_create(
+        order=None,
+        user=employee,
+        material=material,
+        defaults={
+            "number": 1
+        }
+    )
+
+    return JsonResponse({
+        "ok": True,
+        "message": "Savatga saqlandi",
+        "number": obj.number
+    })

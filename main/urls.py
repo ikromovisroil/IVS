@@ -67,6 +67,8 @@ urlpatterns = [
     # =========================
     # AJAX / FILTER / DINAMIK
     # =========================
+    path("material/cart/add/", add_material_to_cart, name="add_material_to_cart"),
+
     path("ajax/load-departments/", ajax_load_departments, name="ajax_load_departments"),
     path("ajax/load-directorate/", ajax_load_directorate, name="ajax_load_directorate"),
     path("ajax/load-division/", ajax_load_division, name="ajax_load_division"),
@@ -109,7 +111,7 @@ urlpatterns = [
     path("reestr/post/", reestr_post, name="reestr_post"),
 
     # =========================
-    # ZAYAVKA / ORDER
+    # ZAYAVKA / ORDER create_order_sender_from
     # =========================
     path("order/sender/", order_sender, name="order_sender"),
     path("order/sender/decide/<int:pk>/", order_decide, name="order_decide"),
@@ -118,6 +120,9 @@ urlpatterns = [
     path("order/sender/all/", order_sender_all, name="order_sender_all"),
     path("order/sender/arxiv/all/", order_sender_arxiv_all, name="order_sender_arxiv_all"),
     path("order/sender/decide/all/<int:pk>/", order_decide_all, name="order_decide_all"),
+    path("order/sender/material/all/", order_sender_material_all, name="order_sender_material_all"),
+    path("order/sender/basket/all/", order_sender_basket_all, name="order_sender_basket_all"),
+    path("order/sender/create/form/", create_order_sender_from, name="create_order_sender_from"),
 
     path("order/agrement/", order_agrement, name="order_agrement"),
     path("order/agrement/material/", order_agrement_material, name="order_agrement_material"),
