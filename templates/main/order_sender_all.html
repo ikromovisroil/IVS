@@ -79,7 +79,7 @@
                   <a href="{% url 'order_sender_arxiv_all' %}" class="nav-link" >Tarix</a>
                 </li>
 
-            
+
 
               </ul>
               <div class="tab-content pt-2">
@@ -313,12 +313,12 @@
                                     </div>
                                     <div class="modal-footer d-flex justify-content-center gap-2">
                                       <form action="{% url 'order_decide_all' o.id %}" method="post">{% csrf_token %}
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Etiborsiz qoldirish</button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle"></i> Etiborsiz qoldirish</button>
                                         {% if o.status in 'viewed process finished' %}
-                                        <button type="submit" name="action" value="canceled" class="btn btn-danger">Bekor qilish</button>
+                                        <button type="submit" name="action" value="canceled" class="btn btn-danger"><i class="bi bi-x-circle me-1"></i> Bekor qilish</button>
                                         {% endif %}
                                         {% if o.status == 'approved' %}
-                                        <button type="submit" name="action" value="accepted" class="btn btn-primary">Qabul qilish</button>
+                                        <button type="submit" name="action" value="accepted" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i> Qabul qilish</button>
                                         {% endif %}
                                       </form>
                                     </div>

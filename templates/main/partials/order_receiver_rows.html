@@ -173,7 +173,7 @@
 
                     <div class="modal-footer d-flex justify-content-center gap-2">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            Etiborsiz qoldirish
+                            <i class="bi bi-exclamation-circle"></i> Etiborsiz qoldirish
                         </button>
 
                         <form action="{% url 'order_accepted' o.pk %}" method="post" style="display:inline;">
@@ -182,7 +182,7 @@
                                 type="submit"
                                 class="btn btn-primary"
                                 onclick="return confirm('Qabul qilishni tasdiqlang?')">
-                                Qabul qilish
+                                <i class="bi bi-check-circle me-1"></i> Qabul qilish
                             </button>
                         </form>
                     </div>
