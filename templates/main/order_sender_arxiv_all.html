@@ -86,8 +86,8 @@
                     <thead class="table-secondary">
                       <tr>
                         <th scope="col">T/r</th>
-                        <th scope="col">Ariza Maqsadi</th>
                         <th scope="col">Bajardi</th>
+                        <th scope="col">Tasdiqladi</th>
                         <th scope="col">Xolati</th>
                         <th scope="col">Yuborilgan sana</th>
                       </tr>
@@ -96,8 +96,8 @@
                     {% for o in order %}
                       <tr>
                         <th scope="row">{{ forloop.counter }}</th>
-                        <td>{{ o.goal.name }}</td>
                         <td>{{ o.receiver.full_name }}</td>
+                        <td>{{ o.user.full_name }}</td>
                         <td>
                             <span type="button"
                               class="badge rounded-pill px-3 py-2 fw-semibold
@@ -202,6 +202,27 @@
                                                 <i class="bi bi-telephone me-1"></i> Telefon raqami
                                             </div>
                                             <div class="col-6">{{ o.receiver.phone|default:"" }}</div>
+                                            {% endif %}
+                                            {% if o.user %}
+                                            <hr class="my-3">
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-person-check me-1"></i> Tasdiqlovchi xodim
+                                            </div>
+                                            <div class="col-6">{{ o.user.full_name }} <span class="text-muted">{{ o.user.rank.name }}</span></div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-building me-1"></i> Tashkilot
+                                            </div>
+                                            <div class="col-6">
+                                                {% if o.user.division %} {{ o.user.division }}
+                                                {% elif o.user.directorate %} {{ o.user.directorate }}
+                                                {% elif o.user.department %} {{ o.user.department }}
+                                                {% else %} {{ o.user.organization }}
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-telephone me-1"></i> Telefon raqami
+                                            </div>
+                                            <div class="col-6">{{ o.user.phone|default:"" }}</div>
                                             {% endif %}
                                         </div>
                                         {% if o.materials_all.exists %}
