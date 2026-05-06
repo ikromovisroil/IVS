@@ -78,7 +78,9 @@
                 <li class="nav-pills">
                   <a href="{% url 'order_sender_arxiv_all' %}" class="nav-link" >Tarix</a>
                 </li>
-                  
+
+            
+
               </ul>
               <div class="tab-content pt-2">
 
@@ -86,8 +88,8 @@
                     <thead class="table-secondary">
                       <tr>
                         <th scope="col">T/r</th>
-                        <th scope="col">Ariza Maqsadi</th>
                         <th scope="col">Bajardi</th>
+                        <th scope="col">Tasdiqladi</th>
                         <th scope="col">Xolati</th>
                         <th scope="col">Yuborilgan sana</th>
                       </tr>
@@ -96,8 +98,8 @@
                     {% for o in order %}
                       <tr>
                         <th scope="row">{{ forloop.counter }}</th>
-                        <td>{{ o.goal.name }}</td>
                         <td>{{ o.receiver.full_name }}</td>
+                        <td>{{ o.user.full_name }}</td>
                         <td>
                             <span type="button"
                               class="badge rounded-pill px-3 py-2 fw-semibold
@@ -124,7 +126,7 @@
                                 <div class="modal-dialog modal-dialog-centered modal-xl">
                                   <div class="modal-content">
                                     <div class="modal-header">
-                                      <h5 class="modal-title">Ariza tafsilotlari</h5>
+                                      <h5 class="modal-title">Ariza tafsilotlari #{{o.id}}</h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
@@ -187,21 +189,42 @@
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-person-check me-1"></i> Mas’ul xodim
                                             </div>
-                                            <div class="col-6">{{ o.receiver.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
+                                            <div class="col-6">{{ o.receiver.full_name }} <span class="text-muted">{{ o.receiver.rank.name }}</span></div>
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-building me-1"></i> Tashkilot
                                             </div>
                                             <div class="col-6">
-                                                {% if o.sender.division %} {{ o.sender.division }}
-                                                {% elif o.sender.directorate %} {{ o.sender.directorate }}
-                                                {% elif o.sender.department %} {{ o.sender.department }}
-                                                {% else %} {{ o.sender.organization }}
+                                                {% if o.receiver.division %} {{ o.receiver.division }}
+                                                {% elif o.receiver.directorate %} {{ o.receiver.directorate }}
+                                                {% elif o.receiver.department %} {{ o.receiver.department }}
+                                                {% else %} {{ o.receiver.organization }}
                                                 {% endif %}
                                             </div>
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-telephone me-1"></i> Telefon raqami
                                             </div>
                                             <div class="col-6">{{ o.receiver.phone|default:"" }}</div>
+                                            {% endif %}
+                                            {% if o.user %}
+                                            <hr class="my-3">
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-person-check me-1"></i> Tasdiqlovchi xodim
+                                            </div>
+                                            <div class="col-6">{{ o.user.full_name }} <span class="text-muted">{{ o.user.rank.name }}</span></div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-building me-1"></i> Tashkilot
+                                            </div>
+                                            <div class="col-6">
+                                                {% if o.user.division %} {{ o.user.division }}
+                                                {% elif o.user.directorate %} {{ o.user.directorate }}
+                                                {% elif o.user.department %} {{ o.user.department }}
+                                                {% else %} {{ o.user.organization }}
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-6 text-muted">
+                                                <i class="bi bi-telephone me-1"></i> Telefon raqami
+                                            </div>
+                                            <div class="col-6">{{ o.user.phone|default:"" }}</div>
                                             {% endif %}
                                         </div>
                                         {% if o.materials_all.exists %}

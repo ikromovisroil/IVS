@@ -852,6 +852,7 @@ def order_sender_basket_all(request):
     }
     return render(request, "main/order_sender_basket_all.html", context)
 
+
 @require_POST
 @login_required
 @transaction.atomic
@@ -860,38 +861,40 @@ def create_order_sender_from(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    goal_id = request.POST.get("goal")
-    body = request.POST.get("body")
+    if not getattr(employee.rol, "client", False):
+        raise PermissionDenied("Sizga ruxsat yo‘q")
 
-    if not goal_id:
-        messages.warning(request, "Maqsad tanlanmagan")
-        return redirect("order_sender_basket_all")
-
-    goal = get_object_or_404(Goal, id=goal_id)
-
-    # 🟢 1. Order yaratamiz
-    order = Order.objects.create(
-        user=employee,
-        sender=employee,
-        goal=goal,
-        body=body,
-        status="viewed"
+    cart_items = (
+        OrderMaterial.objects
+        .select_for_update()
+        .filter(
+            order__isnull=True,
+            user=employee,
+            material__isnull=False
+        )
     )
 
-    # 🟢 2. Savatdagi materiallarni olamiz
-    materials = OrderMaterial.objects.select_for_update().filter(
-        user=employee,
-        order__isnull=True
-    )
-
-    if not materials.exists():
+    if not cart_items.exists():
         messages.warning(request, "Savat bo‘sh")
         return redirect("order_sender_basket_all")
 
-    # 🟢 3. Orderga biriktiramiz
-    materials.update(order=order)
+    order = Order.objects.create(
+        organization=employee.organization,
+        sender=employee,
+        status="viewed",
+    )
 
-    messages.success(request, "Ariza yuborildi ✅")
+    # inputdagi sonlarni yangilash
+    for item in cart_items:
+        number = request.POST.get(f"number_{item.id}")
+
+        if number and number.isdigit():
+            item.number = max(int(number), 1)
+
+        item.order = order
+        item.save(update_fields=["number", "order"])
+
+    messages.success(request, "Ariza muvaffaqiyatli yuborildi")
     return redirect("order_sender_all")
 
 

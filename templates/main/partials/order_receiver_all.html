@@ -94,15 +94,15 @@
                             <div class="col-6 text-muted">
                                 <i class="bi bi-person-check me-1"></i> Mas’ul xodim
                             </div>
-                            <div class="col-6">{{ o.receiver.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
+                            <div class="col-6">{{ o.receiver.full_name }} <span class="text-muted">{{ o.receiver.rank.name }}</span></div>
                             <div class="col-6 text-muted">
                                 <i class="bi bi-building me-1"></i> Tashkilot
                             </div>
                             <div class="col-6">
-                                {% if o.sender.division %} {{ o.sender.division }}
-                                {% elif o.sender.directorate %} {{ o.sender.directorate }}
-                                {% elif o.sender.department %} {{ o.sender.department }}
-                                {% else %} {{ o.sender.organization }}
+                                {% if o.receiver.division %} {{ o.receiver.division }}
+                                {% elif o.receiver.directorate %} {{ o.receiver.directorate }}
+                                {% elif o.receiver.department %} {{ o.receiver.department }}
+                                {% else %} {{ o.receiver.organization }}
                                 {% endif %}
                             </div>
                             <div class="col-6 text-muted">
