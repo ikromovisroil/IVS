@@ -864,27 +864,34 @@ def create_order_sender_from(request):
     if not getattr(employee.rol, "client", False):
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
+    # 🟢 Savatdagi materiallar
     cart_items = (
         OrderMaterial.objects
         .select_for_update()
         .filter(
-            order__isnull=True,
             user=employee,
+            order__isnull=True,
             material__isnull=False
         )
+        .select_related("material")
     )
 
     if not cart_items.exists():
         messages.warning(request, "Savat bo‘sh")
         return redirect("order_sender_basket_all")
 
+    # 🟢 Modaldan kelgan body
+    body = request.POST.get("body", "").strip()
+
+    # 🟢 Order yaratish
     order = Order.objects.create(
         organization=employee.organization,
         sender=employee,
+        body=body,
         status="viewed",
     )
 
-    # inputdagi sonlarni yangilash
+    # 🟢 Savatni orderga o‘tkazish
     for item in cart_items:
         number = request.POST.get(f"number_{item.id}")
 
@@ -894,7 +901,7 @@ def create_order_sender_from(request):
         item.order = order
         item.save(update_fields=["number", "order"])
 
-    messages.success(request, "Ariza muvaffaqiyatli yuborildi")
+    messages.success(request, "Ariza yuborildi ✅")
     return redirect("order_sender_all")
 
 
@@ -1037,123 +1044,6 @@ def order_material_all(request):
     if not employee.rol.client:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
-    order_id = request.POST.get("order_id")
-    material_ids = request.POST.getlist("material_id[]")
-    numbers = request.POST.getlist("number[]")
-
-    order = get_object_or_404(
-        Order.objects.select_for_update(),
-        id=order_id,
-    )
-
-    # ✅ Materiallar bo‘sh bo‘lishi mumkin (xohlasangiz majburiy qiling)
-    pairs = []
-    for m_id, num in zip(material_ids, numbers):
-        if not m_id:
-            continue
-        try:
-            n = int(num or 1)
-        except ValueError:
-            messages.info(request, "Material soni noto‘g‘ri kiritilgan!")
-            return redirect(request.META.get("HTTP_REFERER", "/"))
-        if n <= 0:
-            messages.info(request, "Material soni 0 yoki manfiy bo‘lishi mumkin emas!")
-            return redirect(request.META.get("HTTP_REFERER", "/"))
-        pairs.append((m_id, n))
-
-    # 🔁 Har bir materialni tekshirib, ombordagi sonni xavfsiz kamaytiramiz
-    for m_id, n in pairs:
-        material = Material.objects.select_for_update().filter(id=m_id).first()
-        if not material:
-            messages.info(request, "Material topilmadi!")
-            return redirect(request.META.get("HTTP_REFERER", "/"))
-
-        OrderMaterial.objects.create(order=order, material=material, number=n)
-
-    # ✅ Status yakunlandi qilish
-    order.status = "finished"
-    order.user = employee
-    order.save(update_fields=["technics", "status", "date_edit", "date_approved"])
-
-    messages.success(request, "Ariza yakunlandi!")
-    return redirect(request.META.get("HTTP_REFERER", "/"))
-
-
-@never_cache
-@require_GET
-@login_required
-@role_required("order")
-def order_receiver_arxiv_all(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo‘q")
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
-    orders_qs = (
-        Order.objects
-        .filter(receiver=employee,organization=employee.organization,status__in=["approved", "accepted", "canceled", "rejected",],)
-        .select_related("organization", "goal", "technics", "user", "receiver", "sender")
-        .order_by("-id")
-    )
-
-    # ✅ PAGINATION
-    page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        "order": page_obj,          # ✅ for loop shu orqali yuradi
-        "page_obj": page_obj,       # ✅ pagination uchun
-        "paginator": paginator,     # ✅ pagination uchun
-    }
-    return render(request, "main/order_receiver_arxiv_all.html", context)
-
-
-@never_cache
-@require_GET
-@login_required
-@role_required("confirm")
-def order_agrement(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo‘q")
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
-    orders_qs = (
-        Order.objects
-        .filter(receiver__region=employee.region,organization=employee.organization, status__in=["finished"])
-        .select_related("organization", "goal", "technics", "user", "receiver", "sender")
-        .order_by("-id")
-    )
-
-    page_number = request.GET.get("page", 1)
-    paginator = Paginator(orders_qs, 20)
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        "order": page_obj,
-        "page_obj": page_obj,
-        "paginator": paginator,
-    }
-    return render(request, "main/order_agrement.html", context)
-
-
-@never_cache
-@require_POST
-@login_required
-@role_required("confirm")
-def order_agrement_material(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo‘q")
-
-    if not employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     back_url = request.META.get("HTTP_REFERER", "/")
 
     order_id = (request.POST.get("order_id") or "").strip()
@@ -1233,10 +1123,9 @@ def order_agrement_material(request):
                 messages.info(request, f"{material.name} uchun beriladigan son noto‘g‘ri.")
                 return redirect(back_url)
 
-            if given < 0:
+            if given <= 0:
                 messages.info(request, f"{material.name} uchun beriladigan son manfiy bo‘lishi mumkin emas.")
                 return redirect(back_url)
-
 
             old_given = om.given or 0
             delta = given - old_given
@@ -1263,6 +1152,260 @@ def order_agrement_material(request):
                 return redirect(back_url)
 
         # bulk update
+        if ordermaterial_to_update:
+            OrderMaterial.objects.bulk_update(ordermaterial_to_update, ["given"])
+
+        changed_materials = [material_map[mid] for mid in material_changed_ids]
+        if changed_materials:
+            Material.objects.bulk_update(changed_materials, ["number"])
+
+        order.receiver = employee
+        order.status = "finished"
+        order.save(update_fields=["user", "status", "date_edit"])
+
+    messages.success(request, "Ariza tasdiqlandi")
+    return redirect(back_url)
+
+@never_cache
+@require_GET
+@login_required
+@role_required("order")
+def order_receiver_arxiv_all(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    if not employee.rol.client:
+        raise PermissionDenied("Sizga ruxsat yo‘q")
+
+    orders_qs = (
+        Order.objects
+        .filter(receiver=employee,organization=employee.organization,status__in=["approved", "accepted", "canceled", "rejected",],)
+        .select_related("organization", "goal", "technics", "user", "receiver", "sender")
+        .order_by("-id")
+    )
+
+    # ✅ PAGINATION
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "order": page_obj,          # ✅ for loop shu orqali yuradi
+        "page_obj": page_obj,       # ✅ pagination uchun
+        "paginator": paginator,     # ✅ pagination uchun
+    }
+    return render(request, "main/order_receiver_arxiv_all.html", context)
+
+
+@never_cache
+@require_GET
+@login_required
+@role_required("confirm")
+def order_agrement(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    if not employee.rol.client:
+        raise PermissionDenied("Sizga ruxsat yo‘q")
+
+    orders_qs = (
+        Order.objects
+        .filter(receiver__region=employee.region,organization=employee.organization, status__in=["finished"])
+        .select_related("organization", "goal", "technics", "user", "receiver", "sender")
+        .order_by("-id")
+    )
+
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(orders_qs, 20)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "order": page_obj,
+        "page_obj": page_obj,
+        "paginator": paginator,
+    }
+    return render(request, "main/order_agrement.html", context)
+
+
+@never_cache
+@require_POST
+@login_required
+@role_required("confirm")
+def order_agrement_material(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    if not getattr(employee.rol, "client", False):
+        raise PermissionDenied("Sizga ruxsat yo‘q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    order_id = (request.POST.get("order_id") or "").strip()
+    action = (request.POST.get("action") or "").strip()
+
+    ordermaterial_ids = request.POST.getlist("ordermaterial_id[]")
+    givens = request.POST.getlist("given[]")
+
+    if not order_id.isdigit():
+        messages.info(request, "Ariza ID noto‘g‘ri.")
+        return redirect(back_url)
+
+    if action not in ["approved", "rejected"]:
+        messages.info(request, "Amal noto‘g‘ri.")
+        return redirect(back_url)
+
+    with transaction.atomic():
+        order = get_object_or_404(
+            Order.objects.select_for_update(),
+            pk=int(order_id)
+        )
+
+        # Faqat tugallangan ariza tasdiqlansin yoki rad etilsin
+        if order.status != "finished":
+            messages.warning(request, "Bu arizani tasdiqlash yoki rad etish mumkin emas.")
+            return redirect(back_url)
+
+        # =========================
+        # RAD ETISH
+        # =========================
+        if action == "rejected":
+            order_materials = list(
+                OrderMaterial.objects
+                .select_for_update()
+                .filter(order=order)
+                .select_related("material")
+            )
+
+            material_ids = [
+                om.material_id for om in order_materials
+                if om.material_id and (om.given or 0) > 0
+            ]
+
+            materials = list(
+                Material.objects
+                .select_for_update()
+                .filter(id__in=material_ids)
+            )
+            material_map = {m.id: m for m in materials}
+
+            changed_materials = []
+            changed_order_materials = []
+
+            for om in order_materials:
+                old_given = om.given or 0
+
+                if old_given > 0:
+                    material = material_map.get(om.material_id)
+                    if material:
+                        material.number = (material.number or 0) + old_given
+                        changed_materials.append(material)
+
+                    om.given = 0
+                    changed_order_materials.append(om)
+
+            if changed_materials:
+                Material.objects.bulk_update(changed_materials, ["number"])
+
+            if changed_order_materials:
+                OrderMaterial.objects.bulk_update(changed_order_materials, ["given"])
+
+            order.user = employee
+            order.status = "rejected"
+            order.save(update_fields=["user", "status", "date_edit"])
+
+            messages.success(request, "Ariza rad etildi. Materiallar omborga qaytarildi.")
+            return redirect("order_agrement_arxiv")
+
+        # =========================
+        # TASDIQLASH
+        # =========================
+        if not ordermaterial_ids:
+            messages.info(request, "Materiallar yuborilmadi.")
+            return redirect(back_url)
+
+        if len(ordermaterial_ids) != len(givens):
+            messages.info(request, "Yuborilgan ma'lumotlar mos emas.")
+            return redirect(back_url)
+
+        if len(ordermaterial_ids) != len(set(ordermaterial_ids)):
+            messages.info(request, "Takroriy materiallar yuborildi.")
+            return redirect(back_url)
+
+        if not all(str(x).isdigit() for x in ordermaterial_ids):
+            messages.info(request, "Material ID noto‘g‘ri.")
+            return redirect(back_url)
+
+        order_materials = list(
+            OrderMaterial.objects
+            .select_for_update()
+            .filter(order=order, id__in=ordermaterial_ids)
+            .select_related("material")
+        )
+
+        om_map = {str(item.id): item for item in order_materials}
+
+        if len(om_map) != len(ordermaterial_ids):
+            messages.info(request, "Ba'zi materiallar topilmadi.")
+            return redirect(back_url)
+
+        material_ids = [om.material_id for om in order_materials if om.material_id]
+
+        if len(material_ids) != len(order_materials):
+            messages.info(request, "Ba'zi materiallarga bog‘lanish topilmadi.")
+            return redirect(back_url)
+
+        materials = list(
+            Material.objects
+            .select_for_update()
+            .filter(id__in=material_ids)
+        )
+        material_map = {m.id: m for m in materials}
+
+        if len(material_map) != len(set(material_ids)):
+            messages.info(request, "Ba'zi materiallar bazada topilmadi.")
+            return redirect(back_url)
+
+        ordermaterial_to_update = []
+        material_changed_ids = set()
+
+        for om_id, given_value in zip(ordermaterial_ids, givens):
+            om = om_map.get(str(om_id))
+            material = material_map.get(om.material_id)
+
+            try:
+                given = int(given_value)
+            except (TypeError, ValueError):
+                messages.info(request, f"{material.name} uchun beriladigan son noto‘g‘ri.")
+                return redirect(back_url)
+
+            if given < 0:
+                messages.info(request, f"{material.name} uchun beriladigan son manfiy bo‘lishi mumkin emas.")
+                return redirect(back_url)
+
+            old_given = om.given or 0
+            delta = given - old_given
+
+            if delta > 0 and (material.number or 0) < delta:
+                messages.info(
+                    request,
+                    f"{material.name} omborda yetarli emas. Omborda: {material.number}, kerak: {delta}"
+                )
+                return redirect(back_url)
+
+            material.number = (material.number or 0) - delta
+            material_changed_ids.add(material.id)
+
+            om.given = given
+            ordermaterial_to_update.append(om)
+
+        for material_id in material_changed_ids:
+            if material_map[material_id].number < 0:
+                messages.info(request, f"{material_map[material_id].name} uchun qoldiq manfiy bo‘lib qoldi.")
+                return redirect(back_url)
+
         if ordermaterial_to_update:
             OrderMaterial.objects.bulk_update(ordermaterial_to_update, ["given"])
 

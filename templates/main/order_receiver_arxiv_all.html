@@ -50,7 +50,6 @@
                   <tr>
                     <th scope="col">T/r</th>
                     <th scope="col">Muallif</th>
-                    <th scope="col">Ariza Maqsadi</th>
                     <th scope="col">Xolati</th>
                     <th scope="col">Yuborilgan sana</th>
                   </tr>
@@ -61,7 +60,6 @@
                     <tr>
                       <th scope="row">{{ forloop.counter }}</th>
                       <td>{{ o.sender.full_name }}</td>
-                      <td>{{ o.goal.name }}</td>
 
                       <td>
                         <span type="button"
@@ -121,10 +119,6 @@
                                     </div>
                                     <div class="col-6">{{ o.sender.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
                                     <div class="col-6 text-muted">
-                                        <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
-                                    </div>
-                                    <div class="col-6">{{ o.goal.name }}</div>
-                                    <div class="col-6 text-muted">
                                         <i class="bi bi-building me-1"></i> Tashkilot
                                     </div>
                                     <div class="col-6">
@@ -171,15 +165,37 @@
                                     </div>
                                     <div class="col-6">{{ o.receiver.phone|default:"" }}</div>
                                     {% endif %}
+                                    {% if o.user %}
+                                    <hr class="my-3">
+                                    <div class="col-6 text-muted">
+                                        <i class="bi bi-person-check me-1"></i> Tasdiqlovchi xodim
+                                    </div>
+                                    <div class="col-6">{{ o.user.full_name }} <span class="text-muted">{{ o.user.rank.name }}</span></div>
+                                    <div class="col-6 text-muted">
+                                        <i class="bi bi-building me-1"></i> Tashkilot
+                                    </div>
+                                    <div class="col-6">
+                                        {% if o.user.division %} {{ o.user.division }}
+                                        {% elif o.user.directorate %} {{ o.user.directorate }}
+                                        {% elif o.user.department %} {{ o.user.department }}
+                                        {% else %} {{ o.user.organization }}
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-6 text-muted">
+                                        <i class="bi bi-telephone me-1"></i> Telefon raqami
+                                    </div>
+                                    <div class="col-6">{{ o.user.phone|default:"" }}</div>
+                                    {% endif %}
                                 </div>
 
                                 {% if o.materials_all.exists %}
                                   <hr>
-                                  <table class="table">
+                                  <table class="table table-bordered align-middle">
                                     <thead>
                                       <tr>
                                         <th>T/r</th>
                                         <th>Material Name</th>
+                                        <th>Birligi</th>
                                         <th>So'ralgan</th>
                                         <th>Berildi</th>
                                         <th>Narxi</th>
@@ -190,6 +206,7 @@
                                         <tr>
                                           <th scope="row">{{ forloop.counter }}</th>
                                           <td>{{ m.material.name }}</td>
+                                          <td>{{ m.material.unit.name }}</td>
                                           <td>{{ m.number|intcomma }}</td>
                                           <td>{{ m.given|intcomma }}</td>
                                           <td>{{ m.material.price|intcomma }}</td>

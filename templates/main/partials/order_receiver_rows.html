@@ -113,62 +113,62 @@
                         </div>
                         <hr>
                         <div class="d-flex flex-wrap gap-2">
-                                            {% if o.date_creat %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi bi-clock text-warning fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ariza yaratildi</div>
-                                            </div>
-                                            {% endif %}
+                            {% if o.date_creat %}
+                            <div class="border rounded px-4 py-2 text-center shadow-sm">
+                                <i class="bi bi bi-clock text-warning fs-5 d-block mb-1"></i>
+                                <div class="small fw-semibold">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+                                <div class="text-muted small">Ariza yaratildi</div>
+                            </div>
+                            {% endif %}
 
-                                            {% if o.date_process %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi bi-clock text-warning fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_process|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ish boshlandi</div>
-                                            </div>
-                                            {% endif %}
+                            {% if o.date_process %}
+                            <div class="border rounded px-4 py-2 text-center shadow-sm">
+                                <i class="bi bi bi-clock text-warning fs-5 d-block mb-1"></i>
+                                <div class="small fw-semibold">{{ o.date_process|date:"d.m.Y, H:i" }}</div>
+                                <div class="text-muted small">Ish boshlandi</div>
+                            </div>
+                            {% endif %}
 
-                                            {% if o.date_finished %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_finished|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ish tugallandi</div>
-                                            </div>
-                                            {% endif %}
+                            {% if o.date_finished %}
+                            <div class="border rounded px-4 py-2 text-center shadow-sm">
+                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
+                                <div class="small fw-semibold">{{ o.date_finished|date:"d.m.Y, H:i" }}</div>
+                                <div class="text-muted small">Ish tugallandi</div>
+                            </div>
+                            {% endif %}
 
-                                            {% if o.date_approved %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_approved|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ariza tasdiqlandi</div>
-                                            </div>
-                                            {% endif %}
+                            {% if o.date_approved %}
+                            <div class="border rounded px-4 py-2 text-center shadow-sm">
+                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
+                                <div class="small fw-semibold">{{ o.date_approved|date:"d.m.Y, H:i" }}</div>
+                                <div class="text-muted small">Ariza tasdiqlandi</div>
+                            </div>
+                            {% endif %}
 
-                                            {% if o.date_accepted %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_accepted|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Qabul qilindi</div>
-                                            </div>
-                                            {% endif %}
+                            {% if o.date_accepted %}
+                            <div class="border rounded px-4 py-2 text-center shadow-sm">
+                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
+                                <div class="small fw-semibold">{{ o.date_accepted|date:"d.m.Y, H:i" }}</div>
+                                <div class="text-muted small">Qabul qilindi</div>
+                            </div>
+                            {% endif %}
 
-                                            {% if o.date_canceled %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-x-circle text-danger fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_canceled|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Bekor qilindi</div>
-                                            </div>
-                                            {% endif %}
+                            {% if o.date_canceled %}
+                            <div class="border rounded px-4 py-2 text-center shadow-sm">
+                                <i class="bi bi-x-circle text-danger fs-5 d-block mb-1"></i>
+                                <div class="small fw-semibold">{{ o.date_canceled|date:"d.m.Y, H:i" }}</div>
+                                <div class="text-muted small">Bekor qilindi</div>
+                            </div>
+                            {% endif %}
 
-                                            {% if o.date_rejected %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-x-circle text-danger fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_rejected|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Rad etildi</div>
-                                            </div>
-                                            {% endif %}
-                                        </div>
+                            {% if o.date_rejected %}
+                            <div class="border rounded px-4 py-2 text-center shadow-sm">
+                                <i class="bi bi-x-circle text-danger fs-5 d-block mb-1"></i>
+                                <div class="small fw-semibold">{{ o.date_rejected|date:"d.m.Y, H:i" }}</div>
+                                <div class="text-muted small">Rad etildi</div>
+                            </div>
+                            {% endif %}
+                        </div>
                     </div>
 
                     <div class="modal-footer d-flex justify-content-center gap-2">

@@ -44,7 +44,7 @@
                 <tr>
                   <th>T/r</th>
                   <th>Muallif</th>
-                  <th>Ariza Maqsadi</th>
+                  <th>Bajardi</th>
                   <th>Xolati</th>
                   <th>Yuborilgan sana</th>
                 </tr>
@@ -55,7 +55,7 @@
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
                     <td>{{ o.sender.full_name }}</td>
-                    <td>{{ o.goal.name }}</td>
+                    <td>{{ o.receiver.full_name }}</td>
 
                     <td>
                         <span type="button"
@@ -117,10 +117,6 @@
                                 </div>
                                 <div class="col-6">{{ o.sender.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
                                 <div class="col-6 text-muted">
-                                    <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
-                                </div>
-                                <div class="col-6">{{ o.goal.name }}</div>
-                                <div class="col-6 text-muted">
                                     <i class="bi bi-building me-1"></i> Tashkilot
                                 </div>
                                 <div class="col-6">
@@ -170,14 +166,16 @@
                               </div>
                               <div>
                                 {% if o.materials_all.exists %}
-                                  <table class="table">
+                                  <hr>
+                                  <table class="table table-bordered align-middle">
                                     <thead>
                                     <tr>
                                       <th>T/r</th>
                                       <th>Material Name</th>
+                                      <th>Birligi</th>
                                       <th>So'ralgan</th>
+                                      <th>Berildi</th>
                                       <th>Narxi</th>
-                                      <th>Beriladi</th>
                                       <th>O'chirish</th>
                                     </tr>
                                     </thead>
@@ -186,13 +184,14 @@
                                       <tr>
                                         <th scope="row">{{ forloop.counter }}</th>
                                         <td>{{ m.material.name }}</td>
-                                        <td>{{ m.number|intcomma }}</td>
-                                        <td>{{ m.material.price|intcomma }}</td>
+                                        <td>{{ m.material.unit.name }}</td>
+                                        <td>{{ m.number }}</td>
                                         <td>
                                             <input type="hidden" name="ordermaterial_id[]" value="{{ m.id }}">
-                                            <input type="number" name="given[]" class="form-control w-50"
-                                                   value="{{ m.given|default:m.number }}" min="0" >
+                                            <input type="number" name="given[]" class=" form-control form-control-sm"
+                                                   value="{{ m.given|default:m.number }}" min="1" style="width: 100px;" >
                                         </td>
+                                        <td>{{ m.material.price|intcomma }}</td>
                                         <td><button type="button"
                                                 class="btn btn-danger btn-sm js-delete-om"
                                                 data-url="{% url 'ordermaterial_delete' m.id %}">
@@ -266,10 +265,11 @@
                             </div>
 
                             <div class="modal-footer d-flex justify-content-center gap-2">
-                              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                <i class="bi bi-exclamation-circle"></i> Etiborsiz qoldirish
+                              <button type="submit" name="action" value="rejected" class="btn btn-danger"
+                              onclick="return confirm('Bekor qilish tasdiqlang?')">
+                                <i class="bi bi-x-circle me-1"></i> Bekor qilish
                               </button>
-                              <button type="submit" class="btn btn-primary"
+                              <button type="submit" name="action" value="approved" class="btn btn-primary"
                               onclick="return confirm('Yakunlashni tasdiqlang?')">
                                 <i class="bi bi-check-circle me-1"></i> Tasdiqlash
                               </button>
@@ -331,69 +331,6 @@
   </section>
 </main>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-document.addEventListener("DOMContentLoaded", function() {
-
-  function initSelect2($selectElem, orderId) {
-    $selectElem.select2({
-      dropdownParent: $("#verticalmodal" + orderId),
-      width: "100%",
-    });
-  }
-
-  // ✅ Modal ochilganda ichidagi selectlarni init qilamiz
-  $(document).on("shown.bs.modal", ".modal", function () {
-    const modalId = $(this).attr("id");              // verticalmodal12
-    const orderId = modalId.replace("verticalmodal", "");
-
-    // Tech select
-    const $tech = $(this).find(".js-tech-select");
-    if ($tech.length && !$tech.hasClass("select2-hidden-accessible")) {
-      initSelect2($tech, orderId);
-    }
-
-    // Material selectlar (agar oldin qo‘shilgan bo‘lsa)
-    $(this).find(".js-material-select").each(function () {
-      const $mat = $(this);
-      if (!$mat.hasClass("select2-hidden-accessible")) {
-        initSelect2($mat, orderId);
-      }
-    });
-  });
-
-  // ✅ Material qator qo‘shish
-  window.addMaterialRow = function(orderId) {
-    let tpl = document.querySelector("#material-options-" + orderId);
-    let optionsHtml = tpl ? tpl.innerHTML : '<option value="">— Tanlang —</option>';
-
-    let $row = $(`
-      <div class="row align-items-center mb-2 material-row">
-        <div class="col-7">
-          <select class="form-select js-material-select" name="material_id[]">
-            ${optionsHtml}
-          </select>
-        </div>
-        <div class="col-3">
-          <input type="number" class="form-control" name="number[]" value="1" min="1">
-        </div>
-        <div class="col-2 text-end">
-          <button type="button" class="btn btn-danger w-100 remove-btn">X</button>
-        </div>
-      </div>
-    `);
-
-    $("#materials-container-" + orderId).append($row);
-
-    let $newSelect = $row.find(".js-material-select");
-    initSelect2($newSelect, orderId);
-  };
-
-  $(document).on("click", ".remove-btn", function () {
-    $(this).closest(".material-row").remove();
-  });
-
-});
-</script>
 <script>
 $(function () {
 

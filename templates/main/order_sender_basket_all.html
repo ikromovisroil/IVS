@@ -16,7 +16,7 @@
 
     <div class="pagetitle">
         <div class="d-flex justify-content-between align-items-center">
-             <h1>Materiallar</h1>
+             <h1>Savatga Saqlanganlar</h1>
         </div>
     </div>
 
@@ -46,35 +46,22 @@
                         <li class="nav-pills">
                           <a href="{% url 'order_sender_basket_all' %}" class="nav-link active" >Savat</a>
                         </li>
+
                     </ul>
                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">+ Ariza Yuborish</button>
                     <div class="modal fade" id="modal" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                           <div class="modal-content">
-                            <form action="{% url 'order_post_all' %}" method="post">{% csrf_token %}
                             <div class="modal-header">
                               <h5 class="modal-title">Ariza Yuborish</h5>
                               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
                             <div class="modal-body">
                                 <div class="">
-                                    <!-- Mavzu -->
-                                    <div class="row mb-3">
-                                        <label class="col-sm-3 col-form-label">Arizaning Maqsadi:</label>
-                                        <div class="col-sm-9">
-                                            <select class="form-select" name="goal" id="topic-select" required>
-                                                <option value="">tanlang</option>
-                                                {% for t in goal %}
-                                                    <option value="{{ t.id }}">{{ t.name }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </div>
-                                    </div>
-
                                     <!-- Izoh -->
                                     <div class="row mb-3">
-                                        <label class="col-sm-3 col-form-label">Qo‘shimcha ma’lumot:</label>
-                                        <div class="col-sm-9">
+                                        <label class="col-sm-12 col-form-label">Qo‘shimcha ma’lumot:</label>
+                                        <div class="col-sm-12">
                                             <textarea class="form-control" name="body" style="height: 100px"></textarea>
                                         </div>
                                     </div>
@@ -85,14 +72,13 @@
                                     <button type="submit" class="btn btn-primary">Yuborish</button>
                                 </div>
                             </div>
-                            </form>
                           </div>
                         </div>
                     </div>
                   </div>
                   <div class="tab-content pt-2">
 
-                    <table class="table table-bordered table-hover">
+                    <table class="table table-bordered table-hover align-middle">
                         <thead class="table-secondary">
                           <tr>
                             <th scope="col">T/r</th>
@@ -111,6 +97,7 @@
                             <td>
                                 <input class="form-control form-control-sm"
                                        type="number"
+                                       name="number_{{ m.id }}"
                                        value="{{ m.number }}"
                                        min="1"  style="width: 100px;">
                             </td>
