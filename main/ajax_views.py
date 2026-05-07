@@ -770,24 +770,79 @@ def ajax_document_preview(request):
 @login_required
 def add_material_to_cart(request):
     employee = getattr(request.user, "employee", None)
+
     if not employee:
-        return JsonResponse({"ok": False, "message": "Employee topilmadi"}, status=403)
+        return JsonResponse({
+            "ok": False,
+            "message": "Employee topilmadi"
+        }, status=403)
 
     material_id = request.POST.get("material_id")
 
-    material = get_object_or_404(Material, id=material_id)
+    material = get_object_or_404(
+        Material,
+        id=material_id
+    )
 
-    obj, created = OrderMaterial.objects.get_or_create(
+    cart_item = OrderMaterial.objects.filter(
+        order=None,
+        user=employee,
+        material=material
+    ).first()
+
+    # AGAR BOR BO'LSA O'CHIRAMIZ
+    if cart_item:
+        cart_item.delete()
+
+        return JsonResponse({
+            "ok": True,
+            "action": "removed",
+            "message": "Savatdan olib tashlandi"
+        })
+
+    # AGAR YO'Q BO'LSA QO'SHAMIZ
+    OrderMaterial.objects.create(
         order=None,
         user=employee,
         material=material,
-        defaults={
-            "number": 1
-        }
+        number=1
     )
 
     return JsonResponse({
         "ok": True,
-        "message": "Savatga saqlandi",
-        "number": obj.number
+        "action": "added",
+        "message": "Savatga saqlandi"
+    })
+
+@require_POST
+@login_required
+def delete_material_from_cart(request):
+    employee = getattr(request.user, "employee", None)
+
+    if not employee:
+        return JsonResponse({
+            "ok": False,
+            "message": "Employee topilmadi"
+        }, status=403)
+
+    item_id = request.POST.get("item_id")
+
+    if not item_id:
+        return JsonResponse({
+            "ok": False,
+            "message": "ID kelmadi"
+        }, status=400)
+
+    item = get_object_or_404(
+        OrderMaterial,
+        id=item_id,
+        order__isnull=True,
+        user=employee
+    )
+
+    item.delete()
+
+    return JsonResponse({
+        "ok": True,
+        "message": "Savatdan o‘chirildi"
     })

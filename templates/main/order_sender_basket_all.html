@@ -82,9 +82,10 @@
                         <thead class="table-secondary">
                           <tr>
                             <th scope="col">T/r</th>
+                            <th scope="col">Image</th>
                             <th scope="col">Nomi</th>
                             <th scope="col">Birligi</th>
-                            <th scope="col">Xolati</th>
+                            <th scope="col">Soni</th>
                             <th scope="col">Bekor qilish</th>
                           </tr>
                         </thead>
@@ -92,6 +93,15 @@
                         {% for m in ordermaterial %}
                           <tr>
                             <th scope="row">{{ forloop.counter }}</th>
+                            <td class="text-center">
+                                {% if m.material.image %}
+                                    <img src="{{ m.material.image.url }}"
+                                         class="img-thumbnail p-0 m-0"
+                                         style="width:40px;height:40px;object-fit:cover;">
+                                {% else %}
+                                    <span class="text-muted">Rasm yo‘q</span>
+                                {% endif %}
+                            </td>
                             <td>{{ m.material.name }}</td>
                             <td>{{ m.material.unit.name }}</td>
                             <td>
@@ -103,9 +113,9 @@
                             </td>
                             <td>
                                 <button type="button"
-                                        class="btn p-0 border-0 bg-transparent add-cart-btn"
-                                        data-material-id="{{ m.id }}">
-                                        <i class="bi bi-trash"></i>
+                                        class="btn btn-light shadow-sm rounded-pill delete-cart-btn"
+                                        data-item-id="{{ m.id }}">
+                                    <i class="bi bi-trash"></i> O'chirish
                                 </button>
                             </td>
                           </tr>
@@ -157,4 +167,30 @@
       </div>
     </section>
 </main>
+
+<script>
+document.querySelectorAll(".delete-cart-btn").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+        let itemId = this.dataset.itemId;
+        let row = this.closest("tr");
+
+        fetch("{% url 'delete_material_from_cart' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: "item_id=" + itemId
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                row.remove();
+            } else {
+                alert(data.message);
+            }
+        });
+    });
+});
+</script>
 {% endblock %}

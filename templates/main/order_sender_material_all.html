@@ -48,10 +48,11 @@
               </ul>
               <div class="tab-content pt-2">
 
-                <table class="table table-bordered table-hover">
+                <table class="table table-bordered table-hover align-middle">
                     <thead class="table-secondary">
                       <tr>
                         <th scope="col">T/r</th>
+                        <th scope="col">Image</th>
                         <th scope="col">Nomi</th>
                         <th scope="col">Birligi</th>
                         <th scope="col">Xolati</th>
@@ -62,6 +63,15 @@
                     {% for m in material %}
                       <tr>
                         <th scope="row">{{ forloop.counter }}</th>
+                        <td class="text-center">
+                            {% if m.image %}
+                                <img src="{{ m.image.url }}"
+                                     class="img-thumbnail p-0 m-0"
+                                     style="width:40px;height:40px;object-fit:cover;">
+                            {% else %}
+                                <span class="text-muted">Rasm yo‘q</span>
+                            {% endif %}
+                        </td>
                         <td>{{ m.name }}</td>
                         <td>{{ m.unit.name }}</td>
                         <td>
@@ -73,13 +83,14 @@
                         </td>
                         <td>
                             <button type="button"
-                                    class="btn p-0 border-0 bg-transparent add-cart-btn"
-                                    data-material-id="{{ m.id }}">
-                                {% if m.id in cart_material_ids %}
-                                    <i class="bi bi-bookmark-check-fill"></i> Saqlash
-                                {% else %}
-                                    <i class="bi bi-bookmark"></i> Saqlash
-                                {% endif %}
+                                class="btn btn-light border-0 shadow-sm rounded-pill add-cart-btn"
+                                data-material-id="{{ m.id }}">
+                            {% if m.id in cart_material_ids %}
+                                <i class="bi bi-bookmark-check-fill"></i> Saqlash
+                            {% else %}
+                                <i class="bi bi-bookmark"></i> Saqlash
+                            {% endif %}
+
                             </button>
                         </td>
                       </tr>
@@ -136,7 +147,6 @@ document.querySelectorAll(".add-cart-btn").forEach(function(btn) {
     btn.addEventListener("click", function() {
         let materialId = this.dataset.materialId;
         let icon = this.querySelector("i");
-
         fetch("{% url 'add_material_to_cart' %}", {
             method: "POST",
             headers: {
@@ -148,8 +158,14 @@ document.querySelectorAll(".add-cart-btn").forEach(function(btn) {
         .then(response => response.json())
         .then(data => {
             if (data.ok) {
-                icon.className = "bi bi-bookmark-check-fill";
-                icon.style.color = "black";
+                if (data.action === "added") {
+                    icon.className = "bi bi-bookmark-check-fill";
+                    icon.style.color = "black";
+                }
+                else if (data.action === "removed") {
+                    icon.className = "bi bi-bookmark";
+                    icon.style.color = "";
+                }
             } else {
                 alert(data.message);
             }

@@ -876,10 +876,6 @@ def create_order_sender_from(request):
         .select_related("material")
     )
 
-    if not cart_items.exists():
-        messages.warning(request, "Savat bo‘sh")
-        return redirect("order_sender_basket_all")
-
     # 🟢 Modaldan kelgan body
     body = request.POST.get("body", "").strip()
 
@@ -1054,9 +1050,6 @@ def order_material_all(request):
         messages.info(request, "Ariza ID noto‘g‘ri.")
         return redirect(back_url)
 
-    if not ordermaterial_ids:
-        messages.info(request, "Materiallar yuborilmadi.")
-        return redirect(back_url)
 
     if len(ordermaterial_ids) != len(givens):
         messages.info(request, "Yuborilgan ma'lumotlar mos emas.")
@@ -1322,10 +1315,6 @@ def order_agrement_material(request):
         # =========================
         # TASDIQLASH
         # =========================
-        if not ordermaterial_ids:
-            messages.info(request, "Materiallar yuborilmadi.")
-            return redirect(back_url)
-
         if len(ordermaterial_ids) != len(givens):
             messages.info(request, "Yuborilgan ma'lumotlar mos emas.")
             return redirect(back_url)

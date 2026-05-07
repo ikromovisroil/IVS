@@ -218,7 +218,7 @@
     <!-- MATERIAL CREATE MODAL -->
     <div class="modal fade" id="vertical" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form class="modal-content" method="post" action="{% url 'material_create' %}">
+        <form class="modal-content" method="post" enctype="multipart/form-data" action="{% url 'material_create' %}">
           {% csrf_token %}
           <div class="modal-header">
             <h5 class="modal-title">Material qo‘shish</h5>
@@ -260,6 +260,12 @@
               <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.year }}
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Rasm</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.image }}
               </div>
             </div>
           </div>
@@ -422,7 +428,7 @@
 
     <div class="modal fade" id="mattax-{{ mat.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form method="post" class="modal-content" action="{% url 'material_update' mat.id %}">
+        <form method="post" class="modal-content" enctype="multipart/form-data" action="{% url 'material_update' mat.id %}">
           {% csrf_token %}
 
           <div class="modal-header">
@@ -469,6 +475,13 @@
               <label class="col-md-4 col-lg-3 col-form">Codi</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" name="code" class="form-control" value="{{ mat.code }}" required>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Rasm</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="file" name="image" class="form-control" accept="image/*">
               </div>
             </div>
           </div>

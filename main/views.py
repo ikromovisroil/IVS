@@ -1565,7 +1565,7 @@ def material_create(request):
         raise PermissionDenied("Employee yo‘q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    form = MaterialForm(request.POST)
+    form = MaterialForm(request.POST, request.FILES)
     if form.is_valid():
         material = form.save(commit=False)
         material.organization = employee.organization
@@ -1593,7 +1593,6 @@ def material_update(request, pk):
 
     unit_id = (request.POST.get("unit") or "").strip()
 
-    # unit
     if unit_id:
         if not unit_id.isdigit():
             messages.info(request, "Birligi noto‘g‘ri tanlangan")
@@ -1604,6 +1603,7 @@ def material_update(request, pk):
 
     mat.name = (request.POST.get("name") or "").strip()
     mat.code = (request.POST.get("code") or "").strip()
+    mat.year = (request.POST.get("year") or "").strip()
 
     if not mat.name:
         messages.info(request, "Nomi kiritilishi shart")
@@ -1613,18 +1613,22 @@ def material_update(request, pk):
         messages.info(request, "1C kodi kiritilishi shart")
         return redirect(back_url)
 
-    # number
     raw_number = (request.POST.get("number") or "").strip()
     try:
         mat.number = int(raw_number)
         if mat.number < 0:
             raise ValueError
     except (TypeError, ValueError):
-        messages.INFO(request, "Soni noto‘g‘ri kiritildi")
+        messages.info(request, "Soni noto‘g‘ri kiritildi")
         return redirect(back_url)
 
-    # price
-    raw_price = (request.POST.get("price") or "").strip().replace(" ", "").replace(",", ".")
+    raw_price = (
+        (request.POST.get("price") or "")
+        .strip()
+        .replace(" ", "")
+        .replace(",", ".")
+    )
+
     try:
         mat.price = Decimal(raw_price) if raw_price else Decimal("0")
         if mat.price < 0:
@@ -1633,7 +1637,20 @@ def material_update(request, pk):
         messages.info(request, "Narx noto‘g‘ri kiritildi. Masalan: 14.45 yoki 14,45")
         return redirect(back_url)
 
-    mat.save(update_fields=["unit", "name", "code", "number", "price"])
+    # RASM YANGILASH
+    if request.FILES.get("image"):
+        mat.image = request.FILES.get("image")
+
+    mat.save(update_fields=[
+        "unit",
+        "name",
+        "code",
+        "number",
+        "price",
+        "year",
+        "image",
+    ])
+
     messages.success(request, "Material tahrirlandi!")
     return redirect(back_url)
 

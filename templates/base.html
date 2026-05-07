@@ -330,7 +330,7 @@
 
         <!-- Arizalar -->
         <li class="nav-item">
-          <a class="nav-link {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% else %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_all' or url_name == 'order_sender_basket_all' %}active{% else %}collapsed{% endif %}"
              data-bs-target="#forms-nav-order"
              data-bs-toggle="collapse"
              href="#">
@@ -340,7 +340,7 @@
           </a>
 
           <ul id="forms-nav-order"
-              class="nav-content collapse {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_all' or url_name == 'order_sender_basket_all' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
             <li>
@@ -352,7 +352,7 @@
 
             {% if request.user.employee.rol.client %}
             <li>
-              <a class="{% if url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' %}active{% endif %}"
+              <a class="{% if url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender_material_all' or url_name == 'order_sender_basket_all' %}active{% endif %}"
                  href="{% url 'order_sender_all' %}">
                 <i class="bi bi-circle"></i><span>Umumiy Ariza Yuborish</span>
               </a>

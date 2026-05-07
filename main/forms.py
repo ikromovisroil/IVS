@@ -75,7 +75,7 @@ class MaterialForm(forms.ModelForm):
         model = Material
         fields = [
             "name", "code", "number",
-            "unit", "price", "year"
+            "unit", "price", "year", "image"
         ]
         widgets = {
             "unit": forms.Select(attrs={"class": "form-select", "required": True}),
@@ -85,4 +85,5 @@ class MaterialForm(forms.ModelForm):
             "number": forms.NumberInput(attrs={"class": "form-control", "placeholder": "number", "required": True}),
             "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "price", "required": True}),
             "year": forms.TextInput(attrs={"class": "form-control", "placeholder": "year"}),
+            "image": forms.ClearableFileInput(attrs={"class": "form-control","accept": "image/*"}),
         }

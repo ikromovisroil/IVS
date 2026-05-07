@@ -68,6 +68,7 @@ urlpatterns = [
     # AJAX / FILTER / DINAMIK
     # =========================
     path("material/cart/add/", add_material_to_cart, name="add_material_to_cart"),
+    path("order/sender/basket/delete/", delete_material_from_cart, name="delete_material_from_cart"),
 
     path("ajax/load-departments/", ajax_load_departments, name="ajax_load_departments"),
     path("ajax/load-directorate/", ajax_load_directorate, name="ajax_load_directorate"),
