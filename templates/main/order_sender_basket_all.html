@@ -82,7 +82,7 @@
                         <thead class="table-secondary">
                           <tr>
                             <th scope="col">T/r</th>
-                            <th scope="col">Image</th>
+                            <th scope="col">Rasm</th>
                             <th scope="col">Nomi</th>
                             <th scope="col">Birligi</th>
                             <th scope="col">Soni</th>
@@ -96,8 +96,31 @@
                             <td class="text-center">
                                 {% if m.material.image %}
                                     <img src="{{ m.material.image.url }}"
-                                         class="img-thumbnail p-0 m-0"
-                                         style="width:40px;height:40px;object-fit:cover;">
+                                     class="img-thumbnail p-0 m-0"
+                                     style="width:40px;height:40px;object-fit:cover;cursor:pointer;"
+                                     data-bs-toggle="modal"
+                                     data-bs-target="#imageModal{{ m.id }}">
+
+                                <div class="modal fade" id="imageModal{{ m.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Rasm</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body text-center">
+                                                <img src="{{ m.material.image.url }}"
+                                                     class="img-fluid rounded shadow"
+                                                     style="max-height:75vh; object-fit:contain;">
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                    Yopish
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 {% else %}
                                     <span class="text-muted">Rasm yo‘q</span>
                                 {% endif %}

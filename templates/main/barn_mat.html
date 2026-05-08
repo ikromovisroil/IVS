@@ -109,6 +109,7 @@
                 <thead class="table-secondary">
                   <tr>
                     <th scope="col">T/r</th>
+                    <th scope="col">Rasm</th>
                     <th scope="col">Material Nomi</th>
                     <th scope="col">Soni</th>
                     <th scope="col">Narxi</th>
@@ -125,12 +126,44 @@
                 {% for mat in material %}
                   <tr>
                     <th scope="row">{{ forloop.counter }}</th>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.name|default:"-"|truncatechars:50 }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.number }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.price|intcomma|default:"-" }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.total_sum|intcomma }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.unit|default:"-" }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{mat.id}}">{{ mat.code|default:"-" }}</td>
+                    <td class="text-center">
+                        {% if mat.image %}
+                            <img src="{{ mat.image.url }}"
+                             class="img-thumbnail p-0 m-0"
+                             style="width:40px;height:40px;object-fit:cover;cursor:pointer;"
+                             data-bs-toggle="modal"
+                             data-bs-target="#imageModal{{ mat.id }}">
+
+                        <div class="modal fade" id="imageModal{{ mat.id }}" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Rasm</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body text-center">
+                                        <img src="{{ mat.image.url }}"
+                                             class="img-fluid rounded shadow"
+                                             style="max-height:75vh; object-fit:contain;">
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                            Yopish
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                            <span class="text-muted">Rasm yo‘q</span>
+                        {% endif %}
+                    </td>
+                    <td >{{ mat.name|default:"-"|truncatechars:50 }}</td>
+                    <td >{{ mat.number }}</td>
+                    <td >{{ mat.price|intcomma|default:"-" }}</td>
+                    <td >{{ mat.total_sum|intcomma }}</td>
+                    <td >{{ mat.unit|default:"-" }}</td>
+                    <td >{{ mat.code|default:"-" }}</td>
                     {% if request.user.employee.rol.material_edit%}
                     <td>
                       <div class="filter">
