@@ -158,7 +158,7 @@
                             <span class="text-muted">Rasm yo‘q</span>
                         {% endif %}
                     </td>
-                    <td >{{ mat.name|default:"-"|truncatechars:50 }}</td>
+                    <td >{{ mat.name|default:"-" }}</td>
                     <td >{{ mat.number }}</td>
                     <td >{{ mat.price|intcomma|default:"-" }}</td>
                     <td >{{ mat.total_sum|intcomma }}</td>
