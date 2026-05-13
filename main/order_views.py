@@ -23,7 +23,7 @@ def order_sender(request):
 
     goals_qs = (
         Goal.objects
-        .filter(organization_id=4)
+        .all()
         .order_by("id")
     )
 
@@ -123,7 +123,7 @@ def order_sender_arxiv(request):
 
     goals_qs = (
         Goal.objects
-        .filter(organization_id=4)
+        .all()
         .order_by("id")
     )
 
@@ -599,14 +599,8 @@ def order_sender_all(request):
     orders_qs = (
         Order.objects
         .filter(sender=employee,organization=employee.organization,status__in=["viewed", "process", "finished", "approved"],)
-        .select_related("organization", "goal", "technics", "user", "receiver", "sender")
+        .select_related("organization", "user", "receiver", "sender")
         .order_by("-id")
-    )
-
-    goals_qs = (
-        Goal.objects
-        .filter(organization=employee.organization)
-        .order_by("id")
     )
 
     # ✅ PAGINATION
@@ -618,7 +612,6 @@ def order_sender_all(request):
         "order": page_obj,          # ✅ for loop shu orqali yuradi
         "page_obj": page_obj,       # ✅ pagination uchun
         "paginator": paginator,     # ✅ pagination uchun
-        "goal": goals_qs,
     }
     return render(request, "main/order_sender_all.html", context)
 
@@ -744,12 +737,6 @@ def order_sender_arxiv_all(request):
         .order_by("-id")
     )
 
-    goals_qs = (
-        Goal.objects
-        .filter(organization=employee.organization)
-        .order_by("id")
-    )
-
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
     paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
@@ -759,8 +746,6 @@ def order_sender_arxiv_all(request):
         "order": page_obj,          # ✅ for loop shu orqali yuradi
         "page_obj": page_obj,       # ✅ pagination uchun
         "paginator": paginator,     # ✅ pagination uchun
-
-        "goal": goals_qs,
     }
     return render(request, "main/order_sender_arxiv_all.html", context)
 
@@ -786,12 +771,6 @@ def order_sender_material_all(request):
         .order_by("-id")
     )
 
-    goals_qs = (
-        Goal.objects
-        .filter(organization=employee.organization)
-        .order_by("id")
-    )
-
     cart_material_ids = set(
         OrderMaterial.objects.filter(
             order__isnull=True,
@@ -808,7 +787,6 @@ def order_sender_material_all(request):
         "material": page_obj,
         "page_obj": page_obj,
         "paginator": paginator,
-        "goal": goals_qs,
         "cart_material_ids": cart_material_ids,
     }
 
@@ -833,12 +811,6 @@ def order_sender_basket_all(request):
         .order_by("-id")
     )
 
-    goals_qs = (
-        Goal.objects
-        .filter(organization=employee.organization)
-        .order_by("id")
-    )
-
     # ✅ PAGINATION
     page_number = request.GET.get("page", 1)
     paginator = Paginator(orders_qs, 20)   # har sahifada 4 ta
@@ -848,7 +820,6 @@ def order_sender_basket_all(request):
         "ordermaterial": page_obj,          # ✅ for loop shu orqali yuradi
         "page_obj": page_obj,       # ✅ pagination uchun
         "paginator": paginator,     # ✅ pagination uchun
-        "goal": goals_qs,
     }
     return render(request, "main/order_sender_basket_all.html", context)
 
