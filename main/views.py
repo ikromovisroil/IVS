@@ -2389,3 +2389,103 @@ def tex_status(request):
 def technics_detail(request, pk):
     technics = get_object_or_404(Technics, pk=pk, is_active=True)
     return render(request, "main/technics_detail.html", {"technics": technics})
+
+
+@never_cache
+@require_GET
+@login_required
+def files(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    name = (request.GET.get("name") or "").strip()
+    date1 = (request.GET.get("date1") or "").strip()
+    date2 = (request.GET.get("date2") or "").strip()
+    page_number = request.GET.get("page", 1)
+
+    # filter bosilganmi
+    has_filter = bool(name or date1 or date2)
+
+    # default bo‘sh
+    if not has_filter:
+        qs = Deed.objects.none()
+
+    else:
+        qs = (
+            Deed.objects
+            .filter(
+                Q(user__organization_id=employee.organization_id) |
+                Q(sender__organization_id=employee.organization_id) |
+                Q(receiver__organization_id=employee.organization_id)
+            ).distinct()
+            .select_related(
+                "user",
+                "sender",
+                "receiver",
+            )
+            .prefetch_related(
+                "deedconsent_set",
+                "deedconsent_set__employee",
+            )
+            .order_by("-id")
+        )
+
+        # qidiruv
+        if name:
+            qs = qs.annotate(
+
+                user_full_name=Concat(
+                    "user__last_name",
+                    Value(" "),
+                    "user__first_name",
+                    Value(" "),
+                    "user__father_name",
+                ),
+
+                sender_full_name=Concat(
+                    "sender__last_name",
+                    Value(" "),
+                    "sender__first_name",
+                    Value(" "),
+                    "sender__father_name",
+                ),
+
+                receiver_full_name=Concat(
+                    "receiver__last_name",
+                    Value(" "),
+                    "receiver__first_name",
+                    Value(" "),
+                    "receiver__father_name",
+                ),
+
+            ).filter(
+                Q(code__icontains=name) |
+                Q(user_full_name__icontains=name) |
+                Q(sender_full_name__icontains=name) |
+                Q(receiver_full_name__icontains=name)
+            )
+
+        # sana filter
+        if date1:
+            qs = qs.filter(date_creat__date__gte=date1)
+
+        if date2:
+            qs = qs.filter(date_creat__date__lte=date2)
+
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(page_number)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+
+    context = {
+        "deed": page_obj,
+        "page_obj": page_obj,
+        "qs_params": params.urlencode(),
+        "name": name,
+        "date1": date1,
+        "date2": date2,
+    }
+
+    return render(request, "main/files.html", context)

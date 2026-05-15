@@ -15,6 +15,7 @@ urlpatterns = [
     path("technics_get/", technics_get, name="technics_get"),
     path("tex_status/", tex_status, name="tex_status"),
     path("technics/<int:pk>/", technics_detail, name="technics_detail"),
+    path("files/", files, name="files"),
 
     # =========================
     # TEXNIKALAR

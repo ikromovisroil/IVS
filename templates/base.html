@@ -562,6 +562,14 @@
         </li>
 
         <li class="nav-item">
+          <a class="nav-link {% if url_name != 'files' %}collapsed{% endif %}"
+             href="{% url 'files' %}">
+            <i class="bi bi-save"></i>
+            <span>Hujjatlar</span>
+          </a>
+        </li>
+
+        <li class="nav-item">
           <a class="nav-link collapsed" href="{% url 'logout' %}">
             <i class="bi bi-box-arrow-in-right"></i>
             <span>Chiqish</span>
