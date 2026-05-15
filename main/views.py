@@ -2274,7 +2274,10 @@ def tex_status(request):
         .annotate(
             technics_count=Count(
                 "technics__id",
-                filter=Q(technics__is_active=True),
+                filter=Q(
+                    technics__is_active=True,
+                    technics__organization_id=employee.organization_id
+                ),
                 distinct=True
             )
         )
@@ -2301,6 +2304,7 @@ def tex_status(request):
         Technics.objects
         .filter(
             is_active=True,
+            organization_id=employee.organization_id,
             group_id__in=group_ids,
             category_id__isnull=False,
         )
