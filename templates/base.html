@@ -534,11 +534,13 @@
                 <i class="bi bi-circle"></i><span>Texnikalar</span>
               </a>
             </li>
+            {% if not request.user.employee.rol.client %}
             <li>
               <a class="{% if url_name == 'emp_status' %}active{% endif %}" href="{% url 'emp_status' %}">
                 <i class="bi bi-circle"></i><span>Xodimlar</span>
               </a>
             </li>
+            {% endif %}
           </ul>
         </li>
         {% endif %}
