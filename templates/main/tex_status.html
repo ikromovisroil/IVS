@@ -1,12 +1,10 @@
 {% extends 'base.html' %}
 {% load static %}
 {% load l10n %}
+
 {% block title %}
 <title>Dashboard</title>
 {% endblock title %}
-
-{% block css %}
-{% endblock css %}
 
 {% block content %}
 <main id="main" class="main">
@@ -18,49 +16,51 @@
   <section class="section dashboard">
     <div class="row">
 
-      <!-- CARDS -->
-      {% for org in orgs_qs %}
+      {% for group in groups_qs %}
       <div class="col-12 col-md-6 col-xl-4 col-xxl-3 mb-4">
         <div class="card shadow-sm h-100 border-0 rounded-4 overflow-hidden">
           <div class="card-body p-0">
 
             <div class="d-flex justify-content-between align-items-center px-3 border-bottom">
               <h5 class="card-title mb-0 fw-bold" style="font-size: 15px;">
-                {{ org.name }}
+                {{ group.name }}
               </h5>
+
               <span class="badge rounded-pill text-primary bg-primary-subtle px-3 py-1" style="font-size: 15px;">
-                {{ org.technics_count }} ta
+                {{ group.technics_count }} ta
               </span>
             </div>
 
-            {% if org.category_list %}
-              {% for cat in org.category_list %}
-              <div class="d-flex align-items-center gap-2 px-3 py-1 border-bottom">
+            {% for cat in group.category_list %}
+            <div class="d-flex align-items-center gap-2 px-3 py-1 border-bottom">
 
-                <div class="flex-grow-1 text-secondary small" style="font-size: 13px;">
-                  {{ cat.name }}
-                </div>
-
-                <div class="d-flex align-items-center gap-2" style="width: 150px;">
-                  <div class="progress flex-grow-1" style="height: 8px;">
-                    <div
-                      class="progress-bar bg-primary"
-                      role="progressbar"
-                      style="width: {{ cat.foiz|unlocalize }}%;"
-                      aria-valuenow="{{ cat.foiz|unlocalize }}"
-                      aria-valuemin="0"
-                      aria-valuemax="100">
-                    </div>
-                  </div>
-
-                  <div class="text-end text-muted small fw-semibold" style="width: 40px;">
-                    {{ cat.soni }}
-                  </div>
-                </div>
-
+              <div class="flex-grow-1 text-secondary small" style="font-size: 13px;">
+                {{ cat.name }}
               </div>
-              {% endfor %}
-            {% endif %}
+
+              <div class="d-flex align-items-center gap-2" style="width: 150px;">
+                <div class="progress flex-grow-1" style="height: 8px;">
+                  <div
+                    class="progress-bar bg-primary"
+                    role="progressbar"
+                    style="width: {{ cat.foiz|unlocalize }}%;"
+                    aria-valuenow="{{ cat.foiz|unlocalize }}"
+                    aria-valuemin="0"
+                    aria-valuemax="100">
+                  </div>
+                </div>
+
+                <div class="text-end text-muted small fw-semibold" style="width: 40px;">
+                  {{ cat.soni }}
+                </div>
+              </div>
+
+            </div>
+            {% empty %}
+            <div class="px-3 py-2 text-muted small">
+              Bu guruhda kategoriya yo‘q
+            </div>
+            {% endfor %}
 
           </div>
         </div>
@@ -70,17 +70,20 @@
       <div class="col-12 mb-4">
         <div class="card shadow-sm border-0 rounded-4">
           <div class="card-body">
-            <h5 class="card-title fw-bold">Tashkilotlar kesimida kategoriya bo‘yicha texnika</h5>
+            <h5 class="card-title fw-bold">
+              Guruhlar kesimida kategoriya bo‘yicha texnika
+            </h5>
             <div id="areaChart" style="min-height: 350px;"></div>
           </div>
         </div>
       </div>
 
-      <!-- CHARTS ROW -->
       <div class="col-12 col-lg-6 mb-4">
         <div class="card shadow-sm border-0 rounded-4">
           <div class="card-body">
-            <h5 class="card-title fw-bold">Tashkilotlar bo‘yicha texnika</h5>
+            <h5 class="card-title fw-bold">
+              Guruhlar bo‘yicha texnika
+            </h5>
             <div id="funnelChart" style="min-height: 350px;"></div>
           </div>
         </div>
@@ -89,7 +92,9 @@
       <div class="col-12 col-lg-6 mb-4">
         <div class="card shadow-sm border-0 rounded-4">
           <div class="card-body">
-            <h5 class="card-title fw-bold">Tashkilotlar ulushi</h5>
+            <h5 class="card-title fw-bold">
+              Guruhlar ulushi
+            </h5>
             <div id="pieChart" style="min-height: 350px;"></div>
           </div>
         </div>
@@ -111,7 +116,6 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-
   const categories = JSON.parse(document.getElementById("categories-data").textContent);
   const series = JSON.parse(document.getElementById("series-data").textContent);
 
@@ -122,13 +126,31 @@ document.addEventListener("DOMContentLoaded", function () {
       toolbar: { show: false }
     },
     dataLabels: { enabled: false },
-    stroke: { curve: "smooth", width: 2 },
+    stroke: {
+      curve: "smooth",
+      width: 2
+    },
     xaxis: {
-      categories: categories
+      categories: categories,
+      labels: {
+        rotate: -30,
+        trim: true
+      }
+    },
+    yaxis: {
+      min: 0,
+      forceNiceScale: true
     },
     series: series,
     legend: {
       position: "top"
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val + " ta";
+        }
+      }
     }
   }).render();
 
@@ -144,6 +166,13 @@ document.addEventListener("DOMContentLoaded", function () {
     series: pieValues,
     legend: {
       position: "bottom"
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val + " ta";
+        }
+      }
     }
   }).render();
 
@@ -159,15 +188,14 @@ document.addEventListener("DOMContentLoaded", function () {
     plotOptions: {
       bar: {
         horizontal: true,
-        isFunnel: true,
         distributed: true,
-        barHeight: "80%"
+        barHeight: "70%"
       }
     },
     dataLabels: {
       enabled: true,
       formatter: function (val, opt) {
-        return opt.w.globals.labels[opt.dataPointIndex] + ": " + val;
+        return opt.w.globals.labels[opt.dataPointIndex] + ": " + val + " ta";
       }
     },
     xaxis: {
@@ -179,11 +207,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }],
     legend: {
       show: false
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val + " ta";
+        }
+      }
     }
   }).render();
-
 });
 </script>
 {% endblock content %}
-
-{% block js %}{% endblock js %}

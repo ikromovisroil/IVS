@@ -2267,69 +2267,65 @@ def tex_status(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    # ------------------- Tashkilotlar -------------------
-    orgs = list(
-        Organization.objects
+    # ------------------- GROUPLAR -------------------
+    groups = list(
+        Group.objects
         .order_by("id")
         .annotate(
             technics_count=Count(
                 "technics__id",
-                filter=Q(technics__is_active=True,technics__group_id=1),
+                filter=Q(technics__is_active=True),
                 distinct=True
             )
         )
         .values("id", "name", "technics_count")
     )
 
-    total_technics = sum(o["technics_count"] for o in orgs) or 1
+    group_ids = [g["id"] for g in groups]
 
-    for o in orgs:
-        o["foiz"] = round((o["technics_count"] * 100) / total_technics, 1)
+    total_technics = sum(g["technics_count"] for g in groups) or 1
 
-    # ------------------- Kategoriyalar -------------------
-    cats_qs = list(
+    for g in groups:
+        g["foiz"] = round((g["technics_count"] * 100) / total_technics, 1)
+
+    # ------------------- GROUPGA TEGISHLI HAMMA CATEGORIYALAR -------------------
+    categories_qs = list(
         Category.objects
-        .filter(group_id=1)
-        .order_by("id")
-        .values("id", "name")
+        .filter(group_id__in=group_ids)
+        .order_by("group_id", "id")
+        .values("id", "name", "group_id", "group__name")
     )
 
-    cat_ids = [c["id"] for c in cats_qs]
-    categories = [c["name"] for c in cats_qs]
-    org_ids = [o["id"] for o in orgs]
-
-    # ------------------- Organization + Category count -------------------
+    # ------------------- TEXNIKA SONI: GROUP + CATEGORY -------------------
     grouped = list(
         Technics.objects
         .filter(
             is_active=True,
-            organization_id__in=org_ids,
-            category_id__in=cat_ids,
-            group_id = 1
+            group_id__in=group_ids,
+            category_id__isnull=False,
         )
-        .values("organization_id", "category_id")
+        .values("group_id", "category_id")
         .annotate(cnt=Count("id"))
-        .order_by("organization_id", "category_id")
     )
 
     lookup = {
-        (g["organization_id"], g["category_id"]): g["cnt"]
-        for g in grouped
+        (item["group_id"], item["category_id"]): item["cnt"]
+        for item in grouped
     }
 
     # ------------------- CARD DATA -------------------
-    orgs_qs = []
+    groups_qs = []
 
-    for org in orgs:
-
+    for group in groups:
+        group_total = group["technics_count"]
         category_list = []
-        org_total = org["technics_count"]
 
-        for cat in cats_qs:
+        for cat in categories_qs:
+            if cat["group_id"] != group["id"]:
+                continue
 
-            count = lookup.get((org["id"], cat["id"]), 0)
-
-            foiz = round((count * 100) / org_total, 1) if org_total > 0 else 0
+            count = lookup.get((group["id"], cat["id"]), 0)
+            foiz = round((count * 100) / group_total, 1) if group_total > 0 else 0
 
             category_list.append({
                 "id": cat["id"],
@@ -2338,46 +2334,65 @@ def tex_status(request):
                 "foiz": foiz,
             })
 
-        orgs_qs.append({
-            "id": org["id"],
-            "name": org["name"],
-            "technics_count": org["technics_count"],
-            "foiz": org["foiz"],
+        groups_qs.append({
+            "id": group["id"],
+            "name": group["name"],
+            "technics_count": group["technics_count"],
+            "foiz": group["foiz"],
             "category_list": category_list,
         })
 
-    # ------------------- PIE CHART -------------------
-    pie_labels = [o["name"] for o in orgs]
-    pie_values = [o["technics_count"] for o in orgs]
-
     # ------------------- AREA CHART -------------------
+    chart_categories = [
+        f'{c["group__name"]} / {c["name"]}'
+        for c in categories_qs
+    ]
+
     series = []
 
-    for org in orgs:
-        data = [lookup.get((org["id"], cid), 0) for cid in cat_ids]
+    for group in groups:
+        data = []
+
+        for cat in categories_qs:
+            if cat["group_id"] == group["id"]:
+                data.append(lookup.get((group["id"], cat["id"]), 0))
+            else:
+                data.append(0)
 
         series.append({
-            "name": org["name"],
-            "data": data
+            "name": group["name"],
+            "data": data,
         })
 
-    # ------------------- FUNNEL CHART -------------------
-    orgs_sorted = sorted(orgs, key=lambda x: x["technics_count"], reverse=True)
+    # ------------------- PIE CHART -------------------
+    pie_labels = [g["name"] for g in groups]
+    pie_values = [g["technics_count"] for g in groups]
 
-    funnel_labels = [o["name"] for o in orgs_sorted[:8]]
-    funnel_values = [o["technics_count"] for o in orgs_sorted[:8]]
+    # ------------------- FUNNEL CHART -------------------
+    groups_sorted = sorted(
+        groups,
+        key=lambda x: x["technics_count"],
+        reverse=True
+    )
+
+    funnel_labels = [g["name"] for g in groups_sorted[:8]]
+    funnel_values = [g["technics_count"] for g in groups_sorted[:8]]
 
     context = {
-        "orgs_qs": orgs_qs,
-        "categories": categories,
+        "groups_qs": groups_qs,
+
+        "categories": chart_categories,
         "series": series,
+
         "pie_labels": pie_labels,
         "pie_values": pie_values,
+
         "funnel_labels": funnel_labels,
         "funnel_values": funnel_values,
     }
 
     return render(request, "main/tex_status.html", context)
+
 
 @never_cache
 @require_GET
