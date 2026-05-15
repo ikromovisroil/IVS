@@ -71,7 +71,7 @@
         <div class="card shadow-sm border-0 rounded-4">
           <div class="card-body">
             <h5 class="card-title fw-bold">
-              Guruhlar kesimida kategoriya bo‘yicha texnika
+              Guruhlar kesimida texnika
             </h5>
             <div id="areaChart" style="min-height: 350px;"></div>
           </div>
@@ -84,7 +84,7 @@
             <h5 class="card-title fw-bold">
               Guruhlar bo‘yicha texnika
             </h5>
-            <div id="funnelChart" style="min-height: 350px;"></div>
+            <div id="barChart" style="min-height: 350px;"></div>
           </div>
         </div>
       </div>
@@ -105,19 +105,20 @@
 
 </main>
 
-{{ categories|json_script:"categories-data" }}
-{{ series|json_script:"series-data" }}
+{{ area_categories|json_script:"area-categories" }}
+{{ area_series|json_script:"area-series" }}
 {{ pie_labels|json_script:"pie-labels" }}
 {{ pie_values|json_script:"pie-values" }}
-{{ funnel_labels|json_script:"funnel-labels" }}
-{{ funnel_values|json_script:"funnel-values" }}
+{{ bar_labels|json_script:"bar-labels" }}
+{{ bar_values|json_script:"bar-values" }}
 
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-  const categories = JSON.parse(document.getElementById("categories-data").textContent);
-  const series = JSON.parse(document.getElementById("series-data").textContent);
+
+  const areaCategories = JSON.parse(document.getElementById("area-categories").textContent);
+  const areaSeries = JSON.parse(document.getElementById("area-series").textContent);
 
   new ApexCharts(document.querySelector("#areaChart"), {
     chart: {
@@ -131,19 +132,56 @@ document.addEventListener("DOMContentLoaded", function () {
       width: 2
     },
     xaxis: {
-      categories: categories,
-      labels: {
-        rotate: -30,
-        trim: true
-      }
+      categories: areaCategories
     },
     yaxis: {
       min: 0,
       forceNiceScale: true
     },
-    series: series,
+    series: areaSeries,
     legend: {
       position: "top"
+    },
+    tooltip: {
+      y: {
+        formatter: function (val) {
+          return val + " ta";
+        }
+      }
+    }
+  }).render();
+
+  const barLabels = JSON.parse(document.getElementById("bar-labels").textContent);
+  const barValues = JSON.parse(document.getElementById("bar-values").textContent);
+
+  new ApexCharts(document.querySelector("#barChart"), {
+    chart: {
+      type: "bar",
+      height: 350,
+      toolbar: { show: false }
+    },
+    plotOptions: {
+      bar: {
+        horizontal: true,
+        distributed: true,
+        barHeight: "70%"
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function (val, opt) {
+        return opt.w.globals.labels[opt.dataPointIndex] + ": " + val + " ta";
+      }
+    },
+    xaxis: {
+      categories: barLabels
+    },
+    series: [{
+      name: "Texnika",
+      data: barValues
+    }],
+    legend: {
+      show: false
     },
     tooltip: {
       y: {
@@ -176,46 +214,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }).render();
 
-  const funnelLabels = JSON.parse(document.getElementById("funnel-labels").textContent);
-  const funnelValues = JSON.parse(document.getElementById("funnel-values").textContent);
-
-  new ApexCharts(document.querySelector("#funnelChart"), {
-    chart: {
-      type: "bar",
-      height: 350,
-      toolbar: { show: false }
-    },
-    plotOptions: {
-      bar: {
-        horizontal: true,
-        distributed: true,
-        barHeight: "70%"
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val, opt) {
-        return opt.w.globals.labels[opt.dataPointIndex] + ": " + val + " ta";
-      }
-    },
-    xaxis: {
-      categories: funnelLabels
-    },
-    series: [{
-      name: "Texnika",
-      data: funnelValues
-    }],
-    legend: {
-      show: false
-    },
-    tooltip: {
-      y: {
-        formatter: function (val) {
-          return val + " ta";
-        }
-      }
-    }
-  }).render();
 });
 </script>
 {% endblock content %}

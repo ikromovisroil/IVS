@@ -2293,7 +2293,7 @@ def tex_status(request):
         Category.objects
         .filter(group_id__in=group_ids)
         .order_by("group_id", "id")
-        .values("id", "name", "group_id", "group__name")
+        .values("id", "name", "group_id")
     )
 
     # ------------------- TEXNIKA SONI: GROUP + CATEGORY -------------------
@@ -2342,53 +2342,39 @@ def tex_status(request):
             "category_list": category_list,
         })
 
-    # ------------------- AREA CHART -------------------
-    chart_categories = [
-        f'{c["group__name"]} / {c["name"]}'
-        for c in categories_qs
-    ]
+    # ------------------- AREA CHART: FAQAT GROUP BO'YICHA -------------------
+    area_categories = [g["name"] for g in groups]
 
-    series = []
-
-    for group in groups:
-        data = []
-
-        for cat in categories_qs:
-            if cat["group_id"] == group["id"]:
-                data.append(lookup.get((group["id"], cat["id"]), 0))
-            else:
-                data.append(0)
-
-        series.append({
-            "name": group["name"],
-            "data": data,
-        })
+    area_series = [{
+        "name": "Texnikalar",
+        "data": [g["technics_count"] for g in groups],
+    }]
 
     # ------------------- PIE CHART -------------------
     pie_labels = [g["name"] for g in groups]
     pie_values = [g["technics_count"] for g in groups]
 
-    # ------------------- FUNNEL CHART -------------------
+    # ------------------- BAR CHART -------------------
     groups_sorted = sorted(
         groups,
         key=lambda x: x["technics_count"],
         reverse=True
     )
 
-    funnel_labels = [g["name"] for g in groups_sorted[:8]]
-    funnel_values = [g["technics_count"] for g in groups_sorted[:8]]
+    bar_labels = [g["name"] for g in groups_sorted[:8]]
+    bar_values = [g["technics_count"] for g in groups_sorted[:8]]
 
     context = {
         "groups_qs": groups_qs,
 
-        "categories": chart_categories,
-        "series": series,
+        "area_categories": area_categories,
+        "area_series": area_series,
 
         "pie_labels": pie_labels,
         "pie_values": pie_values,
 
-        "funnel_labels": funnel_labels,
-        "funnel_values": funnel_values,
+        "bar_labels": bar_labels,
+        "bar_values": bar_values,
     }
 
     return render(request, "main/tex_status.html", context)
