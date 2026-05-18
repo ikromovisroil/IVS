@@ -16,6 +16,7 @@ from django.urls import reverse
 class Organization(models.Model):
     name = models.CharField(max_length=200)
     contract = models.CharField(max_length=200, null=True, blank=True)
+    inn = models.CharField(max_length=20, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name}"
@@ -483,7 +484,7 @@ class Order(models.Model):
         return self.materials.select_related('material').all()
 
     def __str__(self):
-        return self.body or f"Order #{self.id}"
+        return f" # {self.id}"
 
     class Meta:
         db_table = 'order'

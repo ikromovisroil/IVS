@@ -27,8 +27,8 @@ class DeedConsentInline(admin.TabularInline):
 
 @admin.register(Organization)
 class OrganizationAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "contract")
-    search_fields = ("name", "contract")
+    list_display = ("id", "inn", "name", "contract")
+    search_fields = ("inn", "name", "contract")
 
 
 @admin.register(Department)
@@ -110,12 +110,11 @@ class ContractAdmin(admin.ModelAdmin):
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = (
         "id", "full_name", "user", "organization", "department",
-        "directorate", "division", "rank", "region", "phone", "pinfl",
-        "date_creat"
+        "directorate", "division", "rank", "region", "pinfl"
     )
     list_filter = (
         "organization", "department", "directorate", "division",
-        "rank", "region", "date_creat"
+        "rank", "region"
     )
     search_fields = (
         "last_name", "first_name", "father_name",
@@ -126,10 +125,6 @@ class EmployeeAdmin(admin.ModelAdmin):
         "division", "rank", "region"
     )
     inlines = [RolInline]
-
-    def full_name(self, obj):
-        return obj.full_name
-    full_name.short_description = "F.I.SH"
 
 
 @admin.register(Rol)
@@ -159,17 +154,16 @@ class RolAdmin(admin.ModelAdmin):
 @admin.register(Technics)
 class TechnicsAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "group", "category", "employee", "organization",
-        "status", "inventory", "serial", "ip", "price", "year", "is_active"
+        "id", "group", "category", "employee", "status",
+        "name", "inventory", "serial", "is_active"
     )
     list_filter = (
         "group", "category", "organization", "department",
-        "directorate", "division", "status", "is_active", "year"
+        "directorate", "division", "status", "is_active"
     )
     search_fields = (
-        "name", "parametr", "inventory", "serial", "mac", "ip",
-        "employee__last_name", "employee__first_name",
-        "organization__name", "category__name"
+        "name", "inventory", "serial", "mac", "ip", 'year',
+        "employee__last_name", "employee__first_name"
     )
     autocomplete_fields = (
         "group", "category", "organization", "department",
@@ -181,13 +175,12 @@ class TechnicsAdmin(admin.ModelAdmin):
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "category", "organization", "technics",
-        "status", "inventory", "serial", "price", "year", "is_active"
+        "id", "technics", "category", "name", "status",
+        "inventory", "serial", "price", "year", "is_active"
     )
-    list_filter = ("category", "organization", "status", "is_active", "year")
+    list_filter = ("organization", "category", "status", "is_active")
     search_fields = (
-        "name", "parametr", "inventory", "serial",
-        "organization__name", "category__name", "technics__name"
+        "name", "inventory", "serial"
     )
     autocomplete_fields = ("category", "organization", "technics")
 
@@ -195,14 +188,13 @@ class StructureAdmin(admin.ModelAdmin):
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "name", "employee", "unit",
+        "id", "employee", "name", "unit",
         "status", "number", "code", "price", "year", "is_active"
     )
-    list_filter = ("unit", "status", "is_active", "year")
+    list_filter = ("organization", "employee", "status", "unit", "is_active")
     search_fields = (
         "name", "code",
-        "employee__last_name", "employee__first_name",
-        "unit__name"
+        "employee__last_name", "employee__first_name"
     )
     autocomplete_fields = ("employee", "unit")
 
@@ -219,22 +211,19 @@ class MaterialUserAdmin(admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "sender", "receiver", "goal", "technics",
-        "status", "rating", "receiver_seen",
-        "date_creat", "date_accepted", "date_finished",
-        "date_approved", "date_rejected"
+        "id", "sender", "receiver", "user",
+        "status", "rating", "date_creat"
     )
     list_filter = (
-        "status", "receiver_seen", "goal",
-        "date_creat", "date_accepted", "date_finished",
-        "date_approved", "date_rejected"
+        "status", "goal", "date_creat"
     )
     search_fields = (
+        "id",
+        "user__last_name", "user__first_name",
         "sender__last_name", "sender__first_name",
-        "receiver__last_name", "receiver__first_name",
-        "technics__name"
+        "receiver__last_name", "receiver__first_name"
     )
-    autocomplete_fields = ("sender", "receiver", "goal", "technics")
+    autocomplete_fields = ("sender", "receiver", "user")
     inlines = [OrderMaterialInline]
     readonly_fields = (
         "date_creat", "date_edit", "date_process", "date_finished",
@@ -244,9 +233,11 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderMaterial)
 class OrderMaterialAdmin(admin.ModelAdmin):
-    list_display = ("id", "order", "material", "number")
-    list_filter = ("material__unit",)
-    search_fields = ("order__body", "material__name", "material__code")
+    list_display = ("id", "order", "user", "material", "number", "given")
+    search_fields = (
+        "order__id", "user__first_name",
+        "user__last_name", "user__father_name"
+    )
     autocomplete_fields = ("order", "material")
 
 
