@@ -74,26 +74,7 @@ def profil(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if request.method == "POST":
-        emp_form = EmployeeProfileForm(request.POST, instance=employee)
-        email_form = UserEmailForm(request.POST, instance=request.user)
-
-        if emp_form.is_valid() and email_form.is_valid():
-            with transaction.atomic():
-                emp_form.save()
-                email_form.save()
-
-            messages.success(request, "Profil muvaffaqiyatli yangilandi")
-            return redirect("profil")
-
-        messages.info(request, "Maydonlarda xatolik bor. Qayta tekshiring")
-    else:
-        emp_form = EmployeeProfileForm(instance=employee)
-        email_form = UserEmailForm(instance=request.user)
-
     return render(request, "main/profil.html", {
-        "emp_form": emp_form,
-        "email_form": email_form,
         "employee": employee,
     })
 
@@ -852,7 +833,7 @@ def technics_create(request):
         technics = form.save(commit=False)
         serial = (technics.serial or "").strip()
         organization = technics.organization
-
+        technics.region = employee.region
         if serial and Technics.objects.filter(
             serial__iexact=serial,
             organization=organization

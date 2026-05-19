@@ -3,27 +3,6 @@ from django.contrib.auth.forms import PasswordChangeForm
 from .models import *
 
 
-class EmployeeProfileForm(forms.ModelForm):
-    class Meta:
-        model = Employee
-        fields = ["first_name", "last_name", "father_name", "phone", "pinfl"]
-        widgets = {
-            "first_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Ism"}),
-            "last_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Familiya"}),
-            "father_name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Otasining ismi"}),
-            "phone": forms.TextInput(attrs={"class": "form-control", "placeholder": "Telefon"}),
-        }
-
-
-class UserEmailForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = ["email"]
-        widgets = {
-            "email": forms.EmailInput(attrs={"class": "form-control", "placeholder": "Email"}),
-        }
-
-
 class TechnicsForm(forms.ModelForm):
     class Meta:
         model = Technics
