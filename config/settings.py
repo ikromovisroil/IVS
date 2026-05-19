@@ -299,6 +299,9 @@ SSO_EIMZO_SIGN_URL = os.getenv("SSO_EIMZO_SIGN_URL")
 SSO_REDIRECT_URI = os.getenv("SSO_REDIRECT_URI")
 EIMZO_RETURN_URL = os.getenv("EIMZO_RETURN_URL")
 
+GATEWAY_BASE_URL = os.getenv("GATEWAY_BASE_URL")
+GATEWAY_USERNAME = os.getenv("GATEWAY_USERNAME")
+GATEWAY_PASSWORD = os.getenv("GATEWAY_PASSWORD")
 
 # =========================================================
 # LOGGING

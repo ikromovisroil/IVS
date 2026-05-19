@@ -31,6 +31,7 @@ class Organization(models.Model):
 # Departament.
 class Department(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    code = models.CharField(max_length=20, null=True, blank=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -45,6 +46,7 @@ class Department(models.Model):
 # Boshqarma.
 class Directorate(models.Model):
     department = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    code = models.CharField(max_length=20, null=True, blank=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -59,6 +61,7 @@ class Directorate(models.Model):
 # Bo'lim.
 class Division(models.Model):
     directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    code = models.CharField(max_length=20, null=True, blank=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):

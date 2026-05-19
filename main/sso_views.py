@@ -17,7 +17,7 @@ from django.views.decorators.cache import never_cache
 from django.db import transaction
 from django.utils import timezone
 from django.core.files.base import ContentFile
-
+import string
 from .sso_utils import *
 from .utils import *
 from .html_pdf import *
@@ -165,10 +165,89 @@ def sso_exchange(request):
 
         employee = Employee.objects.select_related("user").filter(pinfl=sso_pinfl).first()
         if not employee or not employee.user:
-            return JsonResponse(
-                {"status": "forbidden", "message": "Siz tizimda ro‘yxatdan o‘tmagansiz", "redirect": "/sso/login/"},
-                status=403
-            )
+            try:
+                from .gateway import GatewayClient
+
+                gateway_data = GatewayClient.current_citizen(sso_pinfl)
+
+                result = gateway_data.get("result") or {}
+                positions = result.get("positions") or []
+
+                if not positions:
+                    return JsonResponse(
+                        {
+                            "status": "forbidden",
+                            "message": "Gatewayda ish joyi topilmadi",
+                            "redirect": "/sso/login/"
+                        },
+                        status=403
+                    )
+
+                position = positions[0]
+
+                org_tin = str(position.get("org_tin") or "").strip()
+                organization = Organization.objects.filter(inn=org_tin).first()
+
+                if not organization:
+                    return JsonResponse({
+                        "status": "forbidden",
+                        "message": "Sizning tashkilotingiz tizim bazasida topilmadi",
+                        "redirect": "/sso/login/"
+                    }, status=403)
+
+                alphabet = string.ascii_letters + string.digits
+                random_password = "".join(secrets.choice(alphabet) for _ in range(16))
+
+                base_username = f"{result.get('name')}.{result.get('surname')}".lower()
+                username = base_username
+
+                counter = 1
+                while User.objects.filter(username=username).exists():
+                    username = f"{base_username}{counter}"
+                    counter += 1
+
+                with transaction.atomic():
+                    user = User.objects.create_user(
+                        username=username,
+                        password=random_password
+                    )
+                    user.is_active = True
+                    user.save(update_fields=["is_active"])
+
+                    employee = user.employee
+
+                    employee.pinfl = sso_pinfl
+                    employee.first_name = (result.get("name") or "").strip()
+                    employee.last_name = (result.get("surname") or "").strip()
+                    employee.father_name = (result.get("partonimic") or "").strip()
+                    employee.organization = organization
+                    employee.save()
+
+                    rol, _ = Rol.objects.get_or_create(employee=employee)
+
+                    if organization.inn == "201059101":
+                        rol.client = False
+                    else:
+                        rol.client = True
+
+                    rol.save(update_fields=["client"])
+
+            except Exception as gateway_error:
+
+                return JsonResponse(
+                    {
+                        "status": "forbidden",
+                        "message": str(gateway_error),
+                        "redirect": "/sso/login/"
+                    },
+                    status=403
+                )
+
+            auth_login(request, employee.user)
+            request.session.pop("SSO_FLOW", None)
+            request.session.modified = True
+
+            return JsonResponse({"status": "ok", "redirect": "/profil/"}, status=200)
 
         if not employee.organization:
             return JsonResponse(
