@@ -228,6 +228,7 @@ class Category(models.Model):
 class Technics(models.Model):
     group = models.ForeignKey(Group, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     category = models.ForeignKey(Category, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
