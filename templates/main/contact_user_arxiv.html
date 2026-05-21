@@ -46,7 +46,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for d in deed_user %}
+                    {% for d in page_obj %}
                         <tr>
                             <th scope="row">{{ page_obj.start_index|add:forloop.counter0 }}</th>
 

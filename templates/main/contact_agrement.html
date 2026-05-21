@@ -46,7 +46,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                    {% for d in deed_consent %}
+                    {% for d in page_obj %}
                         <tr>
                             <th scope="row">{{ page_obj.start_index|add:forloop.counter0 }}</th>
 
@@ -214,54 +214,52 @@
                             </td>
 
                             <td>
-                                {% with my_dc=None %}
-                                    {% for dc in d.deedconsent_set.all %}
-                                        {% if dc.employee == request.user.employee and dc.status == "viewed" %}
-                                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modal-c{{ dc.id }}">
-                                                Kelishish
-                                            </button>
+                                {% for dc in d.deedconsent_set.all %}
+                                    {% if dc.employee == request.user.employee and dc.status == "viewed" %}
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modal-c{{ dc.id }}">
+                                            Kelishish
+                                        </button>
 
-                                            <div class="modal fade" id="modal-c{{ dc.id }}" tabindex="-1">
-                                                <div class="modal-dialog modal-dialog-centered modal-lg">
-                                                    <div class="modal-content">
-                                                        <div class="modal-header">
-                                                            <h5 class="modal-title">Kelishish</h5>
-                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        <div class="modal fade" id="modal-c{{ dc.id }}" tabindex="-1">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Kelishish</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div>
+                                                            Hujjat kelishilgandan so‘ng keyingi bosqichga o‘tadi.
                                                         </div>
-                                                        <div class="modal-body">
-                                                            <div>
-                                                                Hujjat kelishilgandan so‘ng keyingi bosqichga o‘tadi.
+                                                        <hr>
+                                                        <form method="post" action="{% url 'deedconsent_action' dc.id %}">
+                                                            {% csrf_token %}
+                                                            <div class="mb-3">
+                                                                <textarea
+                                                                    name="message"
+                                                                    class="form-control"
+                                                                    style="height: 100px"
+                                                                    placeholder="Izoh yozing..."></textarea>
                                                             </div>
-                                                            <hr>
-                                                            <form method="post" action="{% url 'deedconsent_action' dc.id %}">
-                                                                {% csrf_token %}
-                                                                <div class="mb-3">
-                                                                    <textarea
-                                                                        name="message"
-                                                                        class="form-control"
-                                                                        style="height: 100px"
-                                                                        placeholder="Izoh yozing..."></textarea>
-                                                                </div>
-                                                                <div class="d-flex justify-content-center gap-2">
-                                                                    <button name="action" value="reject" class="btn btn-danger"
-                                                                            onclick="return confirm('Rad etishga rozimisiz?')">
-                                                                        Rad etish
-                                                                    </button>
-                                                                    <button name="action" value="approve" class="btn btn-primary"
-                                                                            onclick="return confirm('Kelishishga rozimisiz?')">
-                                                                        Kelishish
-                                                                    </button>
-                                                                </div>
-                                                            </form>
-                                                        </div>
+                                                            <div class="d-flex justify-content-center gap-2">
+                                                                <button name="action" value="reject" class="btn btn-danger"
+                                                                        onclick="return confirm('Rad etishga rozimisiz?')">
+                                                                    Rad etish
+                                                                </button>
+                                                                <button name="action" value="approve" class="btn btn-primary"
+                                                                        onclick="return confirm('Kelishishga rozimisiz?')">
+                                                                    Kelishish
+                                                                </button>
+                                                            </div>
+                                                        </form>
                                                     </div>
                                                 </div>
                                             </div>
-                                        {% endif %}
-                                    {% empty %}
-                                        <span class="text-muted">—</span>
-                                    {% endfor %}
-                                {% endwith %}
+                                        </div>
+                                    {% endif %}
+                                {% empty %}
+                                    <span class="text-muted">—</span>
+                                {% endfor %}
                             </td>
                         </tr>
                     {% empty %}
