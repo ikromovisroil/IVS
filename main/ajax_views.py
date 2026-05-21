@@ -193,7 +193,7 @@ def ajax_load_departments(request):
     qs = Department.objects.filter(
         organization_id=org_id,
         region_id=reg_id
-    ).values("id", "name").order_by("name")
+    ).values("id", "name").order_by("id")
 
     return JsonResponse({"results": list(qs)})
 
