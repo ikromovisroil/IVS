@@ -130,12 +130,13 @@ class EmployeeAdmin(admin.ModelAdmin):
 @admin.register(Rol)
 class RolAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "employee", "full", "client",
+        "id", "employee", "full", "region", "client",
         "confirm", "order", "boss", "shop", "akt", "status",
         "technics", "technics_edit", "material", "material_edit"
     )
     list_filter = (
-        "full", "confirm", "client", "order", "boss", "shop", "akt", "status",
+        "full", "region", "client",
+        "confirm", "order", "boss", "shop", "akt", "status",
         "technics", "technics_edit", "material", "material_edit"
     )
     search_fields = (
