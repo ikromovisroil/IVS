@@ -658,6 +658,8 @@ def barn_tex(request):
     technics_form = TechnicsForm()
 
     regions = Region.objects.only("id", "name").order_by("id")
+    if not getattr(employee.rol, "region", False):
+        regions = regions.filter(id=employee.region_id)
 
     departments = Department.objects.none()
     if organization_id and region_id:
