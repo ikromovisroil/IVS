@@ -632,6 +632,7 @@ def barn_tex(request):
             return None
 
     organization_id = to_int(request.GET.get("organization"))
+    region_id = to_int(request.GET.get("region"))
     department_id = to_int(request.GET.get("department"))
     directorate_id = to_int(request.GET.get("directorate"))
     division_id = to_int(request.GET.get("division"))
@@ -645,7 +646,7 @@ def barn_tex(request):
         name = name[:120]
 
     has_filter = bool(
-        organization_id or department_id or directorate_id or division_id
+        organization_id or region_id or department_id or directorate_id or division_id
         or status or category_id or group_id or name
     )
 
@@ -656,8 +657,15 @@ def barn_tex(request):
     groups = Group.objects.only("id", "name").order_by("id")
     technics_form = TechnicsForm()
 
+    regions = Region.objects.only("id", "name").order_by("id")
+
     departments = Department.objects.none()
-    if organization_id:
+    if organization_id and region_id:
+        departments = Department.objects.filter(
+            organization_id=organization_id,
+            region_id=region_id
+        ).only("id", "name").order_by("id")
+    elif organization_id:
         departments = Department.objects.filter(
             organization_id=organization_id
         ).only("id", "name").order_by("id")
@@ -686,6 +694,7 @@ def barn_tex(request):
 
     empty_context = {
         "organizations": organizations,
+        "regions": regions,
         "groups": groups,
         "categories": categories,
         "technics_form": technics_form,
@@ -693,6 +702,7 @@ def barn_tex(request):
         "directorates": directorates,
         "divisions": divisions,
         "selected_org": organization_id,
+        "selected_reg": region_id,
         "selected_dep": department_id,
         "selected_dir": directorate_id,
         "selected_div": division_id,
@@ -715,6 +725,8 @@ def barn_tex(request):
 
     if organization_id:
         base_qs = base_qs.filter(organization_id=organization_id)
+    if region_id:
+        base_qs = base_qs.filter(region_id=region_id)
     if department_id:
         base_qs = base_qs.filter(department_id=department_id)
     if directorate_id:
@@ -752,6 +764,7 @@ def barn_tex(request):
         base_qs
         .select_related(
             "organization",
+            "region",
             "department",
             "directorate",
             "division",
@@ -762,6 +775,7 @@ def barn_tex(request):
             "id","name","parametr","inventory","serial",
             "ip","mac","status","year","price","employee_id",
             "organization__id","organization__name",
+            "region__id", "region__name",
             "department__id","department__name",
             "directorate__id","directorate__name",
             "division__id","division__name",
@@ -798,6 +812,7 @@ def barn_tex(request):
 
     return render(request, "main/barn_tex.html", {
         "organizations": organizations,
+        "regions": regions,
         "groups": groups,
         "categories": categories,
         "technics_form": technics_form,
@@ -805,6 +820,7 @@ def barn_tex(request):
         "directorates": directorates,
         "divisions": divisions,
         "selected_org": organization_id,
+        "selected_reg": region_id,
         "selected_dep": department_id,
         "selected_dir": directorate_id,
         "selected_div": division_id,

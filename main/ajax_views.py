@@ -185,10 +185,16 @@ def get_department_employees(request):
 @login_required
 def ajax_load_departments(request):
     org_id = (request.GET.get("organization") or "").strip()
-    if not org_id or org_id == "None":
+    reg_id = (request.GET.get("region") or "").strip()
+
+    if not org_id or not reg_id:
         return JsonResponse({"results": []})
 
-    qs = Department.objects.filter(organization_id=org_id).values("id", "name")
+    qs = Department.objects.filter(
+        organization_id=org_id,
+        region_id=reg_id
+    ).values("id", "name").order_by("name")
+
     return JsonResponse({"results": list(qs)})
 
 @never_cache
@@ -283,16 +289,16 @@ def ajax_dep_negotiator(request):
 @login_required
 def ajax_employees_org(request):
     org_id = (request.GET.get("organization") or "").strip()
-    if not org_id:
+    reg_id = (request.GET.get("region") or "").strip()
+
+    if not org_id and not reg_id:
         return JsonResponse({"results": []})
 
-    qs = (
-        Employee.objects
-        .select_related("user")
-        .filter(organization_id=org_id)
-        .select_related("rank")
-        .order_by("last_name", "first_name", "father_name")
-    )
+    qs = Employee.objects.all()
+    if org_id:
+        qs = qs.filter(organization_id=org_id)
+    if reg_id:
+        qs = qs.filter(region_id=reg_id)
 
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})

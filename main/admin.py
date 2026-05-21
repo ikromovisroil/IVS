@@ -33,8 +33,8 @@ class OrganizationAdmin(admin.ModelAdmin):
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
-    list_display = ("id", "code", "name", "organization")
-    list_filter = ("organization",)
+    list_display = ("id", "code", "region", "name", "organization")
+    list_filter = ("organization", "region")
     search_fields = ("name", "organization__name")
 
 

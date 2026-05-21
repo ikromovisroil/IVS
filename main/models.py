@@ -28,9 +28,23 @@ class Organization(models.Model):
         verbose_name_plural = "Tashkilotlar"
 
 
+# viloyat.
+class Region(models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'region'
+        verbose_name = "Xudud"
+        verbose_name_plural = "Xududlar"
+
+
 # Departament.
 class Department(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     code = models.CharField(max_length=20, null=True, blank=True)
     name = models.CharField(max_length=200)
 
@@ -84,19 +98,6 @@ class Rank(models.Model):
         db_table = 'rank'
         verbose_name = "Lavozim"
         verbose_name_plural = "Lavozim"
-
-
-# viloyat.
-class Region(models.Model):
-    name = models.CharField(max_length=200)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = 'region'
-        verbose_name = "Xudud"
-        verbose_name_plural = "Xududlar"
 
 
 class Rol(models.Model):

@@ -17,125 +17,138 @@
     </div>
 
     <!-- FILTER -->
-        <section class="section">
-          <div class="row">
-            <div class="col-lg-12">
-              <div class="card">
-                <div class="card-body">
-                  <form class="row g-2 mt-1" method="get">
-                      <div class="col-md-3">
-                          <label for="groups" class="form-label">Turi</label>
-                          <select id="groups" name="groups" class="form-select" required>
-                              <option value="">Tanlang...</option>
-                              {% for g in groups %}
-                                <option value="{{ g.id }}"
-                                  {% if request.GET.groups|stringformat:"s" == g.id|stringformat:"s" %}selected{% endif %}>
-                                  {{ g.name }}
-                                </option>
-                              {% endfor %}
-                          </select>
-                      </div>
-
-                      <div class="col-md-3">
-                          <label for="category" class="form-label">Kategoriya</label>
-                          <select id="category" name="category" class="form-select">
-                              <option value="">Tanlang...</option>
-                              {% for c in categories %}
-                                <option value="{{ c.id }}"
-                                  {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
-                                  {{ c.name }}
-                                </option>
-                              {% endfor %}
-                          </select>
-                      </div>
-
-                      <div class="col-md-3">
-                          <label for="status" class="form-label">Xolati</label>
-                          <select id="status" name="status" class="form-select">
-                              <option value="">Tanlang...</option>
-                              <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
-                              <option value="free" {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
-                              <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
-                              <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Yaroqsiz</option>
-                          </select>
-                      </div>
-
-                      <div class="col-md-3">
-                          <label for="name" class="form-label">Name</label>
-                          <input id="name"
-                           type="text"
-                           name="name"
-                           class="form-control"
-                           value="{{ request.GET.name|default:'' }}"
-                           placeholder="F.I.O, Nomi, I/R, S/R, MAC ...">
-                      </div>
-
-                      <div class="col-md-3">
-                        <label for="organization" class="form-label">Tashkilot</label>
-                        <select id="organization" name="organization" class="form-select" required>
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+              <form class="row g-2 mt-1" method="get">
+                  <div class="col-md-3">
+                      <label for="groups" class="form-label">Turi</label>
+                      <select id="groups" name="groups" class="form-select" required>
                           <option value="">Tanlang...</option>
-                          {% for org in organizations %}
-                            <option value="{{ org.id }}"
-                              {% if request.GET.organization|stringformat:"s" == org.id|stringformat:"s" %}selected{% endif %}>
-                              {{ org.name }}
+                          {% for g in groups %}
+                            <option value="{{ g.id }}"
+                              {% if request.GET.groups|stringformat:"s" == g.id|stringformat:"s" %}selected{% endif %}>
+                              {{ g.name }}
                             </option>
                           {% endfor %}
-                        </select>
-                      </div>
+                      </select>
+                  </div>
 
-                      <div class="col-md-3">
-                        <label for="department" class="form-label">Department</label>
-                        <select id="department" name="department" class="form-select">
+                  <div class="col-md-3">
+                      <label for="category" class="form-label">Kategoriya</label>
+                      <select id="category" name="category" class="form-select">
                           <option value="">Tanlang...</option>
-                          {% for dep in departments %}
-                            <option value="{{ dep.id }}"
-                              {% if request.GET.department|stringformat:"s" == dep.id|stringformat:"s" %}selected{% endif %}>
-                              {{ dep.name }}
+                          {% for c in categories %}
+                            <option value="{{ c.id }}"
+                              {% if request.GET.category|stringformat:"s" == c.id|stringformat:"s" %}selected{% endif %}>
+                              {{ c.name }}
                             </option>
                           {% endfor %}
-                        </select>
-                      </div>
+                      </select>
+                  </div>
 
-                      <div class="col-md-3">
-                        <label for="directorate" class="form-label">Boshqarma</label>
-                        <select id="directorate" name="directorate" class="form-select">
+                  <div class="col-md-3">
+                      <label for="status" class="form-label">Xolati</label>
+                      <select id="status" name="status" class="form-select">
                           <option value="">Tanlang...</option>
-                          {% for dir in directorates %}
-                            <option value="{{ dir.id }}"
-                              {% if request.GET.directorate|stringformat:"s" == dir.id|stringformat:"s" %}selected{% endif %}>
-                              {{ dir.name }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                      </div>
+                          <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
+                          <option value="free" {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
+                          <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                          <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Yaroqsiz</option>
+                      </select>
+                  </div>
 
-                      <div class="col-md-3">
-                        <label for="division" class="form-label">Bo‘lim</label>
-                        <select id="division" name="division" class="form-select">
-                          <option value="">Tanlang...</option>
-                          {% for div in divisions %}
-                            <option value="{{ div.id }}"
-                              {% if request.GET.division|stringformat:"s" == div.id|stringformat:"s" %}selected{% endif %}>
-                              {{ div.name }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                      </div>
+                  <div class="col-md-3">
+                      <label for="name" class="form-label">Name</label>
+                      <input id="name"
+                       type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{ request.GET.name|default:'' }}"
+                       placeholder="F.I.O, Nomi, I/R, S/R, MAC ...">
+                  </div>
 
-                    <div class="col-md-3 d-flex align-items-end">
-                      <button type="submit" class="btn btn-primary w-100">Qidirish</button>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                      <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
-                    </div>
+                  <div class="col-md-3">
+                    <label for="organization" class="form-label">Tashkilot</label>
+                    <select id="organization" name="organization" class="form-select" required>
+                      <option value="">Tanlang...</option>
+                      {% for org in organizations %}
+                        <option value="{{ org.id }}"
+                          {% if request.GET.organization|stringformat:"s" == org.id|stringformat:"s" %}selected{% endif %}>
+                          {{ org.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
 
+                  <div class="col-md-3">
+                    <label for="organization" class="form-label">Hududlar</label>
+                    <select id="region" name="region" class="form-select" required>
+                      <option value="">Tanlang...</option>
+                      {% for r in regions %}
+                        <option value="{{ r.id }}"
+                          {% if request.GET.region|stringformat:"s" == r.id|stringformat:"s" %}selected{% endif %}>
+                          {{ r.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
 
-                  </form>
+                  <div class="col-md-3">
+                    <label for="department" class="form-label">Department</label>
+                    <select id="department" name="department" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for dep in departments %}
+                        <option value="{{ dep.id }}"
+                          {% if request.GET.department|stringformat:"s" == dep.id|stringformat:"s" %}selected{% endif %}>
+                          {{ dep.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label for="directorate" class="form-label">Boshqarma</label>
+                    <select id="directorate" name="directorate" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for dir in directorates %}
+                        <option value="{{ dir.id }}"
+                          {% if request.GET.directorate|stringformat:"s" == dir.id|stringformat:"s" %}selected{% endif %}>
+                          {{ dir.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label for="division" class="form-label">Bo‘lim</label>
+                    <select id="division" name="division" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for div in divisions %}
+                        <option value="{{ div.id }}"
+                          {% if request.GET.division|stringformat:"s" == div.id|stringformat:"s" %}selected{% endif %}>
+                          {{ div.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                <div class="col-md-3 d-flex align-items-end">
+                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
                 </div>
-              </div>
+                <div class="col-md-3 d-flex align-items-end">
+                  <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
+                </div>
+
+
+              </form>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
+    </section>
 
     <!-- TEXNIKALAR -->
     <section class="section">
@@ -499,28 +512,25 @@
                 <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
                 <div class="col-md-8 col-lg-9">
                   <select name="employee_id"
-                          class="form-select employee-select"
-                          data-selected="{{ tex.employee_id|default:'' }}">
-                    <option value="">— Tanlang —</option>
+                        class="form-select employee-select"> <!-- ← bu yo'q edi -->
+                        data-org="{{ tex.organization_id|default:'' }}"
+                        data-region="{{ tex.region_id|default:'' }}"
+                        data-selected="{{ tex.employee_id|default:'' }}">
+                  <option value="">— Tanlang —</option>
                   </select>
                 </div>
             </div>
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Department</label>
+                <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
                 <div class="col-md-8 col-lg-9">
                   <select name="department_id"
-                          class="form-select department-select"
-                          data-selected="{{ tex.department_id|default:'' }}">
-                      <option value="">— Tanlang —</option>
-                      {% if tex.organization %}
-                        {% for i in tex.organization.department_set.all %}
-                          <option value="{{ i.id }}" {% if tex.department_id == i.id %}selected{% endif %}>
-                            {{ i.name }}
-                          </option>
-                        {% endfor %}
-                      {% endif %}
-                    </select>
+                        class="form-select department-select"
+                        data-selected="{{ tex.department_id|default:'' }}"
+                        data-org="{{ tex.organization_id|default:'' }}"
+                        data-region="{{ tex.region_id|default:'' }}">
+                    <option value="">— Yuklanmoqda —</option>
+                  </select>
                 </div>
             </div>
 
@@ -1098,60 +1108,87 @@
 
 </main>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-
+<!-- madal, dep - dir - div -->
 <script>
 (function () {
+  const urlDepartment  = "{% url 'ajax_load_departments' %}";
   const urlDirectorate = "{% url 'ajax_load_directorate' %}";
-  const urlDivision = "{% url 'ajax_load_division' %}";
+  const urlDivision    = "{% url 'ajax_load_division' %}";
 
   function initModalAttachAjax(modalEl) {
     const $modal = $(modalEl);
-    const $department = $modal.find(".department-select");
+
+    const $department  = $modal.find(".department-select");
     const $directorate = $modal.find(".directorate-select");
-    const $division = $modal.find(".division-select");
+    const $division    = $modal.find(".division-select");
 
     if (!$department.length || !$directorate.length || !$division.length) {
       console.log("department/directorate/division select topilmadi");
       return;
     }
 
+    const orgId       = $department.data("org")      || "";
+    const regionId    = $department.data("region")   || "";
+    const selectedDep = $department.data("selected") || "";
+
     $department.off("change.modalAttach");
     $directorate.off("change.modalAttach");
 
     if (!$department.hasClass("select2-hidden-accessible")) {
-      $department.select2({
-        width: "100%",
-        dropdownParent: $modal,
-        placeholder: "Tanlang...",
-        allowClear: true
-      });
+      $department.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
     }
-
     if (!$directorate.hasClass("select2-hidden-accessible")) {
-      $directorate.select2({
-        width: "100%",
-        dropdownParent: $modal,
-        placeholder: "Tanlang...",
-        allowClear: true
-      });
+      $directorate.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
     }
-
     if (!$division.hasClass("select2-hidden-accessible")) {
-      $division.select2({
-        width: "100%",
-        dropdownParent: $modal,
-        placeholder: "Tanlang...",
-        allowClear: true
+      $division.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
+    }
+
+    // ── Department yuklanadi (org + region bo'yicha) ──
+    function loadDepartments() {
+      $department.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
+      $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
+      $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
+
+      if (!orgId || !regionId) {
+        $department.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        return;
+      }
+
+      $.ajax({
+        url: urlDepartment,
+        type: "GET",
+        data: { organization: orgId, region: regionId },
+        success: function (data) {
+          $department.empty().append('<option value="">Tanlang...</option>');
+          $.each(data.results || [], function (_, item) {
+            $department.append($("<option>", {
+              value: item.id,
+              text: item.name,
+              selected: String(item.id) === String(selectedDep)
+            }));
+          });
+          $department.trigger("change");
+
+          // department oldindan tanlangan bo'lsa directorateni yukla
+          if (selectedDep) {
+            const selectedDir = $directorate.data("selected") || "";
+            loadDirectorates(selectedDep, selectedDir);
+          }
+        },
+        error: function () {
+          $department.empty().append('<option value="">Xatolik</option>').trigger("change");
+        }
       });
     }
 
+    // ── Directorate yuklanadi ──
     function loadDirectorates(departmentId, selectedDirectorateId = "") {
       $directorate.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
-      $division.empty().append('<option value="">Avval boshqarma tanlang</option>').trigger("change");
+      $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
 
       if (!departmentId) {
         $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
-        $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
         return;
       }
 
@@ -1160,33 +1197,29 @@
         type: "GET",
         data: { department: departmentId },
         success: function (data) {
-          $directorate.empty();
-          $directorate.append('<option value="">Tanlang...</option>');
-
+          $directorate.empty().append('<option value="">Tanlang...</option>');
           $.each(data.results || [], function (_, item) {
-            $directorate.append(
-              $("<option>", {
-                value: item.id,
-                text: item.name,
-                selected: String(item.id) === String(selectedDirectorateId)
-              })
-            );
+            $directorate.append($("<option>", {
+              value: item.id,
+              text: item.name,
+              selected: String(item.id) === String(selectedDirectorateId)
+            }));
           });
-
           $directorate.trigger("change");
 
+          // directorate oldindan tanlangan bo'lsa divisionni yukla
           if (selectedDirectorateId) {
             loadDivisions(selectedDirectorateId, $division.data("selected") || "");
           }
         },
-        error: function (xhr, status, error) {
-          console.log("Directorate yuklashda xato:", error);
-          $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        error: function () {
+          $directorate.empty().append('<option value="">Xatolik</option>').trigger("change");
           $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
         }
       });
     }
 
+    // ── Division yuklanadi ──
     function loadDivisions(directorateId, selectedDivisionId = "") {
       $division.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
 
@@ -1200,47 +1233,36 @@
         type: "GET",
         data: { directorate: directorateId },
         success: function (data) {
-          $division.empty();
-          $division.append('<option value="">Tanlang...</option>');
-
+          $division.empty().append('<option value="">Tanlang...</option>');
           $.each(data.results || [], function (_, item) {
-            $division.append(
-              $("<option>", {
-                value: item.id,
-                text: item.name,
-                selected: String(item.id) === String(selectedDivisionId)
-              })
-            );
+            $division.append($("<option>", {
+              value: item.id,
+              text: item.name,
+              selected: String(item.id) === String(selectedDivisionId)
+            }));
           });
-
           $division.trigger("change");
         },
-        error: function (xhr, status, error) {
-          console.log("Division yuklashda xato:", error);
-          $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
+        error: function () {
+          $division.empty().append('<option value="">Xatolik</option>').trigger("change");
         }
       });
     }
 
+    // ── Eventlar ──
     $department.on("change.modalAttach", function () {
-      const departmentId = $(this).val();
       $directorate.attr("data-selected", "");
       $division.attr("data-selected", "");
-      loadDirectorates(departmentId);
+      loadDirectorates($(this).val());
     });
 
     $directorate.on("change.modalAttach", function () {
-      const directorateId = $(this).val();
       $division.attr("data-selected", "");
-      loadDivisions(directorateId);
+      loadDivisions($(this).val());
     });
 
-    const selectedDepartment = $department.val() || "";
-    const selectedDirectorate = $directorate.data("selected") || "";
-
-    if (selectedDepartment) {
-      loadDirectorates(selectedDepartment, selectedDirectorate);
-    }
+    // ── Modal ochilganda department yukla ──
+    loadDepartments();
   }
 
   document.querySelectorAll('.modal[id^="texbir-"]').forEach(function (modalEl) {
@@ -1250,7 +1272,7 @@
   });
 })();
 </script>
-
+<!--creat, grup - cat -->
 <script>
 (function () {
   const modalEl = document.getElementById("verticalycentered");
@@ -1337,7 +1359,7 @@
   });
 })();
 </script>
-
+<!-- select,org - reg - dep - dir - div  -->
 <script>
 /**
  * ✅ 1) Org -> Dep -> Dir -> Div (Select2 bilan)
@@ -1349,6 +1371,7 @@
  */
 (() => {
   const orgSel = document.getElementById("organization");
+  const regSel = document.getElementById("region");
   const depSel = document.getElementById("department");
   const dirSel = document.getElementById("directorate");
   const divSel = document.getElementById("division");
@@ -1409,17 +1432,22 @@
     return await res.json();
   }
 
-  async function loadDepartments(orgId, preselect="") {
-    // reset pastdagilar
-    setEmpty(depSel, "Tanlang...");
-    setEmpty(dirSel, "Tanlang...");
-    setEmpty(divSel, "Tanlang...");
+  async function loadDepartments(orgId, regId, preselect="") {
+      // reset pastdagilar
+      setEmpty(depSel, "Tanlang...");
+      setEmpty(dirSel, "Tanlang...");
+      setEmpty(divSel, "Tanlang...");
 
-    if (!orgId) return;
+      if (!orgId || !regId) return;
 
-    setLoading(depSel);
-    const data = await getJSON(`${URL_DEPS}?organization=${encodeURIComponent(orgId)}`);
-    fillOptions(depSel, data.results || [], "Tanlang...", preselect);
+      setLoading(depSel);
+
+      let qs = "";
+      if (orgId) qs += `organization=${encodeURIComponent(orgId)}&`;
+      if (regId) qs += `region=${encodeURIComponent(regId)}`;
+
+      const data = await getJSON(`${URL_DEPS}?${qs}`);
+      fillOptions(depSel, data.results || [], "Tanlang...", preselect);
   }
 
   async function loadDirectorates(depId, preselect="") {
@@ -1454,7 +1482,12 @@
   document.addEventListener("DOMContentLoaded", () => {
     // org -> dep
     bindSelectEvents(orgSel, async () => {
-      await loadDepartments((orgSel.value || "").trim());
+    await loadDepartments((orgSel.value||"").trim(), (regSel?.value||"").trim());
+    });
+
+    // reg -> dep
+    bindSelectEvents(regSel, async () => {
+        await loadDepartments((orgSel?.value||"").trim(), (regSel.value||"").trim());
     });
 
     // dep -> dir
@@ -1470,11 +1503,12 @@
     // ✅ reload bo‘lsa tanlanganlarni tiklash
     (async () => {
       const orgId = (orgSel?.value || "").trim();
+      const regId = (regSel?.value || "").trim();
       const depId = (depSel?.value || "").trim();
       const dirId = (dirSel?.value || "").trim();
       const divId = (divSel?.value || "").trim();
 
-      if (orgId) await loadDepartments(orgId, depId || selectedDep);
+      if (orgId || regId) await loadDepartments(orgId, regId, depId || selectedDep);
       const depNow = (depSel?.value || "").trim();
       if (depNow) await loadDirectorates(depNow, dirId || selectedDir);
       const dirNow = (dirSel?.value || "").trim();
@@ -1493,7 +1527,7 @@
   });
 })();
 </script>
-
+<!--select, grup - cat -->
 <script>
 (() => {
   const groupSel = document.getElementById("groups");
@@ -1592,17 +1626,12 @@
   });
 })();
 </script>
-
+<!--select, employe briktrish -->
 <script>
-/**
- * ✅ 2) Modal: employee-select (organization bo‘yicha)
- * - modal ochilganda xodimlar keladi
- * - cache bor (tez ishlaydi)
- * - org o‘zgarsa modal selectlar reset bo‘ladi
- */
 (() => {
   const orgSelect = document.getElementById("organization");
-  const URL_EMP = "{% url 'ajax_employees_org' %}";
+  const regSelect = document.getElementById("region");
+  const URL_EMP   = "{% url 'ajax_employees_org' %}";
 
   const employeesCache = new Map();
 
@@ -1613,36 +1642,45 @@
     if (isSelect2(el)) window.jQuery(el).trigger("change");
   }
 
-  async function fetchEmployees(orgId) {
-    if (!orgId) return [];
-    if (employeesCache.has(orgId)) return employeesCache.get(orgId);
+  async function fetchEmployees(orgId, regId) {
+    const key = `${orgId}_${regId}`;
+    if (!orgId && !regId) return [];
+    if (employeesCache.has(key)) return employeesCache.get(key);
 
-    const res = await fetch(`${URL_EMP}?organization=${encodeURIComponent(orgId)}`, {
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    });
+    let qs = "";
+    if (orgId) qs += `organization=${encodeURIComponent(orgId)}&`;
+    if (regId) qs += `region=${encodeURIComponent(regId)}`;
 
-    const ct = res.headers.get("content-type") || "";
-    if (!res.ok || !ct.includes("application/json")) {
-      employeesCache.set(orgId, []);
+    try {
+      const res = await fetch(`${URL_EMP}?${qs}`, {
+        headers: { "X-Requested-With": "XMLHttpRequest" }
+      });
+      const ct = res.headers.get("content-type") || "";
+      if (!res.ok || !ct.includes("application/json")) {
+        employeesCache.set(key, []);
+        return [];
+      }
+      const data = await res.json();
+      const list = data.results || [];
+      employeesCache.set(key, list);
+      return list;
+    } catch (e) {
+      console.log("Employee yuklashda xato:", e);
+      employeesCache.set(key, []);
       return [];
     }
-
-    const data = await res.json();
-    const list = data.results || [];
-    employeesCache.set(orgId, list);
-    return list;
   }
 
-  async function fillEmployeeSelect(selectEl, orgId) {
+  async function fillEmployeeSelect(selectEl, orgId, regId) {
     const selectedId = (selectEl.dataset.selected || "").trim();
     selectEl.innerHTML = `<option value="">Yuklanmoqda...</option>`;
     refreshUI(selectEl);
 
-    const employees = await fetchEmployees(orgId);
+    const employees = await fetchEmployees(orgId, regId);
 
     let html = `<option value="">— Tanlang —</option>`;
     for (const e of employees) {
-      const sel = (String(e.id) === String(selectedId)) ? "selected" : "";
+      const sel = String(e.id) === String(selectedId) ? "selected" : "";
       html += `<option value="${e.id}" ${sel}>${e.text}</option>`;
     }
     selectEl.innerHTML = html;
@@ -1650,24 +1688,36 @@
   }
 
   document.addEventListener("shown.bs.modal", async (event) => {
-    const modal = event.target;
+    const modal    = event.target;
     const selectEl = modal.querySelector(".employee-select");
     if (!selectEl) return;
 
-    // agar data-org bo‘lsa o‘shani oladi, bo‘lmasa filter org
-    let orgId = (selectEl.dataset.org || "").trim();
-    if (!orgId) orgId = (orgSelect?.value || "").trim();
+    // data-org va data-region bor bo'lsa o'shani ol
+    // bo'lmasa filtrdagi #organization va #region dan ol
+    let orgId = (selectEl.dataset.org    || "").trim();
+    let regId = (selectEl.dataset.region || "").trim();
 
-    if (!orgId) {
-      selectEl.innerHTML = `<option value="">Avval tashkilotni tanlang</option>`;
+    if (!orgId) orgId = (orgSelect?.value || "").trim();
+    if (!regId) regId = (regSelect?.value || "").trim();
+
+    if (!orgId && !regId) {
+      selectEl.innerHTML = `<option value="">Avval tashkilot yoki hududni tanlang</option>`;
       refreshUI(selectEl);
       return;
     }
 
-    await fillEmployeeSelect(selectEl, orgId);
+    await fillEmployeeSelect(selectEl, orgId, regId);
   });
 
+  // org yoki reg o'zgarganda barcha employee selectlar reset
   orgSelect?.addEventListener("change", () => {
+    document.querySelectorAll(".employee-select").forEach(sel => {
+      sel.innerHTML = `<option value="">— Tanlang —</option>`;
+      refreshUI(sel);
+    });
+  });
+
+  regSelect?.addEventListener("change", () => {
     document.querySelectorAll(".employee-select").forEach(sel => {
       sel.innerHTML = `<option value="">— Tanlang —</option>`;
       refreshUI(sel);
@@ -1675,7 +1725,7 @@
   });
 })();
 </script>
-
+<!--egzel -->
 <script>
 /**
  * ✅ 3) Excel export
