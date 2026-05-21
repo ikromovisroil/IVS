@@ -328,6 +328,7 @@ class StructureCategory(models.Model):
 class Structure(models.Model):
     category = models.ForeignKey(StructureCategory, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     status = models.CharField(max_length=20, choices=[
         ('free', "Bo'sh"),

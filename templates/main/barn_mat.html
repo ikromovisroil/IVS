@@ -49,6 +49,7 @@
 
                     <!-- EMPLOYEE -->
                     {% if not request.user.employee.rol.client %}
+                    {% if request.user.employee.rol.region %}
                     <div class="col-md-3">
                         <label class="form-label">Xodim</label>
                         <select name="employee" class="form-select">
@@ -61,6 +62,7 @@
                             {% endfor %}
                         </select>
                     </div>
+                    {% endif %}
                     {% endif %}
 
                     <!-- NAME -->

@@ -421,8 +421,12 @@ $(function () {
 
   if (!$('#date1').val()) $('#date1').val(monthAgoStr);
   if (!$('#date2').val()) $('#date2').val(todayStr);
+  const userRegion = "{{ user_region|default:'' }}";
 
-  function loadDepartments(orgId, selectedDepId = null) {
+  function loadDepartments(orgId, regId, selectedDepId = null) {
+    const effectiveReg = regId || userRegion;
+    if (!orgId || !effectiveReg) return;
+
     const $dep = $('#department');
     const $sender = $('#sender');
     const $agr = $('#agreements');
@@ -431,16 +435,11 @@ $(function () {
     $sender.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
     $agr.html('').trigger('change.select2');
 
-    if (!orgId) {
-      $dep.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
-      return;
-    }
-
     $.ajax({
       url: "{% url 'ajax_load_departments' %}",
       method: "GET",
       dataType: "json",
-      data: { organization: orgId },
+      data: { organization: orgId, region: effectiveReg },
 
       success: function (data) {
         console.log("Departments AJAX data:", data);
@@ -664,7 +663,7 @@ $(function () {
   $('#organization').on('change', function() {
     const orgId = $(this).val();
 
-    loadDepartments(orgId);
+    loadDepartments($(this).val(), userRegion);
     updateEditorWithSelections();
     updateContractText();
   });
@@ -717,7 +716,7 @@ $(function () {
   if (initialOrg) {
     $('#organization').val(initialOrg).trigger('change');
 
-    loadDepartments(initialOrg, initialDep);
+    loadDepartments(initialOrg, userRegion, initialDep);
 
     setTimeout(function() {
       if (initialDep) {

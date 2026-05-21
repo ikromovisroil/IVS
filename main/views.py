@@ -1161,7 +1161,7 @@ def extra_tex(request):
 
     # ✅ Filter bor bo‘lsa — query ishlaydi
     qs = (
-        Structure.objects.filter(is_active=True)
+        Structure.objects.filter(is_active=True,region=employee.region)
         .select_related("organization")
         .order_by("-id")
     )
@@ -1221,6 +1221,7 @@ def extra_tex_create(request):
         technics = form.save(commit=False)
         serial = (technics.serial or "").strip()
         organization = technics.organization
+        technics.region = employee.region
 
         if serial and organization and Structure.objects.filter(
             serial__iexact=serial,
@@ -1515,6 +1516,12 @@ def barn_mat(request):
         .order_by("-id")
     )
 
+    if getattr(employee.rol, "region", False):
+        if emp_id and emp_id.isdigit():
+            qs = qs.filter(employee_id=int(emp_id))
+    else:
+        qs = qs.filter(employee=employee)
+
     if unit_id:
         qs = qs.filter(unit_id=int(unit_id))
 
@@ -1807,6 +1814,9 @@ def document_get(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
+    if not request.user.employee.liable_set.exists():
+        raise PermissionDenied("ruxsat yoq")
+
     liable = Liable.objects.filter(employee=employee).select_related("contract").distinct("contract")
 
     context = {
@@ -1826,6 +1836,9 @@ def document_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
+
+    if not request.user.employee.liable_set.exists():
+        raise PermissionDenied("ruxsat yoq")
     # formdan keladiganlar
     sender_id = (request.POST.get("sender") or "").strip()
     receiver_id = (request.POST.get("receiver") or "").strip()
@@ -1902,6 +1915,7 @@ def akt_get(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
+        "user_region": employee.region_id,
     }
     return render(request, "main/akt.html", context)
 
