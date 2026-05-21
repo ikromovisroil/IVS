@@ -4,31 +4,37 @@
 <body>
 <script>
 async function pkce() {
-  const a = new Uint8Array(32);
-  crypto.getRandomValues(a);
+    const a = new Uint8Array(32);
+    crypto.getRandomValues(a);
 
-  const v = btoa(String.fromCharCode(...a))
-    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/, '');
+    const v = btoa(Array.from(a, b => String.fromCharCode(b)).join(""))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
-  const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v));
-  const c = btoa(String.fromCharCode(...new Uint8Array(d)))
-    .replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/, '');
+    const d = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(v));
 
-  return {v,c};
+    const c = btoa(Array.from(new Uint8Array(d), b => String.fromCharCode(b)).join(""))
+        .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+    return {v, c};
 }
 
-(async ()=>{
-  const {v,c} = await pkce();
-  localStorage.setItem("pkce_verifier", v);
+(async () => {
+    try {
+        const {v, c} = await pkce();
+        sessionStorage.setItem("pkce_verifier", v);
 
-  const p = new URLSearchParams({
-    clientId: "{{ client_id }}",
-    redirectUri: "{{ redirect_uri }}",
-    codeChallenge: c,
-    codeChallengeMethod: "S256"
-  });
+        const p = new URLSearchParams({
+            clientId:            "{{ client_id }}",
+            redirectUri:         "{{ redirect_uri }}",
+            codeChallenge:       c,
+            codeChallengeMethod: "S256"
+        });
 
-  window.location.replace("{{ sso_auth_url }}?" + p.toString());
+        window.location.replace("{{ sso_auth_url }}?" + p.toString());
+    } catch(e) {
+        alert("Xatolik yuz berdi: " + e.message);
+        window.location.href = "/sso/login/";
+    }
 })();
 </script>
 </body>

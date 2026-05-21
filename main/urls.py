@@ -146,7 +146,6 @@ urlpatterns = [
     path("order/receiver/post/", order_receiver_deed_post, name="order_receiver_deed_post"),
 
     path("order/post/", order_post, name="order_post"),
-    path("order/post/all", order_post_all, name="order_post_all"),
     path("order/material/", order_material_post, name="order_material_post"),
 
     # =========================

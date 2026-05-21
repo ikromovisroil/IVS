@@ -3,40 +3,46 @@
 <head><meta charset="utf-8"><title>SSO callback</title></head>
 <body>
 <script>
-const qs = new URLSearchParams(location.search);
-const code = qs.get("code");
-const err  = qs.get("error");
+const qs       = new URLSearchParams(location.search);
+const code     = qs.get("code");
+const err      = qs.get("error");
+
+function showError(text) {
+    alert(text);
+    window.location.href = "/sso/login/";
+}
 
 if (err || !code) {
-  alert("SSO xatolik: " + (err || "code kelmadi"));
-  window.location.href = "/sso/login/";
+    showError("SSO xatolik: " + (err || "code kelmadi"));
+} else {
+    const verifier = sessionStorage.getItem("pkce_verifier");
+    if (!verifier) {
+        showError("PKCE verifier topilmadi. Qaytadan urinib ko'ring.");
+    } else {
+        fetch("/sso/exchange/", {
+            method:      "POST",
+            credentials: "same-origin",
+            headers:     {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                code:         code,
+                codeVerifier: verifier,
+                redirectUri:  "{{ redirect_uri }}"
+            })
+        })
+        .then(r => r.json().then(j => ({ok: r.ok, data: j})))
+        .then(({ok, data}) => {
+            sessionStorage.removeItem("pkce_verifier");
+            if (ok && data.status === "ok") {
+                window.location.href = data.redirect;
+            } else {
+                showError(data.message || "SSO xatolik");
+            }
+        })
+        .catch(() => {
+            showError("Tarmoq xatoligi. Qaytadan urinib ko'ring.");
+        });
+    }
 }
-
-const verifier = localStorage.getItem("pkce_verifier");
-if (!verifier) {
-  alert("PKCE verifier topilmadi. Qaytadan urinib ko‘ring.");
-  window.location.href = "/sso/start/";
-}
-
-fetch("/sso/exchange/", {
-  method: "POST",
-  headers: {"Content-Type": "application/json"},
-  body: JSON.stringify({
-    code: code,
-    codeVerifier: verifier,
-    redirectUri: "{{ redirect_uri }}"
-  })
-})
-.then(r => r.json().then(j => ({ok:r.ok, data:j})))
-.then(({ok, data}) => {
-  localStorage.removeItem("pkce_verifier");
-  if (ok && data.status === "ok") {
-    window.location.href = data.redirect;
-  } else {
-    alert(data.message || "SSO xatolik");
-    window.location.href = data.redirect || "/sso/login/";
-  }
-});
 </script>
 </body>
 </html>

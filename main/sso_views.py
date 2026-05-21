@@ -21,7 +21,7 @@ import string
 from .sso_utils import *
 from .utils import *
 from .html_pdf import *
-from .models import Employee, Deed, DeedConsent
+from .models import *
 
 logger = logging.getLogger(__name__)
 
@@ -47,53 +47,44 @@ def sso_start_login(request):
 @never_cache
 @login_required
 def sso_start_approve(request):
-    """
-    Approve uchun umumiy SSO sahifaga emas,
-    to'g'ridan-to'g'ri E-IMZO sign endpointga yuboramiz.
-    """
     pending = request.session.get("PENDING_APPROVE")
     if not pending:
         messages.info(request, "Tasdiqlash topilmadi")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    role = pending.get("role")
+    role         = pending.get("role")
     redirect_url = pending.get("redirect_url") or "/"
 
-    # request.user login bo'lgan bo'lishi kerak
     req_emp = getattr(request.user, "employee", None)
     if not req_emp:
-        messages.error(request, "Employee topilmadi")
+        messages.info(request, "Employee topilmadi")
         return redirect(redirect_url)
 
-    # doc qiymatini aniq va tekshiriladigan qilib yasaymiz
     if role in ("sender", "receiver"):
         deed_id = pending.get("deed_id")
         if not deed_id:
-            messages.error(request, "Deed topilmadi")
+            messages.info(request, "Deed topilmadi")
             return redirect(redirect_url)
-
         doc_value = f"deed-{deed_id}-{role}-{req_emp.id}"
 
     elif role == "consent":
         consent_id = pending.get("consent_id")
         if not consent_id:
-            messages.error(request, "Consent topilmadi")
+            messages.info(request, "Consent topilmadi")
             return redirect(redirect_url)
-
         doc_value = f"consent-{consent_id}-{req_emp.id}"
 
     else:
-        messages.error(request, "Noto‘g‘ri approve turi")
+        messages.info(request, "Noto'g'ri approve turi")
         return redirect(redirect_url)
 
     request.session["PENDING_EIMZO"] = {
-        "doc": doc_value,
+        "doc":          doc_value,
         "redirect_url": redirect_url,
     }
     request.session.modified = True
 
-    sign_url = build_eimzo_sign_url(request, doc_value)
-    return redirect(sign_url)
+    return redirect(build_eimzo_sign_url(request, doc_value))
 
 
 # -----------------------
@@ -126,7 +117,7 @@ def sso_callback(request):
 @require_POST
 def sso_exchange(request):
     try:
-        flow = request.session.get("SSO_FLOW") or {}
+        flow    = request.session.get("SSO_FLOW") or {}
         purpose = (flow.get("purpose") or "").strip()
 
         if purpose != "login":
@@ -139,22 +130,22 @@ def sso_exchange(request):
             body = json.loads(request.body or "{}")
         except Exception:
             return JsonResponse(
-                {"status": "error", "message": "JSON noto‘g‘ri", "redirect": "/sso/login/"},
+                {"status": "error", "message": "JSON noto'g'ri", "redirect": "/sso/login/"},
                 status=400
             )
 
-        code = (body.get("code") or "").strip()
+        code          = (body.get("code")         or "").strip()
         code_verifier = (body.get("codeVerifier") or "").strip()
-        redirect_uri = (body.get("redirectUri") or "").strip()
+        redirect_uri  = (body.get("redirectUri")  or "").strip()
 
         if not code or not code_verifier or not redirect_uri:
             return JsonResponse(
-                {"status": "error", "message": "SSO parametrlari to‘liq emas", "redirect": "/sso/login/"},
+                {"status": "error", "message": "SSO parametrlari to'liq emas", "redirect": "/sso/login/"},
                 status=400
             )
 
         token_data = exchange_code_for_token(code, code_verifier, redirect_uri) or {}
-        id_token = token_data.get("id_token")
+        id_token   = token_data.get("id_token")
         if not id_token:
             raise PermissionDenied("id_token kelmadi")
 
@@ -164,89 +155,65 @@ def sso_exchange(request):
             raise PermissionDenied("SSO token ichida pinfl topilmadi")
 
         employee = Employee.objects.select_related("user").filter(pinfl=sso_pinfl).first()
+
         if not employee or not employee.user:
             try:
                 from .gateway import GatewayClient
 
                 gateway_data = GatewayClient.current_citizen(sso_pinfl)
-
-                result = gateway_data.get("result") or {}
-                positions = result.get("positions") or []
+                result       = gateway_data.get("result") or {}
+                positions    = result.get("positions") or []
 
                 if not positions:
                     return JsonResponse(
-                        {
-                            "status": "forbidden",
-                            "message": "Gatewayda ish joyi topilmadi",
-                            "redirect": "/sso/login/"
-                        },
+                        {"status": "forbidden", "message": "Gatewayda ish joyi topilmadi", "redirect": "/sso/login/"},
                         status=403
                     )
 
-                position = positions[0]
-
-                org_tin = str(position.get("org_tin") or "").strip()
+                org_tin      = str(positions[0].get("org_tin") or "").strip()
                 organization = Organization.objects.filter(inn=org_tin).first()
 
                 if not organization:
-                    return JsonResponse({
-                        "status": "forbidden",
-                        "message": "Sizning tashkilotingiz tizim bazasida topilmadi",
-                        "redirect": "/sso/login/"
-                    }, status=403)
+                    return JsonResponse(
+                        {"status": "forbidden", "message": "Tashkilot tizimda topilmadi", "redirect": "/sso/login/"},
+                        status=403
+                    )
 
-                alphabet = string.ascii_letters + string.digits
-                random_password = "".join(secrets.choice(alphabet) for _ in range(16))
-
-                base_username = f"{result.get('name')}.{result.get('surname')}".lower()
-                username = base_username
-
-                counter = 1
-                while User.objects.filter(username=username).exists():
-                    username = f"{base_username}{counter}"
-                    counter += 1
+                base_username = f"{result.get('name', '')}.{result.get('surname', '')}".lower()
 
                 with transaction.atomic():
+                    username = base_username
+                    counter  = 1
+                    while User.objects.filter(username=username).exists():
+                        username = f"{base_username}{counter}"
+                        counter += 1
+
                     user = User.objects.create_user(
                         username=username,
-                        password=random_password
+                        password=secrets.token_urlsafe(16),
                     )
-                    user.is_active = True
-                    user.save(update_fields=["is_active"])
 
-                    employee = user.employee
-
-                    employee.pinfl = sso_pinfl
-                    employee.first_name = (result.get("name") or "").strip()
-                    employee.last_name = (result.get("surname") or "").strip()
-                    employee.father_name = (result.get("partonimic") or "").strip()
+                    employee              = user.employee
+                    employee.pinfl        = sso_pinfl
+                    employee.first_name   = (result.get("name")       or "").strip()
+                    employee.last_name    = (result.get("surname")    or "").strip()
+                    employee.father_name  = (result.get("partonimic") or "").strip()
                     employee.organization = organization
                     employee.save()
 
                     rol, _ = Rol.objects.get_or_create(employee=employee)
-
-                    if organization.inn == "201059101":
-                        rol.client = False
-                    else:
-                        rol.client = True
-
+                    rol.client = organization.inn != getattr(settings, "ATM_INN", "201059101")
                     rol.save(update_fields=["client"])
 
             except Exception as gateway_error:
-
                 return JsonResponse(
-                    {
-                        "status": "forbidden",
-                        "message": str(gateway_error),
-                        "redirect": "/sso/login/"
-                    },
+                    {"status": "forbidden", "message": str(gateway_error), "redirect": "/sso/login/"},
                     status=403
                 )
 
             auth_login(request, employee.user)
             request.session.pop("SSO_FLOW", None)
             request.session.modified = True
-
             return JsonResponse({"status": "ok", "redirect": "/profil/"}, status=200)
 
         if not employee.organization:
@@ -257,14 +224,13 @@ def sso_exchange(request):
 
         if not employee.user.is_active:
             return JsonResponse(
-                {"status": "forbidden", "message": "Foydalanuvchi bloklangan (active emas)", "redirect": "/sso/login/"},
+                {"status": "forbidden", "message": "Foydalanuvchi bloklangan", "redirect": "/sso/login/"},
                 status=403
             )
 
         auth_login(request, employee.user)
         request.session.pop("SSO_FLOW", None)
         request.session.modified = True
-
         return JsonResponse({"status": "ok", "redirect": "/profil/"}, status=200)
 
     except PermissionDenied as e:
@@ -280,37 +246,41 @@ def sso_exchange(request):
 @never_cache
 @login_required
 def eimzo_return(request):
-    try:
-        pending = request.session.get("PENDING_APPROVE")
-        pending_eimzo = request.session.get("PENDING_EIMZO")
+    pending       = request.session.get("PENDING_APPROVE")
+    pending_eimzo = request.session.get("PENDING_EIMZO")
 
+    def clear_session():
+        request.session.pop("PENDING_APPROVE", None)
+        request.session.pop("PENDING_EIMZO", None)
+        request.session.pop("SSO_FLOW", None)
+        request.session.modified = True
+
+    try:
         if not pending or not pending_eimzo:
-            messages.error(request, "Imzolash sessiyasi topilmadi")
+            messages.info(request, "Imzolash sessiyasi topilmadi")
             return redirect("/")
 
         returned_doc = (request.GET.get("doc") or "").strip()
-        sent_doc = (pending_eimzo.get("doc") or "").strip()
+        sent_doc     = (pending_eimzo.get("doc") or "").strip()
 
         if returned_doc and sent_doc and returned_doc != sent_doc:
-            messages.error(request, "Imzolash hujjati mos emas")
+            messages.info(request, "Imzolash hujjati mos emas")
             return redirect(pending_eimzo.get("redirect_url") or "/")
 
-        role = pending.get("role")
-        message = (pending.get("message") or "").strip()
+        role         = pending.get("role")
+        message      = (pending.get("message") or "").strip()
         redirect_url = pending.get("redirect_url") or "/"
 
         req_emp = getattr(request.user, "employee", None)
         if not req_emp:
-            request.session.pop("PENDING_APPROVE", None)
-            request.session.pop("PENDING_EIMZO", None)
-            messages.error(request, "Employee yo‘q")
+            messages.info(request, "Employee yo'q")
             return redirect(redirect_url)
 
         # ---- sender/receiver approve ----
         if role in ("sender", "receiver"):
             deed_id = pending.get("deed_id")
             if not deed_id:
-                raise PermissionDenied("Deed yo‘q")
+                raise PermissionDenied("Deed yo'q")
 
             approver_name = getattr(req_emp, "full_name", None) or str(req_emp)
 
@@ -326,15 +296,15 @@ def eimzo_return(request):
 
                 if role == "sender":
                     if deed.status_sender != "approved":
-                        deed.status_sender = "approved"
+                        deed.status_sender  = "approved"
                         deed.message_sender = message or ""
-                        deed.date_sender = now
+                        deed.date_sender    = now
                         deed.save(update_fields=["status_sender", "message_sender", "date_sender"])
                 else:
                     if deed.status_receiver != "approved":
-                        deed.status_receiver = "approved"
+                        deed.status_receiver  = "approved"
                         deed.message_receiver = message or ""
-                        deed.date_receiver = now
+                        deed.date_receiver    = now
                         deed.save(update_fields=["status_receiver", "message_receiver", "date_receiver"])
 
                 is_final = (
@@ -349,18 +319,13 @@ def eimzo_return(request):
 
             if is_final:
                 try:
-                    deed = Deed.objects.get(pk=deed_pk)
-
+                    deed      = Deed.objects.get(pk=deed_pk)
                     pdf_bytes = deed_to_pdf_bytes(deed)
 
                     if deed.file:
                         deed.file.delete(save=False)
 
-                    today_str = timezone.now().strftime("%Y%m%d")
-                    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-                    random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
-                    pdf_name = f"akt_{today_str}_{random_part}.pdf"
-
+                    pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
                     deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
                     sign_pdf_inplace(
@@ -369,31 +334,27 @@ def eimzo_return(request):
                         approver_name=approver_name,
                         deed_id=deed.pk,
                     )
-
-                    messages.success(request, "Xujjat muvaffaqiyatli imzolandi")
+                    messages.success(request, "Hujjat muvaffaqiyatli imzolandi")
 
                 except HtmlPdfError as e:
-                    messages.error(request, f"PDF yaratilmadi: {e}")
+                    messages.info(request, f"PDF yaratilmadi: {e}")
                     return redirect(redirect_url)
                 except TimeoutError as e:
-                    messages.error(request, str(e))
+                    messages.info(request, str(e))
                     return redirect(redirect_url)
                 except Exception:
                     logger.exception("PDF rebuild/sign error")
-                    messages.error(request, "PDF imzolashda xatolik")
+                    messages.info(request, "PDF imzolashda xatolik")
                     return redirect(redirect_url)
 
-            request.session.pop("PENDING_APPROVE", None)
-            request.session.pop("PENDING_EIMZO", None)
-            request.session.pop("SSO_FLOW", None)
-            request.session.modified = True
+            clear_session()
             return redirect(redirect_url)
 
         # ---- consent approve ----
         if role == "consent":
             consent_id = pending.get("consent_id")
             if not consent_id:
-                raise PermissionDenied("consent_id yo‘q")
+                raise PermissionDenied("consent_id yo'q")
 
             consent = get_object_or_404(
                 DeedConsent.objects.select_related("employee__user"),
@@ -401,57 +362,62 @@ def eimzo_return(request):
             )
 
             if consent.employee.user_id != request.user.id:
-                raise PermissionDenied("Ruxsat yo‘q")
+                raise PermissionDenied("Ruxsat yo'q")
 
             if consent.status != "approved":
-                consent.status = "approved"
+                consent.status  = "approved"
                 consent.message = message or ""
-                consent.date_edit = timezone.now()
-                consent.save(update_fields=["status", "message", "date_edit"])
+                consent.save(update_fields=["status", "message"])
 
-            request.session.pop("PENDING_APPROVE", None)
-            request.session.pop("PENDING_EIMZO", None)
-            request.session.pop("SSO_FLOW", None)
-            request.session.modified = True
-
+            clear_session()
             messages.success(request, "Kelishuv muvaffaqiyatli tasdiqlandi")
             return redirect(redirect_url)
 
-        raise PermissionDenied("Noto‘g‘ri pending turi")
+        raise PermissionDenied("Noto'g'ri pending turi")
 
     except PermissionDenied as e:
-        messages.error(request, str(e))
+        messages.info(request, str(e))
         return redirect("/")
     except Exception as e:
         logger.exception("E-IMZO RETURN ERROR")
-        messages.error(request, f"E-IMZO xatolik: {e}")
+        messages.info(request, f"E-IMZO xatolik: {e}")
         return redirect("/")
+    finally:
+        clear_session()
 
 
 def exchange_code_for_token(code: str, code_verifier: str, redirect_uri: str) -> dict:
-    auth = base64.b64encode(f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()).decode()
+    auth = base64.b64encode(
+        f"{settings.SSO_CLIENT_ID}:{settings.SSO_CLIENT_SECRET}".encode()
+    ).decode()
 
     data = {
-        "grant_type": "authorization_code",
-        "code": code,
+        "grant_type":    "authorization_code",
+        "code":          code,
         "code_verifier": code_verifier,
-        "redirect_uri": redirect_uri,
+        "redirect_uri":  redirect_uri,
     }
 
-    r = requests.post(
-        settings.SSO_TOKEN_URL,
-        data=data,
-        headers={
-            "Authorization": f"Basic {auth}",
-            "Content-Type": "application/x-www-form-urlencoded",
-        },
-        timeout=20,
-    )
+    try:
+        r = requests.post(
+            settings.SSO_TOKEN_URL,
+            data=data,
+            headers={
+                "Authorization": f"Basic {auth}",
+                "Content-Type":  "application/x-www-form-urlencoded",
+            },
+            timeout=20,
+        )
+    except requests.exceptions.RequestException as e:
+        raise PermissionDenied(f"SSO ga ulanishda xatolik: {e}")
 
     if r.status_code != 200:
-        raise PermissionDenied(f"SSO token olinmadi: {r.status_code} {r.text}")
+        raise PermissionDenied(f"SSO token olinmadi: {r.status_code} {r.text[:200]}")
 
-    return r.json()
+    try:
+        return r.json()
+    except ValueError:
+        raise PermissionDenied("SSO javob JSON emas")
 
 
 @never_cache

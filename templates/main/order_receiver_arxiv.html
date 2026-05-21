@@ -59,7 +59,7 @@
                 </thead>
 
                 <tbody>
-                  {% for o in order %}
+                  {% for o in page_obj %}
                     <tr>
                       <th scope="row">{{ forloop.counter }}</th>
                       <td>{{ o.sender.full_name }}</td>

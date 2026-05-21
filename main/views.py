@@ -2079,71 +2079,54 @@ def reestr_get(request):
 
 
 @never_cache
+@require_POST
 @login_required
 @role_required("akt")
 def reestr_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
-    # formdan keladiganlar
-    sender_id = (request.POST.get("sender") or "").strip()
-    message = (request.POST.get("message") or "").strip() or None
+    sender_id  = (request.POST.get("sender")  or "").strip()
+    message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
-    body = request.POST.get("body") or ""
+    body       = (request.POST.get("body")    or "").strip()
 
-    file_type = False
-
-    # sender obyekt
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
         messages.info(request, "Imzolovchi xodim tanlanmadi")
         return redirect("akt_get")
 
-    if not body.strip():
-        messages.info(request, "Hujjat matni (body) bo‘sh bo‘lmasin")
+    if not body:
+        messages.info(request, "Hujjat matni bo'sh bo'lmasin")
         return redirect("akt_get")
 
-    # ✅ Deed yaratamiz
-    deed = Deed.objects.create(
-        sender=sender,  # FK obyekt
-        user=employee,  # FK obyekt
-        message_user=message,
-        body=body,
-        file_type=file_type,  # ✅ True/False
-    )
+    # 1. DB — transaction ichida
+    with transaction.atomic():
+        deed = Deed.objects.create(
+            sender=sender,
+            user=employee,
+            message_user=message,
+            body=body,
+            file_type=False,
+        )
 
-    # ✅ PDF yaratib deed.file ga saqlaymiz
+        ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
+        ids = [i for i in ids if i != sender.id]
+
+        if ids:
+            emps = Employee.objects.filter(id__in=ids).only("id")
+            objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+            DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    # 2. PDF — transaction tashqarisida
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
-        wm_text = "TASDIQLANMAGAN"
-        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, wm_text)
-        today_str = timezone.now().strftime("%Y%m%d")
-        alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-        random_part = ''.join(secrets.choice(alphabet) for _ in range(6))
-        pdf_name = f"akt_{today_str}_{random_part}.pdf"
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
+        pdf_name  = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
         deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
-
     except HtmlPdfError as e:
         messages.info(request, f"PDF yaratilmadi: {e}")
-
-    # ✅ kelishuvchilar IDs tozalash
-    ids = []
-    for x in (agreements or []):
-        x = (x or "").strip()
-        if x.isdigit():
-            ids.append(int(x))
-    ids = list(set(ids))  # uniq
-
-    # ✅ sender va hozirgi employee’ni exclude
-    exclude_ids = {sender.id}
-    ids = [i for i in ids if i not in exclude_ids]
-
-    # ✅ DeedConsent bulk_create
-    if ids:
-        emps = Employee.objects.filter(id__in=ids).only("id")
-        objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
-        DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
     messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
