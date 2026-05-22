@@ -18,7 +18,7 @@ def order_sender(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender=employee, organization=4,status__in=["viewed", "process", "finished"],)
+        .filter(sender=employee, organization_id=4,status__in=["viewed", "process", "finished"],)
         .select_related("organization", "goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
@@ -102,7 +102,7 @@ def order_sender_arxiv(request):
     orders_qs = (
         Order.objects
         .filter(
-            sender=employee, organization=4,
+            sender=employee, organization_id=4,
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
         .select_related(
@@ -141,7 +141,7 @@ def order_post(request):
     goal = get_object_or_404(Goal, pk=int(goal_id))
 
     Order.objects.create(
-        organization=4,
+        organization_id=4,
         sender_id=employee.id,
         goal=goal,
         body=body,
@@ -242,7 +242,7 @@ def order_receiver_activ(request):
 
     orders_qs = (
         Order.objects
-        .filter(receiver=employee,organization=4,status__in=["process", "finished"],)
+        .filter(receiver=employee,organization_id=4,status__in=["process", "finished"],)
         .select_related("organization", "goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
@@ -392,7 +392,7 @@ def order_receiver_arxiv(request):
 
     orders_qs = (
         Order.objects
-        .filter(receiver=employee,organization=4,status__in=["approved", "accepted", "canceled", "rejected"],)
+        .filter(receiver=employee,organization_id=4,status__in=["approved", "accepted", "canceled", "rejected"],)
         .select_related("organization", "goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
