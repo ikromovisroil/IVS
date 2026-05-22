@@ -47,44 +47,53 @@ def sso_start_login(request):
 @never_cache
 @login_required
 def sso_start_approve(request):
+    """
+    Approve uchun umumiy SSO sahifaga emas,
+    to'g'ridan-to'g'ri E-IMZO sign endpointga yuboramiz.
+    """
     pending = request.session.get("PENDING_APPROVE")
     if not pending:
         messages.info(request, "Tasdiqlash topilmadi")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    role         = pending.get("role")
+    role = pending.get("role")
     redirect_url = pending.get("redirect_url") or "/"
 
+    # request.user login bo'lgan bo'lishi kerak
     req_emp = getattr(request.user, "employee", None)
     if not req_emp:
-        messages.info(request, "Employee topilmadi")
+        messages.error(request, "Employee topilmadi")
         return redirect(redirect_url)
 
+    # doc qiymatini aniq va tekshiriladigan qilib yasaymiz
     if role in ("sender", "receiver"):
         deed_id = pending.get("deed_id")
         if not deed_id:
-            messages.info(request, "Deed topilmadi")
+            messages.error(request, "Deed topilmadi")
             return redirect(redirect_url)
+
         doc_value = f"deed-{deed_id}-{role}-{req_emp.id}"
 
     elif role == "consent":
         consent_id = pending.get("consent_id")
         if not consent_id:
-            messages.info(request, "Consent topilmadi")
+            messages.error(request, "Consent topilmadi")
             return redirect(redirect_url)
+
         doc_value = f"consent-{consent_id}-{req_emp.id}"
 
     else:
-        messages.info(request, "Noto'g'ri approve turi")
+        messages.error(request, "Noto‘g‘ri approve turi")
         return redirect(redirect_url)
 
     request.session["PENDING_EIMZO"] = {
-        "doc":          doc_value,
+        "doc": doc_value,
         "redirect_url": redirect_url,
     }
     request.session.modified = True
 
-    return redirect(build_eimzo_sign_url(request, doc_value))
+    sign_url = build_eimzo_sign_url(request, doc_value)
+    return redirect(sign_url)
 
 
 # -----------------------
@@ -154,7 +163,9 @@ def sso_exchange(request):
         if not sso_pinfl:
             raise PermissionDenied("SSO token ichida pinfl topilmadi")
 
-        employee = Employee.objects.select_related("user").filter(pinfl=sso_pinfl).first()
+        employee = Employee.objects.select_related(
+            "user", "organization"
+        ).filter(pinfl=sso_pinfl).first()
 
         if not employee or not employee.user:
             try:
@@ -170,12 +181,15 @@ def sso_exchange(request):
                         status=403
                     )
 
-                org_tin      = str(positions[0].get("org_tin") or "").strip()
-                organization = Organization.objects.filter(inn=org_tin).first()
+                dep_ids = [
+                    str(pos.get("dep_id") or "").strip()
+                    for pos in positions
+                    if pos.get("dep_id")
+                ]
 
-                if not organization:
+                if not dep_ids:
                     return JsonResponse(
-                        {"status": "forbidden", "message": "Tashkilot tizimda topilmadi", "redirect": "/sso/login/"},
+                        {"status": "forbidden", "message": "Pozitsiyalarda dep_id topilmadi", "redirect": "/sso/login/"},
                         status=403
                     )
 
@@ -193,33 +207,48 @@ def sso_exchange(request):
                         password=secrets.token_urlsafe(16),
                     )
 
-                    employee              = user.employee
-                    employee.pinfl        = sso_pinfl
-                    employee.first_name   = (result.get("name")       or "").strip()
-                    employee.last_name    = (result.get("surname")    or "").strip()
-                    employee.father_name  = (result.get("partonimic") or "").strip()
-                    employee.organization = organization
+                    # Avval employee olamiz, keyin fieldlarni to'ldiramiz
+                    employee             = user.employee
+                    employee.pinfl       = sso_pinfl
+                    employee.first_name  = (result.get("name")       or "").strip()
+                    employee.last_name   = (result.get("surname")    or "").strip()
+                    employee.father_name = (result.get("partonimic") or "").strip()
+
+                    # dep_id bo'yicha Department / Directorate / Division topamiz
+                    for dep_id in dep_ids:
+                        department = Department.objects.filter(code=dep_id).first()
+                        if department:
+                            employee.department = department
+                            break
+
+                        directorate = Directorate.objects.filter(code=dep_id).first()
+                        if directorate:
+                            employee.directorate = directorate
+                            break
+
+                        division = Division.objects.filter(code=dep_id).first()
+                        if division:
+                            employee.division = division
+                            break
+
                     employee.save()
 
                     rol, _ = Rol.objects.get_or_create(employee=employee)
-                    rol.client = organization.inn != getattr(settings, "ATM_INN", "201059101")
-                    rol.save(update_fields=["client"])
+                    rol.save()
 
             except Exception as gateway_error:
+                logger.exception("Gateway yoki user yaratishda xatolik")
                 return JsonResponse(
                     {"status": "forbidden", "message": str(gateway_error), "redirect": "/sso/login/"},
                     status=403
                 )
 
-            auth_login(request, employee.user)
-            request.session.pop("SSO_FLOW", None)
-            request.session.modified = True
-            return JsonResponse({"status": "ok", "redirect": "/profil/"}, status=200)
+        # --- Umumiy tekshiruvlar (yangi va mavjud user uchun ham) ---
 
-        if not employee.organization:
+        if not employee or not employee.user:
             return JsonResponse(
-                {"status": "forbidden", "message": "Sizga tashkilot biriktirilmagan", "redirect": "/sso/login/"},
-                status=403
+                {"status": "error", "message": "Foydalanuvchi aniqlanmadi", "redirect": "/sso/login/"},
+                status=500
             )
 
         if not employee.user.is_active:
