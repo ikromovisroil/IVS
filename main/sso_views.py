@@ -234,7 +234,8 @@ def sso_exchange(request):
                     employee.save()
 
                     rol, _ = Rol.objects.get_or_create(employee=employee)
-                    rol.save()
+                    rol.client = employee.organization_id != 4
+                    rol.save(update_fields=["client"])
 
             except Exception as gateway_error:
                 logger.exception("Gateway yoki user yaratishda xatolik")
