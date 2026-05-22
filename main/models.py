@@ -165,7 +165,7 @@ class Employee(models.Model):
         # Department tanlansa → organization avtomatik
         if self.department and self.department.organization:
             self.organization = self.department.organization
-            if self.organization_id != 4:
+            if self.organization_id == 4:
                 self.region = self.department.region
 
 
