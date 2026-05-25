@@ -32,7 +32,7 @@ def _get_base_url(request, local_path: str, settings_key: str) -> str:
     host = request.get_host()
     if "localhost" in host or "127.0.0.1" in host:
         return f"http://localhost:8000{local_path}"
-    return getattr(settings, settings_key, "") or f"https://report.imv.uz{local_path}"
+    return getattr(settings, settings_key, "") or f"https://report.yatm.uz{local_path}"
 
 
 def get_sso_redirect_uri(request) -> str:
