@@ -216,9 +216,9 @@ def sso_exchange(request):
 
                     # dep_id bo'yicha Department / Directorate / Division topamiz
                     for dep_id in dep_ids:
-                        department = Department.objects.filter(code=dep_id).first()
-                        if department:
-                            employee.department = department
+                        division = Division.objects.filter(code=dep_id).first()
+                        if division:
+                            employee.division = division
                             break
 
                         directorate = Directorate.objects.filter(code=dep_id).first()
@@ -226,9 +226,9 @@ def sso_exchange(request):
                             employee.directorate = directorate
                             break
 
-                        division = Division.objects.filter(code=dep_id).first()
-                        if division:
-                            employee.division = division
+                        department = Department.objects.filter(code=dep_id).first()
+                        if department:
+                            employee.department = department
                             break
 
                     employee.save()
