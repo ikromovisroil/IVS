@@ -265,44 +265,31 @@
 <script>
 function formatNumber(num) {
   if (num === null || num === undefined || isNaN(num)) return '0';
-
   let numStr = num.toString();
-
   if (numStr.includes('.')) {
-    let parts = numStr.split('.');
-    let integerPart = parts[0];
-    let fractionalPart = parts[1];
-
-    integerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-
-    if (fractionalPart.length === 1) fractionalPart = fractionalPart + '0';
-    else if (fractionalPart.length > 2) fractionalPart = fractionalPart.substring(0, 2);
-
-    return integerPart + ',' + fractionalPart;
-  } else {
-    return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    let [intPart, fracPart] = numStr.split('.');
+    intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+    if (fracPart.length === 1)    fracPart = fracPart + '0';
+    else if (fracPart.length > 2) fracPart = fracPart.substring(0, 2);
+    return intPart + ',' + fracPart;
   }
+  return numStr.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
 }
 
 function todayDmy() {
-  const d = new Date();
+  const d  = new Date();
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yy = d.getFullYear();
   return `${dd}.${mm}.${yy} y`;
 }
 
-function formatMonthYear(dateStr) {
-  if (!dateStr) return '';
-
+function formatMonthYear() {
   const months = [
-    'fevral', 'mart', 'aprel', 'may', 'iyun',
-    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr', 'yanvar'
+    'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
+    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
   ];
-
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return '';
-
+  const d = new Date();
   return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
 }
 
@@ -316,86 +303,64 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+// ─── EDITOR ───────────────────────────────────────────────────────────────────
+
 function editorGet() {
-  return window.tinymce ? tinymce.get('body') : null;
+  if (!window.tinymce) return null;
+  const ed = tinymce.get('body');
+  if (!ed) return null;
+  try { if (!ed.getBody()) return null; } catch (e) { return null; }
+  return ed;
 }
 
 function editorSetText(selector, text) {
   const ed = editorGet();
   if (!ed) return false;
-
   try {
     const node = ed.getBody().querySelector(selector);
-    if (node) {
-      node.textContent = text;
-      ed.nodeChanged();
-      return true;
-    }
-  } catch (e) {
-    console.log('editorSetText xatosi:', e);
-  }
+    if (node) { node.textContent = text; ed.nodeChanged(); return true; }
+  } catch (e) { console.log('editorSetText xatosi:', e); }
   return false;
 }
 
 function editorSetTbodyRows(rowsHtml) {
-    const ed = editorGet();
-    if (!ed) return;
-
-    try {
-        const tbody = ed.getBody().querySelector('#materials_tbody');
-
-        if (!tbody) {
-            console.log('materials_tbody topilmadi');
-            return;
-        }
-
-        tbody.innerHTML = rowsHtml;
-        ed.nodeChanged();
-
-    } catch (e) {
-        console.log('editorSetTbodyRows xatosi:', e);
-    }
-}
-
-function updateEditorWithSelections() {
   const ed = editorGet();
   if (!ed) return;
-
-  const selectedOption = $('#organization option:selected');
-  const orgName = selectedOption.text().trim();
-  const contractText = selectedOption.attr('data-contract') || '';
-  const date1 = $('#date1').val();
-
-  if (orgName && orgName !== 'Tanlang...') {
-    editorSetText('#org_id', orgName);
-  } else {
-    editorSetText('#org_id', 'Tashkilot');
-  }
-
-  if (contractText && contractText.trim() !== '') {
-    editorSetText('#date_contract', contractText);
-  } else {
-    editorSetText('#date_contract', '_');
-  }
-
-  editorSetText('#doc_date', todayDmy());
-
-  const periodText = formatMonthYear(date1);
-  if (periodText) {
-    editorSetText('#report_period', periodText);
-  } else {
-    editorSetText('#report_period', '');
-  }
+  try {
+    const tbody = ed.getBody().querySelector('#materials_tbody');
+    if (!tbody) { console.log('materials_tbody topilmadi'); return; }
+    tbody.innerHTML = rowsHtml;
+    ed.nodeChanged();
+  } catch (e) { console.log('editorSetTbodyRows xatosi:', e); }
 }
 
+function waitForTinyMCE(callback, tries = 0) {
+  const ed = editorGet();
+  if (ed) { callback(); return; }
+  if (tries > 50) { console.log('TinyMCE topilmadi'); return; }
+  setTimeout(function () { waitForTinyMCE(callback, tries + 1); }, 200);
+}
+
+// ─── EDITOR UPDATE ────────────────────────────────────────────────────────────
+
+function updateEditorWithSelections() {
+  const $opt         = $('#organization option:selected');
+  const orgName      = $opt.text().trim();
+  const contractText = $opt.attr('data-contract') || '';
+
+  editorSetText('#org_id',        (orgName && orgName !== 'Tanlang...') ? orgName : 'Tashkilot');
+  editorSetText('#date_contract', contractText.trim() ? contractText : '_');
+  editorSetText('#doc_date',      todayDmy());
+  editorSetText('#report_period', formatMonthYear());
+}
+
+// ─── AJAX ─────────────────────────────────────────────────────────────────────
+
 function loadAgreementsByOrg(orgId, selectedIds = []) {
-  const $agreements = $('#agreements');
+  const $agr = $('#agreements');
+  $agr.html('').trigger('change');
 
-  $agreements.html('').trigger('change');
-
-  if (!orgId) {
-    return;
-  }
+  if (!orgId) return;
 
   $.ajax({
     url: "{% url 'ajax_agreements_employees' %}",
@@ -404,17 +369,17 @@ function loadAgreementsByOrg(orgId, selectedIds = []) {
     data: { org_id: orgId },
 
     success: function (data) {
-      let options = '';
       const selectedSet = new Set((selectedIds || []).map(String));
+      let options = '';
 
       (data || []).forEach(function (emp) {
-        const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
+        const sel      = selectedSet.has(String(emp.id)) ? 'selected' : '';
         const fullName = emp.full_name || '';
-        const rank = emp.rank || '';
+        const rank     = emp.rank     || '';
         const fullText = rank ? `${fullName} (${rank})` : fullName;
 
         options += `
-          <option value="${escapeHtml(emp.id)}" ${selected}
+          <option value="${escapeHtml(emp.id)}" ${sel}
                   data-fullname="${escapeHtml(fullName)}"
                   data-rank="${escapeHtml(rank)}">
             ${escapeHtml(fullText)}
@@ -422,12 +387,12 @@ function loadAgreementsByOrg(orgId, selectedIds = []) {
         `;
       });
 
-      $agreements.html(options).trigger('change');
+      $agr.html(options).trigger('change');
     },
 
     error: function (xhr) {
-      console.error('Kelishuvchilar AJAX xatosi:', xhr.status, xhr.statusText, xhr.responseText);
-      $agreements.html('').trigger('change');
+      console.error('Kelishuvchilar AJAX xatosi:', xhr.status, xhr.responseText);
+      $agr.html('').trigger('change');
     }
   });
 }
@@ -446,7 +411,7 @@ function searchMaterials() {
 
   editorSetTbodyRows(`
     <tr>
-      <td colspan="8" style="border:1px solid #000; text-align:center; padding:14px; font-size:10pt;">
+      <td colspan="8" style="border:1px solid #000;text-align:center;padding:14px;font-size:10pt;">
         <i>Yuklanmoqda...</i>
       </td>
     </tr>
@@ -456,17 +421,13 @@ function searchMaterials() {
     url: "{% url 'ajax_svod_materials' %}",
     method: 'GET',
     dataType: 'json',
-    data: {
-      organization: orgId,
-      date1: date1,
-      date2: date2
-    },
+    data: { organization: orgId, date1: date1, date2: date2 },
 
     success: function (data) {
-      if (!Array.isArray(data) || data.length === 0) {
+      if (!Array.isArray(data) || !data.length) {
         editorSetTbodyRows(`
           <tr>
-            <td colspan="8" style="border:1px solid #000; text-align:center; color:#888; padding:14px; font-size:10pt;">
+            <td colspan="8" style="border:1px solid #000;text-align:center;color:#888;padding:14px;font-size:10pt;">
               Tanlangan sana oralig'ida ma'lumot topilmadi
             </td>
           </tr>
@@ -474,69 +435,61 @@ function searchMaterials() {
         return;
       }
 
-      let rows = '';
-      let totalQty = 0;
+      let rows     = '';
       let totalSum = 0;
-      let index = 1;
+      let index    = 1;
 
-      data.forEach(function(item) {
-         const materialName = item.material__name || '';
-        const unit = item.material__unit__name || 'dona';
-        const qty = parseFloat(item.total_number || 0) || 0;
+      data.forEach(function (item) {
+        const qty   = parseFloat(item.total_number   || 0) || 0;
         const price = parseFloat(item.material__price || 0) || 0;
-        const sum = parseFloat(item.total_sum || 0) || 0;
-        const note = item.order_info || '';
-        const code = item.material__code || '';
-
-        totalQty += qty;
+        const sum   = parseFloat(item.total_sum       || 0) || 0;
         totalSum += sum;
 
         rows += `
           <tr>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${index++}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(materialName)}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(unit)}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(qty)}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(price)}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(sum)}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(note)}</td>
-            <td style="border:1px solid #000; font-size:8pt; text-align:center;">${escapeHtml(code)}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__name       || '')}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__unit__name || 'dona')}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(qty)}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(price)}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(sum)}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.order_info          || '')}</td>
+            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__code      || '')}</td>
           </tr>
         `;
       });
 
       rows += `
         <tr>
-          <td colspan="5" style="border:1px solid #000; font-size:8pt; text-align:right; font-weight:bold; background-color: rgb(251, 238, 184);">JAMI:</td>
-          <td style="border:1px solid #000; font-size:8pt; text-align:center; font-weight:bold; background-color: rgb(251, 238, 184);">${formatNumber(totalSum)}</td>
-          <td colspan="2" style="border:1px solid #000; background-color: rgb(251, 238, 184);"></td>
+          <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">JAMI:</td>
+          <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(totalSum)}</td>
+          <td colspan="2" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
         </tr>
       `;
 
       editorSetTbodyRows(rows);
     },
 
-    error: function(xhr, status, error) {
-      console.error('Xatolik:', error);
-      console.error('Status:', status);
-      console.error('Response:', xhr.responseText);
-
-      let errorMessage = "Xatolik yuz berdi";
-      if (xhr.status === 404) errorMessage = "So'rov yo'li topilmadi (404)";
-      else if (xhr.status === 500) errorMessage = "Server xatoligi (500)";
-      else if (xhr.status === 403) errorMessage = "Ruxsat yo'q (403)";
-      else if (xhr.status === 400) errorMessage = "Noto'g'ri so'rov (400)";
+    error: function (xhr) {
+      const msg = {
+        404: "So'rov yo'li topilmadi (404)",
+        500: "Server xatoligi (500)",
+        403: "Ruxsat yo'q (403)",
+        400: "Noto'g'ri so'rov (400)",
+      }[xhr.status] || "Xatolik yuz berdi";
 
       editorSetTbodyRows(`
         <tr>
-          <td colspan="8" style="border:1px solid #000; text-align:center; color:red; padding:14px; font-size:10pt;">
-            ${errorMessage}. Batafsil: ${xhr.status} ${xhr.statusText}
+          <td colspan="8" style="border:1px solid #000;text-align:center;color:red;padding:14px;font-size:10pt;">
+            ${msg}. Batafsil: ${xhr.status} ${xhr.statusText}
           </td>
         </tr>
       `);
     }
   });
 }
+
+// ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
 $(function () {
   if ($.fn.select2) {
@@ -547,33 +500,22 @@ $(function () {
     });
   }
 
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
+  const today    = new Date();
   const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
-  const monthAgoStr = monthAgo.toISOString().split('T')[0];
 
-  if (!$('#date1').val()) $('#date1').val(monthAgoStr);
-  if (!$('#date2').val()) $('#date2').val(todayStr);
+  if (!$('#date1').val()) $('#date1').val(monthAgo.toISOString().split('T')[0]);
+  if (!$('#date2').val()) $('#date2').val(today.toISOString().split('T')[0]);
 
-  const timer = setInterval(function () {
-    if (editorGet()) {
-      clearInterval(timer);
-      updateEditorWithSelections();
-    }
-  }, 300);
+  // ─── EVENTS ───────────────────────────────────────────────────────────────
 
   $('#organization').on('change', function () {
     const orgId = $(this).val();
-
     updateEditorWithSelections();
-
     if (!orgId) {
       $('#agreements').html('').trigger('change');
       return;
     }
-
     loadAgreementsByOrg(orgId);
   });
 
@@ -592,12 +534,19 @@ $(function () {
     return true;
   });
 
-  {% if selected_org %}
-    $('#organization').val('{{ selected_org }}').trigger('change');
-  {% else %}
-    $('#agreements').html('').trigger('change');
+  // ─── INITIAL LOAD ─────────────────────────────────────────────────────────
+
+  const initialOrg = '{{ selected_org|default:"" }}';
+
+  if (initialOrg) {
+    $('#organization').val(initialOrg);
+    loadAgreementsByOrg(initialOrg);
+  }
+
+  waitForTinyMCE(function () {
     updateEditorWithSelections();
-  {% endif %}
+  });
+
 });
 </script>
 

@@ -271,131 +271,99 @@
 
 <script>
 function todayDmy() {
-  const d = new Date();
+  const d  = new Date();
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yy = d.getFullYear();
   return `${dd}.${mm}.${yy}`;
 }
 
-function ymdToDmy(ymd) {
-  if (!ymd) return '';
-  const [y, m, d] = ymd.split('-');
-  return `${d}.${m}.${y}`;
-}
-
 function formatNumber(value) {
   if (value === null || value === undefined) return '-';
-
   let s = String(value).trim();
   if (!s) return '-';
-
   s = s.replace(/\s+/g, '');
   const normalized = s.replace(',', '.');
-
   const num = Number(normalized);
   if (!isFinite(num)) return '-';
-
   const hasFraction = /[,.]\d+/.test(s);
-
   let [intPart, fracPart] = (hasFraction ? num.toFixed(2) : Math.trunc(num).toString()).split('.');
-
   const sign = intPart.startsWith('-') ? '-' : '';
-  intPart = intPart.replace('-', '');
-  intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
-
+  intPart = intPart.replace('-', '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
   return hasFraction ? `${sign}${intPart},${fracPart}` : `${sign}${intPart}`;
 }
 
-// ----------------- TinyMCE helper -----------------
+// ─── EDITOR HELPERS ───────────────────────────────────────────────────────────
+
 function editorGet() {
-  return tinymce.get('body');
+  if (!window.tinymce) return null;
+  const ed = tinymce.get('body');
+  if (!ed) return null;
+  try { if (!ed.getBody()) return null; } catch (e) { return null; }
+  return ed;
 }
 
 function editorSetText(selector, text) {
   const ed = editorGet();
   if (!ed) return false;
-
   try {
     const node = ed.getBody().querySelector(selector);
-    if (node) {
-      node.textContent = text;
-      ed.nodeChanged();
-      return true;
-    }
-  } catch (e) {
-    console.log("editorSetText xatosi:", e);
-  }
+    if (node) { node.textContent = text; ed.nodeChanged(); return true; }
+  } catch (e) { console.log("editorSetText xatosi:", e); }
   return false;
 }
 
 function editorSetTbodyRows(rowsHtml) {
   const ed = editorGet();
   if (!ed) return;
-
   try {
-    const body = ed.getBody();
-    const tbody = body.querySelector('#materials_tbody');
-    if (!tbody) {
-      console.log("materials_tbody topilmadi");
-      return;
-    }
-
-    const trs = tbody.querySelectorAll('tr');
+    const tbody = ed.getBody().querySelector('#materials_tbody');
+    if (!tbody) return;
+    const trs     = tbody.querySelectorAll('tr');
     const header1 = trs[0] ? trs[0].outerHTML : '';
     const header2 = trs[1] ? trs[1].outerHTML : '';
-
     tbody.innerHTML = header1 + header2 + (rowsHtml || '');
     ed.nodeChanged();
-  } catch (e) {
-    console.log("editorSetTbodyRows xatosi:", e);
-  }
+  } catch (e) { console.log("editorSetTbodyRows xatosi:", e); }
 }
 
-// ----------------- Editor update funksiyalar -----------------
-function updateContractText() {
-  const selectedOption = $('#organization option:selected');
-  const contract = selectedOption.data('contract');
-
-  if (contract && String(contract).trim() !== '') {
-    editorSetText('#date_contract', contract);
-  } else {
-    editorSetText('#date_contract', '_');
-  }
+function waitForTinyMCE(callback, tries = 0) {
+  const ed = editorGet();
+  if (ed) { callback(); return; }
+  if (tries > 50) { console.log("TinyMCE topilmadi"); return; }
+  setTimeout(function () { waitForTinyMCE(callback, tries + 1); }, 200);
 }
+
+// ─── EDITOR UPDATE ────────────────────────────────────────────────────────────
 
 function updateDocDate() {
-  const bugungiSana = todayDmy() + ' y';
-  editorSetText('#doc_date', bugungiSana);
+  editorSetText('#doc_date', todayDmy() + ' y');
+}
+
+function updateContractText() {
+  const contract = $('#organization option:selected').data('contract');
+  editorSetText('#date_contract', (contract && String(contract).trim()) ? contract : '_');
 }
 
 function updateEditorWithSelections() {
   const orgName = $('#organization option:selected').text();
   const depName = $('#department option:selected').text();
 
-  if (orgName && orgName !== 'Tanlang...') {
-    editorSetText('#org_id_1', orgName);
-    editorSetText('#org_id_2', orgName);
-  } else {
-    editorSetText('#org_id_1', 'Tashkilot');
-    editorSetText('#org_id_2', 'Tashkilot');
-  }
+  const org = (orgName && orgName !== 'Tanlang...') ? orgName : 'Tashkilot';
+  const dep = (depName && depName !== 'Tanlang...') ? depName : 'Departament';
 
-  if (depName && depName !== 'Tanlang...') {
-    editorSetText('#dep_id', depName);
-  } else {
-    editorSetText('#dep_id', 'Departament');
-  }
+  editorSetText('#org_id_1', org);
+  editorSetText('#org_id_2', org);
+  editorSetText('#dep_id',   dep);
 
   updateContractText();
 
-  const senderEl = $('#sender option:selected');
+  const $sender  = $('#sender option:selected');
   const senderVal = $('#sender').val();
 
   if (senderVal) {
-    const fullText = senderEl.text() || '_';
-    const fullName = senderEl.data('fullname') || fullText;
-
+    const fullText = $sender.text()                   || '_';
+    const fullName = $sender.data('fullname') || fullText;
     editorSetText('#sender_name1', fullText);
     editorSetText('#sender_name2', fullName);
   } else {
@@ -404,36 +372,42 @@ function updateEditorWithSelections() {
   }
 }
 
-// ----------------- jQuery ready -----------------
+// ─── JQUERY READY ─────────────────────────────────────────────────────────────
+
 $(function () {
+
   $('#organization, #department, #sender, #agreements').select2({
     width: '100%',
     placeholder: 'Tanlang...',
     allowClear: true
   });
 
-  const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
-
+  // Sanalarni avtomatik to'ldirish
+  const today    = new Date();
   const monthAgo = new Date();
   monthAgo.setMonth(monthAgo.getMonth() - 1);
-  const monthAgoStr = monthAgo.toISOString().split('T')[0];
 
-  if (!$('#date1').val()) $('#date1').val(monthAgoStr);
-  if (!$('#date2').val()) $('#date2').val(todayStr);
+  if (!$('#date1').val()) $('#date1').val(monthAgo.toISOString().split('T')[0]);
+  if (!$('#date2').val()) $('#date2').val(today.toISOString().split('T')[0]);
+
   const userRegion = "{{ user_region|default:'' }}";
 
-  function loadDepartments(orgId, regId, selectedDepId = null) {
+  // ─── LOAD DEPARTMENTS ───────────────────────────────────────────────────────
+
+  function loadDepartments(orgId, regId, selectedDepId = null, onSuccess = null) {
     const effectiveReg = regId || userRegion;
-    if (!orgId || !effectiveReg) return;
+    const $dep         = $('#department');
+    const $sender      = $('#sender');
+    const $agr         = $('#agreements');
 
-    const $dep = $('#department');
-    const $sender = $('#sender');
-    const $agr = $('#agreements');
+    if (!orgId || !effectiveReg) {
+      $dep.html('<option value="">Tanlang...</option>').val('').trigger('change');
+      return;
+    }
 
-    $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change.select2');
-    $sender.html('<option value="">Tanlang...</option>').val('').trigger('change.select2');
-    $agr.html('').trigger('change.select2');
+    $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change');
+    $sender.html('<option value="">Tanlang...</option>').val('').trigger('change');
+    $agr.html('').trigger('change');
 
     $.ajax({
       url: "{% url 'ajax_load_departments' %}",
@@ -442,20 +416,12 @@ $(function () {
       data: { organization: orgId, region: effectiveReg },
 
       success: function (data) {
-        console.log("Departments AJAX data:", data);
-
         const list = Array.isArray(data) ? data : (data.departments || data.results || []);
-
-        if (!Array.isArray(list)) {
-          console.error("Departments format xato:", list);
-          $dep.html('<option value="">Format xato</option>').val('').trigger('change.select2');
-          return;
-        }
-
         let options = '<option value="">Tanlang...</option>';
-        list.forEach(function(dep) {
-          const selected = selectedDepId && String(selectedDepId) === String(dep.id) ? 'selected' : '';
-          options += `<option value="${dep.id}" ${selected}>${dep.name}</option>`;
+
+        list.forEach(function (dep) {
+          const sel = selectedDepId && String(selectedDepId) === String(dep.id) ? 'selected' : '';
+          options += `<option value="${dep.id}" ${sel}>${dep.name}</option>`;
         });
 
         $dep.html(options);
@@ -465,18 +431,21 @@ $(function () {
         } else {
           $dep.val('').trigger('change');
         }
+
+        if (typeof onSuccess === 'function') onSuccess();
       },
 
-      error: function(xhr) {
-        console.error("Departments AJAX error:", xhr.status, xhr.statusText);
-        console.log(xhr.responseText);
-        $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change.select2');
+      error: function (xhr) {
+        console.error("Departments AJAX error:", xhr.status, xhr.responseText);
+        $dep.html('<option value="">Xatolik yuz berdi</option>').val('').trigger('change');
       }
     });
   }
 
+  // ─── LOAD SIGNATORIES ───────────────────────────────────────────────────────
+
   function loadSignatories(depId, selectedSenderId = null) {
-    const orgId = $('#organization').val();
+    const orgId   = $('#organization').val();
     const $sender = $('#sender');
 
     $sender.html('<option value="">Yuklanmoqda...</option>').trigger('change');
@@ -488,7 +457,7 @@ $(function () {
 
     const payload = {};
     if (orgId) payload.organization = orgId;
-    if (depId) payload.department = depId;
+    if (depId) payload.department   = depId;
 
     $.ajax({
       url: "{% url 'ajax_dep_signatory' %}",
@@ -496,15 +465,57 @@ $(function () {
       dataType: "json",
       data: payload,
 
-      success: function(data) {
+      success: function (data) {
         let options = '<option value="">Tanlang...</option>';
-
-        (data || []).forEach(function(emp) {
-          const selected = String(selectedSenderId) === String(emp.id) ? 'selected' : '';
+        (data || []).forEach(function (emp) {
+          const sel      = String(selectedSenderId) === String(emp.id) ? 'selected' : '';
           const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-
           options += `
-            <option value="${emp.id}" ${selected}
+            <option value="${emp.id}" ${sel}
+                    data-fullname="${emp.full_name || ''}"
+                    data-rank="${emp.rank || ''}">
+              ${fullText}
+            </option>
+          `;
+        });
+        $sender.html(options).trigger('change');
+      },
+
+      error: function (xhr) {
+        console.error("Signatory AJAX error:", xhr.status, xhr.responseText);
+        $sender.html('<option value="">Xatolik</option>').trigger('change');
+      }
+    });
+  }
+
+  // ─── LOAD NEGOTIATORS ───────────────────────────────────────────────────────
+
+  function loadNegotiators(depId, selectedIds = []) {
+    const orgId = $('#organization').val();
+    const $agr  = $('#agreements');
+
+    $agr.html('').trigger('change');
+    if (!orgId && !depId) return;
+
+    const payload = {};
+    if (orgId) payload.organization = orgId;
+    if (depId) payload.department   = depId;
+
+    $.ajax({
+      url: "{% url 'ajax_dep_negotiator' %}",
+      method: "GET",
+      dataType: "json",
+      data: payload,
+
+      success: function (data) {
+        const selectedSet = new Set((selectedIds || []).map(String));
+        let options = '';
+
+        (data || []).forEach(function (emp) {
+          const sel      = selectedSet.has(String(emp.id)) ? 'selected' : '';
+          const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
+          options += `
+            <option value="${emp.id}" ${sel}
                     data-fullname="${emp.full_name || ''}"
                     data-rank="${emp.rank || ''}">
               ${fullText}
@@ -512,62 +523,17 @@ $(function () {
           `;
         });
 
-        $sender.html(options).trigger('change');
+        $agr.html(options).trigger('change');
       },
 
-      error: function(xhr) {
-        console.error("Signatory AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
-        $sender.html('<option value="">Xatolik</option>').trigger('change');
+      error: function (xhr) {
+        console.error("Negotiators AJAX error:", xhr.status, xhr.responseText);
+        $agr.html('').trigger('change');
       }
     });
   }
 
-  function loadNegotiators(depId, selectedIds = []) {
-      const orgId = $('#organization').val();
-      const $agr = $('#agreements');
-
-      $agr.html('').trigger('change');
-
-      if (!orgId && !depId) return;
-
-      const payload = {};
-      if (orgId) payload.organization = orgId;
-      if (depId) payload.department = depId;
-
-      $agr.html('<option value="">Yuklanmoqda...</option>').trigger('change');
-
-      $.ajax({
-        url: "{% url 'ajax_dep_negotiator' %}",
-        method: "GET",
-        dataType: "json",
-        data: payload,
-
-        success: function(data) {
-          let options = '';
-          const selectedSet = new Set((selectedIds || []).map(String));
-
-          (data || []).forEach(function(emp) {
-            const selected = selectedSet.has(String(emp.id)) ? 'selected' : '';
-            const fullText = emp.rank ? `${emp.full_name} (${emp.rank})` : emp.full_name;
-
-            options += `
-              <option value="${emp.id}" ${selected}
-                      data-fullname="${emp.full_name || ''}"
-                      data-rank="${emp.rank || ''}">
-                ${fullText}
-              </option>
-            `;
-          });
-
-          $agr.html(options).trigger('change');
-        },
-
-        error: function(xhr) {
-          console.error("Negotiators AJAX error:", xhr.status, xhr.statusText, xhr.responseText);
-          $agr.html('').trigger('change');
-        }
-      });
-  }
+  // ─── SEARCH MATERIALS ───────────────────────────────────────────────────────
 
   function searchMaterials() {
     const orgId = $('#organization').val();
@@ -585,7 +551,7 @@ $(function () {
 
     editorSetTbodyRows(`
       <tr>
-        <td colspan="11" style="text-align:center; padding:20px;">
+        <td colspan="11" style="text-align:center;padding:20px;">
           <i>Yuklanmoqda...</i>
         </td>
       </tr>
@@ -595,18 +561,13 @@ $(function () {
       url: "{% url 'ajax_akt_materials' %}",
       method: "GET",
       dataType: "json",
-      data: {
-        organization: orgId,
-        department: depId,
-        date1: date1,
-        date2: date2
-      },
+      data: { organization: orgId, department: depId, date1: date1, date2: date2 },
 
-      success: function(data) {
-        if (!data || data.length === 0) {
+      success: function (data) {
+        if (!data || !data.length) {
           editorSetTbodyRows(`
             <tr>
-              <td colspan="11" style="text-align:center; color:#888; padding:20px;">
+              <td colspan="11" style="text-align:center;color:#888;padding:20px;">
                 Tanlangan sana oralig'ida ma'lumot topilmadi
               </td>
             </tr>
@@ -615,29 +576,26 @@ $(function () {
         }
 
         let rows = '';
-
-        data.forEach(function(item, index) {
+        data.forEach(function (item, index) {
           let finishedDate = '-';
           if (item['order__date_finished']) {
             const dt = new Date(item['order__date_finished']);
-            if (!isNaN(dt.getTime())) {
-              finishedDate = dt.toLocaleDateString('ru-RU');
-            }
+            if (!isNaN(dt.getTime())) finishedDate = dt.toLocaleDateString('ru-RU');
           }
 
           rows += `
             <tr>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${index + 1}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['order__technics__serial'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['number'])}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['material__unit__name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['full_name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['rank_name'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${formatNumber(item['material__price'])}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${item['id'] || '-'}</td>
-              <td style="border:1px solid #000; font-size:8pt; text-align:center;">${finishedDate}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index + 1}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['order__technics__name']   || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['order__technics__serial'] || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['material__name']          || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item['number'])}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['material__unit__name']    || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['full_name']               || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['rank_name']               || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item['material__price'])}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${item['id']                      || '-'}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${finishedDate}</td>
             </tr>
           `;
         });
@@ -645,12 +603,11 @@ $(function () {
         editorSetTbodyRows(rows);
       },
 
-      error: function(xhr) {
-        console.error("Material search error:", xhr.status, xhr.statusText, xhr.responseText);
-
+      error: function (xhr) {
+        console.error("Material search error:", xhr.status, xhr.responseText);
         editorSetTbodyRows(`
           <tr>
-            <td colspan="11" style="text-align:center; color:red; padding:20px;">
+            <td colspan="11" style="text-align:center;color:red;padding:20px;">
               Xatolik yuz berdi: ${xhr.status} ${xhr.statusText}
             </td>
           </tr>
@@ -659,97 +616,76 @@ $(function () {
     });
   }
 
-  // ----------------- Events -----------------
-  $('#organization').on('change', function() {
-    const orgId = $(this).val();
+  // ─── EVENTS ─────────────────────────────────────────────────────────────────
 
-    loadDepartments($(this).val(), userRegion);
+  $('#organization').on('change', function () {
+    const orgId = $(this).val();
     updateEditorWithSelections();
     updateContractText();
+
+    loadDepartments(orgId, userRegion, null, function () {
+      const depId = $('#department').val();
+      loadSignatories(depId);
+      loadNegotiators(depId);
+    });
   });
 
-  $('#department').on('change', function() {
+  $('#department').on('change', function () {
     const depId = $(this).val();
-
     loadSignatories(depId);
     loadNegotiators(depId);
     updateEditorWithSelections();
   });
 
-  $('#sender').on('change', function() {
+  $('#sender').on('change', function () {
     updateEditorWithSelections();
   });
 
-  $('#btnSearch').on('click', function() {
+  $('#btnSearch').on('click', function () {
     searchMaterials();
   });
 
-  // ----------------- Initial load -----------------
-  const initialOrg = '{{ selected_org|default:"" }}';
-  const initialDep = '{{ selected_dep|default:"" }}';
-  const initialSender = '{{ selected_sender|default:"" }}';
+  $('form').on('submit', function () {
+    const ed = editorGet();
+    if (ed) ed.save();
+    return true;
+  });
+
+  // ─── INITIAL LOAD ────────────────────────────────────────────────────────────
+
+  const initialOrg         = '{{ selected_org|default:"" }}';
+  const initialDep         = '{{ selected_dep|default:"" }}';
+  const initialSender      = '{{ selected_sender|default:"" }}';
   const initialConsentList = {{ selected_employees|default:"[]"|safe }};
 
-  function initAll() {
-    updateDocDate();
-    updateEditorWithSelections();
-    updateContractText();
-  }
-
-  function waitForTinyMCEAndInit(tries = 0) {
-    const ed = editorGet();
-    if (ed) {
-      initAll();
-      return;
-    }
-
-    if (tries > 30) {
-      console.log("TinyMCE topilmadi");
-      return;
-    }
-
-    setTimeout(function() {
-      waitForTinyMCEAndInit(tries + 1);
-    }, 300);
-  }
-
   if (initialOrg) {
-    $('#organization').val(initialOrg).trigger('change');
+    $('#organization').val(initialOrg);
 
-    loadDepartments(initialOrg, userRegion, initialDep);
-
-    setTimeout(function() {
+    loadDepartments(initialOrg, userRegion, initialDep, function () {
       if (initialDep) {
         $('#department').val(initialDep).trigger('change');
-
         loadSignatories(initialDep, initialSender);
         loadNegotiators(initialDep, initialConsentList);
-
-        setTimeout(function() {
-          if (initialSender) {
-            $('#sender').val(initialSender).trigger('change');
-          }
-
-          updateDocDate();
-          updateEditorWithSelections();
-          updateContractText();
-        }, 1000);
-      } else {
+      }
+      waitForTinyMCE(function () {
         updateDocDate();
         updateEditorWithSelections();
         updateContractText();
-      }
-    }, 700);
+        if (initialSender) {
+          $('#sender').val(initialSender).trigger('change');
+          updateEditorWithSelections();
+        }
+      });
+    });
   } else {
-    waitForTinyMCEAndInit();
+    waitForTinyMCE(function () {
+      updateDocDate();
+      updateEditorWithSelections();
+      updateContractText();
+    });
   }
 
-  // TinyMCE yuklangandan keyin yana bir marta yangilab qo'yamiz
-  setTimeout(function() {
-    updateDocDate();
-    updateEditorWithSelections();
-    updateContractText();
-  }, 1500);
 });
 </script>
+
 {% endblock content %}
