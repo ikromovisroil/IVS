@@ -187,9 +187,15 @@ def sso_exchange(request):
                     if pos.get("dep_id")
                 ]
 
-                if not dep_ids:
+                org_ids = [
+                    str(pos.get("org_id") or "").strip()
+                    for pos in positions
+                    if pos.get("org_id")
+                ]
+
+                if not dep_ids and not org_ids :
                     return JsonResponse(
-                        {"status": "forbidden", "message": "Pozitsiyalarda dep_id topilmadi", "redirect": "/sso/login/"},
+                        {"status": "forbidden", "message": "Pozitsiyalarda Tashkilot va Department topilmadi", "redirect": "/sso/login/"},
                         status=403
                     )
 
@@ -215,21 +221,28 @@ def sso_exchange(request):
                     employee.father_name = (result.get("partonimic") or "").strip()
 
                     # dep_id bo'yicha Department / Directorate / Division topamiz
-                    for dep_id in dep_ids:
-                        division = Division.objects.filter(code=dep_id).first()
-                        if division:
-                            employee.division = division
-                            break
+                    if dep_ids:
+                        for dep_id in dep_ids:
+                            division = Division.objects.filter(code=dep_id).first()
+                            if division:
+                                employee.division = division
+                                break
 
-                        directorate = Directorate.objects.filter(code=dep_id).first()
-                        if directorate:
-                            employee.directorate = directorate
-                            break
+                            directorate = Directorate.objects.filter(code=dep_id).first()
+                            if directorate:
+                                employee.directorate = directorate
+                                break
 
-                        department = Department.objects.filter(code=dep_id).first()
-                        if department:
-                            employee.department = department
-                            break
+                            department = Department.objects.filter(code=dep_id).first()
+                            if department:
+                                employee.department = department
+                                break
+                    elif org_ids:
+                        for org_id in org_ids:
+                            department = Department.objects.filter(code=org_id).first()
+                            if department:
+                                employee.department = department
+                                break
 
                     employee.save()
 
