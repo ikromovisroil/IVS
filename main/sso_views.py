@@ -193,7 +193,7 @@ def sso_exchange(request):
                     if pos.get("org_id")
                 ]
 
-                if not dep_ids and not org_ids :
+                if not dep_ids and not org_ids:
                     return JsonResponse(
                         {"status": "forbidden", "message": "Pozitsiyalarda Tashkilot va Department topilmadi", "redirect": "/sso/login/"},
                         status=403
@@ -213,37 +213,83 @@ def sso_exchange(request):
                         password=secrets.token_urlsafe(16),
                     )
 
-                    # Avval employee olamiz, keyin fieldlarni to'ldiramiz
                     employee             = user.employee
                     employee.pinfl       = sso_pinfl
                     employee.first_name  = (result.get("name")       or "").strip()
                     employee.last_name   = (result.get("surname")    or "").strip()
                     employee.father_name = (result.get("partonimic") or "").strip()
 
-                    # dep_id bo'yicha Department / Directorate / Division topamiz
+                    # -------------------------------------------------------
+                    # Bo'linma aniqlash
+                    # -------------------------------------------------------
+                    assigned = False
+
+                    # 1. dep_id bo'yicha Division → Directorate → Department
                     if dep_ids:
                         for dep_id in dep_ids:
                             division = Division.objects.filter(code=dep_id).first()
                             if division:
                                 employee.division = division
+                                assigned = True
                                 break
 
                             directorate = Directorate.objects.filter(code=dep_id).first()
                             if directorate:
                                 employee.directorate = directorate
+                                assigned = True
                                 break
 
                             department = Department.objects.filter(code=dep_id).first()
                             if department:
                                 employee.department = department
+                                assigned = True
                                 break
-                    elif org_ids:
-                        for org_id in org_ids:
+
+                    # 2. dep_id topilmadi → org_id bo'yicha Department qidir
+                    #    Topilsa → yangi Directorate yarat va employee ga biriktir
+                    if not assigned and org_ids:
+                        for idx, org_id in enumerate(org_ids):
                             department = Department.objects.filter(code=org_id).first()
                             if department:
                                 employee.department = department
+
+                                # Shu org_id ga mos position dan dep_name olamiz
+                                position_data = next(
+                                    (p for p in positions if str(p.get("org_id") or "") == org_id),
+                                    {}
+                                )
+
+                                # dep_id sifatida shu pozitsiyadagi dep_id ishlatamiz
+                                dir_code = str(position_data.get("dep_id") or "").strip() or None
+
+                                if dir_code:
+                                    directorate, _ = Directorate.objects.get_or_create(
+                                        code=dir_code,
+                                        defaults={
+                                            "name": position_data.get("dep_name") or f"Boshqarma-{dir_code}",
+                                            "department": department,
+                                        }
+                                    )
+                                    # Mavjud bo'lsa department ni yangilaymiz
+                                    if directorate.department_id != department.pk:
+                                        directorate.department = department
+                                        directorate.save(update_fields=["department"])
+
+                                    employee.directorate = directorate
+                                else:
+                                    # dep_id yo'q → faqat department ga biriktir
+                                    employee.department = department
+
+                                assigned = True
                                 break
 
+                    if not assigned:
+                        logger.warning(
+                            "PINFL %s uchun bo'linma topilmadi: dep_ids=%s, org_ids=%s",
+                            sso_pinfl, dep_ids, org_ids
+                        )
+
+                    # -------------------------------------------------------
                     employee.save()
 
                     rol, _ = Rol.objects.get_or_create(employee=employee)
@@ -257,7 +303,7 @@ def sso_exchange(request):
                     status=403
                 )
 
-        # --- Umumiy tekshiruvlar (yangi va mavjud user uchun ham) ---
+        # --- Umumiy tekshiruvlar ---
 
         if not employee or not employee.user:
             return JsonResponse(
