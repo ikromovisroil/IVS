@@ -54,8 +54,8 @@ class DivisionAdmin(admin.ModelAdmin):
 
 @admin.register(Rank)
 class RankAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
+    list_display = ("id", "code", "name")
+    search_fields = ("name", "code",)
 
 
 @admin.register(Region)
