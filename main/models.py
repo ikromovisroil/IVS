@@ -46,6 +46,7 @@ class Department(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     code = models.CharField(max_length=20, null=True, blank=True)
+    inn = models.CharField(max_length=20, null=True, blank=True)
     name = models.CharField(max_length=300)
 
     def __str__(self):
