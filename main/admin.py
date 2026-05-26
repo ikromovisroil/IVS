@@ -35,21 +35,21 @@ class OrganizationAdmin(admin.ModelAdmin):
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "region", "name", "organization")
     list_filter = ("organization", "region")
-    search_fields = ("name", "organization__name")
+    search_fields = ("name", "code", "organization__name")
 
 
 @admin.register(Directorate)
 class DirectorateAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "name", "department")
     list_filter = ("department", "department__organization")
-    search_fields = ("name", "department__name", "department__organization__name")
+    search_fields = ("name", "code", "department__name", "department__organization__name")
 
 
 @admin.register(Division)
 class DivisionAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "name", "directorate")
     list_filter = ("directorate", "directorate__department")
-    search_fields = ("name", "directorate__name")
+    search_fields = ("name", "code", "directorate__name")
 
 
 @admin.register(Rank)
