@@ -8,11 +8,13 @@ User = get_user_model()
 
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_employee(sender, instance, created, **kwargs):
-    if created:
-        emp = Employee.objects.create(user=instance)
-        Rol.objects.create(employee=emp)
+    if not created:
+        return
+    Employee.objects.get_or_create(user=instance)
 
-@receiver(post_delete, sender=Employee)
-def delete_user_on_employee_delete(sender, instance, **kwargs):
-    if instance.user_id:
-        User.objects.filter(pk=instance.user_id).delete()
+@receiver(post_save, sender=Employee)
+def create_rol(sender, instance, created, **kwargs):
+    if not created:
+        return
+    Rol.objects.get_or_create(employee=instance)
+

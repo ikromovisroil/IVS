@@ -14,7 +14,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.utils import timezone
 from django.core.files.base import ContentFile
 import string
@@ -118,15 +118,117 @@ def sso_callback(request):
     })
 
 
+def _resolve_position(sso_pinfl, positions):
+    """
+    Gateway dan kelgan positions ro'yxatini tekshirib,
+    employee ga biriktiriladigan tashkilot ma'lumotlarini qaytaradi.
+
+    Qaytaradi: dict yoki None
+    {
+        "organization": ...,
+        "department": ...,
+        "directorate": ...,
+        "division": ...,
+    }
+    """
+    for pos in positions:
+        org_tin = str(pos.get("org_tin") or "").strip()
+        dep_id = str(pos.get("dep_id") or "").strip()
+        dep_name = (pos.get("dep_name") or "").strip()
+
+        if not org_tin:
+            continue
+
+        data = {
+            "organization": None,
+            "department": None,
+            "directorate": None,
+            "division": None,
+        }
+
+        # -----------------------------------------------
+        # HOLAT A: Organization.inn = org_tin
+        # -----------------------------------------------
+        organization = Organization.objects.filter(inn=org_tin).first()
+        if organization:
+            data["organization"] = organization
+
+            if dep_id:
+                division = Division.objects.filter(
+                    code=dep_id,
+                    directorate__department__organization=organization
+                ).first()
+                if division:
+                    data["division"] = division
+                    return data
+
+                directorate = Directorate.objects.filter(
+                    code=dep_id,
+                    department__organization=organization
+                ).first()
+                if directorate:
+                    data["directorate"] = directorate
+                    return data
+
+                department = Department.objects.filter(
+                    code=dep_id,
+                    organization=organization
+                ).first()
+                if department:
+                    data["department"] = department
+                    return data
+
+                logger.warning(
+                    "PINFL %s → org_tin=%s, dep_id=%s hech qaysi kodga mos kelmadi, faqat org ga biriktirildi",
+                    sso_pinfl, org_tin, dep_id
+                )
+
+            return data  # dep_id yo'q yoki hech biriga mos kelmadi → faqat org
+
+        # -----------------------------------------------
+        # HOLAT B: Department.inn = org_tin
+        # -----------------------------------------------
+        department = Department.objects.filter(inn=org_tin).first()
+        if department:
+            data["department"] = department
+
+            if dep_id:
+                directorate = Directorate.objects.filter(
+                    code=dep_id,
+                    department=department
+                ).first()
+                if not directorate:
+                    directorate = Directorate.objects.create(
+                        code=dep_id,
+                        name=dep_name or f"Boshqarma-{dep_id}",
+                        department=department,
+                    )
+                data["directorate"] = directorate
+
+            return data
+
+        # -----------------------------------------------
+        # HOLAT C: hech biriga mos kelmadi
+        # -----------------------------------------------
+        logger.warning(
+            "PINFL %s → org_tin=%s na Organization.inn ga, na Department.inn ga mos kelmadi",
+            sso_pinfl, org_tin
+        )
+
+    return None
+
 # -----------------------
-# 5) Login exchange (faqat login uchun)
+# 5) sso_exchange Login
 # -----------------------
 @csrf_exempt
 @never_cache
 @require_POST
 def sso_exchange(request):
     try:
-        flow    = request.session.get("SSO_FLOW") or {}
+        # -------------------------------------------------------
+        # 1. Session tekshirish
+        # -------------------------------------------------------
+        flow = request.session.get("SSO_FLOW") or {}
         purpose = (flow.get("purpose") or "").strip()
 
         if purpose != "login":
@@ -135,6 +237,9 @@ def sso_exchange(request):
                 status=400
             )
 
+        # -------------------------------------------------------
+        # 2. Request body parse
+        # -------------------------------------------------------
         try:
             body = json.loads(request.body or "{}")
         except Exception:
@@ -143,9 +248,9 @@ def sso_exchange(request):
                 status=400
             )
 
-        code          = (body.get("code")         or "").strip()
+        code = (body.get("code") or "").strip()
         code_verifier = (body.get("codeVerifier") or "").strip()
-        redirect_uri  = (body.get("redirectUri")  or "").strip()
+        redirect_uri = (body.get("redirectUri") or "").strip()
 
         if not code or not code_verifier or not redirect_uri:
             return JsonResponse(
@@ -153,8 +258,11 @@ def sso_exchange(request):
                 status=400
             )
 
+        # -------------------------------------------------------
+        # 3. Token olish va PINFL aniqlash
+        # -------------------------------------------------------
         token_data = exchange_code_for_token(code, code_verifier, redirect_uri) or {}
-        id_token   = token_data.get("id_token")
+        id_token = token_data.get("id_token")
         if not id_token:
             raise PermissionDenied("id_token kelmadi")
 
@@ -163,17 +271,23 @@ def sso_exchange(request):
         if not sso_pinfl:
             raise PermissionDenied("SSO token ichida pinfl topilmadi")
 
+        # -------------------------------------------------------
+        # 4. Bazada mavjud employeeni tekshirish
+        # -------------------------------------------------------
         employee = Employee.objects.select_related(
             "user", "organization"
         ).filter(pinfl=sso_pinfl).first()
 
+        # -------------------------------------------------------
+        # 5. Yangi foydalanuvchi yaratish
+        # -------------------------------------------------------
         if not employee or not employee.user:
             try:
                 from .gateway import GatewayClient
 
                 gateway_data = GatewayClient.current_citizen(sso_pinfl)
-                result       = gateway_data.get("result") or {}
-                positions    = result.get("positions") or []
+                result = gateway_data.get("result") or {}
+                positions = result.get("positions") or []
 
                 if not positions:
                     return JsonResponse(
@@ -181,119 +295,63 @@ def sso_exchange(request):
                         status=403
                     )
 
-                dep_ids = [
-                    str(pos.get("dep_id") or "").strip()
-                    for pos in positions
-                    if pos.get("dep_id")
-                ]
+                # ---------------------------------------------------
+                # 5.1 Avval bo'linmani aniqlaymiz — hech narsa yaratmasdan
+                # ---------------------------------------------------
+                assigned_data = _resolve_position(sso_pinfl, positions)
 
-                org_ids = [
-                    str(pos.get("org_id") or "").strip()
-                    for pos in positions
-                    if pos.get("org_id")
-                ]
-
-                if not dep_ids and not org_ids:
+                if not assigned_data:
+                    logger.warning(
+                        "PINFL %s uchun hech qaysi pozitsiyada tashkilot topilmadi. positions=%s",
+                        sso_pinfl, positions
+                    )
                     return JsonResponse(
-                        {"status": "forbidden", "message": "Pozitsiyalarda Tashkilot va Department topilmadi", "redirect": "/sso/login/"},
+                        {"status": "forbidden", "message": "Tizimda tashkilot topilmadi", "redirect": "/sso/login/"},
                         status=403
                     )
 
-                base_username = f"{result.get('name', '')}.{result.get('surname', '')}".lower()
-
                 with transaction.atomic():
-                    username = base_username
-                    counter  = 1
-                    while User.objects.filter(username=username).exists():
-                        username = f"{base_username}{counter}"
-                        counter += 1
-
-                    user = User.objects.create_user(
-                        username=username,
-                        password=secrets.token_urlsafe(16),
+                    # ---------------------------------------------------
+                    # 5.2 Username yaratish — race condition xavfsiz
+                    # ---------------------------------------------------
+                    base_username = (
+                        f"{result.get('surname', '').lower()}"
+                        f".{result.get('name', '').lower()}"
                     )
+                    user = None
+                    for counter in range(2):
+                        candidate = base_username if counter == 0 else f"{base_username}{counter}"
+                        try:
+                            user = User.objects.create_user(
+                                username=candidate,
+                                password=secrets.token_urlsafe(16),
+                            )
+                            break
+                        except IntegrityError:
+                            continue
 
-                    employee             = user.employee
-                    employee.pinfl       = sso_pinfl
-                    employee.first_name  = (result.get("name")       or "").strip()
-                    employee.last_name   = (result.get("surname")    or "").strip()
+                    if user is None:
+                        raise Exception("Username yaratib bo'lmadi (2 urinishdan keyin)")
+
+                    # ---------------------------------------------------
+                    # 5.3 Employee ma'lumotlarini to'ldirish
+                    # ---------------------------------------------------
+                    employee = user.employee
+                    employee.pinfl = sso_pinfl
+                    employee.first_name = (result.get("name") or "").strip()
+                    employee.last_name = (result.get("surname") or "").strip()
                     employee.father_name = (result.get("partonimic") or "").strip()
-
-                    # -------------------------------------------------------
-                    # Bo'linma aniqlash
-                    # -------------------------------------------------------
-                    assigned = False
-
-                    # 1. dep_id bo'yicha Division → Directorate → Department
-                    if dep_ids:
-                        for dep_id in dep_ids:
-                            division = Division.objects.filter(code=dep_id).first()
-                            if division:
-                                employee.division = division
-                                assigned = True
-                                break
-
-                            directorate = Directorate.objects.filter(code=dep_id).first()
-                            if directorate:
-                                employee.directorate = directorate
-                                assigned = True
-                                break
-
-                            department = Department.objects.filter(code=dep_id).first()
-                            if department:
-                                employee.department = department
-                                assigned = True
-                                break
-
-                    # 2. dep_id topilmadi → org_id bo'yicha Department qidir
-                    #    Topilsa → yangi Directorate yarat va employee ga biriktir
-                    if not assigned and org_ids:
-                        for idx, org_id in enumerate(org_ids):
-                            department = Department.objects.filter(code=org_id).first()
-                            if department:
-                                employee.department = department
-
-                                # Shu org_id ga mos position dan dep_name olamiz
-                                position_data = next(
-                                    (p for p in positions if str(p.get("org_id") or "") == org_id),
-                                    {}
-                                )
-
-                                # dep_id sifatida shu pozitsiyadagi dep_id ishlatamiz
-                                dir_code = str(position_data.get("dep_id") or "").strip() or None
-
-                                if dir_code:
-                                    directorate, _ = Directorate.objects.get_or_create(
-                                        code=dir_code,
-                                        defaults={
-                                            "name": position_data.get("dep_name") or f"Boshqarma-{dir_code}",
-                                            "department": department,
-                                        }
-                                    )
-                                    # Mavjud bo'lsa department ni yangilaymiz
-                                    if directorate.department_id != department.pk:
-                                        directorate.department = department
-                                        directorate.save(update_fields=["department"])
-
-                                    employee.directorate = directorate
-                                else:
-                                    # dep_id yo'q → faqat department ga biriktir
-                                    employee.department = department
-
-                                assigned = True
-                                break
-
-                    if not assigned:
-                        logger.warning(
-                            "PINFL %s uchun bo'linma topilmadi: dep_ids=%s, org_ids=%s",
-                            sso_pinfl, dep_ids, org_ids
-                        )
-
-                    # -------------------------------------------------------
+                    employee.organization = assigned_data["organization"]
+                    employee.department = assigned_data["department"]
+                    employee.directorate = assigned_data["directorate"]
+                    employee.division = assigned_data["division"]
                     employee.save()
 
-                    rol, _ = Rol.objects.get_or_create(employee=employee)
-                    rol.client = employee.organization_id != 4
+                    # ---------------------------------------------------
+                    # 5.4 Rol flagini yangilash
+                    # ---------------------------------------------------
+                    rol = employee.rol
+                    rol.client = (employee.organization_id != 4)
                     rol.save(update_fields=["client"])
 
             except Exception as gateway_error:
@@ -303,8 +361,9 @@ def sso_exchange(request):
                     status=403
                 )
 
-        # --- Umumiy tekshiruvlar ---
-
+        # -------------------------------------------------------
+        # 6. Umumiy tekshiruvlar
+        # -------------------------------------------------------
         if not employee or not employee.user:
             return JsonResponse(
                 {"status": "error", "message": "Foydalanuvchi aniqlanmadi", "redirect": "/sso/login/"},
@@ -317,6 +376,9 @@ def sso_exchange(request):
                 status=403
             )
 
+        # -------------------------------------------------------
+        # 7. Login
+        # -------------------------------------------------------
         auth_login(request, employee.user)
         request.session.pop("SSO_FLOW", None)
         request.session.modified = True
