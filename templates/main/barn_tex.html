@@ -54,20 +54,17 @@
                       <select id="status" name="status" class="form-select">
                           <option value="">Tanlang...</option>
                           <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
-                          <option value="free" {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
-                          <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                          <option value="free"   {% if request.GET.status == "free"   %}selected{% endif %}>Bo'sh</option>
+                          <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta'mirda</option>
                           <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Yaroqsiz</option>
                       </select>
                   </div>
 
                   <div class="col-md-3">
-                      <label for="name" class="form-label">Name</label>
-                      <input id="name"
-                       type="text"
-                       name="name"
-                       class="form-control"
-                       value="{{ request.GET.name|default:'' }}"
-                       placeholder="F.I.O, Nomi, I/R, S/R, MAC ...">
+                      <label for="name" class="form-label">Qidirish</label>
+                      <input id="name" type="text" name="name" class="form-control"
+                             value="{{ request.GET.name|default:'' }}"
+                             placeholder="F.I.O, Nomi, I/R, S/R, MAC ...">
                   </div>
 
                   <div class="col-md-3">
@@ -84,7 +81,7 @@
                   </div>
 
                   <div class="col-md-3">
-                    <label for="organization" class="form-label">Hududlar</label>
+                    <label for="region" class="form-label">Hududlar</label>
                     <select id="region" name="region" class="form-select" required>
                       <option value="">Tanlang...</option>
                       {% for r in regions %}
@@ -123,7 +120,7 @@
                   </div>
 
                   <div class="col-md-3">
-                    <label for="division" class="form-label">Bo‘lim</label>
+                    <label for="division" class="form-label">Bo'lim</label>
                     <select id="division" name="division" class="form-select">
                       <option value="">Tanlang...</option>
                       {% for div in divisions %}
@@ -142,7 +139,6 @@
                   <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
                 </div>
 
-
               </form>
             </div>
           </div>
@@ -150,26 +146,25 @@
       </div>
     </section>
 
-    <!-- TEXNIKALAR -->
+    <!-- TEXNIKALAR JADVALI -->
     <section class="section">
       <div class="row">
-
         <div class="col-lg-12">
           <div class="card">
             <div class="card-body">
 
                <div class="d-flex justify-content-between align-items-center">
                   <h5 class="card-title mb-0">
-                    Uskunalar {{ total_count }} ta</i>
+                    Uskunalar {{ total_count }} ta
                   </h5>
                   {% if request.user.employee.rol.technics_edit %}
-                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#verticalycentered">
+                  <button type="button" class="btn btn-primary"
+                          data-bs-toggle="modal" data-bs-target="#verticalycentered">
                     + Uskuna qo'shish
                   </button>
                   {% endif %}
                </div>
 
-              <!-- ✅ datatable class olib tashlandi -->
               <table class="table table-bordered table-hover align-middle table-sm">
                 <thead class="table-secondary">
                   <tr>
@@ -187,97 +182,160 @@
 
                 <tbody id="technicsBody">
                   {% for emp, items in grouped_technics %}
-                    {% for tex in items %}
+
+                    {# ════════════════════════════════════════════════════ #}
+                    {# HOLAT 1: Xodimning texnikalari bor                  #}
+                    {# ════════════════════════════════════════════════════ #}
+                    {% if items %}
+                      {% for tex in items %}
                       <tr>
+                        {# T/r — faqat birinchi qatorda rowspan #}
                         {% if forloop.first %}
-                        <th scope="row" rowspan="{{ items|length }}" class="align-middle">
+                        <th scope="row"
+                            rowspan="{{ items|length }}"
+                            class="align-middle text-center">
                           {{ forloop.parentloop.counter }}
                         </th>
                         {% endif %}
 
+                        {# F.I.O — faqat birinchi qatorda rowspan #}
                         {% if forloop.first %}
                         <td rowspan="{{ items|length }}" class="align-middle">
-                          {{ emp.full_name|default:"Biriktirilmagan" }}
-                          <span class="text-secondary small ps-4 ms-2 mt-1">
-                              {% if emp.rank %}
-                              " {{ emp.rank.name|default:"" }} "
-                              {% endif %}
-                          </span>
+                          {% if emp %}
+                            {{ emp.full_name|default:"—" }}
+                            {% if emp.rank %}
+                            <span class="text-secondary small d-block mt-1">
+                              "{{ emp.rank.name|default:'' }}"
+                            </span>
+                            {% endif %}
+                          {% else %}
+                            <span class="text-muted fst-italic">Biriktirilmagan</span>
+                          {% endif %}
                         </td>
                         {% endif %}
 
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">
-                            {{ tex.name|default:"-" }}
-                              <span class="text-secondary small ps-4 ms-2 mt-1">
-                                {% for et in tex.structure_set.all %}
-                                  <br><i>{{et.category.name|default:""}} / {{ et.name|default:"-" }}</i>
-                                {% endfor %}
-                              </span>
-                        </td>
-
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.inventory|default:"-" }}
-                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                        {# Texnika nomi #}
+                        <td style="cursor:pointer"
+                            data-bs-toggle="modal"
+                            data-bs-target="#qkcentered{{ tex.id }}">
+                          {{ tex.name|default:"-" }}
+                          <span class="text-secondary small d-block mt-1">
                             {% for et in tex.structure_set.all %}
-                              <br><i>{{ et.inventory|default:"-" }}</i>
+                              <i>{{ et.category.name|default:"" }} / {{ et.name|default:"-" }}</i><br>
                             {% endfor %}
                           </span>
                         </td>
 
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.serial|default:"-" }}
-                          <span class="text-secondary small ps-4 ms-2 mt-1">
+                        {# Inventar #}
+                        <td style="cursor:pointer"
+                            data-bs-toggle="modal"
+                            data-bs-target="#qkcentered{{ tex.id }}">
+                          {{ tex.inventory|default:"-" }}
+                          <span class="text-secondary small d-block mt-1">
                             {% for et in tex.structure_set.all %}
-                              <br><i>{{ et.serial|default:"-" }}</i>
+                              <i>{{ et.inventory|default:"-" }}</i><br>
                             {% endfor %}
                           </span>
                         </td>
 
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.address|default:"-" }}
+                        {# Serial #}
+                        <td style="cursor:pointer"
+                            data-bs-toggle="modal"
+                            data-bs-target="#qkcentered{{ tex.id }}">
+                          {{ tex.serial|default:"-" }}
+                          <span class="text-secondary small d-block mt-1">
+                            {% for et in tex.structure_set.all %}
+                              <i>{{ et.serial|default:"-" }}</i><br>
+                            {% endfor %}
+                          </span>
                         </td>
 
+                        {# Joylashuvi #}
+                        <td style="cursor:pointer"
+                            data-bs-toggle="modal"
+                            data-bs-target="#qkcentered{{ tex.id }}">
+                          {{ tex.address|default:"-" }}
+                        </td>
+
+                        {# Amallar #}
                         {% if request.user.employee.rol.technics_edit %}
                         <td>
-                            <div class="filter">
-                              <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
-                                <i class="bi bi-stack" style="font-size: 18px;"></i>
-                              </a>
-
-                              <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                                <li>
-                                  <a class="dropdown-item" href="javascript:void(0)"
-                                     data-bs-toggle="modal" data-bs-target="#texdel-{{ tex.id }}">
-                                    <i class="bi bi-trash"></i> O'chirish
-                                  </a>
-                                </li>
-                                <li>
-                                  <a class="dropdown-item" href="javascript:void(0)"
-                                     data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">
-                                    <i class="bi bi-brush"></i> Tahrirlash
-                                  </a>
-                                </li>
-                                <li>
-                                  <a class="dropdown-item" href="javascript:void(0)"
-                                     data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
-                                    <i class="bi bi-paperclip"></i> Biriktirish
-                                  </a>
-                                </li>
-                                <li>
-                                  <a class="dropdown-item" href="javascript:void(0)"
-                                     data-bs-toggle="modal" data-bs-target="#extratex-{{ tex.id }}">
-                                    <i class="bi bi-pin-angle"></i>Qurilmani biriktirish
-                                  </a>
-                                </li>
-                                <li>
-                                  <a class="dropdown-item" href="javascript:void(0)"
-                                     data-bs-toggle="modal" data-bs-target="#extratexdetach-{{ tex.id }}">
-                                    <i class="bi bi-x-square"></i>Qurilmani bekor qilish
-                                  </a>
-                                </li>
-                              </ul>
-                            </div>
+                          <div class="filter">
+                            <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
+                              <i class="bi bi-stack" style="font-size:18px;"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                              <li>
+                                <a class="dropdown-item" href="javascript:void(0)"
+                                   data-bs-toggle="modal" data-bs-target="#texdel-{{ tex.id }}">
+                                  <i class="bi bi-trash"></i> O'chirish
+                                </a>
+                              </li>
+                              <li>
+                                <a class="dropdown-item" href="javascript:void(0)"
+                                   data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">
+                                  <i class="bi bi-brush"></i> Tahrirlash
+                                </a>
+                              </li>
+                              <li>
+                                <a class="dropdown-item" href="javascript:void(0)"
+                                   data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
+                                  <i class="bi bi-paperclip"></i> Biriktirish
+                                </a>
+                              </li>
+                              <li>
+                                <a class="dropdown-item" href="javascript:void(0)"
+                                   data-bs-toggle="modal" data-bs-target="#extratex-{{ tex.id }}">
+                                  <i class="bi bi-pin-angle"></i> Qurilmani biriktirish
+                                </a>
+                              </li>
+                              <li>
+                                <a class="dropdown-item" href="javascript:void(0)"
+                                   data-bs-toggle="modal" data-bs-target="#extratexdetach-{{ tex.id }}">
+                                  <i class="bi bi-x-square"></i> Qurilmani bekor qilish
+                                </a>
+                              </li>
+                            </ul>
+                          </div>
                         </td>
                         {% endif %}
                       </tr>
-                    {% endfor %}
+                      {% endfor %}
+
+                    {# ════════════════════════════════════════════════════ #}
+                    {# HOLAT 2: Xodimning texnikasi YO'Q (FULL JOIN right) #}
+                    {# ════════════════════════════════════════════════════ #}
+                    {% else %}
+                    <tr class="table-warning">
+                      <th scope="row" class="align-middle text-center">
+                        {{ forloop.counter }}
+                      </th>
+                      <td class="align-middle">
+                        {% if emp %}
+                          {{ emp.full_name|default:"—" }}
+                          {% if emp.rank %}
+                          <span class="text-secondary small d-block mt-1">
+                            "{{ emp.rank.name|default:'' }}"
+                          </span>
+                          {% endif %}
+                        {% else %}
+                          <span class="text-muted fst-italic">Biriktirilmagan</span>
+                        {% endif %}
+                      </td>
+                      <td colspan="{% if request.user.employee.rol.technics_edit %}5{% else %}4{% endif %}"
+                          class="text-center text-muted fst-italic align-middle">Texnika biriktirilmagan
+                      </td>
+                    </tr>
+                    {% endif %}
+
+                  {% empty %}
+                  {# Hech narsa topilmagan #}
+                  <tr>
+                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
+                        class="text-center text-muted py-4">
+                      <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
+                    </td>
+                  </tr>
                   {% endfor %}
                 </tbody>
               </table>
@@ -287,7 +345,6 @@
               <nav aria-label="Order pagination" class="mt-3">
                 <ul class="pagination justify-content-center">
 
-                  {# Oldingi #}
                   {% if page_obj.has_previous %}
                     <li class="page-item">
                       <a class="page-link" href="?{{ qs_params }}&page={{ page_obj.previous_page_number }}">‹</a>
@@ -296,7 +353,6 @@
                     <li class="page-item disabled"><span class="page-link">‹</span></li>
                   {% endif %}
 
-                  {# Sahifa raqamlari #}
                   {% for num in page_obj.paginator.page_range %}
                     {% if num == page_obj.number %}
                       <li class="page-item active"><span class="page-link">{{ num }}</span></li>
@@ -307,7 +363,6 @@
                     {% endif %}
                   {% endfor %}
 
-                  {# Keyingi #}
                   {% if page_obj.has_next %}
                     <li class="page-item">
                       <a class="page-link" href="?{{ qs_params }}&page={{ page_obj.next_page_number }}">›</a>
@@ -327,13 +382,15 @@
     </section>
 
 
-    <!-- TEXNIKA CREATE MODAL -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- TEXNIKA CREATE MODAL                                               -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
     <div class="modal fade" id="verticalycentered" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form class="modal-content" method="post" action="{% url 'technics_create' %}">
           {% csrf_token %}
           <div class="modal-header">
-            <h5 class="modal-title">Uskuna qo‘shish</h5>
+            <h5 class="modal-title">Uskuna qo'shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
@@ -361,72 +418,52 @@
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.organization }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.organization }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.name }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.name }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.parametr }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.parametr }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventar</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.inventory }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.inventory }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.serial }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.serial }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Mac</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.mac }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.mac }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Ip</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.ip }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.ip }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.year }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.year }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.price }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.price }}</div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Joylashuvi</label>
-              <div class="col-md-8 col-lg-9">
-                {{ technics_form.address }}
-              </div>
+              <div class="col-md-8 col-lg-9">{{ technics_form.address }}</div>
             </div>
 
           </div>
@@ -438,122 +475,117 @@
       </div>
     </div>
 
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- TEXNIKA MODALLARI: faqat texnikasi bor guruhlar uchun             -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
     {% for emp, items in grouped_technics %}
     {% for tex in items %}
+
+    <!-- O'chirish -->
     <div class="modal fade" id="texdel-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'technics_delete' %}">
           {% csrf_token %}
-
           <div class="modal-header">
             <h5 class="modal-title">Texnika o'chirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" class="form-control" value="{{ tex.name }}" disabled>
+                <input type="text" class="form-control" value="{{ tex.name }}" disabled>
               </div>
             </div>
-
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
+                <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
+                <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
+                <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
               </div>
             </div>
-
           </div>
-
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-            <button type="submit" class="btn btn-primary"
-            onclick="return confirm('Texnika o\'chirilsinmi?')">
-                O'chirish</button>
+            <button type="submit" class="btn btn-danger"
+                    onclick="return confirm('Texnika o\'chirilsinmi?')">O'chirish</button>
           </div>
-
         </form>
       </div>
     </div>
 
+    <!-- Biriktirish -->
     <div class="modal fade" id="texbir-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'technics_attach' %}">
           {% csrf_token %}
-
           <div class="modal-header">
             <h5 class="modal-title">Uskunani biriktirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
-                <div class="col-md-8 col-lg-9">
-                  <select name="employee_id"
+              <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="employee_id"
                         class="form-select employee-select"
                         data-org="{{ tex.organization_id|default:'' }}"
                         data-region="{{ tex.region_id|default:'' }}"
                         data-selected="{{ tex.employee_id|default:'' }}">
                   <option value="">— Tanlang —</option>
-                  </select>
-                </div>
+                </select>
+              </div>
             </div>
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
-                <div class="col-md-8 col-lg-9">
-                  <select name="department_id"
+              <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="department_id"
                         class="form-select department-select"
                         data-selected="{{ tex.department_id|default:'' }}"
                         data-org="{{ tex.organization_id|default:'' }}"
                         data-region="{{ tex.region_id|default:'' }}">
-                    <option value="">— Yuklanmoqda —</option>
-                  </select>
-                </div>
+                  <option value="">— Yuklanmoqda —</option>
+                </select>
+              </div>
             </div>
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Boshqarma</label>
-                <div class="col-md-8 col-lg-9">
-                  <select name="directorate_id"
-                          class="form-select directorate-select"
-                          data-selected="{{ tex.directorate_id|default:'' }}">
-                    <option value="">— Tanlang —</option>
-                  </select>
-                </div>
+              <label class="col-md-4 col-lg-3 col-form-label">Boshqarma</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="directorate_id"
+                        class="form-select directorate-select"
+                        data-selected="{{ tex.directorate_id|default:'' }}">
+                  <option value="">— Tanlang —</option>
+                </select>
+              </div>
             </div>
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Bo‘lim</label>
-                <div class="col-md-8 col-lg-9">
-                  <select name="division_id"
-                          class="form-select division-select"
-                          data-selected="{{ tex.division_id|default:'' }}">
-                    <option value="">— Tanlang —</option>
-                  </select>
-                </div>
+              <label class="col-md-4 col-lg-3 col-form-label">Bo'lim</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="division_id"
+                        class="form-select division-select"
+                        data-selected="{{ tex.division_id|default:'' }}">
+                  <option value="">— Tanlang —</option>
+                </select>
+              </div>
             </div>
 
             <div class="row mb-3">
@@ -562,89 +594,81 @@
                 <input type="text" class="form-control" value="{{ tex.name }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
               </div>
             </div>
-
           </div>
-
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
             <button type="submit" class="btn btn-primary"
-            onclick="return confirm('Texnika xodimga biriktrilsinmi?')">
-                Biriktirish</button>
+                    onclick="return confirm('Texnika xodimga biriktrilsinmi?')">Biriktirish</button>
           </div>
-
         </form>
       </div>
     </div>
 
+    <!-- Tahrirlash -->
     <div class="modal fade" id="textax-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'technics_update' tex.id %}">
           {% csrf_token %}
-
           <div class="modal-header">
             <h5 class="modal-title">Uskunani tahrirlash</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
           <div class="modal-body">
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
               <div class="col-md-8 col-lg-9">
-                  <select name="category" class="form-select" required>
-                    <option value="">— Tanlang —</option>
-                    {% for c in tex.group.category_set.all %}
-                      <option value="{{ c.id }}" {% if tex.category_id == c.id %}selected{% endif %}>
-                        {{ c.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
+                <select name="category" class="form-select" required>
+                  <option value="">— Tanlang —</option>
+                  {% for c in tex.group.category_set.all %}
+                    <option value="{{ c.id }}" {% if tex.category_id == c.id %}selected{% endif %}>
+                      {{ c.name }}
+                    </option>
+                  {% endfor %}
+                </select>
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
               <div class="col-md-8 col-lg-9">
-                  <select name="organization" class="form-select" required>
-                    <option value="">— Tanlang —</option>
-                    {% for o in organizations %}
-                      <option value="{{ o.id }}" {% if tex.organization_id == o.id %}selected{% endif %}>
-                        {{ o.name }}
-                      </option>
-                    {% endfor %}
-                  </select>
+                <select name="organization" class="form-select" required>
+                  <option value="">— Tanlang —</option>
+                  {% for o in organizations %}
+                    <option value="{{ o.id }}" {% if tex.organization_id == o.id %}selected{% endif %}>
+                      {{ o.name }}
+                    </option>
+                  {% endfor %}
+                </select>
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Xolati</label>
               <div class="col-md-8 col-lg-9">
-                  <select name="status" class="form-select" required>
+                <select name="status" class="form-select" required>
                   <option value="">— Tanlang —</option>
                   <option value="active" {% if tex.status == "active" %}selected{% endif %}>Aktiv</option>
-                  <option value="free" {% if tex.status == "free" %}selected{% endif %}>Bo'sh</option>
-                  <option value="repair" {% if tex.status == "repair" %}selected{% endif %}>Ta’mirda</option>
+                  <option value="free"   {% if tex.status == "free"   %}selected{% endif %}>Bo'sh</option>
+                  <option value="repair" {% if tex.status == "repair" %}selected{% endif %}>Ta'mirda</option>
                   <option value="defect" {% if tex.status == "defect" %}selected{% endif %}>Yaroqsiz</option>
                 </select>
               </div>
@@ -653,103 +677,106 @@
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="name" class="form-control" value="{{ tex.name }}" required>
+                <input type="text" name="name" class="form-control" value="{{ tex.name }}" required>
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="parametr" class="form-control" value="{{ tex.parametr|default_if_none:'' }}">
+                <input type="text" name="parametr" class="form-control"
+                       value="{{ tex.parametr|default_if_none:'' }}">
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="inventory" class="form-control" value="{{ tex.inventory|default_if_none:'' }}">
+                <input type="text" name="inventory" class="form-control"
+                       value="{{ tex.inventory|default_if_none:'' }}">
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="serial" class="form-control" value="{{ tex.serial|default_if_none:'' }}">
+                <input type="text" name="serial" class="form-control"
+                       value="{{ tex.serial|default_if_none:'' }}">
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">MAC</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="mac" class="form-control" value="{{ tex.mac|default_if_none:'' }}">
+                <input type="text" name="mac" class="form-control"
+                       value="{{ tex.mac|default_if_none:'' }}">
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">IP</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="ip" class="form-control" value="{{ tex.ip|default_if_none:'' }}">
+                <input type="text" name="ip" class="form-control"
+                       value="{{ tex.ip|default_if_none:'' }}">
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="year" class="form-control" value="{{ tex.year|default_if_none:'' }}">
+                <input type="text" name="year" class="form-control"
+                       value="{{ tex.year|default_if_none:'' }}">
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="number" step="0.01" name="price"
-                     class="form-control"
-                     value="{{ tex.price|default_if_none:''|stringformat:'s'|cut:',' }}">
+                <input type="number" step="0.01" name="price" class="form-control"
+                       value="{{ tex.price|default_if_none:''|stringformat:'s'|cut:',' }}">
               </div>
             </div>
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Joylashuvi</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="address" class="form-control" value="{{ tex.address|default_if_none:'' }}">
+                <input type="text" name="address" class="form-control"
+                       value="{{ tex.address|default_if_none:'' }}">
               </div>
             </div>
 
           </div>
-
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
             <button type="submit" class="btn btn-primary"
-            onclick="return confirm('Texnika Tahrirlansinmi?')">
-                Saqlash</button>
+                    onclick="return confirm('Texnika Tahrirlansinmi?')">Saqlash</button>
           </div>
         </form>
       </div>
     </div>
 
+    <!-- Qurilma biriktirish -->
     <div class="modal fade" id="extratex-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'extra_tex_attach' %}">
           {% csrf_token %}
-
           <div class="modal-header">
             <h5 class="modal-title">Qurilmani biriktirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
-                <div class="col-md-8 col-lg-9">
-                  <select name="extra_tex_id" class="form-select">
-                     <option value="">— Tanlang —</option>
-                    {% for i in extratex %}
-                    <option value="{{i.id}}">{{i.name}} | {{i.inventory}} | {{i.serial}}</option>
-                    {% endfor %}
-                  </select>
-                </div>
+              <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="extra_tex_id" class="form-select">
+                  <option value="">— Tanlang —</option>
+                  {% for i in extratex %}
+                  <option value="{{ i.id }}">{{ i.name }} | {{ i.inventory }} | {{ i.serial }}</option>
+                  {% endfor %}
+                </select>
+              </div>
             </div>
 
             <div class="row mb-3">
@@ -758,64 +785,56 @@
                 <input type="text" class="form-control" value="{{ tex.name }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
               </div>
             </div>
-
           </div>
-
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
             <button type="submit" class="btn btn-primary"
-            onclick="return confirm('Texnika biriktrilsinmi?')">
-                Biriktirish</button>
+                    onclick="return confirm('Texnika biriktrilsinmi?')">Biriktirish</button>
           </div>
-
         </form>
       </div>
     </div>
 
+    <!-- Qurilma bekor qilish -->
     <div class="modal fade" id="extratexdetach-{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'extra_tex_detach' %}">
           {% csrf_token %}
-
           <div class="modal-header">
             <h5 class="modal-title">Qurulma o'chirish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
 
             <div class="row mb-3">
-                <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
-                <div class="col-md-8 col-lg-9">
-                  <select name="extra_tex_id" class="form-select">
-                     <option value="">— Tanlang —</option>
-                    {% for i in tex.structure_set.all %}
-                    <option value="{{i.id}}">{{i.name}} | {{i.inventory}} | {{i.serial}}</option>
-                    {% endfor %}
-                  </select>
-                </div>
+              <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="extra_tex_id" class="form-select">
+                  <option value="">— Tanlang —</option>
+                  {% for i in tex.structure_set.all %}
+                  <option value="{{ i.id }}">{{ i.name }} | {{ i.inventory }} | {{ i.serial }}</option>
+                  {% endfor %}
+                </select>
+              </div>
             </div>
 
             <div class="row mb-3">
@@ -824,173 +843,139 @@
                 <input type="text" class="form-control" value="{{ tex.name }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.parametr }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.inventory }}" disabled>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" class="form-control" value="{{ tex.serial }}" disabled>
               </div>
             </div>
-
           </div>
-
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
             <button type="submit" class="btn btn-primary"
-            onclick="return confirm('Qo\'shimcha texnika o\'chirilsinmi?')">
-                Saqlash</button>
+                    onclick="return confirm('Qo\'shimcha texnika o\'chirilsinmi?')">Saqlash</button>
           </div>
-
         </form>
       </div>
     </div>
 
-    <!-- TEXNIKA QK -->
+    <!-- Texnika tafsiloti (QR modal) -->
     <div class="modal fade" id="qkcentered{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
-
           <div class="modal-header">
             <h5 class="modal-title">
               <i class="bi bi-cpu me-2"></i>Texnika tafsiloti
             </h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
-
           <div class="modal-body">
 
-            <!-- TEXNIKA UMUMIY MALUMOT -->
+            <!-- Umumiy ma'lumot -->
             <div class="mb-4 p-3 border rounded bg-light">
-              <div>
-                <i class="bi bi-info-circle me-2"></i>Umumiy ma'lumot
-              </div><hr>
+              <div><i class="bi bi-info-circle me-2"></i>Umumiy ma'lumot</div><hr>
               <div class="card-body">
+
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Xodim</div>
-                  <div class="col-md-7">
-                    {{ tex.employee.full_name|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.employee.full_name|default:"-" }}</div>
                 </div>
 
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Lavozim</div>
-                  <div class="col-md-7">
-                    {{ tex.employee.rank.name|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.employee.rank.name|default:"-" }}</div>
                 </div>
 
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Tashkilot</div>
                   <div class="col-md-7">
                     {{ tex.organization.name|default:"-" }}<br>
-                    {% if tex.department %}
-                    {{ tex.department.name|default:"-" }}<br>
-                    {% endif %}
-                    {% if tex.directorate %}
-                    {{ tex.directorate.name|default:"-" }}<br>
-                    {% endif %}
-                    {% if tex.division %}
-                    {{ tex.division.name|default:"-" }}
-                    {% endif %}
+                    {% if tex.department %}{{ tex.department.name }}<br>{% endif %}
+                    {% if tex.directorate %}{{ tex.directorate.name }}<br>{% endif %}
+                    {% if tex.division %}{{ tex.division.name }}{% endif %}
                   </div>
                 </div>
 
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Turi</div>
-                  <div class="col-md-7">
-                    {{ tex.group.name|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.group.name|default:"-" }}</div>
                 </div>
 
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Kategoriya</div>
-                  <div class="col-md-7">
-                    {{ tex.category.name|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.category.name|default:"-" }}</div>
                 </div>
 
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Nomi</div>
-                  <div class="col-md-7">
-                    {{ tex.name|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.name|default:"-" }}</div>
                 </div>
+
                 {% if tex.parametr %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Parametr</div>
-                  <div class="col-md-7">
-                    {{ tex.parametr|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.parametr }}</div>
                 </div>
                 {% endif %}
+
                 {% if tex.inventory %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Inventory</div>
-                  <div class="col-md-7">
-                    {{ tex.inventory|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.inventory }}</div>
                 </div>
                 {% endif %}
+
                 {% if tex.serial %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Serial</div>
-                  <div class="col-md-7">
-                    {{ tex.serial|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.serial }}</div>
                 </div>
                 {% endif %}
+
                 {% if tex.mac %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Mac</div>
-                  <div class="col-md-7">
-                    {{ tex.mac|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.mac }}</div>
                 </div>
                 {% endif %}
+
                 {% if tex.ip %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Ip</div>
-                  <div class="col-md-7">
-                    {{ tex.ip|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.ip }}</div>
                 </div>
                 {% endif %}
+
                 {% if tex.year %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Yili</div>
-                  <div class="col-md-7">
-                    {{ tex.year|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.year }}</div>
                 </div>
                 {% endif %}
+
                 {% if tex.price %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Narxi</div>
-                  <div class="col-md-7">
-                    {{ tex.price|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.price }}</div>
                 </div>
                 {% endif %}
+
                 {% if tex.address %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Joylashuvi</div>
-                  <div class="col-md-7">
-                    {{ tex.address|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.address }}</div>
                 </div>
                 {% endif %}
 
@@ -1002,7 +987,7 @@
                     {% elif tex.status == "active" %}
                       <span class="badge bg-primary">Aktiv</span>
                     {% elif tex.status == "repair" %}
-                      <span class="badge bg-warning ">Ta’mirda</span>
+                      <span class="badge bg-warning">Ta'mirda</span>
                     {% elif tex.status == "defect" %}
                       <span class="badge bg-danger">Yaroqsiz</span>
                     {% else %}
@@ -1010,105 +995,88 @@
                     {% endif %}
                   </div>
                 </div>
+
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Xududi</div>
-                  <div class="col-md-7">
-                    {{ tex.region.name|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ tex.region.name|default:"-" }}</div>
                 </div>
 
               </div>
             </div>
 
-
-            <!-- QO‘SHIMCHA QURILMALAR -->
+            <!-- Qo'shimcha qurilmalar -->
             {% for et in tex.structure_set.all %}
             <div class="mb-4 p-3 border rounded bg-light">
-              <div>
-                <i class="bi bi-hdd-stack me-2"></i>Qo‘shimcha qurilmalar
-              </div><hr>
+              <div><i class="bi bi-hdd-stack me-2"></i>Qo'shimcha qurilmalar</div><hr>
               <div class="card-body">
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Nomi</div>
-                  <div class="col-md-7">
-                    {{ et.category }} {{ et.name|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ et.category }} {{ et.name|default:"-" }}</div>
                 </div>
                 {% if et.parametr %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Parametr</div>
-                  <div class="col-md-7">
-                    {{ et.parametr|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ et.parametr }}</div>
                 </div>
                 {% endif %}
                 {% if et.inventory %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Inventory</div>
-                  <div class="col-md-7">
-                    {{ et.inventory|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ et.inventory }}</div>
                 </div>
                 {% endif %}
                 {% if et.serial %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Serial</div>
-                  <div class="col-md-7">
-                    {{ et.serial|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ et.serial }}</div>
                 </div>
                 {% endif %}
                 {% if et.year %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Yili</div>
-                  <div class="col-md-7">
-                    {{ et.year|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ et.year }}</div>
                 </div>
                 {% endif %}
                 {% if et.price %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Narxi</div>
-                  <div class="col-md-7">
-                    {{ et.price|intcomma|default:"-" }}
-                  </div>
+                  <div class="col-md-7">{{ et.price|intcomma }}</div>
                 </div>
                 {% endif %}
-
               </div>
             </div>
             {% endfor %}
 
+            <!-- QR kod -->
             <div class="p-3 border rounded bg-light text-center">
-                <h5 class="mb-3 fw-bold">QR kod</h5><hr>
-                {% if tex.qr_code and tex.qr_code.url %}
-                <a href="{% url 'technics_download' tex.id %}" target="_blank">
-                  <img src="{{ tex.qr_code.url }}"
-                       alt="QR code"
-                       style="width:180px;height:180px;object-fit:contain;">
-                </a>
-                {% else %}
-                    —
-                {% endif %}
+              <h5 class="mb-3 fw-bold">QR kod</h5><hr>
+              {% if tex.qr_code and tex.qr_code.url %}
+              <a href="{% url 'technics_download' tex.id %}" target="_blank">
+                <img src="{{ tex.qr_code.url }}"
+                     alt="QR code"
+                     style="width:180px;height:180px;object-fit:contain;">
+              </a>
+              {% else %}
+              —
+              {% endif %}
             </div>
 
           </div>
-
           <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-              Yopish
-            </button>
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
           </div>
-
         </div>
       </div>
     </div>
-    {% endfor %}
-    {% endfor %}
+
+    {% endfor %}{# tex #}
+    {% endfor %}{# emp, items #}
 
 </main>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- madal, dep - dir - div -->
+
+<!-- Modal: dep → dir → div (Biriktirish modali uchun) -->
 <script>
 (function () {
   const urlDepartment  = "{% url 'ajax_load_departments' %}";
@@ -1122,10 +1090,7 @@
     const $directorate = $modal.find(".directorate-select");
     const $division    = $modal.find(".division-select");
 
-    if (!$department.length || !$directorate.length || !$division.length) {
-      console.log("department/directorate/division select topilmadi");
-      return;
-    }
+    if (!$department.length || !$directorate.length || !$division.length) return;
 
     const orgId       = $department.data("org")      || "";
     const regionId    = $department.data("region")   || "";
@@ -1144,7 +1109,6 @@
       $division.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
     }
 
-    // ── Department yuklanadi (org + region bo'yicha) ──
     function loadDepartments() {
       $department.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
       $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
@@ -1169,8 +1133,6 @@
             }));
           });
           $department.trigger("change");
-
-          // department oldindan tanlangan bo'lsa directorateni yukla
           if (selectedDep) {
             const selectedDir = $directorate.data("selected") || "";
             loadDirectorates(selectedDep, selectedDir);
@@ -1182,7 +1144,6 @@
       });
     }
 
-    // ── Directorate yuklanadi ──
     function loadDirectorates(departmentId, selectedDirectorateId = "") {
       $directorate.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
       $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
@@ -1206,8 +1167,6 @@
             }));
           });
           $directorate.trigger("change");
-
-          // directorate oldindan tanlangan bo'lsa divisionni yukla
           if (selectedDirectorateId) {
             loadDivisions(selectedDirectorateId, $division.data("selected") || "");
           }
@@ -1219,7 +1178,6 @@
       });
     }
 
-    // ── Division yuklanadi ──
     function loadDivisions(directorateId, selectedDivisionId = "") {
       $division.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
 
@@ -1249,7 +1207,6 @@
       });
     }
 
-    // ── Eventlar ──
     $department.on("change.modalAttach", function () {
       $directorate.attr("data-selected", "");
       $division.attr("data-selected", "");
@@ -1261,7 +1218,6 @@
       loadDivisions($(this).val());
     });
 
-    // ── Modal ochilganda department yukla ──
     loadDepartments();
   }
 
@@ -1272,46 +1228,30 @@
   });
 })();
 </script>
-<!--creat, grup - cat -->
+
+<!-- Create modal: group → category -->
 <script>
 (function () {
   const modalEl = document.getElementById("verticalycentered");
   const url = "{% url 'ajax_load_categories' %}";
 
   function initModalCategoryAjax() {
-    const $group = $("#id_group");
+    const $group    = $("#id_group");
     const $category = $("#id_category");
 
-    if (!$group.length || !$category.length) {
-      console.log("id_group yoki id_category topilmadi");
-      return;
-    }
+    if (!$group.length || !$category.length) return;
 
-    // oldingi eventlarni tozalab, qayta ulaymiz
     $group.off("change.modalCategory");
 
-    // select2 faqat bir marta ishga tushsin
     if (!$group.hasClass("select2-hidden-accessible")) {
-      $group.select2({
-        width: "100%",
-        dropdownParent: $("#verticalycentered"),
-        placeholder: "Tanlang...",
-        allowClear: true
-      });
+      $group.select2({ width:"100%", dropdownParent:$("#verticalycentered"), placeholder:"Tanlang...", allowClear:true });
     }
-
     if (!$category.hasClass("select2-hidden-accessible")) {
-      $category.select2({
-        width: "100%",
-        dropdownParent: $("#verticalycentered"),
-        placeholder: "Tanlang...",
-        allowClear: true
-      });
+      $category.select2({ width:"100%", dropdownParent:$("#verticalycentered"), placeholder:"Tanlang...", allowClear:true });
     }
 
     $group.on("change.modalCategory", function () {
       const groupId = $(this).val();
-
       $category.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
 
       if (!groupId) {
@@ -1324,51 +1264,28 @@
         type: "GET",
         data: { group: groupId },
         success: function (data) {
-          $category.empty();
-          $category.append('<option value="">Tanlang...</option>');
-
+          $category.empty().append('<option value="">Tanlang...</option>');
           $.each(data.results || [], function (_, item) {
-            $category.append(
-              $("<option>", {
-                value: item.id,
-                text: item.name
-              })
-            );
+            $category.append($("<option>", { value: item.id, text: item.name }));
           });
-
           $category.val("").trigger("change");
         },
-        error: function (xhr, status, error) {
-          console.log("Kategoriya yuklashda xato:", error);
+        error: function () {
           $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
         }
       });
     });
   }
 
-  // modal ochilganda init qilinadi
   if (modalEl) {
-    modalEl.addEventListener("shown.bs.modal", function () {
-      initModalCategoryAjax();
-    });
+    modalEl.addEventListener("shown.bs.modal", function () { initModalCategoryAjax(); });
   }
-
-  // sahifa yuklanganda ham init
-  $(document).ready(function () {
-    initModalCategoryAjax();
-  });
+  $(document).ready(function () { initModalCategoryAjax(); });
 })();
 </script>
-<!-- select,org - reg - dep - dir - div  -->
+
+<!-- Filter: org → dep → dir → div -->
 <script>
-/**
- * ✅ 1) Org -> Dep -> Dir -> Div (Select2 bilan)
- * - Org tanlansa dep keladi
- * - Dep tanlansa dir keladi
- * - Dir tanlansa div keladi
- * - Sahifa reload bo‘lsa ham tanlanganlar tiklanadi
- * - Qidirish bosilganda select2 ochilib ketmaydi
- */
 (() => {
   const orgSel = document.getElementById("organization");
   const regSel = document.getElementById("region");
@@ -1387,33 +1304,25 @@
   function isSelect2(el) {
     return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible");
   }
-
-  // ✅ change.select2 EMAS! (open bo‘lib ketmasin)
   function refreshUI(el) {
     if (isSelect2(el)) window.jQuery(el).trigger("change");
   }
-
   function closeSelect2(el) {
-    if (isSelect2(el)) {
-      try { window.jQuery(el).select2("close"); } catch (e) {}
-    }
+    if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} }
   }
-
-  function setLoading(selectEl, text="Yuklanmoqda...") {
+  function setLoading(selectEl, text = "Yuklanmoqda...") {
     selectEl.innerHTML = `<option value="">${text}</option>`;
     selectEl.disabled = true;
     refreshUI(selectEl);
     closeSelect2(selectEl);
   }
-
-  function setEmpty(selectEl, text="Tanlang...") {
+  function setEmpty(selectEl, text = "Tanlang...") {
     selectEl.innerHTML = `<option value="">${text}</option>`;
     selectEl.disabled = false;
     refreshUI(selectEl);
     closeSelect2(selectEl);
   }
-
-  function fillOptions(selectEl, items, placeholder="Tanlang...", selectedValue="") {
+  function fillOptions(selectEl, items, placeholder = "Tanlang...", selectedValue = "") {
     let html = `<option value="">${placeholder}</option>`;
     for (const it of items) {
       const sel = String(it.id) === String(selectedValue) ? "selected" : "";
@@ -1424,113 +1333,83 @@
     refreshUI(selectEl);
     closeSelect2(selectEl);
   }
-
   async function getJSON(url) {
-    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" }});
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
     const ct = res.headers.get("content-type") || "";
     if (!res.ok || !ct.includes("application/json")) return { results: [] };
     return await res.json();
   }
-
-  async function loadDepartments(orgId, regId, preselect="") {
-      // reset pastdagilar
-      setEmpty(depSel, "Tanlang...");
-      setEmpty(dirSel, "Tanlang...");
-      setEmpty(divSel, "Tanlang...");
-
-      if (!orgId || !regId) return;
-
-      setLoading(depSel);
-
-      let qs = "";
-      if (orgId) qs += `organization=${encodeURIComponent(orgId)}&`;
-      if (regId) qs += `region=${encodeURIComponent(regId)}`;
-
-      const data = await getJSON(`${URL_DEPS}?${qs}`);
-      fillOptions(depSel, data.results || [], "Tanlang...", preselect);
+  async function loadDepartments(orgId, regId, preselect = "") {
+    setEmpty(depSel); setEmpty(dirSel); setEmpty(divSel);
+    if (!orgId || !regId) return;
+    setLoading(depSel);
+    let qs = "";
+    if (orgId) qs += `organization=${encodeURIComponent(orgId)}&`;
+    if (regId) qs += `region=${encodeURIComponent(regId)}`;
+    const data = await getJSON(`${URL_DEPS}?${qs}`);
+    fillOptions(depSel, data.results || [], "Tanlang...", preselect);
   }
-
-  async function loadDirectorates(depId, preselect="") {
-    setEmpty(dirSel, "Tanlang...");
-    setEmpty(divSel, "Tanlang...");
-
+  async function loadDirectorates(depId, preselect = "") {
+    setEmpty(dirSel); setEmpty(divSel);
     if (!depId) return;
-
     setLoading(dirSel);
     const data = await getJSON(`${URL_DIRS}?department=${encodeURIComponent(depId)}`);
     fillOptions(dirSel, data.results || [], "Tanlang...", preselect);
   }
-
-  async function loadDivisions(dirId, preselect="") {
-    setEmpty(divSel, "Tanlang...");
-
+  async function loadDivisions(dirId, preselect = "") {
+    setEmpty(divSel);
     if (!dirId) return;
-
     setLoading(divSel);
     const data = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(dirId)}`);
     fillOptions(divSel, data.results || [], "Tanlang...", preselect);
   }
-
-  // ✅ org change: oddiy + select2 event
   function bindSelectEvents(el, cb) {
     el?.addEventListener("change", cb);
-    if (window.jQuery) {
-      window.jQuery(el).on("select2:select select2:clear", cb);
-    }
+    if (window.jQuery) window.jQuery(el).on("select2:select select2:clear", cb);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    // org -> dep
     bindSelectEvents(orgSel, async () => {
-    await loadDepartments((orgSel.value||"").trim(), (regSel?.value||"").trim());
+      await loadDepartments((orgSel.value || "").trim(), (regSel?.value || "").trim());
     });
-
-    // reg -> dep
     bindSelectEvents(regSel, async () => {
-        await loadDepartments((orgSel?.value||"").trim(), (regSel.value||"").trim());
+      await loadDepartments((orgSel?.value || "").trim(), (regSel.value || "").trim());
     });
-
-    // dep -> dir
     bindSelectEvents(depSel, async () => {
       await loadDirectorates((depSel.value || "").trim());
     });
-
-    // dir -> div
     bindSelectEvents(dirSel, async () => {
       await loadDivisions((dirSel.value || "").trim());
     });
 
-    // ✅ reload bo‘lsa tanlanganlarni tiklash
     (async () => {
       const orgId = (orgSel?.value || "").trim();
       const regId = (regSel?.value || "").trim();
       const depId = (depSel?.value || "").trim();
       const dirId = (dirSel?.value || "").trim();
-      const divId = (divSel?.value || "").trim();
 
       if (orgId || regId) await loadDepartments(orgId, regId, depId || selectedDep);
       const depNow = (depSel?.value || "").trim();
       if (depNow) await loadDirectorates(depNow, dirId || selectedDir);
       const dirNow = (dirSel?.value || "").trim();
-      if (dirNow) await loadDivisions(dirNow, divId || selectedDiv);
+      if (dirNow) await loadDivisions(dirNow, selectedDiv);
 
-      // ✅ eng oxiri: hech qaysi select2 ochiq bo‘lmasin
       closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
       document.activeElement && document.activeElement.blur();
     })();
   });
 
-  // ✅ Qidirish bosilganda select2 "ochilib ketmasin"
   window.addEventListener("load", () => {
     closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
     document.activeElement && document.activeElement.blur();
   });
 })();
 </script>
-<!--select, grup - cat -->
+
+<!-- Filter: group → category -->
 <script>
 (() => {
-  const groupSel = document.getElementById("groups");
+  const groupSel    = document.getElementById("groups");
   const categorySel = document.getElementById("category");
   const URL_CATEGORIES = "{% url 'ajax_load_categories' %}";
   const selectedCategory = "{{ request.GET.category|default:'' }}";
@@ -1538,101 +1417,71 @@
   function isSelect2(el) {
     return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible");
   }
-
   function refreshUI(el) {
-    if (isSelect2(el)) {
-      window.jQuery(el).trigger("change");
-    }
+    if (isSelect2(el)) window.jQuery(el).trigger("change");
   }
-
   function closeSelect2(el) {
-    if (isSelect2(el)) {
-      try { window.jQuery(el).select2("close"); } catch (e) {}
-    }
+    if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} }
   }
-
   function setLoading(selectEl, text = "Yuklanmoqda...") {
     selectEl.innerHTML = `<option value="">${text}</option>`;
     selectEl.disabled = true;
     refreshUI(selectEl);
     closeSelect2(selectEl);
   }
-
   function setEmpty(selectEl, text = "Tanlang...") {
     selectEl.innerHTML = `<option value="">${text}</option>`;
     selectEl.disabled = false;
     refreshUI(selectEl);
     closeSelect2(selectEl);
   }
-
   function fillOptions(selectEl, items, placeholder = "Tanlang...", selectedValue = "") {
     let html = `<option value="">${placeholder}</option>`;
-
     for (const item of items) {
       const selected = String(item.id) === String(selectedValue) ? "selected" : "";
       html += `<option value="${item.id}" ${selected}>${item.name}</option>`;
     }
-
     selectEl.innerHTML = html;
     selectEl.disabled = false;
     refreshUI(selectEl);
     closeSelect2(selectEl);
   }
-
   async function getJSON(url) {
-    const res = await fetch(url, {
-      headers: { "X-Requested-With": "XMLHttpRequest" }
-    });
-
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
     const ct = res.headers.get("content-type") || "";
-    if (!res.ok || !ct.includes("application/json")) {
-      return { results: [] };
-    }
-
+    if (!res.ok || !ct.includes("application/json")) return { results: [] };
     return await res.json();
   }
-
   async function loadCategories(groupId, preselect = "") {
-    setEmpty(categorySel, "Tanlang...");
-
+    setEmpty(categorySel);
     if (!groupId) return;
-
     setLoading(categorySel);
-
     const data = await getJSON(`${URL_CATEGORIES}?group=${encodeURIComponent(groupId)}`);
-    console.log("CATEGORY AJAX:", data); // debug uchun
-
     fillOptions(categorySel, data.results || [], "Tanlang...", preselect);
   }
-
   function bindSelectEvents(el, cb) {
     el?.addEventListener("change", cb);
-    if (window.jQuery) {
-      window.jQuery(el).on("select2:select select2:clear", cb);
-    }
+    if (window.jQuery) window.jQuery(el).on("select2:select select2:clear", cb);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
     bindSelectEvents(groupSel, async () => {
       await loadCategories((groupSel.value || "").trim());
     });
-
     (async () => {
       const groupId = (groupSel?.value || "").trim();
-      if (groupId) {
-        await loadCategories(groupId, selectedCategory);
-      }
+      if (groupId) await loadCategories(groupId, selectedCategory);
     })();
   });
 })();
 </script>
-<!--select, employe briktrish -->
+
+<!-- Employee biriktirish select -->
 <script>
 (() => {
   const orgSelect = document.getElementById("organization");
   const regSelect = document.getElementById("region");
   const URL_EMP   = "{% url 'ajax_employees_org' %}";
-
   const employeesCache = new Map();
 
   function isSelect2(el) {
@@ -1656,16 +1505,12 @@
         headers: { "X-Requested-With": "XMLHttpRequest" }
       });
       const ct = res.headers.get("content-type") || "";
-      if (!res.ok || !ct.includes("application/json")) {
-        employeesCache.set(key, []);
-        return [];
-      }
+      if (!res.ok || !ct.includes("application/json")) { employeesCache.set(key, []); return []; }
       const data = await res.json();
       const list = data.results || [];
       employeesCache.set(key, list);
       return list;
     } catch (e) {
-      console.log("Employee yuklashda xato:", e);
       employeesCache.set(key, []);
       return [];
     }
@@ -1677,7 +1522,6 @@
     refreshUI(selectEl);
 
     const employees = await fetchEmployees(orgId, regId);
-
     let html = `<option value="">— Tanlang —</option>`;
     for (const e of employees) {
       const sel = String(e.id) === String(selectedId) ? "selected" : "";
@@ -1692,11 +1536,8 @@
     const selectEl = modal.querySelector(".employee-select");
     if (!selectEl) return;
 
-    // data-org va data-region bor bo'lsa o'shani ol
-    // bo'lmasa filtrdagi #organization va #region dan ol
     let orgId = (selectEl.dataset.org    || "").trim();
     let regId = (selectEl.dataset.region || "").trim();
-
     if (!orgId) orgId = (orgSelect?.value || "").trim();
     if (!regId) regId = (regSelect?.value || "").trim();
 
@@ -1709,14 +1550,12 @@
     await fillEmployeeSelect(selectEl, orgId, regId);
   });
 
-  // org yoki reg o'zgarganda barcha employee selectlar reset
   orgSelect?.addEventListener("change", () => {
     document.querySelectorAll(".employee-select").forEach(sel => {
       sel.innerHTML = `<option value="">— Tanlang —</option>`;
       refreshUI(sel);
     });
   });
-
   regSelect?.addEventListener("change", () => {
     document.querySelectorAll(".employee-select").forEach(sel => {
       sel.innerHTML = `<option value="">— Tanlang —</option>`;
@@ -1725,11 +1564,9 @@
   });
 })();
 </script>
-<!--egzel -->
+
+<!-- Excel export -->
 <script>
-/**
- * ✅ 3) Excel export
- */
 document.getElementById("btnExcel")?.addEventListener("click", async () => {
   const fields = ["organization", "department", "directorate", "division", "group", "status", "category", "name"];
   const params = new URLSearchParams();
@@ -1739,24 +1576,19 @@ document.getElementById("btnExcel")?.addEventListener("click", async () => {
     if (val) params.append(f, val);
   }
 
-  const url = "{% url 'export_technics_xlsx' %}?" + params.toString();
+  const url  = "{% url 'export_technics_xlsx' %}?" + params.toString();
+  const res  = await fetch(url, { method: "GET" });
 
-  const res = await fetch(url, { method: "GET" });
-  if (!res.ok) {
-    alert("Excel eksportda xatolik!");
-    return;
-  }
+  if (!res.ok) { alert("Excel eksportda xatolik!"); return; }
 
-  const blob = await res.blob();
+  const blob    = await res.blob();
   const blobUrl = window.URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = "technics.xlsx";
+  const a       = document.createElement("a");
+  a.href        = blobUrl;
+  a.download    = "technics.xlsx";
   document.body.appendChild(a);
   a.click();
   a.remove();
-
   window.URL.revokeObjectURL(blobUrl);
 });
 </script>
