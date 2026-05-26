@@ -110,11 +110,11 @@ class ContractAdmin(admin.ModelAdmin):
 class EmployeeAdmin(admin.ModelAdmin):
     list_display = (
         "id", "full_name", "user", "organization", "department",
-        "directorate", "division", "rank", "region", "pinfl"
+        "directorate", "division", "rank", "region", "pinfl", "date_creat", "date_creat"
     )
     list_filter = (
         "organization", "department", "directorate", "division",
-        "rank", "region"
+        "rank", "region", "date_creat", "date_creat"
     )
     search_fields = (
         "last_name", "first_name", "father_name",
