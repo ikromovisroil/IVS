@@ -119,31 +119,33 @@ def sso_callback(request):
 
 
 def _resolve_position(sso_pinfl, positions):
-    """
-    Gateway dan kelgan positions ro'yxatini tekshirib,
-    employee ga biriktiriladigan tashkilot ma'lumotlarini qaytaradi.
 
-    Qaytaradi: dict yoki None
-    {
-        "organization": ...,
-        "department": ...,
-        "directorate": ...,
-        "division": ...,
-    }
-    """
     for pos in positions:
-        org_tin = str(pos.get("org_tin") or "").strip()
-        dep_id = str(pos.get("dep_id") or "").strip()
-        dep_name = (pos.get("dep_name") or "").strip()
+        org_tin     = str(pos.get("org_tin")     or "").strip()
+        dep_id      = str(pos.get("dep_id")      or "").strip()
+        dep_name    = (pos.get("dep_name")       or "").strip()
+        position_id = str(pos.get("position_id") or "").strip()
+        position    = (pos.get("position")       or "").strip()
 
         if not org_tin:
             continue
 
+        # Lavozimni topish yoki yaratish
+        rank = None
+        if position_id:
+            rank = Rank.objects.filter(code=position_id).first()
+            if not rank:
+                rank = Rank.objects.create(
+                    code=position_id,
+                    name=position or f"Lavozim-{position_id}",
+                )
+
         data = {
             "organization": None,
-            "department": None,
-            "directorate": None,
-            "division": None,
+            "department":   None,
+            "directorate":  None,
+            "division":     None,
+            "rank":         rank,
         }
 
         # -----------------------------------------------
@@ -183,7 +185,7 @@ def _resolve_position(sso_pinfl, positions):
                     sso_pinfl, org_tin, dep_id
                 )
 
-            return data  # dep_id yo'q yoki hech biriga mos kelmadi → faqat org
+            return data
 
         # -----------------------------------------------
         # HOLAT B: Department.inn = org_tin
@@ -217,6 +219,7 @@ def _resolve_position(sso_pinfl, positions):
 
     return None
 
+
 # -----------------------
 # 5) sso_exchange Login
 # -----------------------
@@ -228,7 +231,7 @@ def sso_exchange(request):
         # -------------------------------------------------------
         # 1. Session tekshirish
         # -------------------------------------------------------
-        flow = request.session.get("SSO_FLOW") or {}
+        flow    = request.session.get("SSO_FLOW") or {}
         purpose = (flow.get("purpose") or "").strip()
 
         if purpose != "login":
@@ -248,9 +251,9 @@ def sso_exchange(request):
                 status=400
             )
 
-        code = (body.get("code") or "").strip()
+        code          = (body.get("code")         or "").strip()
         code_verifier = (body.get("codeVerifier") or "").strip()
-        redirect_uri = (body.get("redirectUri") or "").strip()
+        redirect_uri  = (body.get("redirectUri")  or "").strip()
 
         if not code or not code_verifier or not redirect_uri:
             return JsonResponse(
@@ -262,7 +265,7 @@ def sso_exchange(request):
         # 3. Token olish va PINFL aniqlash
         # -------------------------------------------------------
         token_data = exchange_code_for_token(code, code_verifier, redirect_uri) or {}
-        id_token = token_data.get("id_token")
+        id_token   = token_data.get("id_token")
         if not id_token:
             raise PermissionDenied("id_token kelmadi")
 
@@ -286,8 +289,8 @@ def sso_exchange(request):
                 from .gateway import GatewayClient
 
                 gateway_data = GatewayClient.current_citizen(sso_pinfl)
-                result = gateway_data.get("result") or {}
-                positions = result.get("positions") or []
+                result       = gateway_data.get("result") or {}
+                positions    = result.get("positions") or []
 
                 if not positions:
                     return JsonResponse(
@@ -319,7 +322,7 @@ def sso_exchange(request):
                         f".{result.get('name', '').lower()}"
                     )
                     user = None
-                    for counter in range(2):
+                    for counter in range(20):
                         candidate = base_username if counter == 0 else f"{base_username}{counter}"
                         try:
                             user = User.objects.create_user(
@@ -331,26 +334,27 @@ def sso_exchange(request):
                             continue
 
                     if user is None:
-                        raise Exception("Username yaratib bo'lmadi (2 urinishdan keyin)")
+                        raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
 
                     # ---------------------------------------------------
                     # 5.3 Employee ma'lumotlarini to'ldirish
                     # ---------------------------------------------------
-                    employee = user.employee
-                    employee.pinfl = sso_pinfl
-                    employee.first_name = (result.get("name") or "").strip()
-                    employee.last_name = (result.get("surname") or "").strip()
+                    employee             = user.employee
+                    employee.pinfl       = sso_pinfl
+                    employee.first_name  = (result.get("name")       or "").strip()
+                    employee.last_name   = (result.get("surname")    or "").strip()
                     employee.father_name = (result.get("partonimic") or "").strip()
                     employee.organization = assigned_data["organization"]
-                    employee.department = assigned_data["department"]
-                    employee.directorate = assigned_data["directorate"]
-                    employee.division = assigned_data["division"]
+                    employee.department   = assigned_data["department"]
+                    employee.directorate  = assigned_data["directorate"]
+                    employee.division     = assigned_data["division"]
+                    employee.rank         = assigned_data["rank"]
                     employee.save()
 
                     # ---------------------------------------------------
                     # 5.4 Rol flagini yangilash
                     # ---------------------------------------------------
-                    rol = employee.rol
+                    rol        = employee.rol
                     rol.client = (employee.organization_id != 4)
                     rol.save(update_fields=["client"])
 
