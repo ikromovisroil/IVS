@@ -167,7 +167,10 @@ class Employee(models.Model):
         # Department tanlansa → organization avtomatik
         if self.department and self.department.organization:
             self.organization = self.department.organization
-            self.region = self.department.region
+
+            old_dep_id = old_structure["department_id"] if old_structure else None
+            if not self.pk or old_dep_id != self.department_id:
+                self.region = self.department.region
 
 
         new_structure = {
