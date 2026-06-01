@@ -35,6 +35,19 @@
                     </div>
 
                     <div class="col-md-3">
+                        <label for="region" class="form-label">Hududlar</label>
+                        <select id="region" name="region" class="form-select" required>
+                          <option value="">Tanlang...</option>
+                          {% for r in regions %}
+                            <option value="{{ r.id }}"
+                              {% if request.GET.region|stringformat:"s" == r.id|stringformat:"s" %}selected{% endif %}>
+                              {{ r.name }}
+                            </option>
+                          {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
                       <label for="status" class="form-label">Xolati</label>
                       <select id="status" name="status" class="form-select">
                         <option value="">Tanlang...</option>

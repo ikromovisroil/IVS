@@ -1263,6 +1263,7 @@ def extra_tex(request):
 
     status          = (request.GET.get("status")       or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
+    region_id       = (request.GET.get("region")       or "").strip()  # ← qo'shildi
     category_id     = (request.GET.get("category")     or "").strip()
     name            = (request.GET.get("name")         or "").strip()
     page_number     = request.GET.get("page", 1)
@@ -1274,15 +1275,20 @@ def extra_tex(request):
     if not getattr(employee.rol, "full", False):
         organizations = organizations.filter(id=employee.organization_id)
 
+    regions    = Region.objects.only("id", "name").order_by("id")
+    if not getattr(employee.rol, "region", False):
+        regions = regions.filter(id=employee.region_id)
+
     categories = StructureCategory.objects.only("id", "name").order_by("id")
 
-    has_filter = bool(category_id or status or organization_id or name)
+    has_filter = bool(category_id or status or organization_id or region_id or name)
 
     params = request.GET.copy()
     params.pop("page", None)
 
     base_context = {
         "organizations":  organizations,
+        "regions":        regions,  # ← qo'shildi
         "categories":     categories,
         "technics_form":  ExtraTechnicsForm(),
         "qs_params":      params.urlencode(),
@@ -1298,7 +1304,7 @@ def extra_tex(request):
     qs = (
         Structure.objects
         .filter(is_active=True)
-        .select_related("organization", "category")
+        .select_related("organization", "category", "region")  # ← region qo'shildi
         .order_by("-id")
     )
 
@@ -1307,6 +1313,9 @@ def extra_tex(request):
 
     if organization_id and organization_id.isdigit():
         qs = qs.filter(organization_id=int(organization_id))
+
+    if region_id and region_id.isdigit():  # ← qo'shildi
+        qs = qs.filter(region_id=int(region_id))
 
     if status:
         qs = qs.filter(status=status)
@@ -1353,6 +1362,9 @@ def extra_tex_create(request):
         technics = form.save(commit=False)
         serial       = (technics.serial or "").strip() or None
         organization = technics.organization
+
+        if employee.region_id:
+            technics.region_id = employee.region_id
 
         if serial and organization and Structure.objects.filter(
             serial__iexact=serial,
