@@ -1266,15 +1266,17 @@
   }
 
   modalEl.addEventListener("shown.bs.modal", function () {
-    // select2.js allaqachon ishlagandan keyin, faqat select2:select tinglash
-    $("#id_group")
-      .off("select2:select.grpCat select2:clear.grpCat")
-      .on("select2:select.grpCat", function () {
-        loadCategoryByGroup($(this).val());
-      })
-      .on("select2:clear.grpCat", function () {
-        loadCategoryByGroup("");
-      });
+    // setTimeout — select2.js init tugaguncha kutish
+    setTimeout(function () {
+      $("#id_group")
+        .off("select2:select.grpCat select2:clear.grpCat")
+        .on("select2:select.grpCat", function () {
+          loadCategoryByGroup($(this).val());
+        })
+        .on("select2:clear.grpCat", function () {
+          loadCategoryByGroup("");
+        });
+    }, 100);
   });
 })();
 </script>
@@ -1358,9 +1360,15 @@
     const data = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(dirId)}`);
     fillOptions(divSel, data.results || [], "Tanlang...", preselect);
   }
+
+  // TUZATILGAN: faqat select2:select, native change emas
   function bindSelectEvents(el, cb) {
-    el?.addEventListener("change", cb);
-    if (window.jQuery) window.jQuery(el).on("select2:select select2:clear", cb);
+    if (!el) return;
+    if (window.jQuery) {
+      window.jQuery(el).on("select2:select select2:clear", cb);
+    } else {
+      el.addEventListener("change", cb);
+    }
   }
 
   document.addEventListener("DOMContentLoaded", () => {
