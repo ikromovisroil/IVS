@@ -47,7 +47,7 @@ class Department(models.Model):
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     code = models.CharField(max_length=20, null=True, blank=True)
     inn = models.CharField(max_length=20, null=True, blank=True)
-    name = models.CharField(max_length=500)
+    name = models.CharField(max_length=1000)
 
     def __str__(self):
         return self.name
@@ -62,7 +62,7 @@ class Department(models.Model):
 class Directorate(models.Model):
     department = models.ForeignKey(Department, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     code = models.CharField(max_length=20, null=True, blank=True)
-    name = models.CharField(max_length=500)
+    name = models.CharField(max_length=1000)
 
     def __str__(self):
         return self.name
@@ -77,7 +77,7 @@ class Directorate(models.Model):
 class Division(models.Model):
     directorate = models.ForeignKey(Directorate, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     code = models.CharField(max_length=20, null=True, blank=True)
-    name = models.CharField(max_length=500)
+    name = models.CharField(max_length=1000)
 
     def __str__(self):
         return self.name
@@ -91,7 +91,7 @@ class Division(models.Model):
 # Lavozim.
 class Rank(models.Model):
     code = models.CharField(max_length=20, null=True, blank=True)
-    name = models.CharField(max_length=500)
+    name = models.CharField(max_length=1000)
 
     def __str__(self):
         return self.name
