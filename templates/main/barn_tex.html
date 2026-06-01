@@ -1233,56 +1233,52 @@
 
 <!-- Create modal: group → category -->
 <script>
-(function () {
-  const modalEl = document.getElementById("verticalycentered");
-  const url = "{% url 'ajax_load_categories' %}";
+(() => {
+  const groupSel    = document.getElementById("id_group");
+  const categorySel = document.getElementById("id_category");
+  const URL_CATEGORIES = "{% url 'ajax_load_categories' %}";
 
-  if (!modalEl) return;
-
-  function loadCategoryByGroup(groupId) {
-    const $category = $("#id_category");
-    $category.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
-
-    if (!groupId) {
-      $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
-      return;
-    }
-
-    $.ajax({
-      url: url,
-      type: "GET",
-      data: { group: groupId },
-      success: function (data) {
-        $category.empty().append('<option value="">Tanlang...</option>');
-        $.each(data.results || [], function (_, item) {
-          $category.append($("<option>", { value: item.id, text: item.name }));
-        });
-        $category.val("").trigger("change");
-      },
-      error: function () {
-        $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
-      }
-    });
+  async function getJSON(url) {
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    const ct = res.headers.get("content-type") || "";
+    if (!res.ok || !ct.includes("application/json")) return { results: [] };
+    return await res.json();
   }
 
-  modalEl.addEventListener("shown.bs.modal", function () {
-    const $group = $("#id_group");
+  function setLoading() {
+    categorySel.innerHTML = `<option value="">Yuklanmoqda...</option>`;
+    categorySel.disabled = true;
+    if (window.jQuery) $(categorySel).trigger("change");
+  }
 
-    // Avvalgi eventlarni tozalash
-    $group.off("change.grpCat select2:select.grpCat select2:clear.grpCat");
+  function fillOptions(items) {
+    let html = `<option value="">Tanlang...</option>`;
+    for (const item of items) {
+      html += `<option value="${item.id}">${item.name}</option>`;
+    }
+    categorySel.innerHTML = html;
+    categorySel.disabled = false;
+    if (window.jQuery) $(categorySel).trigger("change");
+  }
 
-    // Select2 bor bo'lsa — select2:select, yo'q bo'lsa — native change
-    if ($group.hasClass("select2-hidden-accessible")) {
-      $group
-        .on("select2:select.grpCat", function () {
-          loadCategoryByGroup($(this).val());
-        })
-        .on("select2:clear.grpCat", function () {
-          loadCategoryByGroup("");
-        });
+  async function loadCategories(groupId) {
+    categorySel.innerHTML = `<option value="">Tanlang...</option>`;
+    categorySel.disabled = false;
+    if (window.jQuery) $(categorySel).trigger("change");
+    if (!groupId) return;
+    setLoading();
+    const data = await getJSON(`${URL_CATEGORIES}?group=${encodeURIComponent(groupId)}`);
+    fillOptions(data.results || []);
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    if (window.jQuery) {
+      $(groupSel).on("select2:select select2:clear", async function () {
+        await loadCategories(($(this).val() || "").trim());
+      });
     } else {
-      $group.on("change.grpCat", function () {
-        loadCategoryByGroup($(this).val());
+      groupSel?.addEventListener("change", async () => {
+        await loadCategories((groupSel.value || "").trim());
       });
     }
   });
