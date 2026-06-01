@@ -1241,7 +1241,8 @@
 
     if (!$group.length || !$category.length) return;
 
-    $group.off("change.modalCategory");
+    // Avvalgi event'larni tozalash
+    $group.off("change.modalCategory").off("select2:select.modalCategory");
 
     if (!$group.hasClass("select2-hidden-accessible")) {
       $group.select2({ width:"100%", dropdownParent:$("#verticalycentered"), placeholder:"Tanlang...", allowClear:true });
@@ -1250,8 +1251,7 @@
       $category.select2({ width:"100%", dropdownParent:$("#verticalycentered"), placeholder:"Tanlang...", allowClear:true });
     }
 
-    $group.on("change.modalCategory", function () {
-      const groupId = $(this).val();
+    function loadCategoryByGroup(groupId) {
       $category.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
 
       if (!groupId) {
@@ -1274,13 +1274,26 @@
           $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
         }
       });
+    }
+
+    // Native change + select2:select IKKALASINI tinglash
+    $group.on("change.modalCategory select2:select.modalCategory", function () {
+      const groupId = $group.val();
+      loadCategoryByGroup(groupId);
     });
+
+    // Modal ochilganda joriy qiymatni tekshirish
+    const currentGroup = $group.val();
+    if (currentGroup) {
+      loadCategoryByGroup(currentGroup);
+    }
   }
 
   if (modalEl) {
-    modalEl.addEventListener("shown.bs.modal", function () { initModalCategoryAjax(); });
+    modalEl.addEventListener("shown.bs.modal", function () {
+      initModalCategoryAjax();
+    });
   }
-  $(document).ready(function () { initModalCategoryAjax(); });
 })();
 </script>
 
