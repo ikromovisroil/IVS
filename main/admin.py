@@ -179,7 +179,7 @@ class StructureAdmin(admin.ModelAdmin):
         "id", "technics", "category", "name", "status",
         "inventory", "serial", "price", "year", "is_active", "date_creat"
     )
-    list_filter = ("organization", "category", "status", "is_active")
+    list_filter = ("organization", "region", "category", "status", "is_active")
     search_fields = (
         "name", "inventory", "serial"
     )
