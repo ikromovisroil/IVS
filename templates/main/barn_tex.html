@@ -1266,17 +1266,25 @@
   }
 
   modalEl.addEventListener("shown.bs.modal", function () {
-    // setTimeout — select2.js init tugaguncha kutish
-    setTimeout(function () {
-      $("#id_group")
-        .off("select2:select.grpCat select2:clear.grpCat")
+    const $group = $("#id_group");
+
+    // Avvalgi eventlarni tozalash
+    $group.off("change.grpCat select2:select.grpCat select2:clear.grpCat");
+
+    // Select2 bor bo'lsa — select2:select, yo'q bo'lsa — native change
+    if ($group.hasClass("select2-hidden-accessible")) {
+      $group
         .on("select2:select.grpCat", function () {
           loadCategoryByGroup($(this).val());
         })
         .on("select2:clear.grpCat", function () {
           loadCategoryByGroup("");
         });
-    }, 100);
+    } else {
+      $group.on("change.grpCat", function () {
+        loadCategoryByGroup($(this).val());
+      });
+    }
   });
 })();
 </script>
