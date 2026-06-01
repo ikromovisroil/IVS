@@ -1096,8 +1096,9 @@
     const regionId    = $department.data("region")   || "";
     const selectedDep = $department.data("selected") || "";
 
-    $department.off("change.modalAttach");
-    $directorate.off("change.modalAttach");
+    // Avvalgi eventlarni tozalash — change O'RNIGA select2:select
+    $department.off("select2:select.modalAttach select2:clear.modalAttach");
+    $directorate.off("select2:select.modalAttach select2:clear.modalAttach");
 
     if (!$department.hasClass("select2-hidden-accessible")) {
       $department.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
@@ -1207,15 +1208,16 @@
       });
     }
 
-    $department.on("change.modalAttach", function () {
+    // change O'RNIGA select2:select ishlatildi
+    $department.on("select2:select.modalAttach select2:clear.modalAttach", function () {
       $directorate.attr("data-selected", "");
       $division.attr("data-selected", "");
-      loadDirectorates($(this).val());
+      loadDirectorates($(this).val() || "");
     });
 
-    $directorate.on("change.modalAttach", function () {
+    $directorate.on("select2:select.modalAttach select2:clear.modalAttach", function () {
       $division.attr("data-selected", "");
-      loadDivisions($(this).val());
+      loadDivisions($(this).val() || "");
     });
 
     loadDepartments();
@@ -1235,65 +1237,45 @@
   const modalEl = document.getElementById("verticalycentered");
   const url = "{% url 'ajax_load_categories' %}";
 
-  function initModalCategoryAjax() {
-    const $group    = $("#id_group");
+  if (!modalEl) return;
+
+  function loadCategoryByGroup(groupId) {
     const $category = $("#id_category");
+    $category.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
 
-    if (!$group.length || !$category.length) return;
-
-    // Avvalgi event'larni tozalash
-    $group.off("change.modalCategory").off("select2:select.modalCategory");
-
-    if (!$group.hasClass("select2-hidden-accessible")) {
-      $group.select2({ width:"100%", dropdownParent:$("#verticalycentered"), placeholder:"Tanlang...", allowClear:true });
-    }
-    if (!$category.hasClass("select2-hidden-accessible")) {
-      $category.select2({ width:"100%", dropdownParent:$("#verticalycentered"), placeholder:"Tanlang...", allowClear:true });
+    if (!groupId) {
+      $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
+      return;
     }
 
-    function loadCategoryByGroup(groupId) {
-      $category.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
-
-      if (!groupId) {
+    $.ajax({
+      url: url,
+      type: "GET",
+      data: { group: groupId },
+      success: function (data) {
+        $category.empty().append('<option value="">Tanlang...</option>');
+        $.each(data.results || [], function (_, item) {
+          $category.append($("<option>", { value: item.id, text: item.name }));
+        });
+        $category.val("").trigger("change");
+      },
+      error: function () {
         $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
-        return;
       }
+    });
+  }
 
-      $.ajax({
-        url: url,
-        type: "GET",
-        data: { group: groupId },
-        success: function (data) {
-          $category.empty().append('<option value="">Tanlang...</option>');
-          $.each(data.results || [], function (_, item) {
-            $category.append($("<option>", { value: item.id, text: item.name }));
-          });
-          $category.val("").trigger("change");
-        },
-        error: function () {
-          $category.empty().append('<option value="">Tanlang...</option>').trigger("change");
-        }
+  modalEl.addEventListener("shown.bs.modal", function () {
+    // select2.js allaqachon ishlagandan keyin, faqat select2:select tinglash
+    $("#id_group")
+      .off("select2:select.grpCat select2:clear.grpCat")
+      .on("select2:select.grpCat", function () {
+        loadCategoryByGroup($(this).val());
+      })
+      .on("select2:clear.grpCat", function () {
+        loadCategoryByGroup("");
       });
-    }
-
-    // Native change + select2:select IKKALASINI tinglash
-    $group.on("change.modalCategory select2:select.modalCategory", function () {
-      const groupId = $group.val();
-      loadCategoryByGroup(groupId);
-    });
-
-    // Modal ochilganda joriy qiymatni tekshirish
-    const currentGroup = $group.val();
-    if (currentGroup) {
-      loadCategoryByGroup(currentGroup);
-    }
-  }
-
-  if (modalEl) {
-    modalEl.addEventListener("shown.bs.modal", function () {
-      initModalCategoryAjax();
-    });
-  }
+  });
 })();
 </script>
 
@@ -1427,60 +1409,53 @@
   const URL_CATEGORIES = "{% url 'ajax_load_categories' %}";
   const selectedCategory = "{{ request.GET.category|default:'' }}";
 
-  function isSelect2(el) {
-    return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible");
-  }
-  function refreshUI(el) {
-    if (isSelect2(el)) window.jQuery(el).trigger("change");
-  }
-  function closeSelect2(el) {
-    if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} }
-  }
-  function setLoading(selectEl, text = "Yuklanmoqda...") {
-    selectEl.innerHTML = `<option value="">${text}</option>`;
-    selectEl.disabled = true;
-    refreshUI(selectEl);
-    closeSelect2(selectEl);
-  }
-  function setEmpty(selectEl, text = "Tanlang...") {
-    selectEl.innerHTML = `<option value="">${text}</option>`;
-    selectEl.disabled = false;
-    refreshUI(selectEl);
-    closeSelect2(selectEl);
-  }
-  function fillOptions(selectEl, items, placeholder = "Tanlang...", selectedValue = "") {
-    let html = `<option value="">${placeholder}</option>`;
-    for (const item of items) {
-      const selected = String(item.id) === String(selectedValue) ? "selected" : "";
-      html += `<option value="${item.id}" ${selected}>${item.name}</option>`;
-    }
-    selectEl.innerHTML = html;
-    selectEl.disabled = false;
-    refreshUI(selectEl);
-    closeSelect2(selectEl);
-  }
   async function getJSON(url) {
     const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
     const ct = res.headers.get("content-type") || "";
     if (!res.ok || !ct.includes("application/json")) return { results: [] };
     return await res.json();
   }
-  async function loadCategories(groupId, preselect = "") {
-    setEmpty(categorySel);
-    if (!groupId) return;
-    setLoading(categorySel);
-    const data = await getJSON(`${URL_CATEGORIES}?group=${encodeURIComponent(groupId)}`);
-    fillOptions(categorySel, data.results || [], "Tanlang...", preselect);
+
+  function setLoading() {
+    categorySel.innerHTML = `<option value="">Yuklanmoqda...</option>`;
+    categorySel.disabled = true;
+    if (window.jQuery) $(categorySel).trigger("change");
   }
-  function bindSelectEvents(el, cb) {
-    el?.addEventListener("change", cb);
-    if (window.jQuery) window.jQuery(el).on("select2:select select2:clear", cb);
+
+  function fillOptions(items, selectedValue = "") {
+    let html = `<option value="">Tanlang...</option>`;
+    for (const item of items) {
+      const sel = String(item.id) === String(selectedValue) ? "selected" : "";
+      html += `<option value="${item.id}" ${sel}>${item.name}</option>`;
+    }
+    categorySel.innerHTML = html;
+    categorySel.disabled = false;
+    if (window.jQuery) $(categorySel).trigger("change");
+  }
+
+  async function loadCategories(groupId, preselect = "") {
+    categorySel.innerHTML = `<option value="">Tanlang...</option>`;
+    categorySel.disabled = false;
+    if (window.jQuery) $(categorySel).trigger("change");
+    if (!groupId) return;
+    setLoading();
+    const data = await getJSON(`${URL_CATEGORIES}?group=${encodeURIComponent(groupId)}`);
+    fillOptions(data.results || [], preselect);
   }
 
   document.addEventListener("DOMContentLoaded", () => {
-    bindSelectEvents(groupSel, async () => {
-      await loadCategories((groupSel.value || "").trim());
-    });
+    // Faqat select2:select — ikki marta chaqirilishini oldini olish
+    if (window.jQuery) {
+      $(groupSel).on("select2:select select2:clear", async function () {
+        await loadCategories(($(this).val() || "").trim());
+      });
+    } else {
+      groupSel?.addEventListener("change", async () => {
+        await loadCategories((groupSel.value || "").trim());
+      });
+    }
+
+    // Sahifa yuklanganda tanlangan qiymat bo'lsa kategoriyalarni yuklash
     (async () => {
       const groupId = (groupSel?.value || "").trim();
       if (groupId) await loadCategories(groupId, selectedCategory);
