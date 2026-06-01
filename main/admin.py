@@ -159,7 +159,7 @@ class TechnicsAdmin(admin.ModelAdmin):
         "name", "inventory", "serial", "is_active"
     )
     list_filter = (
-        "group", "category", "organization", "department",
+        "group", "category", "organization", "region", "department",
         "directorate", "division", "status", "is_active"
     )
     search_fields = (
