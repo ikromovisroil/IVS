@@ -2539,3 +2539,83 @@ def files(request):
         "date2":     date2,
     }
     return render(request, "main/files.html", context)
+
+from .sso_views import _resolve_position
+
+@login_required
+@require_POST
+def employe_create(request):
+    pinfl = request.POST.get("pinfl", "").strip()
+
+    if not pinfl:
+        messages.info(request, "PINFL kiritilmadi")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    # PINFL allaqachon bazada bormi
+    if Employee.objects.filter(pinfl=pinfl).exists():
+        messages.info(request, "Bu PINFL allaqachon ro'yxatda bor")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    try:
+        from .gateway import GatewayClient
+
+        gateway_data = GatewayClient.current_citizen(pinfl)
+        result       = gateway_data.get("result") or {}
+        positions    = result.get("positions") or []
+
+        if not positions:
+            messages.info(request, "Gatewayda ish joyi topilmadi")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        assigned_data = _resolve_position(pinfl, positions)
+
+        if not assigned_data:
+            messages.info(request, "Tizimda tashkilot topilmadi")
+            return redirect(request.META.get("HTTP_REFERER", "/"))
+
+        with transaction.atomic():
+            # Username yaratish
+            base_username = (
+                f"{result.get('surname', '').lower()}"
+                f".{result.get('name', '').lower()}"
+            )
+            user = None
+            for counter in range(20):
+                candidate = base_username if counter == 0 else f"{base_username}{counter}"
+                try:
+                    user = User.objects.create_user(
+                        username=candidate,
+                        password=secrets.token_urlsafe(16),
+                    )
+                    break
+                except IntegrityError:
+                    continue
+
+            if user is None:
+                messages.error(request, "Username yaratib bo'lmadi")
+                return redirect(request.META.get("HTTP_REFERER", "/"))
+
+            # Employee to'ldirish
+            employee             = user.employee
+            employee.pinfl       = pinfl
+            employee.first_name  = (result.get("name")       or "").strip()
+            employee.last_name   = (result.get("surname")    or "").strip()
+            employee.father_name = (result.get("partonimic") or "").strip()
+            employee.organization = assigned_data["organization"]
+            employee.department   = assigned_data["department"]
+            employee.directorate  = assigned_data["directorate"]
+            employee.division     = assigned_data["division"]
+            employee.rank         = assigned_data["rank"]
+            employee.save()
+
+            rol        = employee.rol
+            rol.client = (employee.organization_id != 4)
+            rol.save(update_fields=["client"])
+
+        messages.success(request, f"{employee.full_name} xodim yaratildi")
+
+    except Exception as e:
+        logger.exception("Xodim yaratishda xatolik")
+        messages.error(request, str(e))
+
+    return redirect(request.META.get("HTTP_REFERER", "/"))

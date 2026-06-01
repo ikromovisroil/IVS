@@ -154,15 +154,21 @@
             <div class="card-body">
 
                <div class="d-flex justify-content-between align-items-center">
-                  <h5 class="card-title mb-0">
-                    Uskunalar {{ total_count }} ta
-                  </h5>
-                  {% if request.user.employee.rol.technics_edit %}
-                  <button type="button" class="btn btn-primary"
-                          data-bs-toggle="modal" data-bs-target="#verticalycentered">
-                    + Uskuna qo'shish
-                  </button>
-                  {% endif %}
+                   <h5 class="card-title mb-0">
+                     Uskunalar {{ total_count }} ta
+                   </h5>
+                   {% if request.user.employee.rol.technics_edit %}
+                   <div class="d-flex gap-2">
+                     <button type="button" class="btn btn-success"
+                             data-bs-toggle="modal" data-bs-target="#verticalycenteredemploye">
+                       + Xodim qo'shish
+                     </button>
+                     <button type="button" class="btn btn-primary"
+                             data-bs-toggle="modal" data-bs-target="#verticalycentered">
+                       + Uskuna qo'shish
+                     </button>
+                   </div>
+                   {% endif %}
                </div>
 
               <table class="table table-bordered table-hover align-middle table-sm">
@@ -475,6 +481,34 @@
       </div>
     </div>
 
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- Employe CREATE MODAL                                               -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="verticalycenteredemploye" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form class="modal-content" method="post" action="{% url 'employe_create' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Xodim qo'shish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">PINFL</label>
+              <div class="col-md-8 col-lg-9">
+                  <input type="text" name="pinfl" class="form-control" placeholder="PINFL kiriting" required>
+              </div>
+            </div>
+
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <!-- ══════════════════════════════════════════════════════════════════ -->
     <!-- TEXNIKA MODALLARI: faqat texnikasi bor guruhlar uchun             -->
