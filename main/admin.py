@@ -156,7 +156,7 @@ class RolAdmin(admin.ModelAdmin):
 class TechnicsAdmin(admin.ModelAdmin):
     list_display = (
         "id", "group", "category", "employee", "status",
-        "name", "inventory", "serial", "is_active"
+        "name", "inventory", "serial", "is_active", "date_creat"
     )
     list_filter = (
         "group", "category", "organization", "region", "department",
@@ -177,7 +177,7 @@ class TechnicsAdmin(admin.ModelAdmin):
 class StructureAdmin(admin.ModelAdmin):
     list_display = (
         "id", "technics", "category", "name", "status",
-        "inventory", "serial", "price", "year", "is_active"
+        "inventory", "serial", "price", "year", "is_active", "date_creat"
     )
     list_filter = ("organization", "category", "status", "is_active")
     search_fields = (
