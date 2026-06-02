@@ -644,6 +644,7 @@ def ajax_reestr_materials(request):
     return JsonResponse(data, safe=False)
 
 
+from collections import defaultdict
 @never_cache
 @require_GET
 @login_required
@@ -658,119 +659,84 @@ def ajax_document_preview(request):
     if not dep_id and not org_id:
         return JsonResponse(
             {"error": "Tashkilot yoki bo'lim tanlanmagan"},
-            status=400
+            status=400,
         )
 
-    komp = Liable.objects.filter(
-        employee=employee,
-        contract=1
-    ).values_list("category__name", flat=True)
-
-    prin4 = Liable.objects.filter(
-        employee=employee,
-        contract=3
-    ).values_list("category__name", flat=True)
-
-    prin3 = Liable.objects.filter(
-        employee=employee,
-        contract=4
-    ).values_list("category__name", flat=True)
-
-    skan = Liable.objects.filter(
-        employee=employee,
-        contract=6
-    ).values_list("category__name", flat=True)
-
-    kompyuter = Technics.objects.filter(
-        category__name__in=komp,
-        is_active=True
-    ).select_related(
-        "employee", "organization", "department", "category"
-    ).prefetch_related(
-        "structure_set"
+    liables = (
+        Liable.objects
+        .filter(employee=employee, category__isnull=False, contract__isnull=False)
+        .select_related("contract", "category")
+        .values("contract_id", "contract__name", "category_id")
     )
 
-    printer4 = Technics.objects.filter(
-        category__name__in=prin4,
-        is_active=True
-    ).select_related(
-        "employee", "organization", "department", "category"
+    contract_map = {}
+    for row in liables:
+        cid   = row["contract_id"]
+        cname = row["contract__name"] or f"Shartnoma {cid}"
+        if cid not in contract_map:
+            contract_map[cid] = {"name": cname, "category_ids": []}
+        contract_map[cid]["category_ids"].append(row["category_id"])
+
+    if not contract_map:
+        return JsonResponse({"contracts": {}})
+
+    loc_filter = {"department_id": dep_id} if dep_id else {"organization_id": org_id}
+
+    all_category_ids = list({
+        cat_id
+        for v in contract_map.values()
+        for cat_id in v["category_ids"]
+    })
+
+    all_technics = (
+        Technics.objects
+        .filter(is_active=True, **loc_filter)
+        .filter(category_id__in=all_category_ids)
+        .select_related("category")
+        .prefetch_related("structure_set")
     )
 
-    printer3 = Technics.objects.filter(
-        category__name__in=prin3,
-        is_active=True
-    ).select_related(
-        "employee", "organization", "department", "category"
-    )
+    cat_to_technics = defaultdict(list)
+    for tex in all_technics:
+        cat_to_technics[tex.category_id].append(tex)
 
-    skaner = Technics.objects.filter(
-        category__name__in=skan,
-        is_active=True
-    ).select_related(
-        "employee", "organization", "department", "category"
-    )
+    PC_CONTRACT_ID = 1
+    contracts_data = {}
 
-    if dep_id:
-        kompyuter = kompyuter.filter(department_id=dep_id)
-        printer4 = printer4.filter(department_id=dep_id)
-        printer3 = printer3.filter(department_id=dep_id)
-        skaner = skaner.filter(department_id=dep_id)
-    else:
-        kompyuter = kompyuter.filter(organization_id=org_id)
-        printer4 = printer4.filter(organization_id=org_id)
-        printer3 = printer3.filter(organization_id=org_id)
-        skaner = skaner.filter(organization_id=org_id)
+    for cid, info in contract_map.items():
+        items = []
+        seen_ids = set()
 
-    kompyuterlar = []
-    for tex in kompyuter:
-        extra_serials = list(
-            tex.structure_set.filter(is_active=True).values_list("serial", flat=True)
-        )
-        kompyuterlar.append({
-            "id": tex.id,
-            "name": tex.name or "",
-            "serial": tex.serial or "",
-            "extra_serials": [s for s in extra_serials if s],
-        })
+        for cat_id in info["category_ids"]:
+            for tex in cat_to_technics.get(cat_id, []):
+                if tex.id in seen_ids:
+                    continue
+                seen_ids.add(tex.id)
 
-    printer4lar = []
-    for tex in printer4:
-        printer4lar.append({
-            "id": tex.id,
-            "name": tex.name or "",
-            "serial": tex.serial or "",
-        })
+                item = {
+                    "id":            tex.id,
+                    "name":          tex.name   or "",
+                    "serial":        tex.serial or "",
+                    "category_name": tex.category.name if tex.category else "",
+                }
 
-    printer3lar = []
-    for tex in printer3:
-        printer3lar.append({
-            "id": tex.id,
-            "name": tex.name or "",
-            "serial": tex.serial or "",
-        })
+                if cid == PC_CONTRACT_ID:
+                    item["extra_serials"] = [
+                        s for s in
+                        tex.structure_set.filter(is_active=True).values_list("serial", flat=True)
+                        if s
+                    ]
 
-    skanerlar = []
-    for tex in skaner:
-        skanerlar.append({
-            "id": tex.id,
-            "name": tex.name or "",
-            "serial": tex.serial or "",
-        })
+                items.append(item)
 
-    data = {
-        "contrac1": kompyuterlar,
-        "contrac1_count": len(kompyuterlar),
-        "contrac2": printer4lar,
-        "contrac2_count": len(printer4lar),
-        "contrac3": printer3lar,
-        "contrac3_count": len(printer3lar),
-        "contrac4": skanerlar,
-        "contrac4_count": len(skanerlar),
-    }
+        contracts_data[str(cid)] = {
+            "contract_id":   cid,
+            "contract_name": info["name"],
+            "count":         len(items),
+            "items":         items,
+        }
 
-    return JsonResponse(data)
-
+    return JsonResponse({"contracts": contracts_data})
 
 @require_POST
 @login_required

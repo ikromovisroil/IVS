@@ -5,11 +5,9 @@
     <title>Hisobot</title>
 {% endblock title %}
 
-{% block css %}
-{% endblock css %}
+{% block css %}{% endblock css %}
 
 {% block content %}
-
 <main id="main" class="main">
 
   <div class="pagetitle">
@@ -20,13 +18,14 @@
     <form class="row" action="{% url 'document_post' %}" method="post">
       {% csrf_token %}
 
+      <!-- ══════════════════ CHAP PANEL ══════════════════ -->
       <div class="col-lg-4">
 
         <div class="card">
           <div class="card-body">
             <h5 class="card-title">Filtrlash</h5>
-
             <div class="row g-3">
+
               <div class="col-12">
                 <label for="organization" class="form-label">Tashkilot :</label>
                 <select id="organization" name="organization" class="form-select" required>
@@ -36,9 +35,7 @@
                       value="{{ org.id }}"
                       data-contract="{{ org.contract|default:'' }}"
                       {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}
-                    >
-                      {{ org.name }}
-                    </option>
+                    >{{ org.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -48,9 +45,9 @@
                 <select id="department" name="department" class="form-select">
                   <option value="">Tanlang...</option>
                   {% for dep in departments %}
-                    <option value="{{ dep.id }}" {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}>
-                      {{ dep.name }}
-                    </option>
+                    <option value="{{ dep.id }}"
+                      {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}
+                    >{{ dep.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -67,8 +64,11 @@
               </div>
 
               <div class="text-center">
-                <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
+                <button type="button" id="btnSearch" class="btn btn-primary w-100">
+                  Qidirish
+                </button>
               </div>
+
             </div>
           </div>
         </div>
@@ -76,8 +76,8 @@
         <div class="card">
           <div class="card-body">
             <h5 class="card-title">Imzolashga yuborish</h5>
-
             <div class="row g-3">
+
               <div class="col-12">
                 <label for="sender" class="form-label">Xizmat ko'rsatuvchining vakili</label>
                 <select id="sender" name="sender" class="form-select" required>
@@ -109,238 +109,191 @@
 
               <div class="col-12">
                 <label for="message" class="form-label">Izox :</label>
-                <textarea class="form-control" id="message" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+                <textarea class="form-control" id="message" name="message"
+                          rows="4" placeholder="Izoh yozing..."></textarea>
               </div>
 
               <div class="text-center">
                 <button type="submit" class="btn btn-primary w-100"
-                onclick="return confirm('Imzolashga yuborishni tasdiqlang?')">
-                    Imzolashga yuborish
+                  onclick="return confirm('Imzolashga yuborishni tasdiqlang?')">
+                  Imzolashga yuborish
                 </button>
               </div>
+
             </div>
           </div>
         </div>
 
-      </div>
+      </div><!-- /col-lg-4 -->
 
+      <!-- ══════════════════ O'NG PANEL — EDITOR ══════════════════ -->
       <div class="col-lg-8">
         <div class="card">
           <div class="card-body">
             <h5 class="card-title">TinyMCE Editor</h5>
 
             <textarea id="body" name="body" class="tinymce-editor">
-                <div style="text-align:center;">
-                  <b>DALOLATNOMA</b>
-                </div>
 
-                <div style="text-align:right;">
-                  <span id="doc_date">12.02.2026 y</span>
-                </div>
+              <!-- ─── 1-SAHIFA: DALOLATNOMA ─── -->
+              <div style="text-align:center;"><b>DALOLATNOMA</b></div>
 
-                <div style="text-align: justify;">
-                  <span>
-                    Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi
-                    <span class="org_id">Iqtisodiyot va moliya vazirligi</span>
-                    <span id="dep_id">Davlat byudjeti siyosati departamenti</span> direktori <b>Sh.Muxamedov</b>,
-                    va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi direktori vazifasini vaqtincha bajaruvchi
-                    <b>F.Xujamqulov</b>:
-                    O‘zbekiston Respublikasi <span class="org_id">Iqtisodiyot va moliya vazirligi</span> hamda
-                    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazlari tomonidan
-                    <b><span id="date_contract">2025 yil 4-martda tuzilgan 1-sonli shartnoma</span>ga asosan</b>
-                    <span id="dep_id2">Davlat byudjeti siyosati departamenti</span> bo‘yicha
-                    2026 yil <span id="chorak">I</span> chorak uchun quyidagi ishlar va xizmatlar bajarildi.
-                    Ishlar texnologik xaritaga muvofiq amalga oshirildi.
-                  </span>
-                </div>
+              <div style="text-align:right;">
+                <span id="doc_date">__.__.____  y</span>
+              </div>
 
-                <div></div>
+              <div style="text-align:justify;">
+                Biz quyida imzo chekuvchilar, O'zbekiston Respublikasi
+                <span class="org_id">___</span>
+                <span id="dep_id">___</span> direktori
+                <b class="receiver_name">__</b>,
+                va O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+                huzuridagi Axborot texnologiyalari markazi direktori vazifasini
+                vaqtincha bajaruvchi <b class="sender_name">__</b>:
+                O'zbekiston Respublikasi <span class="org_id">___</span> hamda
+                O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+                huzuridagi Axborot texnologiyalari markazlari tomonidan
+                <b><span id="date_contract">___</span>ga asosan</b>
+                <span id="dep_id2">___</span> bo'yicha
+                2026 yil <span id="chorak">__</span> chorak uchun quyidagi
+                ishlar va xizmatlar bajarildi.
+                Ishlar texnologik xaritaga muvofiq amalga oshirildi.
+              </div>
 
+              <div></div>
+
+              <div style="text-align:left;">
+                <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va
+                tizimli xizmat ko'rsatish:</b>
+              </div>
+
+              <div></div>
+
+              <!-- Har bir contract uchun "X dona" satri — Django render qiladi -->
+              {% for l in liable %}
                 <div style="text-align:left;">
-                  <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish:</b>
+                  <b>
+                    <span>{{ l.contract.name }}</span>
+                    <span id="count_c{{ l.contract.id }}">_</span> dona.
+                  </b>
                 </div>
+              {% endfor %}
 
-                <div></div>
+              <div></div>
 
-                {% for l in liable %}
-                  {% if l.contract.id == 1 %}
-                    <div style="text-align:left;">
-                      <b><span>{{ l.contract.name }}</span> <span id="komp_count">_</span> dona.</b>
-                    </div>
-                  {% elif l.contract.id == 3 %}
-                    <div style="text-align:left;">
-                      <b><span>{{ l.contract.name }}</span> <span id="prin4_count">_</span> dona.</b>
-                    </div>
-                  {% elif l.contract.id == 4 %}
-                    <div style="text-align:left;">
-                      <b><span>{{ l.contract.name }}</span> <span id="prin3_count">_</span> dona.</b>
-                    </div>
-                  {% elif l.contract.id == 6 %}
-                    <div style="text-align:left;">
-                      <b><span>{{ l.contract.name }}</span> <span id="scan_count">_</span> dona.</b>
-                    </div>
-                  {% endif %}
-                {% endfor %}
+              <!-- Imzo jadvali -->
+              <div>
+                <table style="border-collapse:collapse;width:100%;">
+                  <colgroup>
+                    <col style="width:50%;"><col style="width:50%;">
+                  </colgroup>
+                  <tbody>
+                    <tr>
+                      <td style="border:1px solid #fff;text-align:center;">
+                        <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+                        <span class="dep_name_text">___</span></b><br><br>
+                        <b class="receiver_name">__</b>
+                      </td>
+                      <td style="border:1px solid #fff;text-align:center;">
+                        <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+                        huzuridagi ATM direktori v.b.</b><br><br>
+                        <b class="sender_name">__</b>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
 
-                <div></div>
+              <div style="page-break-after:always;"></div>
 
-                <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:50%;">
-                      <col style="width:50%;">
-                    </colgroup>
-                    <tbody>
-                      <tr>
-                        <td style="border:1px solid #fff;text-align:center;">
-                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi <span class="dep_name_text">Davlat byudjeti siyosati departamenti</span></b><br><br>
-                          <b class="receiver_name">__</b>
-                        </td>
-                        <td style="border:1px solid #fff;text-align:center;">
-                          <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM direktori v.b.</b><br><br>
-                          <b class="sender_name">__</b>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <!-- ─── 2-SAHIFA: TEXNIKALAR JADVALI ─── -->
+              <div style="text-align:right;">
+                <span id="doc_date2">__.__.____  y</span>
+              </div>
 
-                <div style="page-break-after: always;"></div>
+              <div style="text-align:center;">
+                <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat
+                ko'rsatishni amalga oshirish hisoboti</b>
+              </div>
 
-                <div style="text-align:right;">
-                  <span id="doc_date2">12.02.2026 y</span>
-                </div>
+              <div style="text-align:center;">
+                <b>DALOLATNOMA</b><br>
+                <b class="dep_name">_</b><br>
+                <span style="font-size:8pt;">(boshqarma nomi)</span>
+              </div>
 
-                <div style="text-align:center;">
-                  <b>Kompyuter va printer texnikalariga tizimli va texnik xizmat ko‘rsatishni amalga oshirish hisoboti</b>
-                </div>
+              <div style="text-align:left;">
+                <b>Xizmat ko'rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
+              </div>
 
-                <div style="text-align:center;">
-                  <b>DALOLATNOMA</b><br>
-                  <b class="dep_name">_</b><br>
-                  <span style="text-align:center;font-size:8pt;">(boshqarma nomi)</span>
-                </div>
-
-                <div style="text-align:center;">
-                  <b>Biz, <u>Tankoz E.E. bosh mutaxassis, Jumayev U.O. 2-toifali mutaxassis</u></b><br>
-                  <span style="text-align:center;font-size:8pt;">(F.I.Sh.) (lavozimi)</span>
-                </div>
-
+              <!-- Har bir contract uchun jadval — ID: tbody_c{contract.id} -->
+              {% for l in liable %}
                 <div style="text-align:left;">
-                  <b>Xizmat ko‘rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
+                  <b>{{ l.contract.name }}</b>
                 </div>
 
-                {% for l in liable %}
-                  {% if l.contract.id == 1 %}
-                    <div style="text-align:left;">
-                      <b>{{ l.contract.name }}</b>
-                    </div>
-                    <div>
-                      <table style="border-collapse:collapse;width:100%;" border="1">
-                        <colgroup>
-                          <col style="width:10%;">
-                          <col style="width:30%;">
-                          <col style="width:30%;">
-                          <col style="width:30%;">
-                        </colgroup>
-                        <tbody id="tbody1">
-                          <tr>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div><br>
+                {% if l.contract.id == 1 %}
+                  <!-- Kompyuter: 4 ustun (№, Rusumi, Kompyuter SR, Monitor SR) -->
+                  <div>
+                    <table style="border-collapse:collapse;width:100%;" border="1">
+                      <colgroup>
+                        <col style="width:8%;">
+                        <col style="width:30%;">
+                        <col style="width:31%;">
+                        <col style="width:31%;">
+                      </colgroup>
+                      <tbody id="tbody_c{{ l.contract.id }}">
+                        <tr>
+                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
+                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div><br>
 
-                  {% elif l.contract.id == 3 %}
-                    <div style="text-align:left;">
-                      <b>{{ l.contract.name }}</b>
-                    </div>
-                    <div>
-                      <table style="border-collapse:collapse;width:100%;" border="1">
-                        <colgroup>
-                          <col style="width:10%;">
-                          <col style="width:45%;">
-                          <col style="width:45%;">
-                        </colgroup>
-                        <tbody id="tbody3">
-                          <tr>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div><br>
+                {% else %}
+                  <!-- Boshqa qurilmalar: 3 ustun (№, Rusumi, SR) -->
+                  <div>
+                    <table style="border-collapse:collapse;width:100%;" border="1">
+                      <colgroup>
+                        <col style="width:8%;">
+                        <col style="width:46%;">
+                        <col style="width:46%;">
+                      </colgroup>
+                      <tbody id="tbody_c{{ l.contract.id }}">
+                        <tr>
+                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Seriya raqami</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div><br>
+                {% endif %}
 
-                  {% elif l.contract.id == 4 %}
-                    <div style="text-align:left;">
-                      <b>{{ l.contract.name }}</b>
-                    </div>
-                    <div>
-                      <table style="border-collapse:collapse;width:100%;" border="1">
-                        <colgroup>
-                          <col style="width:10%;">
-                          <col style="width:45%;">
-                          <col style="width:45%;">
-                        </colgroup>
-                        <tbody id="tbody4">
-                          <tr>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Printer SR</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div><br>
+              {% endfor %}
 
-                  {% elif l.contract.id == 6 %}
-                    <div style="text-align:left;">
-                      <b>{{ l.contract.name }}</b>
-                    </div>
-                    <div>
-                      <table style="border-collapse:collapse;width:100%;" border="1">
-                        <colgroup>
-                          <col style="width:10%;">
-                          <col style="width:45%;">
-                          <col style="width:45%;">
-                        </colgroup>
-                        <tbody id="tbody6">
-                          <tr>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Skaner SR</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div><br>
-                  {% endif %}
-                {% endfor %}
             </textarea>
-
           </div>
         </div>
-      </div>
+      </div><!-- /col-lg-8 -->
 
     </form>
   </section>
-
 </main>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <script>
 (function () {
-  if (!window.jQuery) {
-    console.error("jQuery yuklanmagan!");
-    return;
-  }
+  if (!window.jQuery) { console.error("jQuery yuklanmagan!"); return; }
 
   $(function () {
 
-    // ─── HELPERS ───────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════
+    // HELPERS
+    // ══════════════════════════════════════════════════════
 
     function esc(s) {
       if (s === null || s === undefined) return '';
@@ -354,91 +307,57 @@
 
     function safeInitSelect2() {
       if (typeof window.initSelect2 === "function") {
-        window.initSelect2(document);
-        return;
+        window.initSelect2(document); return;
       }
-
       if (!$.fn.select2) return;
-
-      $('#organization, #department, #rim_id, #sender, #receiver, #agreements').each(function () {
+      $('#organization,#department,#rim_id,#sender,#receiver,#agreements').each(function () {
         const $el = $(this);
         if ($el.data('select2')) return;
-
         $el.select2({
-          width: '100%',
-          placeholder: 'Tanlang...',
-          allowClear: true,
-          closeOnSelect: !$el.prop('multiple')
+          width: '100%', placeholder: 'Tanlang...',
+          allowClear: true, closeOnSelect: !$el.prop('multiple')
         });
       });
     }
-
     safeInitSelect2();
 
-    // ─── EDITOR ────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════
+    // EDITOR UTILITIES
+    // ══════════════════════════════════════════════════════
 
     function getEditor() {
       if (!window.tinymce) return null;
       const ed = tinymce.get('body');
       if (!ed) return null;
-      try {
-        const body = ed.getBody();
-        if (!body) return null;
-      } catch (e) {
-        return null;
-      }
+      try { if (!ed.getBody()) return null; } catch (e) { return null; }
       return ed;
     }
 
     function setInEditor(selector, text) {
-      const ed = getEditor();
-      if (!ed) return false;
+      const ed = getEditor(); if (!ed) return false;
       try {
-        const root = ed.getBody();
-        if (!root) return false;
-        const el = root.querySelector(selector);
+        const el = ed.getBody().querySelector(selector);
         if (!el) return false;
-        el.textContent = text;
-        ed.nodeChanged();
-        return true;
-      } catch (e) {
-        console.log('setInEditor xatosi:', e);
-        return false;
-      }
+        el.textContent = text; ed.nodeChanged(); return true;
+      } catch (e) { return false; }
     }
 
     function setAllInEditor(selector, text) {
-      const ed = getEditor();
-      if (!ed) return false;
+      const ed = getEditor(); if (!ed) return false;
       try {
-        const root = ed.getBody();
-        if (!root) return false;
-        const els = root.querySelectorAll(selector);
-        if (!els.length) return false;
-        els.forEach(function (el) { el.textContent = text; });
-        ed.nodeChanged();
-        return true;
-      } catch (e) {
-        console.log('setAllInEditor xatosi:', e);
-        return false;
-      }
+        ed.getBody().querySelectorAll(selector)
+          .forEach(function (el) { el.textContent = text; });
+        ed.nodeChanged(); return true;
+      } catch (e) { return false; }
     }
 
     function setTbodyHtml(tbodyId, html) {
-      const ed = getEditor();
-      if (!ed) return false;
+      const ed = getEditor(); if (!ed) return false;
       try {
-        const root = ed.getBody();
-        if (!root) return false;
-        const tb = root.querySelector('#' + tbodyId);
+        const tb = ed.getBody().querySelector('#' + tbodyId);
         if (!tb) return false;
-        tb.innerHTML = html;
-        ed.nodeChanged();
-        return true;
-      } catch (e) {
-        console.log('setTbodyHtml xatosi:', e);
-        return false;
-      }
+        tb.innerHTML = html; ed.nodeChanged(); return true;
+      } catch (e) { return false; }
     }
 
     function waitEditorReady(callback) {
@@ -453,300 +372,197 @@
       }, 150);
     }
 
-    // ─── EDITOR APPLY FUNKSIYALAR ──────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════
+    // EDITOR — MATN SINXRONIZATSIYASI
+    // ══════════════════════════════════════════════════════
 
     function todayStr() {
-      const now = new Date();
-      const dd  = String(now.getDate()).padStart(2, '0');
-      const mm  = String(now.getMonth() + 1).padStart(2, '0');
-      const yyyy = now.getFullYear();
-      return `${dd}.${mm}.${yyyy} y`;
+      const n = new Date();
+      return `${String(n.getDate()).padStart(2,'0')}.${String(n.getMonth()+1).padStart(2,'0')}.${n.getFullYear()} y`;
     }
 
-    function applyTodayDate() {
-      const d = todayStr();
-      setAllInEditor('#doc_date, #doc_date2', d);
-    }
-
-    function applyOrgToEditor(orgText) {
-      if (!orgText || orgText === 'Tanlang...') orgText = 'Tashkilot';
-      setAllInEditor('.org_id', orgText);
-    }
+    function applyTodayDate()           { setAllInEditor('#doc_date, #doc_date2', todayStr()); }
+    function applyOrgToEditor(t)        { setAllInEditor('.org_id', t || 'Tashkilot'); }
+    function applyChorakToEditor(q)     { setInEditor('#chorak', q || ''); }
+    function applyContractToEditor(t)   { setInEditor('#date_contract', t || "Shartnoma ma'lumoti kiritilmagan"); }
 
     function applyDepToEditor(depText, orgText) {
-      const cleanDep = (!depText || depText === 'Tanlang...') ? '' : depText;
-      const cleanOrg = (!orgText || orgText === 'Tanlang...')  ? '' : orgText;
-      const finalText = cleanDep || cleanOrg || 'Tashkilot / Departament';
-
-      setInEditor('#dep_id', finalText);
-      setInEditor('#dep_id2', finalText);
-      setAllInEditor('.dep_name_text', finalText);
-      setAllInEditor('.dep_name', finalText);
-    }
-
-    function applyChorakToEditor(q) {
-      setInEditor('#chorak', q || '');
-    }
-
-    function applyContractToEditor(contractText) {
-      if (!contractText || !String(contractText).trim()) {
-        contractText = "Shartnoma ma'lumoti kiritilmagan";
-      }
-      setInEditor('#date_contract', contractText);
+      const final = (depText && depText !== 'Tanlang...')
+        ? depText
+        : (orgText && orgText !== 'Tanlang...' ? orgText : '___');
+      setInEditor('#dep_id',           final);
+      setInEditor('#dep_id2',          final);
+      setAllInEditor('.dep_name_text', final);
+      setAllInEditor('.dep_name',      final);
     }
 
     function applySenderToEditor() {
-      let senderText = $('#sender option:selected').text() || '';
-      if (!senderText || senderText === 'Tanlang...') senderText = '__';
-      setAllInEditor('.sender_name', senderText);
+      let t = $('#sender option:selected').text() || '';
+      if (!t || t === 'Tanlang...') t = '__';
+      setAllInEditor('.sender_name', t);
     }
 
     function applyReceiverToEditor() {
-      const $selected  = $('#receiver option:selected');
-      let receiverText = $selected.attr('data-fullname') || '';
-      if (!receiverText || receiverText === 'Tanlang...') receiverText = '__';
-      setAllInEditor('.receiver_name', receiverText);
+      let t = $('#receiver option:selected').attr('data-fullname') || '';
+      if (!t || t === 'Tanlang...') t = '__';
+      setAllInEditor('.receiver_name', t);
     }
 
-    function applySenderReceiver() {
+    function syncEditorTexts() {
+      const orgText = $('#organization option:selected').text() || '';
+      const depText = $('#department option:selected').text()   || '';
+      applyTodayDate();
+      applyOrgToEditor(orgText);
+      applyDepToEditor(depText, orgText);
+      applyChorakToEditor($('#rim_id').val() || '');
+      applyContractToEditor($('#organization option:selected').attr('data-contract') || '');
       applySenderToEditor();
       applyReceiverToEditor();
     }
 
-    function syncEditorTexts() {
-      const orgText      = $('#organization option:selected').text() || '';
-      const depText      = $('#department option:selected').text()   || '';
-      const chorak       = $('#rim_id').val()                        || '';
-      const contractText = $('#organization option:selected').attr('data-contract') || '';
-
-      applyTodayDate();
-      applyOrgToEditor(orgText);
-      applyDepToEditor(depText, orgText);
-      applyChorakToEditor(chorak);
-      applyContractToEditor(contractText);
-      applySenderReceiver();
-    }
-
-    // ─── AJAX LOAD ─────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════
+    // AJAX — DEPARTAMENTLAR, RECEIVER, AGREEMENTS
+    // ══════════════════════════════════════════════════════
 
     const userRegion = "{{ request.user.employee.region_id|default:'' }}";
 
-    function loadDepartments(orgId, selectedDepId = null, onSuccess = null) {
-      const $dep      = $('#department');
-      const $receiver = $('#receiver');
-      const $agr      = $('#agreements');
-
-      $dep.html('<option value="">Yuklanmoqda...</option>').val('').trigger('change');
-      $receiver.html('<option value="">Tanlang...</option>').val('').trigger('change');
+    function loadDepartments(orgId, selectedDepId, onSuccess) {
+      const $dep = $('#department'), $rcv = $('#receiver'), $agr = $('#agreements');
+      $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change');
+      $rcv.html('<option value="">Tanlang...</option>').trigger('change');
       $agr.html('').trigger('change');
 
       if (!orgId) {
-        $dep.html('<option value="">Tanlang...</option>').val('').trigger('change');
-        applyReceiverToEditor();
+        $dep.html('<option value="">Tanlang...</option>').trigger('change');
         return;
       }
 
       $.ajax({
-        url: "{% url 'ajax_load_departments' %}",
-        method: "GET",
-        dataType: "json",
+        url: "{% url 'ajax_load_departments' %}", method: "GET", dataType: "json",
         data: { organization: orgId, region: userRegion },
         success: function (data) {
           const list = Array.isArray(data) ? data : (data.departments || data.results || []);
-          let options = '<option value="">Tanlang...</option>';
-
+          let opts = '<option value="">Tanlang...</option>';
           list.forEach(function (dep) {
-            const selected = selectedDepId && String(selectedDepId) === String(dep.id) ? 'selected' : '';
-            options += `<option value="${dep.id}" ${selected}>${esc(dep.name)}</option>`;
+            const sel = selectedDepId && String(selectedDepId) === String(dep.id) ? 'selected' : '';
+            opts += `<option value="${dep.id}" ${sel}>${esc(dep.name)}</option>`;
           });
-
-          $dep.html(options).trigger('change');
+          $dep.html(opts).trigger('change');
           safeInitSelect2();
-
           if (typeof onSuccess === 'function') onSuccess();
         },
         error: function (xhr) {
-          console.error('Departments AJAX error:', xhr.status, xhr.responseText);
-          $dep.html('<option value="">Xatolik yuz berdi</option>').trigger('change');
+          console.error('Departments AJAX:', xhr.status);
+          $dep.html('<option value="">Xatolik</option>').trigger('change');
         }
       });
     }
 
-    function fillEmployeeSelect($sel, list, selectedId = null, allowEmpty = true, keepSelected = false) {
-      let currentSelected = [];
-      if (keepSelected) {
-        currentSelected = ($sel.val() || []).map(String);
-      }
-
+    function fillEmployeeSelect($sel, list, selectedId, allowEmpty, keepSelected) {
+      let current = keepSelected ? ($sel.val() || []).map(String) : [];
       let html = allowEmpty ? '<option value="">Tanlang...</option>' : '';
-
       (list || []).forEach(function (emp) {
-        const idStr        = String(emp.id);
-        const selectedSingle = selectedId && String(selectedId) === idStr;
-        const selectedKeep   = keepSelected && currentSelected.includes(idStr);
-        const fullName       = emp.full_name || '';
-        const rank           = emp.rank || '';
-        const label          = rank ? `${fullName} (${rank})` : fullName;
-
-        html += `
-          <option value="${esc(emp.id)}"
-                  ${(selectedSingle || selectedKeep) ? 'selected' : ''}
-                  data-fullname="${esc(fullName)}"
-                  data-rank="${esc(rank)}">
-            ${esc(label)}
-          </option>
-        `;
+        const id    = String(emp.id);
+        const fn    = emp.full_name || '';
+        const rank  = emp.rank || '';
+        const label = rank ? `${fn} (${rank})` : fn;
+        const sel   = (selectedId && String(selectedId) === id) || current.includes(id);
+        html += `<option value="${esc(emp.id)}" ${sel ? 'selected' : ''}
+                  data-fullname="${esc(fn)}" data-rank="${esc(rank)}">${esc(label)}</option>`;
       });
-
       $sel.html(html).trigger('change');
       safeInitSelect2();
     }
 
-    function loadReceiverByDepartment(depId, selectedId = null) {
-      const $receiver = $('#receiver');
-      const orgId     = $('#organization').val();
-
-      $receiver.html('<option value="">Yuklanmoqda...</option>').trigger('change');
-      applyReceiverToEditor();
-
+    function loadReceiverByDepartment(depId, selectedId) {
+      const $rcv  = $('#receiver');
+      const orgId = $('#organization').val();
+      $rcv.html('<option value="">Yuklanmoqda...</option>').trigger('change');
       if (!orgId && !depId) {
-        $receiver.html('<option value="">Tanlang...</option>').trigger('change');
-        applyReceiverToEditor();
-        return;
+        $rcv.html('<option value="">Tanlang...</option>').trigger('change');
+        applyReceiverToEditor(); return;
       }
-
       const payload = {};
       if (orgId) payload.organization = orgId;
       if (depId) payload.department   = depId;
-
       $.ajax({
-        url: "{% url 'ajax_dep_signatory' %}",
-        method: "GET",
-        dataType: "json",
-        data: payload,
-        success: function (list) {
-          fillEmployeeSelect($receiver, list, selectedId, true, false);
-          applyReceiverToEditor();
-        },
-        error: function (xhr) {
-          console.log('receiver ajax error:', xhr.status, xhr.responseText);
-          $receiver.html('<option value="">Xatolik</option>').trigger('change');
-          applyReceiverToEditor();
-        }
+        url: "{% url 'ajax_dep_signatory' %}", method: "GET", dataType: "json", data: payload,
+        success: function (list) { fillEmployeeSelect($rcv, list, selectedId, true, false); applyReceiverToEditor(); },
+        error:   function ()     { $rcv.html('<option value="">Xatolik</option>').trigger('change'); applyReceiverToEditor(); }
       });
     }
 
-    function loadAgreementsByDepartment(depId, selectedIds = []) {
+    function loadAgreementsByDepartment(depId, selectedIds) {
       const $agr  = $('#agreements');
       const orgId = $('#organization').val();
-
       $agr.html('').trigger('change');
-
       if (!orgId && !depId) return;
-
       const payload = {};
       if (orgId) payload.organization = orgId;
       if (depId) payload.department   = depId;
-
       $.ajax({
-        url: "{% url 'ajax_dep_negotiator' %}",
-        method: "GET",
-        dataType: "json",
-        data: payload,
+        url: "{% url 'ajax_dep_negotiator' %}", method: "GET", dataType: "json", data: payload,
         success: function (list) {
           fillEmployeeSelect($agr, list, null, false, true);
-          if (selectedIds && selectedIds.length) {
-            $agr.val(selectedIds.map(String)).trigger('change');
-          }
+          if (selectedIds && selectedIds.length) $agr.val(selectedIds.map(String)).trigger('change');
         },
-        error: function (xhr) {
-          console.log('agreements ajax error:', xhr.status, xhr.responseText);
-          $agr.html('').trigger('change');
+        error: function () { $agr.html('').trigger('change'); }
+      });
+    }
+
+    // ══════════════════════════════════════════════════════
+    // TEXNIKALAR — JADVAL QURILISHI
+    // ══════════════════════════════════════════════════════
+
+    function buildRows(contract) {
+      const isPC = (contract.contract_id === 1);
+      const colspan = isPC ? 4 : 3;
+
+      // Header
+      let html = '<tr>';
+      html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>';
+      html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>';
+      if (isPC) {
+        html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>';
+        html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>';
+      } else {
+        html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Seriya raqami</td>';
+      }
+      html += '</tr>';
+
+      // Rows
+      if (!contract.items || !contract.items.length) {
+        html += `<tr><td colspan="${colspan}"
+          style="border:1px solid #000;text-align:center;color:#777;">
+          Ma'lumot topilmadi</td></tr>`;
+        return html;
+      }
+
+      contract.items.forEach(function (x, i) {
+        html += '<tr>';
+        html += `<td style="border:1px solid #000;text-align:center;">${i + 1}</td>`;
+        html += `<td style="border:1px solid #000;">${esc(x.name)}</td>`;
+        if (isPC) {
+          html += `<td style="border:1px solid #000;">${esc(x.serial)}</td>`;
+          html += `<td style="border:1px solid #000;">${esc((x.extra_serials || []).join(', '))}</td>`;
+        } else {
+          html += `<td style="border:1px solid #000;">${esc(x.serial)}</td>`;
         }
-      });
-    }
-
-    // ─── TECHNICS ──────────────────────────────────────────────────────────────
-
-    function fillPc(items) {
-      let rows = `
-        <tr>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>
-        </tr>
-      `;
-
-      if (!items || !items.length) {
-        rows += `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
-        setTbodyHtml('tbody1', rows);
-        return;
-      }
-
-      items.forEach(function (x, i) {
-        rows += `
-          <tr>
-            <td style="border:1px solid #000;text-align:center;">${i + 1}</td>
-            <td style="border:1px solid #000;">${esc(x.name   || '')}</td>
-            <td style="border:1px solid #000;">${esc(x.serial || '')}</td>
-            <td style="border:1px solid #000;">${esc((x.extra_serials || []).join(', '))}</td>
-          </tr>
-        `;
+        html += '</tr>';
       });
 
-      setTbodyHtml('tbody1', rows);
+      return html;
     }
 
-    function fillGeneric(tbodyId, items, serialTitle) {
-      let rows = `
-        <tr>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-          <td style="border:1px solid #000;font-size:12pt;text-align:center;">${serialTitle}</td>
-        </tr>
-      `;
-
-      if (!items || !items.length) {
-        rows += `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Ma'lumot topilmadi</td></tr>`;
-        setTbodyHtml(tbodyId, rows);
-        return;
-      }
-
-      items.forEach(function (x, i) {
-        rows += `
-          <tr>
-            <td style="border:1px solid #000;text-align:center;">${i + 1}</td>
-            <td style="border:1px solid #000;">${esc(x.name   || '')}</td>
-            <td style="border:1px solid #000;">${esc(x.serial || '')}</td>
-          </tr>
-        `;
-      });
-
-      setTbodyHtml(tbodyId, rows);
-    }
+    // ══════════════════════════════════════════════════════
+    // TEXNIKALAR — AJAX VA EDITOR GA YOZISH
+    // ══════════════════════════════════════════════════════
 
     function loadTechnicsToEditor(depId) {
       const orgId = $('#organization').val();
-
       syncEditorTexts();
 
-      if (!orgId && !depId) {
-        setInEditor('#komp_count',  '_');
-        setInEditor('#prin4_count', '_');
-        setInEditor('#prin3_count', '_');
-        setInEditor('#scan_count',  '_');
-        fillPc([]);
-        fillGeneric('tbody3', [], 'Printer SR');
-        fillGeneric('tbody4', [], 'Printer SR');
-        fillGeneric('tbody6', [], 'Skaner SR');
-        return;
-      }
-
-      setTbodyHtml('tbody1', `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
-      setTbodyHtml('tbody3', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
-      setTbodyHtml('tbody4', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
-      setTbodyHtml('tbody6', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:#777;">Yuklanmoqda...</td></tr>`);
+      if (!orgId && !depId) return;
 
       const payload = {};
       if (orgId) payload.organization = orgId;
@@ -757,43 +573,43 @@
         method: "GET",
         dataType: "json",
         data: payload,
-        success: function (res) {
-          setInEditor('#komp_count',  String(res.contrac1_count ?? 0));
-          setInEditor('#prin4_count', String(res.contrac2_count ?? 0));
-          setInEditor('#prin3_count', String(res.contrac3_count ?? 0));
-          setInEditor('#scan_count',  String(res.contrac4_count ?? 0));
 
-          fillPc(res.contrac1 || []);
-          fillGeneric('tbody3', res.contrac2 || [], 'Printer SR');
-          fillGeneric('tbody4', res.contrac3 || [], 'Printer SR');
-          fillGeneric('tbody6', res.contrac4 || [], 'Skaner SR');
+        success: function (res) {
+          const contracts = res.contracts || {};
+
+          if (!Object.keys(contracts).length) {
+            console.warn('Hech qanday contract ma\'lumoti qaytmadi');
+            return;
+          }
+
+          Object.values(contracts).forEach(function (contract) {
+            const cid = String(contract.contract_id);
+
+            // ── "X dona" spanini yangilash ──
+            setInEditor('#count_c' + cid, String(contract.count));
+
+            // ── Jadvalni to'ldirish ──
+            setTbodyHtml('tbody_c' + cid, buildRows(contract));
+          });
         },
+
         error: function (xhr) {
           let msg = "Xatolik yuz berdi";
           try {
             if (xhr.responseJSON && xhr.responseJSON.error) msg = xhr.responseJSON.error;
           } catch (e) {}
-
-          setInEditor('#komp_count',  '_');
-          setInEditor('#prin4_count', '_');
-          setInEditor('#prin3_count', '_');
-          setInEditor('#scan_count',  '_');
-
-          setTbodyHtml('tbody1', `<tr><td colspan="4" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
-          setTbodyHtml('tbody3', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
-          setTbodyHtml('tbody4', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
-          setTbodyHtml('tbody6', `<tr><td colspan="3" style="border:1px solid #000;text-align:center;color:red;">${esc(msg)}</td></tr>`);
+          console.error('ajax_document_preview xatosi:', msg);
         }
       });
     }
 
-    // ─── EVENTS ────────────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════
+    // EVENTLAR
+    // ══════════════════════════════════════════════════════
 
     $('#organization').on('change', function () {
-      const orgId = $(this).val();
       syncEditorTexts();
-
-      loadDepartments(orgId, null, function () {
+      loadDepartments($(this).val(), null, function () {
         const depId = $('#department').val();
         loadReceiverByDepartment(depId);
         loadAgreementsByDepartment(depId);
@@ -807,17 +623,11 @@
       loadAgreementsByDepartment(depId);
     });
 
-    $('#rim_id').on('change', function () {
-      syncEditorTexts();
-    });
+    $('#rim_id').on('change', syncEditorTexts);
 
-    $('#sender').on('change', function () {
-      applySenderToEditor();
-    });
+    $('#sender').on('change', applySenderToEditor);
 
-    $('#receiver').on('change', function () {
-      applyReceiverToEditor();
-    });
+    $('#receiver').on('change', applyReceiverToEditor);
 
     $('#btnSearch').on('click', function (e) {
       e.preventDefault();
@@ -830,37 +640,30 @@
       return true;
     });
 
-    // ─── INITIAL LOAD ──────────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════
+    // BOSHLANG'ICH YUKLASH
+    // ══════════════════════════════════════════════════════
 
     const initialOrg = '{{ selected_org|default:"" }}';
     const initialDep = '{{ selected_dep|default:"" }}';
 
     if (initialOrg) {
       $('#organization').val(initialOrg);
-
       loadDepartments(initialOrg, initialDep, function () {
         if (initialDep) {
           $('#department').val(initialDep).trigger('change');
           loadReceiverByDepartment(initialDep);
           loadAgreementsByDepartment(initialDep);
         }
-        waitEditorReady(function () {
-          syncEditorTexts();
-          applySenderReceiver();
-        });
+        waitEditorReady(function () { syncEditorTexts(); });
       });
     } else {
-      waitEditorReady(function () {
-        syncEditorTexts();
-        applySenderReceiver();
-      });
+      waitEditorReady(function () { syncEditorTexts(); });
     }
 
   });
 })();
 </script>
-
 {% endblock content %}
 
-{% block js %}
-{% endblock js %}
+{% block js %}{% endblock js %}
