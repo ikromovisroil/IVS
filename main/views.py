@@ -2552,6 +2552,7 @@ def files(request):
     }
     return render(request, "main/files.html", context)
 
+
 import traceback
 from .sso_views import _resolve_position
 @login_required
@@ -2655,6 +2656,6 @@ def employe_create(request):
 
     except Exception as e:
         logger.exception("Xodim yaratishda xatolik")
-        messages.error(request, traceback.format_exc())
+        messages.info(request, str(e))
 
     return redirect(request.META.get("HTTP_REFERER", "/"))
