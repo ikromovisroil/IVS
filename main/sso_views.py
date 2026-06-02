@@ -130,15 +130,9 @@ def _resolve_position(sso_pinfl, positions):
         if not org_tin:
             continue
 
-        # Lavozimni topish yoki yaratish
         rank = None
         if position_id:
             rank = Rank.objects.filter(code=position_id).first()
-            if not rank:
-                rank = Rank.objects.create(
-                    code=position_id,
-                    name=position or f"Lavozim-{position_id}",
-                )
 
         data = {
             "organization": None,
@@ -146,11 +140,13 @@ def _resolve_position(sso_pinfl, positions):
             "directorate":  None,
             "division":     None,
             "rank":         rank,
+            "_position_id": position_id,
+            "_position":    position,
+            "_dep_id":      dep_id,
+            "_dep_name":    dep_name,
         }
 
-        # -----------------------------------------------
         # HOLAT A: Organization.inn = org_tin
-        # -----------------------------------------------
         organization = Organization.objects.filter(inn=org_tin).first()
         if organization:
             data["organization"] = organization
@@ -187,31 +183,13 @@ def _resolve_position(sso_pinfl, positions):
 
             return data
 
-        # -----------------------------------------------
         # HOLAT B: Department.inn = org_tin
-        # -----------------------------------------------
         department = Department.objects.filter(inn=org_tin).first()
         if department:
             data["department"] = department
-
-            if dep_id:
-                directorate = Directorate.objects.filter(
-                    code=dep_id,
-                    department=department
-                ).first()
-                if not directorate:
-                    directorate = Directorate.objects.create(
-                        code=dep_id,
-                        name=dep_name or f"Boshqarma-{dep_id}",
-                        department=department,
-                    )
-                data["directorate"] = directorate
-
             return data
 
-        # -----------------------------------------------
-        # HOLAT C: hech biriga mos kelmadi
-        # -----------------------------------------------
+        # HOLAT C
         logger.warning(
             "PINFL %s → org_tin=%s na Organization.inn ga, na Department.inn ga mos kelmadi",
             sso_pinfl, org_tin
@@ -325,25 +303,55 @@ def sso_exchange(request):
                     for counter in range(20):
                         candidate = base_username if counter == 0 else f"{base_username}{counter}"
                         try:
+                            sid = transaction.savepoint()
                             user = User.objects.create_user(
                                 username=candidate,
                                 password=secrets.token_urlsafe(16),
                             )
+                            transaction.savepoint_commit(sid)
                             break
                         except IntegrityError:
+                            transaction.savepoint_rollback(sid)
                             continue
 
                     if user is None:
                         raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
 
                     # ---------------------------------------------------
-                    # 5.3 Employee ma'lumotlarini to'ldirish
+                    # 5.3 Rank — atomic() ichida yaratish
                     # ---------------------------------------------------
-                    employee             = user.employee
-                    employee.pinfl       = sso_pinfl
-                    employee.first_name  = (result.get("name")       or "").strip()
-                    employee.last_name   = (result.get("surname")    or "").strip()
-                    employee.father_name = (result.get("partonimic") or "").strip()
+                    if not assigned_data["rank"] and assigned_data.get("_position_id"):
+                        assigned_data["rank"], _ = Rank.objects.get_or_create(
+                            code=assigned_data["_position_id"],
+                            defaults={
+                                "name": assigned_data["_position"] or f"Lavozim-{assigned_data['_position_id']}"
+                            },
+                        )
+
+                    # ---------------------------------------------------
+                    # 5.4 Directorate — atomic() ichida yaratish (Holat B uchun)
+                    # ---------------------------------------------------
+                    if (
+                        assigned_data["department"]
+                        and not assigned_data["directorate"]
+                        and assigned_data.get("_dep_id")
+                    ):
+                        assigned_data["directorate"], _ = Directorate.objects.get_or_create(
+                            code=assigned_data["_dep_id"],
+                            department=assigned_data["department"],
+                            defaults={
+                                "name": assigned_data["_dep_name"] or f"Boshqarma-{assigned_data['_dep_id']}"
+                            },
+                        )
+
+                    # ---------------------------------------------------
+                    # 5.5 Employee ma'lumotlarini to'ldirish
+                    # ---------------------------------------------------
+                    employee              = user.employee
+                    employee.pinfl        = sso_pinfl
+                    employee.first_name   = (result.get("name")       or "").strip()
+                    employee.last_name    = (result.get("surname")    or "").strip()
+                    employee.father_name  = (result.get("partonimic") or "").strip()
                     employee.organization = assigned_data["organization"]
                     employee.department   = assigned_data["department"]
                     employee.directorate  = assigned_data["directorate"]
@@ -352,7 +360,7 @@ def sso_exchange(request):
                     employee.save()
 
                     # ---------------------------------------------------
-                    # 5.4 Rol flagini yangilash
+                    # 5.6 Rol flagini yangilash
                     # ---------------------------------------------------
                     rol        = employee.rol
                     rol.client = (employee.organization_id != 4)

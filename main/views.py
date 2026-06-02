@@ -2552,8 +2552,8 @@ def files(request):
     }
     return render(request, "main/files.html", context)
 
-from .sso_views import _resolve_position
 
+from .sso_views import _resolve_position
 @login_required
 @require_POST
 def employe_create(request):
@@ -2563,7 +2563,6 @@ def employe_create(request):
         messages.info(request, "PINFL kiritilmadi")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    # PINFL allaqachon bazada bormi
     if Employee.objects.filter(pinfl=pinfl).exists():
         messages.info(request, "Bu PINFL allaqachon ro'yxatda bor")
         return redirect(request.META.get("HTTP_REFERER", "/"))
@@ -2586,7 +2585,9 @@ def employe_create(request):
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
         with transaction.atomic():
-            # Username yaratish
+            # -----------------------------------------------
+            # Username yaratish — savepoint bilan xavfsiz
+            # -----------------------------------------------
             base_username = (
                 f"{result.get('surname', '').lower()}"
                 f".{result.get('name', '').lower()}"
@@ -2595,24 +2596,56 @@ def employe_create(request):
             for counter in range(20):
                 candidate = base_username if counter == 0 else f"{base_username}{counter}"
                 try:
+                    sid = transaction.savepoint()
                     user = User.objects.create_user(
                         username=candidate,
                         password=secrets.token_urlsafe(16),
                     )
+                    transaction.savepoint_commit(sid)
                     break
                 except IntegrityError:
+                    transaction.savepoint_rollback(sid)
                     continue
 
             if user is None:
                 messages.error(request, "Username yaratib bo'lmadi")
                 return redirect(request.META.get("HTTP_REFERER", "/"))
 
+            # -----------------------------------------------
+            # Rank — atomic() ichida yaratish
+            # -----------------------------------------------
+            if not assigned_data["rank"] and assigned_data.get("_position_id"):
+                assigned_data["rank"], _ = Rank.objects.get_or_create(
+                    code=assigned_data["_position_id"],
+                    defaults={
+                        "name": assigned_data["_position"] or f"Lavozim-{assigned_data['_position_id']}"
+                    },
+                )
+
+            # -----------------------------------------------
+            # Directorate — atomic() ichida yaratish (Holat B)
+            # -----------------------------------------------
+            if (
+                assigned_data["department"]
+                and not assigned_data["directorate"]
+                and assigned_data.get("_dep_id")
+            ):
+                assigned_data["directorate"], _ = Directorate.objects.get_or_create(
+                    code=assigned_data["_dep_id"],
+                    department=assigned_data["department"],
+                    defaults={
+                        "name": assigned_data["_dep_name"] or f"Boshqarma-{assigned_data['_dep_id']}"
+                    },
+                )
+
+            # -----------------------------------------------
             # Employee to'ldirish
-            employee             = user.employee
-            employee.pinfl       = pinfl
-            employee.first_name  = (result.get("name")       or "").strip()
-            employee.last_name   = (result.get("surname")    or "").strip()
-            employee.father_name = (result.get("partonimic") or "").strip()
+            # -----------------------------------------------
+            employee              = user.employee
+            employee.pinfl        = pinfl
+            employee.first_name   = (result.get("name")       or "").strip()
+            employee.last_name    = (result.get("surname")    or "").strip()
+            employee.father_name  = (result.get("partonimic") or "").strip()
             employee.organization = assigned_data["organization"]
             employee.department   = assigned_data["department"]
             employee.directorate  = assigned_data["directorate"]
