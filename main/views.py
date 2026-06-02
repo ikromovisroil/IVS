@@ -2578,16 +2578,17 @@ def employe_create(request):
             messages.info(request, "Gatewayda ish joyi topilmadi")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
+        # _resolve_position — faqat READ, hech narsa yaratmaydi
         assigned_data = _resolve_position(pinfl, positions)
 
         if not assigned_data:
             messages.info(request, "Tizimda tashkilot topilmadi")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
+        # ✅ Barcha DB write lar bitta atomic ichida
         with transaction.atomic():
-            # -----------------------------------------------
-            # Username yaratish — savepoint bilan xavfsiz
-            # -----------------------------------------------
+
+            # Username — savepoint bilan
             base_username = (
                 f"{result.get('surname', '').lower()}"
                 f".{result.get('name', '').lower()}"
@@ -2608,12 +2609,9 @@ def employe_create(request):
                     continue
 
             if user is None:
-                messages.error(request, "Username yaratib bo'lmadi")
-                return redirect(request.META.get("HTTP_REFERER", "/"))
+                raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
 
-            # -----------------------------------------------
-            # Rank — atomic() ichida yaratish
-            # -----------------------------------------------
+            # Rank
             if not assigned_data["rank"] and assigned_data.get("_position_id"):
                 assigned_data["rank"], _ = Rank.objects.get_or_create(
                     code=assigned_data["_position_id"],
@@ -2622,9 +2620,7 @@ def employe_create(request):
                     },
                 )
 
-            # -----------------------------------------------
-            # Directorate — atomic() ichida yaratish (Holat B)
-            # -----------------------------------------------
+            # Directorate (Holat B)
             if (
                 assigned_data["department"]
                 and not assigned_data["directorate"]
@@ -2638,9 +2634,7 @@ def employe_create(request):
                     },
                 )
 
-            # -----------------------------------------------
-            # Employee to'ldirish
-            # -----------------------------------------------
+            # Employee
             employee              = user.employee
             employee.pinfl        = pinfl
             employee.first_name   = (result.get("name")       or "").strip()
