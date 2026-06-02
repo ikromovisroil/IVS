@@ -738,6 +738,7 @@ def ajax_document_preview(request):
 
     return JsonResponse({"contracts": contracts_data})
 
+
 @require_POST
 @login_required
 def add_material_to_cart(request):
@@ -785,6 +786,7 @@ def add_material_to_cart(request):
         "action": "added",
         "message": "Savatga saqlandi"
     })
+
 
 @require_POST
 @login_required

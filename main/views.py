@@ -1928,7 +1928,7 @@ def document_get(request):
         .filter(employee=employee)
         .select_related("contract")
         .order_by("contract_id")
-        .distinct()
+        .distinct("contract")
     )
 
     context = {
