@@ -934,11 +934,12 @@ def barn_tex(request: HttpRequest):
             Structure.objects
             .filter(
                 organization_id=organization_id,
+                region=employee.region,
                 status="free",
                 is_active=True,
             )
             .only("id", "name", "inventory", "serial")
-            .order_by("id")[:50]
+            .order_by("id")
         )
 
     # ------------------------------------------------------------------ #
