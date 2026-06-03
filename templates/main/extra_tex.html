@@ -132,7 +132,7 @@
                       <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.inventory|default:"-" }}</td>
                       <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.serial|default:"-" }}</td>
                       <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.year|default:"-" }}</td>
-                      {% if request.user.employee.rol.material_edit %}
+                      {% if request.user.employee.rol.technics_edit %}
                       <td>
                         <div class="filter">
                           <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
