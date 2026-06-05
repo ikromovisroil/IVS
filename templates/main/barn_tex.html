@@ -188,14 +188,9 @@
 
                 <tbody id="technicsBody">
                   {% for emp, items in grouped_technics %}
-
-                    {# ════════════════════════════════════════════════════ #}
-                    {# HOLAT 1: Xodimning texnikalari bor                  #}
-                    {# ════════════════════════════════════════════════════ #}
                     {% if items %}
                       {% for tex in items %}
                       <tr>
-                        {# T/r — faqat birinchi qatorda rowspan #}
                         {% if forloop.first %}
                         <th scope="row"
                             rowspan="{{ items|length }}"
@@ -204,7 +199,6 @@
                         </th>
                         {% endif %}
 
-                        {# F.I.O — faqat birinchi qatorda rowspan #}
                         {% if forloop.first %}
                         <td rowspan="{{ items|length }}" class="align-middle">
                           {% if emp %}
@@ -220,7 +214,6 @@
                         </td>
                         {% endif %}
 
-                        {# Texnika nomi #}
                         <td style="cursor:pointer"
                             data-bs-toggle="modal"
                             data-bs-target="#qkcentered{{ tex.id }}">
@@ -232,7 +225,6 @@
                           </span>
                         </td>
 
-                        {# Inventar #}
                         <td style="cursor:pointer"
                             data-bs-toggle="modal"
                             data-bs-target="#qkcentered{{ tex.id }}">
@@ -244,7 +236,6 @@
                           </span>
                         </td>
 
-                        {# Serial #}
                         <td style="cursor:pointer"
                             data-bs-toggle="modal"
                             data-bs-target="#qkcentered{{ tex.id }}">
@@ -256,14 +247,12 @@
                           </span>
                         </td>
 
-                        {# Joylashuvi #}
                         <td style="cursor:pointer"
                             data-bs-toggle="modal"
                             data-bs-target="#qkcentered{{ tex.id }}">
                           {{ tex.address|default:"-" }}
                         </td>
 
-                        {# Amallar #}
                         {% if request.user.employee.rol.technics_edit %}
                         <td>
                           <div class="filter">
@@ -307,35 +296,8 @@
                         {% endif %}
                       </tr>
                       {% endfor %}
-
-                    {# ════════════════════════════════════════════════════ #}
-                    {# HOLAT 2: Xodimning texnikasi YO'Q (FULL JOIN right) #}
-                    {# ════════════════════════════════════════════════════ #}
-                    {% else %}
-                    <tr class="table-warning">
-                      <th scope="row" class="align-middle text-center">
-                        {{ forloop.counter }}
-                      </th>
-                      <td class="align-middle">
-                        {% if emp %}
-                          {{ emp.full_name|default:"—" }}
-                          {% if emp.rank %}
-                          <span class="text-secondary small d-block mt-1">
-                            "{{ emp.rank.name|default:'' }}"
-                          </span>
-                          {% endif %}
-                        {% else %}
-                          <span class="text-muted fst-italic">Biriktirilmagan</span>
-                        {% endif %}
-                      </td>
-                      <td colspan="{% if request.user.employee.rol.technics_edit %}5{% else %}4{% endif %}"
-                          class="text-center text-muted fst-italic align-middle">Texnika biriktirilmagan
-                      </td>
-                    </tr>
                     {% endif %}
-
                   {% empty %}
-                  {# Hech narsa topilmagan #}
                   <tr>
                     <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
                         class="text-center text-muted py-4">
@@ -343,6 +305,38 @@
                     </td>
                   </tr>
                   {% endfor %}
+
+                  {# ══════════════════════════════════════════════════════ #}
+                  {# Texnikasi yo'q xodimlar — FAQAT OXIRGI SAHIFADA      #}
+                  {# ══════════════════════════════════════════════════════ #}
+                  {% if not page_obj.has_next and employees_without_technics %}
+                  <tr>
+                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
+                        class="table-secondary fw-bold ps-2 text-center fst-italic align-middle">
+                        Texnikasi yo'q xodimlar
+                    </td>
+                  </tr>
+                  {% for emp in employees_without_technics %}
+                  <tr class="table-warning">
+                    <th scope="row" class="align-middle text-center">
+                      {{ page_obj.end_index|add:forloop.counter }}
+                    </th>
+                    <td class="align-middle">
+                      {{ emp.full_name|default:"—" }}
+                      {% if emp.rank %}
+                      <span class="text-secondary small d-block mt-1">
+                        "{{ emp.rank.name|default:'' }}"
+                      </span>
+                      {% endif %}
+                    </td>
+                    <td colspan="{% if request.user.employee.rol.technics_edit %}5{% else %}4{% endif %}"
+                        class="text-center text-muted fst-italic align-middle">
+                      Texnika biriktirilmagan
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  {% endif %}
+
                 </tbody>
               </table>
 
@@ -387,10 +381,7 @@
       </div>
     </section>
 
-
-    <!-- ══════════════════════════════════════════════════════════════════ -->
-    <!-- TEXNIKA CREATE MODAL                                               -->
-    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- TEXNIKA CREATE MODAL -->
     <div class="modal fade" id="verticalycentered" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form class="modal-content" method="post" action="{% url 'technics_create' %}">
@@ -400,7 +391,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Turi *</label>
               <div class="col-md-8 col-lg-9">
@@ -412,7 +402,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Kategoriya *</label>
               <div class="col-md-8 col-lg-9">
@@ -421,57 +410,46 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Tashkilot *</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.organization }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi *</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.name }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.parametr }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventar</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.inventory }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.serial }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Mac</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.mac }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Ip</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.ip }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.year }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.price }}</div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Joylashuvi</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.address }}</div>
             </div>
-
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -481,9 +459,7 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════════════ -->
-    <!-- Employe CREATE MODAL                                               -->
-    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- EMPLOYEE CREATE MODAL -->
     <div class="modal fade" id="verticalycenteredemploye" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form class="modal-content" method="post" action="{% url 'employe_create' %}">
@@ -493,14 +469,12 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">PINFL</label>
               <div class="col-md-8 col-lg-9">
-                  <input type="text" name="pinfl" class="form-control" placeholder="PINFL kiriting" required>
+                <input type="text" name="pinfl" class="form-control" placeholder="PINFL kiriting" required>
               </div>
             </div>
-
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -510,9 +484,7 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════════════════════════════════ -->
-    <!-- TEXNIKA MODALLARI: faqat texnikasi bor guruhlar uchun             -->
-    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- TEXNIKA MODALLARI -->
     {% for emp, items in grouped_technics %}
     {% for tex in items %}
 
@@ -527,7 +499,6 @@
           </div>
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
@@ -573,7 +544,6 @@
           </div>
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Xodimlar</label>
               <div class="col-md-8 col-lg-9">
@@ -586,7 +556,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
               <div class="col-md-8 col-lg-9">
@@ -599,7 +568,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Boshqarma</label>
               <div class="col-md-8 col-lg-9">
@@ -610,7 +578,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Bo'lim</label>
               <div class="col-md-8 col-lg-9">
@@ -621,7 +588,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
@@ -666,7 +632,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
               <div class="col-md-8 col-lg-9">
@@ -680,7 +645,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Tashkilot</label>
               <div class="col-md-8 col-lg-9">
@@ -694,7 +658,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Xolati</label>
               <div class="col-md-8 col-lg-9">
@@ -707,14 +670,12 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
                 <input type="text" name="name" class="form-control" value="{{ tex.name }}" required>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Parametr</label>
               <div class="col-md-8 col-lg-9">
@@ -722,7 +683,6 @@
                        value="{{ tex.parametr|default_if_none:'' }}">
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Inventory</label>
               <div class="col-md-8 col-lg-9">
@@ -730,7 +690,6 @@
                        value="{{ tex.inventory|default_if_none:'' }}">
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Serial</label>
               <div class="col-md-8 col-lg-9">
@@ -738,7 +697,6 @@
                        value="{{ tex.serial|default_if_none:'' }}">
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">MAC</label>
               <div class="col-md-8 col-lg-9">
@@ -746,7 +704,6 @@
                        value="{{ tex.mac|default_if_none:'' }}">
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">IP</label>
               <div class="col-md-8 col-lg-9">
@@ -754,7 +711,6 @@
                        value="{{ tex.ip|default_if_none:'' }}">
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Yil</label>
               <div class="col-md-8 col-lg-9">
@@ -762,7 +718,6 @@
                        value="{{ tex.year|default_if_none:'' }}">
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
               <div class="col-md-8 col-lg-9">
@@ -770,7 +725,6 @@
                        value="{{ tex.price|default_if_none:''|stringformat:'s'|cut:',' }}">
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Joylashuvi</label>
               <div class="col-md-8 col-lg-9">
@@ -778,7 +732,6 @@
                        value="{{ tex.address|default_if_none:'' }}">
               </div>
             </div>
-
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -800,7 +753,6 @@
           </div>
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
               <div class="col-md-8 col-lg-9">
@@ -812,7 +764,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
@@ -858,7 +809,6 @@
           </div>
           <div class="modal-body">
             <input type="hidden" name="texnika_id" value="{{ tex.id }}">
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Qurilmalar</label>
               <div class="col-md-8 col-lg-9">
@@ -870,7 +820,6 @@
                 </select>
               </div>
             </div>
-
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
               <div class="col-md-8 col-lg-9">
@@ -905,7 +854,7 @@
       </div>
     </div>
 
-    <!-- Texnika tafsiloti (QR modal) -->
+    <!-- Texnika tafsiloti -->
     <div class="modal fade" id="qkcentered{{ tex.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content">
@@ -916,22 +865,17 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-
-            <!-- Umumiy ma'lumot -->
             <div class="mb-4 p-3 border rounded bg-light">
               <div><i class="bi bi-info-circle me-2"></i>Umumiy ma'lumot</div><hr>
               <div class="card-body">
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Xodim</div>
                   <div class="col-md-7">{{ tex.employee.full_name|default:"-" }}</div>
                 </div>
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Lavozim</div>
                   <div class="col-md-7">{{ tex.employee.rank.name|default:"-" }}</div>
                 </div>
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Tashkilot</div>
                   <div class="col-md-7">
@@ -941,78 +885,66 @@
                     {% if tex.division %}{{ tex.division.name }}{% endif %}
                   </div>
                 </div>
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Turi</div>
                   <div class="col-md-7">{{ tex.group.name|default:"-" }}</div>
                 </div>
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Kategoriya</div>
                   <div class="col-md-7">{{ tex.category.name|default:"-" }}</div>
                 </div>
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Nomi</div>
                   <div class="col-md-7">{{ tex.name|default:"-" }}</div>
                 </div>
-
                 {% if tex.parametr %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Parametr</div>
                   <div class="col-md-7">{{ tex.parametr }}</div>
                 </div>
                 {% endif %}
-
                 {% if tex.inventory %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Inventory</div>
                   <div class="col-md-7">{{ tex.inventory }}</div>
                 </div>
                 {% endif %}
-
                 {% if tex.serial %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Serial</div>
                   <div class="col-md-7">{{ tex.serial }}</div>
                 </div>
                 {% endif %}
-
                 {% if tex.mac %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Mac</div>
                   <div class="col-md-7">{{ tex.mac }}</div>
                 </div>
                 {% endif %}
-
                 {% if tex.ip %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Ip</div>
                   <div class="col-md-7">{{ tex.ip }}</div>
                 </div>
                 {% endif %}
-
                 {% if tex.year %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Yili</div>
                   <div class="col-md-7">{{ tex.year }}</div>
                 </div>
                 {% endif %}
-
                 {% if tex.price %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Narxi</div>
                   <div class="col-md-7">{{ tex.price }}</div>
                 </div>
                 {% endif %}
-
                 {% if tex.address %}
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Joylashuvi</div>
                   <div class="col-md-7">{{ tex.address }}</div>
                 </div>
                 {% endif %}
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Holati</div>
                   <div class="col-md-7">
@@ -1029,16 +961,13 @@
                     {% endif %}
                   </div>
                 </div>
-
                 <div class="row mb-2">
                   <div class="col-md-5 text-muted">Xududi</div>
                   <div class="col-md-7">{{ tex.region.name|default:"-" }}</div>
                 </div>
-
               </div>
             </div>
 
-            <!-- Qo'shimcha qurilmalar -->
             {% for et in tex.structure_set.all %}
             <div class="mb-4 p-3 border rounded bg-light">
               <div><i class="bi bi-hdd-stack me-2"></i>Qo'shimcha qurilmalar</div><hr>
@@ -1081,7 +1010,6 @@
             </div>
             {% endfor %}
 
-            <!-- QR kod -->
             <div class="p-3 border rounded bg-light text-center">
               <h5 class="mb-3 fw-bold">QR kod</h5><hr>
               {% if tex.qr_code and tex.qr_code.url %}
@@ -1094,7 +1022,6 @@
               —
               {% endif %}
             </div>
-
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -1110,7 +1037,7 @@
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-<!-- Modal: dep → dir → div (Biriktirish modali uchun) -->
+<!-- Modal: dep → dir → div -->
 <script>
 (function () {
   const urlDepartment  = "{% url 'ajax_load_departments' %}";
@@ -1119,18 +1046,15 @@
 
   function initModalAttachAjax(modalEl) {
     const $modal = $(modalEl);
-
     const $department  = $modal.find(".department-select");
     const $directorate = $modal.find(".directorate-select");
     const $division    = $modal.find(".division-select");
-
     if (!$department.length || !$directorate.length || !$division.length) return;
 
     const orgId       = $department.data("org")      || "";
     const regionId    = $department.data("region")   || "";
     const selectedDep = $department.data("selected") || "";
 
-    // Avvalgi eventlarni tozalash — change O'RNIGA select2:select
     $department.off("select2:select.modalAttach select2:clear.modalAttach");
     $directorate.off("select2:select.modalAttach select2:clear.modalAttach");
 
@@ -1148,29 +1072,22 @@
       $department.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
       $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
       $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
-
       if (!orgId || !regionId) {
         $department.empty().append('<option value="">Tanlang...</option>').trigger("change");
         return;
       }
-
       $.ajax({
-        url: urlDepartment,
-        type: "GET",
+        url: urlDepartment, type: "GET",
         data: { organization: orgId, region: regionId },
         success: function (data) {
           $department.empty().append('<option value="">Tanlang...</option>');
           $.each(data.results || [], function (_, item) {
-            $department.append($("<option>", {
-              value: item.id,
-              text: item.name,
-              selected: String(item.id) === String(selectedDep)
-            }));
+            $department.append($("<option>", { value: item.id, text: item.name,
+              selected: String(item.id) === String(selectedDep) }));
           });
           $department.trigger("change");
           if (selectedDep) {
-            const selectedDir = $directorate.data("selected") || "";
-            loadDirectorates(selectedDep, selectedDir);
+            loadDirectorates(selectedDep, $directorate.data("selected") || "");
           }
         },
         error: function () {
@@ -1182,24 +1099,18 @@
     function loadDirectorates(departmentId, selectedDirectorateId = "") {
       $directorate.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
       $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
-
       if (!departmentId) {
         $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
         return;
       }
-
       $.ajax({
-        url: urlDirectorate,
-        type: "GET",
+        url: urlDirectorate, type: "GET",
         data: { department: departmentId },
         success: function (data) {
           $directorate.empty().append('<option value="">Tanlang...</option>');
           $.each(data.results || [], function (_, item) {
-            $directorate.append($("<option>", {
-              value: item.id,
-              text: item.name,
-              selected: String(item.id) === String(selectedDirectorateId)
-            }));
+            $directorate.append($("<option>", { value: item.id, text: item.name,
+              selected: String(item.id) === String(selectedDirectorateId) }));
           });
           $directorate.trigger("change");
           if (selectedDirectorateId) {
@@ -1215,24 +1126,18 @@
 
     function loadDivisions(directorateId, selectedDivisionId = "") {
       $division.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
-
       if (!directorateId) {
         $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
         return;
       }
-
       $.ajax({
-        url: urlDivision,
-        type: "GET",
+        url: urlDivision, type: "GET",
         data: { directorate: directorateId },
         success: function (data) {
           $division.empty().append('<option value="">Tanlang...</option>');
           $.each(data.results || [], function (_, item) {
-            $division.append($("<option>", {
-              value: item.id,
-              text: item.name,
-              selected: String(item.id) === String(selectedDivisionId)
-            }));
+            $division.append($("<option>", { value: item.id, text: item.name,
+              selected: String(item.id) === String(selectedDivisionId) }));
           });
           $division.trigger("change");
         },
@@ -1242,13 +1147,11 @@
       });
     }
 
-    // change O'RNIGA select2:select ishlatildi
     $department.on("select2:select.modalAttach select2:clear.modalAttach", function () {
       $directorate.attr("data-selected", "");
       $division.attr("data-selected", "");
       loadDirectorates($(this).val() || "");
     });
-
     $directorate.on("select2:select.modalAttach select2:clear.modalAttach", function () {
       $division.attr("data-selected", "");
       loadDivisions($(this).val() || "");
@@ -1278,13 +1181,11 @@
     if (!res.ok || !ct.includes("application/json")) return { results: [] };
     return await res.json();
   }
-
   function setLoading() {
     categorySel.innerHTML = `<option value="">Yuklanmoqda...</option>`;
     categorySel.disabled = true;
     if (window.jQuery) $(categorySel).trigger("change");
   }
-
   function fillOptions(items) {
     let html = `<option value="">Tanlang...</option>`;
     for (const item of items) {
@@ -1294,7 +1195,6 @@
     categorySel.disabled = false;
     if (window.jQuery) $(categorySel).trigger("change");
   }
-
   async function loadCategories(groupId) {
     categorySel.innerHTML = `<option value="">Tanlang...</option>`;
     categorySel.disabled = false;
@@ -1304,7 +1204,6 @@
     const data = await getJSON(`${URL_CATEGORIES}?group=${encodeURIComponent(groupId)}`);
     fillOptions(data.results || []);
   }
-
   document.addEventListener("DOMContentLoaded", () => {
     if (window.jQuery) {
       $(groupSel).on("select2:select select2:clear", async function () {
@@ -1336,26 +1235,16 @@
   const selectedDir = "{{ selected_dir|default:'' }}";
   const selectedDiv = "{{ selected_div|default:'' }}";
 
-  function isSelect2(el) {
-    return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible");
-  }
-  function refreshUI(el) {
-    if (isSelect2(el)) window.jQuery(el).trigger("change");
-  }
-  function closeSelect2(el) {
-    if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} }
-  }
+  function isSelect2(el) { return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible"); }
+  function refreshUI(el) { if (isSelect2(el)) window.jQuery(el).trigger("change"); }
+  function closeSelect2(el) { if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} } }
   function setLoading(selectEl, text = "Yuklanmoqda...") {
     selectEl.innerHTML = `<option value="">${text}</option>`;
-    selectEl.disabled = true;
-    refreshUI(selectEl);
-    closeSelect2(selectEl);
+    selectEl.disabled = true; refreshUI(selectEl); closeSelect2(selectEl);
   }
   function setEmpty(selectEl, text = "Tanlang...") {
     selectEl.innerHTML = `<option value="">${text}</option>`;
-    selectEl.disabled = false;
-    refreshUI(selectEl);
-    closeSelect2(selectEl);
+    selectEl.disabled = false; refreshUI(selectEl); closeSelect2(selectEl);
   }
   function fillOptions(selectEl, items, placeholder = "Tanlang...", selectedValue = "") {
     let html = `<option value="">${placeholder}</option>`;
@@ -1364,9 +1253,7 @@
       html += `<option value="${it.id}" ${sel}>${it.name}</option>`;
     }
     selectEl.innerHTML = html;
-    selectEl.disabled = false;
-    refreshUI(selectEl);
-    closeSelect2(selectEl);
+    selectEl.disabled = false; refreshUI(selectEl); closeSelect2(selectEl);
   }
   async function getJSON(url) {
     const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
@@ -1398,17 +1285,11 @@
     const data = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(dirId)}`);
     fillOptions(divSel, data.results || [], "Tanlang...", preselect);
   }
-
-  // TUZATILGAN: faqat select2:select, native change emas
   function bindSelectEvents(el, cb) {
     if (!el) return;
-    if (window.jQuery) {
-      window.jQuery(el).on("select2:select select2:clear", cb);
-    } else {
-      el.addEventListener("change", cb);
-    }
+    if (window.jQuery) { window.jQuery(el).on("select2:select select2:clear", cb); }
+    else { el.addEventListener("change", cb); }
   }
-
   document.addEventListener("DOMContentLoaded", () => {
     bindSelectEvents(orgSel, async () => {
       await loadDepartments((orgSel.value || "").trim(), (regSel?.value || "").trim());
@@ -1416,30 +1297,23 @@
     bindSelectEvents(regSel, async () => {
       await loadDepartments((orgSel?.value || "").trim(), (regSel.value || "").trim());
     });
-    bindSelectEvents(depSel, async () => {
-      await loadDirectorates((depSel.value || "").trim());
-    });
-    bindSelectEvents(dirSel, async () => {
-      await loadDivisions((dirSel.value || "").trim());
-    });
+    bindSelectEvents(depSel, async () => { await loadDirectorates((depSel.value || "").trim()); });
+    bindSelectEvents(dirSel, async () => { await loadDivisions((dirSel.value || "").trim()); });
 
     (async () => {
       const orgId = (orgSel?.value || "").trim();
       const regId = (regSel?.value || "").trim();
       const depId = (depSel?.value || "").trim();
       const dirId = (dirSel?.value || "").trim();
-
       if (orgId || regId) await loadDepartments(orgId, regId, depId || selectedDep);
       const depNow = (depSel?.value || "").trim();
       if (depNow) await loadDirectorates(depNow, dirId || selectedDir);
       const dirNow = (dirSel?.value || "").trim();
       if (dirNow) await loadDivisions(dirNow, selectedDiv);
-
       closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
       document.activeElement && document.activeElement.blur();
     })();
   });
-
   window.addEventListener("load", () => {
     closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
     document.activeElement && document.activeElement.blur();
@@ -1461,13 +1335,11 @@
     if (!res.ok || !ct.includes("application/json")) return { results: [] };
     return await res.json();
   }
-
   function setLoading() {
     categorySel.innerHTML = `<option value="">Yuklanmoqda...</option>`;
     categorySel.disabled = true;
     if (window.jQuery) $(categorySel).trigger("change");
   }
-
   function fillOptions(items, selectedValue = "") {
     let html = `<option value="">Tanlang...</option>`;
     for (const item of items) {
@@ -1478,7 +1350,6 @@
     categorySel.disabled = false;
     if (window.jQuery) $(categorySel).trigger("change");
   }
-
   async function loadCategories(groupId, preselect = "") {
     categorySel.innerHTML = `<option value="">Tanlang...</option>`;
     categorySel.disabled = false;
@@ -1488,9 +1359,7 @@
     const data = await getJSON(`${URL_CATEGORIES}?group=${encodeURIComponent(groupId)}`);
     fillOptions(data.results || [], preselect);
   }
-
   document.addEventListener("DOMContentLoaded", () => {
-    // Faqat select2:select — ikki marta chaqirilishini oldini olish
     if (window.jQuery) {
       $(groupSel).on("select2:select select2:clear", async function () {
         await loadCategories(($(this).val() || "").trim());
@@ -1500,8 +1369,6 @@
         await loadCategories((groupSel.value || "").trim());
       });
     }
-
-    // Sahifa yuklanganda tanlangan qiymat bo'lsa kategoriyalarni yuklash
     (async () => {
       const groupId = (groupSel?.value || "").trim();
       if (groupId) await loadCategories(groupId, selectedCategory);
@@ -1518,43 +1385,31 @@
   const URL_EMP   = "{% url 'ajax_employees_org' %}";
   const employeesCache = new Map();
 
-  function isSelect2(el) {
-    return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible");
-  }
-  function refreshUI(el) {
-    if (isSelect2(el)) window.jQuery(el).trigger("change");
-  }
+  function isSelect2(el) { return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible"); }
+  function refreshUI(el) { if (isSelect2(el)) window.jQuery(el).trigger("change"); }
 
   async function fetchEmployees(orgId, regId) {
     const key = `${orgId}_${regId}`;
     if (!orgId && !regId) return [];
     if (employeesCache.has(key)) return employeesCache.get(key);
-
     let qs = "";
     if (orgId) qs += `organization=${encodeURIComponent(orgId)}&`;
     if (regId) qs += `region=${encodeURIComponent(regId)}`;
-
     try {
-      const res = await fetch(`${URL_EMP}?${qs}`, {
-        headers: { "X-Requested-With": "XMLHttpRequest" }
-      });
+      const res = await fetch(`${URL_EMP}?${qs}`, { headers: { "X-Requested-With": "XMLHttpRequest" } });
       const ct = res.headers.get("content-type") || "";
       if (!res.ok || !ct.includes("application/json")) { employeesCache.set(key, []); return []; }
       const data = await res.json();
       const list = data.results || [];
       employeesCache.set(key, list);
       return list;
-    } catch (e) {
-      employeesCache.set(key, []);
-      return [];
-    }
+    } catch (e) { employeesCache.set(key, []); return []; }
   }
 
   async function fillEmployeeSelect(selectEl, orgId, regId) {
     const selectedId = (selectEl.dataset.selected || "").trim();
     selectEl.innerHTML = `<option value="">Yuklanmoqda...</option>`;
     refreshUI(selectEl);
-
     const employees = await fetchEmployees(orgId, regId);
     let html = `<option value="">— Tanlang —</option>`;
     for (const e of employees) {
@@ -1569,31 +1424,26 @@
     const modal    = event.target;
     const selectEl = modal.querySelector(".employee-select");
     if (!selectEl) return;
-
     let orgId = (selectEl.dataset.org    || "").trim();
     let regId = (selectEl.dataset.region || "").trim();
     if (!orgId) orgId = (orgSelect?.value || "").trim();
     if (!regId) regId = (regSelect?.value || "").trim();
-
     if (!orgId && !regId) {
       selectEl.innerHTML = `<option value="">Avval tashkilot yoki hududni tanlang</option>`;
       refreshUI(selectEl);
       return;
     }
-
     await fillEmployeeSelect(selectEl, orgId, regId);
   });
 
   orgSelect?.addEventListener("change", () => {
     document.querySelectorAll(".employee-select").forEach(sel => {
-      sel.innerHTML = `<option value="">— Tanlang —</option>`;
-      refreshUI(sel);
+      sel.innerHTML = `<option value="">— Tanlang —</option>`; refreshUI(sel);
     });
   });
   regSelect?.addEventListener("change", () => {
     document.querySelectorAll(".employee-select").forEach(sel => {
-      sel.innerHTML = `<option value="">— Tanlang —</option>`;
-      refreshUI(sel);
+      sel.innerHTML = `<option value="">— Tanlang —</option>`; refreshUI(sel);
     });
   });
 })();
@@ -1604,17 +1454,13 @@
 document.getElementById("btnExcel")?.addEventListener("click", async () => {
   const fields = ["organization", "department", "directorate", "division", "group", "status", "category", "name"];
   const params = new URLSearchParams();
-
   for (const f of fields) {
     const val = document.querySelector(`[name="${f}"]`)?.value || "";
     if (val) params.append(f, val);
   }
-
   const url  = "{% url 'export_technics_xlsx' %}?" + params.toString();
   const res  = await fetch(url, { method: "GET" });
-
   if (!res.ok) { alert("Excel eksportda xatolik!"); return; }
-
   const blob    = await res.blob();
   const blobUrl = window.URL.createObjectURL(blob);
   const a       = document.createElement("a");

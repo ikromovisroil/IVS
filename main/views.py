@@ -666,9 +666,6 @@ def barn_tex(request: HttpRequest):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    # ------------------------------------------------------------------ #
-    #  Yordamchi: GET parametrni xavfsiz int ga o'girish                   #
-    # ------------------------------------------------------------------ #
     def to_int(v):
         v = (v or "").strip()
         if not v:
@@ -678,9 +675,6 @@ def barn_tex(request: HttpRequest):
         except (TypeError, ValueError):
             return None
 
-    # ------------------------------------------------------------------ #
-    #  GET parametrlarni o'qish                                            #
-    # ------------------------------------------------------------------ #
     organization_id = to_int(request.GET.get("organization"))
     region_id = to_int(request.GET.get("region"))
     department_id = to_int(request.GET.get("department"))
@@ -700,9 +694,6 @@ def barn_tex(request: HttpRequest):
         or division_id or status or category_id or group_id or name
     )
 
-    # ------------------------------------------------------------------ #
-    #  Sidebar uchun lookup ma'lumotlar                                    #
-    # ------------------------------------------------------------------ #
     organizations = Organization.objects.only("id", "name").order_by("id")
     if not getattr(employee.rol, "full", False):
         organizations = organizations.filter(id=employee.organization_id)
@@ -743,14 +734,10 @@ def barn_tex(request: HttpRequest):
             group_id=group_id,
         ).only("id", "name").order_by("id")
 
-    # Pagination uchun query string (page parametrsiz)
     params = request.GET.copy()
     params.pop("page", None)
     qs_params = params.urlencode()
 
-    # ------------------------------------------------------------------ #
-    #  Umumiy bo'sh context (filter yo'q bo'lganda)                        #
-    # ------------------------------------------------------------------ #
     base_context = {
         "organizations": organizations,
         "regions": regions,
@@ -776,19 +763,18 @@ def barn_tex(request: HttpRequest):
             **base_context,
             "page_obj": Paginator([], 20).get_page(page_number),
             "grouped_technics": [],
+            "employees_without_technics": [],
             "total_count": 0,
         })
 
     # ------------------------------------------------------------------ #
-    #  1. TEXNIKALAR query (Technics tomoni)                               #
+    #  1. TEXNIKALAR query                                                 #
     # ------------------------------------------------------------------ #
     base_qs = Technics.objects.filter(is_active=True)
 
-    # Rol cheklovi
     if not getattr(employee.rol, "full", False):
         base_qs = base_qs.filter(organization_id=employee.organization_id)
 
-    # Filterlar
     if organization_id:
         base_qs = base_qs.filter(organization_id=organization_id)
     if region_id:
@@ -806,20 +792,19 @@ def barn_tex(request: HttpRequest):
     if category_id:
         base_qs = base_qs.filter(category_id=category_id)
 
-    # Ism/texnika bo'yicha qidirish
     if name:
         words = [w for w in name.split() if w]
         q = Q()
         for w in words:
             q &= (
-                    Q(employee__last_name__icontains=w) |
-                    Q(employee__first_name__icontains=w) |
-                    Q(employee__father_name__icontains=w) |
-                    Q(name__icontains=w) |
-                    Q(inventory__icontains=w) |
-                    Q(serial__icontains=w) |
-                    Q(mac__icontains=w) |
-                    Q(ip__icontains=w)
+                Q(employee__last_name__icontains=w) |
+                Q(employee__first_name__icontains=w) |
+                Q(employee__father_name__icontains=w) |
+                Q(name__icontains=w) |
+                Q(inventory__icontains=w) |
+                Q(serial__icontains=w) |
+                Q(mac__icontains=w) |
+                Q(ip__icontains=w)
             )
         base_qs = base_qs.filter(q)
 
@@ -843,29 +828,18 @@ def barn_tex(request: HttpRequest):
             "employee__id", "employee__first_name",
             "employee__last_name", "employee__father_name",
         )
-        # NULL employee_id lar eng oxirida, keyin employee_id, id bo'yicha
         .order_by("employee_id", "id")
     )
 
     # ------------------------------------------------------------------ #
-    #  2. Pagination                                                       #
+    #  2. Pagination — faqat texnikalar bo'yicha                          #
     # ------------------------------------------------------------------ #
     paginator = Paginator(tech_qs, 20)
     page_obj = paginator.get_page(page_number)
 
     # ------------------------------------------------------------------ #
-    #  3. FULL OUTER JOIN effekti                                          #
-    #     = texnikali xodimlar  +  texnikasiz xodimlar  +  egasiz texnikalar
+    #  3. Texnikasi yo'q xodimlar                                         #
     # ------------------------------------------------------------------ #
-
-    # Hozirgi sahifadagi employee_id lar (None dan tashqari)
-    page_emp_ids = {
-        t.employee_id
-        for t in page_obj.object_list
-        if t.employee_id is not None
-    }
-
-    # base_qs dagi BARCHA employee_id lar (pagination ga bog'liq emas)
     all_assigned_emp_ids = set(
         base_qs
         .exclude(employee_id=None)
@@ -873,7 +847,6 @@ def barn_tex(request: HttpRequest):
         .distinct()
     )
 
-    # Employee filter — texnikalar filteri bilan bir xil shartlar
     emp_filter = Q()
     if not getattr(employee.rol, "full", False):
         emp_filter &= Q(organization_id=employee.organization_id)
@@ -888,45 +861,36 @@ def barn_tex(request: HttpRequest):
     if division_id:
         emp_filter &= Q(division_id=division_id)
 
-    # Ism bo'yicha qidirish bo'lsa — xodim qidiruvini ham qo'llash
     if name:
         words = [w for w in name.split() if w]
         emp_name_q = Q()
         for w in words:
             emp_name_q &= (
-                    Q(last_name__icontains=w) |
-                    Q(first_name__icontains=w) |
-                    Q(father_name__icontains=w)
+                Q(last_name__icontains=w) |
+                Q(first_name__icontains=w) |
+                Q(father_name__icontains=w)
             )
         emp_filter &= emp_name_q
 
-    # Texnikasi yo'q xodimlar (FULL JOIN — right side)
     employees_without_technics = (
         Employee.objects
         .filter(emp_filter)
-        .exclude(id__in=all_assigned_emp_ids)  # birorta texnikasi bor — chiqar
+        .exclude(id__in=all_assigned_emp_ids)
         .only("id", "first_name", "last_name", "father_name")
         .order_by("last_name", "first_name")
     )
 
     # ------------------------------------------------------------------ #
-    #  4. grouped_technics ro'yxatini tuzish                              #
-    #     Har element: (employee_obj | None, [Technics, ...])             #
+    #  4. grouped_technics — faqat sahifadagi texnikalar                  #
     # ------------------------------------------------------------------ #
     grouped_technics = []
-
-    # a) Sahifadagi texnikalarni xodim bo'yicha guruhlash
     for emp_id, items in groupby(page_obj.object_list, key=lambda t: t.employee_id):
         items_list = list(items)
         emp_obj = items_list[0].employee if emp_id else None
         grouped_technics.append((emp_obj, items_list))
 
-    # b) Texnikasi yo'q xodimlarni qo'shish (FULL JOIN — right side)
-    for emp_obj in employees_without_technics:
-        grouped_technics.append((emp_obj, []))
-
     # ------------------------------------------------------------------ #
-    #  5. Erkin (free) texnikalar — tashkilot bo'yicha                    #
+    #  5. Erkin texnikalar                                                 #
     # ------------------------------------------------------------------ #
     extratex = Structure.objects.none()
     if organization_id:
@@ -942,13 +906,11 @@ def barn_tex(request: HttpRequest):
             .order_by("id")
         )
 
-    # ------------------------------------------------------------------ #
-    #  6. Render                                                           #
-    # ------------------------------------------------------------------ #
     return render(request, "main/barn_tex.html", {
         **base_context,
         "page_obj": page_obj,
         "grouped_technics": grouped_technics,
+        "employees_without_technics": employees_without_technics,
         "extratex": extratex,
         "total_count": total_count,
     })
