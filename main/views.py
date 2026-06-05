@@ -1864,11 +1864,7 @@ def material_attach(request):
 
     # Ombordan ayiramiz
     src.number = src_qty - give_number_int
-    if src.number == 0:
-        src.is_active = False
-        src.save(update_fields=["number", "is_active"])
-    else:
-        src.save(update_fields=["number"])
+    src.save(update_fields=["number"])
 
     messages.success(request, "Material biriktirildi")
     return redirect(back_url)
