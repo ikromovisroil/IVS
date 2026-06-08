@@ -21,7 +21,6 @@
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
 
-
                     <!-- STATUS -->
                     <div class="col-md-3">
                         <label class="form-label">Holati</label>
@@ -262,32 +261,32 @@
           </div>
           <div class="modal-body">
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Birligi *</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.unit }}
               </div>
             </div>
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi *</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.name }}
               </div>
             </div>
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Code</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Code *</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.code }}
               </div>
             </div>
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Soni</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Soni *</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.number }}
               </div>
             </div>
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi *</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.price }}
               </div>
@@ -392,7 +391,7 @@
             <input type="hidden" name="material_id" value="{{ mat.id }}">
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Xodim</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Xodim *</label>
               <div class="col-md-8 col-lg-9">
                 <select name="employee_id" class="form-select" required>
                  <option value="">Tanlang...</option>
@@ -406,7 +405,7 @@
             </div>
 
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Beriladigan soni</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Beriladigan soni *</label>
               <div class="col-md-8 col-lg-9">
                 <input type="number" name="give_number" class="form-control" min="1" max="{{ mat.number }}" required>
               </div>
