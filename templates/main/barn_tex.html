@@ -1045,119 +1045,96 @@
   const urlDivision    = "{% url 'ajax_load_division' %}";
 
   function initModalAttachAjax(modalEl) {
-    const $modal = $(modalEl);
-    const $department  = $modal.find(".department-select");
-    const $directorate = $modal.find(".directorate-select");
-    const $division    = $modal.find(".division-select");
-    if (!$department.length || !$directorate.length || !$division.length) return;
+    const depSel = modalEl.querySelector(".department-select");
+    const dirSel = modalEl.querySelector(".directorate-select");
+    const divSel = modalEl.querySelector(".division-select");
+    if (!depSel || !dirSel || !divSel) return;
 
-    const orgId       = $department.data("org")      || "";
-    const regionId    = $department.data("region")   || "";
-    const selectedDep = $department.data("selected") || "";
+    const orgId    = (depSel.dataset.org      || "").trim();
+    const regionId = (depSel.dataset.region   || "").trim();
+    const selDep   = (depSel.dataset.selected || "").trim();
+    const selDir   = (dirSel.dataset.selected || "").trim();
+    const selDiv   = (divSel.dataset.selected || "").trim();
 
-    $department.off("select2:select.modalAttach select2:clear.modalAttach");
-    $directorate.off("select2:select.modalAttach select2:clear.modalAttach");
+    // --- filtrdagi helper funksiyalar ---
+    function isSelect2(el) { return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible"); }
+    function refreshUI(el) { if (isSelect2(el)) window.jQuery(el).trigger("change"); }
+    function closeSelect2(el) { if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch(e){} } }
 
-    if (!$department.hasClass("select2-hidden-accessible")) {
-      $department.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
+    function setLoading(el) {
+      el.innerHTML = `<option value="">Yuklanmoqda...</option>`;
+      el.disabled = true; refreshUI(el); closeSelect2(el);
     }
-    if (!$directorate.hasClass("select2-hidden-accessible")) {
-      $directorate.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
+    function setEmpty(el) {
+      el.innerHTML = `<option value="">Tanlang...</option>`;
+      el.disabled = false; refreshUI(el); closeSelect2(el);
     }
-    if (!$division.hasClass("select2-hidden-accessible")) {
-      $division.select2({ width:"100%", dropdownParent:$modal, placeholder:"Tanlang...", allowClear:true });
-    }
-
-    function loadDepartments() {
-      $department.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
-      $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
-      $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
-      if (!orgId && !regionId) {
-        $department.empty().append('<option value="">Tanlang...</option>').trigger("change");
-        return;
+    function fillOptions(el, items, selectedValue = "") {
+      let html = `<option value="">Tanlang...</option>`;
+      for (const it of items) {
+        const sel = String(it.id) === String(selectedValue) ? "selected" : "";
+        html += `<option value="${it.id}" ${sel}>${it.name}</option>`;
       }
-      $.ajax({
-        url: urlDepartment, type: "GET",
-        data: { organization: orgId, region: regionId },
-        success: function (data) {
-          $department.empty().append('<option value="">Tanlang...</option>');
-          $.each(data.results || [], function (_, item) {
-            $department.append($("<option>", { value: item.id, text: item.name,
-              selected: String(item.id) === String(selectedDep) }));
-          });
-          $department.trigger("change");
-          if (selectedDep) {
-            loadDirectorates(selectedDep, $directorate.data("selected") || "");
-          }
-        },
-        error: function () {
-          $department.empty().append('<option value="">Xatolik</option>').trigger("change");
-        }
-      });
+      el.innerHTML = html;
+      el.disabled = false; refreshUI(el); closeSelect2(el);
+    }
+    async function getJSON(url) {
+      const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+      const ct = res.headers.get("content-type") || "";
+      if (!res.ok || !ct.includes("application/json")) return { results: [] };
+      return await res.json();
     }
 
-    function loadDirectorates(departmentId, selectedDirectorateId = "") {
-      $directorate.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
-      $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
-      if (!departmentId) {
-        $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
-        return;
-      }
-      $.ajax({
-        url: urlDirectorate, type: "GET",
-        data: { department: departmentId },
-        success: function (data) {
-          $directorate.empty().append('<option value="">Tanlang...</option>');
-          $.each(data.results || [], function (_, item) {
-            $directorate.append($("<option>", { value: item.id, text: item.name,
-              selected: String(item.id) === String(selectedDirectorateId) }));
-          });
-          $directorate.trigger("change");
-          if (selectedDirectorateId) {
-            loadDivisions(selectedDirectorateId, $division.data("selected") || "");
-          }
-        },
-        error: function () {
-          $directorate.empty().append('<option value="">Xatolik</option>').trigger("change");
-          $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
-        }
-      });
+    // --- filtrdagi load funksiyalar ---
+    async function loadDepartments(preselect = "") {
+      setEmpty(depSel); setEmpty(dirSel); setEmpty(divSel);
+      if (!orgId && !regionId) return;        // && — bittasi bo'lsa ham ishlaydi
+      setLoading(depSel);
+      let qs = "";
+      if (orgId)    qs += `organization=${encodeURIComponent(orgId)}&`;
+      if (regionId) qs += `region=${encodeURIComponent(regionId)}`;
+      const data = await getJSON(`${urlDepartment}?${qs}`);
+      fillOptions(depSel, data.results || [], preselect);
+      const depNow = depSel.value;
+      if (depNow) await loadDirectorates(depNow, selDir);
     }
 
-    function loadDivisions(directorateId, selectedDivisionId = "") {
-      $division.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
-      if (!directorateId) {
-        $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
-        return;
-      }
-      $.ajax({
-        url: urlDivision, type: "GET",
-        data: { directorate: directorateId },
-        success: function (data) {
-          $division.empty().append('<option value="">Tanlang...</option>');
-          $.each(data.results || [], function (_, item) {
-            $division.append($("<option>", { value: item.id, text: item.name,
-              selected: String(item.id) === String(selectedDivisionId) }));
-          });
-          $division.trigger("change");
-        },
-        error: function () {
-          $division.empty().append('<option value="">Xatolik</option>').trigger("change");
-        }
-      });
+    async function loadDirectorates(depId, preselect = "") {
+      setEmpty(dirSel); setEmpty(divSel);
+      if (!depId) return;
+      setLoading(dirSel);
+      const data = await getJSON(`${urlDirectorate}?department=${encodeURIComponent(depId)}`);
+      fillOptions(dirSel, data.results || [], preselect);
+      const dirNow = dirSel.value;
+      if (dirNow) await loadDivisions(dirNow, selDiv);
     }
 
-    $department.on("select2:select.modalAttach select2:clear.modalAttach", function () {
-      $directorate.attr("data-selected", "");
-      $division.attr("data-selected", "");
-      loadDirectorates($(this).val() || "");
+    async function loadDivisions(dirId, preselect = "") {
+      setEmpty(divSel);
+      if (!dirId) return;
+      setLoading(divSel);
+      const data = await getJSON(`${urlDivision}?directorate=${encodeURIComponent(dirId)}`);
+      fillOptions(divSel, data.results || [], preselect);
+    }
+
+    // --- eventlar (filtrdagidek) ---
+    function bindEvents(el, cb) {
+      if (window.jQuery) { window.jQuery(el).off(".modalAttach").on("select2:select.modalAttach select2:clear.modalAttach", cb); }
+      el.addEventListener("change", cb);
+    }
+
+    bindEvents(depSel, async () => {
+      dirSel.dataset.selected = "";
+      divSel.dataset.selected = "";
+      await loadDirectorates(depSel.value || "");
     });
-    $directorate.on("select2:select.modalAttach select2:clear.modalAttach", function () {
-      $division.attr("data-selected", "");
-      loadDivisions($(this).val() || "");
+    bindEvents(dirSel, async () => {
+      divSel.dataset.selected = "";
+      await loadDivisions(dirSel.value || "");
     });
 
-    loadDepartments();
+    // --- sahifa yuklangandagidek boshlang'ich yuklash ---
+    loadDepartments(selDep);
   }
 
   document.querySelectorAll('.modal[id^="texbir-"]').forEach(function (modalEl) {
