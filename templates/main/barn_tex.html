@@ -1072,7 +1072,7 @@
       $department.empty().append('<option value="">Yuklanmoqda...</option>').trigger("change");
       $directorate.empty().append('<option value="">Tanlang...</option>').trigger("change");
       $division.empty().append('<option value="">Tanlang...</option>').trigger("change");
-      if (!orgId || !regionId) {
+      if (!orgId && !regionId) {
         $department.empty().append('<option value="">Tanlang...</option>').trigger("change");
         return;
       }
