@@ -1671,9 +1671,25 @@ def material_create(request):
         material = form.save(commit=False)
         material.organization = employee.organization
         material.save()
+
+        MaterialMovement.objects.create(
+            material=material,
+            user=employee,
+            status='created',
+            body=(
+                f"Tashkilot: {material.organization}\n"
+                f"Birligi: {material.unit.name if material.unit else '—'}\n"
+                f"Nomi: {material.name}\n"
+                f"Soni: {material.number}\n"
+                f"Kodi: {material.code or '—'}\n"
+                f"Narxi: {material.price or '—'}"
+            )
+        )
         messages.success(request, "Material qo'shildi")
     else:
         messages.info(request, f"Maʼlumotlarda xatolik bor!")
+
+
 
     return redirect(back_url)
 
@@ -1693,6 +1709,16 @@ def material_update(request, pk):
 
     if mat.organization_id != employee.organization_id:
         raise PermissionDenied("Sizga ruxsat yo'q")
+
+    # Eski qiymatlar — save dan OLDIN saqlab qo'yamiz
+    old = {
+        "name":   mat.name,
+        "unit":   mat.unit.name if mat.unit else "—",
+        "number": mat.number,
+        "code":   mat.code or "—",
+        "price":  mat.price or "—",
+        "year":   mat.year or "—",
+    }
 
     unit_id = (request.POST.get("unit") or "").strip()
     if unit_id:
@@ -1736,6 +1762,38 @@ def material_update(request, pk):
         "unit", "name", "code",
         "number", "price", "year", "image",
     ])
+
+    # Yangi qiymatlar
+    new = {
+        "name":   mat.name,
+        "unit":   mat.unit.name if mat.unit else "—",
+        "number": mat.number,
+        "code":   mat.code or "—",
+        "price":  mat.price or "—",
+        "year":   mat.year or "—",
+    }
+
+    # Faqat o'zgargan fieldlarni yozamiz
+    changes = []
+    labels = {
+        "name":   "Nomi",
+        "unit":   "Birligi",
+        "number": "Soni",
+        "code":   "Kodi",
+        "price":  "Narxi",
+        "year":   "Yili",
+    }
+    for key, label in labels.items():
+        if old[key] != new[key]:
+            changes.append(f"{label}: {old[key]} → {new[key]}")
+
+    if changes:
+        MaterialMovement.objects.create(
+            material=mat,
+            user=employee,
+            status='edited',
+            body="\n".join(changes)
+        )
 
     messages.success(request, "Material tahrirlandi")
     return redirect(back_url)
@@ -1828,6 +1886,21 @@ def material_attach(request):
     src.number = src_qty - give_number_int
     src.save(update_fields=["number"])
 
+    MaterialMovement.objects.create(
+        material=src,
+        user=employee,
+        employee=emp,
+        number=give_number_int,
+        status='assigned',
+        body=(
+            f"Berildi: {employee}\n"
+            f"Qabul qildi: {emp}\n"
+            f"Material: {src_qty}\n"
+            f"Soni: {give_number_int}\n"
+            f"Omborda qoldi: {src.number}"
+        )
+    )
+
     messages.success(request, "Material biriktirildi")
     return redirect(back_url)
 
@@ -1865,6 +1938,13 @@ def material_delete(request):
 
     mat.is_active = False
     mat.save(update_fields=["is_active"])
+
+    MaterialMovement.objects.create(
+        material=mat,
+        user=employee,
+        status='deleted',
+        body=f"Material o'chirildi: {mat.id}"
+    )
 
     messages.success(request, "Material muvaffaqiyatli o'chirildi")
     return redirect(back_url)

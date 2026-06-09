@@ -648,3 +648,29 @@ class Liable(models.Model):
         db_table = 'Liable'
         verbose_name = "Shartnomaga javobgar shaxs"
         verbose_name_plural = "Shartnomaga javobgar shaxslar"
+
+
+class MaterialMovement(models.Model):
+    STATUS_CHOICES = [
+        ('created', "Qo'shildi"),
+        ('edited', 'Taxrirlandi'),
+        ('deleted', "O'chirildi"),
+        ('assigned', 'Biriktirildi'),
+    ]
+    user = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True, blank=True,db_index=True, related_name='movement_created')
+    material = models.ForeignKey(Material, on_delete=models.PROTECT,null=True, blank=True,db_index=True)
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True, related_name='movement_received')
+    number = models.PositiveIntegerField(null=True, blank=True,)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='created', db_index=True)
+    body = models.TextField(null=True, blank=True)
+    date_creat = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.get_status_display()} | {self.material} | {self.employee}"
+
+    class Meta:
+        db_table = 'material_movement'
+        verbose_name = "Material harakati"
+        verbose_name_plural = "Material harakatlari"
+        ordering = ['-date_creat']
+

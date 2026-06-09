@@ -292,3 +292,24 @@ class LiableAdmin(admin.ModelAdmin):
         "contract__name", "category__name"
     )
     autocomplete_fields = ("employee", "contract", "category")
+
+
+@admin.register(MaterialMovement)
+class MaterialMovementAdmin(admin.ModelAdmin):
+    list_display = [
+        'id',
+        'status',
+        'material',
+        'user',
+        'employee',
+        'number',
+        'date_creat',
+    ]
+    list_filter = ['status', 'date_creat']
+    search_fields = [
+        'material__name',
+        'user__last_name',
+        'user__first_name',
+        'employee__last_name',
+        'employee__first_name',
+    ]
