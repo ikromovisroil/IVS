@@ -144,7 +144,7 @@
               <div style="text-align:justify;">&nbsp; &nbsp; &nbsp; &nbsp;
                 Biz quyida imzo chekuvchilar, O'zbekiston Respublikasi
                 <span class="org_id">___</span>
-                <span id="dep_id">___</span> boshlig‘i
+                <span id="dep_id">___</span> boshlig'i
                 <b class="receiver_name">__</b>,
                 va O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazi direktori
@@ -168,7 +168,6 @@
 
               <div></div>
 
-              <!-- Har bir contract uchun "X dona" satri — Django render qiladi -->
               {% for l in liable %}
                 <div style="text-align:left;">
                   <b>
@@ -190,7 +189,7 @@
                     <tr>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                        <span class="dep_name_text">___</span> boshlig‘i</b><br><br>
+                        <span class="dep_name_text">___</span> boshlig'i</b><br><br>
                         <b class="receiver_name">__</b>
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
@@ -228,14 +227,12 @@
                 <b>Xizmat ko'rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
               </div>
 
-              <!-- Har bir contract uchun jadval — ID: tbody_c{contract.id} -->
               {% for l in liable %}
                 <div style="text-align:left;">
                   <b>{{ l.contract.name }}</b>
                 </div>
 
                 {% if l.contract.id == 1 %}
-                  <!-- Kompyuter: 4 ustun (№, Rusumi, Kompyuter SR, Monitor SR) -->
                   <div>
                     <table style="border-collapse:collapse;width:100%;" border="1">
                       <colgroup>
@@ -254,9 +251,7 @@
                       </tbody>
                     </table>
                   </div><br>
-
                 {% else %}
-                  <!-- Boshqa qurilmalar: 3 ustun (№, Rusumi, SR) -->
                   <div>
                     <table style="border-collapse:collapse;width:100%;" border="1">
                       <colgroup>
@@ -274,7 +269,6 @@
                     </table>
                   </div><br>
                 {% endif %}
-
               {% endfor %}
 
             </textarea>
@@ -384,10 +378,10 @@
       return `${String(n.getDate()).padStart(2,'0')}.${String(n.getMonth()+1).padStart(2,'0')}.${n.getFullYear()} y`;
     }
 
-    function applyTodayDate()           { setAllInEditor('#doc_date, #doc_date2', todayStr()); }
-    function applyOrgToEditor(t)        { setAllInEditor('.org_id', t || 'Tashkilot'); }
-    function applyChorakToEditor(q)     { setInEditor('#chorak', q || ''); }
-    function applyContractToEditor(t)   { setInEditor('#date_contract', t || "Shartnoma ma'lumoti kiritilmagan"); }
+    function applyTodayDate()         { setAllInEditor('#doc_date, #doc_date2', todayStr()); }
+    function applyOrgToEditor(t)      { setAllInEditor('.org_id', t || 'Tashkilot'); }
+    function applyChorakToEditor(q)   { setInEditor('#chorak', q || ''); }
+    function applyContractToEditor(t) { setInEditor('#date_contract', t || "Shartnoma ma'lumoti kiritilmagan"); }
 
     function applyDepToEditor(depText, orgText) {
       const final = (depText && depText !== 'Tanlang...')
@@ -518,10 +512,9 @@
     // ══════════════════════════════════════════════════════
 
     function buildRows(contract) {
-      const isPC = (contract.contract_id === 1);
+      const isPC    = (contract.contract_id === 1);
       const colspan = isPC ? 4 : 3;
 
-      // Header
       let html = '<tr>';
       html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>';
       html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>';
@@ -533,7 +526,6 @@
       }
       html += '</tr>';
 
-      // Rows
       if (!contract.items || !contract.items.length) {
         html += `<tr><td colspan="${colspan}"
           style="border:1px solid #000;text-align:center;color:#777;">
@@ -545,12 +537,21 @@
         html += '<tr>';
         html += `<td style="border:1px solid #000;text-align:center;">${i + 1}</td>`;
         html += `<td style="border:1px solid #000;">${esc(x.name)}</td>`;
+
         if (isPC) {
           html += `<td style="border:1px solid #000;">${esc(x.serial)}</td>`;
-          html += `<td style="border:1px solid #000;">${esc((x.extra_serials || []).join(', '))}</td>`;
+
+          // Monitor nomi va SR — har biri alohida qatorda
+          const monitorsHtml = (x.extra_serials || []).map(function (s) {
+            const parts = s.split('\n');
+            return `<div>${parts.map(function(p){ return esc(p); }).join('<br>')}</div>`;
+          }).join('');
+          html += `<td style="border:1px solid #000;">${monitorsHtml || ''}</td>`;
+
         } else {
           html += `<td style="border:1px solid #000;">${esc(x.serial)}</td>`;
         }
+
         html += '</tr>';
       });
 
@@ -576,26 +577,18 @@
         method: "GET",
         dataType: "json",
         data: payload,
-
         success: function (res) {
           const contracts = res.contracts || {};
-
           if (!Object.keys(contracts).length) {
-            console.warn('Hech qanday contract ma\'lumoti qaytmadi');
+            console.warn("Hech qanday contract ma'lumoti qaytmadi");
             return;
           }
-
           Object.values(contracts).forEach(function (contract) {
             const cid = String(contract.contract_id);
-
-            // ── "X dona" spanini yangilash ──
             setInEditor('#count_c' + cid, String(contract.count));
-
-            // ── Jadvalni to'ldirish ──
             setTbodyHtml('tbody_c' + cid, buildRows(contract));
           });
         },
-
         error: function (xhr) {
           let msg = "Xatolik yuz berdi";
           try {
@@ -627,9 +620,7 @@
     });
 
     $('#rim_id').on('change', syncEditorTexts);
-
     $('#sender').on('change', applySenderToEditor);
-
     $('#receiver').on('change', applyReceiverToEditor);
 
     $('#btnSearch').on('click', function (e) {

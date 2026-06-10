@@ -722,9 +722,9 @@ def ajax_document_preview(request):
 
                 if cid == PC_CONTRACT_ID:
                     item["extra_serials"] = [
-                        s for s in
-                        tex.structure_set.filter(is_active=True).values_list("serial", flat=True)
-                        if s
+                        f"{s['name']}\nSR: {s['serial']}"
+                        for s in tex.structure_set.filter(is_active=True).values("name", "serial")
+                        if s["serial"]
                     ]
 
                 items.append(item)
