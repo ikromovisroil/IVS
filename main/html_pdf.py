@@ -55,7 +55,7 @@ def deed_to_pdf_bytes(deed) -> bytes:
         "dpi": "150",
         "print-media-type": "",
         "enable-local-file-access": "",
-        "margin-top": "10mm",
+        "margin-top": "15mm",
         "margin-right": "10mm",
         "margin-bottom": "25mm",
         "margin-left": "15mm",
