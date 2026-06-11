@@ -236,21 +236,23 @@
                                             </td>
 
                                             <td>
-                                                {% if d.receiver %}
-                                                    {% if d.status_sender == "viewed" and d.status_receiver == "viewed" %}
-                                                        <a class="btn btn-sm btn-primary" href="{% url 'deed_edit' d.pk %}">
-                                                            Tahrirlash
-                                                        </a>
+                                                {% if d.body %}
+                                                    {% if d.receiver %}
+                                                        {% if d.status_sender == "viewed" and d.status_receiver == "viewed" %}
+                                                            <a class="btn btn-sm btn-primary" href="{% url 'deed_edit' d.pk %}">
+                                                                Tahrirlash
+                                                            </a>
+                                                        {% else %}
+                                                            <span class="text-muted">—</span>
+                                                        {% endif %}
                                                     {% else %}
-                                                        <span class="text-muted">—</span>
-                                                    {% endif %}
-                                                {% else %}
-                                                    {% if d.status_sender == "viewed" %}
-                                                        <a class="btn btn-sm btn-primary" href="{% url 'deed_edit' d.pk %}">
-                                                            Tahrirlash
-                                                        </a>
-                                                    {% else %}
-                                                        <span class="text-muted">—</span>
+                                                        {% if d.status_sender == "viewed" %}
+                                                            <a class="btn btn-sm btn-primary" href="{% url 'deed_edit' d.pk %}">
+                                                                Tahrirlash
+                                                            </a>
+                                                        {% else %}
+                                                            <span class="text-muted">—</span>
+                                                        {% endif %}
                                                     {% endif %}
                                                 {% endif %}
                                             </td>
