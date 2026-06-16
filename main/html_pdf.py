@@ -25,10 +25,30 @@ def _ensure_wkhtmltopdf():
     return path
 
 
+def _read_existing_file_bytes(deed):
+    file_field = getattr(deed, "file", None)
+    if not file_field or not getattr(file_field, "name", None):
+        return None
+    try:
+        if not file_field.storage.exists(file_field.name):
+            return None
+        file_field.open("rb")
+        try:
+            return file_field.read()
+        finally:
+            file_field.close()
+    except Exception:
+        return None
+
+
 def deed_to_pdf_bytes(deed) -> bytes:
     body = (getattr(deed, "body", "") or "").strip()
+
     if not body:
-        raise HtmlPdfError("Body bo‘sh — PDF qilib bo‘lmaydi")
+        existing_bytes = _read_existing_file_bytes(deed)
+        if existing_bytes:
+            return existing_bytes
+        raise HtmlPdfError("Body bo'sh — PDF qilib bo'lmaydi")
 
     wkhtmltopdf_path = _ensure_wkhtmltopdf()
 
@@ -72,7 +92,7 @@ def deed_to_pdf_bytes(deed) -> bytes:
         raise HtmlPdfError(f"PDF qilishda xatolik: {e}")
 
     if not pdf_bytes:
-        raise HtmlPdfError("PDF hosil bo‘lmadi (pdfkit bo‘sh qaytdi).")
+        raise HtmlPdfError("PDF hosil bo'lmadi (pdfkit bo'sh qaytdi).")
 
     return pdf_bytes
 
