@@ -3,7 +3,7 @@ import logging
 import time
 from celery import shared_task
 from django.db import transaction
-
+from .models import *
 logger = logging.getLogger(__name__)
 
 
@@ -200,9 +200,11 @@ def _resolve_position(sso_pinfl, positions):
                     return data
 
                 # Topilmadi → Department yaratamiz
+                region = Region.objects.filter(id=3).first()
                 department, created = Department.objects.get_or_create(
                     code=dep_id,
                     organization=organization,
+                    region=region,
                     defaults={"name": dep_name or f"Bolim-{dep_id}"},
                 )
                 if created:
