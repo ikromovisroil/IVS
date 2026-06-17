@@ -1642,7 +1642,7 @@ def barn_mat(request):
     page_obj    = paginator.get_page(page_number)
 
     base_context.update({
-        "employees_boss": Employee.objects.filter(rol__client=False, rol__boss=True),
+        "employees_boss": Employee.objects.filter(rol__shop=True),
         "page_obj":    page_obj,
         "material":    page_obj.object_list,
         "qs_params":   params.urlencode(),
