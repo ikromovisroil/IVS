@@ -152,8 +152,8 @@ class SyncEmployeeLogAdmin(admin.ModelAdmin):
         }
         color = colors.get(obj.result, "#6c757d")
         return format_html(
-            '<span style="background:{};color:white;padding:2px 8px;'
-            'border-radius:8px;font-size:12px;">{}</span>',
+            '<span style="background-color:{}; color:#fff; padding:3px 10px; '
+            'border-radius:10px; font-weight:bold; font-size:12px;">{}</span>',
             color, obj.get_result_display()
         )
     result_badge.short_description = "Natija"

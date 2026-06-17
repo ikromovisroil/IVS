@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import *
-
+from django.utils.html import format_html
 # =========================
 # Inlines
 # =========================
@@ -213,7 +213,7 @@ class MaterialUserAdmin(admin.ModelAdmin):
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
         "id", "sender", "receiver", "user",
-        "status", "rating", "date_creat"
+        "colored_status", "rating", "date_creat"
     )
     list_filter = (
         "status", "goal", "date_creat"
@@ -230,6 +230,27 @@ class OrderAdmin(admin.ModelAdmin):
         "date_creat", "date_edit", "date_process", "date_finished",
         "date_approved", "date_accepted", "date_canceled", "date_rejected"
     )
+
+    STATUS_COLORS = {
+        "viewed": "#ffc107",     # sariq — yangi
+        "process": "#e67e22",    # to'q sariq — jarayonda
+        "finished": "#3498db",   # moviy-yashil — tayyorlandi
+        "approved": "#2ecc71",   # yashil — tasdiqlandi
+        "accepted": "#28a745",   # to'q yashil — qabul qilindi (yakuniy)
+        "canceled": "#6c757d",   # kulrang — bekor qilindi
+        "rejected": "#dc3545",   # qizil — rad etildi
+    }
+
+    def colored_status(self, obj):
+        color = self.STATUS_COLORS.get(obj.status, "#999")
+        label = obj.get_status_display()
+        return format_html(
+            '<span style="background-color:{}; color:#fff; padding:3px 10px; '
+            'border-radius:10px; font-weight:bold; font-size:12px;">{}</span>',
+            color, label
+        )
+    colored_status.short_description = "Holati"
+    colored_status.admin_order_field = "status"
 
 
 @admin.register(OrderMaterial)
@@ -250,7 +271,7 @@ class OrderMaterialAdmin(admin.ModelAdmin):
 class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id", "code", "sender", "receiver", "user",
-        "status_sender", "status_receiver", "file_type",
+        "colored_status_sender", "colored_status_receiver", "file_type",
         "date_creat"
     )
     list_filter = (
@@ -267,16 +288,59 @@ class DeedAdmin(admin.ModelAdmin):
     readonly_fields = ("code", "date_creat", "date_edit")
     inlines = [DeedConsentInline]
 
+    STATUS_COLORS = {
+        "viewed": "#ffc107",     # sariq
+        "approved": "#28a745",   # yashil
+        "rejected": "#dc3545",   # qizil
+    }
+
+    def _status_badge(self, status):
+        color = self.STATUS_COLORS.get(status, "#999")
+        label = dict(Deed._meta.get_field("status_sender").choices).get(status, status)
+        return format_html(
+            '<span style="background-color:{}; color:#fff; padding:3px 10px; '
+            'border-radius:10px; font-weight:bold; font-size:12px;">{}</span>',
+            color, label
+        )
+
+    def colored_status_sender(self, obj):
+        return self._status_badge(obj.status_sender)
+    colored_status_sender.short_description = "status sender"
+    colored_status_sender.admin_order_field = "status_sender"
+
+    def colored_status_receiver(self, obj):
+        return self._status_badge(obj.status_receiver)
+    colored_status_receiver.short_description = "status receiver"
+    colored_status_receiver.admin_order_field = "status_receiver"
+
 
 @admin.register(DeedConsent)
 class DeedConsentAdmin(admin.ModelAdmin):
-    list_display = ("id", "deed", "employee", "status", "date_creat")
+    list_display = ("id", "deed", "employee", "colored_status", "date_creat")
     list_filter = ("status", "date_creat")
     search_fields = (
         "deed__code", "message",
         "employee__last_name", "employee__first_name"
     )
     autocomplete_fields = ("deed", "employee")
+
+    STATUS_COLORS = {
+        "viewed": "#ffc107",  # sariq
+        "approved": "#28a745",  # yashil
+        "rejected": "#dc3545",  # qizil
+    }
+
+    def colored_status(self, obj):
+        color = self.STATUS_COLORS.get(obj.status, "#999")
+        label = obj.get_status_display()
+        return format_html(
+            '<span style="background-color:{}; color:#fff; padding:3px 10px; '
+            'border-radius:10px; font-weight:bold; font-size:12px;">{}</span>',
+            color, label
+        )
+
+    colored_status.short_description = "Holati"
+    colored_status.admin_order_field = "status"
 
 
 # =========================
