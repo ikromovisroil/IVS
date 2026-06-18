@@ -301,6 +301,9 @@ class Technics(models.Model):
     def save(self, *args, **kwargs):
         is_new = self.pk is None
 
+        if not self.serial or not self.serial.strip():
+            self.serial = "B/N"
+
         if self.employee:
             self.status = 'active'
             self.organization_id = self.employee.organization_id
