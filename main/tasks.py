@@ -1,12 +1,52 @@
 # main/tasks.py
 import logging
+import re
 import time
 from celery import shared_task
 from django.db import transaction
 from .models import *
+
 logger = logging.getLogger(__name__)
 
 
+# =========================================================
+# KIRILL → LOTIN KONVERTATSIYA
+# =========================================================
+CYRILLIC_TO_LATIN = {
+    'а': 'a',  'б': 'b',  'в': 'v',  'г': 'g',  'д': 'd',
+    'е': 'e',  'ё': 'yo', 'ж': 'j',  'з': 'z',  'и': 'i',
+    'й': 'y',  'к': 'k',  'л': 'l',  'м': 'm',  'н': 'n',
+    'о': 'o',  'п': 'p',  'р': 'r',  'с': 's',  'т': 't',
+    'у': 'u',  'ф': 'f',  'х': 'x',  'ц': 'ts', 'ч': 'ch',
+    'ш': 'sh', 'щ': 'sh', 'ъ': "ʼ",  'ы': 'i',  'ь': '',
+    'э': 'e',  'ю': 'yu', 'я': 'ya',
+    'ғ': "gʼ", 'қ': 'q',  'ҳ': 'h',  'ў': "oʼ", 'ҷ': 'j',
+}
+
+
+def cyrillic_to_latin(text: str) -> str:
+    if not text:
+        return text
+    result = []
+    for char in text:
+        lower = char.lower()
+        if lower in CYRILLIC_TO_LATIN:
+            converted = CYRILLIC_TO_LATIN[lower]
+            if char.isupper() and converted:
+                converted = converted.upper()  # HAMMASI katta bo'lsin
+            result.append(converted)
+        else:
+            result.append(char)
+    return ''.join(result)
+
+
+def has_cyrillic(text: str) -> bool:
+    return bool(re.search('[а-яА-ЯёЁғқҳўҷҒҚҲЎҶ]', text or ''))
+
+
+# =========================================================
+# CELERY TASK
+# =========================================================
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def sync_all_employees(self):
     from .models import Employee
@@ -27,7 +67,6 @@ def sync_all_employees(self):
     errors     = 0
     start_time = time.time()
 
-    # SyncLog — boshida yaratamiz
     sync_log = SyncLog.objects.create(total=total)
 
     logger.info("sync_all_employees boshlandi: %d xodim", total)
@@ -73,7 +112,6 @@ def sync_all_employees(self):
 
     duration = int(time.time() - start_time)
 
-    # Status aniqlash
     if errors == 0:
         status = "success"
     elif errors < total:
@@ -81,7 +119,6 @@ def sync_all_employees(self):
     else:
         status = "failed"
 
-    # SyncLog — oxirida yangilaymiz
     SyncLog.objects.filter(pk=sync_log.pk).update(
         updated  = updated,
         blocked  = blocked,
@@ -105,6 +142,9 @@ def sync_all_employees(self):
     }
 
 
+# =========================================================
+# SYNC SINGLE EMPLOYEE
+# =========================================================
 def _sync_single_employee(emp):
     from .gateway import GatewayClient
 
@@ -137,15 +177,18 @@ def _sync_single_employee(emp):
     return "updated", changes
 
 
+# =========================================================
+# RESOLVE POSITION
+# =========================================================
 def _resolve_position(sso_pinfl, positions):
     from .models import Organization, Department, Directorate, Division, Rank
 
     for pos in positions:
         org_tin     = str(pos.get("org_tin")     or "").strip()
         dep_id      = str(pos.get("dep_id")      or "").strip()
-        dep_name    = (pos.get("dep_name")        or "").strip()
+        dep_name    = cyrillic_to_latin((pos.get("dep_name") or "").strip())  # ← konvertatsiya
         position_id = str(pos.get("position_id") or "").strip()
-        position    = (pos.get("position")        or "").strip()
+        position    = cyrillic_to_latin((pos.get("position") or "").strip())  # ← konvertatsiya
 
         if not org_tin:
             continue
@@ -200,12 +243,15 @@ def _resolve_position(sso_pinfl, positions):
                     return data
 
                 # Topilmadi → Department yaratamiz
-                region = Region.objects.filter(id=3).first()
+                region = getattr(organization, "region", None)
+                if not region:
+                    region = Region.objects.filter(id=3).first()
+
                 department, created = Department.objects.get_or_create(
                     code=dep_id,
                     organization=organization,
                     region=region,
-                    defaults={"name": dep_name or f"Bolim-{dep_id}"},
+                    defaults={"name": dep_name or f"Bolim-{dep_id}"},  # ← allaqachon lotin
                 )
                 if created:
                     logger.info("Department yaratildi: %s", department)
@@ -233,7 +279,7 @@ def _resolve_position(sso_pinfl, positions):
                 directorate, created = Directorate.objects.get_or_create(
                     code=dep_id,
                     department=department,
-                    defaults={"name": dep_name or f"Boshqarma-{dep_id}"},
+                    defaults={"name": dep_name or f"Boshqarma-{dep_id}"},  # ← allaqachon lotin
                 )
                 if created:
                     logger.info("Directorate yaratildi: %s", directorate)
@@ -250,6 +296,9 @@ def _resolve_position(sso_pinfl, positions):
     return None
 
 
+# =========================================================
+# HAS CHANGED
+# =========================================================
 def _has_changed(emp, assigned):
     return (
         emp.organization_id != getattr(assigned["organization"], "id", None) or
@@ -259,6 +308,9 @@ def _has_changed(emp, assigned):
     )
 
 
+# =========================================================
+# APPLY CHANGES
+# =========================================================
 def _apply_changes(emp, assigned, result):
     from .models import Rank
 
@@ -266,11 +318,10 @@ def _apply_changes(emp, assigned, result):
         assigned["rank"], _ = Rank.objects.get_or_create(
             code=assigned["_position_id"],
             defaults={
-                "name": assigned["_position"] or f"Lavozim-{assigned['_position_id']}"
+                "name": assigned["_position"] or f"Lavozim-{assigned['_position_id']}"  # ← allaqachon lotin
             },
         )
 
-    # O'zgarishlarni aniqlaymiz
     changes = []
 
     if emp.organization_id != getattr(assigned["organization"], "id", None):
@@ -293,10 +344,10 @@ def _apply_changes(emp, assigned, result):
         new = str(assigned["division"]) if assigned["division"] else "—"
         changes.append(f"Bo'lim: {old} → {new}")
 
-    # Saqlash
-    emp.first_name  = (result.get("name")       or "").strip()
-    emp.last_name   = (result.get("surname")    or "").strip()
-    emp.father_name = (result.get("partonimic") or "").strip()
+    # Kirill → Lotin konvertatsiya qilib saqlaymiz
+    emp.first_name  = cyrillic_to_latin((result.get("name")       or "").strip())
+    emp.last_name   = cyrillic_to_latin((result.get("surname")    or "").strip())
+    emp.father_name = cyrillic_to_latin((result.get("partonimic") or "").strip())
 
     emp.organization = assigned["organization"]
     emp.department   = assigned["department"]
@@ -305,7 +356,6 @@ def _apply_changes(emp, assigned, result):
     emp.rank         = assigned.get("rank")
     emp.save()
 
-    # Avval bloklangan bo'lsa qayta faollashtirish
     if emp.user and not emp.user.is_active:
         emp.user.is_active = True
         emp.user.save(update_fields=["is_active"])
@@ -325,6 +375,9 @@ def _apply_changes(emp, assigned, result):
     return changes_str
 
 
+# =========================================================
+# BLOCK EMPLOYEE
+# =========================================================
 def _block_employee(emp, pinfl):
     from .models import Technics
 
