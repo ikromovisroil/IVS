@@ -66,7 +66,7 @@ def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: st
         c = canvas.Canvas(pdf_buf, pagesize=(page_w, page_h))
 
         c.setFillColor(red)
-        c.setFont("Helvetica-Bold", 8)
+        c.setFont("Helvetica-Bold", 9)
 
         lines   = (text or "").splitlines()
         x       = 10
