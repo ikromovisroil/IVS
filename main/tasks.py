@@ -395,6 +395,7 @@ def _block_employee(emp, pinfl):
         emp.department = None
         emp.directorate = None
         emp.division = None
+        emp.region = None
         emp.rank = None
         emp.save(update_fields=["organization", "department", "directorate", "division", "rank"])
 
