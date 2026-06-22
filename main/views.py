@@ -2656,7 +2656,7 @@ def employe_create(request):
                 )
 
             employee = user.employee
-            employee.pinfl = sso_pinfl
+            employee.pinfl = pinfl
             employee.first_name = (result.get("name") or "").strip()
             employee.last_name = (result.get("surname") or "").strip()
             employee.father_name = (result.get("partonimic") or "").strip()
