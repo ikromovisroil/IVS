@@ -391,4 +391,11 @@ def _block_employee(emp, pinfl):
             emp.user.is_active = False
             emp.user.save(update_fields=["is_active"])
 
+        emp.organization = None
+        emp.department = None
+        emp.directorate = None
+        emp.division = None
+        emp.rank = None
+        emp.save(update_fields=["organization", "department", "directorate", "division", "rank"])
+
     logger.info("PINFL %s bloklandi", pinfl)
