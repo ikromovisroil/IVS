@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required
 from itertools import groupby
 from django.http import FileResponse, Http404
 from django.utils.dateparse import parse_date
-from main.tasks import *
+
 
 def role_required(permission):
     def decorator(view_func):
@@ -2591,7 +2591,10 @@ def files(request):
     return render(request, "main/files.html", context)
 
 
-import traceback
+import secrets
+from .sso_views import _resolve_position
+from .tasks import cyrillic_to_latin
+
 @login_required
 @require_POST
 def employe_create(request):
