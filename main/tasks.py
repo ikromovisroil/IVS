@@ -279,7 +279,7 @@ def _resolve_position(sso_pinfl, positions):
                 directorate, created = Directorate.objects.get_or_create(
                     code=dep_id,
                     department=department,
-                    defaults={"name": dep_name or f"Boshqarma-{dep_id}"},  # ← allaqachon lotin
+                    defaults={"name": cyrillic_to_latin(dep_name or f"Boshqarma-{dep_id}")},
                 )
                 if created:
                     logger.info("Directorate yaratildi: %s", directorate)
