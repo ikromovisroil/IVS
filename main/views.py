@@ -2592,8 +2592,7 @@ def files(request):
 
 
 import secrets
-from .sso_views import _resolve_position
-from .tasks import cyrillic_to_latin
+from .tasks import _resolve_position, cyrillic_to_latin
 
 @login_required
 @require_POST
