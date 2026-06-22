@@ -117,7 +117,7 @@ def sso_callback(request):
         "redirect_uri": get_sso_redirect_uri(request),
     })
 
-from .tasks import _resolve_position
+from .tasks import _resolve_position, cyrillic_to_latin
 # -----------------------
 # 5) sso_exchange Login
 # -----------------------
@@ -126,9 +126,6 @@ from .tasks import _resolve_position
 @require_POST
 def sso_exchange(request):
     try:
-        # -------------------------------------------------------
-        # 1. Session tekshirish
-        # -------------------------------------------------------
         flow    = request.session.get("SSO_FLOW") or {}
         purpose = (flow.get("purpose") or "").strip()
 
@@ -138,9 +135,6 @@ def sso_exchange(request):
                 status=400
             )
 
-        # -------------------------------------------------------
-        # 2. Request body parse
-        # -------------------------------------------------------
         try:
             body = json.loads(request.body or "{}")
         except Exception:
@@ -159,9 +153,6 @@ def sso_exchange(request):
                 status=400
             )
 
-        # -------------------------------------------------------
-        # 3. Token olish va PINFL aniqlash
-        # -------------------------------------------------------
         token_data = exchange_code_for_token(code, code_verifier, redirect_uri) or {}
         id_token   = token_data.get("id_token")
         if not id_token:
@@ -172,16 +163,10 @@ def sso_exchange(request):
         if not sso_pinfl:
             raise PermissionDenied("SSO token ichida pinfl topilmadi")
 
-        # -------------------------------------------------------
-        # 4. Bazada mavjud employeeni tekshirish
-        # -------------------------------------------------------
         employee = Employee.objects.select_related(
             "user", "organization"
         ).filter(pinfl=sso_pinfl).first()
 
-        # -------------------------------------------------------
-        # 5. Yangi foydalanuvchi yaratish
-        # -------------------------------------------------------
         if not employee or not employee.user:
             try:
                 from .gateway import GatewayClient
@@ -196,9 +181,6 @@ def sso_exchange(request):
                         status=403
                     )
 
-                # ---------------------------------------------------
-                # 5.1 Avval bo'linmani aniqlaymiz — hech narsa yaratmasdan
-                # ---------------------------------------------------
                 assigned_data = _resolve_position(sso_pinfl, positions)
 
                 if not assigned_data:
@@ -212,12 +194,10 @@ def sso_exchange(request):
                     )
 
                 with transaction.atomic():
-                    # ---------------------------------------------------
-                    # 5.2 Username yaratish — race condition xavfsiz
-                    # ---------------------------------------------------
+
                     base_username = (
-                        f"{result.get('surname', '').lower()}"
-                        f".{result.get('name', '').lower()}"
+                        f"{cyrillic_to_latin(result.get('surname', '').lower())}"
+                        f".{cyrillic_to_latin(result.get('name', '').lower())}"
                     )
                     user = None
                     for counter in range(20):
@@ -237,9 +217,6 @@ def sso_exchange(request):
                     if user is None:
                         raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
 
-                    # ---------------------------------------------------
-                    # 5.3 Rank — atomic() ichida yaratish
-                    # ---------------------------------------------------
                     if not assigned_data["rank"] and assigned_data.get("_position_id"):
                         assigned_data["rank"], _ = Rank.objects.get_or_create(
                             code=assigned_data["_position_id"],
@@ -248,30 +225,11 @@ def sso_exchange(request):
                             },
                         )
 
-                    # ---------------------------------------------------
-                    # 5.4 Directorate — atomic() ichida yaratish (Holat B uchun)
-                    # ---------------------------------------------------
-                    if (
-                        assigned_data["department"]
-                        and not assigned_data["directorate"]
-                        and assigned_data.get("_dep_id")
-                    ):
-                        assigned_data["directorate"], _ = Directorate.objects.get_or_create(
-                            code=assigned_data["_dep_id"],
-                            department=assigned_data["department"],
-                            defaults={
-                                "name": assigned_data["_dep_name"] or f"Boshqarma-{assigned_data['_dep_id']}"
-                            },
-                        )
-
-                    # ---------------------------------------------------
-                    # 5.5 Employee ma'lumotlarini to'ldirish
-                    # ---------------------------------------------------
                     employee              = user.employee
                     employee.pinfl        = sso_pinfl
-                    employee.first_name   = (result.get("name")       or "").strip()
-                    employee.last_name    = (result.get("surname")    or "").strip()
-                    employee.father_name  = (result.get("partonimic") or "").strip()
+                    employee.first_name   = cyrillic_to_latin((result.get("name")       or "").strip())
+                    employee.last_name    = cyrillic_to_latin((result.get("surname")    or "").strip())
+                    employee.father_name  = cyrillic_to_latin((result.get("partonimic") or "").strip())
                     employee.organization = assigned_data["organization"]
                     employee.department   = assigned_data["department"]
                     employee.directorate  = assigned_data["directorate"]
@@ -279,9 +237,6 @@ def sso_exchange(request):
                     employee.rank         = assigned_data["rank"]
                     employee.save()
 
-                    # ---------------------------------------------------
-                    # 5.6 Rol flagini yangilash
-                    # ---------------------------------------------------
                     rol        = employee.rol
                     rol.client = (employee.organization_id != 4)
                     rol.save(update_fields=["client"])
@@ -293,9 +248,6 @@ def sso_exchange(request):
                     status=403
                 )
 
-        # -------------------------------------------------------
-        # 6. Umumiy tekshiruvlar
-        # -------------------------------------------------------
         if not employee or not employee.user:
             return JsonResponse(
                 {"status": "error", "message": "Foydalanuvchi aniqlanmadi", "redirect": "/sso/login/"},
@@ -308,9 +260,6 @@ def sso_exchange(request):
                 status=403
             )
 
-        # -------------------------------------------------------
-        # 7. Login
-        # -------------------------------------------------------
         auth_login(request, employee.user)
         request.session.pop("SSO_FLOW", None)
         request.session.modified = True

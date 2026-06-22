@@ -2625,10 +2625,9 @@ def employe_create(request):
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
         with transaction.atomic():
-
             base_username = (
-                f"{cyrillic_to_latin(result.get('surname', '').lower())}"
-                f".{cyrillic_to_latin(result.get('name', '').lower())}"
+                f"{result.get('surname', '').lower()}"
+                f".{result.get('name', '').lower()}"
             )
             user = None
             for counter in range(20):
@@ -2656,32 +2655,19 @@ def employe_create(request):
                     },
                 )
 
-            if (
-                assigned_data["department"]
-                and not assigned_data["directorate"]
-                and assigned_data.get("_dep_id")
-            ):
-                assigned_data["directorate"], _ = Directorate.objects.get_or_create(
-                    code=assigned_data["_dep_id"],
-                    department=assigned_data["department"],
-                    defaults={
-                        "name": cyrillic_to_latin(assigned_data["_dep_name"] or f"Boshqarma-{assigned_data['_dep_id']}")
-                    },
-                )
-
-            employee              = user.employee
-            employee.pinfl        = pinfl
-            employee.first_name   = cyrillic_to_latin((result.get("name")       or "").strip())
-            employee.last_name    = cyrillic_to_latin((result.get("surname")    or "").strip())
-            employee.father_name  = cyrillic_to_latin((result.get("partonimic") or "").strip())
+            employee = user.employee
+            employee.pinfl = sso_pinfl
+            employee.first_name = (result.get("name") or "").strip()
+            employee.last_name = (result.get("surname") or "").strip()
+            employee.father_name = (result.get("partonimic") or "").strip()
             employee.organization = assigned_data["organization"]
-            employee.department   = assigned_data["department"]
-            employee.directorate  = assigned_data["directorate"]
-            employee.division     = assigned_data["division"]
-            employee.rank         = assigned_data["rank"]
+            employee.department = assigned_data["department"]
+            employee.directorate = assigned_data["directorate"]
+            employee.division = assigned_data["division"]
+            employee.rank = assigned_data["rank"]
             employee.save()
 
-            rol        = employee.rol
+            rol = employee.rol
             rol.client = (employee.organization_id != 4)
             rol.save(update_fields=["client"])
 
