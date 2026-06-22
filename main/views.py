@@ -16,7 +16,7 @@ from django.contrib.auth.decorators import login_required
 from itertools import groupby
 from django.http import FileResponse, Http404
 from django.utils.dateparse import parse_date
-
+from main.tasks import *
 
 def role_required(permission):
     def decorator(view_func):
@@ -2592,7 +2592,6 @@ def files(request):
 
 
 import traceback
-from .sso_views import _resolve_position
 @login_required
 @require_POST
 def employe_create(request):
@@ -2617,20 +2616,17 @@ def employe_create(request):
             messages.info(request, "Gatewayda ish joyi topilmadi")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        # _resolve_position — faqat READ, hech narsa yaratmaydi
         assigned_data = _resolve_position(pinfl, positions)
 
         if not assigned_data:
             messages.info(request, "Tizimda tashkilot topilmadi")
             return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        # ✅ Barcha DB write lar bitta atomic ichida
         with transaction.atomic():
 
-            # Username — savepoint bilan
             base_username = (
-                f"{result.get('surname', '').lower()}"
-                f".{result.get('name', '').lower()}"
+                f"{cyrillic_to_latin(result.get('surname', '').lower())}"
+                f".{cyrillic_to_latin(result.get('name', '').lower())}"
             )
             user = None
             for counter in range(20):
@@ -2650,7 +2646,6 @@ def employe_create(request):
             if user is None:
                 raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
 
-            # Rank
             if not assigned_data["rank"] and assigned_data.get("_position_id"):
                 assigned_data["rank"], _ = Rank.objects.get_or_create(
                     code=assigned_data["_position_id"],
@@ -2659,7 +2654,6 @@ def employe_create(request):
                     },
                 )
 
-            # Directorate (Holat B)
             if (
                 assigned_data["department"]
                 and not assigned_data["directorate"]
@@ -2669,16 +2663,15 @@ def employe_create(request):
                     code=assigned_data["_dep_id"],
                     department=assigned_data["department"],
                     defaults={
-                        "name": assigned_data["_dep_name"] or f"Boshqarma-{assigned_data['_dep_id']}"
+                        "name": cyrillic_to_latin(assigned_data["_dep_name"] or f"Boshqarma-{assigned_data['_dep_id']}")
                     },
                 )
 
-            # Employee
             employee              = user.employee
             employee.pinfl        = pinfl
-            employee.first_name   = (result.get("name")       or "").strip()
-            employee.last_name    = (result.get("surname")    or "").strip()
-            employee.father_name  = (result.get("partonimic") or "").strip()
+            employee.first_name   = cyrillic_to_latin((result.get("name")       or "").strip())
+            employee.last_name    = cyrillic_to_latin((result.get("surname")    or "").strip())
+            employee.father_name  = cyrillic_to_latin((result.get("partonimic") or "").strip())
             employee.organization = assigned_data["organization"]
             employee.department   = assigned_data["department"]
             employee.directorate  = assigned_data["directorate"]
