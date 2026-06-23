@@ -1575,14 +1575,13 @@ def barn_mat(request):
 
     unit_id     = (request.GET.get("unit")     or "").strip()
     emp_id      = (request.GET.get("employee") or "").strip()
-    status      = (request.GET.get("status")   or "").strip()
     name        = (request.GET.get("name")     or "").strip()
     page_number = request.GET.get("page", 1)
 
     if name:
         name = name[:120]
 
-    has_filter = bool(unit_id or emp_id or status or name)
+    has_filter = bool(unit_id or emp_id or name)
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -1627,8 +1626,6 @@ def barn_mat(request):
     if unit_id and unit_id.isdigit():
         qs = qs.filter(unit_id=int(unit_id))
 
-    if status:
-        qs = qs.filter(status=status)
 
     if name:
         qs = qs.filter(
@@ -1864,15 +1861,12 @@ def material_attach(request):
             dst.price = src.price
         if not dst.unit_id and src.unit_id:
             dst.unit = src.unit
-        if dst.status != "active":
-            dst.status = "active"
 
         dst.save(update_fields=["number", "price", "unit", "status"])
     else:
         Material.objects.create(
             organization=emp.organization,
             employee=emp,
-            status="active",
             name=src.name,
             code=src.code,
             number=give_number_int,

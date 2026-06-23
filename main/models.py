@@ -383,12 +383,6 @@ class Material(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
-    status = models.CharField(max_length=20, choices=[
-        ('free', "Bo'sh"),
-        ('active', 'Aktiv'),
-        ('repair', 'Ta’mirda'),
-        ('defect', 'Yaroqsiz')
-    ], default='free',db_index=True)
     name = models.CharField(max_length=300)
     number = models.PositiveIntegerField(default=1)
     code = models.CharField(max_length=10, null=True, blank=True)

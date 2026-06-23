@@ -190,9 +190,9 @@ class StructureAdmin(admin.ModelAdmin):
 class MaterialAdmin(admin.ModelAdmin):
     list_display = (
         "id", "employee", "name", "unit",
-        "status", "number", "code", "price", "year", "is_active"
+        "number", "code", "price", "year", "is_active"
     )
-    list_filter = ("organization", "employee", "status", "unit", "is_active")
+    list_filter = ("organization", "employee", "unit", "is_active")
     search_fields = (
         "name", "code",
         "employee__last_name", "employee__first_name"

@@ -20,33 +20,6 @@
           <div class="card">
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
-
-                    <!-- STATUS -->
-                    <div class="col-md-3">
-                        <label class="form-label">Holati</label>
-                        <select name="status" class="form-select" required>
-                            <option value="">Tanlang...</option>
-                            <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktiv</option>
-                            <option value="free"   {% if request.GET.status == "free" %}selected{% endif %}>Bo'sh</option>
-                            <option value="repair" {% if request.GET.status == "repair" %}selected{% endif %}>Ta’mirda</option>
-                            <option value="defect" {% if request.GET.status == "defect" %}selected{% endif %}>Brak</option>
-                        </select>
-                    </div>
-
-                    <!-- UNIT -->
-                    <div class="col-md-3">
-                        <label class="form-label">Birligi</label>
-                        <select name="unit" class="form-select">
-                            <option value="">Tanlang...</option>
-                            {% for u in unit %}
-                                <option value="{{ u.id }}"
-                                    {% if request.GET.unit|stringformat:"s" == u.id|stringformat:"s" %}selected{% endif %}>
-                                    {{ u.name }}
-                                </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
                     <!-- EMPLOYEE -->
                     {% if not request.user.employee.rol.client %}
                     {% if request.user.employee.rol.region %}
@@ -64,6 +37,20 @@
                     </div>
                     {% endif %}
                     {% endif %}
+
+                    <!-- UNIT -->
+                    <div class="col-md-3">
+                        <label class="form-label">Birligi</label>
+                        <select name="unit" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for u in unit %}
+                                <option value="{{ u.id }}"
+                                    {% if request.GET.unit|stringformat:"s" == u.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ u.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
                     <!-- NAME -->
                     <div class="col-md-3">
