@@ -304,7 +304,8 @@ def _has_changed(emp, assigned):
         emp.organization_id != getattr(assigned["organization"], "id", None) or
         emp.department_id   != getattr(assigned["department"],   "id", None) or
         emp.directorate_id  != getattr(assigned["directorate"],  "id", None) or
-        emp.division_id     != getattr(assigned["division"],     "id", None)
+        emp.division_id     != getattr(assigned["division"],     "id", None) or
+        emp.rank_id         != getattr(assigned.get("rank"),     "id", None)
     )
 
 
@@ -343,6 +344,11 @@ def _apply_changes(emp, assigned, result):
         old = str(emp.division) if emp.division else "—"
         new = str(assigned["division"]) if assigned["division"] else "—"
         changes.append(f"Bo'lim: {old} → {new}")
+
+    if emp.rank_id != getattr(assigned.get("rank"), "id", None):
+        old = str(emp.rank) if emp.rank else "—"
+        new = str(assigned["rank"]) if assigned.get("rank") else "—"
+        changes.append(f"Lavozim: {old} → {new}")
 
     # Kirill → Lotin konvertatsiya qilib saqlaymiz
     emp.first_name  = cyrillic_to_latin((result.get("name")       or "").strip())
