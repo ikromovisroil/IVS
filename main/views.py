@@ -1666,6 +1666,7 @@ def material_create(request):
     if form.is_valid():
         material = form.save(commit=False)
         material.organization = employee.organization
+        material.employee = employee
         material.save()
 
         MaterialMovement.objects.create(
@@ -1814,6 +1815,10 @@ def material_attach(request):
         messages.info(request, "Material yoki xodim noto'g'ri tanlandi")
         return redirect(back_url)
 
+    if int(employee_id) == employee.id:
+        messages.info(request, "O'zingizga material biriktira olmaysiz")
+        return redirect(back_url)
+
     try:
         give_number_int = int(give_number)
         if give_number_int <= 0:
@@ -1862,7 +1867,7 @@ def material_attach(request):
         if not dst.unit_id and src.unit_id:
             dst.unit = src.unit
 
-        dst.save(update_fields=["number", "price", "unit", "status"])
+        dst.save(update_fields=["number", "price", "unit"])
     else:
         Material.objects.create(
             organization=emp.organization,
