@@ -366,7 +366,9 @@ class MaterialMovementAdmin(admin.ModelAdmin):
         'material',
         'user',
         'employee',
-        'number',
+        'balance',
+        'income',
+        'outcome',
         'date_creat',
     ]
     list_filter = ['status', 'date_creat']

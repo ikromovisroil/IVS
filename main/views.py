@@ -1673,6 +1673,7 @@ def material_create(request):
             material=material,
             user=employee,
             status='created',
+            balance=material.number,
             body=(
                 f"Tashkilot: {material.organization}\n"
                 f"Birligi: {material.unit.name if material.unit else '—'}\n"
@@ -1704,8 +1705,13 @@ def material_update(request, pk):
     back_url = request.META.get("HTTP_REFERER", "/")
     mat = get_object_or_404(Material.objects.select_for_update(), pk=pk)
 
+    if mat.employee_id is not None and mat.employee_id != employee.id:
+        messages.info(request, "Sizga ruxsat yo'q")
+        return redirect(back_url)
+
     if mat.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
+        messages.info(request, "Sizga ruxsat yo'q")
+        return redirect(back_url)
 
     # Eski qiymatlar — save dan OLDIN saqlab qo'yamiz
     old = {
@@ -1785,10 +1791,20 @@ def material_update(request, pk):
             changes.append(f"{label}: {old[key]} → {new[key]}")
 
     if changes:
+        old_number = old["number"]
+        new_number = new["number"]
+        diff = new_number - old_number
+
+        income = diff if diff > 0 else None
+        outcome = -diff if diff < 0 else None
+
         MaterialMovement.objects.create(
             material=mat,
             user=employee,
             status='edited',
+            income=income,
+            outcome=outcome,
+            balance=old_number if diff != 0 else None,
             body="\n".join(changes)
         )
 
@@ -1815,10 +1831,6 @@ def material_attach(request):
         messages.info(request, "Material yoki xodim noto'g'ri tanlandi")
         return redirect(back_url)
 
-    if int(employee_id) == employee.id:
-        messages.info(request, "O'zingizga material biriktira olmaysiz")
-        return redirect(back_url)
-
     try:
         give_number_int = int(give_number)
         if give_number_int <= 0:
@@ -1834,6 +1846,10 @@ def material_attach(request):
 
     if src.organization_id != employee.organization_id:
         raise PermissionDenied("Sizga ruxsat yo'q")
+
+    if src.employee_id and src.employee_id == int(employee_id):
+        messages.info(request, "Bu material allaqachon shu xodimga tegishli")
+        return redirect(back_url)
 
     emp = get_object_or_404(Employee, id=int(employee_id))
 
@@ -1860,7 +1876,8 @@ def material_attach(request):
     )
 
     if dst:
-        dst.number = int(dst.number or 0) + give_number_int
+        dst_qty_before = int(dst.number or 0)
+        dst.number     = dst_qty_before + give_number_int
 
         if (dst.price in [None, 0, "0"]) and src.price not in [None, 0, "0"]:
             dst.price = src.price
@@ -1868,34 +1885,57 @@ def material_attach(request):
             dst.unit = src.unit
 
         dst.save(update_fields=["number", "price", "unit"])
+        dst_material = dst
     else:
-        Material.objects.create(
-            organization=emp.organization,
-            employee=emp,
-            name=src.name,
-            code=src.code,
-            number=give_number_int,
-            unit=src.unit,
-            price=src.price,
-            year=src.year,
+        dst_qty_before = 0
+        dst_material   = Material.objects.create(
+            organization = emp.organization,
+            employee     = emp,
+            name         = src.name,
+            code         = src.code,
+            number       = give_number_int,
+            unit         = src.unit,
+            price        = src.price,
+            year         = src.year,
         )
 
     # Ombordan ayiramiz
     src.number = src_qty - give_number_int
     src.save(update_fields=["number"])
 
+    # Ombordan chiqim (src uchun)
     MaterialMovement.objects.create(
-        material=src,
-        user=employee,
-        employee=emp,
-        number=give_number_int,
-        status='assigned',
+        material = src,
+        user     = employee,
+        employee = emp,
+        status   = 'assigned',
+        income   = None,
+        outcome  = give_number_int,
+        balance  = src_qty,
         body=(
             f"Berildi: {employee}\n"
             f"Qabul qildi: {emp}\n"
-            f"Material: {src_qty}\n"
+            f"Ombordan oldin: {src_qty}\n"
             f"Soni: {give_number_int}\n"
             f"Omborda qoldi: {src.number}"
+        )
+    )
+
+    # Xodimga kirim (dst uchun)
+    MaterialMovement.objects.create(
+        material = dst_material,
+        user     = employee,
+        employee = emp,
+        status   = 'assigned',
+        income   = give_number_int,
+        outcome  = None,
+        balance  = dst_qty_before,
+        body=(
+            f"Qabul qildi: {emp}\n"
+            f"Berdi: {employee}\n"
+            f"Oldin: {dst_qty_before}\n"
+            f"Soni: {give_number_int}\n"
+            f"Jami: {dst_qty_before + give_number_int}"
         )
     )
 
@@ -1927,8 +1967,13 @@ def material_delete(request):
         messages.info(request, "Material topilmadi")
         return redirect(back_url)
 
+    if mat.employee_id is not None and mat.employee_id != employee.id:
+        messages.info(request, "Sizga ruxsat yo'q")
+        return redirect(back_url)
+
     if mat.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
+        messages.info(request, "Sizga ruxsat yo'q")
+        return redirect(back_url)
 
     if not mat.is_active:
         messages.info(request, "Material allaqachon o'chirilgan")
