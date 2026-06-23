@@ -384,13 +384,16 @@
     function applyContractToEditor(t) { setInEditor('#date_contract', t || "Shartnoma ma'lumoti kiritilmagan"); }
 
     function applyDepToEditor(depText, orgText) {
-      const final = (depText && depText !== 'Tanlang...')
-        ? depText
-        : (orgText && orgText !== 'Tanlang...' ? orgText : '___');
-      setInEditor('#dep_id',           final);
-      setInEditor('#dep_id2',          final);
-      setAllInEditor('.dep_name_text', final);
-      setAllInEditor('.dep_name',      final);
+      // org_id — faqat tashkilot nomi
+      const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
+      setAllInEditor('.org_id', orgFinal);
+
+      // dep_id — faqat departament tanlansa, aks holda bo'sh/chiziq
+      const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
+      setInEditor('#dep_id',           depFinal);
+      setInEditor('#dep_id2',          depFinal);
+      setAllInEditor('.dep_name_text', depFinal);
+      setAllInEditor('.dep_name',      depFinal);
     }
 
     function applySenderToEditor() {
@@ -409,8 +412,7 @@
       const orgText = $('#organization option:selected').text() || '';
       const depText = $('#department option:selected').text()   || '';
       applyTodayDate();
-      applyOrgToEditor(orgText);
-      applyDepToEditor(depText, orgText);
+      applyDepToEditor(depText, orgText); // org_id va dep_id ni ichida boshqaradi
       applyChorakToEditor($('#rim_id').val() || '');
       applyContractToEditor($('#organization option:selected').attr('data-contract') || '');
       applySenderToEditor();
