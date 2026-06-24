@@ -27,6 +27,10 @@ class TechnicsForm(forms.ModelForm):
             "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "narxi"}),
         }
 
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.fields["organization"].queryset = Organization.objects.order_by("id")
+
 
 class ExtraTechnicsForm(forms.ModelForm):
     class Meta:
