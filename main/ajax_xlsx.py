@@ -16,6 +16,7 @@ def export_technics_xlsx(request):
     dep_id = (request.GET.get("department") or "").strip()
     dir_id = (request.GET.get("directorate") or "").strip()
     div_id = (request.GET.get("division") or "").strip()
+    reg_id = (request.GET.get("region") or "").strip()
     group_id = (request.GET.get("group") or "").strip()
     category_id = (request.GET.get("category") or "").strip()
     status = (request.GET.get("status") or "").strip()
@@ -23,7 +24,7 @@ def export_technics_xlsx(request):
 
     qs = (
         Technics.objects
-        .all()
+        .filter(is_active=True)
         .select_related("organization", "category")
         .order_by("-id")
     )
@@ -33,6 +34,9 @@ def export_technics_xlsx(request):
 
     if dep_id.isdigit():
         qs = qs.filter(department_id=int(dep_id))
+
+    if reg_id.isdigit():
+        qs = qs.filter(region_id=int(reg_id))
 
     if dir_id.isdigit():
         qs = qs.filter(directorate_id=int(dir_id))
