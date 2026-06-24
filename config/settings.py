@@ -412,6 +412,44 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Tashkent"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+# =========================================================
+# CSP (django-csp 4.0+)
+# =========================================================
+CONTENT_SECURITY_POLICY_REPORT_ONLY = {
+    "INCLUDE_NONCE_IN": ["script-src", "style-src"],
+    "DIRECTIVES": {
+        "default-src": ["'self'"],
+        "script-src": [
+            "'self'",
+            "https://cdn.jsdelivr.net",
+            "https://code.jquery.com",
+            "https://cdnjs.cloudflare.com",
+            "https://fonts.googleapis.com",
+        ],
+        "style-src": [
+            "'self'",
+            "https://fonts.googleapis.com",
+            "https://cdn.jsdelivr.net",
+            "https://cdnjs.cloudflare.com",
+        ],
+        "font-src": [
+            "'self'",
+            "https://fonts.gstatic.com",
+            "https://cdn.jsdelivr.net",
+            "https://cdnjs.cloudflare.com",
+        ],
+        "img-src": [
+            "'self'",
+            "data:",
+            "blob:",
+        ],
+        "connect-src": ["'self'"],
+        "object-src":  ["'none'"],
+        "base-uri":    ["'self'"],
+        "frame-ancestors": ["'none'"],
+    },
+}
+
 JAZZMIN_SETTINGS = {
     "site_title": "Admin Panel",
     "site_header": "Boshqaruv paneli",
