@@ -1995,10 +1995,10 @@ def material_delete(request):
     return redirect(back_url)
 
 
+from django.core.paginator import Paginator
 from django.db.models import Sum
-from django.utils.timezone import make_aware
+from django.utils.timezone import make_aware, localdate
 from datetime import datetime, time
-
 @never_cache
 @require_GET
 @login_required
@@ -2011,10 +2011,18 @@ def mat_info(request):
     date1_raw = (request.GET.get("date1") or "").strip()
     date2_raw = (request.GET.get("date2") or "").strip()
 
-    date1 = parse_date(date1_raw) if date1_raw else None
-    date2 = parse_date(date2_raw) if date2_raw else None
-
     has_search = bool(date1_raw or date2_raw)
+
+    if has_search:
+        date1 = parse_date(date1_raw) if date1_raw else None
+        date2 = parse_date(date2_raw) if date2_raw else None
+    else:
+        # Hech narsa tanlanmagan bo'lsa — joriy oyning boshidan bugungacha
+        today = localdate()
+        date1 = today.replace(day=1)
+        date2 = today
+        date1_raw = date1.strftime("%Y-%m-%d")
+        date2_raw = date2.strftime("%Y-%m-%d")
 
     movements_qs = MaterialMovement.objects.exclude(status='deleted')
 
@@ -2025,7 +2033,6 @@ def mat_info(request):
         end_dt = make_aware(datetime.combine(date2, time.max))
         movements_qs = movements_qs.filter(date_creat__lte=end_dt)
 
-    # Tanlangan sana oralig'idagi kirim/chiqim, material bo'yicha guruhlangan
     period_map = {
         row["material"]: row
         for row in movements_qs.values("material").annotate(
@@ -2034,8 +2041,7 @@ def mat_info(request):
         )
     }
 
-    # Barcha materiallarni olamiz
-    materials = Material.objects.filter(is_active=True)
+    materials = Material.objects.filter(is_active=True).order_by("name")
 
     table_rows = []
     for m in materials:
@@ -2043,7 +2049,7 @@ def mat_info(request):
         income = period.get("period_income") or 0
         outcome = period.get("period_outcome") or 0
 
-        current_count = m.number  # Material modelidagi hozirgi son
+        current_count = m.number
         initial_balance = current_count - income + outcome
 
         table_rows.append({
@@ -2056,11 +2062,21 @@ def mat_info(request):
             "current_balance": current_count,
         })
 
+    paginator = Paginator(table_rows, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    qs = request.GET.copy()
+    qs.pop("page", None)
+    qs_params = qs.urlencode()
+
     context = {
         "date1": date1_raw,
         "date2": date2_raw,
         "has_search": has_search,
-        "table_rows": table_rows,
+        "page_obj": page_obj,
+        "table_rows": page_obj.object_list,
+        "qs_params": qs_params,
     }
     return render(request, "main/mat_info.html", context)
 
