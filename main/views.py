@@ -1588,8 +1588,13 @@ def barn_mat(request):
     params = request.GET.copy()
     params.pop("page", None)
 
+    if getattr(employee.rol, "region", False):
+        base_qs = Employee.objects.filter(rol__shop=True,organization=employee.organization)
+    else:
+        base_qs = Employee.objects.filter(id=employee.id)
+
     base_context = {
-        "employees_shop": Employee.objects.filter(rol__shop=True),
+        "employees_shop": base_qs,
         "unit":           Unit.objects.all(),
         "material_form":  MaterialForm(),
         "qs_params":      params.urlencode(),
@@ -2078,8 +2083,13 @@ def mat_info(request):
 
         table_rows = page_obj.object_list
 
+    if getattr(employee.rol, "region", False):
+        base_qs = Employee.objects.filter(rol__shop=True,organization=employee.organization)
+    else:
+        base_qs = Employee.objects.filter(id=employee.id)
+
     context = {
-        "employees_shop": Employee.objects.filter(rol__shop=True),
+        "employees_shop": base_qs,
         "date1": date1_raw,
         "date2": date2_raw,
         "has_search": has_search,
