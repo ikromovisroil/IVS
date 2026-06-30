@@ -2634,12 +2634,13 @@ def files(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    name  = (request.GET.get("name")  or "").strip()[:120]
-    date1 = (request.GET.get("date1") or "").strip()
-    date2 = (request.GET.get("date2") or "").strip()
+    name   = (request.GET.get("name")   or "").strip()[:120]
+    date1  = (request.GET.get("date1")  or "").strip()
+    date2  = (request.GET.get("date2")  or "").strip()
+    status = (request.GET.get("status") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    has_filter = bool(name or date1 or date2)
+    has_filter = bool(name or date1 or date2 or status)
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -2692,11 +2693,14 @@ def files(request):
                 "receiver__father_name",
             ),
         ).filter(
-            Q(code__icontains=name)                |
-            Q(user_full_name__icontains=name)      |
-            Q(sender_full_name__icontains=name)    |
+            Q(code__icontains=name)             |
+            Q(user_full_name__icontains=name)   |
+            Q(sender_full_name__icontains=name) |
             Q(receiver_full_name__icontains=name)
         )
+
+    if status:
+        qs = qs.filter(status=status)
 
     if date1:
         try:
@@ -2719,13 +2723,13 @@ def files(request):
         "name":      name,
         "date1":     date1,
         "date2":     date2,
+        "status":    status,
     }
     return render(request, "main/files.html", context)
 
 
 import secrets
 from .tasks import _resolve_position, cyrillic_to_latin
-
 @login_required
 @require_POST
 def employe_create(request):

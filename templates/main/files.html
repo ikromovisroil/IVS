@@ -43,6 +43,17 @@
                     <input type="date" name="date2" class="form-control" value="{{ date2|default:'' }}">
                   </div>
 
+                  <div class="col-md-3">
+                      <label for="status" class="form-label">Xolati</label>
+                      <select id="status" name="status" class="form-select">
+                          <option value="">Tanlang...</option>
+                          <option value="document" {% if request.GET.status == "document" %}selected{% endif %}>Dalolatnoma</option>
+                          <option value="svod"     {% if request.GET.status == "svod"   %}selected{% endif %}>Yakuniy hisobot</option>
+                          <option value="reestr"   {% if request.GET.status == "reestr" %}selected{% endif %}>Reestr</option>
+                          <option value="act"      {% if request.GET.status == "act" %}selected{% endif %}>Akt</option>
+                      </select>
+                  </div>
+
                   <div class="col-md-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary w-100">Qidirish</button>
                   </div>
