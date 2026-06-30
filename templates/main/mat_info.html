@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'base.html' %}{% load humanize %}
 {% load static %}
 
 {% block title %}
@@ -20,13 +20,26 @@
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
                   <div class="col-md-3">
+                        <label class="form-label">Xodim</label>
+                        <select name="employee" class="form-select" required>
+                            <option value="">Tanlang...</option>
+                            {% for emp in employees_shop %}
+                                <option value="{{ emp.id }}"
+                                    {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                  </div>
+
+                  <div class="col-md-3">
                     <label class="form-label">Boshlangich sanasi</label>
-                    <input type="date" name="date1" class="form-control" value="{{ date1|default:'' }}">
+                    <input type="date" name="date1" class="form-control" value="{{ date1|default:'' }}" required>
                   </div>
 
                   <div class="col-md-3">
                     <label class="form-label">Tugash sanasi</label>
-                    <input type="date" name="date2" class="form-control" value="{{ date2|default:'' }}">
+                    <input type="date" name="date2" class="form-control" value="{{ date2|default:'' }}" required>
                   </div>
 
                   <div class="col-md-3 d-flex align-items-end">
@@ -67,7 +80,7 @@
                         <td>{{ forloop.counter }}</td>
                         <td>{{ row.material }}</td>
                         <td>{{ row.code }}</td>
-                        <td>{{ row.price }}</td>
+                        <td>{{ row.price|intcomma }}</td>
                         <td>{{ row.initial_balance }}</td>
                         <td>{{ row.income }}</td>
                         <td>{{ row.outcome }}</td>

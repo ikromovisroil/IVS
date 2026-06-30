@@ -1674,6 +1674,7 @@ def material_create(request):
         MaterialMovement.objects.create(
             material=material,
             user=employee,
+            employee=employee,
             status='created',
             balance=material.number,
             body=(
@@ -1803,6 +1804,7 @@ def material_update(request, pk):
         MaterialMovement.objects.create(
             material=mat,
             user=employee,
+            employee=mat.employee,
             status='edited',
             income=income,
             outcome=outcome,
@@ -1987,6 +1989,7 @@ def material_delete(request):
     MaterialMovement.objects.create(
         material=mat,
         user=employee,
+        employee=mat.employee,
         status='deleted',
         body=f"Material o'chirildi: {mat.id}"
     )
@@ -2010,72 +2013,78 @@ def mat_info(request):
 
     date1_raw = (request.GET.get("date1") or "").strip()
     date2_raw = (request.GET.get("date2") or "").strip()
+    employee_id_raw = (request.GET.get("employee") or "").strip()
 
-    has_search = bool(date1_raw or date2_raw)
-
-    if has_search:
-        date1 = parse_date(date1_raw) if date1_raw else None
-        date2 = parse_date(date2_raw) if date2_raw else None
-    else:
-        # Hech narsa tanlanmagan bo'lsa — joriy oyning boshidan bugungacha
-        today = localdate()
-        date1 = today.replace(day=1)
-        date2 = today
-        date1_raw = date1.strftime("%Y-%m-%d")
-        date2_raw = date2.strftime("%Y-%m-%d")
-
-    movements_qs = MaterialMovement.objects.exclude(status='deleted')
-
-    if date1:
-        start_dt = make_aware(datetime.combine(date1, time.min))
-        movements_qs = movements_qs.filter(date_creat__gte=start_dt)
-    if date2:
-        end_dt = make_aware(datetime.combine(date2, time.max))
-        movements_qs = movements_qs.filter(date_creat__lte=end_dt)
-
-    period_map = {
-        row["material"]: row
-        for row in movements_qs.values("material").annotate(
-            period_income=Sum("income"),
-            period_outcome=Sum("outcome"),
-        )
-    }
-
-    materials = Material.objects.filter(is_active=True).order_by("name")
+    # Barcha 3 maydon to'ldirilgandagina qidiruv ishlaydi
+    has_search = bool(date1_raw and date2_raw and employee_id_raw and employee_id_raw.isdigit())
 
     table_rows = []
-    for m in materials:
-        period = period_map.get(m.id, {})
-        income = period.get("period_income") or 0
-        outcome = period.get("period_outcome") or 0
+    page_obj = None
+    qs_params = ""
 
-        current_count = m.number
-        initial_balance = current_count - income + outcome
+    if has_search:
+        date1 = parse_date(date1_raw)
+        date2 = parse_date(date2_raw)
+        employee_id = int(employee_id_raw)
 
-        table_rows.append({
-            "material": m,
-            "code": m.code,
-            "price": m.price,
-            "initial_balance": initial_balance,
-            "income": income,
-            "outcome": outcome,
-            "current_balance": current_count,
-        })
+        movements_qs = MaterialMovement.objects.exclude(status='deleted')
 
-    paginator = Paginator(table_rows, 20)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
+        if date1:
+            start_dt = make_aware(datetime.combine(date1, time.min))
+            movements_qs = movements_qs.filter(date_creat__gte=start_dt)
+        if date2:
+            end_dt = make_aware(datetime.combine(date2, time.max))
+            movements_qs = movements_qs.filter(date_creat__lte=end_dt)
 
-    qs = request.GET.copy()
-    qs.pop("page", None)
-    qs_params = qs.urlencode()
+        movements_qs = movements_qs.filter(employee_id=employee_id)
+
+        period_map = {
+            row["material"]: row
+            for row in movements_qs.values("material").annotate(
+                period_income=Sum("income"),
+                period_outcome=Sum("outcome"),
+            )
+        }
+
+        materials = Material.objects.filter(
+            is_active=True, employee_id=employee_id
+        ).order_by("name")
+
+        for m in materials:
+            period = period_map.get(m.id, {})
+            income = period.get("period_income") or 0
+            outcome = period.get("period_outcome") or 0
+
+            current_count = m.number
+            initial_balance = current_count - income + outcome
+
+            table_rows.append({
+                "material": m,
+                "code": m.code,
+                "price": m.price,
+                "initial_balance": initial_balance,
+                "income": income,
+                "outcome": outcome,
+                "current_balance": current_count,
+            })
+
+        paginator = Paginator(table_rows, 20)
+        page_number = request.GET.get("page")
+        page_obj = paginator.get_page(page_number)
+
+        qs = request.GET.copy()
+        qs.pop("page", None)
+        qs_params = qs.urlencode()
+
+        table_rows = page_obj.object_list
 
     context = {
+        "employees_shop": Employee.objects.filter(rol__shop=True),
         "date1": date1_raw,
         "date2": date2_raw,
         "has_search": has_search,
         "page_obj": page_obj,
-        "table_rows": page_obj.object_list,
+        "table_rows": table_rows,
         "qs_params": qs_params,
     }
     return render(request, "main/mat_info.html", context)
