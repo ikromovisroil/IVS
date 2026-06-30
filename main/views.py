@@ -1161,10 +1161,12 @@ def technics_update(request, pk):
         messages.info(request, "Holat noto'g'ri")
         return redirect(back_url)
 
+    has_real_serial = tex.serial and tex.serial.strip().upper() != "B/N"
+
     # Serial tekshiruvi
-    if tex.serial and tex.organization and Technics.objects.filter(
-        serial__iexact=tex.serial,
-        organization=tex.organization
+    if has_real_serial and tex.organization and Technics.objects.filter(
+            serial__iexact=tex.serial,
+            organization=tex.organization
     ).exclude(pk=tex.pk).exists():
         messages.info(request, f"Bu serial raqamli uskuna allaqachon mavjud: {tex.serial}")
         return redirect(back_url)
@@ -1993,7 +1995,7 @@ def material_delete(request):
     return redirect(back_url)
 
 
-from django.db.models import Sum, Q
+from django.db.models import Sum
 from django.utils.timezone import make_aware
 from datetime import datetime, time
 
@@ -2014,62 +2016,44 @@ def mat_info(request):
 
     has_search = bool(date1_raw or date2_raw)
 
-    base_qs = MaterialMovement.objects.exclude(status='deleted')
+    movements_qs = MaterialMovement.objects.exclude(status='deleted')
 
-    start_dt = make_aware(datetime.combine(date1, time.min)) if date1 else None
-    end_dt = make_aware(datetime.combine(date2, time.max)) if date2 else None
+    if date1:
+        start_dt = make_aware(datetime.combine(date1, time.min))
+        movements_qs = movements_qs.filter(date_creat__gte=start_dt)
+    if date2:
+        end_dt = make_aware(datetime.combine(date2, time.max))
+        movements_qs = movements_qs.filter(date_creat__lte=end_dt)
 
-    # 1) Davr ICHIDAGI kirim/chiqim (material bo'yicha guruhlangan)
-    period_qs = base_qs
-    if start_dt:
-        period_qs = period_qs.filter(date_creat__gte=start_dt)
-    if end_dt:
-        period_qs = period_qs.filter(date_creat__lte=end_dt)
-
-    period_data = (
-        period_qs.values("material")
-        .annotate(
+    # Tanlangan sana oralig'idagi kirim/chiqim, material bo'yicha guruhlangan
+    period_map = {
+        row["material"]: row
+        for row in movements_qs.values("material").annotate(
             period_income=Sum("income"),
             period_outcome=Sum("outcome"),
         )
-    )
-    period_map = {row["material"]: row for row in period_data}
+    }
 
-    # 2) Davr BOSHLANISHIGACHA bo'lgan qoldiq (boshlang'ich son)
-    before_data = {}
-    if start_dt:
-        before_qs = base_qs.filter(date_creat__lt=start_dt).values("material").annotate(
-            before_income=Sum("income"),
-            before_outcome=Sum("outcome"),
-        )
-        before_map = {row["material"]: row for row in before_qs}
-    else:
-        before_map = {}
-
-    # 3) Barcha materiallar (kamida bitta harakati bo'lganlar)
-    material_ids = (
-        base_qs.values_list("material", flat=True).distinct()
-    )
-    materials = Material.objects.filter(id__in=material_ids)
+    # Barcha materiallarni olamiz
+    materials = Material.objects.filter(is_active=True)
 
     table_rows = []
     for m in materials:
-        before = before_map.get(m.id, {})
         period = period_map.get(m.id, {})
-
-        initial_balance = (before.get("before_income") or 0) - (before.get("before_outcome") or 0)
         income = period.get("period_income") or 0
         outcome = period.get("period_outcome") or 0
-        current_balance = initial_balance + income - outcome
+
+        current_count = m.number  # Material modelidagi hozirgi son
+        initial_balance = current_count - income + outcome
 
         table_rows.append({
             "material": m,
-            "code": getattr(m, "code", ""),
-            "price": getattr(m, "price", ""),
+            "code": m.code,
+            "price": m.price,
             "initial_balance": initial_balance,
             "income": income,
             "outcome": outcome,
-            "current_balance": current_balance,
+            "current_balance": current_count,
         })
 
     context = {
@@ -2391,6 +2375,7 @@ def reestr_post(request):
 @never_cache
 @require_GET
 @login_required
+@role_required("boss")
 def technics_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2400,7 +2385,6 @@ def technics_get(request):
         'technics': Technics.objects.filter(employee=employee),
     }
     return render(request, 'main/technics_get.html', context)
-
 
 
 @never_cache
@@ -2629,6 +2613,7 @@ def technics_detail(request, pk):
 @never_cache
 @require_GET
 @login_required
+@role_required("boss")
 def files(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

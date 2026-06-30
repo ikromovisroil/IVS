@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-<title>Tashkilot texnikalari</title>
+<title>Material statistikasi</title>
 {% endblock title %}
 
 {% block content %}
@@ -45,35 +45,37 @@
 
         <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Xodimlar samaradorligi</h5>
+              <h5 class="card-title">Materiallar harakati</h5>
 
               <!-- Default Table -->
               <table class="table table-bordered table-hover table-sm">
                   <thead class="table-secondary">
                     <tr>
                       <th>T/r</th>
-                      <th>F.I.O</th>
-                      <th>Ish jarayonida</th>
-                      <th>Yakunladi</th>
-                      <th>Tasdiqlandi</th>
-                      <th>Rad etilgan</th>
-                      <th>Jami</th>
+                      <th>Material</th>
+                      <th>Kodi</th>
+                      <th>Narxi</th>
+                      <th>Boshlang'ich soni</th>
+                      <th>Kirim</th>
+                      <th>Chiqim</th>
+                      <th>Qoldiq (hozirda)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {% for emp in employee %}
+                    {% for row in table_rows %}
                       <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td>{{ emp.full_name }}</td>
-                        <td>{{ emp.accepted_count }}</td>
-                        <td>{{ emp.finished_count }}</td>
-                        <td>{{ emp.approved_count }}</td>
-                        <td>{{ emp.rejected_count }}</td>
-                        <td>{{ emp.total_count }}</td>
+                        <td>{{ row.material }}</td>
+                        <td>{{ row.code }}</td>
+                        <td>{{ row.price }}</td>
+                        <td>{{ row.initial_balance }}</td>
+                        <td>{{ row.income }}</td>
+                        <td>{{ row.outcome }}</td>
+                        <td>{{ row.current_balance }}</td>
                       </tr>
                     {% empty %}
                       <tr>
-                        <td colspan="7">Ma'lumot topilmadi</td>
+                        <td colspan="8">Ma'lumot topilmadi</td>
                       </tr>
                     {% endfor %}
                   </tbody>
