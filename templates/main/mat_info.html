@@ -88,7 +88,10 @@
                       </tr>
                     {% empty %}
                       <tr>
-                        <td colspan="8">Ma'lumot topilmadi</td>
+                        <td colspan="{% if request.user.employee.rol.technics_edit %}8{% else %}7{% endif %}"
+                            class="text-center text-muted py-4">
+                          <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
+                        </td>
                       </tr>
                     {% endfor %}
                   </tbody>

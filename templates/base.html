@@ -505,19 +505,29 @@
         <!-- Materiallar -->
         {% if request.user.employee.rol.material %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'barn_mat' %}collapsed{% endif %}"
-             href="{% url 'barn_mat' %}">
+          <a class="nav-link {% if url_name != 'barn_mat' and url_name != 'mat_info' %}collapsed{% endif %}"
+             data-bs-target="#forms-nav-material"
+             data-bs-toggle="collapse"
+             href="#">
             <i class="bi bi-box-seam"></i>
             <span>Materiallar</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
           </a>
-        </li>
 
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'mat_info' %}collapsed{% endif %}"
-             href="{% url 'mat_info' %}">
-            <i class="bi bi-box-seam"></i>
-            <span>Kirim - chiqim</span>
-          </a>
+          <ul id="forms-nav-material"
+              class="nav-content collapse {% if url_name == 'barn_mat' or url_name == 'mat_info' %}show{% endif %}"
+              data-bs-parent="#sidebar-nav">
+            <li>
+              <a class="{% if url_name == 'barn_mat' %}active{% endif %}" href="{% url 'barn_mat' %}">
+                <i class="bi bi-circle"></i><span>Materiallar</span>
+              </a>
+            </li>
+            <li>
+              <a class="{% if url_name == 'mat_info' %}active{% endif %}" href="{% url 'mat_info' %}">
+                <i class="bi bi-circle"></i><span>Kirim - chiqim</span>
+              </a>
+            </li>
+          </ul>
         </li>
         {% endif %}
 
