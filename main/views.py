@@ -2400,7 +2400,6 @@ def reestr_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("boss")
 def technics_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
