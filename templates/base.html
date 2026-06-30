@@ -511,6 +511,14 @@
             <span>Materiallar</span>
           </a>
         </li>
+
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'mat_info' %}collapsed{% endif %}"
+             href="{% url 'mat_info' %}">
+            <i class="bi bi-box-seam"></i>
+            <span>Kirim - chiqim</span>
+          </a>
+        </li>
         {% endif %}
 
         <!-- Statistika -->

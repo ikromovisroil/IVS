@@ -562,8 +562,13 @@ class Deed(models.Model):
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True, db_index=True)
     message_user = models.TextField(null=True, blank=True)
     body = models.TextField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=[
+        ('document', 'Dalolatnoma'),
+        ('svod', 'Yakuniy hisobot'),
+        ('reestr', 'Reestr'),
+        ('act', 'Akt'),
+    ], default='act', db_index=True)
 
-    file_type = models.BooleanField(default=False)
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
     code = models.CharField(max_length=10, null=True, blank=True, unique=True, db_index=True)
 

@@ -271,12 +271,11 @@ class OrderMaterialAdmin(admin.ModelAdmin):
 class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id", "code", "sender", "receiver", "user",
-        "colored_status_sender", "colored_status_receiver", "file_type",
+        "colored_status_sender", "colored_status_receiver", "status",
         "date_creat"
     )
     list_filter = (
-        "status_sender", "status_receiver",
-        "file_type", "date_creat"
+        "status_sender", "status_receiver", "status", "date_creat"
     )
     search_fields = (
         "code", "body", "message_sender", "message_receiver", "message_user",

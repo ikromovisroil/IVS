@@ -53,8 +53,7 @@ def deed_to_pdf_bytes(deed) -> bytes:
     wkhtmltopdf_path = _ensure_wkhtmltopdf()
 
     # False = Landscape, True = Portrait
-    ft = bool(getattr(deed, "file_type", False))
-    orientation = "Portrait" if ft else "Landscape"
+    orientation = "Portrait" if deed.status == "document" else "Landscape"
 
     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 

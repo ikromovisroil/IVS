@@ -1993,6 +1993,94 @@ def material_delete(request):
     return redirect(back_url)
 
 
+from django.db.models import Sum, Q
+from django.utils.timezone import make_aware
+from datetime import datetime, time
+
+@never_cache
+@require_GET
+@login_required
+@role_required("material")
+def mat_info(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    date1_raw = (request.GET.get("date1") or "").strip()
+    date2_raw = (request.GET.get("date2") or "").strip()
+
+    date1 = parse_date(date1_raw) if date1_raw else None
+    date2 = parse_date(date2_raw) if date2_raw else None
+
+    has_search = bool(date1_raw or date2_raw)
+
+    base_qs = MaterialMovement.objects.exclude(status='deleted')
+
+    start_dt = make_aware(datetime.combine(date1, time.min)) if date1 else None
+    end_dt = make_aware(datetime.combine(date2, time.max)) if date2 else None
+
+    # 1) Davr ICHIDAGI kirim/chiqim (material bo'yicha guruhlangan)
+    period_qs = base_qs
+    if start_dt:
+        period_qs = period_qs.filter(date_creat__gte=start_dt)
+    if end_dt:
+        period_qs = period_qs.filter(date_creat__lte=end_dt)
+
+    period_data = (
+        period_qs.values("material")
+        .annotate(
+            period_income=Sum("income"),
+            period_outcome=Sum("outcome"),
+        )
+    )
+    period_map = {row["material"]: row for row in period_data}
+
+    # 2) Davr BOSHLANISHIGACHA bo'lgan qoldiq (boshlang'ich son)
+    before_data = {}
+    if start_dt:
+        before_qs = base_qs.filter(date_creat__lt=start_dt).values("material").annotate(
+            before_income=Sum("income"),
+            before_outcome=Sum("outcome"),
+        )
+        before_map = {row["material"]: row for row in before_qs}
+    else:
+        before_map = {}
+
+    # 3) Barcha materiallar (kamida bitta harakati bo'lganlar)
+    material_ids = (
+        base_qs.values_list("material", flat=True).distinct()
+    )
+    materials = Material.objects.filter(id__in=material_ids)
+
+    table_rows = []
+    for m in materials:
+        before = before_map.get(m.id, {})
+        period = period_map.get(m.id, {})
+
+        initial_balance = (before.get("before_income") or 0) - (before.get("before_outcome") or 0)
+        income = period.get("period_income") or 0
+        outcome = period.get("period_outcome") or 0
+        current_balance = initial_balance + income - outcome
+
+        table_rows.append({
+            "material": m,
+            "code": getattr(m, "code", ""),
+            "price": getattr(m, "price", ""),
+            "initial_balance": initial_balance,
+            "income": income,
+            "outcome": outcome,
+            "current_balance": current_balance,
+        })
+
+    context = {
+        "date1": date1_raw,
+        "date2": date2_raw,
+        "has_search": has_search,
+        "table_rows": table_rows,
+    }
+    return render(request, "main/mat_info.html", context)
+
+
 @never_cache
 @require_GET
 @login_required
@@ -2058,7 +2146,7 @@ def document_post(request):
             user=employee,
             message_user=message,
             body=body,
-            file_type=True,
+            status='document',
         )
 
         ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
@@ -2134,7 +2222,7 @@ def akt_post(request):
             user=employee,
             message_user=message,
             body=body,
-            file_type=False,
+            status='act',
         )
 
         ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
@@ -2205,7 +2293,7 @@ def svod_post(request):
             user=employee,
             message_user=message,
             body=body,
-            file_type=False,
+            status='svod',
         )
 
         ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
@@ -2276,7 +2364,7 @@ def reestr_post(request):
             user=employee,
             message_user=message,
             body=body,
-            file_type=False,
+            status='reestr',
         )
 
         ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
