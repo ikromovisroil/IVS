@@ -562,15 +562,7 @@
         </li>
         {% endif %}
 
-        {% if request.user.employee.rol.status %}
-        <li class="nav-item">
-          <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"
-             href="{% url 'technics_get' %}">
-            <i class="bi bi-laptop"></i>
-            <span>Texnikalarim</span>
-          </a>
-        </li>
-
+        {% if request.user.employee.rol.document %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'files' %}collapsed{% endif %}"
              href="{% url 'files' %}">
@@ -579,6 +571,14 @@
           </a>
         </li>
         {% endif %}
+
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"
+             href="{% url 'technics_get' %}">
+            <i class="bi bi-laptop"></i>
+            <span>Texnikalarim</span>
+          </a>
+        </li>
 
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'profil' %}collapsed{% endif %}"

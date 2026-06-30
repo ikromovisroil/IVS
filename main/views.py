@@ -1911,7 +1911,7 @@ def material_attach(request):
     MaterialMovement.objects.create(
         material = src,
         user     = employee,
-        employee = emp,
+        employee = src.employee,
         status   = 'assigned',
         income   = None,
         outcome  = give_number_int,
@@ -2638,7 +2638,7 @@ def technics_detail(request, pk):
 @never_cache
 @require_GET
 @login_required
-@role_required("boss")
+@role_required("document")
 def files(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

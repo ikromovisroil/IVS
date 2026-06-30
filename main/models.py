@@ -113,6 +113,7 @@ class Rol(models.Model):
     shop = models.BooleanField(default=False, db_index=True)
     akt = models.BooleanField(default=False, db_index=True)
     status = models.BooleanField(default=False, db_index=True)
+    document = models.BooleanField(default=False, db_index=True)
     technics = models.BooleanField(default=False, db_index=True)
     technics_edit = models.BooleanField(default=False, db_index=True)
     material = models.BooleanField(default=False, db_index=True)
