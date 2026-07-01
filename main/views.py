@@ -2490,7 +2490,7 @@ def emp_status(request):
                 Value(" "),
                 Coalesce(F("receiver__father_name"), Value("")),
             ),
-            accepted_count=Count("id", filter=Q(status="accepted")),
+            accepted_count=Count("id", filter=Q(status="process")),
             finished_count=Count("id", filter=Q(status="finished")),
             approved_count=Count("id", filter=Q(status="approved")),
             rejected_count=Count("id", filter=Q(status="rejected")),
