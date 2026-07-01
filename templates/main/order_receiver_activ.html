@@ -188,7 +188,7 @@
                                       class="form-select js-tech-select"
                                       name="technics_id"
                                       data-order-id="{{ o.id }}"
-                                      data-sender-id="{{ o.sender.id }}"
+                                      data-sender-id="{{ o.receiver.id|default:o.sender.id }}"
                                       data-selected-id="{{ o.technics_id|default:'' }}">
                                       <option value="">— Tanlang —</option>
                                     </select>
@@ -373,9 +373,6 @@
     </div>
   </section>
 </main>
-
-<script src="{% static 'js/jquery-3.6.0.min.js' %}"></script>
-<script src="{% static 'js/select2.min.js' %}"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {

@@ -2415,8 +2415,18 @@ def technics_get(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
+    if getattr(employee.rol, "boss", False):
+        technics = Technics.objects.filter(
+            organization=employee.organization,
+            department=employee.department,
+            region=employee.region,
+            is_active=True,
+        ),
+    else:
+        technics = Technics.objects.filter(employee=employee),
+
     context = {
-        'technics': Technics.objects.filter(employee=employee),
+        'technics': technics,
     }
     return render(request, 'main/technics_get.html', context)
 
