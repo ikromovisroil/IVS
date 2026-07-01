@@ -21,37 +21,157 @@
               <h5 class="card-title">{{request.user.employee.full_name}}</h5>
 
               <!-- Default Table -->
-              <table class="table table-bordered table-hover table-sm">
-                <thead>
+              <table class="table table-bordered table-hover align-middle table-sm">
+                <thead class="table-secondary">
                   <tr>
                     <th scope="col">T/r</th>
-                    {% if request.user.employee.rol.boss %}
                     <th scope="col">F.I.O</th>
-                    <th scope="col">Lavozim</th>
-                    {% endif %}
-                    <th scope="col">Nomi</th>
+                    <th scope="col">Texnika nomi</th>
                     <th scope="col">I/R</th>
                     <th scope="col">S/R</th>
-                    <th scope="col">Mac</th>
                   </tr>
                 </thead>
-                <tbody>
-                {% for tex in technics %}
-                  <tr>
-                    <th scope="row">{{forloop.counter}}</th>
-                    {% if request.user.employee.rol.boss %}
-                    <td>{{tex.employee.full_name}}</td>
-                    <td>{{tex.employee.rank.name}}</td>
+
+                <tbody id="technicsBody">
+                  {% for emp, items in grouped_technics %}
+                    {% if items %}
+                      {% for tex in items %}
+                      <tr>
+                        {% if forloop.first %}
+                        <th scope="row"
+                            rowspan="{{ items|length }}"
+                            class="align-middle text-center">
+                          {{ forloop.parentloop.counter }}
+                        </th>
+                        {% endif %}
+
+                        {% if forloop.first %}
+                        <td rowspan="{{ items|length }}" class="align-middle">
+                          {% if emp %}
+                            {{ emp.full_name|default:"—" }}
+                            {% if emp.rank %}
+                            <span class="text-secondary small d-block mt-1">
+                              "{{ emp.rank.name|default:'' }}"
+                            </span>
+                            {% endif %}
+                          {% else %}
+                            <span class="text-muted fst-italic">Biriktirilmagan</span>
+                          {% endif %}
+                        </td>
+                        {% endif %}
+
+                        <td style="cursor:pointer"
+                            data-bs-toggle="modal"
+                            data-bs-target="#qkcentered{{ tex.id }}">
+                          {{ tex.name|default:"-" }}
+                          <span class="text-secondary small d-block mt-1">
+                            {% for et in tex.structure_set.all %}
+                              <i>{{ et.category.name|default:"" }} / {{ et.name|default:"-" }}</i><br>
+                            {% endfor %}
+                          </span>
+                        </td>
+
+                        <td style="cursor:pointer"
+                            data-bs-toggle="modal"
+                            data-bs-target="#qkcentered{{ tex.id }}">
+                          {{ tex.inventory|default:"-" }}
+                          <span class="text-secondary small d-block mt-1">
+                            {% for et in tex.structure_set.all %}
+                              <i>{{ et.inventory|default:"-" }}</i><br>
+                            {% endfor %}
+                          </span>
+                        </td>
+
+                        <td style="cursor:pointer"
+                            data-bs-toggle="modal"
+                            data-bs-target="#qkcentered{{ tex.id }}">
+                          {{ tex.serial|default:"-" }}
+                          <span class="text-secondary small d-block mt-1">
+                            {% for et in tex.structure_set.all %}
+                              <i>{{ et.serial|default:"-" }}</i><br>
+                            {% endfor %}
+                          </span>
+                        </td>
+                      </tr>
+                      {% endfor %}
                     {% endif %}
-                    <td>{{tex.category.name}}
-                        {{ tex.name|default:"-" }}</td>
-                    <td>{{ tex.inventory|default:"-" }}</td>
-                    <td>{{ tex.serial|default:"-" }}</td>
-                    <td>{{ tex.mac|default:"-" }}</td>
+                  {% empty %}
+                  <tr>
+                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
+                        class="text-center text-muted py-4">
+                      <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
+                    </td>
                   </tr>
-                {% endfor %}
+                  {% endfor %}
+
+                  {# ══════════════════════════════════════════════════════ #}
+                  {# Texnikasi yo'q xodimlar — FAQAT OXIRGI SAHIFADA      #}
+                  {# ══════════════════════════════════════════════════════ #}
+                  {% if not page_obj.has_next and employees_without_technics %}
+                  <tr>
+                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
+                        class="table-secondary fw-bold ps-2 text-center fst-italic align-middle">
+                        Texnikasi yo'q xodimlar
+                    </td>
+                  </tr>
+                  {% for emp in employees_without_technics %}
+                  <tr class="table-warning">
+                    <th scope="row" class="align-middle text-center">
+                      {{ page_obj.end_index|add:forloop.counter }}
+                    </th>
+                    <td class="align-middle">
+                      {{ emp.full_name|default:"—" }}
+                      {% if emp.rank %}
+                      <span class="text-secondary small d-block mt-1">
+                        "{{ emp.rank.name|default:'' }}"
+                      </span>
+                      {% endif %}
+                    </td>
+                    <td colspan="{% if request.user.employee.rol.technics_edit %}5{% else %}4{% endif %}"
+                        class="text-center text-muted fst-italic align-middle">
+                      Texnika biriktirilmagan
+                    </td>
+                  </tr>
+                  {% endfor %}
+                  {% endif %}
+
                 </tbody>
               </table>
+
+              <!-- PAGINATION -->
+              {% if page_obj.paginator.num_pages > 1 %}
+              <nav aria-label="Order pagination" class="mt-3">
+                <ul class="pagination justify-content-center">
+
+                  {% if page_obj.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?{{ qs_params }}&page={{ page_obj.previous_page_number }}">‹</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled"><span class="page-link">‹</span></li>
+                  {% endif %}
+
+                  {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                      <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num >= page_obj.number|add:-3 and num <= page_obj.number|add:3 %}
+                      <li class="page-item">
+                        <a class="page-link" href="?{{ qs_params }}&page={{ num }}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+
+                  {% if page_obj.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?{{ qs_params }}&page={{ page_obj.next_page_number }}">›</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled"><span class="page-link">›</span></li>
+                  {% endif %}
+
+                </ul>
+              </nav>
+              {% endif %}
               <!-- End Default Table Example -->
             </div>
         </div>

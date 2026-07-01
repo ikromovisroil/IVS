@@ -2415,20 +2415,73 @@ def technics_get(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if getattr(employee.rol, "boss", False):
-        technics = Technics.objects.filter(
+    page_number = request.GET.get("page", 1)
+    is_boss = getattr(employee.rol, "boss", False)
+
+    if is_boss:
+        base_qs = Technics.objects.filter(
             organization=employee.organization,
             department=employee.department,
             region=employee.region,
             is_active=True,
         )
     else:
-        technics = Technics.objects.filter(employee=employee)
+        base_qs = Technics.objects.filter(
+            employee=employee,
+            is_active=True,
+        )
+
+    tech_qs = (
+        base_qs
+        .select_related("employee", "employee__rank", "category")
+        .prefetch_related("structure_set__category")
+        .order_by("employee_id", "id")
+    )
+
+    # Pagination
+    paginator = Paginator(tech_qs, 20)
+    page_obj = paginator.get_page(page_number)
+
+    # grouped_technics — sahifadagi texnikalarni xodim bo'yicha guruhlash
+    grouped_technics = []
+    for emp_id, items in groupby(page_obj.object_list, key=lambda t: t.employee_id):
+        items_list = list(items)
+        emp_obj = items_list[0].employee if emp_id else None
+        grouped_technics.append((emp_obj, items_list))
+
+    # Texnikasi yo'q xodimlar (faqat boss uchun, faqat oxirgi sahifada ko'rinadi)
+    employees_without_technics = []
+    if is_boss:
+        assigned_ids = set(
+            base_qs
+            .exclude(employee_id=None)
+            .values_list("employee_id", flat=True)
+            .distinct()
+        )
+        employees_without_technics = (
+            Employee.objects
+            .filter(
+                organization=employee.organization,
+                department=employee.department,
+                region=employee.region,
+            )
+            .exclude(id__in=assigned_ids)
+            .select_related("rank")
+            .only("id", "first_name", "last_name", "father_name", "rank__name")
+            .order_by("last_name", "first_name")
+        )
+
+    params = request.GET.copy()
+    params.pop("page", None)
+    qs_params = params.urlencode()
 
     context = {
-        'technics': technics,
+        "grouped_technics": grouped_technics,
+        "employees_without_technics": employees_without_technics,
+        "page_obj": page_obj,
+        "qs_params": qs_params,
     }
-    return render(request, 'main/technics_get.html', context)
+    return render(request, "main/technics_get.html", context)
 
 
 @never_cache
