@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}<title>Material import</title>{% endblock %}
+
+{% block content %}
+<main id="main" class="main">
+
+  <div class="pagetitle">
+    <h1>Material import</h1>
+  </div>
+
+  <section class="section">
+    <div class="row justify-content-center">
+      <div class="col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Excel fayldan import</h5>
+
+            <form method="post" action="{% url 'material_import' %}" enctype="multipart/form-data">
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label class="form-label">Xodim <span class="text-danger">*</span></label>
+                <select name="employee" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for emp in employees_shop %}
+                    <option value="{{ emp.id }}">
+                      {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
+                    </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Excel fayl <span class="text-danger">*</span></label>
+                <input type="file" name="file" class="form-control" accept=".xlsx,.xls" required>
+                <div class="form-text text-muted">
+                  Fayl ustunlari: №, nomi, brligi, narxi, 1c kode, soni
+                </div>
+              </div>
+
+              <div class="d-grid">
+                <button type="submit" class="btn btn-success"
+                        onclick="return confirm('Importni boshlashni tasdiqlaysizmi?')">
+                  <i class="bi bi-upload me-1"></i> Importni boshlash
+                </button>
+              </div>
+
+            </form>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+{% endblock %}

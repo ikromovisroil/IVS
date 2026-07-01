@@ -2898,3 +2898,145 @@ def employe_create(request):
         messages.info(request, str(e))
 
     return redirect(request.META.get("HTTP_REFERER", "/"))
+
+
+@never_cache
+@login_required
+@role_required("material_edit")
+def material_import_page(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    employees_shop = Employee.objects.filter(
+        rol__shop=True,
+        organization=employee.organization,
+    ).order_by("last_name", "first_name")
+
+    context = {
+        "employees_shop": employees_shop,
+    }
+    return render(request, "main/material_import.html", context)
+
+
+import openpyxl
+from io import BytesIO
+@never_cache
+@require_POST
+@login_required
+@role_required("material_edit")
+@transaction.atomic
+def material_import(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    file = request.FILES.get("file")
+    target_employee_id = (request.POST.get("employee") or "").strip()
+
+    if not file:
+        messages.info(request, "Fayl tanlanmadi")
+        return redirect(back_url)
+
+    if not file.name.endswith((".xlsx", ".xls")):
+        messages.info(request, "Faqat .xlsx yoki .xls fayl yuklang")
+        return redirect(back_url)
+
+    if not target_employee_id.isdigit():
+        messages.info(request, "Xodim tanlanmadi")
+        return redirect(back_url)
+
+    target_employee = get_object_or_404(
+        Employee,
+        pk=int(target_employee_id),
+        organization=employee.organization,
+    )
+
+    try:
+        file_content = BytesIO(file.read())
+        wb = openpyxl.load_workbook(file_content, data_only=True)
+        ws = wb.active
+    except Exception as e:
+        messages.info(request, f"Faylni o'qishda xatolik: {e}")
+        return redirect(back_url)
+
+    created = 0
+    updated = 0
+    skipped = 0
+    errors = []
+
+    for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+        try:
+            nomi   = str(row[1] or "").strip()
+            brligi = str(row[2] or "").strip()
+            narxi  = row[3]
+            kode   = str(row[4] or "").strip() or None
+            soni   = row[5]
+
+            if not nomi:
+                skipped += 1
+                continue
+
+            try:
+                number = int(soni) if soni else 0
+            except Exception:
+                number = 0
+
+            try:
+                price = Decimal(str(narxi).replace(" ", "").replace(",", ".")) if narxi else None
+            except Exception:
+                price = None
+
+            unit = None
+            if brligi:
+                unit, _ = Unit.objects.get_or_create(name=brligi)
+
+            if kode:
+                mat, is_created = Material.objects.get_or_create(
+                    code=kode,
+                    employee=target_employee,
+                    defaults={
+                        "organization": target_employee.organization,
+                        "unit": unit,
+                        "name": nomi,
+                        "price": price,
+                        "number": number,
+                        "is_active": True,
+                    }
+                )
+                if not is_created:
+                    mat.number = number
+                    mat.name = nomi
+                    mat.price = price
+                    if unit:
+                        mat.unit = unit
+                    mat.save(update_fields=["number", "name", "price", "unit"])
+                    updated += 1
+                else:
+                    created += 1
+            else:
+                Material.objects.create(
+                    organization=target_employee.organization,
+                    employee=target_employee,
+                    unit=unit,
+                    name=nomi,
+                    code=None,
+                    price=price,
+                    number=number,
+                    is_active=True,
+                )
+                created += 1
+
+        except Exception as e:
+            errors.append(f"{row_idx}-qator: {e}")
+
+    if errors:
+        messages.info(request, f"Xatoliklar: {'; '.join(errors[:5])}")
+
+    messages.success(
+        request,
+        f"{created} ta yangi qo'shildi, {updated} ta yangilandi, {skipped} ta o'tkazildi"
+    )
+    return redirect(back_url)
