@@ -2413,7 +2413,7 @@ def reestr_post(request):
 def technics_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     if getattr(employee.rol, "boss", False):
         technics = Technics.objects.filter(
@@ -2421,9 +2421,9 @@ def technics_get(request):
             department=employee.department,
             region=employee.region,
             is_active=True,
-        ),
+        )
     else:
-        technics = Technics.objects.filter(employee=employee),
+        technics = Technics.objects.filter(employee=employee)
 
     context = {
         'technics': technics,

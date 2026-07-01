@@ -60,10 +60,12 @@ def export_technics_xlsx(request):
     ws = wb.active
     ws.title = "Technics"
 
-    headers = ["F.I.O", "Group", "Category", "Name", "Parametr", "I/N", "S/N", "Mac", "Status"]
+    headers = ["F.I.O", "Group", "Category", "Name", "Parametr", "I/N", "S/N", "Mac", "Status", "Manitor Name", "Manitor S/N"]
     ws.append(headers)
 
     for t in qs:
+        structures = list(t.structure_set.all())
+        monitor = structures[0] if structures else None
         ws.append([
             (t.employee.full_name if getattr(t, "employee", None) else ""),
             (t.group.name if getattr(t, "group", None) else ""),
@@ -74,6 +76,8 @@ def export_technics_xlsx(request):
             (getattr(t, "serial", "") or ""),
             (getattr(t, "mac", "") or ""),
             (getattr(t, "status", "") or ""),
+            (monitor.name if monitor else ""),
+            (monitor.serial if monitor else ""),
         ])
 
     for col in range(1, len(headers) + 1):
