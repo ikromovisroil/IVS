@@ -44,7 +44,7 @@ def ajax_sender_technics(request):
         Technics.objects
         .filter(
             Q(employee_id=sender.id) |
-            Q(employee__isnull=True, department=employee.department),
+            Q(employee__isnull=True, department=sender.department),
             is_active=True,
         )
         .order_by("name")
