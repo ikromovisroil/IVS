@@ -2547,7 +2547,7 @@ def emp_status(request):
             accepted_count=Count("id", filter=Q(status="process")),
             finished_count=Count("id", filter=Q(status="finished")),
             approved_count=Count("id", filter=Q(status="approved")),
-            rejected_count=Count("id", filter=Q(status="rejected")),
+            rejected_count=Count("id", filter=Q(status="rejected") | Q(status="canceled")),
             total_count=Count("id"),
             avg_rating=Avg("rating"),  # <-- shu qo'shildi
         )
