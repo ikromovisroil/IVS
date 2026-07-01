@@ -2919,6 +2919,7 @@ def material_import_page(request):
     return render(request, "main/material_import.html", context)
 
 
+
 import openpyxl
 from io import BytesIO
 @never_cache
@@ -2994,27 +2995,37 @@ def material_import(request):
                 unit, _ = Unit.objects.get_or_create(name=brligi)
 
             if kode:
-                mat, is_created = Material.objects.get_or_create(
+                existing = Material.objects.filter(
                     code=kode,
                     employee=target_employee,
-                    defaults={
-                        "organization": target_employee.organization,
-                        "unit": unit,
-                        "name": nomi,
-                        "price": price,
-                        "number": number,
-                        "is_active": True,
-                    }
-                )
-                if not is_created:
-                    mat.number = number
-                    mat.name = nomi
-                    mat.price = price
+                ).order_by("id").first()
+
+                if existing:
+                    existing.number = number
+                    existing.name = nomi
+                    existing.price = price
                     if unit:
-                        mat.unit = unit
-                    mat.save(update_fields=["number", "name", "price", "unit"])
+                        existing.unit = unit
+                    existing.save(update_fields=["number", "name", "price", "unit"])
                     updated += 1
+
+                    # Dublikatlarni o'chirish
+                    Material.objects.filter(
+                        code=kode,
+                        employee=target_employee,
+                    ).exclude(pk=existing.pk).delete()
+
                 else:
+                    Material.objects.create(
+                        organization=target_employee.organization,
+                        employee=target_employee,
+                        unit=unit,
+                        name=nomi,
+                        code=kode,
+                        price=price,
+                        number=number,
+                        is_active=True,
+                    )
                     created += 1
             else:
                 Material.objects.create(
