@@ -2484,6 +2484,7 @@ def technics_get(request):
     return render(request, "main/technics_get.html", context)
 
 
+from django.db.models import Avg
 @never_cache
 @require_GET
 @login_required
@@ -2548,6 +2549,7 @@ def emp_status(request):
             approved_count=Count("id", filter=Q(status="approved")),
             rejected_count=Count("id", filter=Q(status="rejected")),
             total_count=Count("id"),
+            avg_rating=Avg("rating"),  # <-- shu qo'shildi
         )
         .order_by("-total_count", "-approved_count")
     )

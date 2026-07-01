@@ -69,6 +69,7 @@
                       <th>Tasdiqlandi</th>
                       <th>Rad etilgan</th>
                       <th>Jami</th>
+                      <th>Reyting</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -81,10 +82,20 @@
                         <td>{{ emp.approved_count }}</td>
                         <td>{{ emp.rejected_count }}</td>
                         <td>{{ emp.total_count }}</td>
+                        <td>
+                          {% if emp.avg_rating %}
+                            {{ emp.avg_rating|floatformat:1 }}
+                          {% else %}
+                            —
+                          {% endif %}
+                        </td>
                       </tr>
                     {% empty %}
                       <tr>
-                        <td colspan="7">Ma'lumot topilmadi</td>
+                        <td colspan="8"
+                            class="text-center text-muted py-4">
+                          <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
+                        </td>
                       </tr>
                     {% endfor %}
                   </tbody>
@@ -123,7 +134,10 @@
                     </tr>
                     {% empty %}
                     <tr>
-                      <td colspan="3">Ma'lumot topilmadi</td>
+                        <td colspan="3"
+                            class="text-center text-muted py-4">
+                          <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
+                        </td>
                     </tr>
                     {% endfor %}
                   </tbody>
