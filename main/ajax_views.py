@@ -40,16 +40,9 @@ def ajax_sender_technics(request):
     if not sender:
         return JsonResponse({"results": []})
 
-    technics = (
-        Technics.objects
-        .filter(
-            Q(employee_id=sender.id) |
-            Q(employee__isnull=True, department=sender.department),
-            is_active=True,
-        )
-        .order_by("name")
-        .values("id", "name", "inventory", "serial", "mac")
-    )
+    qs1 = Technics.objects.filter(employee_id=sender.id, is_active=True)
+    qs2 = Technics.objects.filter(employee__isnull=True, department=sender.department, is_active=True)
+    technics = qs1.union(qs2).order_by("name").values("id", "name", "inventory", "serial", "mac")
 
     results = []
     for t in technics:
