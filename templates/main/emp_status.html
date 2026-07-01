@@ -84,7 +84,7 @@
                         <td>{{ emp.total_count }}</td>
                         <td>
                           {% if emp.avg_rating %}
-                            5/{{ emp.avg_rating|floatformat:1 }} ⭐
+                            {{ emp.avg_rating|floatformat:1 }} ⭐
                           {% else %}
                             —
                           {% endif %}
