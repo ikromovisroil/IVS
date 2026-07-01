@@ -527,11 +527,13 @@
                 <i class="bi bi-circle"></i><span>Kirim - chiqim</span>
               </a>
             </li>
+            {% if request.user.employee.id == 4 %}
             <li>
               <a class="{% if url_name == 'material_import_page' %}active{% endif %}" href="{% url 'material_import_page' %}">
                 <i class="bi bi-circle"></i><span>Material import</span>
               </a>
             </li>
+            {% endif %}
           </ul>
         </li>
         {% endif %}

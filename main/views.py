@@ -2925,12 +2925,14 @@ from io import BytesIO
 @never_cache
 @require_POST
 @login_required
-@role_required("material_edit")
 @transaction.atomic
 def material_import(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if employee.id != 4:
+        raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
 
