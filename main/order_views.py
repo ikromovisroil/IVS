@@ -490,7 +490,7 @@ def order_receiver_deed_post(request):
             user_id=employee.id,
             message_user=message,
             body=body,
-            file_type=False,
+            status='act',
         )
 
         ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
