@@ -96,9 +96,9 @@
                     <th scope="col">T/r</th>
                     <th scope="col">Rasm</th>
                     <th scope="col">Material Nomi</th>
-                    <th scope="col">Soni</th>
                     <th scope="col">Narxi</th>
                     <th scope="col">Umumiy narxi</th>
+                    <th scope="col">Soni</th>
                     <th scope="col">Birligi</th>
                     <th scope="col">Code</th>
                     {% if request.user.employee.rol.material_edit%}
@@ -144,9 +144,9 @@
                         {% endif %}
                     </td>
                     <td >{{ mat.name|default:"-" }}</td>
-                    <td >{{ mat.number }}</td>
                     <td >{{ mat.price|intcomma|default:"-" }}</td>
                     <td >{{ mat.total_sum|intcomma }}</td>
+                    <td >{{ mat.number }}</td>
                     <td >{{ mat.unit|default:"-" }}</td>
                     <td >{{ mat.code|default:"-" }}</td>
                     {% if request.user.employee.rol.material_edit%}

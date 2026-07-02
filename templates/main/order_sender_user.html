@@ -23,14 +23,35 @@
     <div class="modal fade" id="modal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
           <div class="modal-content">
-            <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
+            <form action="{% url 'order_user_post' %}" method="post">{% csrf_token %}
             <div class="modal-header">
-              <h5 class="modal-title">#Ariza Yuborish</h5>
+              <h5 class="modal-title">Ariza Yuborish</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <div class="">
                     <!-- Mavzu -->
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Tashkilotlar:</label>
+                        <div class="col-sm-9">
+                            <select class="form-select" name="organizations" id="organizations-select" required>
+                                <option value="">tanlang</option>
+                                {% for o in organizations %}
+                                    <option value="{{ o.id }}">{{ o.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-sm-3 col-form-label">Xodimlar:</label>
+                        <div class="col-sm-9">
+                            <select class="form-select" name="employee" id="employee-select" required>
+                                <option value="">Tashkilotni tanlang...</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="row mb-3">
                         <label class="col-sm-3 col-form-label">Arizaning Maqsadi:</label>
                         <div class="col-sm-9">
@@ -45,16 +66,16 @@
 
                     <!-- Izoh -->
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Izoh:</label>
+                        <label class="col-sm-3 col-form-label">Qo‘shimcha ma’lumot:</label>
                         <div class="col-sm-9">
-                            <textarea class="form-control" name="body" style="height: 100px"></textarea>
+                            <textarea class="form-control" name="body" style="height: 100px" placeholder="IP, Telefon va Qo'shimcha ma'lumot yuboring"></textarea>
                         </div>
                     </div>
 
                 </div>
                 <div class="modal-footer d-flex justify-content-center gap-2">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
-                        <button type="submit" class="btn btn-primary">Yuborish</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+                    <button type="submit" class="btn btn-primary">Yuborish</button>
                 </div>
             </div>
             </form>
@@ -76,13 +97,13 @@
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_arxiv' %}" class="nav-link active" >Tarix</a>
+                  <a href="{% url 'order_sender_arxiv' %}" class="nav-link border border-primary" >Tarix</a>
                 </li>
-                {% if not request.user.employee.rol.client and request.user.employee.rol.order %}
+
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_user' %}" class="nav-link border border-primary" >Ariza  berish</a>
+                  <a href="{% url 'order_sender_user' %}" class="nav-link active" >Ariza  berish</a>
                 </li>
-                {% endif %}
+
               </ul>
               <div class="tab-content pt-2">
 
@@ -126,7 +147,7 @@
 
                             <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">
                                 <div class="modal-dialog modal-dialog-centered modal-xl">
-                                  <div class="modal-content">
+                                  <form class="modal-content" action="{% url 'order_decide' o.id %}" method="post">{% csrf_token %}
                                     <div class="modal-header">
                                       <h5 class="modal-title">Ariza tafsilotlari: #{{o.id}}</h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -289,16 +310,38 @@
                                             </div>
                                             {% endif %}
                                         </div>
-                                        {% if o.rating %}
+                                        {% if o.status == 'finished' %}
                                         <hr>
-                                        <div class="text-center">
-                                            {% for i in ""|center:o.rating %}
-                                                <i class="bi bi-star-fill text-warning fs-2"></i>
-                                            {% endfor %}
+                                        <div>
+                                           <div class="rating text-center">
+                                                <input type="radio" name="rating" id="star1-{{ or.id }}" value="1">
+                                                <label for="star1-{{ or.id }}">1⭐</label>
+
+                                                <input type="radio" name="rating" id="star2-{{ or.id }}" value="2">
+                                                <label for="star2-{{ or.id }}">2⭐</label>
+
+                                                <input type="radio" name="rating" id="star3-{{ or.id }}" value="3">
+                                                <label for="star3-{{ or.id }}">3⭐</label>
+
+                                                <input type="radio" name="rating" id="star4-{{ or.id }}" value="4">
+                                                <label for="star4-{{ or.id }}">4⭐</label>
+
+                                                <input type="radio" name="rating" id="star5-{{ or.id }}" value="5" required>
+                                                <label for="star5-{{ or.id }}">5⭐</label>
+                                           </div>
                                         </div>
                                         {% endif %}
                                     </div>
-                                  </div>
+                                    <div class="modal-footer d-flex justify-content-center gap-2">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle"></i> Etiborsiz qoldirish</button>
+                                        {% if o.status in 'viewed process' %}
+                                        <button type="submit" name="action" value="canceled" class="btn btn-danger"><i class="bi bi-x-circle me-1"></i> Bekor qilish</button>
+                                        {% endif %}
+                                        {% if o.status == 'finished' %}
+                                        <button type="submit" name="action" value="approved" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i> Tasdiqlash</button>
+                                        {% endif %}
+                                    </div>
+                                  </form>
                                 </div>
                             </div><!-- End Vertically centered Modal-->
                         </td>
@@ -352,5 +395,48 @@
     </section>
 </main>
 
+<script>
+$(document).ready(function () {
+    const $orgSelect = $('#organizations-select');
+    const $empSelect = $('#employee-select');
+
+    // Agar select2 hali init qilinmagan bo'lsa
+    if (!$empSelect.hasClass('select2-hidden-accessible')) {
+        $empSelect.select2({ dropdownParent: $empSelect.closest('.modal') });
+    }
+    if (!$orgSelect.hasClass('select2-hidden-accessible')) {
+        $orgSelect.select2({ dropdownParent: $orgSelect.closest('.modal') });
+    }
+
+    $orgSelect.on('change', function () {
+        const orgId = $(this).val();
+
+        $empSelect.empty().append('<option value="">yuklanmoqda...</option>').trigger('change');
+
+        if (!orgId) {
+            $empSelect.empty().append('<option value="">avval tashkilotni tanlang</option>').trigger('change');
+            return;
+        }
+
+        $.ajax({
+            url: '/ajax/employees-org-user-region/',
+            data: { organization: orgId },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            dataType: 'json'
+        })
+        .done(function (data) {
+            $empSelect.empty().append('<option value="">tanlang</option>');
+            data.results.forEach(function (item) {
+                $empSelect.append(new Option(item.text, item.id, false, false));
+            });
+            $empSelect.trigger('change'); // select2 UI'ni yangilash uchun MAJBURIY
+        })
+        .fail(function (err) {
+            console.error(err);
+            $empSelect.empty().append('<option value="">xatolik yuz berdi</option>').trigger('change');
+        });
+    });
+});
+</script>
 {% endblock %}
 

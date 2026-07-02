@@ -50,7 +50,7 @@ def order_decide(request, pk):
 
     order = get_object_or_404(Order, pk=pk)
 
-    if order.sender_id != employee.id:
+    if order.sender_id != employee.id and order.user_id != employee.id:
         raise PermissionDenied("Sizda bu arizani o'zgartirish huquqi yo'q")
 
     if action == "canceled":
@@ -150,6 +150,76 @@ def order_post(request):
 
     messages.success(request, "Ariza yuborildi")
     return redirect(back_url)
+
+
+# yangi arizalar
+@never_cache
+@require_GET
+@login_required
+@role_required("order")
+def order_sender_user(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo‘q")
+
+    page_number = request.GET.get("page", 1)
+
+    orders_qs = (
+        Order.objects
+        .filter(user=employee, organization_id=4)
+        .select_related("organization", "goal", "technics","user", "receiver", "sender")
+        .order_by("-id")
+    )
+
+    paginator = Paginator(orders_qs, 20)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "page_obj": page_obj,
+        "goal":     Goal.objects.order_by("id"),
+        "organizations": Organization.objects.only("id", "name").order_by("id"),
+    }
+    return render(request, "main/order_sender_user.html", context)
+
+
+@never_cache
+@require_POST
+@login_required
+@role_required("order")
+def order_user_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+    goal_id  = (request.POST.get("goal") or "").strip()
+    emp_id = (request.POST.get("employee") or "").strip()
+    body     = (request.POST.get("body") or "").strip() or None
+
+    if not goal_id.isdigit():
+        messages.info(request, "Ariza turi tanlanmadi")
+        return redirect(back_url)
+
+    if not emp_id.isdigit():
+        messages.info(request, "Xodim tanlanmadi")
+        return redirect(back_url)
+
+    goal = get_object_or_404(Goal, pk=int(goal_id))
+    emp = get_object_or_404(Employee, pk=int(emp_id))
+
+
+    Order.objects.create(
+        organization_id=4,
+        sender_id=emp.id,
+        user_id=employee.id,
+        goal=goal,
+        body=body,
+        status="viewed",
+    )
+
+    messages.success(request, "Ariza yuborildi")
+    return redirect("order_receiver")
+
 
 
 @never_cache

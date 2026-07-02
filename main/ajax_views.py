@@ -307,6 +307,24 @@ def ajax_employees_org(request):
 @never_cache
 @require_GET
 @login_required
+def ajax_employees_org_user_region(request):
+    org_id = (request.GET.get("organization") or "").strip()
+    reg_id = request.user.employee.region.id
+
+    if not org_id:
+        return JsonResponse({"results": []})
+
+    qs = Employee.objects.filter(organization_id=org_id)
+    if reg_id:
+        qs = qs.filter(region_id=reg_id)
+
+    data = [{"id": e.id, "text": e.full_name} for e in qs]
+    return JsonResponse({"results": data})
+
+
+@never_cache
+@require_GET
+@login_required
 def ajax_agreements_employees(request):
     org_id = request.GET.get("org_id")
 

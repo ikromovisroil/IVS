@@ -94,6 +94,7 @@ urlpatterns = [
     path("ajax/check-new/", order_check_new, name="order_check_new"),
     path("ajax/check-all/", order_check_all, name="order_check_all"),
     path("ajax/sender-technics/", ajax_sender_technics, name="ajax_sender_technics"),
+    path('ajax/employees-org-user-region/', ajax_employees_org_user_region, name='ajax_employees_org_user_region'),
 
     # =========================
     # HUJJATLAR
@@ -114,11 +115,12 @@ urlpatterns = [
     path("reestr/post/", reestr_post, name="reestr_post"),
 
     # =========================
-    # ZAYAVKA / ORDER create_order_sender_from
+    # ZAYAVKA / ORDER create_order_sender_from   order_sender_user
     # =========================
     path("order/sender/", order_sender, name="order_sender"),
     path("order/sender/decide/<int:pk>/", order_decide, name="order_decide"),
     path("order/sender/arxiv/", order_sender_arxiv, name="order_sender_arxiv"),
+    path("order/sender/user/", order_sender_user, name="order_sender_user"),
 
     path("order/sender/all/", order_sender_all, name="order_sender_all"),
     path("order/sender/arxiv/all/", order_sender_arxiv_all, name="order_sender_arxiv_all"),
@@ -147,6 +149,7 @@ urlpatterns = [
     path("order/receiver/post/", order_receiver_deed_post, name="order_receiver_deed_post"),
 
     path("order/post/", order_post, name="order_post"),
+    path("order/user/post/", order_user_post, name="order_user_post"),
     path("order/material/", order_material_post, name="order_material_post"),
 
     # =========================
