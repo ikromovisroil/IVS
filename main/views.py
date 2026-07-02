@@ -2534,7 +2534,7 @@ def emp_status(request):
 
     employee = (
         orders
-        .filter(receiver__isnull=False)
+        .filter(organization=employee.organization, receiver__isnull=False)
         .values("receiver_id")
         .annotate(
             full_name=Concat(
