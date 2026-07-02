@@ -156,7 +156,7 @@ def order_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@role_required("order_edit")
 def order_sender_user(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -185,7 +185,7 @@ def order_sender_user(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("order")
+@role_required("order_edit")
 def order_user_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -729,7 +729,6 @@ def order_sender_material_all(request):
         Material.objects
         .filter(
             organization=employee.organization,
-            status="free",
             is_active=True,
         )
         .select_related("organization", "unit")

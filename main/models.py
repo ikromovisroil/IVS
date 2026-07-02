@@ -109,6 +109,7 @@ class Rol(models.Model):
     client = models.BooleanField(default=False, db_index=True)
     confirm = models.BooleanField(default=False, db_index=True)
     order = models.BooleanField(default=False, db_index=True)
+    order_edit = models.BooleanField(default=False, db_index=True)
     boss = models.BooleanField(default=False, db_index=True)
     shop = models.BooleanField(default=False, db_index=True)
     akt = models.BooleanField(default=False, db_index=True)
