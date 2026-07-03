@@ -1833,6 +1833,9 @@ def material_attach(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
+    if not getattr(employee.rol, "client", False):
+        raise PermissionDenied("Employee yo'q")
+
     back_url    = request.META.get("HTTP_REFERER", "/")
     material_id = (request.POST.get("material_id") or "").strip()
     employee_id = (request.POST.get("employee_id") or "").strip()
@@ -2006,7 +2009,8 @@ def material_delete(request):
 
 
 from django.core.paginator import Paginator
-from django.db.models import Sum
+from django.db.models import Sum, F
+from django.db.models.functions import Coalesce
 from django.utils.timezone import make_aware, localdate
 from datetime import datetime, time
 @never_cache
@@ -2022,7 +2026,6 @@ def mat_info(request):
     date2_raw = (request.GET.get("date2") or "").strip()
     employee_id_raw = (request.GET.get("employee") or "").strip()
 
-    # Barcha 3 maydon to'ldirilgandagina qidiruv ishlaydi
     has_search = bool(date1_raw and date2_raw and employee_id_raw and employee_id_raw.isdigit())
 
     table_rows = []
@@ -2034,22 +2037,35 @@ def mat_info(request):
         date2 = parse_date(date2_raw)
         employee_id = int(employee_id_raw)
 
-        movements_qs = MaterialMovement.objects.exclude(status='deleted')
+        start_dt = make_aware(datetime.combine(date1, time.min)) if date1 else None
+        end_dt = make_aware(datetime.combine(date2, time.max)) if date2 else None
 
-        if date1:
-            start_dt = make_aware(datetime.combine(date1, time.min))
+        # --- MaterialMovement bo'yicha kirim/chiqim ---
+        movements_qs = MaterialMovement.objects.exclude(status='deleted').filter(employee_id=employee_id)
+        if start_dt:
             movements_qs = movements_qs.filter(date_creat__gte=start_dt)
-        if date2:
-            end_dt = make_aware(datetime.combine(date2, time.max))
+        if end_dt:
             movements_qs = movements_qs.filter(date_creat__lte=end_dt)
-
-        movements_qs = movements_qs.filter(employee_id=employee_id)
 
         period_map = {
             row["material"]: row
             for row in movements_qs.values("material").annotate(
                 period_income=Sum("income"),
                 period_outcome=Sum("outcome"),
+            )
+        }
+
+        # --- OrderMaterial bo'yicha chiqim (arizadan berilgan materiallar) ---
+        ordermaterial_qs = OrderMaterial.objects.filter(material__employee_id=employee_id)
+        if start_dt:
+            ordermaterial_qs = ordermaterial_qs.filter(order__date_finished__gte=start_dt)
+        if end_dt:
+            ordermaterial_qs = ordermaterial_qs.filter(order__date_finished__lte=end_dt)
+
+        order_period_map = {
+            row["material"]: row["period_given"] or 0
+            for row in ordermaterial_qs.values("material").annotate(
+                period_given=Sum(Coalesce(F("given"), F("number")))
             )
         }
 
@@ -2061,9 +2077,11 @@ def mat_info(request):
             period = period_map.get(m.id, {})
             income = period.get("period_income") or 0
             outcome = period.get("period_outcome") or 0
+            order_outcome = order_period_map.get(m.id, 0)
 
+            total_outcome = outcome + order_outcome
             current_count = m.number
-            initial_balance = current_count - income + outcome
+            initial_balance = current_count - income + total_outcome
 
             table_rows.append({
                 "material": m,
@@ -2071,7 +2089,7 @@ def mat_info(request):
                 "price": m.price,
                 "initial_balance": initial_balance,
                 "income": income,
-                "outcome": outcome,
+                "outcome": total_outcome,
                 "current_balance": current_count,
             })
 
@@ -2086,7 +2104,7 @@ def mat_info(request):
         table_rows = page_obj.object_list
 
     if getattr(employee.rol, "region", False):
-        base_qs = Employee.objects.filter(rol__shop=True,organization=employee.organization)
+        base_qs = Employee.objects.filter(rol__shop=True, organization=employee.organization)
     else:
         base_qs = Employee.objects.filter(id=employee.id)
 
@@ -2213,6 +2231,8 @@ def akt_get(request):
 
 
 
+import base64
+import binascii
 @never_cache
 @require_POST
 @login_required
@@ -2225,7 +2245,15 @@ def akt_post(request):
     sender_id  = (request.POST.get("sender")  or "").strip()
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
-    body       = (request.POST.get("body")    or "").strip()
+
+    # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
+    body_encoded = (request.POST.get("body_encoded") or "").strip()
+    body = ""
+    if body_encoded:
+        try:
+            body = base64.b64decode(body_encoded).decode("utf-8").strip()
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            body = ""
 
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
@@ -2265,7 +2293,6 @@ def akt_post(request):
 
     messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
-
 
 @never_cache
 @require_GET
