@@ -1333,6 +1333,7 @@ def extra_tex_create(request):
             technics.region_id = employee.region_id
 
         if serial and organization and Structure.objects.filter(
+            is_active=True,
             serial__iexact=serial,
             organization=organization
         ).exists():
