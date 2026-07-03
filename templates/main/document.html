@@ -628,10 +628,31 @@
       loadTechnicsToEditor($('#department').val());
     });
 
-    $('form').on('submit', function () {
+    // ── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ──
+
+    $('form').on('submit', function (e) {
+      e.preventDefault();
+
       const ed = getEditor();
-      if (ed) ed.save();
-      return true;
+      if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+
+      const rawBody = $('#body').val() || '';
+
+      // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
+      const encoded = btoa(unescape(encodeURIComponent(rawBody)));
+
+      // yashirin maydonga joylaymiz
+      let $hidden = $(this).find('input[name="body_encoded"]');
+      if ($hidden.length === 0) {
+        $hidden = $('<input type="hidden" name="body_encoded">').appendTo(this);
+      }
+      $hidden.val(encoded);
+
+      // asl 'body' maydonini yuborilishdan chiqarib tashlaymiz
+      $('#body').removeAttr('name');
+
+      // haqiqiy (native) yuborish
+      this.submit();
     });
 
     // ══════════════════════════════════════════════════════

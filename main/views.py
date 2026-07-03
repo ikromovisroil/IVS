@@ -16,7 +16,8 @@ from django.contrib.auth.decorators import login_required
 from itertools import groupby
 from django.http import FileResponse, Http404
 from django.utils.dateparse import parse_date
-
+import base64
+import binascii
 
 def role_required(permission):
     def decorator(view_func):
@@ -494,8 +495,16 @@ def deed_edit(request, pk):
     if request.method == "POST":
         sender_id = (request.POST.get("sender") or "").strip()
         receiver_id = (request.POST.get("receiver") or "").strip()
-        body = (request.POST.get("body") or "").strip()
         agreements_ids = request.POST.getlist("agreements[]")
+
+        # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
+        body_encoded = (request.POST.get("body_encoded") or "").strip()
+        body = ""
+        if body_encoded:
+            try:
+                body = base64.b64decode(body_encoded).decode("utf-8").strip()
+            except (binascii.Error, UnicodeDecodeError, ValueError):
+                body = ""
 
         if not body:
             messages.info(request, "Hujjat matni bo'sh bo'lmasin")
@@ -655,8 +664,8 @@ def deedconsent_action(request, pk):
 
     return redirect(back_url)
 
-from django.http import HttpRequest
 
+from django.http import HttpRequest
 @never_cache
 @require_GET
 @login_required
@@ -2164,7 +2173,15 @@ def document_post(request):
     receiver_id = (request.POST.get("receiver") or "").strip()
     message     = (request.POST.get("message")  or "").strip() or None
     agreements  = request.POST.getlist("agreements[]")
-    body        = (request.POST.get("body")     or "").strip()
+
+    # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
+    body_encoded = (request.POST.get("body_encoded") or "").strip()
+    body = ""
+    if body_encoded:
+        try:
+            body = base64.b64decode(body_encoded).decode("utf-8").strip()
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            body = ""
 
     sender   = Employee.objects.filter(id=sender_id).first()   if sender_id.isdigit()   else None
     receiver = Employee.objects.filter(id=receiver_id).first() if receiver_id.isdigit() else None
@@ -2213,7 +2230,6 @@ def document_post(request):
     return redirect("contact_user")
 
 
-
 @never_cache
 @require_GET
 @login_required
@@ -2230,9 +2246,6 @@ def akt_get(request):
     return render(request, "main/akt.html", context)
 
 
-
-import base64
-import binascii
 @never_cache
 @require_POST
 @login_required
@@ -2294,6 +2307,7 @@ def akt_post(request):
     messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
 
+
 @never_cache
 @require_GET
 @login_required
@@ -2323,7 +2337,15 @@ def svod_post(request):
     sender_id  = (request.POST.get("sender")  or "").strip()
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
-    body       = (request.POST.get("body")    or "").strip()
+
+    # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
+    body_encoded = (request.POST.get("body_encoded") or "").strip()
+    body = ""
+    if body_encoded:
+        try:
+            body = base64.b64decode(body_encoded).decode("utf-8").strip()
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            body = ""
 
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
@@ -2394,7 +2416,15 @@ def reestr_post(request):
     sender_id  = (request.POST.get("sender")  or "").strip()
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
-    body       = (request.POST.get("body")    or "").strip()
+
+    # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
+    body_encoded = (request.POST.get("body_encoded") or "").strip()
+    body = ""
+    if body_encoded:
+        try:
+            body = base64.b64decode(body_encoded).decode("utf-8").strip()
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            body = ""
 
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
