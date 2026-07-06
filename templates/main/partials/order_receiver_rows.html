@@ -83,11 +83,11 @@
                             </div>
                             <div class="col-6">{{ o.technics.name }}</div>
                             {% endif %}
-                            {% if o.body %}
+                            {% if o.message_sender %}
                             <div class="col-6 text-muted">
                                 <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
                             </div>
-                            <div class="col-6">{{ o.body }}</div>
+                            <div class="col-6">{{ o.message_sender }}</div>
                             {% endif %}
                             {% if o.receiver %}
                             <hr class="my-3">

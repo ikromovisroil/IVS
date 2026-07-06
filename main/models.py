@@ -420,15 +420,16 @@ class Goal(models.Model):
 # zayafka.
 class Order(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_user', null=True, blank=True, db_index=True)
 
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_sender', null=True, blank=True, db_index=True)
-    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
-    body = models.TextField(null=True, blank=True)
+    message_sender = models.TextField(null=True, blank=True)
+    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     rating = models.PositiveIntegerField(null=True, blank=True)
 
     receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_receiver',null=True, blank=True,db_index=True)
-    technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
+    message_receiver = models.TextField(null=True, blank=True)
 
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Yangi'),

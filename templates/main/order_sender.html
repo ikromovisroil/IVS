@@ -7,6 +7,20 @@
 {% endblock title %}
 
 {% block css %}
+<style>
+.star-rating label {
+  color: #dee2e6;
+  transition: color .15s ease, transform .15s ease;
+  text-decoration: none;
+}
+
+.star-rating label:hover,
+.star-rating label:hover ~ label,
+.star-rating input:checked ~ label {
+  color: #ffc107;
+  transform: scale(1.1);
+}
+</style>
 {% endblock css %}
 
 
@@ -67,7 +81,7 @@
         <div class="col-xl-12">
 
           <div class="card">
-            <div class="card-body pt-3">
+            <div class="card-body pt-3 ">
               <!-- Bordered Tabs -->
               <ul class="nav nav-pills gap-2">
 
@@ -84,9 +98,9 @@
                 </li>
                 {% endif  %}
               </ul>
-              <div class="tab-content pt-2">
+              <div class="table-responsive tab-content pt-2">
 
-                <table class="table table-bordered table-hover">
+                <table class="table table-bordered table-hover align-middle table-sm">
                     <thead class="table-secondary">
                       <tr>
                         <th scope="col">T/r</th>
@@ -131,7 +145,7 @@
                                       <h5 class="modal-title">Ariza tafsilotlari: #{{o.id}}</h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <div class="modal-body">
+                                    <div class="modal-body table-bordered table-hover">
                                         <div class="row g-2">
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-info-circle me-1"></i> Ariza holati
@@ -180,11 +194,11 @@
                                             </div>
                                             <div class="col-6">{{ o.technics.name }}</div>
                                             {% endif %}
-                                            {% if o.body %}
+                                            {% if o.message_sender %}
                                             <div class="col-6 text-muted">
                                                 <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
                                             </div>
-                                            <div class="col-6">{{ o.body }}</div>
+                                            <div class="col-6">{{ o.message_sender }}</div>
                                             {% endif %}
                                             {% if o.receiver %}
                                             <hr class="my-3">
@@ -210,7 +224,8 @@
                                         </div>
                                         {% if o.materials_all.exists %}
                                           <hr>
-                                          <table class="table">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-hover align-middle table-sm">
                                             <thead>
                                             <tr>
                                               <th>T/r</th>
@@ -230,6 +245,7 @@
                                             {% endfor %}
                                             </tbody>
                                           </table>
+                                        </div>
                                         {% endif %}
                                         <hr>
                                         <div class="d-flex flex-wrap gap-2">
@@ -291,23 +307,36 @@
                                         </div>
                                         {% if o.status == 'finished' %}
                                         <hr>
-                                        <div>
-                                           <div class="rating text-center">
-                                                <input type="radio" name="rating" id="star1-{{ or.id }}" value="1">
-                                                <label for="star1-{{ or.id }}">1⭐</label>
+                                        <div class="text-center mb-2">
+                                          <span class="fw-semibold d-block">Xizmat sifatini baholang!</span>
+                                        </div>
+                                        <div class="d-flex justify-content-center">
+                                          <div class="star-rating d-flex flex-row-reverse" id="rating-{{ o.id }}">
+                                            <input type="radio" class="d-none" name="rating" id="star5-{{ o.id }}" value="5" required>
+                                            <label class="btn btn-link p-1 fs-3" for="star5-{{ o.id }}" title="5 yulduz">
+                                              <i class="bi bi-star-fill"></i>
+                                            </label>
 
-                                                <input type="radio" name="rating" id="star2-{{ or.id }}" value="2">
-                                                <label for="star2-{{ or.id }}">2⭐</label>
+                                            <input type="radio" class="d-none" name="rating" id="star4-{{ o.id }}" value="4">
+                                            <label class="btn btn-link p-1 fs-3" for="star4-{{ o.id }}" title="4 yulduz">
+                                              <i class="bi bi-star-fill"></i>
+                                            </label>
 
-                                                <input type="radio" name="rating" id="star3-{{ or.id }}" value="3">
-                                                <label for="star3-{{ or.id }}">3⭐</label>
+                                            <input type="radio" class="d-none" name="rating" id="star3-{{ o.id }}" value="3">
+                                            <label class="btn btn-link p-1 fs-3" for="star3-{{ o.id }}" title="3 yulduz">
+                                              <i class="bi bi-star-fill"></i>
+                                            </label>
 
-                                                <input type="radio" name="rating" id="star4-{{ or.id }}" value="4">
-                                                <label for="star4-{{ or.id }}">4⭐</label>
+                                            <input type="radio" class="d-none" name="rating" id="star2-{{ o.id }}" value="2">
+                                            <label class="btn btn-link p-1 fs-3" for="star2-{{ o.id }}" title="2 yulduz">
+                                              <i class="bi bi-star-fill"></i>
+                                            </label>
 
-                                                <input type="radio" name="rating" id="star5-{{ or.id }}" value="5" required>
-                                                <label for="star5-{{ or.id }}">5⭐</label>
-                                           </div>
+                                            <input type="radio" class="d-none" name="rating" id="star1-{{ o.id }}" value="1">
+                                            <label class="btn btn-link p-1 fs-3" for="star1-{{ o.id }}" title="1 yulduz">
+                                              <i class="bi bi-star-fill"></i>
+                                            </label>
+                                          </div>
                                         </div>
                                         {% endif %}
                                     </div>

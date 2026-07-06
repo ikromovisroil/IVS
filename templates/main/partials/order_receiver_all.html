@@ -78,11 +78,11 @@
                             </div>
                             <div class="col-6">{{ o.technics.name }}</div>
                             {% endif %}
-                            {% if o.body %}
+                            {% if o.message_sender %}
                             <div class="col-6 text-muted">
                                 <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
                             </div>
-                            <div class="col-6">{{ o.body }}</div>
+                            <div class="col-6">{{ o.message_sender }}</div>
                             {% endif %}
                             {% if o.receiver %}
                             <hr class="my-3">
@@ -108,7 +108,8 @@
                         </div>
                         {% if o.materials_all.exists %}
                           <hr>
-                          <table class="table table-bordered align-middle">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle table-sm">
                             <thead>
                               <tr>
                                 <th>T/r</th>
@@ -130,6 +131,7 @@
                               {% endfor %}
                             </tbody>
                           </table>
+                        </div>
                         {% endif %}
                         <hr>
                         <div class="d-flex flex-wrap gap-2">

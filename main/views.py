@@ -445,7 +445,6 @@ def deed_action(request, pk):
 @never_cache
 @require_http_methods(["GET", "POST"])
 @login_required
-@role_required("akt")
 def deed_edit(request, pk):
     emp_me = getattr(request.user, "employee", None)
     if not emp_me:

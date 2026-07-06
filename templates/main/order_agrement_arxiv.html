@@ -39,9 +39,9 @@
 
             </ul>
 
-            <div class="tab-content pt-2">
+            <div class="table-responsive tab-content pt-2">
 
-              <table class="table table-bordered table-hover">
+              <table class="table table-bordered table-hover align-middle table-sm">
                 <thead class="table-secondary">
                   <tr>
                     <th scope="col">T/r</th>
@@ -189,7 +189,8 @@
 
                                 {% if o.materials_all.exists %}
                                   <hr>
-                                  <table class="table table-bordered align-middle">
+                                  <div class="table-responsive">
+                                     <table class="table table-bordered table-hover align-middle table-sm">
                                     <thead>
                                       <tr>
                                         <th>T/r</th>
@@ -213,6 +214,7 @@
                                       {% endfor %}
                                     </tbody>
                                   </table>
+                                  </div>
                                 {% endif %}
                                  <hr>
                                 <div class="d-flex flex-wrap gap-2">

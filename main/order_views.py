@@ -147,7 +147,7 @@ def order_post(request):
         organization_id=4,
         sender_id=employee.id,
         goal=goal,
-        body=body,
+        message_sender=body,
         status="viewed",
     )
 
@@ -216,7 +216,7 @@ def order_user_post(request):
         sender_id=emp.id,
         user_id=employee.id,
         goal=goal,
-        body=body,
+        message_sender=body,
         status="viewed",
     )
 
@@ -822,7 +822,7 @@ def create_order_sender_from(request):
     order = Order.objects.create(
         organization=employee.organization,
         sender=employee,
-        body=body,
+        message_sender=body,
         status="viewed",
     )
 
@@ -1005,6 +1005,7 @@ def order_material_all(request):
 
     back_url          = request.META.get("HTTP_REFERER", "/")
     order_id          = (request.POST.get("order_id") or "").strip()
+    body              = (request.POST.get("body") or "").strip()
     ordermaterial_ids = request.POST.getlist("ordermaterial_id[]")
     givens            = request.POST.getlist("given[]")
 
@@ -1103,7 +1104,8 @@ def order_material_all(request):
                 Material.objects.bulk_update(changed_materials, ["number"])
 
             order.status = "finished"
-            order.save(update_fields=["status"])
+            order.message_receiver = body
+            order.save(update_fields=["status","message_receiver"])
 
     except DatabaseError:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
