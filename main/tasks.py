@@ -403,6 +403,7 @@ def _block_employee(emp, pinfl):
         emp.division = None
         emp.region = None
         emp.rank = None
-        emp.save(update_fields=["organization", "department", "directorate", "division", "region", "rank"])
+        emp.save()
+        # emp.save(update_fields=["organization", "department", "directorate", "division", "region", "rank"])
 
     logger.info("PINFL %s bloklandi", pinfl)

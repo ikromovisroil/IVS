@@ -173,7 +173,7 @@
               <div>
                 <table style="border-collapse:collapse;width:100%;" border="1">
                   <colgroup>
-                    <col style="width:4%;">
+                    <col style="width:5%;">
                     <col style="width:20%;">
                     <col style="width:10%;">
                     <col style="width:10%;">
@@ -189,17 +189,12 @@
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">№</td>
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Moddiy qiymatliklarning nomi, navi va oʼlchami</td>
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Oʼlchov birligi</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;" colspan="2">Buxgalteriya yozuvi</td>
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;" colspan="2">Miqdor</td>
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Narxi, soʼm</td>
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Summa, soʼm</td>
                     </tr>
                       <!-- HEADER 2 -->
                     <tr>
-                        <!-- Buxgalteriya -->
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;">debet</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;">kredit</td>
-
                         <!-- Miqdor -->
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;">talab qilingan</td>
                         <td style="border:1px solid #000;font-size:10pt;text-align:center;">berilgan</td>
@@ -210,8 +205,6 @@
                       <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ forloop.counter }}</td>
                       <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.name }}</td>
                       <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.unit.name }}</td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;"></td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;"></td>
                       <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.number }}</td>
                       <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.given }}</td>
                       <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.price }}</td>
@@ -286,7 +279,6 @@
 
 </main>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 (function () {
 
