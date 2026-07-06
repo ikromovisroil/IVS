@@ -507,7 +507,7 @@ def order_receiver_deed(request, pk):
         Employee.objects
         .filter(
             organization=order.sender.organization,
-            department=order.sender.department
+            department=order.sender.department,
         )
         .select_related("organization", "rank")
     )
