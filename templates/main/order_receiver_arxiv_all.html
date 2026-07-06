@@ -49,6 +49,7 @@
                 <thead class="table-secondary">
                   <tr>
                     <th scope="col">T/r</th>
+                    <th scope="col">Ariza №</th>
                     <th scope="col">Muallif</th>
                     <th scope="col">Xolati</th>
                     <th scope="col">Yuborilgan sana</th>
@@ -59,6 +60,7 @@
                   {% for o in page_obj %}
                     <tr>
                       <th scope="row">{{ forloop.counter }}</th>
+                      <td>#{{ o.id }}</td>
                       <td>{{ o.sender.full_name }}</td>
 
                       <td>

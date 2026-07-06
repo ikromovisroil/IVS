@@ -104,6 +104,7 @@
                     <thead class="table-secondary">
                       <tr>
                         <th scope="col">T/r</th>
+                        <th scope="col">Ariza №</th>
                         <th scope="col">Ariza Maqsadi</th>
                         <th scope="col">Bajardi</th>
                         <th scope="col">Xolati</th>
@@ -114,6 +115,7 @@
                     {% for o in page_obj %}
                       <tr>
                         <th scope="row">{{ forloop.counter }}</th>
+                        <td>#{{ o.id }}</td>
                         <td>{{ o.goal.name }}</td>
                         <td>{{ o.receiver.full_name }}</td>
                         <td>
