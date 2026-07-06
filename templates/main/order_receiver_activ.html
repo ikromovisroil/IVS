@@ -128,10 +128,10 @@
                                   <i class="bi bi-building me-1"></i> Tashkilot
                                 </div>
                                 <div class="col-6">
+                                  {{ o.sender.organization }}<br>
                                   {% if o.sender.division %}{{ o.sender.division }}
                                   {% elif o.sender.directorate %}{{ o.sender.directorate }}
                                   {% elif o.sender.department %}{{ o.sender.department }}
-                                  {% else %}{{ o.sender.organization }}
                                   {% endif %}
                                 </div>
                                 <div class="col-6 text-muted">
@@ -166,10 +166,10 @@
                                   <i class="bi bi-building me-1"></i> Tashkilot
                                 </div>
                                 <div class="col-6">
+                                  {{ o.receiver.organization }}<br>
                                   {% if o.receiver.division %}{{ o.receiver.division }}
                                   {% elif o.receiver.directorate %}{{ o.receiver.directorate }}
                                   {% elif o.receiver.department %}{{ o.receiver.department }}
-                                  {% else %}{{ o.receiver.organization }}
                                   {% endif %}
                                 </div>
                                 <div class="col-6 text-muted">
