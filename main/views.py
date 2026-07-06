@@ -465,7 +465,7 @@ def deed_edit(request, pk):
     sender_qs = (
         Employee.objects.filter(
             organization_id=sender_org_id,
-            rol__boss=True,
+            department=deed.sender.department,
         ).order_by("last_name", "first_name", "father_name")
         if sender_org_id else Employee.objects.none()
     )
@@ -473,7 +473,7 @@ def deed_edit(request, pk):
     receiver_qs = (
         Employee.objects.filter(
             organization_id=receiver_org_id,
-            rol__boss=True,
+            department=deed.receiver.department,
         ).order_by("last_name", "first_name", "father_name")
         if receiver_org_id else Employee.objects.none()
     )
