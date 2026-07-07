@@ -1272,7 +1272,8 @@ def order_agrement_material(request):
                     OrderMaterial.objects.bulk_update(changed_order_materials, ["given"])
 
                 order.status = "rejected"
-                order.save(update_fields=["status"])
+                order.user = employee
+                order.save(update_fields=["status", "user"])
 
             # ── TASDIQLASH ─────────────────────────────
             else:
@@ -1345,10 +1346,11 @@ def order_agrement_material(request):
                     Material.objects.bulk_update(changed_materials, ["number"])
 
                 order.status = "approved"
-                order.save(update_fields=["status"])
+                order.user = employee
+                order.save(update_fields=["status", "user"])
 
     except DatabaseError as e:
-        messages.info(request, f"Xatolik yuz berdi. Qayta urinib ko'ring")
+        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
     if action == "rejected":
