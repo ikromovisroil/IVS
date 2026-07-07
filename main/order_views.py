@@ -1353,7 +1353,6 @@ def order_agrement_material(request):
     #     return redirect(back_url)
 
     except DatabaseError as e:
-        messages.info("DatabaseError: %s", e, exc_info=True)
         messages.info(request, f"Xatolik yuz berdi: {e}")
         return redirect(back_url)
 
