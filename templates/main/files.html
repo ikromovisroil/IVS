@@ -118,7 +118,7 @@
                                         </span>
                                     {% else %}
                                         <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
-                                            Kutulmoqda
+                                            Kutilmoqda
                                         </span>
                                     {% endif %}
                                 {% else %}
@@ -132,7 +132,7 @@
                                         </span>
                                     {% else %}
                                         <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
-                                            Kutulmoqda
+                                            Kutilmoqda
                                         </span>
                                     {% endif %}
                                 {% endif %}
@@ -175,7 +175,7 @@
                                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
                                                         <div class="col-12 col-md-7 info-value">
                                                             {% if d.status_sender == 'viewed' %}
-                                                                <span class="badge bg-warning">Kutulmoqda</span>
+                                                                <span class="badge bg-warning">Kutilmoqda</span>
                                                             {% elif d.status_sender == 'approved' %}
                                                                 <span class="badge bg-success">Tasdiqlandi</span>
                                                             {% elif d.status_sender == 'rejected' %}
@@ -206,7 +206,7 @@
                                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
                                                         <div class="col-12 col-md-7 info-value">
                                                             {% if d.status_receiver == 'viewed' %}
-                                                                <span class="badge bg-warning">Kutulmoqda</span>
+                                                                <span class="badge bg-warning">Kutilmoqda</span>
                                                             {% elif d.status_receiver == 'approved' %}
                                                                 <span class="badge bg-success">Tasdiqlandi</span>
                                                             {% elif d.status_receiver == 'rejected' %}
@@ -239,7 +239,7 @@
                                                             <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
                                                             <div class="col-12 col-md-7 info-value">
                                                                 {% if dc.status == 'viewed' %}
-                                                                    <span class="badge bg-warning">Kutulmoqda</span>
+                                                                    <span class="badge bg-warning">Kutilmoqda</span>
                                                                 {% elif dc.status == 'approved' %}
                                                                     <span class="badge bg-success">Kelishildi</span>
                                                                 {% elif dc.status == 'rejected' %}
