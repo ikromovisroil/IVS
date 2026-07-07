@@ -7,20 +7,7 @@
 {% endblock title %}
 
 {% block css %}
-<style>
-.star-rating label {
-  color: #dee2e6;
-  transition: color .15s ease, transform .15s ease;
-  text-decoration: none;
-}
 
-.star-rating label:hover,
-.star-rating label:hover ~ label,
-.star-rating input:checked ~ label {
-  color: #ffc107;
-  transform: scale(1.1);
-}
-</style>
 {% endblock css %}
 
 
@@ -140,215 +127,219 @@
                             {{ o.get_status_display }}
                             </span>
 
-                            <div class="modal fade" id="verticalmodal{{o.id}}" tabindex="-1">
-                                <div class="modal-dialog modal-dialog-centered modal-xl">
+                            <div class="modal fade order-modal" id="verticalmodal{{o.id}}" tabindex="-1">
+                                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl modal-fullscreen-sm-down">
                                   <form class="modal-content" action="{% url 'order_decide' o.id %}" method="post">{% csrf_token %}
                                     <div class="modal-header">
-                                      <h5 class="modal-title">Ariza tafsilotlari: #{{o.id}}</h5>
+                                      <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Ariza tafsilotlari &nbsp;<span class="opacity-75">#{{ o.id }}</span></h5>
                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
-                                    <div class="modal-body table-bordered table-hover">
-                                        <div class="row g-2">
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-info-circle me-1"></i> Ariza holati
+                                    <div class="modal-body">
+
+                                        <div class="info-card">
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Ariza holati</div>
+                                                <div class="col-12 col-md-7 info-value">
+                                                    <span class="badge rounded-pill px-3 py-2 fw-semibold
+                                                      {% if o.status == 'viewed' or o.status == 'process' %}bg-warning
+                                                      {% elif o.status == 'finished' %}bg-primary
+                                                      {% elif o.status == 'approved' or o.status == 'accepted' %}bg-success
+                                                      {% elif o.status == 'canceled' %}bg-secondary
+                                                      {% elif o.status == 'rejected' %}bg-danger
+                                                      {% endif %}
+                                                      text-white shadow-sm">
+                                                      {{ o.get_status_display }}
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <div class="col-6">
-                                                <span class="badge rounded-pill px-3 py-2 fw-semibold
-                                                  {% if o.status == 'viewed' or o.status == 'process' %}bg-warning
-                                                  {% elif o.status == 'finished' %}bg-primary
-                                                  {% elif o.status == 'approved' or o.status == 'accepted' %}bg-success
-                                                  {% elif o.status == 'canceled' %}bg-secondary
-                                                  {% elif o.status == 'rejected' %}bg-danger
-                                                  {% endif %}
-                                                  text-white shadow-sm d-inline-flex align-items-center">
-                                                  {{ o.get_status_display }}
-                                                </span>
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-event"></i> Ro'yxatga olingan sana</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
                                             </div>
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-calendar-event me-1"></i> Ro‘yxatga olingan sana
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> Ariza muallifi</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.sender.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
                                             </div>
-                                            <div class="col-6">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-person me-1"></i> Ariza muallifi
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-bullseye"></i> Ariza maqsadi</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.goal.name }}</div>
                                             </div>
-                                            <div class="col-6">{{ o.sender.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-bullseye me-1"></i> Ariza maqsadi
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
+                                                <div class="col-12 col-md-7 info-value">
+                                                    {{ o.sender.organization }}<br>
+                                                    {% if o.sender.division %}<span class="text-muted">{{ o.sender.division }}</span>
+                                                    {% elif o.sender.directorate %}<span class="text-muted">{{ o.sender.directorate }}</span>
+                                                    {% elif o.sender.department %}<span class="text-muted">{{ o.sender.department }}</span>
+                                                    {% endif %}
+                                                </div>
                                             </div>
-                                            <div class="col-6">{{ o.goal.name }}</div>
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-building me-1"></i> Tashkilot
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.sender.phone|default:"—" }}</div>
                                             </div>
-                                            <div class="col-6">
-                                                {{ o.sender.organization }}<br>
-                                                {% if o.sender.division %} {{ o.sender.division }}
-                                                {% elif o.sender.directorate %} {{ o.sender.directorate }}
-                                                {% elif o.sender.department %} {{ o.sender.department }}
-                                                {% endif %}
-                                            </div>
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-telephone me-1"></i> Telefon raqami
-                                            </div>
-                                            <div class="col-6">{{ o.sender.phone|default:"" }}</div>
                                             {% if o.technics %}
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-cpu me-1"></i> Xizmat ko‘rsatilgan texnika
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-cpu"></i> Xizmat ko'rsatilgan texnika</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.technics.name }}</div>
                                             </div>
-                                            <div class="col-6">{{ o.technics.name }}</div>
                                             {% endif %}
                                             {% if o.message_sender %}
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-chat-left-text me-1"></i> Qo‘shimcha ma’lumot
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.message_sender }}</div>
                                             </div>
-                                            <div class="col-6">{{ o.message_sender }}</div>
-                                            {% endif %}
-                                            {% if o.receiver %}
-                                            <hr class="my-3">
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-person-check me-1"></i> Mas’ul xodim
-                                            </div>
-                                            <div class="col-6">{{ o.receiver.full_name }} <span class="text-muted">{{ o.receiver.rank.name }}</span></div>
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-building me-1"></i> Tashkilot
-                                            </div>
-                                            <div class="col-6">
-                                                {{ o.receiver.organization }}<br>
-                                                {% if o.receiver.division %} {{ o.receiver.division }}
-                                                {% elif o.receiver.directorate %} {{ o.receiver.directorate }}
-                                                {% elif o.receiver.department %} {{ o.receiver.department }}
-                                                {% endif %}
-                                            </div>
-                                            <div class="col-6 text-muted">
-                                                <i class="bi bi-telephone me-1"></i> Telefon raqami
-                                            </div>
-                                            <div class="col-6">{{ o.receiver.phone|default:"" }}</div>
                                             {% endif %}
                                         </div>
+
+                                        {% if o.receiver %}
+                                        <div class="section-title">Mas'ul xodim ma'lumotlari</div>
+                                        <div class="info-card">
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-person-check"></i> Mas'ul xodim</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.receiver.full_name }} <span class="text-muted">{{ o.receiver.rank.name }}</span></div>
+                                            </div>
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
+                                                <div class="col-12 col-md-7 info-value">
+                                                    {{ o.receiver.organization }}<br>
+                                                    {% if o.receiver.division %}<span class="text-muted">{{ o.receiver.division }}</span>
+                                                    {% elif o.receiver.directorate %}<span class="text-muted">{{ o.receiver.directorate }}</span>
+                                                    {% elif o.receiver.department %}<span class="text-muted">{{ o.receiver.department }}</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.receiver.phone|default:"—" }}</div>
+                                            </div>
+                                        </div>
+                                        {% endif %}
+
                                         {% if o.materials_all.exists %}
-                                          <hr>
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-hover align-middle table-sm">
+                                        <div class="section-title">Materiallar</div>
+                                        <div class="table-responsive info-card p-2">
+                                            <table class="table table-bordered align-middle table-sm mb-0">
                                             <thead>
                                             <tr>
-                                              <th>T/r</th>
-                                              <th>Material Name</th>
+                                              <th class="ps-3">T/r</th>
+                                              <th>Material nomi</th>
                                               <th>Soni</th>
-                                              <th>Narxi</th>
+                                              <th class="pe-3">Narxi</th>
                                             </tr>
                                             </thead>
                                             <tbody>
                                             {% for m in o.materials_all %}
                                               <tr>
-                                                <th scope="row">{{ forloop.counter }}</th>
+                                                <td class="ps-3">{{ forloop.counter }}</td>
                                                 <td>{{ m.material.name }}</td>
                                                 <td>{{ m.number|intcomma }}</td>
-                                                <td>{{ m.material.price|intcomma }}</td>
+                                                <td class="pe-3">{{ m.material.price|intcomma }}</td>
                                               </tr>
                                             {% endfor %}
                                             </tbody>
                                           </table>
                                         </div>
                                         {% endif %}
-                                        <hr>
-                                        <div class="d-flex flex-wrap gap-2">
+
+                                        <div class="section-title">Jarayon tarixi</div>
+                                        <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-2 g-md-3">
                                             {% if o.date_creat %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi bi-clock text-warning fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ariza yaratildi</div>
+                                            <div class="col">
+                                                <div class="timeline-item">
+                                                    <div class="icon pending"><i class="bi bi-file-earmark-plus"></i></div>
+                                                    <div class="time">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
+                                                    <div class="label">Ariza yaratildi</div>
+                                                </div>
                                             </div>
                                             {% endif %}
-
                                             {% if o.date_process %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi bi-clock text-warning fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_process|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ish boshlandi</div>
+                                            <div class="col">
+                                                <div class="timeline-item">
+                                                    <div class="icon process"><i class="bi bi-gear-fill"></i></div>
+                                                    <div class="time">{{ o.date_process|date:"d.m.Y, H:i" }}</div>
+                                                    <div class="label">Ish boshlandi</div>
+                                                </div>
                                             </div>
                                             {% endif %}
-
                                             {% if o.date_finished %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_finished|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ish tugallandi</div>
+                                            <div class="col">
+                                                <div class="timeline-item">
+                                                    <div class="icon done"><i class="bi bi-check2-circle"></i></div>
+                                                    <div class="time">{{ o.date_finished|date:"d.m.Y, H:i" }}</div>
+                                                    <div class="label">Ish tugallandi</div>
+                                                </div>
                                             </div>
                                             {% endif %}
-
                                             {% if o.date_approved %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_approved|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Ariza tasdiqlandi</div>
+                                            <div class="col">
+                                                <div class="timeline-item">
+                                                    <div class="icon approved"><i class="bi bi-patch-check-fill"></i></div>
+                                                    <div class="time">{{ o.date_approved|date:"d.m.Y, H:i" }}</div>
+                                                    <div class="label">Ariza tasdiqlandi</div>
+                                                </div>
                                             </div>
                                             {% endif %}
-
                                             {% if o.date_accepted %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-check2-circle text-primary fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_accepted|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Qabul qilindi</div>
+                                            <div class="col">
+                                                <div class="timeline-item">
+                                                    <div class="icon accepted"><i class="bi bi-hand-thumbs-up-fill"></i></div>
+                                                    <div class="time">{{ o.date_accepted|date:"d.m.Y, H:i" }}</div>
+                                                    <div class="label">Qabul qilindi</div>
+                                                </div>
                                             </div>
                                             {% endif %}
-
                                             {% if o.date_canceled %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-x-circle text-danger fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_canceled|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Bekor qilindi</div>
+                                            <div class="col">
+                                                <div class="timeline-item">
+                                                    <div class="icon bad"><i class="bi bi-x-circle-fill"></i></div>
+                                                    <div class="time">{{ o.date_canceled|date:"d.m.Y, H:i" }}</div>
+                                                    <div class="label">Bekor qilindi</div>
+                                                </div>
                                             </div>
                                             {% endif %}
-
                                             {% if o.date_rejected %}
-                                            <div class="border rounded px-4 py-2 text-center shadow-sm">
-                                                <i class="bi bi-x-circle text-danger fs-5 d-block mb-1"></i>
-                                                <div class="small fw-semibold">{{ o.date_rejected|date:"d.m.Y, H:i" }}</div>
-                                                <div class="text-muted small">Rad etildi</div>
+                                            <div class="col">
+                                                <div class="timeline-item">
+                                                    <div class="icon rejected"><i class="bi bi-slash-circle-fill"></i></div>
+                                                    <div class="time">{{ o.date_rejected|date:"d.m.Y, H:i" }}</div>
+                                                    <div class="label">Rad etildi</div>
+                                                </div>
                                             </div>
                                             {% endif %}
                                         </div>
+
                                         {% if o.status == 'finished' %}
-                                        <hr>
-                                        <div class="text-center mb-2">
-                                          <span class="fw-semibold d-block">Xizmat sifatini baholang!</span>
-                                        </div>
-                                        <div class="d-flex justify-content-center">
-                                          <div class="star-rating d-flex flex-row-reverse" id="rating-{{ o.id }}">
-                                            <input type="radio" class="d-none" name="rating" id="star5-{{ o.id }}" value="5" required>
-                                            <label class="btn btn-link p-1 fs-3" for="star5-{{ o.id }}" title="5 yulduz">
-                                              <i class="bi bi-star-fill"></i>
-                                            </label>
+                                        <div class="info-card text-center mt-3">
+                                          <span class="fw-semibold d-block mb-2">Xizmat sifatini baholang!</span>
+                                          <div class="d-flex justify-content-center">
+                                            <div class="star-rating d-flex flex-row-reverse" id="rating-{{ o.id }}">
+                                              <input type="radio" class="d-none" name="rating" id="star5-{{ o.id }}" value="5" required>
+                                              <label class="p-1" for="star5-{{ o.id }}" title="5 yulduz"><i class="bi bi-star-fill"></i></label>
 
-                                            <input type="radio" class="d-none" name="rating" id="star4-{{ o.id }}" value="4">
-                                            <label class="btn btn-link p-1 fs-3" for="star4-{{ o.id }}" title="4 yulduz">
-                                              <i class="bi bi-star-fill"></i>
-                                            </label>
+                                              <input type="radio" class="d-none" name="rating" id="star4-{{ o.id }}" value="4">
+                                              <label class="p-1" for="star4-{{ o.id }}" title="4 yulduz"><i class="bi bi-star-fill"></i></label>
 
-                                            <input type="radio" class="d-none" name="rating" id="star3-{{ o.id }}" value="3">
-                                            <label class="btn btn-link p-1 fs-3" for="star3-{{ o.id }}" title="3 yulduz">
-                                              <i class="bi bi-star-fill"></i>
-                                            </label>
+                                              <input type="radio" class="d-none" name="rating" id="star3-{{ o.id }}" value="3">
+                                              <label class="p-1" for="star3-{{ o.id }}" title="3 yulduz"><i class="bi bi-star-fill"></i></label>
 
-                                            <input type="radio" class="d-none" name="rating" id="star2-{{ o.id }}" value="2">
-                                            <label class="btn btn-link p-1 fs-3" for="star2-{{ o.id }}" title="2 yulduz">
-                                              <i class="bi bi-star-fill"></i>
-                                            </label>
+                                              <input type="radio" class="d-none" name="rating" id="star2-{{ o.id }}" value="2">
+                                              <label class="p-1" for="star2-{{ o.id }}" title="2 yulduz"><i class="bi bi-star-fill"></i></label>
 
-                                            <input type="radio" class="d-none" name="rating" id="star1-{{ o.id }}" value="1">
-                                            <label class="btn btn-link p-1 fs-3" for="star1-{{ o.id }}" title="1 yulduz">
-                                              <i class="bi bi-star-fill"></i>
-                                            </label>
+                                              <input type="radio" class="d-none" name="rating" id="star1-{{ o.id }}" value="1">
+                                              <label class="p-1" for="star1-{{ o.id }}" title="1 yulduz"><i class="bi bi-star-fill"></i></label>
+                                            </div>
                                           </div>
                                         </div>
                                         {% endif %}
                                     </div>
-                                    <div class="modal-footer d-flex justify-content-center gap-2">
-                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle"></i> Etiborsiz qoldirish</button>
+                                    <div class="modal-footer d-flex flex-row justify-content-center gap-2">
+                                        <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i> Yopish</button>
                                         {% if o.status in 'viewed process' %}
-                                        <button type="submit" name="action" value="canceled" class="btn btn-danger"><i class="bi bi-x-circle me-1"></i> Bekor qilish</button>
+                                        <button type="submit" name="action" value="canceled" class="btn btn-danger flex-fill"><i class="bi bi-x-circle me-1"></i> Bekor qilish</button>
                                         {% endif %}
                                         {% if o.status == 'finished' %}
-                                        <button type="submit" name="action" value="approved" class="btn btn-primary"><i class="bi bi-check-circle me-1"></i> Tasdiqlash</button>
+                                        <button type="submit" name="action" value="approved" class="btn btn-primary flex-fill"><i class="bi bi-check-circle me-1"></i> Tasdiqlash</button>
                                         {% endif %}
                                     </div>
                                   </form>

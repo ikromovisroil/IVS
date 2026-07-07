@@ -611,7 +611,7 @@ class DeedConsent(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     message = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=[
-        ('viewed', 'Kutulmoqda'),
+        ('viewed', 'Kutilmoqda'),
         ('approved', 'Tasdiqlandi'),
         ('rejected', 'Rad etildi'),
     ], default='viewed',db_index=True)

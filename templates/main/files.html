@@ -6,6 +6,7 @@
 {% endblock %}
 
 {% block css %}
+<link rel="stylesheet" href="{% static 'css/order-modal.css' %}">
 {% endblock css %}
 
 {% block content %}
@@ -136,39 +137,43 @@
                                     {% endif %}
                                 {% endif %}
 
-                                <div class="modal fade" id="modalcondition-r{{ d.id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-dialog-centered modal-xl">
+                                <div class="modal fade order-modal" id="modalcondition-r{{ d.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl modal-fullscreen-sm-down">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Dalolatnoma holati: #{{d.code}}</h5>
+                                                <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Dalolatnoma holati &nbsp;<span class="opacity-75">#{{d.code}}</span></h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
 
                                             <div class="modal-body">
 
-                                                <div class="mb-4 p-3 border rounded bg-light">
-                                                    <h5 class="fw-bold mb-2">Jo'natuvchi</h5>
-                                                    <hr>
-                                                    <div class="row">
-                                                        <div class="col-md-4"><strong>F.I.O:</strong> {{ d.user.full_name }}</div>
-                                                        <div class="col-md-4"></div>
-                                                        <div class="col-md-4"><strong>Yuborilgan sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
+                                                <div class="section-title">Jo'natuvchi</div>
+                                                <div class="info-card">
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.user.full_name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-event"></i> Yuborilgan sana</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.date_creat|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_user %}
-                                                        <div class="mt-2">
-                                                            <strong>Izoh:</strong>
-                                                            <span class="text-muted">{{ d.message_user }}</span>
-                                                        </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                        <div class="col-12 col-md-7 info-value text-muted">{{ d.message_user }}</div>
+                                                    </div>
                                                     {% endif %}
                                                 </div>
 
-                                                <div class="mb-4 p-3 border rounded bg-light">
-                                                    <h5 class="fw-bold mb-2">Imzolovchi: {{ d.sender.organization }} vakili</h5>
-                                                    <hr>
-                                                    <div class="row">
-                                                        <div class="col-md-4"><strong>F.I.O:</strong> {{ d.sender.full_name }}</div>
-                                                        <div class="col-md-4">
-                                                            <strong>Holati:</strong>
+                                                <div class="section-title">Imzolovchi: {{ d.sender.organization }} vakili</div>
+                                                <div class="info-card">
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.sender.full_name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
+                                                        <div class="col-12 col-md-7 info-value">
                                                             {% if d.status_sender == 'viewed' %}
                                                                 <span class="badge bg-warning">Kutulmoqda</span>
                                                             {% elif d.status_sender == 'approved' %}
@@ -177,24 +182,29 @@
                                                                 <span class="badge bg-danger">Rad etildi</span>
                                                             {% endif %}
                                                         </div>
-                                                        <div class="col-md-4"><strong>Imzolangan sana:</strong> {{ d.date_sender|date:"d.m.Y H:i" }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-check"></i> Imzolangan sana</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.date_sender|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_sender %}
-                                                        <div class="mt-2">
-                                                            <strong>Izoh:</strong>
-                                                            <span class="text-muted">{{ d.message_sender }}</span>
-                                                        </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                        <div class="col-12 col-md-7 info-value text-muted">{{ d.message_sender }}</div>
+                                                    </div>
                                                     {% endif %}
                                                 </div>
 
                                                 {% if d.receiver %}
-                                                <div class="mb-4 p-3 border rounded bg-light">
-                                                    <h5 class="fw-bold mb-2">Imzolovchi: {{ d.receiver.organization }} vakili</h5>
-                                                    <hr>
-                                                    <div class="row">
-                                                        <div class="col-md-4"><strong>F.I.O:</strong> {{ d.receiver.full_name }}</div>
-                                                        <div class="col-md-4">
-                                                            <strong>Holati:</strong>
+                                                <div class="section-title">Imzolovchi: {{ d.receiver.organization }} vakili</div>
+                                                <div class="info-card">
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.receiver.full_name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
+                                                        <div class="col-12 col-md-7 info-value">
                                                             {% if d.status_receiver == 'viewed' %}
                                                                 <span class="badge bg-warning">Kutulmoqda</span>
                                                             {% elif d.status_receiver == 'approved' %}
@@ -203,26 +213,31 @@
                                                                 <span class="badge bg-danger">Rad etildi</span>
                                                             {% endif %}
                                                         </div>
-                                                        <div class="col-md-4"><strong>Imzolangan sana:</strong> {{ d.date_receiver|date:"d.m.Y H:i" }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-check"></i> Imzolangan sana</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.date_receiver|date:"d.m.Y H:i" }}</div>
                                                     </div>
                                                     {% if d.message_receiver %}
-                                                        <div class="mt-2">
-                                                            <strong>Izoh:</strong>
-                                                            <span class="text-muted">{{ d.message_receiver }}</span>
-                                                        </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                        <div class="col-12 col-md-7 info-value text-muted">{{ d.message_receiver }}</div>
+                                                    </div>
                                                     {% endif %}
                                                 </div>
                                                 {% endif %}
 
                                                 {% if d.deedconsent_set.count %}
                                                     {% for dc in d.deedconsent_set.all %}
-                                                    <div class="mb-4 p-3 border rounded bg-light">
-                                                        <h5 class="fw-bold mb-2">Kelishuvchi: {{ dc.employee.organization.name }} vakili</h5>
-                                                        <hr>
-                                                        <div class="row">
-                                                            <div class="col-md-4"><strong>F.I.O:</strong> {{ dc.employee.full_name }}</div>
-                                                            <div class="col-md-4">
-                                                                <strong>Holati:</strong>
+                                                    <div class="section-title">Kelishuvchi: {{ dc.employee.organization.name }} vakili</div>
+                                                    <div class="info-card">
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                            <div class="col-12 col-md-7 info-value">{{ dc.employee.full_name }}</div>
+                                                        </div>
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
+                                                            <div class="col-12 col-md-7 info-value">
                                                                 {% if dc.status == 'viewed' %}
                                                                     <span class="badge bg-warning">Kutulmoqda</span>
                                                                 {% elif dc.status == 'approved' %}
@@ -231,18 +246,20 @@
                                                                     <span class="badge bg-danger">Rad etildi</span>
                                                                 {% endif %}
                                                             </div>
-                                                            <div class="col-md-4">
-                                                                <strong>Kelishilgan sana:</strong>
+                                                        </div>
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-check"></i> Kelishilgan sana</div>
+                                                            <div class="col-12 col-md-7 info-value">
                                                                 {% if dc.status == 'approved' or dc.status == 'rejected' %}
                                                                     {{ dc.date_edit|date:"d.m.Y H:i" }}
-                                                                {% endif %}
+                                                                {% else %}—{% endif %}
                                                             </div>
                                                         </div>
                                                         {% if dc.message %}
-                                                            <div class="mt-2">
-                                                                <strong>Izoh:</strong>
-                                                                <span class="text-muted">{{ dc.message }}</span>
-                                                            </div>
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                            <div class="col-12 col-md-7 info-value text-muted">{{ dc.message }}</div>
+                                                        </div>
                                                         {% endif %}
                                                     </div>
                                                     {% endfor %}
