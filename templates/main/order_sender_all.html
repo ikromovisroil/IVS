@@ -280,7 +280,7 @@
                                     <div class="modal-footer d-flex justify-content-center gap-2">
                                       <form action="{% url 'order_decide_all' o.id %}" method="post">{% csrf_token %}
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle"></i> Etiborsiz qoldirish</button>
-                                        {% if o.status in 'viewed process finished' %}
+                                        {% if o.status in 'viewed process' %}
                                         <button type="submit" name="action" value="canceled" class="btn btn-danger"><i class="bi bi-x-circle me-1"></i> Bekor qilish</button>
                                         {% endif %}
                                         {% if o.status == 'approved' %}

@@ -516,7 +516,6 @@ def deed_edit(request, pk):
         new_sender = Employee.objects.filter(
             id=int(sender_id),
             organization_id=sender_org_id,
-            rol__boss=True,
         ).first()
 
         if not new_sender:
