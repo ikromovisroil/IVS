@@ -1347,8 +1347,14 @@ def order_agrement_material(request):
                 order.status = "approved"
                 order.save(update_fields=["status"])
 
-    except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+    # except DatabaseError:
+    #     messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+    #
+    #     return redirect(back_url)
+
+    except DatabaseError as e:
+        messages.info("DatabaseError: %s", e, exc_info=True)
+        messages.info(request, f"Xatolik yuz berdi: {e}")
         return redirect(back_url)
 
     if action == "rejected":
