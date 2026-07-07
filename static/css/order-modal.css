@@ -1,3 +1,6 @@
+.star-rating {
+  font-size: 2.2rem;
+}
 .star-rating label {
   color: #dee2e6;
   transition: color .15s ease, transform .15s ease;
