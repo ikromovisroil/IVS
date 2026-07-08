@@ -172,7 +172,7 @@ def _sync_single_employee(emp):
         return "skipped", ""
 
     with transaction.atomic():
-        changes = _apply_changes(emp, assigned, result)
+        changes = _apply_changes(emp, assigned)
 
     return "updated", changes
 
@@ -312,7 +312,7 @@ def _has_changed(emp, assigned):
 # =========================================================
 # APPLY CHANGES
 # =========================================================
-def _apply_changes(emp, assigned, result):
+def _apply_changes(emp, assigned):
     from .models import Rank
 
     if not assigned["rank"] and assigned.get("_position_id"):
@@ -351,9 +351,9 @@ def _apply_changes(emp, assigned, result):
         changes.append(f"Lavozim: {old} → {new}")
 
     # Kirill → Lotin konvertatsiya qilib saqlaymiz
-    emp.first_name  = cyrillic_to_latin((result.get("name")       or "").strip())
-    emp.last_name   = cyrillic_to_latin((result.get("surname")    or "").strip())
-    emp.father_name = cyrillic_to_latin((result.get("partonimic") or "").strip())
+    # emp.first_name  = cyrillic_to_latin((result.get("name")       or "").strip())
+    # emp.last_name   = cyrillic_to_latin((result.get("surname")    or "").strip())
+    # emp.father_name = cyrillic_to_latin((result.get("partonimic") or "").strip())
 
     emp.organization = assigned["organization"]
     emp.department   = assigned["department"]

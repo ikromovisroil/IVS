@@ -308,9 +308,9 @@
                                             </div>
                                             {% endif %}
                                         </div>
-
-                                        {% if o.status == 'finished' %}
-                                        <div class="info-card text-center mt-3">
+                                    </div>
+                                    {% if o.status == 'finished' %}
+                                        <div class="text-center mt-3">
                                           <span class="fw-semibold d-block mb-2">Xizmat sifatini baholang!</span>
                                           <div class="d-flex justify-content-center">
                                             <div class="star-rating d-flex flex-row-reverse" id="rating-{{ o.id }}">
@@ -331,8 +331,7 @@
                                             </div>
                                           </div>
                                         </div>
-                                        {% endif %}
-                                    </div>
+                                    {% endif %}
                                     <div class="modal-footer d-flex flex-row justify-content-center gap-2">
                                         <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle me-1"></i> Etiborsiz qoldirish</button>
                                         {% if o.status in 'viewed process' %}
