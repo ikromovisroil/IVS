@@ -76,43 +76,45 @@
 
             <li class="notification-item">
 
-              {# ================= LINK LOGIC (TO‘G‘RILANGAN) ================= #}
+              {# ================= LINK LOGIC ================= #}
                 {% if request.user.employee.rol.client %}
-
-                    {% if o.sender and o.sender.user_id == request.user.id %}
+                    {% if o.sender.user_id == request.user.id %}
                         {% if o.organization_id == 4 %}
-                            {% if o.status == "process" or o.status == "finished" %}
+                            {% if o.status == "finished" %}
                                 {% url 'order_sender' as link %}
-                            {% else %}
+                            {% elif o.status == "rejected"  %}
                                 {% url 'order_sender_arxiv' as link %}
                             {% endif %}
                         {% else %}
-                            {% if o.status == "process" or o.status == "finished" or o.status == "approved" %}
+                            {% if o.status == "approved" %}
                                 {% url 'order_sender_all' as link %}
-                            {% else %}
+                            {% elif o.status == "rejected" %}
                                 {% url 'order_sender_arxiv_all' as link %}
                             {% endif %}
                         {% endif %}
-
-                    {% elif o.receiver and o.receiver.user_id == request.user.id %}
-                        {% url 'order_receiver_arxiv_all' as link %}
-
-                    {% else %}
-                        {% url 'order_agrement_arxiv' as link %}
-                    {% endif %}
-
-                {% else %}
-
-                    {% if o.sender and o.sender.user_id == request.user.id %}
-                        {% if o.status == "process" or o.status == "finished" or o.status == "rejected" %}
-                            {% url 'order_sender' as link %}
-                        {% else %}
-                            {% url 'order_sender_arxiv' as link %}
+                    {% elif o.receiver.user_id == request.user.id %}
+                        {% if o.status == "accepted" or o.status == "canceled" or o.status == "rejected" %}
+                            {% url 'order_receiver_arxiv_all' as link %}
                         {% endif %}
-                    {% else %}
-                        {% url 'order_receiver_arxiv' as link %}
+                    {% elif o.user.user_id == request.user.id %}
+                        {% if o.status == "accepted" %}
+                            {% url 'order_user_arxiv' as link %}
+                        {% endif %}
                     {% endif %}
-
+                {% elif not request.user.employee.rol.client %}
+                    {% if o.sender.user_id == request.user.id %}
+                        {% if o.organization_id == 4 %}
+                            {% if o.status == "finished" %}
+                                {% url 'order_sender' as link %}
+                            {% elif o.status == "rejected"  %}
+                                {% url 'order_sender_arxiv' as link %}
+                            {% endif %}
+                        {% endif %}
+                    {% elif o.receiver.user_id == request.user.id %}
+                        {% if o.status == "accepted" or o.status == "rejected" %}
+                            {% url 'order_receiver_arxiv' as link %}
+                        {% endif %}
+                    {% endif %}
                 {% endif %}
 
                 <a href="{{ link }}" class="d-flex align-items-start text-decoration-none">
@@ -146,44 +148,50 @@
                 <div class="ms-2">
 
                   <!-- ================= NAME ================= -->
-                  {% if request.user.id == o.sender.user.id %}
-                    <h4 class="mb-1">{{ o.receiver.full_name }}</h4>
-                  {% elif request.user.id == o.receiver.user.id %}
-                    <h4 class="mb-1">{{ o.sender.full_name }}</h4>
+                  {% if o.sender.user_id == request.user.id %}
+                  <h4 class="mb-1">{{ o.receiver.full_name }}</h4>
+                  {% elif o.receiver.user_id == request.user.id %}
+                  <h4 class="mb-1">{{ o.sender.full_name }}</h4>
+                  {% elif o.user.user_id == request.user.id %}
+                  <h4 class="mb-1">{{ o.sender.full_name }}</h4>
                   {% endif %}
+
 
                   <!-- ================= TEXT ================= -->
 
                   {% if o.status == 'viewed' %}
-                    <p class="text-warning mb-1">Yangi ariza yuborildi</p>
-                    <p class="small text-muted mb-0">{{ o.date_create|timesince }} oldin</p>
+                    <p class="text-warning mb-1">#{{o.id}} Yangi ariza yuborildi</p>
+                    <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
 
                   {% elif o.status == 'process' %}
-                    <p class="text-warning mb-1">Arizangiz ish jarayonida</p>
+                    <p class="text-warning mb-1">#{{o.id}} Ariza ish jarayonida</p>
                     <p class="small text-muted mb-0">{{ o.date_process|timesince }} oldin</p>
 
                   {% elif o.status == 'finished' %}
-                    <p class="text-primary mb-1">Arizangiz Tayyorlandi</p>
+                    <p class="text-primary mb-1">#{{o.id}} Ariza Tayyorlandi</p>
                     <p class="small text-muted mb-0">{{ o.date_finished|timesince }} oldin</p>
 
                   {% elif o.status == 'approved' %}
-                    <p class="text-primary mb-1">Arizangiz Tasdiqlandi</p>
+                    <p class="text-primary mb-1">#{{o.id}} Ariza Tasdiqlandi</p>
+                    {% if o.message_receiver %}
+                    <p class="text-primary mb-1">{{o.message_receiver}}</p>
+                    {% endif %}
                     <p class="small text-muted mb-0">{{ o.date_approved|timesince }} oldin</p>
 
                   {% elif o.status == 'accepted' %}
-                    <p class="text-primary mb-1">Arizangiz qabul qilindi</p>
+                    <p class="text-primary mb-1">#{{o.id}} Ariza qabul qilindi</p>
                     <p class="small text-muted mb-0">{{ o.date_accepted|timesince }} oldin</p>
 
                   {% elif o.status == 'canceled' %}
-                    <p class="text-danger mb-1">Arizangiz bekor qilindi</p>
+                    <p class="text-danger mb-1">#{{o.id}} Ariza bekor qilindi</p>
                     <p class="small text-muted mb-0">{{ o.date_canceled|timesince }} oldin</p>
 
                   {% elif o.status == 'rejected' %}
-                    <p class="text-danger mb-1">Arizangiz rad etildi</p>
+                    <p class="text-danger mb-1">#{{o.id}} Ariza rad etildi</p>
                     <p class="small text-muted mb-0">{{ o.date_rejected|timesince }} oldin</p>
 
                   {% else %}
-                    <p class="mb-1">Ariza holati yangilandi</p>
+                    <p class="mb-1">#{{o.id}} Ariza holati yangilandi</p>
                     <p class="small text-muted mb-0">{{ o.date_edit|timesince }} oldin</p>
                   {% endif %}
 

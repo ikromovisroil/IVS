@@ -73,15 +73,14 @@ def order_mark_seen(request):
     if not rol:
         return JsonResponse({"status": "no_role"}, status=400)
 
-    # receiver notificationlari
-    Order.objects.filter(
-        receiver=employee,
-        status__in=["approved", "canceled"],
-        receiver_seen=False,
-    ).update(receiver_seen=True)
 
     if getattr(rol, "client", False):
-        # IVS bo'yicha sender notificationlari
+        Order.objects.filter(
+            receiver=employee,
+            status__in=["accepted", "canceled", "rejected"],
+            receiver_seen=False,
+        ).update(receiver_seen=True)
+
         Order.objects.filter(
             organization_id=4,
             sender=employee,
@@ -89,7 +88,6 @@ def order_mark_seen(request):
             sender_seen=False,
         ).update(sender_seen=True)
 
-        # O'z tashkiloti bo'yicha sender notificationlari
         if employee.organization_id and employee.organization_id != 4:
             Order.objects.filter(
                 organization_id=employee.organization_id,
@@ -98,7 +96,6 @@ def order_mark_seen(request):
                 sender_seen=False,
             ).update(sender_seen=True)
 
-        # user notificationlari
         Order.objects.filter(
             user=employee,
             status="accepted",
@@ -106,6 +103,12 @@ def order_mark_seen(request):
         ).update(user_seen=True)
 
     else:
+        Order.objects.filter(
+            receiver=employee,
+            status__in=["approved", "canceled"],
+            receiver_seen=False,
+        ).update(receiver_seen=True)
+
         Order.objects.filter(
             sender=employee,
             status="rejected",

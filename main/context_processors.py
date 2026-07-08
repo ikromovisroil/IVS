@@ -71,47 +71,37 @@ def order_notifications(request):
     sender_notes_all = Order.objects.none()
     user_notes = Order.objects.none()
 
+    sender_notes = Order.objects.filter(
+        organization_id=4,
+        sender=employee,
+        status__in=["finished", "rejected"],
+        sender_seen=False,
+    )
+
     if getattr(rol, "client", False):
         receiver_notes = Order.objects.filter(
             receiver=employee,
-            status__in=["approved", "canceled"],
+            status__in=["accepted", "canceled", "rejected"],
             receiver_seen=False,
         )
 
-        # IVS ga yuborilgan arizalar
-        sender_notes = Order.objects.filter(
-            organization_id=4,
+        sender_notes_all = Order.objects.filter(
+            organization_id=employee.organization_id,
             sender=employee,
-            status__in=["process", "finished", "rejected"],
+            status__in=["approved", "rejected"],
             sender_seen=False,
-        )
-
-        # O'z tashkilotiga yuborilgan arizalar
-        if employee.organization_id:
-            sender_notes_all = Order.objects.filter(
-                organization_id=employee.organization_id,
-                sender=employee,
-                status__in=["process", "finished", "rejected", "approved"],
-                sender_seen=False,
-            )
+        ).exclude(organization_id=4)
 
         user_notes = Order.objects.filter(
             user=employee,
             status="accepted",
             user_seen=False,
         )
-
     else:
         receiver_notes = Order.objects.filter(
             receiver=employee,
             status__in=["approved", "canceled"],
             receiver_seen=False,
-        )
-
-        sender_notes = Order.objects.filter(
-            sender=employee,
-            status__in=["process", "finished", "rejected"],
-            sender_seen=False,
         )
 
     all_notes = (
