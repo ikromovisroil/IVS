@@ -254,7 +254,7 @@ def order_receiver(request):
     page_obj = paginator.get_page(page_number)
 
     context = {
-        "page_obj": page_obj.start_index(),
+        "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
     }
 
