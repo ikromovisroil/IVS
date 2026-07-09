@@ -1,379 +1,138 @@
-{% extends 'base.html' %}
-{% load static %}
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup>
+      <col style="width:60%;">
+      <col style="width:40%;">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;text-align:center;"></td>
+        <td style="border:1px solid #fff;text-align:center;">
+          <b>Byudjet tashkilotlarida buxgalteriya hisobi toʼgʼrisidagi yoʼriqnomaga 30-ILOVА</b>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<div style="text-align:right;"><u>{{ today|date:"d.m.Y" }} y</u></div>
+<div style="text-align:center;"><b>{{ order.id }} - sonli YuK XАTI (TАLАBNOMА)</b></div>
+<div style="text-align:right;"><b>434-son shakl</b></div>
 
-{% block title %}
-  <title>Hisobot</title>
-{% endblock title %}
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;"><strong>Oluvchi tashkilot nomi</strong><br></td>
+        <td style="border:1px solid #fff;"><strong>{{ order.sender.organization.name|default:"" }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-{% block css %}
-{% endblock css %}
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;"><strong>Tarkibiy boʼlinma</strong><br></td>
+        <td style="border:1px solid #fff;"><strong>{{ order.sender.department.name|default:"" }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-{% block content %}
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;"><strong>Jo'natuvchi tashkilot nomi</strong><br></td>
+        <td style="border:1px solid #fff;"><strong>{{ order.receiver.organization.name|default:"" }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-<main id="main" class="main">
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;"><strong>Moddiy javobgar shaxs</strong><br></td>
+        <td style="border:1px solid #fff;"><strong>{{ order.receiver.full_name|default:"" }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-  <div class="pagetitle">
-    <h1>Akt</h1>
-  </div>
+<div>
+  <table style="border-collapse:collapse;width:100%;" border="1">
+    <colgroup>
+      <col style="width:5%;"><col style="width:20%;"><col style="width:15%;">
+      <col style="width:15%;"><col style="width:15%;"><col style="width:15%;"><col style="width:15%;">
+    </colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">№</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Moddiy qiymatliklarning nomi, navi va oʼlchami</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Oʼlchov birligi</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;" colspan="2">Miqdor</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Narxi, soʼm</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Summa, soʼm</td>
+      </tr>
+      <tr>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">talab qilingan</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">berilgan</td>
+      </tr>
 
-  <section class="section">
-    <form class="row" action="{% url 'order_agrement_deed_post' %}" method="post">{% csrf_token %}
+      {% for i in order.materials_all %}
+      <tr>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ forloop.counter }}</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.name }}</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.unit.name|default:"" }}</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.number }}</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.given|default:"" }}</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.price|default:"" }}</td>
+        <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.given_summa }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
 
-      <!-- LEFT: FILTER + SIGN -->
-      <div class="col-lg-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Imzolashga yuborish</h5>
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;"><strong>Tasdiqlovchi : </strong><br></td>
+        <td style="border:1px solid #fff;"><strong>{{ order.user.full_name|default:"" }} {{ order.user.rank.name|default:"" }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-            <div class="row g-3">
-              <div class="col-12">
-                <label for="sender_select" class="form-label">Imzolovchi xodim:</label>
-                <select id="sender_select" name="sender" class="form-select" required>
-                  <option value="">Tanlang...</option>
-                  {% for i in emp_bos %}
-                    <option value="{{ i.id }}" data-rank="{{ i.rank.name }}">{{ i.full_name }} {{i.rank.name}}</option>
-                  {% endfor %}
-                </select>
-              </div>
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;"><strong>Berdi :</strong><br></td>
+        <td style="border:1px solid #fff;"><strong>{{ order.receiver.full_name|default:"" }} {{ order.receiver.rank.name|default:"" }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
 
-              <div class="col-12">
-                <label for="agreements_select" class="form-label">Kelishuvchilar:</label>
-                <select id="agreements_select" name="agreements[]" class="form-select" multiple>
-                  {% for i in employee %}
-                    <option value="{{ i.id }}">{{ i.full_name }} ({{i.rank.name}})</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="col-12">
-                <label for="message" class="form-label">Izoh:</label>
-                <textarea id="message" class="form-control" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
-              </div>
-
-              <div class="text-center">
-                <button type="submit" class="btn btn-primary w-100"
-                onclick="return confirm('Imzolashga yuborishni tasdiqlang?')">
-                    Imzolashga yuborish
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT: TINYMCE -->
-      <div class="col-lg-8">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">TinyMCE Editor</h5>
-
-            <textarea id="body" name="body" class="tinymce-editor">
-              <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:60%;">
-                      <col style="width:40%;">
-                    </colgroup>
-                    <tbody>
-                      <tr>
-                        <td style="border:1px solid #fff;text-align:center;"></td>
-                        <td style="border:1px solid #fff;text-align:center;">
-                          <b>Byudjet tashkilotlarida buxgalteriya hisobi toʼgʼrisidagi yoʼriqnomaga 30-ILOVА</b>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-              </div>
-              <div style="text-align:right;">
-                  <u id="doc_date">_</u>
-              </div>
-              <div style="text-align:center;">
-                  <b>{{order.id}} - sonli YuK XАTI (TАLАBNOMА)</b>
-              </div>
-              <div style="text-align:right;">
-                  <b>434-son shakl</b>
-              </div>
-
-
-              <div>
-                <table style="border-collapse:collapse;width:100%;">
-                  <colgroup>
-                    <col style="width:50%;">
-                    <col style="width:50%;">
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style="border:1px solid #fff;">
-                        <strong>Oluvchi tashkilot nomi</strong><br>
-                      </td>
-                      <td style="border:1px solid #fff;">
-                        <strong>{{order.sender.organization.name}}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div>
-                <table style="border-collapse:collapse;width:100%;">
-                  <colgroup>
-                    <col style="width:50%;">
-                    <col style="width:50%;">
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style="border:1px solid #fff">
-                        <strong>Tarkibiy boʼlinma</strong><br>
-                      </td>
-                      <td style="border:1px solid #fff;">
-                        <strong>{{order.sender.department.name}}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div>
-                <table style="border-collapse:collapse;width:100%;">
-                  <colgroup>
-                    <col style="width:50%;">
-                    <col style="width:50%;">
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style="border:1px solid #fff;">
-                        <strong>Jo'natuvchi tashkilot nomi</strong><br>
-                      </td>
-                      <td style="border:1px solid #fff;">
-                        <strong>{{order.user.organization.name}}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div>
-                <table style="border-collapse:collapse;width:100%;">
-                  <colgroup>
-                    <col style="width:50%;">
-                    <col style="width:50%;">
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style="border:1px solid #fff;">
-                        <strong>Moddiy javobgar shaxs</strong><br>
-                      </td>
-                      <td style="border:1px solid #fff;">
-                        <strong>{{order.user.full_name}}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
-              <div>
-                <table style="border-collapse:collapse;width:100%;" border="1">
-                  <colgroup>
-                    <col style="width:5%;">
-                    <col style="width:20%;">
-                    <col style="width:15%;">
-                    <col style="width:15%;">
-                    <col style="width:15%;">
-                    <col style="width:15%;">
-                    <col style="width:15%;">
-                  </colgroup>
-
-                  <tbody>
-                    <tr>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">№</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Moddiy qiymatliklarning nomi, navi va oʼlchami</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Oʼlchov birligi</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;" colspan="2">Miqdor</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Narxi, soʼm</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;" rowspan="2">Summa, soʼm</td>
-                    </tr>
-                      <!-- HEADER 2 -->
-                    <tr>
-                        <!-- Miqdor -->
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;">talab qilingan</td>
-                        <td style="border:1px solid #000;font-size:10pt;text-align:center;">berilgan</td>
-                    </tr>
-
-                    {% for i in order.materials_all %}
-                    <tr>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ forloop.counter }}</td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.name }}</td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.unit.name }}</td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.number }}</td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.given }}</td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.material.price }}</td>
-                      <td style="border:1px solid #000;font-size:10pt;text-align:center;">{{ i.given_summa }}</td>
-                    </tr>
-                    {% endfor %}
-                  </tbody>
-                </table>
-              </div>
-              <div>
-                <table style="border-collapse:collapse;width:100%;">
-                  <colgroup>
-                    <col style="width:50%;">
-                    <col style="width:50%;">
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style="border:1px solid #fff;">
-                        <strong>Tasdiqlovchi : </strong><br>
-                      </td>
-                      <td style="border:1px solid #fff;">
-                        <strong id="sender_name">_</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div>
-                <table style="border-collapse:collapse;width:100%;">
-                  <colgroup>
-                    <col style="width:50%;">
-                    <col style="width:50%;">
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style="border:1px solid #fff;">
-                        <strong>Berdi :</strong><br>
-                      </td>
-                      <td style="border:1px solid #fff;">
-                        <strong>{{order.user.full_name}} {{order.user.rank.name}}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <div>
-                <table style="border-collapse:collapse;width:100%;">
-                  <colgroup>
-                    <col style="width:50%;">
-                    <col style="width:50%;">
-                  </colgroup>
-                  <tbody>
-                    <tr>
-                      <td style="border:1px solid #fff;">
-                        <strong>Oldi :</strong><br>
-                      </td>
-                      <td style="border:1px solid #fff;">
-                        <strong>{{order.sender.full_name}} {{order.sender.rank.name}}</strong>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </textarea>
-
-          </div>
-        </div>
-      </div>
-
-    </form>
-  </section>
-
-</main>
-
-<script>
-(function () {
-
-  function formatUzDate(dateObj) {
-    const day = String(dateObj.getDate()).padStart(2, '0');
-    const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const year = dateObj.getFullYear();
-    return `${day}.${month}.${year}`;
-  }
-
-  function getEditor() {
-    if (!window.tinymce) return null;
-    return tinymce.get('body') || null;
-  }
-
-  function setEditorText(elementId, text) {
-    const editor = getEditor();
-    if (!editor) return;
-
-    const body = editor.getBody();
-    if (!body) return;
-
-    const el = body.querySelector('#' + elementId);
-    if (el) {
-      el.innerHTML = text || '';
-      editor.save();
-    }
-  }
-
-  // ✅ Sana qo‘yish
-  function applyDate() {
-    const today = formatUzDate(new Date());
-    setEditorText('doc_date', today);
-  }
-
-  // ✅ Sender qo‘yish
-  function applySender() {
-    const selected = $('#sender_select option:selected');
-    const senderName = selected.text().trim();
-
-    if (!senderName || senderName === 'Tanlang...') {
-      setEditorText('sender_name', '__');
-      return;
-    }
-
-    setEditorText('sender_name', senderName);
-  }
-
-  // ✅ TinyMCE tayyor bo‘lishini kutamiz
-  function waitForEditor(callback) {
-    let i = 0;
-    const timer = setInterval(function () {
-      const ed = getEditor();
-
-      if (ed && ed.initialized) {
-        clearInterval(timer);
-        callback(ed);
-      }
-
-      if (i++ > 100) clearInterval(timer);
-    }, 150);
-  }
-
-  $(document).ready(function () {
-
-    // select2 bo‘lsa ishlaydi
-    if ($.fn.select2) {
-      $('#sender_select').select2({
-        width: '100%',
-        placeholder: 'Tanlang...'
-      });
-    }
-
-    // change event
-    $('#sender_select').on('change', function () {
-      applySender();
-    });
-
-    // TinyMCE ready
-    waitForEditor(function (editor) {
-      applyDate();
-      applySender();
-
-      editor.on('init', function () {
-        applyDate();
-        applySender();
-      });
-
-      editor.on('SetContent', function () {
-        applyDate();
-        applySender();
-      });
-    });
-
-  });
-
-})();
-</script>
-
-{% endblock content %}
+<div>
+  <table style="border-collapse:collapse;width:100%;">
+    <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+    <tbody>
+      <tr>
+        <td style="border:1px solid #fff;"><strong>Oldi :</strong><br></td>
+        <td style="border:1px solid #fff;"><strong>{{ order.sender.full_name|default:"" }} {{ order.sender.rank.name|default:"" }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+</div>

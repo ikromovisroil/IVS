@@ -132,8 +132,6 @@ urlpatterns = [
     path("order/agrement/", order_agrement, name="order_agrement"),
     path("order/agrement/material/", order_agrement_material, name="order_agrement_material"),
     path("order/agrement/arxiv/", order_agrement_arxiv, name="order_agrement_arxiv"),
-    path("order/agrement/deed/<int:pk>/", order_agrement_deed, name="order_agrement_deed"),
-    path("order/agrement/post/", order_agrement_deed_post, name="order_agrement_deed_post"),
 
     path("order/receiver/all/", order_receiver_all, name="order_receiver_all"),
     path("order/receiver/accepted/all/<int:pk>/", order_accepted_all, name="order_accepted_all"),

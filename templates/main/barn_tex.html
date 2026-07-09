@@ -195,7 +195,7 @@
                         <th scope="row"
                             rowspan="{{ items|length }}"
                             class="align-middle text-center">
-                          {{ forloop.parentloop.counter }}
+                          {{ row_start|add:forloop.parentloop.counter0 }}
                         </th>
                         {% endif %}
 

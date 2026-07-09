@@ -50,7 +50,7 @@
                     <tbody>
                     {% for d in page_obj %}
                         <tr>
-                            <th scope="row">{{ page_obj.start_index|add:forloop.counter0 }}</th>
+                            <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
 
                             <td>
                                 {{ d.sender.full_name }}

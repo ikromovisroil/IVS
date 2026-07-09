@@ -110,7 +110,7 @@
                 <tbody id="materialBody">
                 {% for mat in material %}
                   <tr>
-                    <th scope="row">{{ forloop.counter }}</th>
+                    <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
                     <td class="text-center">
                         {% if mat.image %}
                             <img src="{{ mat.image.url }}"

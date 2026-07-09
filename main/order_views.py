@@ -6,6 +6,7 @@ from main.sso_views import *
 from django.db import transaction, DatabaseError
 import base64
 import binascii
+from .html_pdf import _create_deed_for_order
 
 
 # yangi arizalar
@@ -31,6 +32,7 @@ def order_sender(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "goal":     Goal.objects.order_by("id"),
     }
     return render(request, "main/order_sender.html", context)
@@ -120,6 +122,7 @@ def order_sender_arxiv(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "goal":     Goal.objects.order_by("id"),
     }
     return render(request, "main/order_sender_arxiv.html", context)
@@ -179,6 +182,7 @@ def order_sender_user(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "goal":     Goal.objects.order_by("id"),
         "organizations": Organization.objects.only("id", "name").order_by("id"),
     }
@@ -249,7 +253,10 @@ def order_receiver(request):
     paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj.start_index(),
+        "row_start": page_obj.start_index() if paginator.count else 0,
+    }
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "main/partials/order_receiver_rows.html", context)
@@ -336,6 +343,7 @@ def order_receiver_activ(request):
 
     context = {
         "page_obj":  page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "materials": materials,
     }
     return render(request, "main/order_receiver_activ.html", context)
@@ -473,7 +481,10 @@ def order_receiver_arxiv(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+    }
     return render(request, "main/order_receiver_arxiv.html", context)
 
 
@@ -623,7 +634,10 @@ def order_sender_all(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+    }
     return render(request, "main/order_sender_all.html", context)
 
 
@@ -676,6 +690,17 @@ def order_decide_all(request, pk):
             order.status = action
             order.save(update_fields=["status"])
 
+            if action == "accepted":
+                if order.materials.exists():
+                    try:
+                        _create_deed_for_order(order, request)
+                    except HtmlPdfError:
+                        messages.error(request, "Ariza qabul qilindi, lekin hujjat yaratilmadi. Qayta urinib ko'ring")
+                        raise
+                    except Exception:
+                        messages.error(request, "Ariza qabul qilindi, lekin hujjatga imzo/QR urishda xatolik yuz berdi")
+                        raise
+
     except DatabaseError:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
@@ -683,7 +708,8 @@ def order_decide_all(request, pk):
     if action == "canceled":
         messages.success(request, "Ariza bekor qilindi")
     else:
-        messages.success(request, "Ariza yakunlandi, materiallarni ombordan olishingiz mumkin")
+
+        messages.success(request, "Ariza yakunlandi")
 
     return redirect(back_url)
 
@@ -718,7 +744,10 @@ def order_sender_arxiv_all(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+    }
     return render(request, "main/order_sender_arxiv_all.html", context)
 
 
@@ -758,6 +787,7 @@ def order_sender_material_all(request):
 
     context = {
         "page_obj":          page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "cart_material_ids": cart_material_ids,
     }
     return render(request, "main/order_sender_material_all.html", context)
@@ -790,7 +820,10 @@ def order_sender_basket_all(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+    }
     return render(request, "main/order_sender_basket_all.html", context)
 
 
@@ -872,7 +905,10 @@ def order_receiver_all(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+    }
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
         return render(request, "main/partials/order_receiver_all.html", context)
@@ -986,6 +1022,7 @@ def order_receiver_activ_all(request):
 
     context = {
         "page_obj":  page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "materials": materials,
     }
     return render(request, "main/order_receiver_activ_all.html", context)
@@ -1146,7 +1183,10 @@ def order_receiver_arxiv_all(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+        }
     return render(request, "main/order_receiver_arxiv_all.html", context)
 
 
@@ -1184,7 +1224,10 @@ def order_agrement(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+    }
     return render(request, "main/order_agrement.html", context)
 
 
@@ -1392,102 +1435,8 @@ def order_agrement_arxiv(request):
     paginator = Paginator(orders_qs, 20)
     page_obj  = paginator.get_page(page_number)
 
-    context = {"page_obj": page_obj}
-    return render(request, "main/order_agrement_arxiv.html", context)
-
-
-@never_cache
-@require_GET
-@login_required
-@role_required("confirm")
-def order_agrement_deed(request, pk):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo'q")
-
-    if not getattr(employee.rol, "client", False):
-        raise PermissionDenied("Sizga ruxsat yo'q")
-
-    order = get_object_or_404(
-        Order.objects.select_related(
-            "sender", "sender__department",
-            "receiver", "receiver__department",
-        ),
-        pk=pk
-    )
-
-    if order.user_id != employee.id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
-
-    if not order.receiver_id:
-        raise PermissionDenied("Ariza qabul qiluvchisi yo'q")
-
     context = {
-        "order": order,
-        "emp_bos": Employee.objects.filter(
-            department=order.receiver.department,
-            rol__boss=True,
-        ).select_related("rank"),
-        "employee": Employee.objects.filter(
-            Q(department=order.sender.department) |
-            Q(department_id=employee.department_id)
-        ).select_related("rank").distinct(),
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
     }
-    return render(request, "main/order_agrement_deed.html", context)
-
-
-@never_cache
-@require_POST
-@login_required
-@role_required("confirm")
-def order_agrement_deed_post(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo'q")
-
-    if not getattr(employee.rol, "client", False):
-        raise PermissionDenied("Sizga ruxsat yo'q")
-
-    sender_id  = (request.POST.get("sender")  or "").strip()
-    message    = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]")
-    body       = (request.POST.get("body")    or "").strip()
-
-    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
-    if not sender:
-        messages.info(request, "Imzolovchi xodim tanlanmadi")
-        return redirect("order_agrement")
-
-    if not body:
-        messages.info(request, "Hujjat matni bo'sh bo'lmasin")
-        return redirect("order_agrement")
-
-    # 1. DB — transaction ichida
-    with transaction.atomic():
-        deed = Deed.objects.create(
-            sender_id=sender.id,
-            user_id=employee.id,
-            message_user=message,
-            body=body,
-            status='act',
-        )
-
-        ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
-        ids = [i for i in ids if i != sender.id]
-
-        if ids:
-            emps = Employee.objects.filter(id__in=ids).only("id")
-            objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
-            DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
-
-    # 2. PDF — transaction tashqarisida
-    try:
-        pdf_bytes = deed_to_pdf_bytes(deed)
-        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
-        pdf_name  = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
-        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
-    except HtmlPdfError as e:
-        messages.info(request, f"PDF yaratilmadi: {e}")
-
-    messages.success(request, "Imzolashga yuborildi")
-    return redirect("contact_user")
+    return render(request, "main/order_agrement_arxiv.html", context)

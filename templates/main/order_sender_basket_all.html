@@ -92,7 +92,7 @@
                         <tbody>
                         {% for m in page_obj %}
                           <tr>
-                            <th scope="row">{{ forloop.counter }}</th>
+                            <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
                             <td class="text-center">
                                 {% if m.material.image %}
                                     <img src="{{ m.material.image.url }}"

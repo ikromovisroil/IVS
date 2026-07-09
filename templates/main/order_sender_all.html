@@ -62,7 +62,7 @@
                     <tbody>
                     {% for o in page_obj %}
                       <tr>
-                        <th scope="row">{{ forloop.counter }}</th>
+                        <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
                         <td>#{{ o.id }}</td>
                         <td>{{ o.receiver.full_name }}</td>
                         <td>{{ o.user.full_name }}</td>

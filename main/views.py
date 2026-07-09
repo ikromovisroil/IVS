@@ -115,6 +115,7 @@ def contact(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
     }
     return render(request, "main/contact.html", context)
@@ -158,6 +159,7 @@ def contact_arxiv(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_arxiv.html", context)
@@ -202,6 +204,7 @@ def contact_agrement(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_agrement.html", context)
@@ -245,6 +248,7 @@ def contact_agrement_arxiv(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_agrement_arxiv.html", context)
@@ -290,6 +294,7 @@ def contact_user(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_user.html", context)
@@ -335,6 +340,7 @@ def contact_user_arxiv(request):
 
     context = {
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_user_arxiv.html", context)
@@ -2121,6 +2127,7 @@ def mat_info(request):
         "date2": date2_raw,
         "has_search": has_search,
         "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "table_rows": table_rows,
         "qs_params": qs_params,
     }
@@ -2860,6 +2867,7 @@ def files(request):
 
     context = {
         "page_obj":  page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
         "name":      name,
         "date1":     date1,

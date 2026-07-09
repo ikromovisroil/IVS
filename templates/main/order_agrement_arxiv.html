@@ -51,14 +51,13 @@
                     <th>Bajardi</th>
                     <th scope="col">Xolati</th>
                     <th scope="col">Yuborilgan sana</th>
-                    <th scope="col">Imzolashga yuborish</th>
                   </tr>
                 </thead>
 
                 <tbody>
                   {% for o in page_obj %}
                     <tr>
-                      <th scope="row">{{ forloop.counter }}</th>
+                      <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
                       <td>#{{ o.id }}</td>
                       <td>{{ o.sender.full_name }}</td>
                       <td>{{ o.receiver.full_name }}</td>
@@ -319,19 +318,6 @@
 
                       </td>
                       <td>{{ o.date_creat|date:"d.m.Y, H:i" }}</td>
-
-                      <td>
-                        {% if o.materials_all.exists and o.status == "accepted" %}
-                            <a href="{% url 'order_agrement_deed' o.pk %}"
-                               class="btn btn-success btn-sm btn-send d-inline-flex align-items-center gap-2 px-3">
-
-                                <i class="bi bi-send-fill"></i>
-                                <span>Yuborish</span>
-                            </a>
-                        {% else %}
-                            <span class="text-muted small">—</span>
-                        {% endif %}
-                      </td>
 
                     </tr>
                   {% endfor %}
