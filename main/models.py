@@ -570,10 +570,12 @@ class Deed(models.Model):
         ('svod', 'Yakuniy hisobot'),
         ('reestr', 'Reestr'),
         ('act', 'Akt'),
+        ('act', 'Akt'),
     ], default='act', db_index=True)
 
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
     code = models.CharField(max_length=10, null=True, blank=True, unique=True, db_index=True)
+    # order = models.ForeignKey(Order, on_delete=models.SET_NULL, related_name='order', null=True, blank=True ,db_index=True)
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
