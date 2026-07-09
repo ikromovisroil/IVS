@@ -2127,7 +2127,7 @@ def mat_info(request):
         "date2": date2_raw,
         "has_search": has_search,
         "page_obj": page_obj,
-        "row_start": page_obj.start_index() if paginator.count else 0,
+        "row_start": page_obj.start_index() if page_obj else 0,
         "table_rows": table_rows,
         "qs_params": qs_params,
     }
