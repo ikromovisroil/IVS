@@ -216,7 +216,7 @@ class OrderAdmin(admin.ModelAdmin):
         "colored_status", "rating", "date_creat"
     )
     list_filter = (
-        "status", "goal", "date_creat"
+        "organization", "goal__type",  "status", "goal", "date_creat"
     )
     search_fields = (
         "id",

@@ -179,6 +179,12 @@
                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
                                         <div class="col-12 col-md-7 info-value">{{ o.receiver.phone|default:"—" }}</div>
                                     </div>
+                                    {% if o.message_receiver %}
+                                    <div class="row info-row gx-3">
+                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
+                                        <div class="col-12 col-md-7 info-value">{{ o.message_receiver }}</div>
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 {% endif %}
 

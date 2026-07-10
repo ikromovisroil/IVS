@@ -28,15 +28,15 @@
 
               <ul class="nav nav-pills gap-2">
                 <li class="nav-pills">
-                  <a href="{% url 'order_receiver_all' %}" class="nav-link active">Arizalar</a>
+                  <a href="{% url 'order_receiver_barn' %}" class="nav-link active">Arizalar</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_receiver_activ_all' %}" class="nav-link border border-primary">Bajarish</a>
+                  <a href="{% url 'order_receiver_activ_barn' %}" class="nav-link border border-primary">Bajarish</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_receiver_arxiv_all' %}" class="nav-link border border-primary">Tarix</a>
+                  <a href="{% url 'order_receiver_arxiv_barn' %}" class="nav-link border border-primary">Tarix</a>
                 </li>
               </ul>
 
@@ -54,7 +54,7 @@
                     </thead>
 
                     <tbody id="order-table-body">
-                      {% include "main/partials/order_receiver_all.html" %}
+                      {% include "main/partials/order_receiver_barn_rows.html" %}
                     </tbody>
                   </table>
                 </div>

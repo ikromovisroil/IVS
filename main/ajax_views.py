@@ -73,47 +73,31 @@ def order_mark_seen(request):
     if not rol:
         return JsonResponse({"status": "no_role"}, status=400)
 
+    Order.objects.filter(
+        receiver=employee,
+        goal__type="atm",
+        status__in=["approved", "canceled"],
+        receiver_seen=False,
+    ).update(receiver_seen=True)
 
-    if getattr(rol, "client", False):
-        Order.objects.filter(
-            receiver=employee,
-            status__in=["accepted", "canceled", "rejected"],
-            receiver_seen=False,
-        ).update(receiver_seen=True)
+    Order.objects.filter(
+        receiver=employee,
+        goal__type="barn",
+        status__in=["accepted", "canceled", "rejected"],
+        receiver_seen=False,
+    ).update(receiver_seen=True)
 
-        Order.objects.filter(
-            organization_id=4,
-            sender=employee,
-            status="rejected",
-            sender_seen=False,
-        ).update(sender_seen=True)
+    Order.objects.filter(
+        sender=employee,
+        status="rejected",
+        sender_seen=False,
+    ).update(sender_seen=True)
 
-        if employee.organization_id and employee.organization_id != 4:
-            Order.objects.filter(
-                organization_id=employee.organization_id,
-                sender=employee,
-                status="rejected",
-                sender_seen=False,
-            ).update(sender_seen=True)
-
-        Order.objects.filter(
-            user=employee,
-            status="accepted",
-            user_seen=False,
-        ).update(user_seen=True)
-
-    else:
-        Order.objects.filter(
-            receiver=employee,
-            status__in=["approved", "canceled"],
-            receiver_seen=False,
-        ).update(receiver_seen=True)
-
-        Order.objects.filter(
-            sender=employee,
-            status="rejected",
-            sender_seen=False,
-        ).update(sender_seen=True)
+    Order.objects.filter(
+        user=employee,
+        status="accepted",
+        user_seen=False,
+    ).update(user_seen=True)
 
     return JsonResponse({"status": "ok"})
 

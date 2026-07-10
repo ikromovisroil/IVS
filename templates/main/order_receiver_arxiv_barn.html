@@ -31,15 +31,15 @@
             <ul class="nav nav-pills gap-2">
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_all' %}" class="nav-link border border-primary">Arizalar</a>
+                <a href="{% url 'order_receiver_barn' %}" class="nav-link border border-primary">Arizalar</a>
               </li>
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_activ_all' %}" class="nav-link border border-primary">Bajarish</a>
+                <a href="{% url 'order_receiver_activ_barn' %}" class="nav-link border border-primary">Bajarish</a>
               </li>
 
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_arxiv_all' %}" class="nav-link active">Tarix</a>
+                <a href="{% url 'order_receiver_arxiv_barn' %}" class="nav-link active">Tarix</a>
               </li>
 
             </ul>
@@ -53,6 +53,7 @@
                     <th scope="col">Ariza №</th>
                     <th scope="col">Muallif</th>
                     <th scope="col">Xolati</th>
+                    <th scope="col">Fayllar</th>
                     <th scope="col">Yuborilgan sana</th>
                   </tr>
                 </thead>
@@ -171,6 +172,12 @@
                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
                                         <div class="col-12 col-md-7 info-value">{{ o.receiver.phone|default:"—" }}</div>
                                     </div>
+                                    {% if o.message_receiver %}
+                                    <div class="row info-row gx-3">
+                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
+                                        <div class="col-12 col-md-7 info-value">{{ o.message_receiver }}</div>
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 {% endif %}
 
@@ -303,6 +310,13 @@
                         </div>
                         <!-- End Modal -->
 
+                      </td>
+                      <td>
+                        {% for d in o.order.all %}
+                            {% if d.file %}
+                            <a href="{{ d.file.url }}" target="_blank">📄 Ko'rish</a><br>
+                            {% endif %}
+                        {% endfor %}
                       </td>
                       <td>{{ o.date_creat|date:"d.m.Y, H:i" }}</td>
 

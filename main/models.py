@@ -406,6 +406,10 @@ class Material(models.Model):
 
 # maqsad.
 class Goal(models.Model):
+    type = models.CharField(max_length=20, choices=[
+        ('atm', 'ATMga ariza'),
+        ('barn', 'Omborga ariza'),
+    ], default='atm', db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -421,15 +425,18 @@ class Goal(models.Model):
 class Order(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
-    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_user', null=True, blank=True, db_index=True)
 
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_sender', null=True, blank=True, db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     rating = models.PositiveIntegerField(null=True, blank=True)
 
+
     receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_receiver',null=True, blank=True,db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
+
+    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_user', null=True, blank=True, db_index=True)
+    message_user = models.TextField(null=True, blank=True)
 
     status = models.CharField(max_length=20, choices=[
         ('viewed', 'Yangi'),
@@ -529,7 +536,6 @@ class OrderMaterial(models.Model):
         verbose_name_plural = "Arizalar materiallari"
 
 
-
 class MaterialUser(models.Model):
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='sender', null=True, blank=True ,db_index=True)
     receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='receiver', null=True, blank=True, db_index=True)
@@ -570,12 +576,12 @@ class Deed(models.Model):
         ('svod', 'Yakuniy hisobot'),
         ('reestr', 'Reestr'),
         ('act', 'Akt'),
-        ('act', 'Akt'),
+        ('petition', 'Talabnoma'),
     ], default='act', db_index=True)
 
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
     code = models.CharField(max_length=10, null=True, blank=True, unique=True, db_index=True)
-    # order = models.ForeignKey(Order, on_delete=models.SET_NULL, related_name='order', null=True, blank=True ,db_index=True)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, related_name='order', null=True, blank=True ,db_index=True)
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)

@@ -32,19 +32,19 @@
                     <ul class="nav nav-pills gap-2">
 
                         <li class="nav-pills">
-                          <a href="{% url 'order_sender_all' %}" class="nav-link border border-primary" >Arizalar</a>
+                          <a href="{% url 'order_sender_barn' %}" class="nav-link border border-primary" >Arizalar</a>
                         </li>
 
                         <li class="nav-pills">
-                          <a href="{% url 'order_sender_arxiv_all' %}" class="nav-link border border-primary" >Tarix</a>
+                          <a href="{% url 'order_sender_arxiv_barn' %}" class="nav-link border border-primary" >Tarix</a>
                         </li>
 
                         <li class="nav-pills">
-                          <a href="{% url 'order_sender_material_all' %}" class="nav-link border border-primary" >Material</a>
+                          <a href="{% url 'order_sender_material_barn' %}" class="nav-link border border-primary" >Material</a>
                         </li>
 
                         <li class="nav-pills">
-                          <a href="{% url 'order_sender_basket_all' %}" class="nav-link active" >Savat</a>
+                          <a href="{% url 'order_sender_basket_barn' %}" class="nav-link active" >Savat</a>
                         </li>
 
                     </ul>
@@ -58,6 +58,19 @@
                             </div>
                             <div class="modal-body">
                                 <div class="">
+
+                                    <div class="row mb-3">
+                                        <label class="col-sm-12 col-form-label">Arizaning Maqsadi:</label>
+                                        <div class="col-sm-12">
+                                            <select class="form-select" name="goal" id="topic-select" required>
+                                                <option value="">tanlang</option>
+                                                {% for t in goal %}
+                                                    <option value="{{ t.id }}">{{ t.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+
                                     <!-- Izoh -->
                                     <div class="row mb-3">
                                         <label class="col-sm-12 col-form-label">Qo‘shimcha ma’lumot:</label>

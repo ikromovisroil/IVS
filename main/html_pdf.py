@@ -155,7 +155,8 @@ def _create_deed_for_order(order, request):
         status_receiver="approved",
         date_receiver=order.date_approved,
         body=html_body,
-        status="act",
+        order=order,
+        status="petition",
     )
 
     try:

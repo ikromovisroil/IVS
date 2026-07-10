@@ -81,7 +81,6 @@ def sso_start_approve(request):
             return redirect(redirect_url)
 
         doc_value = f"consent-{consent_id}-{req_emp.id}"
-
     else:
         messages.error(request, "Noto‘g‘ri approve turi")
         return redirect(redirect_url)

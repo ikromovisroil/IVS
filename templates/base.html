@@ -77,47 +77,34 @@
             <li class="notification-item">
 
               {# ================= LINK LOGIC ================= #}
-                {% if request.user.employee.rol.client %}
-                    {% if o.sender.user_id == request.user.id %}
-                        {% if o.organization_id == 4 %}
-                            {% if o.status == "finished" %}
-                                {% url 'order_sender' as link %}
-                            {% elif o.status == "rejected"  %}
-                                {% url 'order_sender_arxiv' as link %}
-                            {% endif %}
-                        {% else %}
-                            {% if o.status == "approved" %}
-                                {% url 'order_sender_all' as link %}
-                            {% elif o.status == "rejected" %}
-                                {% url 'order_sender_arxiv_all' as link %}
-                            {% endif %}
+              {% with link="#" %}
+                {% if o.sender.user_id == request.user.id %}
+                    {% if o.goal.type == "atm" %}
+                        {% if o.status == "finished" %}
+                            {% url 'order_sender' as link %}
+                        {% elif o.status == "rejected" %}
+                            {% url 'order_sender_arxiv' as link %}
                         {% endif %}
-                    {% elif o.receiver.user_id == request.user.id %}
-                        {% if o.status == "accepted" or o.status == "canceled" or o.status == "rejected" %}
-                            {% url 'order_receiver_arxiv_all' as link %}
-                        {% endif %}
-                    {% elif o.user.user_id == request.user.id %}
-                        {% if o.status == "accepted" %}
-                            {% url 'order_user_arxiv' as link %}
+                    {% elif o.goal.type == "barn" %}
+                        {% if o.status == "approved" %}
+                            {% url 'order_sender_barn' as link %}
+                        {% elif o.status == "rejected" %}
+                            {% url 'order_sender_arxiv_barn' as link %}
                         {% endif %}
                     {% endif %}
-                {% elif not request.user.employee.rol.client %}
-                    {% if o.sender.user_id == request.user.id %}
-                        {% if o.organization_id == 4 %}
-                            {% if o.status == "finished" %}
-                                {% url 'order_sender' as link %}
-                            {% elif o.status == "rejected"  %}
-                                {% url 'order_sender_arxiv' as link %}
-                            {% endif %}
-                        {% endif %}
-                    {% elif o.receiver.user_id == request.user.id %}
-                        {% if o.status == "accepted" or o.status == "rejected" %}
-                            {% url 'order_receiver_arxiv' as link %}
-                        {% endif %}
+
+                {% elif o.receiver.user_id == request.user.id %}
+                    {% if o.goal.type == "atm" %}
+                        {% url 'order_receiver_arxiv' as link %}
+                    {% elif o.goal.type == "barn" %}
+                        {% url 'order_receiver_arxiv_barn' as link %}
                     {% endif %}
+
+                {% elif o.user.user_id == request.user.id %}
+                    {% url 'order_agrement_arxiv' as link %}
                 {% endif %}
 
-                <a href="{{ link }}" class="d-flex align-items-start text-decoration-none">
+              <a href="{{ link }}" class="d-flex align-items-start text-decoration-none">
 
                 <!-- ================= ICON ================= -->
                 {% if o.status == 'viewed' %}
@@ -198,6 +185,7 @@
                 </div>
 
               </a>
+              {% endwith %}
             </li>
 
             <li><hr class="dropdown-divider"></li>
@@ -205,7 +193,7 @@
             {% empty %}
 
             <li class="text-center p-3 text-muted">
-              Hech qanday xabar yo‘q
+              Hech qanday xabar yo'q
             </li>
 
             {% endfor %}
@@ -338,7 +326,7 @@
 
         <!-- Arizalar -->
         <li class="nav-item">
-          <a class="nav-link {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_all' or url_name == 'order_sender_basket_all' or url_name == 'order_sender_user' %}active{% else %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_barn' or url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_sender_barn' or url_name == 'order_sender_arxiv_barn' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_barn' or url_name == 'order_sender_basket_barn' or url_name == 'order_sender_user' %}active{% else %}collapsed{% endif %}"
              data-bs-target="#forms-nav-order"
              data-bs-toggle="collapse"
              href="#">
@@ -348,7 +336,7 @@
           </a>
 
           <ul id="forms-nav-order"
-              class="nav-content collapse {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_all' or url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_all' or url_name == 'order_sender_basket_all' or url_name == 'order_sender_user' %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_barn' or url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_sender_barn' or url_name == 'order_sender_arxiv_barn' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_barn' or url_name == 'order_sender_basket_barn' or url_name == 'order_sender_user' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
             <li>
@@ -360,8 +348,8 @@
 
             {% if request.user.employee.rol.client %}
             <li>
-              <a class="{% if url_name == 'order_sender_all' or url_name == 'order_sender_arxiv_all' or url_name == 'order_sender_material_all' or url_name == 'order_sender_basket_all' %}active{% endif %}"
-                 href="{% url 'order_sender_all' %}">
+              <a class="{% if url_name == 'order_sender_barn' or url_name == 'order_sender_arxiv_barn' or url_name == 'order_sender_material_barn' or url_name == 'order_sender_basket_barn' %}active{% endif %}"
+                 href="{% url 'order_sender_barn' %}">
                 <i class="bi bi-circle"></i><span>Omborxona</span>
               </a>
             </li>
@@ -379,8 +367,8 @@
 
               {% if request.user.employee.rol.client %}
               <li>
-                <a class="{% if url_name == 'order_receiver_all' or url_name == 'order_receiver_activ_all' or url_name == 'order_receiver_arxiv_all' %}active{% endif %}"
-                   href="{% url 'order_receiver_all' %}">
+                <a class="{% if url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_receiver_arxiv_barn' %}active{% endif %}"
+                   href="{% url 'order_receiver_barn' %}">
                   <i class="bi bi-circle"></i><span>Arizalarni Bajarish</span>
                 </a>
               </li>

@@ -22,10 +22,11 @@ def order_sender(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender=employee, organization_id=4,status__in=["viewed", "process", "finished"],)
-        .select_related("organization", "goal", "technics","user", "receiver", "sender")
+        .filter(sender=employee,goal__type="atm", status__in=["viewed", "process", "finished"],)
+        .select_related( "goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
+    print(orders_qs)
 
     paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
@@ -33,7 +34,7 @@ def order_sender(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.order_by("id"),
+        "goal":     Goal.objects.filter(type="atm").order_by("id"),
     }
     return render(request, "main/order_sender.html", context)
 
@@ -107,11 +108,11 @@ def order_sender_arxiv(request):
     orders_qs = (
         Order.objects
         .filter(
-            sender=employee, organization_id=4,
+            sender=employee, goal__type="atm",
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
         .select_related(
-            "organization", "goal", "technics",
+            "goal", "technics",
             "user", "receiver", "sender"
         )
         .order_by("-id")
@@ -123,7 +124,7 @@ def order_sender_arxiv(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.order_by("id"),
+        "goal":     Goal.objects.filter(type="atm").order_by("id"),
     }
     return render(request, "main/order_sender_arxiv.html", context)
 
@@ -147,7 +148,6 @@ def order_post(request):
     goal = get_object_or_404(Goal, pk=int(goal_id))
 
     Order.objects.create(
-        organization_id=4,
         sender_id=employee.id,
         goal=goal,
         message_sender=body,
@@ -172,8 +172,8 @@ def order_sender_user(request):
 
     orders_qs = (
         Order.objects
-        .filter(user=employee, organization_id=4)
-        .select_related("organization", "goal", "technics","user", "receiver", "sender")
+        .filter(user=employee, goal__type="atm")
+        .select_related("goal", "technics", "user", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -183,7 +183,7 @@ def order_sender_user(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.order_by("id"),
+        "goal":     Goal.objects.filter(type="atm").order_by("id"),
         "organizations": Organization.objects.only("id", "name").order_by("id"),
     }
     return render(request, "main/order_sender_user.html", context)
@@ -216,7 +216,6 @@ def order_user_post(request):
 
 
     Order.objects.create(
-        organization_id=4,
         sender_id=emp.id,
         user_id=employee.id,
         goal=goal,
@@ -225,8 +224,7 @@ def order_user_post(request):
     )
 
     messages.success(request, "Ariza yuborildi")
-    return redirect("order_receiver")
-
+    return redirect(back_url)
 
 
 @never_cache
@@ -245,8 +243,8 @@ def order_receiver(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender__region=employee.region,organization_id=4, status="viewed")
-        .select_related("organization", "goal", "technics", "user", "receiver", "sender")
+        .filter(sender__region=employee.region, goal__type="atm", status="viewed")
+        .select_related( "goal", "technics", "user", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -322,8 +320,8 @@ def order_receiver_activ(request):
 
     orders_qs = (
         Order.objects
-        .filter(receiver=employee,organization_id=4,status__in=["process", "finished"],)
-        .select_related("organization", "goal", "technics","user", "receiver", "sender")
+        .filter(receiver=employee, goal__type="atm", status__in=["process", "finished"],)
+        .select_related("goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -473,8 +471,8 @@ def order_receiver_arxiv(request):
 
     orders_qs = (
         Order.objects
-        .filter(receiver=employee,organization_id=4,status__in=["approved", "accepted", "canceled", "rejected"],)
-        .select_related("organization", "goal", "technics","user", "receiver", "sender")
+        .filter(receiver=employee, goal__type="atm", status__in=["approved", "accepted", "canceled", "rejected"],)
+        .select_related("goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -518,7 +516,6 @@ def order_receiver_deed(request, pk):
         Employee.objects
         .filter(
             organization=order.sender.organization,
-            department=order.sender.department,
         )
         .select_related("organization", "rank")
     )
@@ -526,8 +523,8 @@ def order_receiver_deed(request, pk):
     employees = (
         Employee.objects
         .filter(
-            Q(department=order.sender.department) |
-            Q(department_id=employee.department_id)
+            Q(organization=order.sender.organization) |
+            Q(organization=employee.organization)
         )
         .select_related("organization", "rank")
         .distinct()
@@ -553,6 +550,7 @@ def order_receiver_deed_post(request):
     if getattr(employee.rol, "client", False):
         raise PermissionDenied("Sizga ruxsat yo'q")
 
+    back_url    = request.META.get("HTTP_REFERER") or "/"
     sender_id  = (request.POST.get("sender")  or "").strip()
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
@@ -569,11 +567,11 @@ def order_receiver_deed_post(request):
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
         messages.info(request, "Imzolovchi xodim tanlanmadi")
-        return redirect("order_receiver_activ")
+        return redirect(back_url)
 
     if not body:
         messages.info(request, "Hujjat matni bo'sh bo'lmasin")
-        return redirect("order_receiver_activ")
+        return redirect(back_url)
 
     # 1. DB — transaction ichida
     with transaction.atomic():
@@ -610,7 +608,7 @@ def order_receiver_deed_post(request):
 @never_cache
 @require_GET
 @login_required
-def order_sender_all(request):
+def order_sender_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -623,8 +621,7 @@ def order_sender_all(request):
     orders_qs = (
         Order.objects
         .filter(
-            sender=employee,
-            organization=employee.organization,
+            sender=employee, organization=employee.organization, goal__type="barn",
             status__in=["viewed", "process", "finished", "approved"],
         )
         .select_related("organization", "user", "receiver", "sender")
@@ -638,13 +635,13 @@ def order_sender_all(request):
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
     }
-    return render(request, "main/order_sender_all.html", context)
+    return render(request, "main/order_sender_barn.html", context)
 
 
 @never_cache
 @require_POST
 @login_required
-def order_decide_all(request, pk):
+def order_decide_barn(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -717,7 +714,7 @@ def order_decide_all(request, pk):
 @never_cache
 @require_GET
 @login_required
-def order_sender_arxiv_all(request):
+def order_sender_arxiv_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -731,6 +728,7 @@ def order_sender_arxiv_all(request):
         Order.objects
         .filter(
             sender=employee,
+            goal__type="barn",
             organization=employee.organization,
             status__in=["accepted", "canceled", "rejected"],
         )
@@ -748,13 +746,13 @@ def order_sender_arxiv_all(request):
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
     }
-    return render(request, "main/order_sender_arxiv_all.html", context)
+    return render(request, "main/order_sender_arxiv_barn.html", context)
 
 
 @never_cache
 @require_GET
 @login_required
-def order_sender_material_all(request):
+def order_sender_material_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -790,13 +788,13 @@ def order_sender_material_all(request):
         "row_start": page_obj.start_index() if paginator.count else 0,
         "cart_material_ids": cart_material_ids,
     }
-    return render(request, "main/order_sender_material_all.html", context)
+    return render(request, "main/order_sender_material_barn.html", context)
 
 
 @never_cache
 @require_GET
 @login_required
-def order_sender_basket_all(request):
+def order_sender_basket_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -823,8 +821,9 @@ def order_sender_basket_all(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
+        "goal": Goal.objects.filter(type="barn").order_by("id"),
     }
-    return render(request, "main/order_sender_basket_all.html", context)
+    return render(request, "main/order_sender_basket_barn.html", context)
 
 
 @never_cache
@@ -851,9 +850,13 @@ def create_order_sender_from(request):
     )
 
     body = (request.POST.get("body") or "").strip() or None
+    goal_id  = (request.POST.get("goal") or "").strip()
+
+    goal = get_object_or_404(Goal, pk=int(goal_id))
 
     order = Order.objects.create(
         organization=employee.organization,
+        goal=goal,
         sender=employee,
         message_sender=body,
         status="viewed",
@@ -868,14 +871,14 @@ def create_order_sender_from(request):
     OrderMaterial.objects.bulk_update(cart_items, ["number", "order"])
 
     messages.success(request, "Ariza yuborildi")
-    return redirect("order_sender_all")
+    return redirect("order_sender_barn")
 
 
 @never_cache
 @require_GET
 @login_required
 @role_required("order")
-def order_receiver_all(request):
+def order_receiver_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -889,6 +892,7 @@ def order_receiver_all(request):
         orders_qs = (
             Order.objects
             .filter(
+                goal__type="barn",
                 sender__region_id=employee.region_id,
                 organization=employee.organization,
                 status="viewed",
@@ -911,16 +915,16 @@ def order_receiver_all(request):
     }
 
     if request.headers.get("x-requested-with") == "XMLHttpRequest":
-        return render(request, "main/partials/order_receiver_all.html", context)
+        return render(request, "main/partials/order_receiver_barn_rows.html", context)
 
-    return render(request, "main/order_receiver_all.html", context)
+    return render(request, "main/order_receiver_barn.html", context)
 
 
 @never_cache
 @require_POST
 @login_required
 @role_required("order")
-def order_accepted_all(request, pk):
+def order_accepted_barn(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -974,7 +978,7 @@ def order_accepted_all(request, pk):
 
     if action == "process":
         messages.success(request, "Ariza qabul qilindi")
-        return redirect("order_receiver_activ_all")
+        return redirect("order_receiver_activ_barn")
 
     messages.success(request, "Ariza rad etildi")
     return redirect(back_url)
@@ -984,7 +988,7 @@ def order_accepted_all(request, pk):
 @require_GET
 @login_required
 @role_required("order")
-def order_receiver_activ_all(request):
+def order_receiver_activ_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -997,6 +1001,7 @@ def order_receiver_activ_all(request):
     orders_qs = (
         Order.objects
         .filter(
+            goal__type="barn",
             receiver=employee,
             organization=employee.organization,
             status__in=["process", "finished"],
@@ -1025,14 +1030,14 @@ def order_receiver_activ_all(request):
         "row_start": page_obj.start_index() if paginator.count else 0,
         "materials": materials,
     }
-    return render(request, "main/order_receiver_activ_all.html", context)
+    return render(request, "main/order_receiver_activ_barn.html", context)
 
 
 @never_cache
 @require_POST
 @login_required
 @role_required("order")
-def order_material_all(request):
+def order_material_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -1156,7 +1161,7 @@ def order_material_all(request):
 @require_GET
 @login_required
 @role_required("order")
-def order_receiver_arxiv_all(request):
+def order_receiver_arxiv_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -1169,6 +1174,7 @@ def order_receiver_arxiv_all(request):
     orders_qs = (
         Order.objects
         .filter(
+            goal__type="barn",
             receiver=employee,
             organization=employee.organization,
             status__in=["approved", "accepted", "canceled", "rejected"],
@@ -1187,7 +1193,7 @@ def order_receiver_arxiv_all(request):
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
         }
-    return render(request, "main/order_receiver_arxiv_all.html", context)
+    return render(request, "main/order_receiver_arxiv_barn.html", context)
 
 
 @never_cache
@@ -1208,6 +1214,7 @@ def order_agrement(request):
         orders_qs = (
             Order.objects
             .filter(
+                goal__type="barn",
                 receiver__region_id=employee.region_id,
                 organization=employee.organization,
                 status="finished",
@@ -1422,6 +1429,7 @@ def order_agrement_arxiv(request):
         Order.objects
         .filter(
             user=employee,
+            goal__type="barn",
             organization=employee.organization,
             status__in=["approved", "accepted", "canceled", "rejected"],
         )

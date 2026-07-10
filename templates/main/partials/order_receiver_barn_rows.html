@@ -209,7 +209,7 @@
                     </div>
 
                     <div class="modal-footer d-flex flex-row justify-content-center gap-2">
-                        <form action="{% url 'order_accepted_all' o.pk %}" method="post" class="d-flex flex-row gap-2 w-100">
+                        <form action="{% url 'order_accepted_barn' o.pk %}" method="post" class="d-flex flex-row gap-2 w-100">
                             {% csrf_token %}
                             <button
                                 type="submit"

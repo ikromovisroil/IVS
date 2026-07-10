@@ -31,13 +31,13 @@
 
             <ul class="nav nav-pills gap-2">
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_all' %}" class="nav-link border border-primary">Arizalar</a>
+                <a href="{% url 'order_receiver_barn' %}" class="nav-link border border-primary">Arizalar</a>
               </li>
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_activ_all' %}" class="nav-link active">Bajarish</a>
+                <a href="{% url 'order_receiver_activ_barn' %}" class="nav-link active">Bajarish</a>
               </li>
               <li class="nav-pills">
-                <a href="{% url 'order_receiver_arxiv_all' %}" class="nav-link border border-primary">Tarix</a>
+                <a href="{% url 'order_receiver_arxiv_barn' %}" class="nav-link border border-primary">Tarix</a>
               </li>
             </ul>
 
@@ -85,7 +85,7 @@
                       {# ===== MODAL ===== #}
                       <div class="modal fade order-modal" id="verticalmodal{{ o.id }}" tabindex="-1">
                         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl modal-fullscreen-sm-down">
-                            <form class="modal-content" action="{% url 'order_material_all' %}" method="post">
+                            <form class="modal-content" action="{% url 'order_material_barn' %}" method="post">
                             {% csrf_token %}
                             <input type="hidden" name="order_id" value="{{ o.id }}">
                             <div class="modal-header">
@@ -168,6 +168,12 @@
                                     <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
                                     <div class="col-12 col-md-7 info-value">{{ o.receiver.phone|default:"—" }}</div>
                                 </div>
+                                {% if o.message_receiver %}
+                                <div class="row info-row gx-3">
+                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
+                                    <div class="col-12 col-md-7 info-value">{{ o.message_receiver }}</div>
+                                </div>
+                                {% endif %}
                               </div>
                               {% endif %}
 

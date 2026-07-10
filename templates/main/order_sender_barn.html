@@ -7,7 +7,6 @@
 {% endblock title %}
 
 {% block css %}
-<link rel="stylesheet" href="{% static 'css/order-modal.css' %}">
 {% endblock css %}
 
 
@@ -31,19 +30,19 @@
               <ul class="nav nav-pills gap-2">
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_all' %}" class="nav-link border border-primary">Arizalar</a>
+                  <a href="{% url 'order_sender_barn' %}" class="nav-link active">Arizalar</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_arxiv_all' %}" class="nav-link active" >Tarix</a>
+                  <a href="{% url 'order_sender_arxiv_barn' %}" class="nav-link border border-primary" >Tarix</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_material_all' %}" class="nav-link border border-primary" >Material</a>
+                  <a href="{% url 'order_sender_material_barn' %}" class="nav-link border border-primary" >Material</a>
                 </li>
 
                 <li class="nav-pills">
-                  <a href="{% url 'order_sender_basket_all' %}" class="nav-link border border-primary" >Savat</a>
+                  <a href="{% url 'order_sender_basket_barn' %}" class="nav-link border border-primary" >Savat</a>
                 </li>
 
               </ul>
@@ -123,10 +122,6 @@
                                                 <div class="col-12 col-md-7 info-value">{{ o.sender.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
                                             </div>
                                             <div class="row info-row gx-3">
-                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-bullseye"></i> Ariza maqsadi</div>
-                                                <div class="col-12 col-md-7 info-value">{{ o.goal.name }}</div>
-                                            </div>
-                                            <div class="row info-row gx-3">
                                                 <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
                                                 <div class="col-12 col-md-7 info-value">
                                                     {{ o.sender.organization }}<br>
@@ -175,6 +170,12 @@
                                                 <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
                                                 <div class="col-12 col-md-7 info-value">{{ o.receiver.phone|default:"—" }}</div>
                                             </div>
+                                            {% if o.message_receiver %}
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.message_receiver }}</div>
+                                            </div>
+                                            {% endif %}
                                         </div>
                                         {% endif %}
 
@@ -188,10 +189,10 @@
                                             <div class="row info-row gx-3">
                                                 <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
                                                 <div class="col-12 col-md-7 info-value">
+                                                    {{ o.user.organization }}<br>
                                                     {% if o.user.division %}<span class="text-muted">{{ o.user.division }}</span>
                                                     {% elif o.user.directorate %}<span class="text-muted">{{ o.user.directorate }}</span>
                                                     {% elif o.user.department %}<span class="text-muted">{{ o.user.department }}</span>
-                                                    {% else %}{{ o.user.organization }}
                                                     {% endif %}
                                                 </div>
                                             </div>
@@ -298,15 +299,17 @@
                                             </div>
                                             {% endif %}
                                         </div>
-
-                                        {% if o.rating %}
-                                        <div class="info-card text-center mt-3">
-                                            <span class="fw-semibold d-block mb-2">Xizmat sifatiga berilgan baho</span>
-                                            {% for i in ""|center:o.rating %}
-                                                <i class="bi bi-star-fill text-warning fs-2"></i>
-                                            {% endfor %}
-                                        </div>
+                                    </div>
+                                    <div class="modal-footer d-flex flex-row justify-content-center gap-2">
+                                      <form action="{% url 'order_decide_barn' o.id %}" method="post" class="d-flex flex-row gap-2 w-100">{% csrf_token %}
+                                        <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle me-1"></i> Etiborsiz qoldirish</button>
+                                        {% if o.status in 'viewed process' %}
+                                        <button type="submit" name="action" value="canceled" class="btn btn-danger flex-fill"><i class="bi bi-x-circle me-1"></i> Bekor qilish</button>
                                         {% endif %}
+                                        {% if o.status == 'approved' %}
+                                        <button type="submit" name="action" value="accepted" class="btn btn-primary flex-fill"><i class="bi bi-check-circle me-1"></i> Qabul qilish</button>
+                                        {% endif %}
+                                      </form>
                                     </div>
                                   </div>
                                 </div>

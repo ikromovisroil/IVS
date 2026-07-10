@@ -112,15 +112,30 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
         reverse("deed_status", args=[deed.code, deed.id])
     )
 
-    dt = timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M")
-    if deed.receiver_id:
-        text = (
-            f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.sender.full_name} tomonidan {dt} da tasdiqlandi\n"
-            f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.receiver.full_name} tomonidan {dt} da tasdiqlandi"
-        )
+    date_sender_fmt = (
+        timezone.localtime(deed.date_sender).strftime("%d.%m.%Y %H:%M")
+        if deed.date_sender else ""
+    )
+    date_receiver_fmt = (
+        timezone.localtime(deed.date_receiver).strftime("%d.%m.%Y %H:%M")
+        if deed.date_receiver else ""
+    )
+    if deed.status != "petition":
+        if deed.receiver_id:
+            text = (
+                f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.sender.full_name} tomonidan {date_sender_fmt} da tasdiqlandi\n"
+                f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.receiver.full_name} tomonidan {date_receiver_fmt} da tasdiqlandi"
+            )
+        else:
+            text = f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.sender.full_name} tomonidan {date_sender_fmt} da tasdiqlandi"
     else:
-        text = f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.sender.full_name} tomonidan {dt} da tasdiqlandi"
-
+        if deed.receiver_id:
+            text = (
+                f"REPORT.YATM.UZ tizimi orqali {deed.sender.full_name} tomonidan {date_sender_fmt} da tasdiqlandi\n"
+                f"REPORT.YATM.UZ tizimi orqali {deed.receiver.full_name} tomonidan {date_receiver_fmt} da tasdiqlandi"
+            )
+        else:
+            text = f"REPORT.YATM.UZ tizimi orqali {deed.sender.full_name} tomonidan {date_sender_fmt} da tasdiqlandi"
     lock_path = abs_pdf + ".lock"
     tmp_out   = abs_pdf.replace(".pdf", "_signed_tmp.pdf")
 

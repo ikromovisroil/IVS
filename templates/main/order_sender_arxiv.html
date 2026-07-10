@@ -33,8 +33,8 @@
                 <div class="">
                     <!-- Mavzu -->
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Arizaning Maqsadi:</label>
-                        <div class="col-sm-9">
+                        <label class="col-sm-12 col-form-label">Arizaning Maqsadi:</label>
+                        <div class="col-sm-12">
                             <select class="form-select" name="goal" id="topic-select" required>
                                 <option value="">tanlang</option>
                                 {% for t in goal %}
@@ -46,8 +46,8 @@
 
                     <!-- Izoh -->
                     <div class="row mb-3">
-                        <label class="col-sm-3 col-form-label">Izoh:</label>
-                        <div class="col-sm-9">
+                        <label class="col-sm-12 col-form-label">Izoh:</label>
+                        <div class="col-sm-12">
                             <textarea class="form-control" name="body" style="height: 100px"></textarea>
                         </div>
                     </div>
@@ -213,6 +213,12 @@
                                                 <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
                                                 <div class="col-12 col-md-7 info-value">{{ o.receiver.phone|default:"—" }}</div>
                                             </div>
+                                            {% if o.message_receiver %}
+                                            <div class="row info-row gx-3">
+                                                <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
+                                                <div class="col-12 col-md-7 info-value">{{ o.message_receiver }}</div>
+                                            </div>
+                                            {% endif %}
                                         </div>
                                         {% endif %}
 
