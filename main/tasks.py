@@ -57,7 +57,7 @@ def sync_all_employees(self):
     ).filter(
         pinfl__isnull=False,
         user__isnull=False,
-        user__is_active=True,
+        # user__is_active=True,
     ).exclude(pinfl="")
 
     total      = employees.count()
@@ -395,7 +395,8 @@ def _block_employee(emp, pinfl):
 
         if emp.user and emp.user.is_active:
             emp.user.is_active = False
-            emp.user.save(update_fields=["is_active"])
+            # emp.user.save(update_fields=["is_active"])
+            emp.user.save()
 
         emp.organization = None
         emp.department = None
