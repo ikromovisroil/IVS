@@ -143,11 +143,31 @@
                         </span>
                         {% endif %}
                     </td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.order }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.technics }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.technics_edit }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.material }}</td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.material_edit }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        <span class="{% if emp.rol.order %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.rol.order %}Bor{% else %}Yo'q{% endif %}
+                        </span>
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        <span class="{% if emp.rol.technics %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.rol.technics %}Bor{% else %}Yo'q{% endif %}
+                        </span>
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        <span class="{% if emp.rol.technics_edit %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.rol.technics_edit %}Bor{% else %}Yo'q{% endif %}
+                        </span>
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        <span class="{% if emp.rol.material %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.rol.material %}Bor{% else %}Yo'q{% endif %}
+                        </span>
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        <span class="{% if emp.rol.material_edit %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.rol.material_edit %}Bor{% else %}Yo'q{% endif %}
+                        </span>
+                    </td>
                   </tr>
                  {% empty %}
                   <tr>
