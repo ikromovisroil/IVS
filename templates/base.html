@@ -575,7 +575,15 @@
           </a>
         </li>
         {% endif %}
-
+        {% if request.user.employee.rol.user %}
+        <li class="nav-item">
+          <a class="nav-link {% if url_name != 'employee' %}collapsed{% endif %}"
+             href="{% url 'employee' %}">
+            <i class="bi bi-person-vcard"></i>
+            <span>Xodimlar</span>
+          </a>
+        </li>
+        {% endif %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"
              href="{% url 'technics_get' %}">

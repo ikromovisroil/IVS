@@ -783,7 +783,11 @@ def barn_tex(request: HttpRequest):
     # ------------------------------------------------------------------ #
     #  1. TEXNIKALAR query                                                 #
     # ------------------------------------------------------------------ #
-    base_qs = Technics.objects.filter(is_active=True)
+    liable_ids = Liable.objects.filter(
+        employee=employee
+    ).values_list("category_id", flat=True)
+
+    base_qs = Technics.objects.filter(category_id__in=liable_ids, is_active=True)
 
     if not getattr(employee.rol, "full", False):
         base_qs = base_qs.filter(organization_id=employee.organization_id)
@@ -2558,6 +2562,9 @@ def emp_status(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
+    rol = getattr(employee, "rol", None)
+    goal_type = "barn" if (rol and rol.client) else "atm"
+
     region_id = (request.GET.get("region") or "").strip()
     date1_raw = (request.GET.get("date1") or "").strip()
     date2_raw = (request.GET.get("date2") or "").strip()
@@ -2598,7 +2605,7 @@ def emp_status(request):
 
     employee = (
         orders
-        .filter(goal__type="atm", receiver__isnull=False)
+        .filter(goal__type=goal_type, receiver__isnull=False)
         .values("receiver_id")
         .annotate(
             full_name=Concat(
@@ -2620,6 +2627,7 @@ def emp_status(request):
 
     goal = (
         Goal.objects
+        .filter(type=goal_type)
         .annotate(
             total=Count(
                 "order",
@@ -3118,3 +3126,166 @@ def material_import(request):
         f"{created} ta yangi qo'shildi, {updated} ta yangilandi, {skipped} ta o'tkazildi"
     )
     return redirect(back_url)
+
+
+@never_cache
+@require_GET
+@login_required
+@role_required("user")
+def employee(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    rol = getattr(employee, "rol", None)
+
+    organization_id = request.GET.get("organization")
+    region_id = request.GET.get("region")
+    department_id = request.GET.get("department")
+    directorate_id = request.GET.get("directorate")
+    division_id = request.GET.get("division")
+    name = request.GET.get("name", "").strip()
+
+    page_number = request.GET.get("page", 1)
+
+    if organization_id:
+        employee_qs = (
+            Employee.objects
+            .select_related("organization", "department", "directorate", "division", "region", "rank")
+            .prefetch_related("rol")
+            .filter(organization_id=organization_id)
+        )
+
+        if region_id:
+            employee_qs = employee_qs.filter(region_id=region_id)
+        if department_id:
+            employee_qs = employee_qs.filter(department_id=department_id)
+        if directorate_id:
+            employee_qs = employee_qs.filter(directorate_id=directorate_id)
+        if division_id:
+            employee_qs = employee_qs.filter(division_id=division_id)
+        if name:
+
+            terms = name.split()
+            query = Q()
+            for term in terms:
+                query &= (
+                        Q(last_name__icontains=term) |
+                        Q(first_name__icontains=term) |
+                        Q(father_name__icontains=term)
+                )
+
+            employee_qs = employee_qs.filter(query)
+
+        employee_qs = employee_qs.order_by("-id")
+    else:
+        employee_qs = Employee.objects.none()
+
+    paginator = Paginator(employee_qs, 20)
+    page_obj = paginator.get_page(page_number)
+
+    if not rol or not rol.client:
+        goal = Goal.objects.filter(type="atm")
+    else:
+        goal = Goal.objects.filter(type="barn")
+
+    category = Category.objects.all()
+
+    emp_ids = [e.id for e in page_obj]
+
+    goal_map = {}
+    for og in OrderGoal.objects.filter(employee_id__in=emp_ids).values("employee_id", "goal_id"):
+        goal_map.setdefault(og["employee_id"], []).append(og["goal_id"])
+
+    category_map = {}
+    for lb in Liable.objects.filter(employee_id__in=emp_ids).values("employee_id", "category_id"):
+        category_map.setdefault(lb["employee_id"], []).append(lb["category_id"])
+
+    for emp in page_obj:
+        emp.selected_goal_ids = goal_map.get(emp.id, [])
+        emp.selected_category_ids = category_map.get(emp.id, [])
+
+    organizations = Organization.objects.only("id", "name").order_by("id")
+    if not (rol and rol.full):
+        organizations = organizations.filter(id=employee.organization_id)
+
+    regions = Region.objects.only("id", "name").order_by("id")
+    if not (rol and rol.region):
+        regions = regions.filter(id=employee.region_id)
+
+    querydict = request.GET.copy()
+    querydict.pop("page", None)
+    qs_params = querydict.urlencode()
+
+    context = {
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+        "total_count": paginator.count,
+        "goal": goal,
+        "category": category,
+        "organizations": organizations,
+        "regions": regions,
+        "qs_params": qs_params,
+    }
+    return render(request, "main/employee.html", context)
+
+
+@never_cache
+@require_POST
+@login_required
+@role_required("user")
+def employee_update(request):
+    current_employee = getattr(request.user, "employee", None)
+    if not current_employee:
+        raise PermissionDenied("Employee yo'q")
+
+    employee_id = request.POST.get("employee_id")
+    if not employee_id:
+        messages.error(request, "Xodim aniqlanmadi")
+        return redirect("employee")
+
+    target_employee = get_object_or_404(
+        Employee, pk=employee_id, organization=current_employee.organization
+    )
+
+    # Checkboxlar — belgilanmagan checkbox umuman POST'da kelmaydi
+    order = request.POST.get("order") == "on"
+    confirm = request.POST.get("confirm") == "on"
+    technics = request.POST.get("technics") == "on"
+    technics_edit = request.POST.get("technics_edit") == "on"
+    material = request.POST.get("material") == "on"
+    material_edit = request.POST.get("material_edit") == "on"
+
+    # Multiple selectlar
+    goal_ids = request.POST.getlist("goal")
+    category_ids = request.POST.getlist("category")
+
+    with transaction.atomic():
+        # --- Rol ---
+        rol, _ = Rol.objects.get_or_create(employee=target_employee)
+        rol.order = order
+        rol.confirm = confirm
+        rol.technics = technics
+        rol.technics_edit = technics_edit
+        rol.material = material
+        rol.material_edit = material_edit
+        rol.save()
+
+        # --- Ariza kategoriyasi (OrderGoal) ---
+        OrderGoal.objects.filter(employee=target_employee).delete()
+        if order and goal_ids:
+            OrderGoal.objects.bulk_create([
+                OrderGoal(employee=target_employee, goal_id=gid)
+                for gid in goal_ids
+            ])
+
+        # --- Texnika kategoriyasi (Liable) ---
+        Liable.objects.filter(employee=target_employee).delete()
+        if technics and category_ids:
+            Liable.objects.bulk_create([
+                Liable(employee=target_employee, category_id=cid, contract=None)
+                for cid in category_ids
+            ])
+
+    messages.success(request, "Xodim muvaffaqiyatli yangilandi")
+    return redirect("employee")

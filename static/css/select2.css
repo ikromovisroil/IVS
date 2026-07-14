@@ -1,5 +1,10 @@
+/* static/css/select2-custom.css */
+
+/* ==========================================================
+   SINGLE SELECT (sizniki, o'zgarmadi)
+   ========================================================== */
 .select2-container--default .select2-selection--single {
-    height: 38px !important;          /* input balandligi */
+    height: 38px !important;
     padding: 6px 12px;
     border: 1px solid #ced4da;
     border-radius: 0.375rem;
@@ -7,8 +12,128 @@
 
 .select2-container--default .select2-selection__rendered {
     line-height: 24px !important;
+    padding-left: 0 !important;
 }
 
 .select2-container--default .select2-selection__arrow {
     height: 36px !important;
+}
+
+/* ==========================================================
+   MULTIPLE SELECT — chiroyli tag/pill ko'rinishi
+   ========================================================== */
+.select2-container--default .select2-selection--multiple {
+    min-height: 38px !important;
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Ichkarida taglar joylashadigan konteyner */
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+}
+
+/* Har bir tanlangan element (tag/pill) */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    background-color: #eef2ff;
+    border: 1px solid #c7d2fe;
+    color: #4338ca;
+    border-radius: 20px;
+    padding: 3px 10px;
+    margin: 3px 4px 3px 0;
+    font-size: 13px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    line-height: 18px;
+}
+
+/* Tag matni */
+.select2-container--default .select2-selection--multiple .select2-selection__choice__display {
+    padding-left: 2px;
+}
+
+/* Tagni o'chirish (X) tugmasi */
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #6366f1;
+    margin-right: 6px;
+    order: -1;
+    font-weight: bold;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    color: #ef4444;
+    background: transparent;
+}
+
+/* Qidiruv input maydoni (taglar ichida yozadigan joy) */
+.select2-container--default .select2-selection--multiple .select2-search--inline .select2-search__field {
+    margin-top: 4px;
+    margin-left: 2px;
+    height: 26px;
+    line-height: 26px;
+}
+
+/* ==========================================================
+   UMUMIY: fokus va dropdown holatlari (single ham, multiple ham)
+   ========================================================== */
+
+/* Fokus bo'lganda border rangi (Bootstrap fokus rangiga mos) */
+.select2-container--default.select2-container--focus .select2-selection--single,
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #86b7fe;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+    outline: 0;
+}
+
+/* Dropdown ochilganda ham border ta'kidlansin */
+.select2-container--default.select2-container--open .select2-selection--single,
+.select2-container--default.select2-container--open .select2-selection--multiple {
+    border-color: #86b7fe;
+}
+
+/* Dropdown paneli */
+.select2-container--default .select2-dropdown {
+    border: 1px solid #ced4da;
+    border-radius: 0.375rem;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* Dropdown ichidagi qidiruv input */
+.select2-container--default .select2-search--dropdown .select2-search__field {
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    padding: 6px 10px;
+}
+
+/* Highlight (hover/keyboard bilan tanlangan) element */
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #6366f1;
+    color: #fff;
+}
+
+/* Allaqachon tanlangan element (single select uchun) */
+.select2-container--default .select2-results__option[aria-selected=true] {
+    background-color: #eef2ff;
+    color: #4338ca;
+}
+
+/* Disabled select */
+.select2-container--default.select2-container--disabled .select2-selection--single,
+.select2-container--default.select2-container--disabled .select2-selection--multiple {
+    background-color: #e9ecef;
+    cursor: not-allowed;
 }

@@ -263,6 +263,17 @@ class OrderMaterialAdmin(admin.ModelAdmin):
     autocomplete_fields = ("order", "material")
 
 
+@admin.register(OrderGoal)
+class OrderGoalAdmin(admin.ModelAdmin):
+    list_display = ("id", "employee", "goal")
+    list_filter = ("goal",)
+    search_fields = (
+        "employee__last_name", "employee__first_name",
+        "goal__name"
+    )
+    autocomplete_fields = ("employee", "goal")
+
+
 # =========================
 # Deed
 # =========================

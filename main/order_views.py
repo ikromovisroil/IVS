@@ -26,7 +26,6 @@ def order_sender(request):
         .select_related( "goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
-    print(orders_qs)
 
     paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
@@ -239,11 +238,20 @@ def order_receiver(request):
     if employee.rol.client:
         raise PermissionDenied("Sizga ruxsat yo‘q")
 
+    order_goal_ids = OrderGoal.objects.filter(
+        employee=employee
+    ).values_list("goal_id", flat=True)
+
     page_number = request.GET.get("page", 1)
 
     orders_qs = (
         Order.objects
-        .filter(sender__region=employee.region, goal__type="atm", status="viewed")
+        .filter(
+            sender__region=employee.region,
+            goal_id__in=order_goal_ids,
+            goal__type="atm",
+            status="viewed"
+        )
         .select_related( "goal", "technics", "user", "receiver", "sender")
         .order_by("-id")
     )
@@ -886,6 +894,10 @@ def order_receiver_barn(request):
     if not getattr(employee.rol, "client", False):
         raise PermissionDenied("Sizga ruxsat yo'q")
 
+    order_goal_ids = OrderGoal.objects.filter(
+        employee=employee
+    ).values_list("goal_id", flat=True)
+
     page_number = request.GET.get("page", 1)
 
     if employee.region_id:
@@ -893,6 +905,7 @@ def order_receiver_barn(request):
             Order.objects
             .filter(
                 goal__type="barn",
+                goal_id__in=order_goal_ids,
                 sender__region_id=employee.region_id,
                 organization=employee.organization,
                 status="viewed",

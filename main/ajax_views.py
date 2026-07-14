@@ -15,11 +15,24 @@ from django.views.decorators.http import require_POST, require_GET
 @require_GET
 @login_required
 def ajax_load_categories(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
     group_id = request.GET.get("group")
     qs = Category.objects.none()
 
+    liable_ids = Liable.objects.filter(
+        employee=employee
+    ).values_list("category_id", flat=True)
+
     if group_id:
-        qs = Category.objects.filter(group_id=group_id).only("id", "name").order_by("name")
+        qs = (
+            Category.objects
+            .filter(id__in=liable_ids, group_id=group_id)
+            .only("id", "name")
+            .order_by("name")
+        )
 
     return JsonResponse({
         "results": [{"id": c.id, "name": c.name} for c in qs]

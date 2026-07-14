@@ -1,0 +1,510 @@
+{% extends 'base.html' %}{% load humanize %}
+{% load static %}
+
+
+{% block title %}
+<title>Texnikalari</title>
+{% endblock title %}
+
+{% block content %}
+
+<main id="main" class="main">
+
+    <div class="pagetitle">
+        <h1> Xodimlar </h1>
+    </div>
+
+    <!-- FILTER -->
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body">
+              <form class="row g-2 mt-1" method="get">
+                  <div class="col-md-3">
+                    <label for="organization" class="form-label">Tashkilot</label>
+                    <select id="organization" name="organization" class="form-select" required>
+                      <option value="">Tanlang...</option>
+                      {% for org in organizations %}
+                        <option value="{{ org.id }}"
+                          {% if request.GET.organization|stringformat:"s" == org.id|stringformat:"s" %}selected{% endif %}>
+                          {{ org.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label for="region" class="form-label">Hududlar</label>
+                    <select id="region" name="region" class="form-select" required>
+                      <option value="">Tanlang...</option>
+                      {% for r in regions %}
+                        <option value="{{ r.id }}"
+                          {% if request.GET.region|stringformat:"s" == r.id|stringformat:"s" %}selected{% endif %}>
+                          {{ r.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label for="department" class="form-label">Department</label>
+                    <select id="department" name="department" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for dep in departments %}
+                        <option value="{{ dep.id }}"
+                          {% if request.GET.department|stringformat:"s" == dep.id|stringformat:"s" %}selected{% endif %}>
+                          {{ dep.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label for="directorate" class="form-label">Boshqarma</label>
+                    <select id="directorate" name="directorate" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for dir in directorates %}
+                        <option value="{{ dir.id }}"
+                          {% if request.GET.directorate|stringformat:"s" == dir.id|stringformat:"s" %}selected{% endif %}>
+                          {{ dir.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                    <label for="division" class="form-label">Bo'lim</label>
+                    <select id="division" name="division" class="form-select">
+                      <option value="">Tanlang...</option>
+                      {% for div in divisions %}
+                        <option value="{{ div.id }}"
+                          {% if request.GET.division|stringformat:"s" == div.id|stringformat:"s" %}selected{% endif %}>
+                          {{ div.name }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+
+                  <div class="col-md-3">
+                      <label for="name" class="form-label">Qidirish</label>
+                      <input id="name" type="text" name="name" class="form-control"
+                             value="{{ request.GET.name|default:'' }}"
+                             placeholder="F.I.O ...">
+                  </div>
+
+                <div class="col-md-3 d-flex align-items-end">
+                  <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+                </div>
+
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EMPLOYEE -->
+    <section class="section">
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="card">
+            <div class="card-body table-responsive">
+              <div class="d-flex justify-content-between align-items-center">
+                 <h5 class="card-title">Xodimlar: {{ total_count }} ta</h5>
+                 <button type="button" class="btn btn-success"
+                         data-bs-toggle="modal" data-bs-target="#verticalycenteredemploye">
+                   + Xodim qo'shish
+                 </button>
+              </div>
+
+              <table class="table table-bordered table-hover align-middle table-sm">
+                <thead class="table-secondary">
+                  <tr>
+                    <th scope="col">T/r</th>
+                    <th scope="col">F.I.O</th>
+                    <th scope="col">Ariza bajarish</th>
+                    <th scope="col">Texnikalar</th>
+                    <th scope="col">Texnika taxrirlash</th>
+                    <th scope="col">Materiallar</th>
+                    <th scope="col">material taxrirlash</th>
+                  </tr>
+                </thead>
+
+                <tbody id="materialBody">
+                {% for emp in page_obj %}
+                  <tr>
+                    <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
+                    <td >
+                        {{ emp.full_name|default:"—" }}
+                        {% if emp.rank %}
+                        <span class="text-secondary small d-block mt-1">
+                          "{{ emp.rank.name|default:'' }}"
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.order }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.technics }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.technics_edit }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.material }}</td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">{{ emp.rol.material_edit }}</td>
+                  </tr>
+                 {% empty %}
+                  <tr>
+                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
+                        class="text-center text-muted py-4">
+                      <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
+                    </td>
+                  </tr>
+                {% endfor %}
+                </tbody>
+              </table>
+
+              {% if page_obj.paginator.num_pages > 1 %}
+              <nav aria-label="Order pagination" class="mt-3">
+                <ul class="pagination justify-content-center">
+
+                  {# Oldingi #}
+                  {% if page_obj.has_previous %}
+                    <li class="page-item">
+                      <a class="page-link" href="?{{ qs_params }}&page={{ page_obj.previous_page_number }}">‹</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled"><span class="page-link">‹</span></li>
+                  {% endif %}
+
+                  {# Sahifa raqamlari #}
+                  {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                      <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num >= page_obj.number|add:-3 and num <= page_obj.number|add:3 %}
+                      <li class="page-item">
+                        <a class="page-link" href="?{{ qs_params }}&page={{ num }}">{{ num }}</a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+
+                  {# Keyingi #}
+                  {% if page_obj.has_next %}
+                    <li class="page-item">
+                      <a class="page-link" href="?{{ qs_params }}&page={{ page_obj.next_page_number }}">›</a>
+                    </li>
+                  {% else %}
+                    <li class="page-item disabled"><span class="page-link">›</span></li>
+                  {% endif %}
+
+                </ul>
+              </nav>
+            {% endif %}
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- EMPLOYEE CREATE MODAL -->
+    <div class="modal fade" id="verticalycenteredemploye" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form class="modal-content" method="post" action="{% url 'employe_create' %}">
+          {% csrf_token %}
+          <div class="modal-header">
+            <h5 class="modal-title">Xodim qo'shish</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">PINFL</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="pinfl" class="form-control" placeholder="PINFL kiriting" required>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ✅ MATERIAL EDIT MODALS (JADVALDAN TASHQARIDA!) -->
+    {% for emp in page_obj %}
+    <div class="modal fade order-modal" id="empmadal-{{ emp.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
+        <form method="post" class="modal-content" action="{% url 'employee_update' %}">
+          {% csrf_token %}
+          <input type="hidden" name="employee_id" value="{{ emp.id }}">
+
+          <div class="modal-header">
+            <h5 class="modal-title">Xodim rol</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Ariza bajarish</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input js-perm-order" type="checkbox" name="order"
+                             {% if emp.rol.order %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Arizani tasdiqlash</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input" type="checkbox" name="confirm"
+                             {% if emp.rol.confirm %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Texnika va Uskunalarni ko'rish</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input js-perm-technics" type="checkbox" name="technics"
+                             {% if emp.rol.technics %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Texnika va Uskunalar ustida amallar</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input" type="checkbox" name="technics_edit"
+                             {% if emp.rol.technics_edit %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Materiallarni ko'rish</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input" type="checkbox" name="material"
+                             {% if emp.rol.material %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Materiallar ustida amallar</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input" type="checkbox" name="material_edit"
+                             {% if emp.rol.material_edit %}checked{% endif %}>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-title">Ariza kategoriyasi</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-12 info-value">
+                    <select class="form-select js-goal-select" name="goal" multiple disabled>
+                      {% for g in goal %}
+                      <option value="{{ g.id }}"
+                        {% if g.id in emp.selected_goal_ids %}selected{% endif %}>
+                        {{ g.name }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="section-title">Texnika kategoriyasi</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-12 info-value">
+                    <select class="form-select js-category-select" name="category" multiple disabled>
+                      {% for c in category %}
+                      <option value="{{ c.id }}"
+                        {% if c.id in emp.selected_category_ids %}selected{% endif %}>
+                        {{ c.name }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+          </div>
+
+          <div class="modal-footer d-flex flex-row justify-content-center gap-2">
+            <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal">
+              <i class="bi bi-exclamation-circle me-1"></i> Etiborsiz qoldirish
+            </button>
+            <button type="submit" class="btn btn-primary flex-fill"
+                  onclick="return confirm('Yakunlashni tasdiqlang?')">
+              <i class="bi bi-check-circle me-1"></i> Yakunlash
+            </button>
+          </div>
+
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+
+</main>
+
+<script>
+(function ($) {
+
+  function toggleMultiSelect(checkbox, $select) {
+    const enabled = checkbox.checked;
+
+    $select.prop('disabled', !enabled);
+
+    if (!enabled) {
+      $select.val(null); // ruxsat olib tashlansa, tanlovlar ham tozalanadi
+    }
+
+    // agar select2 ishga tushirilgan bo'lsa, uni yangilaymiz
+    if ($select.hasClass('select2-hidden-accessible')) {
+      $select.trigger('change.select2');
+    }
+  }
+
+  function initPermissionToggles(modal) {
+    const $modal = $(modal);
+
+    const $orderCheckbox = $modal.find('.js-perm-order');
+    const $goalSelect = $modal.find('.js-goal-select');
+
+    const $technicsCheckbox = $modal.find('.js-perm-technics');
+    const $categorySelect = $modal.find('.js-category-select');
+
+    if (!$orderCheckbox.length || !$technicsCheckbox.length) return;
+
+    // boshlang'ich holatni sozlash (modal ochilganda)
+    toggleMultiSelect($orderCheckbox[0], $goalSelect);
+    toggleMultiSelect($technicsCheckbox[0], $categorySelect);
+
+    // eski listenerlarni olib tashlab, qayta ulaymiz (bir necha marta ochilishidan saqlanish uchun)
+    $orderCheckbox.off('change.permToggle').on('change.permToggle', function () {
+      toggleMultiSelect(this, $goalSelect);
+    });
+
+    $technicsCheckbox.off('change.permToggle').on('change.permToggle', function () {
+      toggleMultiSelect(this, $categorySelect);
+    });
+  }
+
+  // Modal ochilganda ishga tushadi
+  document.addEventListener('shown.bs.modal', function (e) {
+    if (e.target.classList.contains('order-modal')) {
+      initPermissionToggles(e.target);
+    }
+  });
+
+})(jQuery);
+</script>
+
+<!-- Filter: org → dep → dir → div -->
+<script>
+(() => {
+  const orgSel = document.getElementById("organization");
+  const regSel = document.getElementById("region");
+  const depSel = document.getElementById("department");
+  const dirSel = document.getElementById("directorate");
+  const divSel = document.getElementById("division");
+
+  const URL_DEPS = "{% url 'ajax_load_departments' %}";
+  const URL_DIRS = "{% url 'ajax_load_directorate' %}";
+  const URL_DIVS = "{% url 'ajax_load_division' %}";
+
+  const selectedDep = "{{ selected_dep|default:'' }}";
+  const selectedDir = "{{ selected_dir|default:'' }}";
+  const selectedDiv = "{{ selected_div|default:'' }}";
+
+  function isSelect2(el) { return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible"); }
+  function refreshUI(el) { if (isSelect2(el)) window.jQuery(el).trigger("change"); }
+  function closeSelect2(el) { if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} } }
+  function setLoading(selectEl, text = "Yuklanmoqda...") {
+    selectEl.innerHTML = `<option value="">${text}</option>`;
+    selectEl.disabled = true; refreshUI(selectEl); closeSelect2(selectEl);
+  }
+  function setEmpty(selectEl, text = "Tanlang...") {
+    selectEl.innerHTML = `<option value="">${text}</option>`;
+    selectEl.disabled = false; refreshUI(selectEl); closeSelect2(selectEl);
+  }
+  function fillOptions(selectEl, items, placeholder = "Tanlang...", selectedValue = "") {
+    let html = `<option value="">${placeholder}</option>`;
+    for (const it of items) {
+      const sel = String(it.id) === String(selectedValue) ? "selected" : "";
+      html += `<option value="${it.id}" ${sel}>${it.name}</option>`;
+    }
+    selectEl.innerHTML = html;
+    selectEl.disabled = false; refreshUI(selectEl); closeSelect2(selectEl);
+  }
+  async function getJSON(url) {
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    const ct = res.headers.get("content-type") || "";
+    if (!res.ok || !ct.includes("application/json")) return { results: [] };
+    return await res.json();
+  }
+  async function loadDepartments(orgId, regId, preselect = "") {
+    setEmpty(depSel); setEmpty(dirSel); setEmpty(divSel);
+    if (!orgId || !regId) return;
+    setLoading(depSel);
+    let qs = "";
+    if (orgId) qs += `organization=${encodeURIComponent(orgId)}&`;
+    if (regId) qs += `region=${encodeURIComponent(regId)}`;
+    const data = await getJSON(`${URL_DEPS}?${qs}`);
+    fillOptions(depSel, data.results || [], "Tanlang...", preselect);
+  }
+  async function loadDirectorates(depId, preselect = "") {
+    setEmpty(dirSel); setEmpty(divSel);
+    if (!depId) return;
+    setLoading(dirSel);
+    const data = await getJSON(`${URL_DIRS}?department=${encodeURIComponent(depId)}`);
+    fillOptions(dirSel, data.results || [], "Tanlang...", preselect);
+  }
+  async function loadDivisions(dirId, preselect = "") {
+    setEmpty(divSel);
+    if (!dirId) return;
+    setLoading(divSel);
+    const data = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(dirId)}`);
+    fillOptions(divSel, data.results || [], "Tanlang...", preselect);
+  }
+  function bindSelectEvents(el, cb) {
+    if (!el) return;
+    if (window.jQuery) { window.jQuery(el).on("select2:select select2:clear", cb); }
+    else { el.addEventListener("change", cb); }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    bindSelectEvents(orgSel, async () => {
+      await loadDepartments((orgSel.value || "").trim(), (regSel?.value || "").trim());
+    });
+    bindSelectEvents(regSel, async () => {
+      await loadDepartments((orgSel?.value || "").trim(), (regSel.value || "").trim());
+    });
+    bindSelectEvents(depSel, async () => { await loadDirectorates((depSel.value || "").trim()); });
+    bindSelectEvents(dirSel, async () => { await loadDivisions((dirSel.value || "").trim()); });
+
+    (async () => {
+      const orgId = (orgSel?.value || "").trim();
+      const regId = (regSel?.value || "").trim();
+      const depId = (depSel?.value || "").trim();
+      const dirId = (dirSel?.value || "").trim();
+      if (orgId || regId) await loadDepartments(orgId, regId, depId || selectedDep);
+      const depNow = (depSel?.value || "").trim();
+      if (depNow) await loadDirectorates(depNow, dirId || selectedDir);
+      const dirNow = (dirSel?.value || "").trim();
+      if (dirNow) await loadDivisions(dirNow, selectedDiv);
+      closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
+      document.activeElement && document.activeElement.blur();
+    })();
+  });
+  window.addEventListener("load", () => {
+    closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
+    document.activeElement && document.activeElement.blur();
+  });
+})();
+</script>
+
+{% endblock content %}

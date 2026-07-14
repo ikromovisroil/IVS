@@ -104,6 +104,7 @@ class Rank(models.Model):
 
 class Rol(models.Model):
     employee = models.OneToOneField("Employee", on_delete=models.CASCADE, null=True, blank=True, db_index=True)
+    user = models.BooleanField(default=False, db_index=True)
     full = models.BooleanField(default=False, db_index=True)
     region = models.BooleanField(default=False, db_index=True)
     client = models.BooleanField(default=False, db_index=True)
@@ -536,6 +537,19 @@ class OrderMaterial(models.Model):
         verbose_name_plural = "Arizalar materiallari"
 
 
+class OrderGoal(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+
+    def __str__(self):
+        return f"{self.employee} → {self.goal}"
+
+    class Meta:
+        db_table = 'OrderGoal'
+        verbose_name = "xodimlar ariza kategoriyasi"
+        verbose_name_plural = "xodimlar ariza kategoriyasi"
+
+
 class MaterialUser(models.Model):
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='sender', null=True, blank=True ,db_index=True)
     receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='receiver', null=True, blank=True, db_index=True)
@@ -659,8 +673,8 @@ class Liable(models.Model):
 
     class Meta:
         db_table = 'Liable'
-        verbose_name = "Shartnomaga javobgar shaxs"
-        verbose_name_plural = "Shartnomaga javobgar shaxslar"
+        verbose_name = "xodimlar kategoriyasi"
+        verbose_name_plural = "xodimlar kategoriyasi"
 
 
 class MaterialMovement(models.Model):
