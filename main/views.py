@@ -3226,6 +3226,9 @@ def employee(request):
         "organizations": organizations,
         "regions": regions,
         "qs_params": qs_params,
+        "selected_dep": department_id or "",
+        "selected_dir": directorate_id or "",
+        "selected_div": division_id or "",
     }
     return render(request, "main/employee.html", context)
 
