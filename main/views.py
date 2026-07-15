@@ -3274,6 +3274,7 @@ def employee(request):
         "total_count": paginator.count,
         "goal": goal,
         "category": category,
+        "matcategory": MaterialCategory.objects.all(),
         "organizations": organizations,
         "regions": regions,
         "qs_params": qs_params,
@@ -3312,6 +3313,8 @@ def employee_update(request):
     # Multiple selectlar
     goal_ids = request.POST.getlist("goal")
     category_ids = request.POST.getlist("category")
+    matcategory_ids = request.POST.getlist("matcategory")
+
 
     with transaction.atomic():
         # --- Rol ---
@@ -3336,6 +3339,14 @@ def employee_update(request):
             Liable.objects.bulk_create([
                 Liable(employee=target_employee, category_id=cid, contract=None)
                 for cid in category_ids
+            ])
+
+        # --- Ruxsat etilgan material kategoriyasi (MaterialEmployee) ---
+        MaterialEmployee.objects.filter(employee=target_employee).delete()
+        if matcategory_ids:
+            MaterialEmployee.objects.bulk_create([
+                MaterialEmployee(employee=target_employee, category_id=mcid)
+                for mcid in matcategory_ids
             ])
 
     messages.success(request, "Xodim muvaffaqiyatli yangilandi")

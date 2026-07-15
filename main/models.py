@@ -381,8 +381,21 @@ class Unit(models.Model):
         verbose_name_plural = "Material birliglari"
 
 
+class MaterialCategory(models.Model):
+    name = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'materialcategory'
+        verbose_name = "Material kategoriyasi"
+        verbose_name_plural = "Material kategoriyalari"
+
+
 # material.
 class Material(models.Model):
+    category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
@@ -403,6 +416,19 @@ class Material(models.Model):
         db_table = 'material'
         verbose_name = "Material"
         verbose_name_plural = "Materiallar"
+
+
+class MaterialEmployee(models.Model):
+    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+
+    def __str__(self):
+        return f"{self.employee} → {self.category}"
+
+    class Meta:
+        db_table = 'materialemployee'
+        verbose_name = "Material Category Employee"
+        verbose_name_plural = "Material Category Employee"
 
 
 # maqsad.

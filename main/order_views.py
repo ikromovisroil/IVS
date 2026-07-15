@@ -771,10 +771,15 @@ def order_sender_material_barn(request):
     name = request.GET.get("name", "").strip()
     page_number = request.GET.get("page", 1)
 
+    category_ids = MaterialEmployee.objects.filter(
+        employee=employee
+    ).values_list("category_id", flat=True)
+
     orders_qs = (
         Material.objects
         .filter(
             organization=employee.organization,
+            category_id__in=category_ids,
             is_active=True,
         )
         .select_related("organization", "unit")

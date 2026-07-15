@@ -321,6 +321,24 @@
                 </div>
               </div>
 
+              {% if request.user.employee.rol.client %}
+              <div class="section-title">Ruxsat etilgan material kategoriyasi</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-12 info-value">
+                    <select class="form-select js-category-select" name="matcategory" multiple disabled>
+                      {% for c in matcategory %}
+                      <option value="{{ c.id }}"
+                        {% if c.id in emp.selected_category_ids %}selected{% endif %}>
+                        {{ c.name }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
           </div>
 
           <div class="modal-footer d-flex flex-row justify-content-center gap-2">
