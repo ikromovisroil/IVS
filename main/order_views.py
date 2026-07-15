@@ -768,6 +768,7 @@ def order_sender_material_barn(request):
     if not getattr(employee.rol, "client", False):
         raise PermissionDenied("Sizga ruxsat yo'q")
 
+    name = request.GET.get("name", "").strip()
     page_number = request.GET.get("page", 1)
 
     orders_qs = (
@@ -779,6 +780,9 @@ def order_sender_material_barn(request):
         .select_related("organization", "unit")
         .order_by("-id")
     )
+
+    if name:
+        orders_qs = orders_qs.filter(name__icontains=name)
 
     cart_material_ids = set(
         OrderMaterial.objects.filter(

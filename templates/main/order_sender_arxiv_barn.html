@@ -28,25 +28,26 @@
           <div class="card">
             <div class="card-body pt-3">
               <!-- Bordered Tabs -->
-              <ul class="nav nav-pills gap-2">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <ul class="nav nav-pills gap-2 d-flex align-items-center mb-0">
+                    <li class="nav-pills">
+                      <a href="{% url 'order_sender_barn' %}" class="nav-link border border-primary">Arizalar</a>
+                    </li>
 
-                <li class="nav-pills">
-                  <a href="{% url 'order_sender_barn' %}" class="nav-link border border-primary">Arizalar</a>
-                </li>
+                    <li class="nav-pills">
+                      <a href="{% url 'order_sender_arxiv_barn' %}" class="nav-link active" >Tarix</a>
+                    </li>
 
-                <li class="nav-pills">
-                  <a href="{% url 'order_sender_arxiv_barn' %}" class="nav-link active" >Tarix</a>
-                </li>
+                    <li class="nav-pills">
+                      <a href="{% url 'order_sender_material_barn' %}" class="nav-link border border-primary" >Material</a>
+                    </li>
 
-                <li class="nav-pills">
-                  <a href="{% url 'order_sender_material_barn' %}" class="nav-link border border-primary" >Material</a>
-                </li>
+                    <li class="nav-pills">
+                      <a href="{% url 'order_sender_basket_barn' %}" class="nav-link border border-primary" >Savat</a>
+                    </li>
+                </ul>
+              </div>
 
-                <li class="nav-pills">
-                  <a href="{% url 'order_sender_basket_barn' %}" class="nav-link border border-primary" >Savat</a>
-                </li>
-
-              </ul>
               <div class="table-responsive tab-content pt-2">
 
                 <table class="table table-bordered table-hover align-middle table-sm">

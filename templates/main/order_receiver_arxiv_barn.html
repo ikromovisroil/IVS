@@ -28,21 +28,21 @@
           <div class="card-body pt-3">
 
             <!-- Bordered Tabs -->
-            <ul class="nav nav-pills gap-2">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <ul class="nav nav-pills gap-2 d-flex align-items-center mb-0">
+                  <li class="nav-pills">
+                    <a href="{% url 'order_receiver_barn' %}" class="nav-link border border-primary">Arizalar</a>
+                  </li>
 
-              <li class="nav-pills">
-                <a href="{% url 'order_receiver_barn' %}" class="nav-link border border-primary">Arizalar</a>
-              </li>
+                  <li class="nav-pills">
+                    <a href="{% url 'order_receiver_activ_barn' %}" class="nav-link border border-primary">Bajarish</a>
+                  </li>
 
-              <li class="nav-pills">
-                <a href="{% url 'order_receiver_activ_barn' %}" class="nav-link border border-primary">Bajarish</a>
-              </li>
-
-              <li class="nav-pills">
-                <a href="{% url 'order_receiver_arxiv_barn' %}" class="nav-link active">Tarix</a>
-              </li>
-
-            </ul>
+                  <li class="nav-pills">
+                    <a href="{% url 'order_receiver_arxiv_barn' %}" class="nav-link active">Tarix</a>
+                  </li>
+                </ul>
+            </div>
 
             <div class="table-responsive tab-content pt-2">
 
@@ -321,6 +321,12 @@
                       <td>{{ o.date_creat|date:"d.m.Y, H:i" }}</td>
 
                     </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                      <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
+                    </td>
+                  </tr>
                   {% endfor %}
                 </tbody>
               </table>
