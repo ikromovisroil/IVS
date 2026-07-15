@@ -296,6 +296,7 @@ def contact_user(request):
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
+        "organization": Organization.objects.all()
     }
     return render(request, "main/contact_user.html", context)
 
@@ -344,6 +345,56 @@ def contact_user_arxiv(request):
         "qs_params": params.urlencode(),
     }
     return render(request, "main/contact_user_arxiv.html", context)
+
+
+@never_cache
+@require_POST
+@login_required
+@role_required("order_edit")
+def contact_post_deed(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    status = request.POST.get("status", "").strip()
+    sender_id = request.POST.get("employee", "").strip()
+    agreement_ids = request.POST.getlist("agreements")
+    uploaded_file = request.FILES.get("file")
+
+    # --- Validatsiya ---
+    valid_statuses = dict(Deed._meta.get_field("status").choices)
+    if status not in valid_statuses:
+        messages.info(request, "Ariza turi noto'g'ri tanlangan")
+        return redirect("contact_user")
+
+    if not sender_id or not sender_id.isdigit():
+        messages.info(request, "Xodim tanlanmagan")
+        return redirect("contact_user")
+
+    # Faqat bo'sh bo'lmagan ID'larni olamiz (select'da bo'sh option ham bo'lishi mumkin)
+    agreement_ids = [aid for aid in agreement_ids if aid.isdigit()]
+    sender = get_object_or_404(Employee, pk=sender_id)
+
+    if not uploaded_file:
+        messages.info(request, "Fayl biriktirilmagan")
+        return redirect("contact_user")
+
+    with transaction.atomic():
+        deed = Deed.objects.create(
+            user=employee,
+            sender=sender,
+            status=status,
+            file=uploaded_file,
+        )
+
+        if agreement_ids:
+            DeedConsent.objects.bulk_create([
+                DeedConsent(deed=deed, employee_id=aid)
+                for aid in agreement_ids
+            ])
+
+    messages.success(request, "Ariza muvaffaqiyatli yuborildi")
+    return redirect("contact_user")
 
 
 @require_GET
@@ -3242,13 +3293,14 @@ def employee_update(request):
     if not current_employee:
         raise PermissionDenied("Employee yo'q")
 
+    back_url = request.META.get("HTTP_REFERER", "/")
     employee_id = request.POST.get("employee_id")
     if not employee_id:
         messages.error(request, "Xodim aniqlanmadi")
         return redirect("employee")
 
     target_employee = get_object_or_404(
-        Employee, pk=employee_id, organization=current_employee.organization
+        Employee, pk=employee_id
     )
 
     # Checkboxlar — belgilanmagan checkbox umuman POST'da kelmaydi
@@ -3256,8 +3308,6 @@ def employee_update(request):
     confirm = request.POST.get("confirm") == "on"
     technics = request.POST.get("technics") == "on"
     technics_edit = request.POST.get("technics_edit") == "on"
-    material = request.POST.get("material") == "on"
-    material_edit = request.POST.get("material_edit") == "on"
 
     # Multiple selectlar
     goal_ids = request.POST.getlist("goal")
@@ -3270,8 +3320,6 @@ def employee_update(request):
         rol.confirm = confirm
         rol.technics = technics
         rol.technics_edit = technics_edit
-        rol.material = material
-        rol.material_edit = material_edit
         rol.save()
 
         # --- Ariza kategoriyasi (OrderGoal) ---
@@ -3291,4 +3339,4 @@ def employee_update(request):
             ])
 
     messages.success(request, "Xodim muvaffaqiyatli yangilandi")
-    return redirect("employee")
+    return redirect(back_url)

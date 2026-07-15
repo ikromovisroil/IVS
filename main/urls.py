@@ -63,6 +63,7 @@ urlpatterns = [
     path("contact/arxiv/", contact_arxiv, name="contact_arxiv"),
     path("contact/user/", contact_user, name="contact_user"),
     path("contact/user/arxiv/", contact_user_arxiv, name="contact_user_arxiv"),
+    path("contact/post/deed/", contact_post_deed, name="contact_post_deed"),
     path("contact/agrement/", contact_agrement, name="contact_agrement"),
     path("contact/agrement/arxiv/", contact_agrement_arxiv, name="contact_agrement_arxiv"),
 

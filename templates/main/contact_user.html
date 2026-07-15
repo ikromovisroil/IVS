@@ -23,15 +23,102 @@
             <div class="col-xl-12">
                 <div class="card">
                     <div class="card-body pt-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <ul class="nav nav-pills gap-2 d-flex align-items-center mb-0">
+                                <li class="nav-item">
+                                    <a href="{% url 'contact_user' %}" class="nav-link active">Imzolanmagan</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{% url 'contact_user_arxiv' %}" class="nav-link border border-primary">Imzolangan</a>
+                                </li>
+                            </ul>
+                            {% if not request.user.employee.rol.client and request.user.employee.rol.order_edit %}
+                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">
+                                + Hujjatlar Yaratish
+                            </button>
+                            {% endif  %}
+                        </div>
 
-                        <ul class="nav nav-pills mb-3 gap-2">
-                            <li class="nav-item">
-                                <a href="{% url 'contact_user' %}" class="nav-link active">Imzolashga yuborish</a>
-                            </li>
-                            <li class="nav-item">
-                                <a href="{% url 'contact_user_arxiv' %}" class="nav-link border border-primary">Imzolangan</a>
-                            </li>
-                        </ul>
+                        <!-- Modal — tashqi d-flex konteynerdan chiqarib, alohida joylashtirilgan -->
+                        <div class="modal fade order-modal" id="modal" tabindex="-1">
+                            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                                <div class="modal-content">
+                                    <form method="post" action="{% url 'contact_post_deed' %}" enctype="multipart/form-data">
+                                        {% csrf_token %}
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Hujjatlar Yaratish</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+
+                                        <div class="modal-body">
+                                            <div class="row mb-3">
+                                                <label class="col-sm-3 col-form-label">Hujjatlar turi:</label>
+                                                <div class="col-sm-9">
+                                                    <select id="status" name="status" class="form-select">
+                                                          <option value="">Tanlang...</option>
+                                                          <option value="document" >Dalolatnoma</option>
+                                                          <option value="svod"     >Yakuniy hisobot</option>
+                                                          <option value="reestr"   >Reestr</option>
+                                                          <option value="act"      >Akt</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <hr>
+
+                                            <div class="row mb-3">
+                                                <label class="col-sm-3 col-form-label">Tashkilotlar:</label>
+                                                <div class="col-sm-9">
+                                                    <select class="form-select" name="organizations" id="organizations-select" required>
+                                                        <option value="">tanlang</option>
+                                                        {% for o in organization %}
+                                                            <option value="{{ o.id }}">{{ o.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <label class="col-sm-3 col-form-label">Xodimlar:</label>
+                                                <div class="col-sm-9">
+                                                    <select class="form-select" name="employee" id="employee-select" required>
+                                                        <option value="">Tashkilotni tanlang...</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <hr>
+
+                                            <div class="row mb-3">
+                                                <label class="col-sm-3 col-form-label">Kelishuvchilar:</label>
+                                                <div class="col-sm-9">
+                                                    <select class="form-select" name="agreements" id="agreements" multiple required>
+                                                        <option value="">Tashkilotni tanlang...</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <label class="col-sm-3 col-form-label">file:</label>
+                                                <div class="col-sm-9">
+                                                    <input type="file" class="form-control" name="file">
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        <div class="modal-footer d-flex flex-row justify-content-center gap-2">
+                                            <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal">
+                                                <i class="bi bi-x-lg me-1"></i> Bekor qilish
+                                            </button>
+                                            <button type="submit" class="btn btn-primary flex-fill">
+                                                <i class="bi bi-send-fill me-1"></i> Yuborish
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="tab-content pt-2">
                             <div class="table-responsive">
@@ -319,4 +406,132 @@
     </section>
 
 </main>
+
+<script>
+$(document).ready(function () {
+    const $orgSelect = $('#organizations-select');
+    const $empSelect = $('#employee-select');
+
+    // Agar select2 hali init qilinmagan bo'lsa
+    if (!$empSelect.hasClass('select2-hidden-accessible')) {
+        $empSelect.select2({ dropdownParent: $empSelect.closest('.modal') });
+    }
+    if (!$orgSelect.hasClass('select2-hidden-accessible')) {
+        $orgSelect.select2({ dropdownParent: $orgSelect.closest('.modal') });
+    }
+
+    $orgSelect.on('change', function () {
+        const orgId = $(this).val();
+
+        $empSelect.empty().append('<option value="">yuklanmoqda...</option>').trigger('change');
+
+        if (!orgId) {
+            $empSelect.empty().append('<option value="">avval tashkilotni tanlang</option>').trigger('change');
+            return;
+        }
+
+        $.ajax({
+            url: '/ajax/employees-org-user-region/',
+            data: { organization: orgId },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            dataType: 'json'
+        })
+        .done(function (data) {
+            $empSelect.empty().append('<option value="">tanlang</option>');
+            data.results.forEach(function (item) {
+                $empSelect.append(new Option(item.text, item.id, false, false));
+            });
+            $empSelect.trigger('change'); // select2 UI'ni yangilash uchun MAJBURIY
+        })
+        .fail(function (err) {
+            console.error(err);
+            $empSelect.empty().append('<option value="">xatolik yuz berdi</option>').trigger('change');
+        });
+    });
+});
+</script>
+
+<script>
+    const AGREEMENTS_URL = "{% url 'ajax_agreements_employees' %}";
+</script>
+
+<script>
+$(document).ready(function () {
+    const $orgSelect = $('#organizations-select');
+    const $empSelect = $('#employee-select');
+    const $electSelect = $('#agreements');
+
+    if (!$empSelect.hasClass('select2-hidden-accessible')) {
+        $empSelect.select2({ dropdownParent: $empSelect.closest('.modal') });
+    }
+    if (!$orgSelect.hasClass('select2-hidden-accessible')) {
+        $orgSelect.select2({ dropdownParent: $orgSelect.closest('.modal') });
+    }
+    if (!$electSelect.hasClass('select2-hidden-accessible')) {
+        $electSelect.select2({
+            dropdownParent: $electSelect.closest('.modal'),
+            placeholder: 'Kelishuvchilarni tanlang...'
+        });
+    }
+
+    $orgSelect.on('change', function () {
+        const orgId = $(this).val();
+
+        $empSelect.empty().append('<option value="">yuklanmoqda...</option>').trigger('change');
+        $electSelect.empty().append('<option value="">yuklanmoqda...</option>').trigger('change');
+
+        if (!orgId) {
+            $empSelect.empty().append('<option value="">avval tashkilotni tanlang</option>').trigger('change');
+            $electSelect.empty().append('<option value="">avval tashkilotni tanlang</option>').trigger('change');
+            return;
+        }
+
+        $.ajax({
+            url: '/ajax/employees-org-user-region/',
+            data: { organization: orgId },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            dataType: 'json'
+        })
+        .done(function (data) {
+            $empSelect.empty().append('<option value="">tanlang</option>');
+            data.results.forEach(function (item) {
+                $empSelect.append(new Option(item.text, item.id, false, false));
+            });
+            $empSelect.trigger('change');
+        })
+        .fail(function (err) {
+            console.error(err);
+            $empSelect.empty().append('<option value="">xatolik yuz berdi</option>').trigger('change');
+        });
+
+        $.ajax({
+            url: AGREEMENTS_URL,
+            data: { org_id: orgId },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            dataType: 'json'
+        })
+        .done(function (data) {
+            $electSelect.empty();
+
+            if (!data.length) {
+                $electSelect.append('<option value="">Xodim topilmadi</option>');
+                $electSelect.trigger('change');
+                return;
+            }
+
+            data.forEach(function (item) {
+                const label = item.rank
+                    ? `${item.full_name} (${item.rank})`
+                    : item.full_name;
+                $electSelect.append(new Option(label, item.id, false, false));
+            });
+            $electSelect.trigger('change');
+        })
+        .fail(function (err) {
+            console.error(err);
+            $electSelect.empty().append('<option value="">xatolik yuz berdi</option>').trigger('change');
+        });
+    });
+});
+</script>
 {% endblock content %}

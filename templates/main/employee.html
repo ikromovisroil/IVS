@@ -126,8 +126,6 @@
                     <th scope="col">Ariza bajarish</th>
                     <th scope="col">Texnikalar</th>
                     <th scope="col">Texnika taxrirlash</th>
-                    <th scope="col">Materiallar</th>
-                    <th scope="col">material taxrirlash</th>
                   </tr>
                 </thead>
 
@@ -158,25 +156,14 @@
                             {% if emp.rol.technics_edit %}Bor{% else %}Yo'q{% endif %}
                         </span>
                     </td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.rol.material %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.rol.material %}Bor{% else %}Yo'q{% endif %}
-                        </span>
-                    </td>
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.rol.material_edit %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.rol.material_edit %}Bor{% else %}Yo'q{% endif %}
-                        </span>
-                    </td>
                   </tr>
                  {% empty %}
                   <tr>
-                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
-                        class="text-center text-muted py-4">
+                    <td colspan="5" class="text-center text-muted py-4">
                       <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                     </td>
                   </tr>
-                {% endfor %}
+                 {% endfor %}
                 </tbody>
               </table>
 
@@ -298,24 +285,6 @@
                   <div class="col-12 col-md-3 info-value">
                       <input class="form-check-input" type="checkbox" name="technics_edit"
                              {% if emp.rol.technics_edit %}checked{% endif %}>
-                  </div>
-                </div>
-                <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Materiallarni ko'rish</label>
-                  </div>
-                  <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input" type="checkbox" name="material"
-                             {% if emp.rol.material %}checked{% endif %}>
-                  </div>
-                </div>
-                <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Materiallar ustida amallar</label>
-                  </div>
-                  <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input" type="checkbox" name="material_edit"
-                             {% if emp.rol.material_edit %}checked{% endif %}>
                   </div>
                 </div>
               </div>

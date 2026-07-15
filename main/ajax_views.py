@@ -326,15 +326,17 @@ def ajax_employees_org_user_region(request):
 @require_GET
 @login_required
 def ajax_agreements_employees(request):
+    employee = getattr(request.user, "employee", None)
+    my_org_id = getattr(employee, "organization_id", None)
+    my_region_id = getattr(employee, "region_id", None)
     org_id = request.GET.get("org_id")
 
     if not org_id or not str(org_id).isdigit():
         return JsonResponse([], safe=False)
 
-    my_dep_id = getattr(request.user.employee, "department_id", None)
-
     qs = Employee.objects.filter(
-        Q(department__organization_id=org_id) | Q(department_id=my_dep_id)
+        Q(organization_id=org_id, region=my_region_id) |
+        Q(organization_id=my_org_id)
     ).select_related("rank").order_by(
         "last_name", "first_name", "father_name"
     ).distinct()
