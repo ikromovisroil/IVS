@@ -779,8 +779,10 @@ def order_sender_material_barn(request):
         Material.objects
         .filter(
             organization=employee.organization,
-            category_id__in=category_ids,
             is_active=True,
+        )
+        .filter(
+            Q(category__isnull=True) | Q(category_id__in=category_ids)
         )
         .select_related("organization", "unit")
         .order_by("-id")
