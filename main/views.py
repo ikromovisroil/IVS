@@ -1296,7 +1296,7 @@ def extra_tex(request):
 
     status          = (request.GET.get("status")       or "").strip()
     organization_id = (request.GET.get("organization") or "").strip()
-    region_id       = (request.GET.get("region")       or "").strip()  # ← qo'shildi
+    region_id       = (request.GET.get("region")       or "").strip()
     category_id     = (request.GET.get("category")     or "").strip()
     name            = (request.GET.get("name")         or "").strip()
     page_number     = request.GET.get("page", 1)
@@ -1321,7 +1321,7 @@ def extra_tex(request):
 
     base_context = {
         "organizations":  organizations,
-        "regions":        regions,  # ← qo'shildi
+        "regions":        regions,
         "categories":     categories,
         "technics_form":  ExtraTechnicsForm(),
         "qs_params":      params.urlencode(),
@@ -1337,17 +1337,22 @@ def extra_tex(request):
     qs = (
         Structure.objects
         .filter(is_active=True)
-        .select_related("organization", "category", "region")  # ← region qo'shildi
+        .select_related("organization", "category", "region")
         .order_by("-id")
     )
 
-    if not request.user.has_perm("main.all_region"):
+    # FIX: organization scope endi to'g'ri permission ("all_organization") bilan tekshiriladi
+    if not request.user.has_perm("main.all_organization"):
         qs = qs.filter(organization_id=employee.organization_id)
+
+    # FIX: region scope alohida, o'z permission'i ("all_region") bilan tekshiriladi
+    if not request.user.has_perm("main.all_region"):
+        qs = qs.filter(region_id=employee.region_id)
 
     if organization_id and organization_id.isdigit():
         qs = qs.filter(organization_id=int(organization_id))
 
-    if region_id and region_id.isdigit():  # ← qo'shildi
+    if region_id and region_id.isdigit():
         qs = qs.filter(region_id=int(region_id))
 
     if status:
