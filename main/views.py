@@ -2174,7 +2174,7 @@ def document_get(request):
 
     liable = (
         Liable.objects
-        .filter(employee=employee)
+        .filter(employee=employee,category__isnull=False, contract__isnull=False)
         .select_related("contract")
         .order_by("contract_id")
         .distinct("contract")
