@@ -115,9 +115,7 @@
                     <th scope="col">I/N</th>
                     <th scope="col">S/N</th>
                     <th scope="col">Yili</th>
-                    {% if request.user.employee.rol.material_edit %}
                     <th scope="col">Tafsif</th>
-                    {% endif %}
                   </tr>
                 </thead>
 
@@ -132,7 +130,6 @@
                       <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.inventory|default:"-" }}</td>
                       <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.serial|default:"-" }}</td>
                       <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#qkcentered{{tex.id}}">{{ tex.year|default:"-" }}</td>
-                      {% if request.user.employee.rol.technics_edit %}
                       <td>
                         <div class="filter">
                           <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
@@ -140,22 +137,25 @@
                           </a>
 
                           <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                            {% if perms.main.delete_structure %}
                             <li>
                               <a class="dropdown-item" href="javascript:void(0)"
                                  data-bs-toggle="modal" data-bs-target="#texdel-{{ tex.id }}">
                                 <i class="bi bi-trash"></i> O'chirish
                               </a>
                             </li>
+                            {% endif %}
+                            {% if perms.main.change_structure %}
                             <li>
                               <a class="dropdown-item" href="javascript:void(0)"
                                  data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">
                                 <i class="bi bi-brush"></i> Tahrirlash
                               </a>
                             </li>
+                            {% endif %}
                           </ul>
                         </div>
                       </td>
-                      {% endif %}
                     </tr>
                   {% endfor %}
                 </tbody>
