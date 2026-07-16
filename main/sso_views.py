@@ -116,7 +116,62 @@ def sso_callback(request):
         "redirect_uri": get_sso_redirect_uri(request),
     })
 
+
 from .tasks import _resolve_position, cyrillic_to_latin
+
+
+# -----------------------
+# Umumiy: Gateway ma'lumotlaridan Employee yaratish
+# (avval sso_exchange VA main/views.py:employe_create ichida
+# so'zma-so'z takrorlangan edi - endi bitta joyda)
+# -----------------------
+def create_employee_from_gateway(pinfl, assigned_data, result):
+    base_username = (
+        f"{cyrillic_to_latin(result.get('surname', '').lower())}"
+        f".{cyrillic_to_latin(result.get('name', '').lower())}"
+    )
+
+    user = None
+    for counter in range(20):
+        candidate = base_username if counter == 0 else f"{base_username}{counter}"
+        try:
+            sid = transaction.savepoint()
+            user = User.objects.create_user(
+                username=candidate,
+                password=secrets.token_urlsafe(16),
+            )
+            transaction.savepoint_commit(sid)
+            break
+        except IntegrityError:
+            transaction.savepoint_rollback(sid)
+            continue
+
+    if user is None:
+        raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
+
+    if not assigned_data["rank"] and assigned_data.get("_position_id"):
+        assigned_data["rank"], _ = Rank.objects.get_or_create(
+            code=assigned_data["_position_id"],
+            defaults={
+                "name": assigned_data["_position"] or f"Lavozim-{assigned_data['_position_id']}"
+            },
+        )
+
+    employee = user.employee
+    employee.pinfl = pinfl
+    employee.first_name = cyrillic_to_latin((result.get("name") or "").strip())
+    employee.last_name = cyrillic_to_latin((result.get("surname") or "").strip())
+    employee.father_name = cyrillic_to_latin((result.get("partonimic") or "").strip())
+    employee.organization = assigned_data["organization"]
+    employee.department = assigned_data["department"]
+    employee.directorate = assigned_data["directorate"]
+    employee.division = assigned_data["division"]
+    employee.rank = assigned_data["rank"]
+    employee.save()
+
+    return employee
+
+
 # -----------------------
 # 5) sso_exchange Login
 # -----------------------
@@ -149,6 +204,17 @@ def sso_exchange(request):
         if not code or not code_verifier or not redirect_uri:
             return JsonResponse(
                 {"status": "error", "message": "SSO parametrlari to'liq emas", "redirect": "/sso/login/"},
+                status=400
+            )
+
+        # FIX: redirect_uri foydalanuvchidan kelayotgani uchun,
+        # serverning o'zi kutayotgan qiymat bilan solishtiramiz
+        # (aks holda tashqi tomon token almashinuvini boshqa manzilga
+        # yo'naltirishga urinishi mumkin edi)
+        expected_redirect_uri = get_sso_redirect_uri(request)
+        if redirect_uri != expected_redirect_uri:
+            return JsonResponse(
+                {"status": "error", "message": "redirect_uri mos emas", "redirect": "/sso/login/"},
                 status=400
             )
 
@@ -192,53 +258,10 @@ def sso_exchange(request):
                         status=403
                     )
 
+                # FIX: takrorlangan employee-yaratish kodi endi umumiy
+                # funksiyaga chiqarilgan (create_employee_from_gateway)
                 with transaction.atomic():
-
-                    base_username = (
-                        f"{cyrillic_to_latin(result.get('surname', '').lower())}"
-                        f".{cyrillic_to_latin(result.get('name', '').lower())}"
-                    )
-                    user = None
-                    for counter in range(20):
-                        candidate = base_username if counter == 0 else f"{base_username}{counter}"
-                        try:
-                            sid = transaction.savepoint()
-                            user = User.objects.create_user(
-                                username=candidate,
-                                password=secrets.token_urlsafe(16),
-                            )
-                            transaction.savepoint_commit(sid)
-                            break
-                        except IntegrityError:
-                            transaction.savepoint_rollback(sid)
-                            continue
-
-                    if user is None:
-                        raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
-
-                    if not assigned_data["rank"] and assigned_data.get("_position_id"):
-                        assigned_data["rank"], _ = Rank.objects.get_or_create(
-                            code=assigned_data["_position_id"],
-                            defaults={
-                                "name": assigned_data["_position"] or f"Lavozim-{assigned_data['_position_id']}"
-                            },
-                        )
-
-                    employee              = user.employee
-                    employee.pinfl        = sso_pinfl
-                    employee.first_name   = cyrillic_to_latin((result.get("name")       or "").strip())
-                    employee.last_name    = cyrillic_to_latin((result.get("surname")    or "").strip())
-                    employee.father_name  = cyrillic_to_latin((result.get("partonimic") or "").strip())
-                    employee.organization = assigned_data["organization"]
-                    employee.department   = assigned_data["department"]
-                    employee.directorate  = assigned_data["directorate"]
-                    employee.division     = assigned_data["division"]
-                    employee.rank         = assigned_data["rank"]
-                    employee.save()
-
-                    rol        = employee.rol
-                    rol.client = (employee.organization_id != 4)
-                    rol.save(update_fields=["client"])
+                    employee = create_employee_from_gateway(sso_pinfl, assigned_data, result)
 
             except Exception as gateway_error:
                 logger.exception("Gateway yoki user yaratishda xatolik")

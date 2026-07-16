@@ -19,30 +19,6 @@ from django.utils.dateparse import parse_date
 import base64
 import binascii
 
-def role_required(permission):
-    def decorator(view_func):
-        @wraps(view_func)
-        @login_required
-        def wrapper(request, *args, **kwargs):
-            employee = getattr(request.user, "employee", None)
-            if not employee:
-                raise PermissionDenied("Employee topilmadi")
-
-            role = getattr(employee, "rol", None)
-            if not role:
-                raise PermissionDenied("Rol biriktirilmagan")
-
-            if not hasattr(role, permission):
-                raise PermissionDenied(f"'{permission}' ruxsat maydoni mavjud emas")
-
-            if not getattr(role, permission):
-                raise PermissionDenied("Sizda bu amal uchun ruxsat yo‘q")
-
-            return view_func(request, *args, **kwargs)
-
-        return wrapper
-    return decorator
-
 @never_cache
 def error_403(request, exception=None):
     return render(request, "errors/403.html", status=403)
@@ -103,6 +79,7 @@ def contact(request):
                 )
             )
         )
+        .distinct()
         .order_by("-id")
     )
 
@@ -147,6 +124,7 @@ def contact_arxiv(request):
                 )
             )
         )
+        .distinct()
         .order_by("-id")
     )
 
@@ -236,6 +214,7 @@ def contact_agrement_arxiv(request):
                 )
             )
         )
+        .distinct()
         .order_by("-id")
     )
 
@@ -281,6 +260,7 @@ def contact_user(request):
                 )
             )
         )
+        .distinct()
         .order_by("-id")
     )
 
@@ -295,7 +275,7 @@ def contact_user(request):
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
         "qs_params": params.urlencode(),
-        "organization": Organization.objects.all()
+        "organization": Organization.objects.only("id", "name").order_by("id"),
     }
     return render(request, "main/contact_user.html", context)
 
@@ -327,6 +307,7 @@ def contact_user_arxiv(request):
                 )
             )
         )
+        .distinct()
         .order_by("-id")
     )
 
@@ -345,10 +326,10 @@ def contact_user_arxiv(request):
     return render(request, "main/contact_user_arxiv.html", context)
 
 
-@permission_required("main.add_deed", raise_exception=True)
 @never_cache
 @require_POST
 @login_required
+@permission_required("main.add_deed", raise_exception=True)
 def contact_post_deed(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -586,7 +567,6 @@ def deed_edit(request, pk):
             new_receiver = Employee.objects.filter(
                 id=int(receiver_id),
                 organization_id=receiver_org_id,
-                rol__boss=True,
             ).first()
 
             if not new_receiver:
@@ -1037,9 +1017,6 @@ def technics_delete(request):
         messages.info(request, "Uskuna topilmadi")
         return redirect(back_url)
 
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
-
     if not tex.is_active:
         messages.info(request, "Uskuna allaqachon o'chirilgan")
         return redirect(back_url)
@@ -1098,9 +1075,6 @@ def technics_attach(request):
 
     tex = get_object_or_404(Technics.objects.select_for_update(), id=int(tex_id))
 
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
-
     # Har uch holatda bir xil update_fields
     update_fields = ["employee", "department", "directorate", "division", "status"]
 
@@ -1112,7 +1086,7 @@ def technics_attach(request):
         )
 
         # Xodim shu tashkilotga tegishlimi?
-        if not getattr(employee.rol, "full", False) and emp.organization_id != tex.organization_id:
+        if emp.organization_id != tex.organization_id:
             raise PermissionDenied("Xodim bu tashkilotga tegishli emas")
 
         tex.employee    = emp
@@ -1184,9 +1158,6 @@ def technics_update(request, pk):
 
     back_url = request.META.get("HTTP_REFERER", "/")
     tex = get_object_or_404(Technics.objects.select_for_update(), pk=pk)
-
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
 
     category_id     = (request.POST.get("category")     or "").strip()
     organization_id = (request.POST.get("organization") or "").strip()
@@ -1268,9 +1239,6 @@ def technics_download(request, pk):
         raise PermissionDenied("Employee yo'q")
 
     tex = get_object_or_404(Technics, pk=pk, is_active=True)
-
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
 
     if not tex.qr_code:
         raise Http404("Fayl topilmadi")
@@ -1440,9 +1408,6 @@ def extra_tex_delete(request):
         messages.info(request, "Texnika topilmadi")
         return redirect(back_url)
 
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
-
     if not tex.is_active:
         messages.info(request, "Texnika allaqachon o‘chirilgan")
         return redirect(back_url)
@@ -1471,9 +1436,6 @@ def extra_tex_update(request, pk):
     back_url = request.META.get("HTTP_REFERER") or "/"
 
     tex = get_object_or_404(Structure.objects.select_for_update(), pk=pk, is_active=True)
-
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
 
     organization_id = (request.POST.get("organization") or "").strip()
     category_id     = (request.POST.get("category")     or "").strip()
@@ -1565,9 +1527,6 @@ def extra_tex_attach(request):
         pk=int(extra_tex_id), is_active=True
     )
 
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
-
     if extra.organization_id != tex.organization_id:
         messages.info(request, "Qurilma boshqa tashkilotga tegishli")
         return redirect(back_url)
@@ -1617,9 +1576,6 @@ def extra_tex_detach(request):
         pk=int(extra_tex_id), is_active=True,
     )
 
-    if not getattr(employee.rol, "full", False) and tex.organization_id != employee.organization_id:
-        raise PermissionDenied("Sizga ruxsat yo'q")
-
     if extra.organization_id != tex.organization_id:
         messages.info(request, "Qo'shimcha texnika boshqa tashkilotga tegishli")
         return redirect(back_url)
@@ -1664,7 +1620,7 @@ def barn_mat(request):
     params.pop("page", None)
 
     perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
-    if request.user.has_perm("main.all_region"):
+    if request.user.has_perm("main.all_material"):
         base_qs = Employee.objects.filter(
             Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
             organization=employee.organization,
@@ -1703,7 +1659,7 @@ def barn_mat(request):
     )
 
     # region ruxsati bo'lsa emp_id bo'yicha filter, bo'lmasa faqat o'zi
-    if not request.user.has_perm("main.all_region"):
+    if not request.user.has_perm("main.all_material"):
         if emp_id and emp_id.isdigit():
             qs = qs.filter(employee_id=int(emp_id))
     else:
@@ -2181,7 +2137,7 @@ def mat_info(request):
         table_rows = page_obj.object_list
 
     perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
-    if request.user.has_perm("main.all_region"):
+    if request.user.has_perm("main.all_material"):
         base_qs = Employee.objects.filter(
             Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
             organization=employee.organization,
@@ -2205,11 +2161,13 @@ def mat_info(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.add_deed", raise_exception=True)
 def document_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if request.user.employee.organization.type == "worker":
+        raise PermissionDenied("Ruxsat yo'q")
 
     if not employee.liable_set.exists():
         raise PermissionDenied("Ruxsat yo'q")
@@ -2233,11 +2191,13 @@ def document_get(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.view_order", raise_exception=True)
 def document_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if request.user.employee.organization.type == "worker":
+        raise PermissionDenied("Ruxsat yo'q")
 
     if not employee.liable_set.exists():
         raise PermissionDenied("Ruxsat yo'q")
@@ -2832,6 +2792,7 @@ def tex_status(request):
 
 @never_cache
 @require_GET
+@login_required
 def technics_detail(request, pk):
     technics = get_object_or_404(Technics, pk=pk, is_active=True)
     return render(request, "main/technics_detail.html", {"technics": technics})
@@ -3322,7 +3283,6 @@ def employee_update(request):
 
     with transaction.atomic():
         # --- Rol ---
-        rol, _ = Rol.objects.get_or_create(employee=target_employee)
         rol.order = order
         rol.confirm = confirm
         rol.technics = technics
