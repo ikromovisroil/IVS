@@ -2166,7 +2166,7 @@ def document_get(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if request.user.employee.organization.type == "worker":
+    if not employee.organization or employee.organization.type == "worker":
         raise PermissionDenied("Ruxsat yo'q")
 
     if not employee.liable_set.exists():
@@ -2196,7 +2196,7 @@ def document_post(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if request.user.employee.organization.type == "worker":
+    if not employee.organization or employee.organization.type == "worker":
         raise PermissionDenied("Ruxsat yo'q")
 
     if not employee.liable_set.exists():
