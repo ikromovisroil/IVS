@@ -3,7 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 
 from main.models import (
-    Organization, Region, Department, Directorate, Division, Rank, Rol,
+    Organization, Region, Department, Directorate, Division, Rank,
     Employee, Group, Category, Technics, StructureCategory, Structure,
     Unit, MaterialCategory, Material, MaterialEmployee, Goal, Order,
     OrderMaterial, OrderGoal, MaterialUser, Deed, DeedConsent, Contract,
@@ -11,7 +11,7 @@ from main.models import (
 )
 from .serializers import (
     OrganizationSerializer, RegionSerializer, DepartmentSerializer,
-    DirectorateSerializer, DivisionSerializer, RankSerializer, RolSerializer,
+    DirectorateSerializer, DivisionSerializer, RankSerializer,
     EmployeeSerializer, GroupSerializer, CategorySerializer,
     TechnicsSerializer, StructureCategorySerializer, StructureSerializer,
     UnitSerializer, MaterialCategorySerializer, MaterialSerializer,
@@ -111,14 +111,6 @@ class ContractViewSet(BaseModelViewSet):
     queryset = Contract.objects.all()
     serializer_class = ContractSerializer
     search_fields = ['name']
-
-
-# ---------- Rol ----------
-
-class RolViewSet(BaseModelViewSet):
-    queryset = Rol.objects.select_related('employee').all()
-    serializer_class = RolSerializer
-    filterset_fields = ['employee']
 
 
 # ---------- Xodim ----------

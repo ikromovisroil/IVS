@@ -1,6 +1,6 @@
 from main.ajax_views import *
 from django.db.models import Prefetch
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from main.forms import *
 from django.core.paginator import Paginator
 from decimal import Decimal, InvalidOperation
@@ -257,7 +257,6 @@ def contact_agrement_arxiv(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -304,7 +303,6 @@ def contact_user(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
 def contact_user_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -347,10 +345,10 @@ def contact_user_arxiv(request):
     return render(request, "main/contact_user_arxiv.html", context)
 
 
+@permission_required("main.add_deed", raise_exception=True)
 @never_cache
 @require_POST
 @login_required
-@role_required("order_edit")
 def contact_post_deed(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -724,7 +722,7 @@ from django.http import HttpRequest
 @never_cache
 @require_GET
 @login_required
-@role_required("technics")
+@permission_required("main.view_technics", raise_exception=True)
 def barn_tex(request: HttpRequest):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -759,14 +757,14 @@ def barn_tex(request: HttpRequest):
     )
 
     organizations = Organization.objects.only("id", "name").order_by("id")
-    if not getattr(employee.rol, "full", False):
+    if not request.user.has_perm("main.all_organization"):
         organizations = organizations.filter(id=employee.organization_id)
 
     groups = Group.objects.only("id", "name").order_by("id")
     technics_form = TechnicsForm()
 
     regions = Region.objects.only("id", "name").order_by("id")
-    if not getattr(employee.rol, "region", False):
+    if not request.user.has_perm("main.all_region"):
         regions = regions.filter(id=employee.region_id)
 
     departments = Department.objects.none()
@@ -840,7 +838,7 @@ def barn_tex(request: HttpRequest):
 
     base_qs = Technics.objects.filter(category_id__in=liable_ids, is_active=True)
 
-    if not getattr(employee.rol, "full", False):
+    if not request.user.has_perm("main.all_organization"):
         base_qs = base_qs.filter(organization_id=employee.organization_id)
 
     if organization_id:
@@ -916,7 +914,7 @@ def barn_tex(request: HttpRequest):
     )
 
     emp_filter = Q()
-    if not getattr(employee.rol, "full", False):
+    if not request.user.has_perm("main.all_organization"):
         emp_filter &= Q(organization_id=employee.organization_id)
     if organization_id:
         emp_filter &= Q(organization_id=organization_id)
@@ -987,7 +985,7 @@ def barn_tex(request: HttpRequest):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.add_technics", raise_exception=True)
 def technics_create(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1023,7 +1021,7 @@ def technics_create(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.delete_technics", raise_exception=True)
 @transaction.atomic
 def technics_delete(request):
     employee = getattr(request.user, "employee", None)
@@ -1063,7 +1061,7 @@ def technics_delete(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.change_technics", raise_exception=True)
 @transaction.atomic
 def technics_attach(request):
     employee = getattr(request.user, "employee", None)
@@ -1177,7 +1175,7 @@ def technics_attach(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.change_technics", raise_exception=True)
 @transaction.atomic
 def technics_update(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -1263,6 +1261,7 @@ def technics_update(request, pk):
 @never_cache
 @require_GET
 @login_required
+@permission_required("main.view_technics", raise_exception=True)
 def technics_download(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1289,7 +1288,7 @@ def technics_download(request, pk):
 @never_cache
 @require_GET
 @login_required
-@role_required("technics")
+@permission_required("main.view_structure", raise_exception=True)
 def extra_tex(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1306,11 +1305,11 @@ def extra_tex(request):
         name = name[:120]
 
     organizations = Organization.objects.only("id", "name").order_by("id")
-    if not getattr(employee.rol, "full", False):
+    if not request.user.has_perm("main.all_organization"):
         organizations = organizations.filter(id=employee.organization_id)
 
-    regions    = Region.objects.only("id", "name").order_by("id")
-    if not getattr(employee.rol, "region", False):
+    regions = Region.objects.only("id", "name").order_by("id")
+    if not request.user.has_perm("main.all_region"):
         regions = regions.filter(id=employee.region_id)
 
     categories = StructureCategory.objects.only("id", "name").order_by("id")
@@ -1342,7 +1341,7 @@ def extra_tex(request):
         .order_by("-id")
     )
 
-    if not getattr(employee.rol, "full", False):
+    if not request.user.has_perm("main.all_region"):
         qs = qs.filter(organization_id=employee.organization_id)
 
     if organization_id and organization_id.isdigit():
@@ -1382,7 +1381,7 @@ def extra_tex(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.add_structure", raise_exception=True)
 @transaction.atomic
 def extra_tex_create(request):
     employee = getattr(request.user, "employee", None)
@@ -1420,7 +1419,7 @@ def extra_tex_create(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.delete_structure", raise_exception=True)
 @transaction.atomic
 def extra_tex_delete(request):
     employee = getattr(request.user, "employee", None)
@@ -1457,7 +1456,7 @@ def extra_tex_delete(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.change_structure", raise_exception=True)
 @transaction.atomic
 def extra_tex_update(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -1537,7 +1536,7 @@ def extra_tex_update(request, pk):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.change_structure", raise_exception=True)
 @transaction.atomic
 def extra_tex_attach(request):
     employee = getattr(request.user, "employee", None)
@@ -1583,7 +1582,7 @@ def extra_tex_attach(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("technics_edit")
+@permission_required("main.change_structure", raise_exception=True)
 @transaction.atomic
 def extra_tex_detach(request):
     employee = getattr(request.user, "employee", None)
@@ -1636,10 +1635,11 @@ def extra_tex_detach(request):
     return redirect(back_url)
 
 
+from django.contrib.auth.models import Permission
 @never_cache
 @require_GET
 @login_required
-@role_required("material")
+@permission_required("main.view_material", raise_exception=True)
 def barn_mat(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1658,8 +1658,12 @@ def barn_mat(request):
     params = request.GET.copy()
     params.pop("page", None)
 
-    if getattr(employee.rol, "region", False):
-        base_qs = Employee.objects.filter(rol__shop=True,organization=employee.organization)
+    perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
+    if request.user.has_perm("main.all_region"):
+        base_qs = Employee.objects.filter(
+            Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
+            organization=employee.organization,
+        ).distinct()
     else:
         base_qs = Employee.objects.filter(id=employee.id)
 
@@ -1694,7 +1698,7 @@ def barn_mat(request):
     )
 
     # region ruxsati bo'lsa emp_id bo'yicha filter, bo'lmasa faqat o'zi
-    if getattr(employee.rol, "region", False):
+    if not request.user.has_perm("main.all_region"):
         if emp_id and emp_id.isdigit():
             qs = qs.filter(employee_id=int(emp_id))
     else:
@@ -1730,7 +1734,7 @@ def barn_mat(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("material_edit")
+@permission_required("main.add_material", raise_exception=True)
 @transaction.atomic
 def material_create(request):
     employee = getattr(request.user, "employee", None)
@@ -1773,7 +1777,7 @@ def material_create(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("material_edit")
+@permission_required("main.change_material", raise_exception=True)
 @transaction.atomic
 def material_update(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -1894,7 +1898,7 @@ def material_update(request, pk):
 @never_cache
 @require_POST
 @login_required
-@role_required("material_edit")
+@permission_required("main.change_material", raise_exception=True)
 @transaction.atomic
 def material_attach(request):
     employee = getattr(request.user, "employee", None)
@@ -2028,7 +2032,7 @@ def material_attach(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("material_edit")
+@permission_required("main.delete_material", raise_exception=True)
 @transaction.atomic
 def material_delete(request):
     employee = getattr(request.user, "employee", None)
@@ -2084,7 +2088,7 @@ from datetime import datetime, time
 @never_cache
 @require_GET
 @login_required
-@role_required("material")
+@permission_required("main.view_material", raise_exception=True)
 def mat_info(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2171,8 +2175,12 @@ def mat_info(request):
 
         table_rows = page_obj.object_list
 
-    if getattr(employee.rol, "region", False):
-        base_qs = Employee.objects.filter(rol__shop=True, organization=employee.organization)
+    perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
+    if request.user.has_perm("main.all_region"):
+        base_qs = Employee.objects.filter(
+            Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
+            organization=employee.organization,
+        ).distinct()
     else:
         base_qs = Employee.objects.filter(id=employee.id)
 
@@ -2192,7 +2200,7 @@ def mat_info(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("akt")
+@permission_required("main.add_deed", raise_exception=True)
 def document_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2220,7 +2228,7 @@ def document_get(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("akt")
+@permission_required("main.view_order", raise_exception=True)
 def document_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2293,7 +2301,7 @@ def document_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("akt")
+@permission_required("main.view_order", raise_exception=True)
 def akt_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2309,7 +2317,7 @@ def akt_get(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("akt")
+@permission_required("main.view_order", raise_exception=True)
 def akt_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2371,7 +2379,7 @@ def akt_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("akt")
+@permission_required("main.shop_employee", raise_exception=True)
 def svod_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2388,7 +2396,7 @@ def svod_get(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("akt")
+@permission_required("main.shop_employee", raise_exception=True)
 def svod_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2450,7 +2458,7 @@ def svod_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("akt")
+@permission_required("main.shop_employee", raise_exception=True)
 def reestr_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2467,7 +2475,7 @@ def reestr_get(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("akt")
+@permission_required("main.shop_employee", raise_exception=True)
 def reestr_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2535,7 +2543,8 @@ def technics_get(request):
         raise PermissionDenied("Employee yo'q")
 
     page_number = request.GET.get("page", 1)
-    is_boss = getattr(employee.rol, "boss", False)
+    is_boss = request.user.has_perm("main.boss_employee")
+
 
     if is_boss:
         base_qs = Technics.objects.filter(
@@ -2607,14 +2616,11 @@ from django.db.models import Avg
 @never_cache
 @require_GET
 @login_required
-@role_required("status")
+@permission_required("main.status_employee", raise_exception=True)
 def emp_status(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
-
-    rol = getattr(employee, "rol", None)
-    goal_type = "barn" if (rol and rol.client) else "atm"
+        raise PermissionDenied("Employee yo'q")
 
     region_id = (request.GET.get("region") or "").strip()
     date1_raw = (request.GET.get("date1") or "").strip()
@@ -2627,17 +2633,13 @@ def emp_status(request):
 
     if not has_search:
         today = timezone.localdate()
-        date1 = today.replace(day=1)  # oyning 1-kuni
-
-        # keyingi oyning 1-kuni (end)
+        date1 = today.replace(day=1)
         if date1.month == 12:
             next_month = date1.replace(year=date1.year + 1, month=1)
         else:
             next_month = date1.replace(month=date1.month + 1)
-
-        # default qiymatlarni inputlarda ko'rsatish uchun
         date1_raw = date1.isoformat()
-        date2_raw = (next_month - timezone.timedelta(days=1)).isoformat()  # oyning oxirgi kuni
+        date2_raw = (next_month - timezone.timedelta(days=1)).isoformat()
         date2 = parse_date(date2_raw)
 
     orders = Order.objects.filter(receiver__isnull=False)
@@ -2654,9 +2656,10 @@ def emp_status(request):
         orders = orders.filter(date_creat__date__lte=date2)
         goal_orders = goal_orders.filter(date_creat__date__lte=date2)
 
-    employee = (
+    # FIX: "employee" o'rniga boshqa nom - Employee obyektini o'chirib yubormaslik uchun
+    employee_stats = (
         orders
-        .filter(goal__type=goal_type, receiver__isnull=False)
+        .filter(goal__organization=employee.organization, receiver__isnull=False)
         .values("receiver_id")
         .annotate(
             full_name=Concat(
@@ -2671,26 +2674,23 @@ def emp_status(request):
             approved_count=Count("id", filter=Q(status="approved")),
             rejected_count=Count("id", filter=Q(status="rejected") | Q(status="canceled")),
             total_count=Count("id"),
-            avg_rating=Avg("rating"),  # <-- shu qo'shildi
+            avg_rating=Avg("rating"),
         )
         .order_by("-total_count", "-approved_count")
     )
 
     goal = (
         Goal.objects
-        .filter(type=goal_type)
+        .filter(organization=employee.organization)   # endi "employee" hali ham Employee obyekti - to'g'ri ishlaydi
         .annotate(
-            total=Count(
-                "order",
-                filter=Q(order__in=goal_orders)
-            )
+            total=Count("order", filter=Q(order__in=goal_orders))
         )
         .order_by("-total")
     )
 
     context = {
         "goal": goal,
-        "employee": employee,
+        "employee": employee_stats,   # FIX: template'ga shu yangi nom bilan uzatiladi
         "region": Region.objects.all().order_by("id"),
         "selected_region": region_id,
         "date1": date1_raw,
@@ -2702,7 +2702,7 @@ def emp_status(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("status")
+@permission_required("main.status_employee", raise_exception=True)
 def tex_status(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2835,7 +2835,7 @@ def technics_detail(request, pk):
 @never_cache
 @require_GET
 @login_required
-@role_required("document")
+@permission_required("main.view_deed", raise_exception=True)
 def files(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -3025,8 +3025,8 @@ def employe_create(request):
 
 
 @never_cache
+@require_GET
 @login_required
-@role_required("material_edit")
 def material_import_page(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -3041,7 +3041,6 @@ def material_import_page(request):
         "employees_shop": employees_shop,
     }
     return render(request, "main/material_import.html", context)
-
 
 
 import openpyxl
@@ -3182,7 +3181,7 @@ def material_import(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("user")
+@permission_required("main.view_employee", raise_exception=True)
 def employee(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -3288,7 +3287,7 @@ def employee(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("user")
+@permission_required("main.view_employee", raise_exception=True)
 def employee_update(request):
     current_employee = getattr(request.user, "employee", None)
     if not current_employee:

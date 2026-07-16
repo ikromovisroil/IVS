@@ -3,7 +3,7 @@
 # moslab o'zgartiring. Masalan agar app nomi "main" bo'lsa - shu holicha qoldiring,
 # agar "core", "inventory" va h.k. bo'lsa - shunga almashtiring.
 from main.models import (
-    Organization, Region, Department, Directorate, Division, Rank, Rol,
+    Organization, Region, Department, Directorate, Division, Rank,
     Employee, Group, Category, Technics, StructureCategory, Structure,
     Unit, MaterialCategory, Material, MaterialEmployee, Goal, Order,
     OrderMaterial, OrderGoal, MaterialUser, Deed, DeedConsent, Contract,
@@ -101,13 +101,6 @@ class ContractSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-# ---------- Rol ----------
-
-class RolSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rol
-        fields = '__all__'
-
 
 # ---------- Xodim ----------
 
@@ -119,7 +112,6 @@ class EmployeeSerializer(serializers.ModelSerializer):
     division_name = serializers.CharField(source='division.name', read_only=True)
     rank_name = serializers.CharField(source='rank.name', read_only=True)
     region_name = serializers.CharField(source='region.name', read_only=True)
-    rol = RolSerializer(read_only=True)
 
     class Meta:
         model = Employee

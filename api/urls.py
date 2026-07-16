@@ -20,9 +20,6 @@ router.register('material-categories', views.MaterialCategoryViewSet)
 router.register('goals', views.GoalViewSet)
 router.register('contracts', views.ContractViewSet)
 
-# Rol
-router.register('roles', views.RolViewSet)
-
 # Xodim
 router.register('employees', views.EmployeeViewSet)
 

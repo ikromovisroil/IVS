@@ -1,6 +1,6 @@
 from .views import *
 from main.ajax_views import *
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 from django.core.paginator import Paginator
 from main.sso_views import *
 from django.db import transaction, DatabaseError
@@ -22,7 +22,8 @@ def order_sender(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender=employee,goal__type="atm", status__in=["viewed", "process", "finished"],)
+        .filter(sender=employee, goal__organization__type="worker",
+                status__in=["viewed", "process", "finished"],)
         .select_related( "goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
@@ -33,7 +34,7 @@ def order_sender(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.filter(type="atm").order_by("id"),
+        "goal":     Goal.objects.filter(organization__type="worker").order_by("id"),
     }
     return render(request, "main/order_sender.html", context)
 
@@ -107,7 +108,7 @@ def order_sender_arxiv(request):
     orders_qs = (
         Order.objects
         .filter(
-            sender=employee, goal__type="atm",
+            sender=employee, goal__organization__type="worker",
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
         .select_related(
@@ -123,7 +124,6 @@ def order_sender_arxiv(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.filter(type="atm").order_by("id"),
     }
     return render(request, "main/order_sender_arxiv.html", context)
 
@@ -153,7 +153,7 @@ def order_post(request):
         status="viewed",
     )
 
-    messages.success(request, "Ariza yuborildi")
+    messages.success(request, "Ariza Yaratish")
     return redirect(back_url)
 
 
@@ -161,7 +161,7 @@ def order_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order_edit")
+@permission_required("main.add_order", raise_exception=True)
 def order_sender_user(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -171,7 +171,7 @@ def order_sender_user(request):
 
     orders_qs = (
         Order.objects
-        .filter(user=employee, goal__type="atm")
+        .filter(user=employee, goal__organization__type="worker",)
         .select_related("goal", "technics", "user", "receiver", "sender")
         .order_by("-id")
     )
@@ -182,7 +182,7 @@ def order_sender_user(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.filter(type="atm").order_by("id"),
+        "goal":     Goal.objects.filter(organization__type="worker").order_by("id"),
         "organizations": Organization.objects.only("id", "name").order_by("id"),
     }
     return render(request, "main/order_sender_user.html", context)
@@ -191,7 +191,7 @@ def order_sender_user(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("order_edit")
+@permission_required("main.add_order", raise_exception=True)
 def order_user_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -229,14 +229,14 @@ def order_user_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    if employee.rol.client:
-        raise PermissionDenied("Sizga ruxsat yo‘q")
+    if employee.organization.type == "client":
+        raise PermissionDenied("Sizga ruxsat yo'q")
 
     order_goal_ids = OrderGoal.objects.filter(
         employee=employee
@@ -249,7 +249,7 @@ def order_receiver(request):
         .filter(
             sender__region=employee.region,
             goal_id__in=order_goal_ids,
-            goal__type="atm",
+            goal__organization__type="worker",
             status="viewed"
         )
         .select_related( "goal", "technics", "user", "receiver", "sender")
@@ -273,13 +273,13 @@ def order_receiver(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("order")
+@permission_required("main.change_order", raise_exception=True)
 def order_accepted(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if getattr(employee.rol, "client", False):
+    if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url = request.META.get("HTTP_REFERER") or "/"
@@ -315,20 +315,23 @@ def order_accepted(request, pk):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver_activ(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if getattr(employee.rol, "client", False):
+    if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
 
     orders_qs = (
         Order.objects
-        .filter(receiver=employee, goal__type="atm", status__in=["process", "finished"],)
+        .filter(receiver=employee,
+                goal__organization__type="worker",
+                goal__organization=employee.organization,
+                status__in=["process", "finished"],)
         .select_related("goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
@@ -358,14 +361,14 @@ def order_receiver_activ(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("order")
+@permission_required("main.change_order", raise_exception=True)
 @transaction.atomic
 def order_material_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if getattr(employee.rol, "client", False):
+    if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url    = request.META.get("HTTP_REFERER") or "/"
@@ -466,20 +469,21 @@ def order_material_post(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if getattr(employee.rol, "client", False):
+    if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
 
     orders_qs = (
         Order.objects
-        .filter(receiver=employee, goal__type="atm", status__in=["approved", "accepted", "canceled", "rejected"],)
+        .filter(receiver=employee, goal__organization__type="worker",
+                status__in=["approved", "accepted", "canceled", "rejected"],)
         .select_related("goal", "technics","user", "receiver", "sender")
         .order_by("-id")
     )
@@ -497,13 +501,13 @@ def order_receiver_arxiv(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver_deed(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if getattr(employee.rol, "client", False):
+    if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     order = get_object_or_404(
@@ -549,13 +553,13 @@ def order_receiver_deed(request, pk):
 @never_cache
 @require_POST
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver_deed_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if getattr(employee.rol, "client", False):
+    if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url    = request.META.get("HTTP_REFERER") or "/"
@@ -621,7 +625,7 @@ def order_sender_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -629,10 +633,11 @@ def order_sender_barn(request):
     orders_qs = (
         Order.objects
         .filter(
-            sender=employee, organization=employee.organization, goal__type="barn",
+            sender=employee,
+            goal__organization__type="client",
             status__in=["viewed", "process", "finished", "approved"],
         )
-        .select_related("organization", "user", "receiver", "sender")
+        .select_related("user", "receiver", "sender")
         .order_by("-id")
     )
 
@@ -654,7 +659,7 @@ def order_decide_barn(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
@@ -727,7 +732,7 @@ def order_sender_arxiv_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -736,12 +741,11 @@ def order_sender_arxiv_barn(request):
         Order.objects
         .filter(
             sender=employee,
-            goal__type="barn",
-            organization=employee.organization,
+            goal__organization__type="client",
             status__in=["accepted", "canceled", "rejected"],
         )
         .select_related(
-            "organization", "goal", "technics",
+            "goal", "technics",
             "user", "receiver", "sender"
         )
         .order_by("-id")
@@ -765,7 +769,7 @@ def order_sender_material_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     name = request.GET.get("name", "").strip()
@@ -818,7 +822,7 @@ def order_sender_basket_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -840,7 +844,7 @@ def order_sender_basket_barn(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal": Goal.objects.filter(type="barn").order_by("id"),
+        "goal": Goal.objects.filter(organization__type="client").order_by("id"),
     }
     return render(request, "main/order_sender_basket_barn.html", context)
 
@@ -854,7 +858,7 @@ def create_order_sender_from(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     cart_items = list(
@@ -874,7 +878,6 @@ def create_order_sender_from(request):
     goal = get_object_or_404(Goal, pk=int(goal_id))
 
     order = Order.objects.create(
-        organization=employee.organization,
         goal=goal,
         sender=employee,
         message_sender=body,
@@ -896,13 +899,13 @@ def create_order_sender_from(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     order_goal_ids = OrderGoal.objects.filter(
@@ -915,14 +918,14 @@ def order_receiver_barn(request):
         orders_qs = (
             Order.objects
             .filter(
-                goal__type="barn",
+                goal__organization__type="client",
+                goal__organization=employee.organization,
                 goal_id__in=order_goal_ids,
                 sender__region_id=employee.region_id,
-                organization=employee.organization,
                 status="viewed",
             )
             .select_related(
-                "organization", "goal", "technics",
+                "goal", "technics",
                 "user", "receiver", "sender"
             )
             .order_by("-id")
@@ -947,13 +950,13 @@ def order_receiver_barn(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("order")
+@permission_required("main.change_order", raise_exception=True)
 def order_accepted_barn(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url = request.META.get("HTTP_REFERER") or "/"
@@ -968,7 +971,7 @@ def order_accepted_barn(request, pk):
         Order.objects
         .filter(
             pk=pk,
-            organization_id=employee.organization_id,
+            goal__organization_id=employee.organization_id,
             status="viewed",
         )
         .first()
@@ -1011,13 +1014,13 @@ def order_accepted_barn(request, pk):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver_activ_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1025,13 +1028,12 @@ def order_receiver_activ_barn(request):
     orders_qs = (
         Order.objects
         .filter(
-            goal__type="barn",
+            goal__organization__type="client",
             receiver=employee,
-            organization=employee.organization,
             status__in=["process", "finished"],
         )
         .select_related(
-            "organization", "goal", "technics",
+            "goal", "technics",
             "user", "receiver", "sender"
         )
         .order_by("-id")
@@ -1060,13 +1062,13 @@ def order_receiver_activ_barn(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("order")
+@permission_required("main.change_order", raise_exception=True)
 def order_material_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url          = request.META.get("HTTP_REFERER", "/")
@@ -1184,13 +1186,13 @@ def order_material_barn(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("order")
+@permission_required("main.view_order", raise_exception=True)
 def order_receiver_arxiv_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1198,13 +1200,12 @@ def order_receiver_arxiv_barn(request):
     orders_qs = (
         Order.objects
         .filter(
-            goal__type="barn",
+            goal__organization__type="client",
             receiver=employee,
-            organization=employee.organization,
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
         .select_related(
-            "organization", "goal", "technics",
+            "goal", "technics",
             "user", "receiver", "sender"
         )
         .order_by("-id")
@@ -1223,13 +1224,13 @@ def order_receiver_arxiv_barn(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("confirm")
+@permission_required("main.confirm_order", raise_exception=True)
 def order_agrement(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1238,13 +1239,13 @@ def order_agrement(request):
         orders_qs = (
             Order.objects
             .filter(
-                goal__type="barn",
+                goal__organization__type="client",
+                goal__organization=employee.organization,
                 receiver__region_id=employee.region_id,
-                organization=employee.organization,
                 status="finished",
             )
             .select_related(
-                "organization", "goal", "technics",
+                "goal", "technics",
                 "user", "receiver", "sender"
             )
             .order_by("-id")
@@ -1265,13 +1266,13 @@ def order_agrement(request):
 @never_cache
 @require_POST
 @login_required
-@role_required("confirm")
+@permission_required("main.confirm_order", raise_exception=True)
 def order_agrement_material(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url          = request.META.get("HTTP_REFERER", "/")
@@ -1438,13 +1439,13 @@ def order_agrement_material(request):
 @never_cache
 @require_GET
 @login_required
-@role_required("confirm")
+@permission_required("main.confirm_order", raise_exception=True)
 def order_agrement_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
+    if employee.organization.type == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1453,12 +1454,11 @@ def order_agrement_arxiv(request):
         Order.objects
         .filter(
             user=employee,
-            goal__type="barn",
-            organization=employee.organization,
+            goal__organization__type="client",
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
         .select_related(
-            "organization", "goal", "technics",
+            "goal", "technics",
             "user", "receiver", "sender"
         )
         .order_by("-id")

@@ -157,7 +157,7 @@
                    <h5 class="card-title mb-0">
                      Uskunalar {{ total_count }} ta
                    </h5>
-                   {% if request.user.employee.rol.technics_edit %}
+                   {% if perms.main.add_technics %}
                    <div class="d-flex gap-2">
                      <button type="button" class="btn btn-success"
                              data-bs-toggle="modal" data-bs-target="#verticalycenteredemploye">
@@ -180,9 +180,7 @@
                     <th scope="col">I/R</th>
                     <th scope="col">S/R</th>
                     <th scope="col">Joylashuvi</th>
-                    {% if request.user.employee.rol.technics_edit %}
                     <th scope="col">Tafsif</th>
-                    {% endif %}
                   </tr>
                 </thead>
 
@@ -253,53 +251,61 @@
                           {{ tex.address|default:"-" }}
                         </td>
 
-                        {% if request.user.employee.rol.technics_edit %}
                         <td>
                           <div class="filter">
                             <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
                               <i class="bi bi-stack" style="font-size:18px;"></i>
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                              <li>
+                              {% if perms.main.delete_technics %}
+                                <li>
                                 <a class="dropdown-item" href="javascript:void(0)"
                                    data-bs-toggle="modal" data-bs-target="#texdel-{{ tex.id }}">
                                   <i class="bi bi-trash"></i> O'chirish
                                 </a>
                               </li>
+                              {% endif %}
+                              {% if perms.main.change_technics %}
                               <li>
                                 <a class="dropdown-item" href="javascript:void(0)"
                                    data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">
                                   <i class="bi bi-brush"></i> Tahrirlash
                                 </a>
                               </li>
+                              {% endif %}
+                              {% if perms.main.change_technics %}
                               <li>
                                 <a class="dropdown-item" href="javascript:void(0)"
                                    data-bs-toggle="modal" data-bs-target="#texbir-{{ tex.id }}">
                                   <i class="bi bi-paperclip"></i> Biriktirish
                                 </a>
                               </li>
+                              {% endif %}
+                              {% if perms.main.change_structure %}
                               <li>
                                 <a class="dropdown-item" href="javascript:void(0)"
                                    data-bs-toggle="modal" data-bs-target="#extratex-{{ tex.id }}">
                                   <i class="bi bi-pin-angle"></i> Qurilmani biriktirish
                                 </a>
                               </li>
+                              {% endif %}
+                              {% if perms.main.change_structure %}
                               <li>
                                 <a class="dropdown-item" href="javascript:void(0)"
                                    data-bs-toggle="modal" data-bs-target="#extratexdetach-{{ tex.id }}">
                                   <i class="bi bi-x-square"></i> Qurilmani bekor qilish
                                 </a>
                               </li>
+                              {% endif %}
                             </ul>
                           </div>
                         </td>
-                        {% endif %}
                       </tr>
                       {% endfor %}
                     {% endif %}
                   {% empty %}
                   <tr>
-                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
+                    <td colspan="7"
                         class="text-center text-muted py-4">
                       <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                     </td>
@@ -311,7 +317,7 @@
                   {# ══════════════════════════════════════════════════════ #}
                   {% if not page_obj.has_next and employees_without_technics %}
                   <tr>
-                    <td colspan="{% if request.user.employee.rol.technics_edit %}7{% else %}6{% endif %}"
+                    <td colspan="7"
                         class="table-secondary fw-bold ps-2 text-center fst-italic align-middle">
                         Texnikasi yo'q xodimlar
                     </td>
@@ -329,7 +335,7 @@
                       </span>
                       {% endif %}
                     </td>
-                    <td colspan="{% if request.user.employee.rol.technics_edit %}5{% else %}4{% endif %}"
+                    <td colspan="5"
                         class="text-center text-muted fst-italic align-middle">
                       Texnika biriktirilmagan
                     </td>

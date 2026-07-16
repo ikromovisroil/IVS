@@ -59,10 +59,10 @@ def order_notifications(request):
         return empty
 
     conditions = (
-        Q(receiver=employee, goal__type="atm", status__in=["approved", "canceled"], receiver_seen=False) |
-        Q(receiver=employee, goal__type="barn", status__in=["accepted", "canceled", "rejected"], receiver_seen=False) |
-        Q(sender=employee, goal__type="atm", status__in=["finished", "rejected"], sender_seen=False) |
-        Q(sender=employee, goal__type="barn", status__in=["approved", "rejected"], sender_seen=False) |
+        Q(receiver=employee, status__in=["approved", "canceled"], receiver_seen=False) |
+        Q(receiver=employee, status__in=["accepted", "canceled", "rejected"], receiver_seen=False) |
+        Q(sender=employee, status__in=["finished", "rejected"], sender_seen=False) |
+        Q(sender=employee, status__in=["approved", "rejected"], sender_seen=False) |
         Q(user=employee, status="accepted", user_seen=False)
     )
 

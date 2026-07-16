@@ -18,6 +18,11 @@ class Organization(models.Model):
     contract = models.CharField(max_length=200, null=True, blank=True)
     inn = models.CharField(max_length=20, null=True, blank=True)
 
+    type = models.CharField(max_length=10, choices=[
+        ("worker", "(xizmat ko'rsatuvchi)"),
+        ("client", "Mijoz tashkilot"),
+    ], default="client", db_index=True)
+
     def __str__(self):
         return f"{self.name}"
 
@@ -26,6 +31,9 @@ class Organization(models.Model):
         db_table = 'organization'
         verbose_name = "Tashkilot"
         verbose_name_plural = "Tashkilotlar"
+        permissions = [
+            ("all_organization", "Barcha tashkilotni ko'rish"),
+        ]
 
 
 # viloyat.
@@ -39,6 +47,9 @@ class Region(models.Model):
         db_table = 'region'
         verbose_name = "Xudud"
         verbose_name_plural = "Xududlar"
+        permissions = [
+            ("all_region", "Barcha Xududlarni ko'rish"),
+        ]
 
 
 # Departament.
@@ -100,34 +111,6 @@ class Rank(models.Model):
         db_table = 'rank'
         verbose_name = "Lavozim"
         verbose_name_plural = "Lavozim"
-
-
-class Rol(models.Model):
-    employee = models.OneToOneField("Employee", on_delete=models.CASCADE, null=True, blank=True, db_index=True)
-    user = models.BooleanField(default=False, db_index=True)
-    full = models.BooleanField(default=False, db_index=True)
-    region = models.BooleanField(default=False, db_index=True)
-    client = models.BooleanField(default=False, db_index=True)
-    confirm = models.BooleanField(default=False, db_index=True)
-    order = models.BooleanField(default=False, db_index=True)
-    order_edit = models.BooleanField(default=False, db_index=True)
-    boss = models.BooleanField(default=False, db_index=True)
-    shop = models.BooleanField(default=False, db_index=True)
-    akt = models.BooleanField(default=False, db_index=True)
-    status = models.BooleanField(default=False, db_index=True)
-    document = models.BooleanField(default=False, db_index=True)
-    technics = models.BooleanField(default=False, db_index=True)
-    technics_edit = models.BooleanField(default=False, db_index=True)
-    material = models.BooleanField(default=False, db_index=True)
-    material_edit = models.BooleanField(default=False, db_index=True)
-
-    def __str__(self):
-        return str(self.id)
-
-    class Meta:
-        db_table = 'rol'
-        verbose_name = "Rol"
-        verbose_name_plural = "Rollar"
 
 
 # Xodim.
@@ -210,6 +193,11 @@ class Employee(models.Model):
         db_table = 'employee'
         verbose_name = "Xodim"
         verbose_name_plural = "Xodimlar"
+        permissions = [
+            ("boss_employee", "Departamentiga tegishli texnikalarni ko'rish"),
+            ("shop_employee", "Materialga javobgar shaxs"),
+            ("status_employee", "Statistikani ko'rish"),
+        ]
 
 
 # Category.
@@ -433,10 +421,7 @@ class MaterialEmployee(models.Model):
 
 # maqsad.
 class Goal(models.Model):
-    type = models.CharField(max_length=20, choices=[
-        ('atm', 'ATMga ariza'),
-        ('barn', 'Omborga ariza'),
-    ], default='atm', db_index=True)
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -450,7 +435,6 @@ class Goal(models.Model):
 
 # zayafka.
 class Order(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
 
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_sender', null=True, blank=True, db_index=True)
@@ -538,6 +522,9 @@ class Order(models.Model):
         db_table = 'order'
         verbose_name = "Ariza"
         verbose_name_plural = "Arizalar"
+        permissions = [
+            ("confirm_order", "Arizani tasdiqlash"),
+        ]
 
 
 # zayafkadan soralgan materiali.

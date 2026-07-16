@@ -346,7 +346,7 @@
               </a>
             </li>
 
-            {% if request.user.employee.rol.client %}
+            {% if request.user.employee.organization.type == "client" %}
             <li>
               <a class="{% if url_name == 'order_sender_barn' or url_name == 'order_sender_arxiv_barn' or url_name == 'order_sender_material_barn' or url_name == 'order_sender_basket_barn' %}active{% endif %}"
                  href="{% url 'order_sender_barn' %}">
@@ -355,8 +355,8 @@
             </li>
             {% endif %}
 
-            {% if request.user.employee.rol.order %}
-              {% if not request.user.employee.rol.client %}
+              {% if request.user.employee.organization.type == "worker" %}
+              {% if perms.main.view_order %}
               <li>
                 <a class="{% if url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% endif %}"
                    href="{% url 'order_receiver' %}">
@@ -364,8 +364,10 @@
                 </a>
               </li>
               {% endif %}
+              {% endif %}
 
-              {% if request.user.employee.rol.client %}
+              {% if request.user.employee.organization.type == "client" %}
+              {% if perms.main.view_order %}
               <li>
                 <a class="{% if url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_receiver_arxiv_barn' %}active{% endif %}"
                    href="{% url 'order_receiver_barn' %}">
@@ -373,15 +375,17 @@
                 </a>
               </li>
               {% endif %}
-            {% endif %}
+              {% endif %}
 
-            {% if request.user.employee.rol.confirm and request.user.employee.rol.client %}
+            {% if request.user.employee.organization.type == "client" %}
+            {% if perms.main.confirm_order %}
             <li>
               <a class="{% if url_name == 'order_agrement' or url_name == 'order_agrement_arxiv' %}active{% endif %}"
                  href="{% url 'order_agrement' %}">
                 <i class="bi bi-circle"></i><span>Arizalarni Tasdiqlash</span>
               </a>
             </li>
+            {% endif %}
             {% endif %}
           </ul>
         </li>
@@ -401,14 +405,12 @@
               class="nav-content collapse {% if url_name == 'contact_user' or url_name == 'contact_user_arxiv' or url_name == 'contact' or url_name == 'contact_arxiv' or url_name == 'contact_agrement' or url_name == 'contact_agrement_arxiv' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
 
-            {% if request.user.employee.rol.order %}
             <li>
               <a class="{% if url_name == 'contact_user' or url_name == 'contact_user_arxiv' %}active{% endif %}"
                  href="{% url 'contact_user' %}">
                 <i class="bi bi-circle"></i><span>Imzolashga yuborish</span>
               </a>
             </li>
-            {% endif %}
 
             <li>
               <a class="{% if url_name == 'contact' or url_name == 'contact_arxiv' %}active{% endif %}"
@@ -427,7 +429,8 @@
         </li>
 
         <!-- Hisobotlar -->
-        {% if request.user.employee.rol.akt %}
+        {% if request.user.employee.organization.type == "worker" %}
+        {% if perms.main.view_order %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' %}collapsed{% endif %}"
              data-bs-target="#charts-nav"
@@ -448,7 +451,7 @@
               </a>
             </li>
             {% endif %}
-            {% if request.user.employee.rol.shop %}
+            {% if perms.main.shop_employee %}
             <li>
               <a class="{% if url_name == 'svod_get' %}active{% endif %}" href="{% url 'svod_get' %}">
                 <i class="bi bi-circle"></i><span>Yakuniy hisobot</span>
@@ -469,9 +472,10 @@
           </ul>
         </li>
         {% endif %}
+        {% endif %}
 
         <!-- Texnika va Uskunalar -->
-        {% if request.user.employee.rol.technics %}
+        {% if perms.main.view_technics or perms.main.view_structure %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'barn_tex' and url_name != 'extra_tex' %}collapsed{% endif %}"
              data-bs-target="#forms-nav-technics"
@@ -485,22 +489,26 @@
           <ul id="forms-nav-technics"
               class="nav-content collapse {% if url_name == 'barn_tex' or url_name == 'extra_tex' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
-            <li>
+            {% if perms.main.view_technics %}
+              <li>
               <a class="{% if url_name == 'barn_tex' %}active{% endif %}" href="{% url 'barn_tex' %}">
                 <i class="bi bi-circle"></i><span>Texnika va Uskunalar</span>
               </a>
             </li>
+            {% endif %}
+            {% if perms.main.view_structure %}
             <li>
               <a class="{% if url_name == 'extra_tex' %}active{% endif %}" href="{% url 'extra_tex' %}">
                 <i class="bi bi-circle"></i><span>Qo‘shimcha qurilmalar</span>
               </a>
             </li>
+            {% endif %}
           </ul>
         </li>
         {% endif %}
 
         <!-- Materiallar -->
-        {% if request.user.employee.rol.material %}
+        {% if perms.main.view_material %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'barn_mat' and url_name != 'mat_info' %}collapsed{% endif %}"
              data-bs-target="#forms-nav-material"
@@ -536,7 +544,7 @@
         {% endif %}
 
         <!-- Statistika -->
-        {% if request.user.employee.rol.status %}
+        {% if perms.main.status_employee %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'tex_status' and url_name != 'emp_status' %}collapsed{% endif %}"
              data-bs-target="#status-navs"
@@ -555,18 +563,16 @@
                 <i class="bi bi-circle"></i><span>Texnikalar</span>
               </a>
             </li>
-            {% if not request.user.employee.rol.client %}
             <li>
               <a class="{% if url_name == 'emp_status' %}active{% endif %}" href="{% url 'emp_status' %}">
                 <i class="bi bi-circle"></i><span>Xodimlar</span>
               </a>
             </li>
-            {% endif %}
           </ul>
         </li>
         {% endif %}
 
-        {% if request.user.employee.rol.document %}
+        {% if perms.main.view_deed %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'files' %}collapsed{% endif %}"
              href="{% url 'files' %}">
@@ -575,7 +581,7 @@
           </a>
         </li>
         {% endif %}
-        {% if request.user.employee.rol.user %}
+        {% if perms.main.view_employee %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'employee' %}collapsed{% endif %}"
              href="{% url 'employee' %}">

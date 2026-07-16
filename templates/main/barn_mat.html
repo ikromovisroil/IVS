@@ -83,7 +83,7 @@
                  </h5>
                  <h5 class="card-title">Umumiy narxi:  {{ total_suma|intcomma }} so'm
                  </h5>
-                 {% if request.user.employee.rol.material_edit %}
+                 {% if perms.main.add_material %}
                  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#vertical">
                    + Material qo'shish
                  </button>
@@ -101,9 +101,7 @@
                     <th scope="col">Soni</th>
                     <th scope="col">Birligi</th>
                     <th scope="col">Code</th>
-                    {% if request.user.employee.rol.material_edit%}
                     <th scope="col">Tafsif</th>
-                    {% endif %}
                   </tr>
                 </thead>
 
@@ -149,7 +147,6 @@
                     <td >{{ mat.number }}</td>
                     <td >{{ mat.unit|default:"-" }}</td>
                     <td >{{ mat.code|default:"-" }}</td>
-                    {% if request.user.employee.rol.material_edit%}
                     <td>
                       <div class="filter">
                         <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
@@ -157,7 +154,7 @@
                         </a>
 
                         <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                          {% if request.user.employee == mat.employee %}
+                          {% if perms.main.delete_material %}
                           <li>
                             <a class="dropdown-item"
                                href="javascript:void(0)"
@@ -166,7 +163,8 @@
                               <i class="bi bi-trash"></i> O'chirish
                             </a>
                           </li>
-
+                          {% endif %}
+                          {% if perms.main.change_material %}
                           <li>
                             <a class="dropdown-item"
                                href="javascript:void(0)"
@@ -176,7 +174,7 @@
                             </a>
                           </li>
                           {% endif %}
-                          {% if not request.user.employee.rol.client %}
+                          {% if perms.main.change_material %}
                           <li>
                             <a class="dropdown-item"
                                href="javascript:void(0)"
@@ -189,7 +187,6 @@
                         </ul>
                       </div>
                     </td>
-                    {% endif %}
                   </tr>
                 {% endfor %}
                 </tbody>

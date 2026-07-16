@@ -5,11 +5,6 @@ from django.utils.html import format_html
 # Inlines
 # =========================
 
-class RolInline(admin.StackedInline):
-    model = Rol
-    extra = 0
-    can_delete = False
-
 
 class OrderMaterialInline(admin.TabularInline):
     model = OrderMaterial
@@ -124,28 +119,7 @@ class EmployeeAdmin(admin.ModelAdmin):
         "user", "organization", "department", "directorate",
         "division", "rank", "region"
     )
-    inlines = [RolInline]
 
-
-@admin.register(Rol)
-class RolAdmin(admin.ModelAdmin):
-    list_display = (
-        "id", "employee", "full", "region", "client", "confirm",
-        "order", "order_edit", "boss", "shop", "akt", "status", "document",
-        "technics", "technics_edit", "material", "material_edit"
-    )
-    list_filter = (
-        "full", "region", "client", "confirm",
-        "order", "order_edit", "boss", "shop", "akt", "status", "document",
-        "technics", "technics_edit", "material", "material_edit"
-    )
-    search_fields = (
-        "employee__last_name",
-        "employee__first_name",
-        "employee__father_name",
-        "employee__user__username",
-    )
-    autocomplete_fields = ("employee",)
 
 
 # =========================
@@ -216,7 +190,7 @@ class OrderAdmin(admin.ModelAdmin):
         "colored_status", "rating", "date_creat"
     )
     list_filter = (
-        "organization", "goal__type",  "status", "goal", "date_creat"
+        "status", "goal", "date_creat"
     )
     search_fields = (
         "id",

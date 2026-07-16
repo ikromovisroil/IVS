@@ -32,11 +32,11 @@
                                     <a href="{% url 'contact_user_arxiv' %}" class="nav-link border border-primary">Imzolangan</a>
                                 </li>
                             </ul>
-                            {% if not request.user.employee.rol.client and request.user.employee.rol.order_edit %}
+                            {% if perms.main.add_deed %}
                             <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">
                                 + Hujjatlar Yaratish
                             </button>
-                            {% endif  %}
+                            {% endif %}
                         </div>
 
                         <!-- Modal — tashqi d-flex konteynerdan chiqarib, alohida joylashtirilgan -->

@@ -37,7 +37,7 @@
                     <li class="nav-pills">
                       <a href="{% url 'order_sender_arxiv' %}" class="nav-link active" >Tarix</a>
                     </li>
-                    {% if not request.user.employee.rol.client and request.user.employee.rol.order_edit %}
+                    {% if perms.main.add_order %}
                     <li class="nav-pills">
                       <a href="{% url 'order_sender_user' %}" class="nav-link border border-primary" >Ariza  berish</a>
                     </li>
