@@ -43,49 +43,6 @@
                     </li>
                     {% endif %}
                 </ul>
-                <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">+ Ariza Yaratish</button>
-              </div>
-
-              <div class="modal fade order-modal" id="modal" tabindex="-1">
-                <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
-                  <div class="modal-content">
-                    <form action="{% url 'order_post' %}" method="post">{% csrf_token %}
-                    <div class="modal-header">
-                      <h5 class="modal-title">Ariza Yaratish</h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="">
-                            <!-- Mavzu -->
-                            <div class="row mb-3">
-                                <label class="col-sm-12 col-form-label">Arizaning Maqsadi:</label>
-                                <div class="col-sm-12">
-                                    <select class="form-select" name="goal" id="topic-select" required>
-                                        <option value="">tanlang</option>
-                                        {% for t in goal %}
-                                            <option value="{{ t.id }}">{{ t.name }}</option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-                            </div>
-
-                            <!-- Izoh -->
-                            <div class="row mb-3">
-                                <label class="col-sm-12 col-form-label">Qo‘shimcha ma’lumot:</label>
-                                <div class="col-sm-12">
-                                    <textarea class="form-control" name="body" style="height: 100px" placeholder="IP, Telefon va Qo'shimcha ma'lumot yuboring"></textarea>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                    <div class="modal-footer d-flex flex-row justify-content-center gap-2">
-                       <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal"><i class="bi bi-x-lg me-1"></i> Bekor qilish</button>
-                       <button type="submit" class="btn btn-primary flex-fill"><i class="bi bi-send-fill me-1"></i> Yuborish</button>
-                    </div>
-                    </form>
-                  </div>
-                </div>
               </div>
 
               <div class="table-responsive tab-content pt-2">

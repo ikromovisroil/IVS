@@ -16,6 +16,7 @@ from rest_framework_simplejwt.views import (
 )
 from django.contrib import admin
 from django.urls import path, include, re_path
+
 schema_view = get_schema_view(
     openapi.Info(
         title="IMV API Documentation",
@@ -27,14 +28,14 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
-    # ADMIN PAN
+    # ADMIN PANEL
     path('ivc_service_admin_panel/', admin.site.urls),
 
     # MAIN SITE
     path("", include("main.urls")),
 
     # API
-    path('api/', include('main.api_urls')),
+    path('api/', include('api.urls')),
 
     # JWT TOKEN URL'lari
     path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
@@ -52,9 +53,7 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 else:
     from django.views.static import serve
-    from django.urls import re_path
 
     urlpatterns += [
         re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
-        re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
     ]

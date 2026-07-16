@@ -58,10 +58,12 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
-    "drf_yasg",
+    "rest_framework.authtoken",   # FIX: oldin vergul yo'qligi sababli "drf_yasg" bilan qo'shilib ketgan edi
+    "drf_yasg",                   # FIX: yuqoridagi qatordan ajratildi
 
     "main.apps.MainConfig",
     "core.apps.CoreConfig",
+    "api.apps.ApiConfig",
 ]
 
 
@@ -75,8 +77,8 @@ MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
 
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.locale.LocaleMiddleware",   # FIX: CommonMiddleware'dan OLDIN bo'lishi kerak
     "django.middleware.common.CommonMiddleware",
-    "django.middleware.locale.LocaleMiddleware",
 
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -219,6 +221,8 @@ CSRF_COOKIE_SAMESITE = "Lax"
 # =========================================================
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.SessionAuthentication",
+        "rest_framework.authentication.TokenAuthentication",
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
@@ -415,6 +419,11 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # =========================================================
 # CSP (django-csp 4.0+)
 # =========================================================
+# ESLATMA: bu REPORT_ONLY rejimda ishlaydi (hech narsani bloklamaydi, faqat
+# hisobot beradi). Productionda real himoya kerak bo'lsa, quyidagini
+# CONTENT_SECURITY_POLICY nomi bilan (REPORT_ONLY'siz) alohida qo'shing,
+# va "report-uri"/"report-to" ni ham belgilang, aks holda hisobotlar
+# hech qayerga yubormaydi.
 CONTENT_SECURITY_POLICY_REPORT_ONLY = {
     "INCLUDE_NONCE_IN": ["script-src", "style-src"],
     "DIRECTIVES": {
