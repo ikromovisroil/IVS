@@ -137,7 +137,7 @@
                           </a>
 
                           <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
-                            {% if perms.main.delete_structure %}
+                            {% if perms.main.delete_technics %}
                             <li>
                               <a class="dropdown-item" href="javascript:void(0)"
                                  data-bs-toggle="modal" data-bs-target="#texdel-{{ tex.id }}">
@@ -145,7 +145,7 @@
                               </a>
                             </li>
                             {% endif %}
-                            {% if perms.main.change_structure %}
+                            {% if perms.main.change_technics %}
                             <li>
                               <a class="dropdown-item" href="javascript:void(0)"
                                  data-bs-toggle="modal" data-bs-target="#textax-{{ tex.id }}">

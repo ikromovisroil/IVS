@@ -563,6 +563,7 @@ def order_receiver_deed_post(request):
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url    = request.META.get("HTTP_REFERER") or "/"
+    order_id  = (request.POST.get("order")  or "").strip()
     sender_id  = (request.POST.get("sender")  or "").strip()
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
@@ -581,6 +582,11 @@ def order_receiver_deed_post(request):
         messages.info(request, "Imzolovchi xodim tanlanmadi")
         return redirect(back_url)
 
+    order = Order.objects.filter(id=order_id).first() if order_id.isdigit() else None
+    if not order:
+        messages.info(request, "Ariza topilmadi")
+        return redirect(back_url)
+
     if not body:
         messages.info(request, "Hujjat matni bo'sh bo'lmasin")
         return redirect(back_url)
@@ -590,6 +596,7 @@ def order_receiver_deed_post(request):
         deed = Deed.objects.create(
             sender_id=sender.id,
             user_id=employee.id,
+            order_id=order.id,
             message_user=message,
             body=body,
             status='act',

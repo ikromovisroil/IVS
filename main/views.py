@@ -1256,7 +1256,7 @@ def technics_download(request, pk):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_structure", raise_exception=True)
+@permission_required("main.change_technics", raise_exception=True)
 def extra_tex(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1354,7 +1354,7 @@ def extra_tex(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.add_structure", raise_exception=True)
+@permission_required("main.add_technics", raise_exception=True)
 @transaction.atomic
 def extra_tex_create(request):
     employee = getattr(request.user, "employee", None)
@@ -1392,7 +1392,7 @@ def extra_tex_create(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.delete_structure", raise_exception=True)
+@permission_required("main.delete_technics", raise_exception=True)
 @transaction.atomic
 def extra_tex_delete(request):
     employee = getattr(request.user, "employee", None)
@@ -1426,7 +1426,7 @@ def extra_tex_delete(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.change_structure", raise_exception=True)
+@permission_required("main.change_technics", raise_exception=True)
 @transaction.atomic
 def extra_tex_update(request, pk):
     employee = getattr(request.user, "employee", None)
@@ -1503,7 +1503,7 @@ def extra_tex_update(request, pk):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.change_structure", raise_exception=True)
+@permission_required("main.change_technics", raise_exception=True)
 @transaction.atomic
 def extra_tex_attach(request):
     employee = getattr(request.user, "employee", None)
@@ -1546,7 +1546,7 @@ def extra_tex_attach(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.change_structure", raise_exception=True)
+@permission_required("main.change_technics", raise_exception=True)
 @transaction.atomic
 def extra_tex_detach(request):
     employee = getattr(request.user, "employee", None)
@@ -1657,13 +1657,6 @@ def barn_mat(request):
         )
         .order_by("-id")
     )
-
-    # region ruxsati bo'lsa emp_id bo'yicha filter, bo'lmasa faqat o'zi
-    if not request.user.has_perm("main.all_material"):
-        if emp_id and emp_id.isdigit():
-            qs = qs.filter(employee_id=int(emp_id))
-    else:
-        qs = qs.filter(employee=employee)
 
     if unit_id and unit_id.isdigit():
         qs = qs.filter(unit_id=int(unit_id))
