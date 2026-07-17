@@ -124,8 +124,10 @@
                     <th scope="col">T/r</th>
                     <th scope="col">F.I.O</th>
                     <th scope="col">Ariza bajarish</th>
-                    <th scope="col">Texnikalar</th>
-                    <th scope="col">Texnika taxrirlash</th>
+                    <th scope="col">Texnikalarni ko'rish</th>
+                    <th scope="col">Texnikalarni qo'shish</th>
+                    <th scope="col">Texnikalarni taxrirlash</th>
+                    <th scope="col">Texnika o'chirish</th>
                   </tr>
                 </thead>
 
@@ -141,28 +143,40 @@
                         </span>
                         {% endif %}
                     </td>
-                    <!-- FIX: emp.rol.order -> emp.has_order (view'da annotatsiya qilingan) -->
+                    <!-- has_change_order = "main.change_order" -->
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_order %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_order %}Bor{% else %}Yo'q{% endif %}
+                        <span class="{% if emp.has_change_order %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_change_order %}Bor{% else %}Yo'q{% endif %}
                         </span>
                     </td>
-                    <!-- FIX: emp.rol.technics -> emp.has_technics -->
+                    <!-- has_view_technics = "main.view_technics" -->
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_technics %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_technics %}Bor{% else %}Yo'q{% endif %}
+                        <span class="{% if emp.has_view_technics %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_view_technics %}Bor{% else %}Yo'q{% endif %}
                         </span>
                     </td>
-                    <!-- FIX: emp.rol.technics_edit -> emp.has_technics_edit -->
+                    <!-- has_change_technics = "main.change_technics" -->
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_technics_edit %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_technics_edit %}Bor{% else %}Yo'q{% endif %}
+                        <span class="{% if emp.has_add_technics %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_change_technics %}Bor{% else %}Yo'q{% endif %}
+                        </span>
+                    </td>
+
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        <span class="{% if emp.has_change_technics %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_change_technics %}Bor{% else %}Yo'q{% endif %}
+                        </span>
+                    </td>
+
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        <span class="{% if emp.has_delete_technics %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_change_technics %}Bor{% else %}Yo'q{% endif %}
                         </span>
                     </td>
                   </tr>
                  {% empty %}
                   <tr>
-                    <td colspan="5" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                       <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                     </td>
                   </tr>
@@ -238,7 +252,7 @@
       </div>
     </div>
 
-    <!-- ✅ MATERIAL EDIT MODALS (JADVALDAN TASHQARIDA!) -->
+    <!-- ✅ RUXSAT/ROL TAHRIRLASH MODALLARI (JADVALDAN TASHQARIDA!) -->
     {% for emp in page_obj %}
     <div class="modal fade order-modal" id="empmadal-{{ emp.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
@@ -247,73 +261,63 @@
           <input type="hidden" name="employee_id" value="{{ emp.id }}">
 
           <div class="modal-header">
-            <h5 class="modal-title">Xodim rol</h5>
+            <h5 class="modal-title">{{ emp.full_name }} — ruxsatlar</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
 
           <div class="modal-body">
 
+              <!-- ================= ARIZA ================= -->
+              <div class="section-title">Ariza</div>
               <div class="info-card">
-                <!-- FIX: emp.rol.order -> emp.has_order -->
                 <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Ariza bajarish</label>
-                  </div>
+                  <div class="col-12 col-md-9"><label class="form-check-label">Ariza bajarish</label></div>
                   <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input js-perm-order" type="checkbox" name="order"
-                             {% if emp.has_order %}checked{% endif %}>
-                  </div>
-                </div>
-                <!-- FIX: emp.rol.confirm -> emp.has_confirm -->
-                <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Arizani tasdiqlash</label>
-                  </div>
-                  <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input" type="checkbox" name="confirm"
-                             {% if emp.has_confirm %}checked{% endif %}>
-                  </div>
-                </div>
-                <!-- FIX: emp.rol.technics -> emp.has_technics -->
-                <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Texnika va Uskunalarni ko'rish</label>
-                  </div>
-                  <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input js-perm-technics" type="checkbox" name="technics"
-                             {% if emp.has_technics %}checked{% endif %}>
-                  </div>
-                </div>
-                <!-- FIX: emp.rol.technics_edit -> emp.has_technics_edit -->
-                <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Texnika va Uskunalar qo'shish</label>
-                  </div>
-                  <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input" type="checkbox" name="technics_edit"
-                             {% if emp.has_technics_tadd %}checked{% endif %}>
-                  </div>
-                </div>
-                <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Texnika va Uskunalar tahrirlash</label>
-                  </div>
-                  <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input" type="checkbox" name="technics_edit"
-                             {% if emp.has_technics_edit %}checked{% endif %}>
-                  </div>
-                </div>
-                <div class="row info-row gx-3">
-                  <div class="col-12 col-md-9">
-                      <label class="form-check-label">Texnika va Uskunalar o'chirish</label>
-                  </div>
-                  <div class="col-12 col-md-3 info-value">
-                      <input class="form-check-input" type="checkbox" name="technics_edit"
-                             {% if emp.has_technics_edit %}checked{% endif %}>
+                    <input class="form-check-input js-perm-order" type="checkbox" name="change_order"
+                           {% if emp.has_change_order %}checked{% endif %}>
                   </div>
                 </div>
               </div>
 
+              <!-- ================= TEXNIKA ================= -->
+              <div class="section-title">Texnika</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Texnikalarni ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-perm-technics" type="checkbox" name="view_technics"
+                           {% if emp.has_view_technics %}checked{% endif %}>
+                  </div>
+                </div>
+                <!-- FIX: quyidagi 3 tasi "Texnikalarni ko'rish" belgilanmaguncha
+                     DISABLED - ko'rish huquqisiz tahrirlash mantiqsiz -->
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Texnikalarni qo'shish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-technics-sub" type="checkbox" name="add_technics"
+                           {% if emp.has_add_technics %}checked{% endif %}
+                           {% if not emp.has_view_technics %}disabled{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Texnikalarni tahrirlash</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-technics-sub" type="checkbox" name="change_technics"
+                           {% if emp.has_change_technics %}checked{% endif %}
+                           {% if not emp.has_view_technics %}disabled{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Texnikalarni o'chirish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-technics-sub" type="checkbox" name="delete_technics"
+                           {% if emp.has_delete_technics %}checked{% endif %}
+                           {% if not emp.has_view_technics %}disabled{% endif %}>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ================= KATEGORIYALAR ================= -->
               <div class="section-title">Ariza kategoriyasi</div>
               <div class="info-card">
                 <div class="row info-row gx-3">
@@ -346,14 +350,11 @@
                 </div>
               </div>
 
-              <!-- FIX: request.user.employee.rol.client -> Organization.type orqali -->
-              {% if request.user.employee.organization.type == "client" %}
+              {% if request.user.employee.organization and request.user.employee.organization.type != "worker" %}
               <div class="section-title">Ruxsat etilgan material kategoriyasi</div>
               <div class="info-card">
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-12 info-value">
-                    <!-- FIX: eski kodda bu ham selected_category_ids dan foydalanardi (xato) -
-                         endi to'g'ri selected_matcategory_ids ishlatiladi -->
                     <select class="form-select js-matcategory-select" name="matcategory" multiple disabled>
                       {% for c in matcategory %}
                       <option value="{{ c.id }}"
@@ -398,38 +399,49 @@
       $select.val(null); // ruxsat olib tashlansa, tanlovlar ham tozalanadi
     }
 
-    // agar select2 ishga tushirilgan bo'lsa, uni yangilaymiz
     if ($select.hasClass('select2-hidden-accessible')) {
       $select.trigger('change.select2');
+    }
+  }
+
+  // FIX: yangi funksiya - checkbox guruhini boshqa checkbox holatiga qarab
+  // yoqadi/o'chiradi (multi-select emas, oddiy checkbox'lar uchun)
+  function toggleSubCheckboxes(masterCheckbox, $subCheckboxes) {
+    const enabled = masterCheckbox.checked;
+
+    $subCheckboxes.prop('disabled', !enabled);
+
+    if (!enabled) {
+      $subCheckboxes.prop('checked', false); // ko'rish o'chirilsa - qolganlari ham tozalanadi
     }
   }
 
   function initPermissionToggles(modal) {
     const $modal = $(modal);
 
-    const $orderCheckbox = $modal.find('.js-perm-order');
+    const $orderCheckbox = $modal.find('.js-perm-order');       // "change_order"
     const $goalSelect = $modal.find('.js-goal-select');
 
-    const $technicsCheckbox = $modal.find('.js-perm-technics');
+    const $technicsCheckbox = $modal.find('.js-perm-technics'); // "view_technics"
     const $categorySelect = $modal.find('.js-category-select');
+    const $technicsSubCheckboxes = $modal.find('.js-technics-sub'); // add/change/delete_technics
 
     if (!$orderCheckbox.length || !$technicsCheckbox.length) return;
 
-    // boshlang'ich holatni sozlash (modal ochilganda)
     toggleMultiSelect($orderCheckbox[0], $goalSelect);
     toggleMultiSelect($technicsCheckbox[0], $categorySelect);
+    toggleSubCheckboxes($technicsCheckbox[0], $technicsSubCheckboxes);
 
-    // eski listenerlarni olib tashlab, qayta ulaymiz (bir necha marta ochilishidan saqlanish uchun)
     $orderCheckbox.off('change.permToggle').on('change.permToggle', function () {
       toggleMultiSelect(this, $goalSelect);
     });
 
     $technicsCheckbox.off('change.permToggle').on('change.permToggle', function () {
       toggleMultiSelect(this, $categorySelect);
+      toggleSubCheckboxes(this, $technicsSubCheckboxes);
     });
   }
 
-  // Modal ochilganda ishga tushadi
   document.addEventListener('shown.bs.modal', function (e) {
     if (e.target.classList.contains('order-modal')) {
       initPermissionToggles(e.target);

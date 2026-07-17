@@ -3140,61 +3140,52 @@ def material_import(request):
 from django.contrib.auth.models import Permission
 from django.db.models import Exists, OuterRef
 
-# ---------------------------------------------------------------------------
-# Ushbu 4 ta permission Meta.permissions (yoki standart) orqali oldindan
-# yaratilgan bo'lishi kerak: main.process_order, main.confirm_order,
-# main.view_technics (standart), main.change_technics (standart)
-# ---------------------------------------------------------------------------
 PERM_CODENAMES = {
-    "order":         "main.process_order",
-    "confirm":       "main.confirm_order",
-    "technics":      "main.view_technics",
-    "technics_edit": "main.change_technics",
+    # Ariza
+    "change_order":      "main.change_order",
+    "confirm_order":     "main.confirm_order",
+    # Ko'rish doirasi
+    "all_organization":  "main.all_organization",
+    "all_region":         "main.all_region",
+    # Texnika
+    "view_technics":      "main.view_technics",
+    "add_technics":       "main.add_technics",
+    "change_technics":    "main.change_technics",
+    "delete_technics":    "main.delete_technics",
+    # Material
+    "view_material":      "main.view_material",
+    "add_material":       "main.add_material",
+    "delete_material":    "main.delete_material",
+    # Maxsus
+    "boss_employee":      "main.boss_employee",
+    "shop_employee":      "main.shop_employee",
+    "status_employee":    "main.status_employee",
 }
 
 
-def _annotate_permission_flags(employee_qs):
-    """Har bir Employee uchun 4 ta bool maydonni QUERYSET DARAJASIDA
-    hisoblab qo'shadi (N+1 emas - bitta so'rovda, Exists subquery orqali).
-    has_perm() ni page_obj ichida for-loop qilib chaqirish o'rniga shu
-    ishlatiladi, aks holda har bir xodim uchun alohida so'rov ketardi."""
-    from django.contrib.auth.models import Group
+DEPENDENT_PERMS = {
+    "view_technics": ["add_technics", "change_technics", "delete_technics"],
+}
 
+def _annotate_permission_flags(employee_qs):
     for field_name, perm_codename in PERM_CODENAMES.items():
         app_label, codename = perm_codename.split(".")
-        perm_via_group = Group.objects.filter(
-            user=OuterRef("user_id"),
-            permissions__content_type__app_label=app_label,
-            permissions__codename=codename,
-        )
         perm_direct = Permission.objects.filter(
             user=OuterRef("user_id"),
             content_type__app_label=app_label,
             codename=codename,
         )
         employee_qs = employee_qs.annotate(**{
-            f"has_{field_name}_group":  Exists(perm_via_group),
-            f"has_{field_name}_direct": Exists(perm_direct),
+            f"has_{field_name}": Exists(perm_direct),
         })
 
     return employee_qs
 
 
-def _resolve_permission_flags(page_obj):
-    """Annotatsiya qilingan ikkita maydonni (group/direct) bitta
-    yakuniy bool ga birlashtiradi - yoki superuser bo'lsa ham True."""
-    for emp in page_obj:
-        for field_name in PERM_CODENAMES:
-            group_flag  = getattr(emp, f"has_{field_name}_group", False)
-            direct_flag = getattr(emp, f"has_{field_name}_direct", False)
-            is_super    = bool(emp.user_id and emp.user.is_superuser)
-            setattr(emp, f"has_{field_name}", bool(group_flag or direct_flag or is_super))
-
-
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_employee", raise_exception=True)
+@permission_required("main.change_employee", raise_exception=True)
 def employee(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -3243,9 +3234,6 @@ def employee(request):
     paginator = Paginator(employee_qs, 20)
     page_obj = paginator.get_page(page_number)
 
-    _resolve_permission_flags(page_obj)
-
-    # FIX: Rol.type o'rniga Organization.type (client kontekstda)
     is_client = bool(employee.organization and employee.organization.type != "worker")
     goal = Goal.objects.filter(organization=employee.organization) if is_client else Goal.objects.all()
 
@@ -3318,9 +3306,6 @@ def employee_update(request):
         Employee.objects.select_related("user", "organization"), pk=employee_id
     )
 
-    # FIX: Privilege Escalation - avval bu tekshiruv umuman yo'q edi,
-    # istalgan "view_employee" huquqli xodim BOSHQA tashkilotdagi
-    # xodimga ham to'liq huquq bera olardi.
     if not request.user.has_perm("main.all_organization"):
         if target_employee.organization_id != current_employee.organization_id:
             raise PermissionDenied("Boshqa tashkilot xodimini o'zgartira olmaysiz")
@@ -3329,20 +3314,26 @@ def employee_update(request):
         messages.error(request, "Bu xodimga User biriktirilmagan")
         return redirect(back_url)
 
-    # Checkboxlar — belgilanmagan checkbox umuman POST'da kelmaydi
+    # Checkboxlar - belgilanmagan checkbox POST'da umuman kelmaydi.
     checked_fields = {
         field_name: request.POST.get(field_name) == "on"
         for field_name in PERM_CODENAMES
     }
 
-    # Multiple selectlar
+    # master ruxsat belgilanmagan bo'lsa, unga bog'liq sub ruxsatlar
+    # SERVERDA HAM majburan False qilinadi.
+    for master_field, sub_fields in DEPENDENT_PERMS.items():
+        if not checked_fields.get(master_field, False):
+            for sub_field in sub_fields:
+                checked_fields[sub_field] = False
+
     goal_ids = request.POST.getlist("goal")
     category_ids = request.POST.getlist("category")
     matcategory_ids = request.POST.getlist("matcategory")
 
     with transaction.atomic():
-        # --- Permission'larni to'g'ridan-to'g'ri userga biriktirish/olib tashlash ---
         user = target_employee.user
+
         for field_name, is_checked in checked_fields.items():
             app_label, codename = PERM_CODENAMES[field_name].split(".")
             perm = Permission.objects.filter(
@@ -3355,17 +3346,17 @@ def employee_update(request):
             else:
                 user.user_permissions.remove(perm)
 
-        # --- Ariza kategoriyasi (OrderGoal) ---
+        # --- Ariza kategoriyasi (OrderGoal) - "change_order" bajaruvchi rolga bog'liq ---
         OrderGoal.objects.filter(employee=target_employee).delete()
-        if checked_fields["order"] and goal_ids:
+        if checked_fields["change_order"] and goal_ids:
             OrderGoal.objects.bulk_create([
                 OrderGoal(employee=target_employee, goal_id=gid)
                 for gid in goal_ids
             ])
 
-        # --- Texnika kategoriyasi (Liable) ---
+        # --- Texnika kategoriyasi (Liable) - "view_technics" ko'rish huquqiga bog'liq ---
         Liable.objects.filter(employee=target_employee).delete()
-        if checked_fields["technics"] and category_ids:
+        if checked_fields["view_technics"] and category_ids:
             Liable.objects.bulk_create([
                 Liable(employee=target_employee, category_id=cid, contract=None)
                 for cid in category_ids
