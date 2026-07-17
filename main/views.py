@@ -2259,7 +2259,7 @@ def document_post(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def akt_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2275,7 +2275,7 @@ def akt_get(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def akt_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
