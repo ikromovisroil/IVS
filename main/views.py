@@ -3144,6 +3144,60 @@ def material_import(request):
     return redirect(back_url)
 
 
+from django.contrib.auth.models import Permission
+from django.db.models import Exists, OuterRef
+
+# ---------------------------------------------------------------------------
+# Ushbu 4 ta permission Meta.permissions (yoki standart) orqali oldindan
+# yaratilgan bo'lishi kerak: main.process_order, main.confirm_order,
+# main.view_technics (standart), main.change_technics (standart)
+# ---------------------------------------------------------------------------
+PERM_CODENAMES = {
+    "order":         "main.process_order",
+    "confirm":       "main.confirm_order",
+    "technics":      "main.view_technics",
+    "technics_edit": "main.change_technics",
+}
+
+
+def _annotate_permission_flags(employee_qs):
+    """Har bir Employee uchun 4 ta bool maydonni QUERYSET DARAJASIDA
+    hisoblab qo'shadi (N+1 emas - bitta so'rovda, Exists subquery orqali).
+    has_perm() ni page_obj ichida for-loop qilib chaqirish o'rniga shu
+    ishlatiladi, aks holda har bir xodim uchun alohida so'rov ketardi."""
+    from django.contrib.auth.models import Group
+
+    for field_name, perm_codename in PERM_CODENAMES.items():
+        app_label, codename = perm_codename.split(".")
+        perm_via_group = Group.objects.filter(
+            user=OuterRef("user_id"),
+            permissions__content_type__app_label=app_label,
+            permissions__codename=codename,
+        )
+        perm_direct = Permission.objects.filter(
+            user=OuterRef("user_id"),
+            content_type__app_label=app_label,
+            codename=codename,
+        )
+        employee_qs = employee_qs.annotate(**{
+            f"has_{field_name}_group":  Exists(perm_via_group),
+            f"has_{field_name}_direct": Exists(perm_direct),
+        })
+
+    return employee_qs
+
+
+def _resolve_permission_flags(page_obj):
+    """Annotatsiya qilingan ikkita maydonni (group/direct) bitta
+    yakuniy bool ga birlashtiradi - yoki superuser bo'lsa ham True."""
+    for emp in page_obj:
+        for field_name in PERM_CODENAMES:
+            group_flag  = getattr(emp, f"has_{field_name}_group", False)
+            direct_flag = getattr(emp, f"has_{field_name}_direct", False)
+            is_super    = bool(emp.user_id and emp.user.is_superuser)
+            setattr(emp, f"has_{field_name}", bool(group_flag or direct_flag or is_super))
+
+
 @never_cache
 @require_GET
 @login_required
@@ -3152,8 +3206,6 @@ def employee(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
-
-    rol = getattr(employee, "rol", None)
 
     organization_id = request.GET.get("organization")
     region_id = request.GET.get("region")
@@ -3167,8 +3219,7 @@ def employee(request):
     if organization_id:
         employee_qs = (
             Employee.objects
-            .select_related("organization", "department", "directorate", "division", "region", "rank")
-            .prefetch_related("rol")
+            .select_related("organization", "department", "directorate", "division", "region", "rank", "user")
             .filter(organization_id=organization_id)
         )
 
@@ -3181,7 +3232,6 @@ def employee(request):
         if division_id:
             employee_qs = employee_qs.filter(division_id=division_id)
         if name:
-
             terms = name.split()
             query = Q()
             for term in terms:
@@ -3190,20 +3240,21 @@ def employee(request):
                         Q(first_name__icontains=term) |
                         Q(father_name__icontains=term)
                 )
-
             employee_qs = employee_qs.filter(query)
 
         employee_qs = employee_qs.order_by("-id")
+        employee_qs = _annotate_permission_flags(employee_qs)
     else:
         employee_qs = Employee.objects.none()
 
     paginator = Paginator(employee_qs, 20)
     page_obj = paginator.get_page(page_number)
 
-    if not rol or not rol.client:
-        goal = Goal.objects.filter(type="atm")
-    else:
-        goal = Goal.objects.filter(type="barn")
+    _resolve_permission_flags(page_obj)
+
+    # FIX: Rol.type o'rniga Organization.type (client kontekstda)
+    is_client = bool(employee.organization and employee.organization.type != "worker")
+    goal = Goal.objects.filter(organization=employee.organization) if is_client else Goal.objects.all()
 
     category = Category.objects.all()
 
@@ -3217,16 +3268,21 @@ def employee(request):
     for lb in Liable.objects.filter(employee_id__in=emp_ids).values("employee_id", "category_id"):
         category_map.setdefault(lb["employee_id"], []).append(lb["category_id"])
 
+    matcategory_map = {}
+    for mc in MaterialEmployee.objects.filter(employee_id__in=emp_ids).values("employee_id", "category_id"):
+        matcategory_map.setdefault(mc["employee_id"], []).append(mc["category_id"])
+
     for emp in page_obj:
         emp.selected_goal_ids = goal_map.get(emp.id, [])
         emp.selected_category_ids = category_map.get(emp.id, [])
+        emp.selected_matcategory_ids = matcategory_map.get(emp.id, [])
 
     organizations = Organization.objects.only("id", "name").order_by("id")
-    if not (rol and rol.full):
+    if not request.user.has_perm("main.all_organization"):
         organizations = organizations.filter(id=employee.organization_id)
 
     regions = Region.objects.only("id", "name").order_by("id")
-    if not (rol and rol.region):
+    if not request.user.has_perm("main.all_region"):
         regions = regions.filter(id=employee.region_id)
 
     querydict = request.GET.copy()
@@ -3253,7 +3309,7 @@ def employee(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.view_employee", raise_exception=True)
+@permission_required("main.change_employee", raise_exception=True)
 def employee_update(request):
     current_employee = getattr(request.user, "employee", None)
     if not current_employee:
@@ -3266,32 +3322,49 @@ def employee_update(request):
         return redirect("employee")
 
     target_employee = get_object_or_404(
-        Employee, pk=employee_id
+        Employee.objects.select_related("user", "organization"), pk=employee_id
     )
 
+    # FIX: Privilege Escalation - avval bu tekshiruv umuman yo'q edi,
+    # istalgan "view_employee" huquqli xodim BOSHQA tashkilotdagi
+    # xodimga ham to'liq huquq bera olardi.
+    if not request.user.has_perm("main.all_organization"):
+        if target_employee.organization_id != current_employee.organization_id:
+            raise PermissionDenied("Boshqa tashkilot xodimini o'zgartira olmaysiz")
+
+    if not target_employee.user_id:
+        messages.error(request, "Bu xodimga User biriktirilmagan")
+        return redirect(back_url)
+
     # Checkboxlar — belgilanmagan checkbox umuman POST'da kelmaydi
-    order = request.POST.get("order") == "on"
-    confirm = request.POST.get("confirm") == "on"
-    technics = request.POST.get("technics") == "on"
-    technics_edit = request.POST.get("technics_edit") == "on"
+    checked_fields = {
+        field_name: request.POST.get(field_name) == "on"
+        for field_name in PERM_CODENAMES
+    }
 
     # Multiple selectlar
     goal_ids = request.POST.getlist("goal")
     category_ids = request.POST.getlist("category")
     matcategory_ids = request.POST.getlist("matcategory")
 
-
     with transaction.atomic():
-        # --- Rol ---
-        rol.order = order
-        rol.confirm = confirm
-        rol.technics = technics
-        rol.technics_edit = technics_edit
-        rol.save()
+        # --- Permission'larni to'g'ridan-to'g'ri userga biriktirish/olib tashlash ---
+        user = target_employee.user
+        for field_name, is_checked in checked_fields.items():
+            app_label, codename = PERM_CODENAMES[field_name].split(".")
+            perm = Permission.objects.filter(
+                content_type__app_label=app_label, codename=codename
+            ).first()
+            if not perm:
+                continue
+            if is_checked:
+                user.user_permissions.add(perm)
+            else:
+                user.user_permissions.remove(perm)
 
         # --- Ariza kategoriyasi (OrderGoal) ---
         OrderGoal.objects.filter(employee=target_employee).delete()
-        if order and goal_ids:
+        if checked_fields["order"] and goal_ids:
             OrderGoal.objects.bulk_create([
                 OrderGoal(employee=target_employee, goal_id=gid)
                 for gid in goal_ids
@@ -3299,7 +3372,7 @@ def employee_update(request):
 
         # --- Texnika kategoriyasi (Liable) ---
         Liable.objects.filter(employee=target_employee).delete()
-        if technics and category_ids:
+        if checked_fields["technics"] and category_ids:
             Liable.objects.bulk_create([
                 Liable(employee=target_employee, category_id=cid, contract=None)
                 for cid in category_ids

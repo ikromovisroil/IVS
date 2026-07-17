@@ -229,7 +229,7 @@ def order_user_post(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -315,7 +315,7 @@ def order_accepted(request, pk):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver_activ(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -469,7 +469,7 @@ def order_material_post(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -501,7 +501,7 @@ def order_receiver_arxiv(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver_deed(request, pk):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -553,7 +553,7 @@ def order_receiver_deed(request, pk):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver_deed_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -899,7 +899,7 @@ def create_order_sender_from(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1014,7 +1014,7 @@ def order_accepted_barn(request, pk):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver_activ_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -1186,7 +1186,7 @@ def order_material_barn(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_order", raise_exception=True)
+@permission_required("main.change_order", raise_exception=True)
 def order_receiver_arxiv_barn(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

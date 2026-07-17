@@ -141,19 +141,22 @@
                         </span>
                         {% endif %}
                     </td>
+                    <!-- FIX: emp.rol.order -> emp.has_order (view'da annotatsiya qilingan) -->
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.rol.order %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.rol.order %}Bor{% else %}Yo'q{% endif %}
+                        <span class="{% if emp.has_order %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_order %}Bor{% else %}Yo'q{% endif %}
                         </span>
                     </td>
+                    <!-- FIX: emp.rol.technics -> emp.has_technics -->
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.rol.technics %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.rol.technics %}Bor{% else %}Yo'q{% endif %}
+                        <span class="{% if emp.has_technics %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_technics %}Bor{% else %}Yo'q{% endif %}
                         </span>
                     </td>
+                    <!-- FIX: emp.rol.technics_edit -> emp.has_technics_edit -->
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.rol.technics_edit %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.rol.technics_edit %}Bor{% else %}Yo'q{% endif %}
+                        <span class="{% if emp.has_technics_edit %}text-success{% else %}text-danger{% endif %}">
+                            {% if emp.has_technics_edit %}Bor{% else %}Yo'q{% endif %}
                         </span>
                     </td>
                   </tr>
@@ -251,40 +254,62 @@
           <div class="modal-body">
 
               <div class="info-card">
+                <!-- FIX: emp.rol.order -> emp.has_order -->
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9">
                       <label class="form-check-label">Ariza bajarish</label>
                   </div>
                   <div class="col-12 col-md-3 info-value">
                       <input class="form-check-input js-perm-order" type="checkbox" name="order"
-                             {% if emp.rol.order %}checked{% endif %}>
+                             {% if emp.has_order %}checked{% endif %}>
                   </div>
                 </div>
+                <!-- FIX: emp.rol.confirm -> emp.has_confirm -->
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9">
                       <label class="form-check-label">Arizani tasdiqlash</label>
                   </div>
                   <div class="col-12 col-md-3 info-value">
                       <input class="form-check-input" type="checkbox" name="confirm"
-                             {% if emp.rol.confirm %}checked{% endif %}>
+                             {% if emp.has_confirm %}checked{% endif %}>
                   </div>
                 </div>
+                <!-- FIX: emp.rol.technics -> emp.has_technics -->
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9">
                       <label class="form-check-label">Texnika va Uskunalarni ko'rish</label>
                   </div>
                   <div class="col-12 col-md-3 info-value">
                       <input class="form-check-input js-perm-technics" type="checkbox" name="technics"
-                             {% if emp.rol.technics %}checked{% endif %}>
+                             {% if emp.has_technics %}checked{% endif %}>
+                  </div>
+                </div>
+                <!-- FIX: emp.rol.technics_edit -> emp.has_technics_edit -->
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Texnika va Uskunalar qo'shish</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input" type="checkbox" name="technics_edit"
+                             {% if emp.has_technics_tadd %}checked{% endif %}>
                   </div>
                 </div>
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9">
-                      <label class="form-check-label">Texnika va Uskunalar ustida amallar</label>
+                      <label class="form-check-label">Texnika va Uskunalar tahrirlash</label>
                   </div>
                   <div class="col-12 col-md-3 info-value">
                       <input class="form-check-input" type="checkbox" name="technics_edit"
-                             {% if emp.rol.technics_edit %}checked{% endif %}>
+                             {% if emp.has_technics_edit %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9">
+                      <label class="form-check-label">Texnika va Uskunalar o'chirish</label>
+                  </div>
+                  <div class="col-12 col-md-3 info-value">
+                      <input class="form-check-input" type="checkbox" name="technics_edit"
+                             {% if emp.has_technics_edit %}checked{% endif %}>
                   </div>
                 </div>
               </div>
@@ -321,15 +346,18 @@
                 </div>
               </div>
 
-              {% if request.user.employee.rol.client %}
+              <!-- FIX: request.user.employee.rol.client -> Organization.type orqali -->
+              {% if request.user.employee.organization.type == "client" %}
               <div class="section-title">Ruxsat etilgan material kategoriyasi</div>
               <div class="info-card">
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-12 info-value">
-                    <select class="form-select js-category-select" name="matcategory" multiple disabled>
+                    <!-- FIX: eski kodda bu ham selected_category_ids dan foydalanardi (xato) -
+                         endi to'g'ri selected_matcategory_ids ishlatiladi -->
+                    <select class="form-select js-matcategory-select" name="matcategory" multiple disabled>
                       {% for c in matcategory %}
                       <option value="{{ c.id }}"
-                        {% if c.id in emp.selected_category_ids %}selected{% endif %}>
+                        {% if c.id in emp.selected_matcategory_ids %}selected{% endif %}>
                         {{ c.name }}
                       </option>
                       {% endfor %}

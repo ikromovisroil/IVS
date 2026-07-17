@@ -356,7 +356,7 @@
             {% endif %}
 
               {% if request.user.employee.organization.type == "worker" %}
-              {% if perms.main.view_order %}
+              {% if perms.main.change_order %}
               <li>
                 <a class="{% if url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% endif %}"
                    href="{% url 'order_receiver' %}">
@@ -367,7 +367,7 @@
               {% endif %}
 
               {% if request.user.employee.organization.type == "client" %}
-              {% if perms.main.view_order %}
+              {% if perms.main.change_order %}
               <li>
                 <a class="{% if url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_receiver_arxiv_barn' %}active{% endif %}"
                    href="{% url 'order_receiver_barn' %}">
