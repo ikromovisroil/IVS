@@ -430,7 +430,7 @@
 
         <!-- Hisobotlar -->
         {% if request.user.employee.organization.type == "worker" %}
-        {% if perms.main.view_order %}
+        {% if perms.main.change_order %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' %}collapsed{% endif %}"
              data-bs-target="#charts-nav"
@@ -475,7 +475,7 @@
         {% endif %}
 
         <!-- Texnika va Uskunalar -->
-        {% if perms.main.view_technics or perms.main.view_structure %}
+        {% if perms.main.view_technics %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'barn_tex' and url_name != 'extra_tex' %}collapsed{% endif %}"
              data-bs-target="#forms-nav-technics"
