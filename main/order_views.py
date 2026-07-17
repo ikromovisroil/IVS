@@ -7,7 +7,7 @@ from django.db import transaction, DatabaseError
 import base64
 import binascii
 from .html_pdf import _create_deed_for_order
-
+from django.utils import timezone
 
 # yangi arizalar
 @never_cache
@@ -507,13 +507,14 @@ def order_receiver_deed(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "client":
+    if not employee.organization or employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     order = get_object_or_404(
         Order.objects.select_related(
             "sender", "sender__organization",
-            "sender__department", "receiver",
+            "sender__department", "receiver", "receiver__rank",
+            "technics",
         ),
         pk=pk,
     )
@@ -524,28 +525,16 @@ def order_receiver_deed(request, pk):
     if not order.sender_id:
         raise PermissionDenied("Ariza jo'natuvchisi yo'q")
 
-    emp_bos = (
-        Employee.objects
-        .filter(
-            organization=order.sender.organization,
-        )
-        .select_related("organization", "rank")
-    )
-
     employees = (
         Employee.objects
-        .filter(
-            Q(organization=order.sender.organization) |
-            Q(organization=employee.organization)
-        )
+        .filter(organization=order.sender.organization)
         .select_related("organization", "rank")
-        .distinct()
     )
 
     context = {
-        "order":    order,
-        "emp_bos":  emp_bos,
-        "employee": employees,
+        "order": order,
+        "employees": employees,
+        "today": timezone.now(),
     }
     return render(request, "main/order_receiver_deed.html", context)
 
@@ -559,14 +548,13 @@ def order_receiver_deed_post(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "client":
+    if not employee.organization or employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    back_url    = request.META.get("HTTP_REFERER") or "/"
-    order_id  = (request.POST.get("order")  or "").strip()
-    sender_id  = (request.POST.get("sender")  or "").strip()
-    message    = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]")
+    back_url = request.META.get("HTTP_REFERER") or "/"
+    order_id = (request.POST.get("order") or "").strip()
+    sender_id = (request.POST.get("sender") or "").strip()
+    message = (request.POST.get("message") or "").strip() or None
 
     # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
     body_encoded = (request.POST.get("body_encoded") or "").strip()
@@ -577,21 +565,38 @@ def order_receiver_deed_post(request):
         except (binascii.Error, UnicodeDecodeError, ValueError):
             body = ""
 
-    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
-    if not sender:
-        messages.info(request, "Imzolovchi xodim tanlanmadi")
-        return redirect(back_url)
-
-    order = Order.objects.filter(id=order_id).first() if order_id.isdigit() else None
+    order = (
+        Order.objects
+        .filter(id=order_id)
+        .select_related("sender", "sender__organization", "receiver")
+        .first()
+        if order_id.isdigit() else None
+    )
     if not order:
         messages.info(request, "Ariza topilmadi")
+        return redirect(back_url)
+
+    if order.receiver_id != employee.id:
+        raise PermissionDenied("Sizga ruxsat yo'q")
+
+    if not order.sender_id:
+        messages.info(request, "Ariza jo'natuvchisi yo'q")
+        return redirect(back_url)
+
+    sender = (
+        Employee.objects
+        .filter(id=sender_id, organization=order.sender.organization)
+        .first()
+        if sender_id.isdigit() else None
+    )
+    if not sender:
+        messages.info(request, "Imzolovchi xodim tanlanmadi")
         return redirect(back_url)
 
     if not body:
         messages.info(request, "Hujjat matni bo'sh bo'lmasin")
         return redirect(back_url)
 
-    # 1. DB — transaction ichida
     with transaction.atomic():
         deed = Deed.objects.create(
             sender_id=sender.id,
@@ -602,19 +607,31 @@ def order_receiver_deed_post(request):
             status='act',
         )
 
-        ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
-        ids = [i for i in ids if i != sender.id]
+        if order.sender_id != sender.id:
+            sender_consent = DeedConsent.objects.create(
+                deed=deed,
+                employee=order.sender,
+                status="approved",
+            )
+            if order.date_approved:
+                DeedConsent.objects.filter(pk=sender_consent.pk).update(
+                    date_creat=order.date_approved
+                )
+        if order.receiver_id != sender.id:
+            receiver_consent = DeedConsent.objects.create(
+                deed=deed,
+                employee=order.receiver,
+                status="approved",
+            )
+            if order.date_finished:
+                DeedConsent.objects.filter(pk=receiver_consent.pk).update(
+                    date_creat=order.date_finished
+                )
 
-        if ids:
-            emps = Employee.objects.filter(id__in=ids).only("id")
-            objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
-            DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
-
-    # 2. PDF — transaction tashqarisida
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
         pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
-        pdf_name  = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
+        pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
         deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
     except HtmlPdfError as e:
         messages.info(request, f"PDF yaratilmadi: {e}")

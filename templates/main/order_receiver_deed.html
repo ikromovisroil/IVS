@@ -30,17 +30,8 @@
                 <label for="sender_select" class="form-label">Imzolovchi xodim:</label>
                 <select id="sender_select" name="sender" class="form-select" required>
                   <option value="">Tanlang...</option>
-                  {% for i in emp_bos %}
+                  {% for i in employees %}
                     <option value="{{ i.id }}" data-rank="{{ i.rank.name }}">{{ i.full_name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="col-12">
-                <label for="agreements_select" class="form-label">Kelishuvchilar:</label>
-                <select id="agreements_select" name="agreements[]" class="form-select" multiple>
-                  {% for i in employee %}
-                    <option value="{{ i.id }}">{{ i.full_name }} ({{i.rank.name}})</option>
                   {% endfor %}
                 </select>
               </div>
@@ -77,8 +68,11 @@
               <div style="text-align:center;">
                 <b>DALOLATNOMA № {{ order.id }}</b>
               </div>
+              <!-- FIX: sana endi serverda render qilinadi - JS/TinyMCE
+                   ishga tushishi shart emas, sahifa yuklanganda darhol
+                   to'g'ri ko'rinadi -->
               <div style="text-align:right;">
-                <u id="doc_date">_</u>
+                <u>{{ today|date:"d.m.Y" }} y</u>
               </div>
 
               <div style="text-align:center;">
@@ -176,13 +170,13 @@
                     {% for i in order.materials_all %}
                     <tr>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ forloop.counter }}</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.order.technics.name }}</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.order.technics.serial }}</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.technics.name }}</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.technics.serial }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.material.name }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.number }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.material.unit.name }}</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.order.sender.full_name }}</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.order.sender.rank.name }}</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.sender.full_name }}</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.sender.rank.name }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.material.price }}</td>
                     </tr>
                     {% endfor %}
@@ -233,13 +227,6 @@
 <script>
 (function () {
 
-  function formatUzDate(d) {
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const yyyy = d.getFullYear();
-    return dd + '.' + mm + '.' + yyyy + ' y';
-  }
-
   function getEditorSafe() {
     const ed = window.tinymce?.get?.('body');
     // eng muhim tekshiruv: dom va dom.get bo‘lsin
@@ -256,10 +243,6 @@
       editor.setDirty(true);
       editor.save();
     }
-  }
-
-  function applyTodayDate(editor) {
-    setInEditor(editor, 'doc_date', formatUzDate(new Date()));
   }
 
   function applySenderToDoc(editor) {
@@ -303,21 +286,16 @@
       allowClear: true
     });
 
-    $('#agreements_select').select2({
-      width: '100%',
-      placeholder: 'Kelishuvchilarni tanlang...'
-    });
-
+    // FIX: applyTodayDate() olib tashlandi - sana endi shablonda
+    // ({{ today|date:"d.m.Y" }}) serverda render qilinadi, JS orqali
+    // qo'yish shart emas (avval JS ulgurmasa sana bo'sh qolib ketardi).
     waitForEditorReady(function (editor) {
-
-      applyTodayDate(editor);
       applySenderToDoc(editor);
 
       $('#sender_select').on('change', function () {
         const ed = getEditorSafe();
         if (ed) applySenderToDoc(ed);
       });
-
     });
 
     // ── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ──

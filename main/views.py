@@ -478,12 +478,15 @@ def deed_action(request, pk):
     return redirect(back_url)
 
 
+
+import logging
+logger = logging.getLogger(__name__)
 @never_cache
 @require_http_methods(["GET", "POST"])
 @login_required
 def deed_edit(request, pk):
-    emp_me = getattr(request.user, "employee", None)
-    if not emp_me:
+    employee = getattr(request.user, "employee", None)
+    if not employee:
         raise PermissionDenied("Employee yo'q")
 
     deed = get_object_or_404(
@@ -491,12 +494,14 @@ def deed_edit(request, pk):
         pk=pk
     )
 
-    if deed.user_id != emp_me.id:
+    if deed.user_id != employee.id:
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     sender_org_id = deed.sender.organization_id if deed.sender_id else None
+    sender_dep_id = deed.sender.department_id if deed.sender_id else None
     receiver_org_id = deed.receiver.organization_id if deed.receiver_id else None
-    my_org_id = emp_me.organization_id or None
+    receiver_dep_id = deed.receiver.department_id if deed.receiver_id else None
+    my_org_id = employee.organization_id or None
 
     sender_qs = (
         Employee.objects.filter(
@@ -517,7 +522,7 @@ def deed_edit(request, pk):
     org_ids = [x for x in [sender_org_id, receiver_org_id, my_org_id] if x]
     employee_qs = (
         Employee.objects.filter(organization_id__in=org_ids)
-        .select_related("organization", "rol")
+        .select_related("organization")
         .distinct()
         .order_by("last_name", "first_name", "father_name")
         if org_ids else Employee.objects.none()
@@ -552,6 +557,7 @@ def deed_edit(request, pk):
         new_sender = Employee.objects.filter(
             id=int(sender_id),
             organization_id=sender_org_id,
+            department_id=sender_dep_id,
         ).first()
 
         if not new_sender:
@@ -567,6 +573,7 @@ def deed_edit(request, pk):
             new_receiver = Employee.objects.filter(
                 id=int(receiver_id),
                 organization_id=receiver_org_id,
+                department_id=receiver_dep_id,
             ).first()
 
             if not new_receiver:
@@ -586,36 +593,66 @@ def deed_edit(request, pk):
             # 1. DB operatsiyalar — transaction ichida
             with transaction.atomic():
                 deed = Deed.objects.select_for_update().get(pk=deed.pk)
+
+                sender_changed = (deed.sender_id != new_sender.id)
+                receiver_changed = (
+                    deed.receiver_id is not None
+                    and deed.receiver_id != new_receiver.id
+                )
+
                 deed.sender = new_sender
-                if deed.receiver_id:
-                    deed.receiver = new_receiver
-                deed.body = body
+                if sender_changed:
+                    deed.status_sender = "viewed"
+                    deed.message_sender = None
+                    deed.date_sender = None
 
                 update_fields = ["sender", "body"]
-                if deed.receiver_id:
-                    update_fields.append("receiver")
-                deed.save(update_fields=update_fields)
+                if sender_changed:
+                    update_fields += ["status_sender", "message_sender", "date_sender"]
 
-                DeedConsent.objects.filter(deed_id=deed.id).delete()
+                if deed.receiver_id:
+                    deed.receiver = new_receiver
+                    if receiver_changed:
+                        deed.status_receiver = "viewed"
+                        deed.message_receiver = None
+                        deed.date_receiver = None
+                        update_fields += ["receiver", "status_receiver", "message_receiver", "date_receiver"]
+                    else:
+                        update_fields.append("receiver")
+
+                deed.body = body
+                deed.save(update_fields=update_fields)
 
                 exclude_ids = {deed.sender_id}
                 if deed.receiver_id:
                     exclude_ids.add(deed.receiver_id)
 
-                new_consents = [
-                    DeedConsent(deed_id=deed.id, employee_id=e_id, status="viewed")
-                    for e_id in clean_agreement_ids
-                    if e_id not in exclude_ids
+                final_ids = [eid for eid in clean_agreement_ids if eid not in exclude_ids]
+
+                existing_employee_ids = set(
+                    DeedConsent.objects.filter(deed_id=deed.id).values_list("employee_id", flat=True)
+                )
+
+                # Ro'yxatdan chiqarilganlarni o'chirish
+                DeedConsent.objects.filter(deed_id=deed.id).exclude(
+                    employee_id__in=final_ids
+                ).delete()
+
+                new_employee_ids = [
+                    eid for eid in final_ids if eid not in existing_employee_ids
                 ]
-                if new_consents:
-                    DeedConsent.objects.bulk_create(new_consents)
+                if new_employee_ids:
+                    DeedConsent.objects.bulk_create([
+                        DeedConsent(deed_id=deed.id, employee_id=eid, status="viewed")
+                        for eid in new_employee_ids
+                    ])
 
             # 2. PDF — transaction tashqarisida
             try:
                 if deed.file:
                     deed.file.delete(save=False)
             except Exception:
-                pass
+                logger.exception("Deed #%s eski faylini o'chirishda xatolik", deed.pk)
 
             pdf_bytes = deed_to_pdf_bytes(deed)
             pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
@@ -629,8 +666,9 @@ def deed_edit(request, pk):
             messages.info(request, f"Hujjat yangilanmadi: {e}")
             return redirect("deed_edit", pk=deed.pk)
 
-        except Exception as e:
-            messages.info(request, f"Kutilmagan xatolik: {e}")
+        except Exception:
+            logger.exception("Deed #%s tahrirlashda kutilmagan xatolik", deed.pk)
+            messages.info(request, "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.")
             return redirect("deed_edit", pk=deed.pk)
 
     context = {
@@ -641,6 +679,7 @@ def deed_edit(request, pk):
         "selected_agreement_ids": selected_agreement_ids,
     }
     return render(request, "main/deed_edit.html", context)
+
 
 
 @never_cache
@@ -1859,9 +1898,6 @@ def material_attach(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if not getattr(employee.rol, "client", False):
-        raise PermissionDenied("Employee yo'q")
-
     back_url    = request.META.get("HTTP_REFERER", "/")
     material_id = (request.POST.get("material_id") or "").strip()
     employee_id = (request.POST.get("employee_id") or "").strip()
@@ -2969,10 +3005,6 @@ def employe_create(request):
             employee.division = assigned_data["division"]
             employee.rank = assigned_data["rank"]
             employee.save()
-
-            rol = employee.rol
-            rol.client = (employee.organization_id != 4)
-            rol.save(update_fields=["client"])
 
         messages.success(request, f"{employee.full_name} xodim yaratildi")
 
