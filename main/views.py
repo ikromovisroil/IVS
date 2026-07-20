@@ -3026,7 +3026,6 @@ def material_import_page(request):
         raise PermissionDenied("Employee yo'q")
 
     employees_shop = Employee.objects.filter(
-        rol__shop=True,
         organization=employee.organization,
     ).order_by("last_name", "first_name")
 
