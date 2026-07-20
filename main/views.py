@@ -3038,6 +3038,8 @@ def material_import_page(request):
 
 import openpyxl
 from io import BytesIO
+
+
 @never_cache
 @require_POST
 @login_required
@@ -3080,6 +3082,14 @@ def material_import(request):
     except Exception as e:
         messages.info(request, f"Faylni o'qishda xatolik: {e}")
         return redirect(back_url)
+
+    # Importdan oldin shu xodimning barcha materiallarini 0 ga tushiramiz.
+    # Fayldagi qatorlar keyinroq to'g'ri qiymat bilan qayta yoziladi;
+    # fayldа yo'q qolgan mahsulotlar esa 0 sonda qoladi.
+    Material.objects.filter(
+        employee=target_employee,
+        is_active=True,
+    ).update(number=0)
 
     created = 0
     updated = 0
@@ -3166,7 +3176,7 @@ def material_import(request):
 
     messages.success(
         request,
-        f"{created} ta yangi qo'shildi, {updated} ta yangilandi, {skipped} ta o'tkazildi"
+        f"Import tugadi: {created} ta yaratildi, {updated} ta yangilandi, {skipped} ta o'tkazib yuborildi",
     )
     return redirect(back_url)
 
