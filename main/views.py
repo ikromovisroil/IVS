@@ -1700,6 +1700,8 @@ def barn_mat(request):
     if unit_id and unit_id.isdigit():
         qs = qs.filter(unit_id=int(unit_id))
 
+    if emp_id and emp_id.isdigit():
+        qs = qs.filter(employee_id=int(emp_id))
 
     if name:
         qs = qs.filter(
