@@ -11,6 +11,8 @@ WKHTMLTOPDF_PATH = os.getenv("WKHTMLTOPDF_PATH", "")
 if not WKHTMLTOPDF_PATH:
     WKHTMLTOPDF_PATH = shutil.which("wkhtmltopdf") or ""
 
+
+SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://report.yatm.uz")
 # =========================================================
 # HELPERS
 # =========================================================
@@ -64,6 +66,7 @@ INSTALLED_APPS = [
     "main.apps.MainConfig",
     "core.apps.CoreConfig",
     "api.apps.ApiConfig",
+    "bot.apps.BotConfig",
 ]
 
 

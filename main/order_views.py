@@ -8,6 +8,8 @@ import base64
 import binascii
 from .html_pdf import _create_deed_for_order
 from django.utils import timezone
+from bot.notify import send_telegram_message, rating_markup, barn_approved_markup
+
 
 # yangi arizalar
 @never_cache
@@ -308,6 +310,13 @@ def order_accepted(request, pk):
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
+    if order.sender_id and order.sender.telegram_chat:
+        send_telegram_message(
+            order.sender.telegram_chat,
+            f"✅ ATMga yuborgan #{order.id} - arizangiz qabul qilindi.\n"
+            f"Bajaruvchi: <b>{employee.full_name}</b>",
+        )
+
     messages.success(request, "Ariza muvaffaqiyatli qabul qilindi")
     return redirect("order_receiver_activ")
 
@@ -461,6 +470,15 @@ def order_material_post(request):
 
     order.status = "finished"
     order.save(update_fields=["status", "technics_id"])
+
+    if order.sender_id and order.sender.telegram_chat:
+        send_telegram_message(
+            order.sender.telegram_chat,
+            f"✅ ATMga yuborgan #{order.id} - arizangiz bajarildi.\n"
+            f"Bajaruvchi: <b>{employee.full_name}</b>\n\n"
+            f"Iltimos, xizmatni sifatini baholang:",
+            reply_markup=rating_markup(order.id),
+        )
 
     messages.success(request, "Ariza muvaffaqiyatli yakunlandi")
     return redirect(back_url)
@@ -1027,6 +1045,20 @@ def order_accepted_barn(request, pk):
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
+    if order.sender_id and order.sender.telegram_chat:
+        if action == "process":
+            send_telegram_message(
+                order.sender.telegram_chat,
+                f"✅ Omborxonaga yuborilgan #{order.id} - arizangiz qabul qilindi.\n"
+                f"Bajaruvchi: <b>{employee.full_name}</b>",
+            )
+        else:
+            send_telegram_message(
+                order.sender.telegram_chat,
+                f"❌ Omborxonaga yuborilgan #{order.id} - arizangiz rad etildi.\n"
+                f"Ko'rib chiqdi: <b>{employee.full_name}</b>",
+            )
+
     if action == "process":
         messages.success(request, "Ariza qabul qilindi")
         return redirect("order_receiver_activ_barn")
@@ -1202,6 +1234,13 @@ def order_material_barn(request):
     except DatabaseError:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
+
+    if order.sender_id and order.sender.telegram_chat:
+        send_telegram_message(
+            order.sender.telegram_chat,
+            f"✅ Omborxonaga yuborilgan #{order.id} - arizangiz bajarildi.\n"
+            f"Bajaruvchi: <b>{employee.full_name}</b>",
+        )
 
     messages.success(request, "Ariza tasdiqlandi")
     return redirect(back_url)
@@ -1451,6 +1490,24 @@ def order_agrement_material(request):
     except DatabaseError as e:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
+
+    if order.sender_id and order.sender.telegram_chat:
+        if action == "approved":
+            send_telegram_message(
+                order.sender.telegram_chat,
+                f"✅ Omborxonaga yuborilgan #{order.id} - arizangiz tasdiqlandi.\n"
+                f"Bajaruvchi: <b>{employee.full_name}</b>\n"
+                f"Tasdiqlovchi: <b>{employee.full_name}</b>\n\n"
+
+                f"<b>{order.message_receiver}</b>",
+                reply_markup=barn_approved_markup(order.id),
+            )
+        else:
+            send_telegram_message(
+                order.sender.telegram_chat,
+                f"❌ Omborxonaga yuborilgan #{order.id} - arizangiz rad etildi.\n"
+                f"Ko'rib chiqdi: <b>{employee.full_name}</b>",
+            )
 
     if action == "rejected":
         messages.success(request, "Ariza rad etildi. Materiallar omborga qaytarildi")

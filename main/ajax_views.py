@@ -88,14 +88,14 @@ def order_mark_seen(request):
 
     Order.objects.filter(
         receiver=employee,
-        goal__type="atm",
+        goal__organization__type="worker",
         status__in=["approved", "canceled"],
         receiver_seen=False,
     ).update(receiver_seen=True)
 
     Order.objects.filter(
         receiver=employee,
-        goal__type="barn",
+        goal__organization__type="client",
         status__in=["accepted", "canceled", "rejected"],
         receiver_seen=False,
     ).update(receiver_seen=True)

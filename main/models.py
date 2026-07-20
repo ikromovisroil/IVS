@@ -127,6 +127,10 @@ class Employee(models.Model):
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True,db_index=True)
     phone = models.CharField(max_length=50,null=True,blank=True)
     pinfl = models.CharField(max_length=20, null=True, blank=True,db_index=True)
+    telegram_chat = models.BigIntegerField(
+        null=True, blank=True, unique=True, db_index=True,
+        verbose_name="Telegram chat ID",
+    )
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 

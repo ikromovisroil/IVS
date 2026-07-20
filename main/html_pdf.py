@@ -141,7 +141,7 @@ from django.utils import timezone
 logger = logging.getLogger(__name__)
 from .utils import sign_pdf_inplace
 
-def _create_deed_for_order(order, request):
+def _create_deed_for_order(order, request=None):
     html_body = render_to_string("main/order_agrement_deed.html", {
         "order": order,
         "today": timezone.now(),
