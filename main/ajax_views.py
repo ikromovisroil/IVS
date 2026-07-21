@@ -82,10 +82,6 @@ def order_mark_seen(request):
     if not employee:
         return JsonResponse({"status": "no_employee"}, status=400)
 
-    rol = getattr(employee, "rol", None)
-    if not rol:
-        return JsonResponse({"status": "no_role"}, status=400)
-
     Order.objects.filter(
         receiver=employee,
         goal__organization__type="worker",
@@ -125,7 +121,7 @@ def order_check_new(request):
 
     latest_order = (
         Order.objects
-        .filter(sender__region=employee.region,goal__organization_type="worker", status="viewed")
+        .filter(sender__region=employee.region,goal__organization__type="worker", status="viewed")
         .order_by("-id")
         .values("id")
         .first()
@@ -235,9 +231,9 @@ def ajax_dep_signatory(request):
     qs = Employee.objects.select_related("rank")
 
     if dep_id:
-        qs = qs.filter(department_id=dep_id,rol__boss=True)
+        qs = qs.filter(department_id=dep_id)
     elif org_id:
-        qs = qs.filter(organization_id=org_id,rol__boss=True)
+        qs = qs.filter(organization_id=org_id,region=request.user.employee.region)
     else:
         return JsonResponse([], safe=False)
 
