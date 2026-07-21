@@ -1658,8 +1658,9 @@ def barn_mat(request):
     params = request.GET.copy()
     params.pop("page", None)
 
+
     perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
-    if request.user.has_perm("main.all_material"):
+    if request.user.has_perm("main.all_material_employee"):
         base_qs = Employee.objects.filter(
             Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
             organization=employee.organization,

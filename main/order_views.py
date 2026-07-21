@@ -1129,9 +1129,11 @@ def order_material_barn(request):
 
     back_url          = request.META.get("HTTP_REFERER", "/")
     order_id          = (request.POST.get("order_id") or "").strip()
-    body              = (request.POST.get("body") or "").strip()
+    date              = (request.POST.get("date") or "").strip()
     ordermaterial_ids = request.POST.getlist("ordermaterial_id[]")
     givens            = request.POST.getlist("given[]")
+
+    body = "Materiallarni {{date}} da qabul qilib olishiz mumkin"
 
     if not order_id.isdigit():
         messages.info(request, "Ariza ID noto'g'ri")
@@ -1144,6 +1146,20 @@ def order_material_barn(request):
     if len(ordermaterial_ids) != len(set(ordermaterial_ids)):
         messages.info(request, "Takroriy materiallar yuborildi")
         return redirect(back_url)
+
+    date_display = ""
+    if date:
+        try:
+            parsed_dt = datetime.strptime(date, "%Y-%m-%dT%H:%M")
+            date_display = parsed_dt.strftime("%d.%m.%Y %H:%M")
+        except ValueError:
+            messages.info(request, "Sana formati noto'g'ri")
+            return redirect(back_url)
+
+    if date_display:
+        body = f"Materiallarni ombordan {date_display} da qabul qilib olishingiz mumkin"
+    else:
+        body = "Materiallarni ombordan qabul qilib olishingiz mumkin"
 
     try:
         with transaction.atomic():

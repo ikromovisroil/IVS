@@ -408,6 +408,10 @@ class Material(models.Model):
         db_table = 'material'
         verbose_name = "Material"
         verbose_name_plural = "Materiallar"
+        permissions = [
+            ("all_material_employee", "Barcha xodimlarni ko'rish"),
+        ]
+
 
 
 class MaterialEmployee(models.Model):

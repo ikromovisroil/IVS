@@ -125,7 +125,7 @@ def order_check_new(request):
 
     latest_order = (
         Order.objects
-        .filter(sender__region=employee.region,organization_id=4, status="viewed")
+        .filter(sender__region=employee.region,goal__organization_type="worker", status="viewed")
         .order_by("-id")
         .values("id")
         .first()
@@ -146,7 +146,7 @@ def order_check_all(request):
 
     latest_order = (
         Order.objects
-        .filter(sender__region=employee.region,organization=employee.organization, status="viewed")
+        .filter(sender__region=employee.region,goal__organization=employee.organization, status="viewed")
         .order_by("-id")
         .values("id")
         .first()

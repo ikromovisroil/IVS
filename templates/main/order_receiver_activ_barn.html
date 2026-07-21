@@ -291,21 +291,24 @@
                                     </div>
                                     {% endif %}
                                 </div>
-
-                              <div class="section-title">Izoh</div>
-                              <div class="info-card">
-                                 <textarea class="form-control border-0 p-0" name="body" style="height: 100px" placeholder="Izox kiriting"></textarea>
-                              </div>
                             </div>
 
-                            <div class="modal-footer d-flex flex-row justify-content-center gap-2">
-                              <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal">
-                                <i class="bi bi-exclamation-circle me-1"></i> Etiborsiz qoldirish
-                              </button>
-                              <button type="submit" class="btn btn-primary flex-fill"
-                              onclick="return confirm('Yakunlashni tasdiqlang?')">
-                                <i class="bi bi-check-circle me-1"></i> Yakunlash
-                              </button>
+                            <div class="modal-footer flex-column gap-2">
+                              <div class="d-flex flex-column align-items-center w-100">
+                                <label class="form-label small text-muted mb-1">
+                                  <i class="bi bi-calendar-check me-1"></i>Materialni qabul qilish vaqtini tanlang
+                                </label>
+                                <input type="datetime-local" name="date" class="form-control w-auto">
+                              </div>
+                              <div class="d-flex flex-row justify-content-center gap-2 w-100">
+                                <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal">
+                                  <i class="bi bi-exclamation-circle me-1"></i> Etiborsiz qoldirish
+                                </button>
+                                <button type="submit" class="btn btn-primary flex-fill"
+                                  onclick="return confirm('Yakunlashni tasdiqlang?')">
+                                  <i class="bi bi-check-circle me-1"></i> Yakunlash
+                                </button>
+                              </div>
                             </div>
 
                           </form>
