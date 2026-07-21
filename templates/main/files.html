@@ -24,14 +24,27 @@
           <div class="card">
             <div class="card-body">
                 <form class="row g-2 mt-1" method="get">
+
                   <div class="col-md-3">
-                      <label for="name" class="form-label">Kode</label>
-                      <input id="name"
-                       type="text"
-                       name="name"
-                       class="form-control"
-                       value="{{ request.GET.name|default:'' }}"
-                       placeholder="F.I.O, Kode ...">
+                      <label for="region" class="form-label">Hududlar</label>
+                      <select id="region" name="region" class="form-select" required>
+                          <option value="">Tanlang...</option>
+                          {% for r in regions %}
+                          <option value="{{ r.id }}" {% if selected_region == r.id|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+                          {% endfor %}
+                      </select>
+                  </div>
+
+                  <div class="col-md-3">
+                      <label for="status" class="form-label">Xolati</label>
+                      <select id="status" name="status" class="form-select" required>
+                          <option value="">Tanlang...</option>
+                          <option value="document" {% if status == "document" %}selected{% endif %}>Dalolatnoma</option>
+                          <option value="svod"     {% if status == "svod"   %}selected{% endif %}>Yakuniy hisobot</option>
+                          <option value="reestr"   {% if status == "reestr" %}selected{% endif %}>Reestr</option>
+                          <option value="act"      {% if status == "act" %}selected{% endif %}>Akt</option>
+                          <option value="petition" {% if status == "petition" %}selected{% endif %}>Talabnoma</option>
+                      </select>
                   </div>
 
                   <div class="col-md-3">
@@ -45,15 +58,13 @@
                   </div>
 
                   <div class="col-md-3">
-                      <label for="status" class="form-label">Xolati</label>
-                      <select id="status" name="status" class="form-select">
-                          <option value="">Tanlang...</option>
-                          <option value="document" {% if request.GET.status == "document" %}selected{% endif %}>Dalolatnoma</option>
-                          <option value="svod"     {% if request.GET.status == "svod"   %}selected{% endif %}>Yakuniy hisobot</option>
-                          <option value="reestr"   {% if request.GET.status == "reestr" %}selected{% endif %}>Reestr</option>
-                          <option value="act"      {% if request.GET.status == "act" %}selected{% endif %}>Akt</option>
-                          <option value="petition" {% if request.GET.status == "petition" %}selected{% endif %}>Talabnoma</option>
-                      </select>
+                      <label for="name" class="form-label">Kode</label>
+                      <input id="name"
+                       type="text"
+                       name="name"
+                       class="form-control"
+                       value="{{ name|default:'' }}"
+                       placeholder="F.I.O, Kode ...">
                   </div>
 
                   <div class="col-md-3 d-flex align-items-end">

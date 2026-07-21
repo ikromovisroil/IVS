@@ -2846,9 +2846,12 @@ def files(request):
     date1  = (request.GET.get("date1")  or "").strip()
     date2  = (request.GET.get("date2")  or "").strip()
     status = (request.GET.get("status") or "").strip()
+    region_id = (request.GET.get("region") or "").strip()
     page_number = request.GET.get("page", 1)
 
-    has_filter = bool(name or date1 or date2 or status)
+    regions = Region.objects.only("id", "name").order_by("id")
+
+    has_filter = bool(name or date1 or date2 or status or region_id)
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -2861,6 +2864,8 @@ def files(request):
             "name":      name,
             "date1":     date1,
             "date2":     date2,
+            "regions":   regions,
+            "selected_region": "",
         })
 
     qs = (
@@ -2907,6 +2912,14 @@ def files(request):
             Q(receiver_full_name__icontains=name)
         )
 
+    region_obj = Region.objects.filter(id=region_id).first() if region_id.isdigit() else None
+    if region_id:
+        qs = qs.filter(
+            Q(user__region=region_obj) |
+            Q(sender__region=region_obj) |
+            Q(receiver__region=region_obj)
+        )
+
     if status:
         qs = qs.filter(status=status)
 
@@ -2933,6 +2946,8 @@ def files(request):
         "date1":     date1,
         "date2":     date2,
         "status":    status,
+        "regions": regions,
+        "selected_region": region_id,
     }
     return render(request, "main/files.html", context)
 
