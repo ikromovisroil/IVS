@@ -1695,7 +1695,7 @@ def barn_mat(request):
                 output_field=DecimalField(max_digits=18, decimal_places=2)
             )
         )
-        .order_by("-id")
+        .order_by("-code")
     )
 
     if unit_id and unit_id.isdigit():
@@ -2148,6 +2148,9 @@ def mat_info(request):
             current_count = m.number
             initial_balance = current_count - income + total_outcome
 
+            if initial_balance == 0 and income == 0 and total_outcome == 0 and current_count == 0:
+                continue
+
             table_rows.append({
                 "material": m,
                 "code": m.code,
@@ -2169,7 +2172,7 @@ def mat_info(request):
         table_rows = page_obj.object_list
 
     perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
-    if request.user.has_perm("main.all_material"):
+    if request.user.has_perm("main.all_material_employee"):
         base_qs = Employee.objects.filter(
             Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
             organization=employee.organization,
