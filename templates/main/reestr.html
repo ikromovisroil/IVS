@@ -60,49 +60,7 @@
 
           </div>
         </div>
-
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Imzolashga yuborish</h5>
-
-            <div class="row g-3">
-              <div class="col-12">
-                <label for="sender" class="form-label">Imzolovchi xodim :</label>
-                <select id="sender" name="sender" class="form-select" required>
-                  <option value="">Tanlang...</option>
-                  {% for emp in emp_bos %}
-                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="col-12">
-                <label for="agreements" class="form-label">Kelishuvchilar :</label>
-                <select id="agreements" name="agreements[]" class="form-select" multiple>
-                  {% for emp in employee %}
-                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
-                  {% endfor %}
-                </select>
-              </div>
-
-              <div class="col-12">
-                <label for="message" class="form-label">Izox :</label>
-                <textarea class="form-control" id="message" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
-              </div>
-
-              <div class="text-center">
-                <button type="submit" class="btn btn-primary w-100"
-                onclick="return confirm('Imzolashga yuborishni tasdiqlang?')">
-                    Imzolashga yuborish
-                </button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
       </div>
-
       <div class="col-lg-8">
         <div class="card">
           <div class="card-body">
@@ -386,7 +344,7 @@ function buildMaterialRow(item, index) {
 function buildGroupHeaderRow(deptName) {
   return `
     <tr>
-      <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;background-color: rgb(191, 237, 210);">
+      <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;">
         ${escapeHtml(deptName)}
       </td>
     </tr>
@@ -417,46 +375,6 @@ function buildGroupTotalRow(label, sum) {
 }
 
 // ─── AJAX ─────────────────────────────────────────────────────────────────────
-
-function loadAgreementsByOrg(orgId, selectedIds = []) {
-  const $agr = $('#agreements');
-  $agr.html('').trigger('change');
-  if (!orgId) return;
-
-  $.ajax({
-    url: "{% url 'ajax_agreements_employees' %}",
-    method: 'GET',
-    dataType: 'json',
-    data: { org_id: orgId },
-
-    success: function (data) {
-      const selectedSet = new Set((selectedIds || []).map(String));
-      let options = '';
-
-      (data || []).forEach(function (emp) {
-        const sel      = selectedSet.has(String(emp.id)) ? 'selected' : '';
-        const fullName = emp.full_name || '';
-        const rank     = emp.rank     || '';
-        const fullText = rank ? `${fullName} (${rank})` : fullName;
-
-        options += `
-          <option value="${escapeHtml(emp.id)}" ${sel}
-                  data-fullname="${escapeHtml(fullName)}"
-                  data-rank="${escapeHtml(rank)}">
-            ${escapeHtml(fullText)}
-          </option>
-        `;
-      });
-
-      $agr.html(options).trigger('change');
-    },
-
-    error: function (xhr) {
-      console.error('Kelishuvchilar AJAX xatosi:', xhr.status, xhr.responseText);
-      $agr.html('').trigger('change');
-    }
-  });
-}
 
 function searchMaterials() {
   const orgId = $('#organization').val();
@@ -575,7 +493,7 @@ function searchMaterials() {
 
 $(function () {
   if ($.fn.select2) {
-    $('#organization, #sender, #agreements').select2({
+    $('#organization').select2({
       width: '100%',
       placeholder: 'Tanlang...',
       allowClear: true
@@ -592,45 +510,12 @@ $(function () {
   // ─── EVENTS ───────────────────────────────────────────────────────────────
 
   $('#organization').on('change', function () {
-    const orgId = $(this).val();
     updateEditorWithSelections();
-    if (!orgId) {
-      $('#agreements').html('').trigger('change');
-      return;
-    }
-    loadAgreementsByOrg(orgId);
   });
 
   $('#btnGenerate').on('click', function (e) {
     e.preventDefault();
     searchMaterials();
-  });
-
-  // ─── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ─────
-
-  $('form').on('submit', function (e) {
-    e.preventDefault();
-
-    const ed = editorGet();
-    if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
-
-    const rawBody = $('#body').val() || '';
-
-    // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
-    const encoded = btoa(unescape(encodeURIComponent(rawBody)));
-
-    // yashirin maydonga joylaymiz
-    let $hidden = $(this).find('input[name="body_encoded"]');
-    if ($hidden.length === 0) {
-      $hidden = $('<input type="hidden" name="body_encoded">').appendTo(this);
-    }
-    $hidden.val(encoded);
-
-    // asl 'body' maydonini yuborilishdan chiqarib tashlaymiz
-    $('#body').removeAttr('name');
-
-    // haqiqiy (native) yuborish
-    this.submit();
   });
 
   // ─── INITIAL LOAD ─────────────────────────────────────────────────────────
@@ -639,7 +524,6 @@ $(function () {
 
   if (initialOrg) {
     $('#organization').val(initialOrg);
-    loadAgreementsByOrg(initialOrg);
   }
 
   waitForTinyMCE(function () {
