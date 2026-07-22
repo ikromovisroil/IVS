@@ -2493,7 +2493,7 @@ def reestr_pdf_download(request):
         return HttpResponseBadRequest("Body noto'g'ri kodlangan (Base64/UTF-8 xatosi)")
 
     try:
-        pdf_bytes = html_to_pdf_bytes(body_html, orientation="Portrait")
+        pdf_bytes = html_to_pdf_bytes(body_html, orientation="Landscape")
     except HtmlPdfError as e:
         return HttpResponseBadRequest(f"PDF yaratishda xatolik: {e}")
 

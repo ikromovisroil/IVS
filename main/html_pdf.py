@@ -42,11 +42,7 @@ def _read_existing_file_bytes(deed):
 
 
 def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
-    """
-    Ixtiyoriy HTML matnni (masalan TinyMCE editordan olingan `body`) PDF
-    bytes'ga aylantiradi. Deed modeliga bog'liq emas — istalgan joyda
-    (masalan reestr HTML'ini yuklab olish uchun) ishlatsa bo'ladi.
-    """
+
     body_html = (body_html or "").strip()
     if not body_html:
         raise HtmlPdfError("Body bo'sh — PDF qilib bo'lmaydi")
