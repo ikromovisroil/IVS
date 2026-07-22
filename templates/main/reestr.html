@@ -534,7 +534,12 @@ function searchMaterials() {
       editorSetTbodyRows(rows);
 
       // ── Xizmat ko'rsatgan xodimlar (receiver) — har bir xodim faqat 1 marta ──
+      // Joriy foydalanuvchi (yuqoridagi statik blokda ko'rsatilgan) takrorlanmasligi uchun
+      // uni oldindan "ko'rilgan" ro'yxatga qo'shib qo'yamiz.
+      const currentUserFullName = "{{ request.user.employee.full_name|default:''|escapejs }}".trim();
       const seenReceivers = new Set();
+      if (currentUserFullName) seenReceivers.add(currentUserFullName);
+
       let serviceRows = '';
 
       data.forEach(function (item) {
