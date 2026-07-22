@@ -194,7 +194,7 @@
                           <b>{{ request.user.employee.rank.name }}</b><br>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b id="current_user_fullname">{{ request.user.employee.full_name }}</b><br>
+                          <b>{{ request.user.employee.full_name }}</b><br>
                         </td>
                       </tr>
                     </tbody>
@@ -285,16 +285,6 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
-function formatShortName(fullName) {
-  if (!fullName) return '';
-  const parts = String(fullName).trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '';
-  if (parts.length === 1) return parts[0];
-  const surname  = parts[0];
-  const initials = parts.slice(1).map(p => p.charAt(0).toUpperCase() + '.').join(' ');
-  return `${surname} ${initials}`;
-}
-
 function formatMonthYear() {
   const months = [
     'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
@@ -381,10 +371,10 @@ function buildMaterialRow(item, index) {
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(quantity)}</td>
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(price)}</td>
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(sum)}</td>
-      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(formatShortName(item.sender))}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.sender        || '')}</td>
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.sender_rank   || '')}</td>
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.department    || '')}</td>
-      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(formatShortName(item.receiver))}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.receiver      || '')}</td>
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.date_finished || '')}</td>
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.order_id      || '')}</td>
       <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.date_creat    || '')}</td>
@@ -396,7 +386,7 @@ function buildMaterialRow(item, index) {
 function buildGroupHeaderRow(deptName) {
   return `
     <tr>
-      <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;">
+      <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;background-color: rgb(191, 237, 210);">
         ${escapeHtml(deptName)}
       </td>
     </tr>
@@ -410,7 +400,7 @@ function buildServiceEmployeeRow(rank, fullName) {
         <b>${escapeHtml(rank)}</b><br>
       </td>
       <td style="border:1px solid #fff;text-align:left;">
-        <b>${escapeHtml(formatShortName(fullName))}</b><br>
+        <b>${escapeHtml(fullName)}</b><br>
       </td>
     </tr>
   `;
@@ -654,17 +644,6 @@ $(function () {
 
   waitForTinyMCE(function () {
     updateEditorWithSelections();
-
-    const ed = editorGet();
-    if (ed) {
-      try {
-        const nameNode = ed.getBody().querySelector('#current_user_fullname');
-        if (nameNode) {
-          nameNode.textContent = formatShortName(nameNode.textContent);
-          ed.nodeChanged();
-        }
-      } catch (e) { console.log('current_user_fullname formatlashda xatolik:', e); }
-    }
   });
 
 });
