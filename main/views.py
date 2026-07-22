@@ -2906,10 +2906,11 @@ def files(request):
                 "receiver__father_name",
             ),
         ).filter(
-            Q(code__icontains=name)             |
-            Q(user_full_name__icontains=name)   |
-            Q(sender_full_name__icontains=name) |
-            Q(receiver_full_name__icontains=name)
+            Q(code__icontains=name)              |
+            Q(user_full_name__icontains=name)    |
+            Q(sender_full_name__icontains=name)  |
+            Q(receiver_full_name__icontains=name)|
+            Q(order_id__icontains=name)
         )
 
     region_obj = Region.objects.filter(id=region_id).first() if region_id.isdigit() else None
