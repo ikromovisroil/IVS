@@ -207,6 +207,17 @@
                       <col style="width:50%;">
                       <col style="width:50%;">
                     </colgroup>
+                    <tbody id="service_employees_tbody">
+                    </tbody>
+                  </table>
+                </div>
+
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
                     <tbody>
                       <tr>
                         <td style="border:1px solid #fff;text-align:left;">
@@ -314,6 +325,17 @@ function editorSetTbodyRows(rowsHtml) {
   } catch (e) { console.log('editorSetTbodyRows xatosi:', e); }
 }
 
+function editorSetServiceEmployeesRows(rowsHtml) {
+  const ed = editorGet();
+  if (!ed) return;
+  try {
+    const tbody = ed.getBody().querySelector('#service_employees_tbody');
+    if (!tbody) { console.log('service_employees_tbody topilmadi'); return; }
+    tbody.innerHTML = rowsHtml;
+    ed.nodeChanged();
+  } catch (e) { console.log('editorSetServiceEmployeesRows xatosi:', e); }
+}
+
 function waitForTinyMCE(callback, tries = 0) {
   const ed = editorGet();
   if (ed) { callback(); return; }
@@ -364,8 +386,21 @@ function buildMaterialRow(item, index) {
 function buildGroupHeaderRow(deptName) {
   return `
     <tr>
-      <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;background-color: rgb(191, 237, 210);">
+      <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;">
         ${escapeHtml(deptName)}
+      </td>
+    </tr>
+  `;
+}
+
+function buildServiceEmployeeRow(rank, fullName) {
+  return `
+    <tr>
+      <td style="border:1px solid #fff;text-align:left;">
+        <b>${escapeHtml(rank)}</b><br>
+      </td>
+      <td style="border:1px solid #fff;text-align:left;">
+        <b>${escapeHtml(fullName)}</b><br>
       </td>
     </tr>
   `;
@@ -458,6 +493,7 @@ function searchMaterials() {
             </td>
           </tr>
         `);
+        editorSetServiceEmployeesRows('');
         return;
       }
 
@@ -496,6 +532,19 @@ function searchMaterials() {
       rows += buildGroupTotalRow('JAMI:', grandTotal);
 
       editorSetTbodyRows(rows);
+
+      // ── Xizmat ko'rsatgan xodimlar (receiver) — har bir xodim faqat 1 marta ──
+      const seenReceivers = new Set();
+      let serviceRows = '';
+
+      data.forEach(function (item) {
+        const receiverName = (item.receiver || '').trim();
+        if (!receiverName || seenReceivers.has(receiverName)) return;
+        seenReceivers.add(receiverName);
+        serviceRows += buildServiceEmployeeRow(item.receiver_rank || '', receiverName);
+      });
+
+      editorSetServiceEmployeesRows(serviceRows);
     },
 
     error: function (xhr) {
