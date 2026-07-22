@@ -122,7 +122,9 @@
                 <div style="text-align:center;">
                   <b>O‘zbekiston Respublikasi <span id="org_id">Tashkilot</span> tashkili</b>
                 </div>
-
+                <div style="text-align:center;">
+                  <b>{{ request.user.employee.region.name }}</b>
+                </div>
                 <div style="text-align:center;">
                   <b id="report_period">2026 yil dekabir oyi uchun</b>
                 </div>
@@ -167,9 +169,6 @@
                       <tr>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">F.I.Sh.</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Lavozimi</td>
-                      </tr>
-                      <tr>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center; background-color: rgb(191, 237, 210);" colspan="15">{{ request.user.employee.region.name }}</td>
                       </tr>
 
                     </thead>
@@ -334,6 +333,54 @@ function updateEditorWithSelections() {
   editorSetText('#report_period', formatMonthYear());
 }
 
+// ─── JADVAL QATORINI QURISH ───────────────────────────────────────────────────
+
+function buildMaterialRow(item, index) {
+  const quantity = parseFloat(item.number          || 0) || 0;
+  const price    = parseFloat(item.material__price || 0) || 0;
+  const sum      = parseFloat(item.total_sum        || 0) || 0;
+
+  return `
+    <tr>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.technics_name   || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.technics_serial || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material_name   || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(quantity)}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(price)}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(sum)}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.sender        || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.sender_rank   || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.department    || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.receiver      || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.date_finished || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.order_id      || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.date_creat    || '')}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material_code || '')}</td>
+    </tr>
+  `;
+}
+
+function buildGroupHeaderRow(deptName) {
+  return `
+    <tr>
+      <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;">
+        ${escapeHtml(deptName)}
+      </td>
+    </tr>
+  `;
+}
+
+function buildGroupTotalRow(label, sum) {
+  return `
+    <tr>
+      <td colspan="6" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${escapeHtml(label)}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(sum)}</td>
+      <td colspan="8" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
+    </tr>
+  `;
+}
+
 // ─── AJAX ─────────────────────────────────────────────────────────────────────
 
 function loadAgreementsByOrg(orgId, selectedIds = []) {
@@ -414,44 +461,39 @@ function searchMaterials() {
         return;
       }
 
-      let rows     = '';
-      let totalSum = 0;
-      let index    = 1;
+      // ── Bo'lim (boshqarma) bo'yicha guruhlash, birinchi uchragan tartibda ──
+      const groups = [];
+      const groupIndexByName = {};
 
       data.forEach(function (item) {
-        const quantity = parseFloat(item.number         || 0) || 0;
-        const price    = parseFloat(item.material__price || 0) || 0;
-        const sum      = parseFloat(item.total_sum       || 0) || 0;
-        totalSum += sum;
-
-        rows += `
-          <tr>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.technics_name   || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.technics_serial || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material_name   || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(quantity)}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(price)}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(sum)}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.sender        || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.sender_rank   || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.department    || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.receiver      || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.date_finished || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.order_id      || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.date_creat    || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material_code || '')}</td>
-          </tr>
-        `;
+        const deptName = (item.department || '').trim() || "Bo'lim ko'rsatilmagan";
+        if (!(deptName in groupIndexByName)) {
+          groupIndexByName[deptName] = groups.length;
+          groups.push({ name: deptName, items: [] });
+        }
+        groups[groupIndexByName[deptName]].items.push(item);
       });
 
-      rows += `
-        <tr>
-          <td colspan="6" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">JAMI:</td>
-          <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(totalSum)}</td>
-          <td colspan="8" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
-        </tr>
-      `;
+      let rows       = '';
+      let grandTotal = 0;
+
+      groups.forEach(function (group) {
+        rows += buildGroupHeaderRow(group.name);
+
+        let rowIndex = 1;
+        let groupSum = 0;
+
+        group.items.forEach(function (item) {
+          rows += buildMaterialRow(item, rowIndex++);
+          groupSum += parseFloat(item.total_sum || 0) || 0;
+        });
+
+        grandTotal += groupSum;
+        rows += buildGroupTotalRow(`JAMI BOSHQARMA: ${group.name}`, groupSum);
+      });
+
+      // Barcha bo'limlar bo'yicha umumiy jami
+      rows += buildGroupTotalRow('JAMI:', grandTotal);
 
       editorSetTbodyRows(rows);
     },
