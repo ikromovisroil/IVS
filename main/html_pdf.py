@@ -41,19 +41,17 @@ def _read_existing_file_bytes(deed):
         return None
 
 
-def deed_to_pdf_bytes(deed) -> bytes:
-    body = (getattr(deed, "body", "") or "").strip()
-
-    if not body:
-        existing_bytes = _read_existing_file_bytes(deed)
-        if existing_bytes:
-            return existing_bytes
+def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
+    """
+    Ixtiyoriy HTML matnni (masalan TinyMCE editordan olingan `body`) PDF
+    bytes'ga aylantiradi. Deed modeliga bog'liq emas — istalgan joyda
+    (masalan reestr HTML'ini yuklab olish uchun) ishlatsa bo'ladi.
+    """
+    body_html = (body_html or "").strip()
+    if not body_html:
         raise HtmlPdfError("Body bo'sh — PDF qilib bo'lmaydi")
 
     wkhtmltopdf_path = _ensure_wkhtmltopdf()
-
-    # False = Landscape, True = Portrait
-    orientation = "Portrait" if deed.status == "document" else "Landscape"
 
     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
@@ -61,7 +59,7 @@ def deed_to_pdf_bytes(deed) -> bytes:
         "<!doctype html>"
         "<html>"
         "<head><meta charset='utf-8'></head>"
-        f"<body>{body}</body>"
+        f"<body>{body_html}</body>"
         "</html>"
     )
 
@@ -78,8 +76,8 @@ def deed_to_pdf_bytes(deed) -> bytes:
         "margin-right": "10mm",
         "margin-bottom": "25mm",
         "margin-left": "15mm",
-        "load-error-handling": "ignore",  # ← qo'shildi
-        "load-media-error-handling": "ignore",  # ← qo'shildi
+        "load-error-handling": "ignore",
+        "load-media-error-handling": "ignore",
     }
 
     try:
@@ -96,6 +94,21 @@ def deed_to_pdf_bytes(deed) -> bytes:
         raise HtmlPdfError("PDF hosil bo'lmadi (pdfkit bo'sh qaytdi).")
 
     return pdf_bytes
+
+
+def deed_to_pdf_bytes(deed) -> bytes:
+    body = (getattr(deed, "body", "") or "").strip()
+
+    if not body:
+        existing_bytes = _read_existing_file_bytes(deed)
+        if existing_bytes:
+            return existing_bytes
+        raise HtmlPdfError("Body bo'sh — PDF qilib bo'lmaydi")
+
+    # False = Landscape, True = Portrait
+    orientation = "Portrait" if deed.status == "document" else "Landscape"
+
+    return html_to_pdf_bytes(body, orientation=orientation)
 
 
 def add_text_watermark_pdf_bytes(pdf_bytes: bytes, text: str) -> bytes:

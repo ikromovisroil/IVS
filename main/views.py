@@ -2472,66 +2472,36 @@ def reestr_get(request):
     return render(request, 'main/reestr.html', context)
 
 
-@never_cache
-@require_POST
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
+from django.http import HttpResponse, HttpResponseBadRequest
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)
-def reestr_post(request):
+@require_POST
+@csrf_protect
+def reestr_pdf_download(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo'q")
+        return HttpResponseBadRequest("Employee yo'q")
 
-    sender_id  = (request.POST.get("sender")  or "").strip()
-    message    = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]")
-
-    # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
     body_encoded = (request.POST.get("body_encoded") or "").strip()
-    body = ""
-    if body_encoded:
-        try:
-            body = base64.b64decode(body_encoded).decode("utf-8").strip()
-        except (binascii.Error, UnicodeDecodeError, ValueError):
-            body = ""
+    if not body_encoded:
+        return HttpResponseBadRequest("Body topilmadi")
 
-    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
-    if not sender:
-        messages.info(request, "Imzolovchi xodim tanlanmadi")
-        return redirect("akt_get")
-
-    if not body:
-        messages.info(request, "Hujjat matni bo'sh bo'lmasin")
-        return redirect("akt_get")
-
-    # 1. DB — transaction ichida
-    with transaction.atomic():
-        deed = Deed.objects.create(
-            sender=sender,
-            user=employee,
-            message_user=message,
-            body=body,
-            status='reestr',
-        )
-
-        ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
-        ids = [i for i in ids if i != sender.id]
-
-        if ids:
-            emps = Employee.objects.filter(id__in=ids).only("id")
-            objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
-            DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
-
-    # 2. PDF — transaction tashqarisida
     try:
-        pdf_bytes = deed_to_pdf_bytes(deed)
-        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
-        pdf_name  = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
-        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
-    except HtmlPdfError as e:
-        messages.info(request, f"PDF yaratilmadi: {e}")
+        body_html = base64.b64decode(body_encoded).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError):
+        return HttpResponseBadRequest("Body noto'g'ri kodlangan (Base64/UTF-8 xatosi)")
 
-    messages.success(request, "Imzolashga yuborildi")
-    return redirect("contact_user")
+    try:
+        pdf_bytes = html_to_pdf_bytes(body_html, orientation="Portrait")
+    except HtmlPdfError as e:
+        return HttpResponseBadRequest(f"PDF yaratishda xatolik: {e}")
+
+    filename = f"reestr_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @never_cache

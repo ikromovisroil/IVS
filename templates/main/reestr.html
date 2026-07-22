@@ -17,11 +17,10 @@
   </div>
 
   <section class="section">
-    <form class="row" action="{% url 'reestr_post' %}" method="post">
-      {% csrf_token %}
+    {% csrf_token %}
+    <div class="row">
 
       <div class="col-lg-4">
-
         <div class="card">
           <div class="card-body">
             <h5 class="card-title">Filtrlash</h5>
@@ -56,11 +55,15 @@
               <div class="text-center">
                 <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
               </div>
+              <div class="text-center">
+                <button type="button" id="btnDownloadPdf" class="btn btn-secondary w-100">yuklab olish</button>
+              </div>
             </div>
 
           </div>
         </div>
       </div>
+
       <div class="col-lg-8">
         <div class="card">
           <div class="card-body">
@@ -215,7 +218,7 @@
         </div>
       </div>
 
-    </form>
+    </div>
   </section>
 </main>
 
@@ -374,7 +377,7 @@ function buildGroupTotalRow(label, sum) {
   `;
 }
 
-// ─── AJAX ─────────────────────────────────────────────────────────────────────
+// ─── AJAX: MATERIALLARNI QIDIRISH ─────────────────────────────────────────────
 
 function searchMaterials() {
   const orgId = $('#organization').val();
@@ -489,6 +492,60 @@ function searchMaterials() {
   });
 }
 
+// ─── PDF YUKLAB OLISH ──────────────────────────────────────────────────────────
+
+function downloadReestrPdf() {
+  const ed = editorGet();
+  if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+
+  const rawBody = ($('#body').val() || '').trim();
+
+  if (!rawBody) {
+    alert('Avval "Qidirish" tugmasini bosib, jadvalni shakllantiring!');
+    return;
+  }
+
+  // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
+  const encoded = btoa(unescape(encodeURIComponent(rawBody)));
+
+  const $btn = $('#btnDownloadPdf');
+  const originalText = $btn.text();
+  $btn.prop('disabled', true).text('Yuklanmoqda...');
+
+  fetch("{% url 'reestr_pdf_download' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val(),
+    },
+    body: new URLSearchParams({ body_encoded: encoded }),
+  })
+    .then(function (response) {
+      if (!response.ok) {
+        return response.text().then(function (text) {
+          throw new Error(text || `Server xatoligi (${response.status})`);
+        });
+      }
+      return response.blob();
+    })
+    .then(function (blob) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'reestr.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(function (err) {
+      console.error('PDF yuklab olishda xatolik:', err);
+      alert('PDF yuklab olishda xatolik yuz berdi: ' + err.message);
+    })
+    .finally(function () {
+      $btn.prop('disabled', false).text(originalText);
+    });
+}
+
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
 $(function () {
@@ -516,6 +573,11 @@ $(function () {
   $('#btnGenerate').on('click', function (e) {
     e.preventDefault();
     searchMaterials();
+  });
+
+  $('#btnDownloadPdf').on('click', function (e) {
+    e.preventDefault();
+    downloadReestrPdf();
   });
 
   // ─── INITIAL LOAD ─────────────────────────────────────────────────────────
