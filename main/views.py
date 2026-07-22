@@ -2910,7 +2910,7 @@ def files(request):
             Q(user_full_name__icontains=name)    |
             Q(sender_full_name__icontains=name)  |
             Q(receiver_full_name__icontains=name)|
-            Q(order_id__icontains=name)
+            Q(order__id__icontains=name)
         )
 
     region_obj = Region.objects.filter(id=region_id).first() if region_id.isdigit() else None
