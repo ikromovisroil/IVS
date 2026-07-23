@@ -255,7 +255,7 @@ class OrderGoalAdmin(admin.ModelAdmin):
 @admin.register(Deed)
 class DeedAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "code", "sender", "receiver", "user",
+        "id", "user__region", "code", "sender", "receiver", "user",
         "colored_status_sender", "colored_status_receiver", "status", "order",
         "date_creat"
     )
