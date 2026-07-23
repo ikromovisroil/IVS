@@ -78,17 +78,17 @@
                     {% for row in table_rows %}
                       <tr>
                         <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.material }}</td>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.code }}</td>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.price|intcomma }}</td>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.initial_balance }}</td>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.income }}</td>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.outcome }}</td>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.current_balance }}</td>
+                        <td>{{ row.material }}</td>
+                        <td>{{ row.code }}</td>
+                        <td>{{ row.price|intcomma }}</td>
+                        <td>{{ row.initial_balance }}</td>
+                        <td>{{ row.income }}</td>
+                        <td>{{ row.outcome }}</td>
+                        <td>{{ row.current_balance }}</td>
                       </tr>
                     {% empty %}
                       <tr>
-                        <td colspan="8"
+                        <td colspan="{% if request.user.employee.rol.technics_edit %}8{% else %}7{% endif %}"
                             class="text-center text-muted py-4">
                           <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                         </td>
@@ -140,56 +140,6 @@
       </div>
     </div>
   </section>
-
-  {% for row in table_rows %}
-  <div class="modal fade" id="matinfo{{ row.id }}" tabindex="-1">
-      <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Material harakatlar tarixi</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-          </div>
-          <div class="modal-body">
-            <div class="table-responsive">
-              <table class="table table-bordered table-hover align-middle table-sm">
-                <thead class="table-secondary">
-                  <tr>
-                    <th scope="col">T/r</th>
-                    <th scope="col">Sana</th>
-                    <th scope="col">F.I.O</th>
-                    <th scope="col">Kirim</th>
-                    <th scope="col">Chiqim</th>
-                    <th scope="col">Xolati</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {% for mv in row.movements %}
-                  <tr>
-                    <td>{{ forloop.counter }}</td>
-                    <td>{{ mv.date|date:"d.m.Y H:i" }}</td>
-                    <td>{{ mv.employee.full_name|default:"-" }}</td>
-                    <td>{{ mv.income|default:"0" }}</td>
-                    <td>{{ mv.outcome|default:"0" }}</td>
-                    <td>{{ mv.status }}</td>
-                  </tr>
-                  {% empty %}
-                  <tr>
-                    <td colspan="7" class="text-center text-muted py-3">
-                      Ushbu davr uchun harakat topilmadi
-                    </td>
-                  </tr>
-                  {% endfor %}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  {% endfor %}
 
 </main>
 
