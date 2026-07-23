@@ -256,7 +256,7 @@ class OrderGoalAdmin(admin.ModelAdmin):
 class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id", "code", "sender", "receiver", "user",
-        "colored_status_sender", "colored_status_receiver", "status",
+        "colored_status_sender", "colored_status_receiver", "status", "order",
         "date_creat"
     )
     list_filter = (
