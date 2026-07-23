@@ -2078,6 +2078,8 @@ from django.db.models import Sum, F
 from django.db.models.functions import Coalesce
 from django.utils.timezone import make_aware, localdate
 from datetime import datetime, time
+
+
 @never_cache
 @require_GET
 @login_required
@@ -2134,9 +2136,40 @@ def mat_info(request):
             )
         }
 
+        # --- Modal uchun: har bir material bo'yicha batafsil harakatlar tarixi ---
+        movements_detail_qs = movements_qs.select_related("employee", "user").order_by("date_creat")
+
+        movements_by_material = {}
+        for mv in movements_detail_qs:
+            movements_by_material.setdefault(mv.material_id, []).append({
+                "date": mv.date_creat,
+                "employee": mv.employee,
+                "income": mv.income,
+                "outcome": mv.outcome,
+                "status": mv.get_status_display(),
+                "body": mv.body,
+            })
+
+        ordermaterial_detail_qs = ordermaterial_qs.select_related(
+            "order", "order__receiver"
+        ).order_by("order__date_finished")
+
+        for om in ordermaterial_detail_qs:
+            order = om.order
+            movements_by_material.setdefault(om.material_id, []).append({
+                "date": order.date_finished if order else None,
+                "employee": order.receiver if order else None,
+                "income": None,
+                "outcome": om.given if om.given is not None else om.number,
+                "status": "Ariza orqali berildi",
+                "body": f"Ariza #{order.id}" if order else "",
+            })
+
         materials = Material.objects.filter(
             is_active=True, employee_id=employee_id
         ).order_by("name")
+
+        min_dt = timezone.make_aware(datetime.min.replace(year=1900))
 
         for m in materials:
             period = period_map.get(m.id, {})
@@ -2151,7 +2184,14 @@ def mat_info(request):
             if initial_balance == 0 and income == 0 and total_outcome == 0 and current_count == 0:
                 continue
 
+            # sana bo'yicha saralash (sanasi bo'sh bo'lganlar oxirida)
+            mat_movements = sorted(
+                movements_by_material.get(m.id, []),
+                key=lambda x: x["date"] or min_dt
+            )
+
             table_rows.append({
+                "id": m.id,
                 "material": m,
                 "code": m.code,
                 "price": m.price,
@@ -2159,6 +2199,7 @@ def mat_info(request):
                 "income": income,
                 "outcome": total_outcome,
                 "current_balance": current_count,
+                "movements": mat_movements,
             })
 
         paginator = Paginator(table_rows, 20)
