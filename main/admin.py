@@ -160,6 +160,12 @@ class StructureAdmin(admin.ModelAdmin):
     autocomplete_fields = ("category", "organization", "technics")
 
 
+@admin.register(MaterialCategory)
+class MaterialCategoryAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
+
+
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
     list_display = (
