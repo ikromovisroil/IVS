@@ -444,7 +444,7 @@ def ajax_akt_materials(request):
         return JsonResponse([], safe=False)
 
     qs = qs.values(
-        "id",
+        "order__id",
         "order__date_finished",
         "order__technics__name",
         "order__technics__serial",

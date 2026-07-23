@@ -166,6 +166,10 @@
                                                         <div class="col-12 col-md-7 info-value">{{ d.user.full_name }}</div>
                                                     </div>
                                                     <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.user.rank.name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
                                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-event"></i> Yuborilgan sana</div>
                                                         <div class="col-12 col-md-7 info-value">{{ d.date_creat|date:"d.m.Y H:i" }}</div>
                                                     </div>
@@ -182,6 +186,10 @@
                                                     <div class="row info-row gx-3">
                                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
                                                         <div class="col-12 col-md-7 info-value">{{ d.sender.full_name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.sender.rank.name }}</div>
                                                     </div>
                                                     <div class="row info-row gx-3">
                                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
@@ -215,6 +223,10 @@
                                                         <div class="col-12 col-md-7 info-value">{{ d.receiver.full_name }}</div>
                                                     </div>
                                                     <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.receiver.rank.name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
                                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
                                                         <div class="col-12 col-md-7 info-value">
                                                             {% if d.status_receiver == 'viewed' %}
@@ -246,6 +258,10 @@
                                                         <div class="row info-row gx-3">
                                                             <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
                                                             <div class="col-12 col-md-7 info-value">{{ dc.employee.full_name }}</div>
+                                                        </div>
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                            <div class="col-12 col-md-7 info-value">{{ dc.employee.rank.name }}</div>
                                                         </div>
                                                         <div class="row info-row gx-3">
                                                             <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
