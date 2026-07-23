@@ -217,9 +217,24 @@ class Group(models.Model):
         verbose_name_plural = "Uskuna turlari"
 
 
+class Contract(models.Model):
+    name = models.CharField(max_length=200, null=True, blank=True)
+    unit = models.CharField(max_length=100, null=True, blank=True)
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        db_table = 'contract'
+        verbose_name = "Shartnoma"
+        verbose_name_plural = "Shartnomalar"
+
+
 # Category.
 class Category(models.Model):
     group = models.ForeignKey(Group, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+    contract = models.ForeignKey(Contract, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -668,20 +683,6 @@ class DeedConsent(models.Model):
         db_table = 'deedconsent'
         verbose_name = "Xujat kelishuvchisi"
         verbose_name_plural = "Xujat kelishuvchilari"
-
-
-class Contract(models.Model):
-    name = models.CharField(max_length=200, null=True, blank=True)
-    unit = models.CharField(max_length=100, null=True, blank=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = 'contract'
-        verbose_name = "Shartnoma"
-        verbose_name_plural = "Shartnomalar"
 
 
 class Liable(models.Model):

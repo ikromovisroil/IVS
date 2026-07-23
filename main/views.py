@@ -3398,8 +3398,24 @@ def employee_update(request):
         # --- Texnika kategoriyasi (Liable) - "view_technics" ko'rish huquqiga bog'liq ---
         Liable.objects.filter(employee=target_employee).delete()
         if checked_fields["view_technics"] and category_ids:
+            # Har bir cid uchun alohida so'rov yubormaslik uchun, barcha
+            # kerakli kategoriyalarni (contract bilan birga) bitta so'rovda olamiz.
+            categories_by_id = {
+                str(cat.id): cat
+                for cat in Category.objects.filter(
+                    id__in=category_ids
+                ).select_related("contract")
+            }
+
             Liable.objects.bulk_create([
-                Liable(employee=target_employee, category_id=cid, contract=None)
+                Liable(
+                    employee=target_employee,
+                    category_id=cid,
+                    contract=(
+                        categories_by_id[cid].contract
+                        if cid in categories_by_id else None
+                    ),
+                )
                 for cid in category_ids
             ])
 
