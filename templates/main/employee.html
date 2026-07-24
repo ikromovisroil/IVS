@@ -270,6 +270,16 @@
               <!-- ================= ARIZA ================= -->
               <div class="section-title">Ariza</div>
               <div class="info-card">
+                {% if emp.organization.type == "worker" %}
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Ariza yaratish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="add_order"
+                           {% if emp.has_add_order %}checked{% endif %}>
+                  </div>
+                </div>
+                {% endif %}
+
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9"><label class="form-check-label">Ariza bajarish</label></div>
                   <div class="col-12 col-md-3 info-value">
@@ -277,8 +287,35 @@
                            {% if emp.has_change_order %}checked{% endif %}>
                   </div>
                 </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Arizani tasdiqlash</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="confirm_order"
+                           {% if emp.has_confirm_order %}checked{% endif %}>
+                  </div>
+                </div>
               </div>
 
+              <!-- ================= KO'RISH DOIRASI ================= -->
+              {% if emp.organization.type == "worker" %}
+              <div class="section-title">Ko'rish doirasi</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Barcha tashkilotlarni ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="all_organization"
+                           {% if emp.has_all_organization %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Barcha hududlarni ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="all_region"
+                           {% if emp.has_all_region %}checked{% endif %}>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
               <!-- ================= TEXNIKA ================= -->
               <div class="section-title">Texnika</div>
               <div class="info-card">
@@ -317,6 +354,71 @@
                 </div>
               </div>
 
+              <!-- ================= MATERIAL ================= -->
+              <div class="section-title">Material</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Materiallarni ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-perm-material" type="checkbox" name="view_material"
+                           {% if emp.has_view_material %}checked{% endif %}>
+                  </div>
+                </div>
+                <!-- Quyidagi 3 tasi "Materiallarni ko'rish" belgilanmaguncha DISABLED -->
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Materiallarni qo'shish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-material-sub" type="checkbox" name="add_material"
+                           {% if emp.has_add_material %}checked{% endif %}
+                           {% if not emp.has_view_material %}disabled{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Materiallarni tahrirlash</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-material-sub" type="checkbox" name="change_material"
+                           {% if emp.has_change_material %}checked{% endif %}
+                           {% if not emp.has_view_material %}disabled{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Materiallarni o'chirish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-material-sub" type="checkbox" name="delete_material"
+                           {% if emp.has_delete_material %}checked{% endif %}
+                           {% if not emp.has_view_material %}disabled{% endif %}>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ================= MAXSUS ================= -->
+              {% if request.user.employee.organization.type == "worker" %}
+              <div class="section-title">Maxsus rollar</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Departament rahbari (boshliq)</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="boss_employee"
+                           {% if emp.has_boss_employee %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Materialga javobgar shaxs</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="shop_employee"
+                           {% if emp.has_shop_employee %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Statistikani ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="status_employee"
+                           {% if emp.has_status_employee %}checked{% endif %}>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
               <!-- ================= KATEGORIYALAR ================= -->
               <div class="section-title">Ariza kategoriyasi</div>
               <div class="info-card">
@@ -350,12 +452,12 @@
                 </div>
               </div>
 
-              {% if request.user.employee.organization and request.user.employee.organization.type != "worker" %}
+              {% if emp.organization.type != "worker" %}
               <div class="section-title">Ruxsat etilgan material kategoriyasi</div>
               <div class="info-card">
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-12 info-value">
-                    <select class="form-select js-matcategory-select" name="matcategory" multiple disabled>
+                    <select class="form-select js-matcategory-select" name="matcategory" multiple>
                       {% for c in matcategory %}
                       <option value="{{ c.id }}"
                         {% if c.id in emp.selected_matcategory_ids %}selected{% endif %}>
@@ -426,11 +528,24 @@
     const $categorySelect = $modal.find('.js-category-select');
     const $technicsSubCheckboxes = $modal.find('.js-technics-sub'); // add/change/delete_technics
 
+    const $materialCheckbox = $modal.find('.js-perm-material'); // "view_material"
+    const $materialSubCheckboxes = $modal.find('.js-material-sub'); // add/change/delete_material
+
+    // NOTE: .js-matcategory-select har doim FAOL - u checkbox emas,
+    // "emp.organization.type != worker" shartiga bog'liq (template darajasida hal qilinadi)
+
     if (!$orderCheckbox.length || !$technicsCheckbox.length) return;
 
     toggleMultiSelect($orderCheckbox[0], $goalSelect);
     toggleMultiSelect($technicsCheckbox[0], $categorySelect);
     toggleSubCheckboxes($technicsCheckbox[0], $technicsSubCheckboxes);
+
+    if ($materialCheckbox.length) {
+      toggleSubCheckboxes($materialCheckbox[0], $materialSubCheckboxes);
+      $materialCheckbox.off('change.permToggle').on('change.permToggle', function () {
+        toggleSubCheckboxes(this, $materialSubCheckboxes);
+      });
+    }
 
     $orderCheckbox.off('change.permToggle').on('change.permToggle', function () {
       toggleMultiSelect(this, $goalSelect);

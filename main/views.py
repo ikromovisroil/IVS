@@ -3221,13 +3221,13 @@ def material_import(request):
 
 from django.contrib.auth.models import Permission
 from django.db.models import Exists, OuterRef
-
 PERM_CODENAMES = {
     # Ariza
-    "change_order":      "main.change_order",
-    "confirm_order":     "main.confirm_order",
+    "add_order":          "main.add_order",
+    "change_order":       "main.change_order",
+    "confirm_order":      "main.confirm_order",
     # Ko'rish doirasi
-    "all_organization":  "main.all_organization",
+    "all_organization":   "main.all_organization",
     "all_region":         "main.all_region",
     # Texnika
     "view_technics":      "main.view_technics",
@@ -3237,6 +3237,7 @@ PERM_CODENAMES = {
     # Material
     "view_material":      "main.view_material",
     "add_material":       "main.add_material",
+    "change_material":    "main.change_material",
     "delete_material":    "main.delete_material",
     # Maxsus
     "boss_employee":      "main.boss_employee",
@@ -3247,7 +3248,36 @@ PERM_CODENAMES = {
 
 DEPENDENT_PERMS = {
     "view_technics": ["add_technics", "change_technics", "delete_technics"],
+    "view_material": ["add_material", "change_material", "delete_material"],
 }
+
+
+def _visible_perm_fields(target_employee, current_employee):
+    target_org_type = (
+        target_employee.organization.type
+        if target_employee.organization_id else None
+    )
+    current_org_type = (
+        current_employee.organization.type
+        if current_employee.organization_id else None
+    )
+
+    visible = set(PERM_CODENAMES.keys())
+
+    if target_org_type != "worker":
+        visible.discard("add_order")
+
+    if target_org_type != "worker":
+        visible.discard("all_organization")
+        visible.discard("all_region")
+
+    if current_org_type != "worker":
+        visible.discard("boss_employee")
+        visible.discard("shop_employee")
+        visible.discard("status_employee")
+
+    return visible
+
 
 def _annotate_permission_flags(employee_qs):
     for field_name, perm_codename in PERM_CODENAMES.items():
@@ -3396,18 +3426,20 @@ def employee_update(request):
         messages.error(request, "Bu xodimga User biriktirilmagan")
         return redirect(back_url)
 
-    # Checkboxlar - belgilanmagan checkbox POST'da umuman kelmaydi.
+    visible_fields = _visible_perm_fields(target_employee, current_employee)
+
     checked_fields = {
         field_name: request.POST.get(field_name) == "on"
-        for field_name in PERM_CODENAMES
+        for field_name in visible_fields
     }
 
-    # master ruxsat belgilanmagan bo'lsa, unga bog'liq sub ruxsatlar
-    # SERVERDA HAM majburan False qilinadi.
     for master_field, sub_fields in DEPENDENT_PERMS.items():
-        if not checked_fields.get(master_field, False):
+        if master_field not in checked_fields:
+            continue
+        if not checked_fields[master_field]:
             for sub_field in sub_fields:
-                checked_fields[sub_field] = False
+                if sub_field in checked_fields:
+                    checked_fields[sub_field] = False
 
     goal_ids = request.POST.getlist("goal")
     category_ids = request.POST.getlist("category")
@@ -3428,19 +3460,15 @@ def employee_update(request):
             else:
                 user.user_permissions.remove(perm)
 
-        # --- Ariza kategoriyasi (OrderGoal) - "change_order" bajaruvchi rolga bog'liq ---
         OrderGoal.objects.filter(employee=target_employee).delete()
-        if checked_fields["change_order"] and goal_ids:
+        if checked_fields.get("change_order") and goal_ids:
             OrderGoal.objects.bulk_create([
                 OrderGoal(employee=target_employee, goal_id=gid)
                 for gid in goal_ids
             ])
 
-        # --- Texnika kategoriyasi (Liable) - "view_technics" ko'rish huquqiga bog'liq ---
         Liable.objects.filter(employee=target_employee).delete()
-        if checked_fields["view_technics"] and category_ids:
-            # Har bir cid uchun alohida so'rov yubormaslik uchun, barcha
-            # kerakli kategoriyalarni (contract bilan birga) bitta so'rovda olamiz.
+        if checked_fields.get("view_technics") and category_ids:
             categories_by_id = {
                 str(cat.id): cat
                 for cat in Category.objects.filter(
@@ -3460,13 +3488,13 @@ def employee_update(request):
                 for cid in category_ids
             ])
 
-        # --- Ruxsat etilgan material kategoriyasi (MaterialEmployee) ---
-        MaterialEmployee.objects.filter(employee=target_employee).delete()
-        if matcategory_ids:
-            MaterialEmployee.objects.bulk_create([
-                MaterialEmployee(employee=target_employee, category_id=mcid)
-                for mcid in matcategory_ids
-            ])
+        if target_employee.organization_id and target_employee.organization.type != "worker":
+            MaterialEmployee.objects.filter(employee=target_employee).delete()
+            if matcategory_ids:
+                MaterialEmployee.objects.bulk_create([
+                    MaterialEmployee(employee=target_employee, category_id=mcid)
+                    for mcid in matcategory_ids
+                ])
 
     messages.success(request, "Xodim muvaffaqiyatli yangilandi")
     return redirect(back_url)

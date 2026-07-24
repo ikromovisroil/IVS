@@ -570,7 +570,6 @@
         </li>
         {% endif %}
 
-        {% if perms.main.view_deed %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'files' %}collapsed{% endif %}"
              href="{% url 'files' %}">
@@ -578,7 +577,7 @@
             <span>Hujjatlar</span>
           </a>
         </li>
-        {% endif %}
+
         {% if perms.main.change_employee %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'employee' %}collapsed{% endif %}"
