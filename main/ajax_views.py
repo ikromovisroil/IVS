@@ -853,10 +853,6 @@ def toggle_user_edit(request, deed_id):
 
     deed = get_object_or_404(Deed, pk=deed_id)
 
-    # Faqat shu hujjatning egasi (user) o'zgartira olishi kerak bo'lsa:
-    if deed.user_id != employee.id:
-        return JsonResponse({"success": False, "error": "Ruxsat yo'q"}, status=403)
-
     deed.user_edit = not deed.user_edit
     deed.save(update_fields=["user_edit"])
 
