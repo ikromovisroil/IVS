@@ -23,16 +23,32 @@
                     <!-- EMPLOYEE -->
                     <div class="col-md-3">
                         <label class="form-label">Xodim</label>
-                        <select name="employee" class="form-select">
+                        <select name="employee" class="form-select" required>
                             <option value="">Tanlang...</option>
                             {% for emp in employees_shop %}
                                 <option value="{{ emp.id }}"
-                                    {% if request.GET.employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
+                                    {% if selected_employee|stringformat:"s" == emp.id|stringformat:"s" %}selected{% endif %}>
                                     {{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}
                                 </option>
                             {% endfor %}
                         </select>
                     </div>
+
+                    <!-- Kategory -->
+                    {% if request.user.employee.organization.type != "worker" %}
+                    <div class="col-md-3">
+                        <label class="form-label">Kategoriya</label>
+                        <select name="category" class="form-select">
+                            <option value="">Tanlang...</option>
+                            {% for cat in category %}
+                                <option value="{{ cat.id }}"
+                                    {% if selected_category|stringformat:"s" == cat.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% endif %}
 
                     <!-- UNIT -->
                     <div class="col-md-3">
@@ -41,7 +57,7 @@
                             <option value="">Tanlang...</option>
                             {% for u in unit %}
                                 <option value="{{ u.id }}"
-                                    {% if request.GET.unit|stringformat:"s" == u.id|stringformat:"s" %}selected{% endif %}>
+                                    {% if selected_unit|stringformat:"s" == u.id|stringformat:"s" %}selected{% endif %}>
                                     {{ u.name }}
                                 </option>
                             {% endfor %}
@@ -52,7 +68,7 @@
                     <div class="col-md-3">
                         <label class="form-label">Name</label>
                         <input type="text" name="name" class="form-control"
-                               value="{{ request.GET.name|default:'' }}"
+                               value="{{ name|default:'' }}"
                                placeholder="Nomi, 1C code ...">
                     </div>
 
@@ -62,7 +78,7 @@
                     </div>
 
                     <div class="col-md-3 d-flex align-items-end">
-                        <button type="button" id="btnExcel" class="btn btn-secondary w-100">Excel</button>
+                        <a href="{% url 'export_material_xlsx' %}?{{ qs_params }}" class="btn btn-secondary w-100">Excel</a>
                     </div>
 
                 </form>
@@ -244,7 +260,17 @@
             <h5 class="modal-title">Material qo‘shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
+
           <div class="modal-body">
+            {% if request.user.employee.organization.type != "worker" %}
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <div class="col-md-8 col-lg-9">
+                {{ material_form.category }}
+              </div>
+            </div>
+            {% endif %}
+
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Birligi *</label>
               <div class="col-md-8 col-lg-9">
@@ -456,6 +482,23 @@
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
+
+            {% if request.user.employee.organization.type != "worker" %}
+            <div class="row mb-3">
+                <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+                <div class="col-md-8 col-lg-9">
+                  <select name="category" class="form-select">
+                    <option value="">— Tanlang —</option>
+                    {% for cat in category %}
+                      <option value="{{ cat.id }}" {% if mat.category_id == cat.id %}selected{% endif %}>
+                        {{ cat.name }}
+                      </option>
+                    {% endfor %}
+                  </select>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="row mb-3">
                 <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
                 <div class="col-md-8 col-lg-9">
@@ -518,37 +561,5 @@
     {% endfor %}
 
 </main>
-<script>
-document.getElementById("btnExcel").addEventListener("click", async () => {
-  const status = document.querySelector('[name="status"]')?.value || "";
-  const employee = document.querySelector('[name="employee"]')?.value || "";
-  const name = document.querySelector('[name="name"]')?.value || "";
-
-  const params = new URLSearchParams();
-  if (status) params.append("status", status);
-  if (employee) params.append("employee", employee);
-  if (name) params.append("name", name);
-
-  const url = "{% url 'export_material_xlsx' %}?" + params.toString();
-
-  const res = await fetch(url, { method: "GET" });
-  if (!res.ok) {
-    alert("Excel eksportda xatolik!");
-    return;
-  }
-
-  const blob = await res.blob();
-  const blobUrl = window.URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = blobUrl;
-  a.download = "material.xlsx";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  window.URL.revokeObjectURL(blobUrl);
-});
-</script>
 
 {% endblock content %}

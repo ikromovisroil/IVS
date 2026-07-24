@@ -1635,7 +1635,7 @@ def extra_tex_detach(request):
     return redirect(back_url)
 
 
-from django.contrib.auth.models import Permission
+
 @never_cache
 @require_GET
 @login_required
@@ -1647,17 +1647,17 @@ def barn_mat(request):
 
     unit_id     = (request.GET.get("unit")     or "").strip()
     emp_id      = (request.GET.get("employee") or "").strip()
+    cat_id      = (request.GET.get("category") or "").strip()
     name        = (request.GET.get("name")     or "").strip()
     page_number = request.GET.get("page", 1)
 
     if name:
         name = name[:120]
 
-    has_filter = bool(unit_id or emp_id or name)
+    has_filter = bool(emp_id)
 
     params = request.GET.copy()
     params.pop("page", None)
-
 
     perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
     if request.user.has_perm("main.all_material_employee"):
@@ -1669,15 +1669,20 @@ def barn_mat(request):
         base_qs = Employee.objects.filter(id=employee.id)
 
     base_context = {
-        "employees_shop": base_qs,
-        "unit":           Unit.objects.all(),
-        "material_form":  MaterialForm(),
-        "qs_params":      params.urlencode(),
-        "row_start":      0,
-        "total_count":    0,
-        "total_suma":     0,
-        "page_obj":       Paginator([], 20).get_page(page_number),
-        "material":       [],
+        "employees_shop":   base_qs,
+        "unit":             Unit.objects.all(),
+        "category":         MaterialCategory.objects.all(),
+        "material_form":    MaterialForm(),
+        "qs_params":        params.urlencode(),
+        "selected_employee": emp_id,
+        "selected_category": cat_id,
+        "selected_unit":     unit_id,
+        "name":              name,
+        "row_start":        0,
+        "total_count":      0,
+        "total_suma":       0,
+        "page_obj":         Paginator([], 20).get_page(page_number),
+        "material":         [],
     }
 
     if not has_filter:
@@ -1688,7 +1693,7 @@ def barn_mat(request):
             is_active=True,
             organization=employee.organization
         )
-        .select_related("employee", "unit")
+        .select_related("employee", "category", "unit")
         .annotate(
             total_sum=ExpressionWrapper(
                 F("number") * F("price"),
@@ -1698,11 +1703,14 @@ def barn_mat(request):
         .order_by("-code")
     )
 
-    if unit_id and unit_id.isdigit():
-        qs = qs.filter(unit_id=int(unit_id))
-
     if emp_id and emp_id.isdigit():
         qs = qs.filter(employee_id=int(emp_id))
+
+    if cat_id and cat_id.isdigit():
+        qs = qs.filter(category_id=int(cat_id))
+
+    if unit_id and unit_id.isdigit():
+        qs = qs.filter(unit_id=int(unit_id))
 
     if name:
         qs = qs.filter(
@@ -1718,7 +1726,6 @@ def barn_mat(request):
     base_context.update({
         "page_obj":    page_obj,
         "material":    page_obj.object_list,
-        "qs_params":   params.urlencode(),
         "row_start":   page_obj.start_index() if total_count else 0,
         "total_count": total_count,
         "total_suma":  total_suma,
@@ -1783,22 +1790,19 @@ def material_update(request, pk):
     back_url = request.META.get("HTTP_REFERER", "/")
     mat = get_object_or_404(Material.objects.select_for_update(), pk=pk)
 
-    if mat.employee_id is not None and mat.employee_id != employee.id:
-        messages.info(request, "Sizga ruxsat yo'q")
-        return redirect(back_url)
-
     if mat.organization_id != employee.organization_id:
         messages.info(request, "Sizga ruxsat yo'q")
         return redirect(back_url)
 
     # Eski qiymatlar — save dan OLDIN saqlab qo'yamiz
     old = {
-        "name":   mat.name,
-        "unit":   mat.unit.name if mat.unit else "—",
-        "number": mat.number,
-        "code":   mat.code or "—",
-        "price":  mat.price or "—",
-        "year":   mat.year or "—",
+        "name":     mat.name,
+        "unit":     mat.unit.name if mat.unit else "—",
+        "category": mat.category.name if mat.category else "—",
+        "number":   mat.number,
+        "code":     mat.code or "—",
+        "price":    mat.price or "—",
+        "year":     mat.year or "—",
     }
 
     unit_id = (request.POST.get("unit") or "").strip()
@@ -1809,6 +1813,15 @@ def material_update(request, pk):
         mat.unit = get_object_or_404(Unit, pk=int(unit_id))
     else:
         mat.unit = None
+
+    category_id = (request.POST.get("category") or "").strip()
+    if category_id:
+        if not category_id.isdigit():
+            messages.info(request, "Kategoriya noto'g'ri tanlangan")
+            return redirect(back_url)
+        mat.category = get_object_or_404(MaterialCategory, pk=int(category_id))
+    else:
+        mat.category = None
 
     mat.name = (request.POST.get("name") or "").strip()
     mat.code = (request.POST.get("code") or "").strip() or None
@@ -1840,29 +1853,31 @@ def material_update(request, pk):
         mat.image = request.FILES["image"]
 
     mat.save(update_fields=[
-        "unit", "name", "code",
+        "unit", "category", "name", "code",
         "number", "price", "year", "image",
     ])
 
     # Yangi qiymatlar
     new = {
-        "name":   mat.name,
-        "unit":   mat.unit.name if mat.unit else "—",
-        "number": mat.number,
-        "code":   mat.code or "—",
-        "price":  mat.price or "—",
-        "year":   mat.year or "—",
+        "name":     mat.name,
+        "unit":     mat.unit.name if mat.unit else "—",
+        "category": mat.category.name if mat.category else "—",
+        "number":   mat.number,
+        "code":     mat.code or "—",
+        "price":    mat.price or "—",
+        "year":     mat.year or "—",
     }
 
     # Faqat o'zgargan fieldlarni yozamiz
     changes = []
     labels = {
-        "name":   "Nomi",
-        "unit":   "Birligi",
-        "number": "Soni",
-        "code":   "Kodi",
-        "price":  "Narxi",
-        "year":   "Yili",
+        "name":     "Nomi",
+        "unit":     "Birligi",
+        "category": "Kategoriya",
+        "number":   "Soni",
+        "code":     "Kodi",
+        "price":    "Narxi",
+        "year":     "Yili",
     }
     for key, label in labels.items():
         if old[key] != new[key]:
