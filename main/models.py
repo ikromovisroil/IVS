@@ -619,6 +619,7 @@ class Deed(models.Model):
     date_receiver = models.DateTimeField(null=True, blank=True)
 
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True, db_index=True)
+    user_edit = models.BooleanField(default=True)
     message_user = models.TextField(null=True, blank=True)
     body = models.TextField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=[

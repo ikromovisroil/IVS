@@ -836,3 +836,28 @@ def delete_material_from_cart(request):
         "ok": True,
         "message": "Savatdan o‘chirildi"
     })
+
+
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import permission_required
+@require_POST
+@csrf_protect
+@login_required
+@permission_required("main.change_deed", raise_exception=True)
+def toggle_user_edit(request, deed_id):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return JsonResponse({"success": False, "error": "Employee yo'q"}, status=403)
+
+    deed = get_object_or_404(Deed, pk=deed_id)
+
+    # Faqat shu hujjatning egasi (user) o'zgartira olishi kerak bo'lsa:
+    if deed.user_id != employee.id:
+        return JsonResponse({"success": False, "error": "Ruxsat yo'q"}, status=403)
+
+    deed.user_edit = not deed.user_edit
+    deed.save(update_fields=["user_edit"])
+
+    return JsonResponse({"success": True, "user_edit": deed.user_edit})

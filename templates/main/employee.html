@@ -296,6 +296,27 @@
                 </div>
               </div>
 
+              <!-- ================= HUJJAT (DALOLATNOMA) ================= -->
+              {% if emp.organization.type == "worker" %}
+              <div class="section-title">Hujjatlar</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Hujjat yaratish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="add_deed"
+                           {% if emp.has_add_deed %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Hujjatni tahrirlash</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="change_deed"
+                           {% if emp.has_change_deed %}checked{% endif %}>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
               <!-- ================= KO'RISH DOIRASI ================= -->
               {% if emp.organization.type == "worker" %}
               <div class="section-title">Ko'rish doirasi</div>

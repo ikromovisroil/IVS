@@ -2202,6 +2202,14 @@ def mat_info(request):
                 "movements": mat_movements,
             })
 
+        # FIX: kirim yoki chiqim bo'lgan materiallarni yuqoriga chiqarish
+        table_rows.sort(
+            key=lambda row: (
+                row["income"] == 0 and row["outcome"] == 0,
+                row["material"].name,
+            )
+        )
+
         paginator = Paginator(table_rows, 20)
         page_number = request.GET.get("page")
         page_obj = paginator.get_page(page_number)
@@ -2858,11 +2866,13 @@ def files(request):
     date2  = (request.GET.get("date2")  or "").strip()
     status = (request.GET.get("status") or "").strip()
     region_id = (request.GET.get("region") or "").strip()
+    org_id = (request.GET.get("organization") or "").strip()
     page_number = request.GET.get("page", 1)
 
     regions = Region.objects.only("id", "name").order_by("id")
+    organizations = Organization.objects.only("id", "name").order_by("id")
 
-    has_filter = bool(name or date1 or date2 or status or region_id)
+    has_filter = bool(name or date1 or date2 or status or region_id or org_id)
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -2877,15 +2887,12 @@ def files(request):
             "date2":     date2,
             "regions":   regions,
             "selected_region": "",
+            "organizations": organizations,
+            "selected_organization": "",
         })
 
     qs = (
         Deed.objects
-        .filter(
-            Q(user__organization_id=employee.organization_id)   |
-            Q(sender__organization_id=employee.organization_id) |
-            Q(receiver__organization_id=employee.organization_id)
-        )
         .distinct()
         .select_related("user", "sender", "receiver")
         .prefetch_related(
@@ -2932,6 +2939,15 @@ def files(request):
 
         qs = qs.filter(name_filter)
 
+    # FIX: org_obj endi org_id orqali olinadi (avval region_id edi)
+    org_obj = Organization.objects.filter(id=org_id).first() if org_id.isdigit() else None
+    if org_id:
+        qs = qs.filter(
+            Q(user__organization=org_obj) |
+            Q(sender__organization=org_obj) |
+            Q(receiver__organization=org_obj)
+        )
+
     region_obj = Region.objects.filter(id=region_id).first() if region_id.isdigit() else None
     if region_id:
         qs = qs.filter(
@@ -2968,6 +2984,8 @@ def files(request):
         "status":    status,
         "regions": regions,
         "selected_region": region_id,
+        "organizations": organizations,
+        "selected_organization": org_id,   # FIX: template uchun qo'shildi
     }
     return render(request, "main/files.html", context)
 
@@ -3076,8 +3094,6 @@ def material_import_page(request):
 
 import openpyxl
 from io import BytesIO
-
-
 @never_cache
 @require_POST
 @login_required
@@ -3226,6 +3242,9 @@ PERM_CODENAMES = {
     "add_order":          "main.add_order",
     "change_order":       "main.change_order",
     "confirm_order":      "main.confirm_order",
+    # Hujjat (Dalolatnoma)
+    "add_deed":           "main.add_deed",
+    "change_deed":        "main.change_deed",
     # Ko'rish doirasi
     "all_organization":   "main.all_organization",
     "all_region":         "main.all_region",
