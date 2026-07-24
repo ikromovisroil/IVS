@@ -287,6 +287,7 @@
                            {% if emp.has_change_order %}checked{% endif %}>
                   </div>
                 </div>
+                {% if emp.organization.type != "worker" %}
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9"><label class="form-check-label">Arizani tasdiqlash</label></div>
                   <div class="col-12 col-md-3 info-value">
@@ -294,6 +295,7 @@
                            {% if emp.has_confirm_order %}checked{% endif %}>
                   </div>
                 </div>
+                {% endif %}
               </div>
 
               <!-- ================= HUJJAT (DALOLATNOMA) ================= -->
