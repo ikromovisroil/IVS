@@ -489,7 +489,7 @@ def ajax_svod_materials(request):
     # OR mantig'i: o'z materiali BO'LSA HAM, o'z hududiga yopilgan bo'lsa ham
     base_filter = (
         Q(material__employee=employee) |
-        Q(order__sender__region=employee.region)
+        Q(order__sender__region=employee.region,order__goal__organization__type="worker")
     )
 
     common_filters = dict(
