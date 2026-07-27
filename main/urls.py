@@ -45,8 +45,10 @@ urlpatterns = [
     path("barn_mat/update/<int:pk>/", material_update, name="material_update"),
     path("barn_mat/attach/", material_attach, name="material_attach"),
     path("barn_mat/delete/", material_delete, name="material_delete"),
+    path("mat_post/", mat_post, name="mat_post"),
     path("mat_info/", mat_info, name="mat_info"),
     path("mat_arxiv/", mat_arxiv, name="mat_arxiv"),
+    path("mat_arxiv/post/", mat_arxiv_post, name="mat_arxiv_post"),
 
     # =========================
     # NOTIFIKATSIYA / STATUS

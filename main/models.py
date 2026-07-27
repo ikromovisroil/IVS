@@ -710,7 +710,6 @@ class MaterialMovement(models.Model):
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL,null=True, blank=True,db_index=True, related_name='movement_created')
     material = models.ForeignKey(Material, on_delete=models.PROTECT,null=True, blank=True,db_index=True)
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True, related_name='movement_received')
-    balance = models.PositiveIntegerField(null=True, blank=True,)
     income = models.PositiveIntegerField(null=True, blank=True,)
     outcome = models.PositiveIntegerField(null=True, blank=True,)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='created', db_index=True)

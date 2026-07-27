@@ -356,7 +356,6 @@ class MaterialMovementAdmin(admin.ModelAdmin):
         'material',
         'user',
         'employee',
-        'balance',
         'income',
         'outcome',
         'date_creat',

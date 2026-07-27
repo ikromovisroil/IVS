@@ -21,7 +21,7 @@
             <div class="card-body table-responsive">
               <div class="d-flex justify-content-between align-items-center">
                  <h5 class="card-title">Materiallar</h5>
-                 <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">+ Ariza Yaratish</button>
+                 <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#modal">+ Xodimga biriktirish</button>
               </div>
 
               <!-- Default Table -->
@@ -44,7 +44,7 @@
                         <td>{{ row.material.name|default:"-" }}</td>
                         <td>{{ row.material.price|intcomma|default:"-" }}</td>
                         <td>{{ row.total_sum|intcomma }}</td>
-                        <td>{{ row.material.number }}</td>
+                        <td>{{ row.income }}</td>
                         <td>{{ row.material.unit|default:"-" }}</td>
                         <td>{{ row.material.code|default:"-" }}</td>
                       </tr>
@@ -103,13 +103,13 @@
     </div>
   </section>
 
-  <!-- MATERIAL CREATE MODAL -->
+  <!-- MATERIAL -->
   <div class="modal fade order-modal" id="modal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
       <div class="modal-content">
-        <form action="#" method="post">{% csrf_token %}
+        <form action="{% url 'mat_arxiv_post' %}" method="post">{% csrf_token %}
         <div class="modal-header">
-          <h5 class="modal-title">Ariza Yaratish</h5>
+          <h5 class="modal-title">Xodimga biriktirish</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
@@ -118,10 +118,10 @@
                 <div class="row mb-3">
                     <label class="col-sm-12 col-form-label">Xodimni tanlang:</label>
                     <div class="col-sm-12">
-                        <select class="form-select" name="goal" id="topic-select" required>
+                        <select class="form-select" name="employe" id="topic-select" required>
                             <option value="">tanlang</option>
                             {% for e in employee %}
-                                <option value="{{ e.id }}">{{ emp.last_name }} {{ emp.first_name }} {{ emp.father_name }}</option>
+                                <option value="{{ e.id }}">{{ e.last_name }} {{ e.first_name }} {{ e.father_name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -131,7 +131,7 @@
                 <div class="row mb-3">
                     <label class="col-sm-12 col-form-label">Qo‘shimcha ma’lumot:</label>
                     <div class="col-sm-12">
-                        <textarea class="form-control" name="body" style="height: 100px" placeholder="IP, Telefon va Qo'shimcha ma'lumot yuboring"></textarea>
+                        <textarea class="form-control" name="body" style="height: 100px" placeholder="..."></textarea>
                     </div>
                 </div>
 

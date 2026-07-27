@@ -1,5 +1,5 @@
 from main.ajax_views import *
-from django.db.models import Prefetch
+from django.db.models import Prefetch, Model
 from django.contrib.auth.decorators import login_required, permission_required
 from main.forms import *
 from django.core.paginator import Paginator
@@ -2093,8 +2093,6 @@ from django.db.models import Sum, F
 from django.db.models.functions import Coalesce
 from django.utils.timezone import make_aware, localdate
 from datetime import datetime, time
-
-
 @never_cache
 @require_GET
 @login_required
@@ -2304,6 +2302,156 @@ def mat_arxiv(request):
         "employee": employee,
     }
     return render(request, "main/mat_arxiv.html", context)
+
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.all_material_employee", raise_exception=True)
+@transaction.atomic
+def mat_arxiv_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    emp_id = (request.POST.get("employe") or "").strip()
+    body = (request.POST.get("body") or "").strip()
+
+    if not emp_id or not emp_id.isdigit():
+        messages.info(request, "Xodim tanlanmadi")
+        return redirect(back_url)
+
+    get_employee = get_object_or_404(
+        Employee, pk=int(emp_id), organization=employee.organization
+    )
+
+    cart_qs = (
+        MaterialMovement.objects
+        .filter(user=employee, employee__isnull=True)
+        .select_related("material")
+        .select_for_update()
+    )
+
+    if not cart_qs.exists():
+        messages.info(request, "Biriktiriladigan material topilmadi")
+        return redirect(back_url)
+
+    moved_count = 0
+
+    for movement in cart_qs:
+        mat = Material.objects.select_for_update().get(pk=movement.material_id)
+        income = movement.income or 0
+
+        if income <= 0:
+            continue
+
+        if income > mat.number:
+            messages.info(
+                request,
+                f"'{mat.name}' uchun omborda yetarli emas (bor: {mat.number}, kerak: {income})"
+            )
+            continue
+
+        # Manba materialdan ayiramiz
+        mat.number -= income
+        mat.save(update_fields=["number"])
+
+        # Tanlangan xodimda mos material bor-yo'qligini tekshiramiz
+        dst_filter = {"employee_id": get_employee.id}
+        if (mat.code or "").strip():
+            dst_filter["code"] = mat.code
+        else:
+            dst_filter["name"] = mat.name
+
+        dst = Material.objects.select_for_update().filter(**dst_filter).first()
+
+        if dst:
+            dst.number = (dst.number or 0) + income
+            dst.save(update_fields=["number"])
+            dst_material = dst
+        else:
+            dst_material = Material.objects.create(
+                organization=get_employee.organization,
+                employee=get_employee,
+                name=mat.name,
+                code=mat.code,
+                number=income,
+                unit=mat.unit,
+                price=mat.price,
+            )
+
+        # Cart yozuvini yakunlaymiz
+        movement.employee = get_employee
+        movement.material = dst_material
+        if body:
+            movement.body = body
+        movement.save(update_fields=["employee", "material", "body"])
+
+        # Chiqim harakati (manba tomondan)
+        MaterialMovement.objects.create(
+            user=employee,
+            employee=employee,
+            material=dst_material,
+            status="assigned",
+            outcome=income,
+        )
+
+        moved_count += 1
+
+    if moved_count:
+        messages.success(request, f"{moved_count} ta material {get_employee.full_name}ga biriktirildi")
+    else:
+        messages.info(request, "Hech qanday material biriktirilmadi")
+
+    return redirect(back_url)
+
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.all_material_employee", raise_exception=True)
+@transaction.atomic
+def mat_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    mat_id = (request.POST.get("material_id") or "").strip()
+    number_raw = (request.POST.get("number") or "").strip()
+
+    if not mat_id.isdigit():
+        messages.info(request, "Material tanlanmadi")
+        return redirect(back_url)
+
+    try:
+        number = int(number_raw)
+        if number <= 0:
+            raise ValueError
+    except (TypeError, ValueError):
+        messages.info(request, "Soni noto'g'ri kiritildi")
+        return redirect(back_url)
+
+    mat = get_object_or_404(
+        Material.objects.select_for_update(),
+        pk=int(mat_id),
+        is_active=True,
+        organization=employee.organization,
+    )
+
+    MaterialMovement.objects.create(
+        material=mat,
+        user=employee,
+        employee=None,
+        status="assigned",
+        income=number,
+    )
+
+    messages.success(request, "Material savatga saqlandi")
+    return redirect(back_url)
 
 
 @never_cache
