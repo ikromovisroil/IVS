@@ -2098,7 +2098,7 @@ from datetime import datetime, time
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_material", raise_exception=True)
+@permission_required("main.all_material_employee", raise_exception=True)
 def mat_info(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2255,6 +2255,55 @@ def mat_info(request):
         "qs_params": qs_params,
     }
     return render(request, "main/mat_info.html", context)
+
+
+@never_cache
+@require_GET
+@login_required
+@permission_required("main.all_material_employee", raise_exception=True)
+def mat_arxiv(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    qs = (
+        MaterialMovement.objects
+        .filter(user=employee, employee__isnull=True)
+        .select_related("material", "material__unit")
+        .annotate(
+            total_sum=ExpressionWrapper(
+                F("material__number") * F("material__price"),
+                output_field=DecimalField(max_digits=18, decimal_places=2)
+            )
+        )
+        .order_by("-date_creat")
+    )
+
+    perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
+    if request.user.has_perm("main.all_material_employee"):
+        employee = Employee.objects.filter(
+            Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
+            organization=employee.organization,
+        ).distinct()
+    else:
+        employee = Employee.objects.filter(id=employee.id)
+
+    params = request.GET.copy()
+    params.pop("page", None)
+    qs_params = params.urlencode()
+
+    page_number = request.GET.get("page", 1)
+    paginator = Paginator(qs, 20)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "table_rows": page_obj.object_list,
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if paginator.count else 0,
+        "qs_params": qs_params,
+        "employee": employee,
+    }
+    return render(request, "main/mat_arxiv.html", context)
 
 
 @never_cache
@@ -2447,7 +2496,7 @@ def akt_post(request):
 def svod_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
@@ -2470,7 +2519,6 @@ def svod_post(request):
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
 
-    # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
     body_encoded = (request.POST.get("body_encoded") or "").strip()
     body = ""
     if body_encoded:
@@ -2488,7 +2536,6 @@ def svod_post(request):
         messages.info(request, "Hujjat matni bo'sh bo'lmasin")
         return redirect("svod_get")
 
-    # 1. DB — transaction ichida
     with transaction.atomic():
         deed = Deed.objects.create(
             sender=sender,
@@ -2506,7 +2553,6 @@ def svod_post(request):
             objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
             DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-    # 2. PDF — transaction tashqarisida
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
         pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
@@ -2870,7 +2916,6 @@ def technics_detail(request, pk):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.view_deed", raise_exception=True)
 def files(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

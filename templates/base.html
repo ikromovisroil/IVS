@@ -508,7 +508,7 @@
         <!-- Materiallar -->
         {% if perms.main.view_material %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'barn_mat' and url_name != 'mat_info' %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name != 'barn_mat' and url_name != 'mat_arxiv' and url_name != 'mat_info' %}collapsed{% endif %}"
              data-bs-target="#forms-nav-material"
              data-bs-toggle="collapse"
              href="#">
@@ -518,11 +518,16 @@
           </a>
 
           <ul id="forms-nav-material"
-              class="nav-content collapse {% if url_name == 'barn_mat' or url_name == 'mat_info' %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'barn_mat' or url_name == 'mat_arxiv' or url_name == 'mat_info' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
             <li>
               <a class="{% if url_name == 'barn_mat' %}active{% endif %}" href="{% url 'barn_mat' %}">
                 <i class="bi bi-circle"></i><span>Materiallar</span>
+              </a>
+            </li>
+            <li>
+              <a class="{% if url_name == 'mat_arxiv' %}active{% endif %}" href="{% url 'mat_arxiv' %}">
+                <i class="bi bi-circle"></i><span>Savat</span>
               </a>
             </li>
             <li>

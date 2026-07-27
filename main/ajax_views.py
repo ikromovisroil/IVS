@@ -176,22 +176,27 @@ def get_department_employees(request):
 
     return JsonResponse({"employees": data})
 
+
 @never_cache
 @require_GET
 @login_required
 def ajax_load_departments(request):
-    org_id = (request.GET.get("organization") or "").strip()
-    reg_id = (request.GET.get("region") or "").strip()
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
 
-    if not org_id or not reg_id:
+    org_id = (request.GET.get("organization") or "").strip()
+
+    if not org_id or not org_id.isdigit():
         return JsonResponse({"results": []})
 
     qs = Department.objects.filter(
         organization_id=org_id,
-        region_id=reg_id
+        region_id=employee.region_id,
     ).values("id", "name").order_by("id")
 
     return JsonResponse({"results": list(qs)})
+
 
 @never_cache
 @require_GET
@@ -468,6 +473,7 @@ def ajax_svod_materials(request):
         raise PermissionDenied
 
     org_id = request.GET.get("organization")
+    dep_id = request.GET.get("department")
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
 
@@ -480,23 +486,29 @@ def ajax_svod_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
-    # umumiy filter (2 marta yozmaslik uchun)
-    base_filter = dict(
-        material__employee=employee,
+    # OR mantig'i: o'z materiali BO'LSA HAM, o'z hududiga yopilgan bo'lsa ham
+    base_filter = (
+        Q(material__employee=employee) |
+        Q(order__sender__region=employee.region)
+    )
+
+    common_filters = dict(
+        order__date_finished__isnull=False,
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
         order__sender__organization_id=org_id,
-        order__receiver__region=employee.region,
     )
-    # Decimal/Integer aralashmasligi uchun
+
+    if dep_id and dep_id.isdigit():
+        common_filters["order__sender__department_id"] = dep_id
+
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
 
-    # 1) Material bo‘yicha svod: qty + sum
     qs = (
-        OrderMaterial.objects.filter(**base_filter)
+        OrderMaterial.objects.filter(base_filter, **common_filters)
         .values(
-            "material_id",                 # ✅ shart
+            "material_id",
             "material__code",
             "material__name",
             "material__unit__name",
@@ -515,9 +527,8 @@ def ajax_svod_materials(request):
         .order_by("material__code", "material__name")
     )
 
-    # 2) Har bir material uchun order_id + date_finished yig‘amiz (SQLite friendly)
     rel = (
-        OrderMaterial.objects.filter(**base_filter)
+        OrderMaterial.objects.filter(base_filter, **common_filters)
         .values("material_id", "order_id", "order__date_finished")
         .distinct()
     )
@@ -529,7 +540,6 @@ def ajax_svod_materials(request):
         txt = f'Akt №{r["order_id"]} ga {dt_str}y'
         material_orders.setdefault(mid, []).append(txt)
 
-    # 3) JSON tayyorlash
     data = []
     for item in qs:
         mid = item["material_id"]
@@ -541,7 +551,7 @@ def ajax_svod_materials(request):
             "total_number": float(item.get("total_number") or 0),
             "material__price": float(item.get("material__price") or 0),
             "total_sum": float(item.get("total_sum") or 0),
-            "order_info": order_info,  # ✅ probelsiz key
+            "order_info": order_info,
             "material__code": item.get("material__code", ""),
         })
     return JsonResponse(data, safe=False)
@@ -578,6 +588,7 @@ def ajax_reestr_materials(request):
             order__date_finished__lt=date2,
             order__sender__organization_id=org_id,
             order__receiver__region=employee.region,
+
         )
         .annotate(
             total_sum=ExpressionWrapper(
