@@ -309,17 +309,19 @@
                       <td>{{ o.date_creat|date:"d.m.Y, H:i" }}</td>
 
                       <td>
-                        {% if o.materials_all.exists %}
+                        {% if o.materials_all.exists and not o.order.exists %}
                             <a href="{% url 'order_receiver_deed' o.pk %}"
                                class="btn btn-success btn-sm btn-send d-inline-flex align-items-center gap-2 px-3">
 
                                 <i class="bi bi-send-fill"></i>
                                 <span>Yuborish</span>
                             </a>
+                        {% elif o.order.exists %}
+                            <span class="text-muted small">Yuborilgan</span>
                         {% else %}
-                            <span class="text-muted small">—</span>
+                            <span class="text-muted small">Mavjud emas</span>
                         {% endif %}
-                    </td>
+                      </td>
 
                     </tr>
                   {% empty %}
