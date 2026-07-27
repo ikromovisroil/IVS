@@ -354,6 +354,7 @@ class MaterialMovementAdmin(admin.ModelAdmin):
         'id',
         'status',
         'material',
+        'material__id',
         'user',
         'employee',
         'income',

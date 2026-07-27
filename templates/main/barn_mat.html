@@ -157,12 +157,21 @@
                             <span class="text-muted">Rasm yo‘q</span>
                         {% endif %}
                     </td>
+                    {% if perms.main.all_material_employee and mat.employee == request.user.employee %}
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matpost{{ mat.id }}">{{ mat.name|default:"-" }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matpost{{ mat.id }}">{{ mat.price|intcomma|default:"-" }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matpost{{ mat.id }}">{{ mat.total_sum|intcomma }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matpost{{ mat.id }}">{{ mat.number }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matpost{{ mat.id }}">{{ mat.unit|default:"-" }}</td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matpost{{ mat.id }}">{{ mat.code|default:"-" }}</td>
+                    {% else %}
+                    <td>{{ mat.name|default:"-" }}</td>
+                    <td>{{ mat.price|intcomma|default:"-" }}</td>
+                    <td>{{ mat.total_sum|intcomma }}</td>
+                    <td>{{ mat.number }}</td>
+                    <td>{{ mat.unit|default:"-" }}</td>
+                    <td>{{ mat.code|default:"-" }}</td>
+                    {% endif %}
                     <td>
                       <div class="filter">
                         <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
@@ -326,6 +335,7 @@
 
     <!-- ✅ MATERIAL EDIT MODALS (JADVALDAN TASHQARIDA!) -->
     {% for mat in material %}
+    {% if perms.main.all_material_employee %}
     <div class="modal fade order-modal" id="matpost{{ mat.id }}" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
           <div class="modal-content">
@@ -351,7 +361,7 @@
           </div>
         </div>
     </div>
-
+    {% endif %}
     <div class="modal fade" id="matdel-{{ mat.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form method="post" class="modal-content" action="{% url 'material_delete' %}">

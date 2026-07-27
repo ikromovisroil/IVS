@@ -525,11 +525,13 @@
                 <i class="bi bi-circle"></i><span>Materiallar</span>
               </a>
             </li>
+            {% if perms.main.all_material_employee %}
             <li>
               <a class="{% if url_name == 'mat_arxiv' %}active{% endif %}" href="{% url 'mat_arxiv' %}">
                 <i class="bi bi-circle"></i><span>Savat</span>
               </a>
             </li>
+            {% endif %}
             <li>
               <a class="{% if url_name == 'mat_info' %}active{% endif %}" href="{% url 'mat_info' %}">
                 <i class="bi bi-circle"></i><span>Kirim - chiqim</span>

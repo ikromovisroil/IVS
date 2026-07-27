@@ -2100,7 +2100,7 @@ from datetime import datetime, time
 def mat_info(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     date1_raw = (request.GET.get("date1") or "").strip()
     date2_raw = (request.GET.get("date2") or "").strip()
@@ -2120,8 +2120,8 @@ def mat_info(request):
         start_dt = make_aware(datetime.combine(date1, time.min)) if date1 else None
         end_dt = make_aware(datetime.combine(date2, time.max)) if date2 else None
 
-        # --- MaterialMovement bo'yicha kirim/chiqim ---
-        movements_qs = MaterialMovement.objects.exclude(status='deleted').filter(employee_id=employee_id)
+        # Material qaysi xodimga tegishli ekanligi bo'yicha filtrlanadi
+        movements_qs = MaterialMovement.objects.exclude(status='deleted').filter(material__employee_id=employee_id)
         if start_dt:
             movements_qs = movements_qs.filter(date_creat__gte=start_dt)
         if end_dt:
@@ -2197,7 +2197,6 @@ def mat_info(request):
             if initial_balance == 0 and income == 0 and total_outcome == 0 and current_count == 0:
                 continue
 
-            # sana bo'yicha saralash (sanasi bo'sh bo'lganlar oxirida)
             mat_movements = sorted(
                 movements_by_material.get(m.id, []),
                 key=lambda x: x["date"] or min_dt
@@ -2215,7 +2214,6 @@ def mat_info(request):
                 "movements": mat_movements,
             })
 
-        # FIX: kirim yoki chiqim bo'lgan materiallarni yuqoriga chiqarish
         table_rows.sort(
             key=lambda row: (
                 row["income"] == 0 and row["outcome"] == 0,
@@ -2342,20 +2340,20 @@ def mat_arxiv_post(request):
 
     for movement in cart_qs:
         mat = Material.objects.select_for_update().get(pk=movement.material_id)
-        income = movement.income or 0
+        outcome = movement.outcome or 0
 
-        if income <= 0:
+        if outcome <= 0:
             continue
 
-        if income > mat.number:
+        if outcome > mat.number:
             messages.info(
                 request,
-                f"'{mat.name}' uchun omborda yetarli emas (bor: {mat.number}, kerak: {income})"
+                f"'{mat.name}' uchun omborda yetarli emas (bor: {mat.number}, kerak: {outcome})"
             )
             continue
 
         # Manba materialdan ayiramiz
-        mat.number -= income
+        mat.number -= outcome
         mat.save(update_fields=["number"])
 
         # Tanlangan xodimda mos material bor-yo'qligini tekshiramiz
@@ -2368,7 +2366,7 @@ def mat_arxiv_post(request):
         dst = Material.objects.select_for_update().filter(**dst_filter).first()
 
         if dst:
-            dst.number = (dst.number or 0) + income
+            dst.number = (dst.number or 0) + outcome
             dst.save(update_fields=["number"])
             dst_material = dst
         else:
@@ -2377,25 +2375,24 @@ def mat_arxiv_post(request):
                 employee=get_employee,
                 name=mat.name,
                 code=mat.code,
-                number=income,
+                number=outcome,
                 unit=mat.unit,
                 price=mat.price,
             )
 
         # Cart yozuvini yakunlaymiz
-        movement.employee = get_employee
-        movement.material = dst_material
+        movement.employee = employee
         if body:
             movement.body = body
-        movement.save(update_fields=["employee", "material", "body"])
+        movement.save(update_fields=["employee", "body"])
 
         # Chiqim harakati (manba tomondan)
         MaterialMovement.objects.create(
             user=employee,
-            employee=employee,
+            employee=get_employee,
             material=dst_material,
             status="assigned",
-            outcome=income,
+            income=outcome,
         )
 
         moved_count += 1
@@ -2441,13 +2438,12 @@ def mat_post(request):
         is_active=True,
         organization=employee.organization,
     )
-
     MaterialMovement.objects.create(
         material=mat,
         user=employee,
         employee=None,
         status="assigned",
-        income=number,
+        outcome=number,
     )
 
     messages.success(request, "Material savatga saqlandi")

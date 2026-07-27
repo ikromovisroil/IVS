@@ -78,7 +78,7 @@
                     {% for row in table_rows %}
                       <tr>
                         <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
-                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.material }}</td>
+                        <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.material }}{{row.id}}</td>
                         <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.code }}</td>
                         <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.price|intcomma }}</td>
                         <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#matinfo{{ row.id }}">{{ row.initial_balance }}</td>
