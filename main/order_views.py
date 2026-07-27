@@ -503,7 +503,7 @@ def order_receiver_arxiv(request):
         .filter(receiver=employee, goal__organization__type="worker",
                 status__in=["approved", "accepted", "canceled", "rejected"],)
         .select_related("goal", "technics","user", "receiver", "sender")
-        .order_by("-id")
+        .order_by("-date_edit")
     )
 
     paginator = Paginator(orders_qs, 20)
