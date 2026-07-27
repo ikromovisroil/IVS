@@ -2572,7 +2572,7 @@ def svod_post(request):
 def reestr_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),

@@ -42,6 +42,13 @@
                 </select>
               </div>
 
+              <div class="col-12">
+                <label for="department" class="form-label">Bo'lim :</label>
+                <select id="department" name="department" class="form-select">
+                  <option value="">Tanlang...</option>
+                </select>
+              </div>
+
               <div class="col-md-12">
                 <label for="date1" class="form-label">Boshlangich sanasi:</label>
                 <input type="date" name="date1" id="date1" required class="form-control">
@@ -81,7 +88,10 @@
                 </div>
 
                 <div style="text-align:center;">
-                  <b>O‘zbekiston Respublikasi <span id="org_id">Tashkilot</span> tashkili</b>
+                  <b>O‘zbekiston Respublikasi <span id="org_id"></span></b>
+                </div>
+                <div style="text-align:center;">
+                  <b><span id="dep_id"></span></b>
                 </div>
                 <div style="text-align:center;">
                   <b>{{ request.user.employee.region.name }}</b>
@@ -311,9 +321,44 @@ function updateEditorWithSelections() {
   const orgName      = $opt.text().trim();
   const contractText = $opt.attr('data-contract') || '';
 
+  const $depOpt = $('#department option:selected');
+  const depName = $depOpt.text().trim();
+
   editorSetText('#org_id',        (orgName && orgName !== 'Tanlang...') ? orgName : 'Tashkilot');
+  editorSetText('#dep_id',        (depName && depName !== 'Tanlang...') ? depName : '');
   editorSetText('#date_contract', contractText.trim() ? contractText : '_');
   editorSetText('#report_period', formatMonthYear());
+}
+
+// ─── AJAX: BO'LIMLARNI YUKLASH ─────────────────────────────────────────────────
+
+function loadDepartmentsByOrg(orgId, selectedId = "") {
+  const $dep = $('#department');
+  $dep.html('<option value="">Tanlang...</option>').trigger('change');
+
+  if (!orgId) return;
+
+  $.ajax({
+    url: "{% url 'ajax_load_departments' %}",
+    method: 'GET',
+    dataType: 'json',
+    data: { organization: orgId },
+
+    success: function (data) {
+      let options = '<option value="">Tanlang...</option>';
+      (data.results || []).forEach(function (dep) {
+        const sel = String(dep.id) === String(selectedId) ? 'selected' : '';
+        options += `<option value="${dep.id}" ${sel}>${escapeHtml(dep.name)}</option>`;
+      });
+      $dep.html(options).trigger('change');
+      updateEditorWithSelections();
+    },
+
+    error: function (xhr) {
+      console.error('Bo\'limlar AJAX xatosi:', xhr.status, xhr.responseText);
+      $dep.html('<option value="">Tanlang...</option>').trigger('change');
+    }
+  });
 }
 
 // ─── JADVAL QATORINI QURISH ───────────────────────────────────────────────────
@@ -381,6 +426,7 @@ function buildGroupTotalRow(label, sum) {
 
 function searchMaterials() {
   const orgId = $('#organization').val();
+  const depId = $('#department').val();
   const date1 = $('#date1').val();
   const date2 = $('#date2').val();
 
@@ -403,7 +449,7 @@ function searchMaterials() {
     url: "{% url 'ajax_reestr_materials' %}",
     method: 'GET',
     dataType: 'json',
-    data: { organization: orgId, date1: date1, date2: date2 },
+    data: { organization: orgId, department: depId, date1: date1, date2: date2 },
 
     success: function (data) {
       if (!Array.isArray(data) || !data.length) {
@@ -455,8 +501,6 @@ function searchMaterials() {
       editorSetTbodyRows(rows);
 
       // ── Xizmat ko'rsatgan xodimlar (receiver) — har bir xodim faqat 1 marta ──
-      // Joriy foydalanuvchi (yuqoridagi statik blokda ko'rsatilgan) takrorlanmasligi uchun
-      // uni oldindan "ko'rilgan" ro'yxatga qo'shib qo'yamiz.
       const currentUserFullName = "{{ request.user.employee.full_name|default:''|escapejs }}".trim();
       const seenReceivers = new Set();
       if (currentUserFullName) seenReceivers.add(currentUserFullName);
@@ -550,7 +594,7 @@ function downloadReestrPdf() {
 
 $(function () {
   if ($.fn.select2) {
-    $('#organization').select2({
+    $('#organization, #department').select2({
       width: '100%',
       placeholder: 'Tanlang...',
       allowClear: true
@@ -567,6 +611,16 @@ $(function () {
   // ─── EVENTS ───────────────────────────────────────────────────────────────
 
   $('#organization').on('change', function () {
+    const orgId = $(this).val();
+    updateEditorWithSelections();
+    if (!orgId) {
+      $('#department').html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+    loadDepartmentsByOrg(orgId);
+  });
+
+  $('#department').on('change', function () {
     updateEditorWithSelections();
   });
 
@@ -583,9 +637,11 @@ $(function () {
   // ─── INITIAL LOAD ─────────────────────────────────────────────────────────
 
   const initialOrg = '{{ selected_org|default:"" }}';
+  const initialDep = '{{ selected_dep|default:"" }}';
 
   if (initialOrg) {
     $('#organization').val(initialOrg);
+    loadDepartmentsByOrg(initialOrg, initialDep);
   }
 
   waitForTinyMCE(function () {

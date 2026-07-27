@@ -566,6 +566,7 @@ def ajax_reestr_materials(request):
         raise PermissionDenied
 
     org_id = request.GET.get("organization")
+    dep_id = request.GET.get("department")
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
 
@@ -578,18 +579,27 @@ def ajax_reestr_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
+    # OR mantig'i: o'z materiali BO'LSA HAM, o'z hududiga yopilgan bo'lsa ham
+    base_filter = (
+        Q(material__employee=employee) |
+        Q(order__sender__region=employee.region,order__goal__organization__type="worker")
+    )
+
+    common_filters = dict(
+        order__date_finished__isnull=False,
+        order__date_finished__gte=date1,
+        order__date_finished__lt=date2,
+        order__sender__organization_id=org_id,
+    )
+
+    if dep_id and dep_id.isdigit():
+        common_filters["order__sender__department_id"] = dep_id
+
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
 
     qs = (
-        OrderMaterial.objects.filter(
-            material__employee=employee,
-            order__date_finished__gte=date1,
-            order__date_finished__lt=date2,
-            order__sender__organization_id=org_id,
-            order__receiver__region=employee.region,
-
-        )
+        OrderMaterial.objects.filter(base_filter, **common_filters)
         .annotate(
             total_sum=ExpressionWrapper(
                 Coalesce(F("material__price"), zero_dec) *
