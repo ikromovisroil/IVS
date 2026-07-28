@@ -3280,9 +3280,7 @@ def material_import_page(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    employees_shop = Employee.objects.filter(
-        organization=employee.organization,
-    ).order_by("last_name", "first_name")
+    employees_shop = Employee.objects.all().order_by("last_name", "first_name")
 
     context = {
         "employees_shop": employees_shop,
