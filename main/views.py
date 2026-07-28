@@ -2580,6 +2580,7 @@ def akt_post(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
+    org_id = (request.POST.get("organization") or "").strip()
     sender_id  = (request.POST.get("sender")  or "").strip()
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
@@ -2593,6 +2594,11 @@ def akt_post(request):
         except (binascii.Error, UnicodeDecodeError, ValueError):
             body = ""
 
+    org = Organization.objects.filter(id=org_id).first() if org_id.isdigit() else None
+    if not org:
+        messages.info(request, "Tashkilot topilmadi")
+        return redirect("akt_get")
+
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
         messages.info(request, "Imzolovchi xodim tanlanmadi")
@@ -2605,6 +2611,7 @@ def akt_post(request):
     # 1. DB — transaction ichida
     with transaction.atomic():
         deed = Deed.objects.create(
+            organization=org,
             sender=sender,
             user=employee,
             message_user=message,
@@ -2659,6 +2666,7 @@ def svod_post(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
+    org_id = (request.POST.get("organization") or "").strip()
     sender_id  = (request.POST.get("sender")  or "").strip()
     message    = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
@@ -2671,6 +2679,11 @@ def svod_post(request):
         except (binascii.Error, UnicodeDecodeError, ValueError):
             body = ""
 
+    org = Organization.objects.filter(id=org_id).first() if org_id.isdigit() else None
+    if not org:
+        messages.info(request, "Tashkilot topilmadi")
+        return redirect("svod_get")
+
     sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
     if not sender:
         messages.info(request, "Imzolovchi xodim tanlanmadi")
@@ -2682,6 +2695,7 @@ def svod_post(request):
 
     with transaction.atomic():
         deed = Deed.objects.create(
+            organization=org,
             sender=sender,
             user=employee,
             message_user=message,
@@ -3117,23 +3131,11 @@ def files(request):
                 "user__first_name", Value(" "),
                 "user__father_name",
             ),
-            sender_full_name=Concat(
-                "sender__last_name", Value(" "),
-                "sender__first_name", Value(" "),
-                "sender__father_name",
-            ),
-            receiver_full_name=Concat(
-                "receiver__last_name", Value(" "),
-                "receiver__first_name", Value(" "),
-                "receiver__father_name",
-            ),
         )
 
         name_filter = (
             Q(code__icontains=name)              |
-            Q(user_full_name__icontains=name)    |
-            Q(sender_full_name__icontains=name)  |
-            Q(receiver_full_name__icontains=name)
+            Q(user_full_name__icontains=name)
         )
 
         if name.isdigit():
@@ -3146,19 +3148,11 @@ def files(request):
     # FIX: org_obj endi org_id orqali olinadi (avval region_id edi)
     org_obj = Organization.objects.filter(id=org_id).first() if org_id.isdigit() else None
     if org_id:
-        qs = qs.filter(
-            Q(user__organization=org_obj) |
-            Q(sender__organization=org_obj) |
-            Q(receiver__organization=org_obj)
-        )
+        qs = qs.filter(organization=org_obj)
 
     region_obj = Region.objects.filter(id=region_id).first() if region_id.isdigit() else None
     if region_id:
-        qs = qs.filter(
-            Q(user__region=region_obj) |
-            Q(sender__region=region_obj) |
-            Q(receiver__region=region_obj)
-        )
+        qs = qs.filter(user__region=region_obj)
 
     if status:
         qs = qs.filter(status=status)

@@ -617,6 +617,7 @@ def order_receiver_deed_post(request):
 
     with transaction.atomic():
         deed = Deed.objects.create(
+            organization=order.sender.organization,
             sender_id=sender.id,
             user_id=employee.id,
             order_id=order.id,

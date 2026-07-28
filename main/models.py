@@ -600,6 +600,8 @@ class MaterialUser(models.Model):
 
 
 class Deed(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_sender', null=True, blank=True ,db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     status_sender = models.CharField(max_length=20, choices=[
