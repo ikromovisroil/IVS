@@ -3322,7 +3322,6 @@ def material_import(request):
     target_employee = get_object_or_404(
         Employee,
         pk=int(target_employee_id),
-        organization=employee.organization,
     )
 
     try:
@@ -3333,9 +3332,6 @@ def material_import(request):
         messages.info(request, f"Faylni o'qishda xatolik: {e}")
         return redirect(back_url)
 
-    # Importdan oldin shu xodimning barcha materiallarini 0 ga tushiramiz.
-    # Fayldagi qatorlar keyinroq to'g'ri qiymat bilan qayta yoziladi;
-    # fayldа yo'q qolgan mahsulotlar esa 0 sonda qoladi.
     Material.objects.filter(
         employee=target_employee,
         is_active=True,
