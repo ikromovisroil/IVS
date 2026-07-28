@@ -248,6 +248,9 @@
                         <td style="cursor:pointer"
                             data-bs-toggle="modal"
                             data-bs-target="#qkcentered{{ tex.id }}">
+                            <span class="text-secondary small d-block mt-1">
+                              <i>{{ tex.address|default:"-" }}</i>
+                            </span>
                           {{ tex.address|default:"-" }}
                         </td>
 
