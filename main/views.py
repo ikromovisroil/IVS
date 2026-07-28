@@ -3332,10 +3332,10 @@ def material_import(request):
         messages.info(request, f"Faylni o'qishda xatolik: {e}")
         return redirect(back_url)
 
-    Material.objects.filter(
-        employee=target_employee,
-        is_active=True,
-    ).update(number=0)
+    # Material.objects.filter(
+    #     employee=target_employee,
+    #     is_active=True,
+    # ).update(number=0)
 
     created = 0
     updated = 0
