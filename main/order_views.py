@@ -9,6 +9,7 @@ import binascii
 from .html_pdf import _create_deed_for_order
 from django.utils import timezone
 from bot.notify import send_telegram_message, rating_markup, barn_approved_markup
+from django.utils import timezone
 
 
 # yangi arizalar
@@ -313,8 +314,10 @@ def order_accepted(request, pk):
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
             order.sender.telegram_chat,
+            f"<b>🔔 Yangi bildirishnoma</b>\n\n"
             f"✅ ATMga yuborgan #{order.id} - arizangiz qabul qilindi.\n"
-            f"Bajaruvchi: <b>{employee.full_name}</b>",
+            f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
+            f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
         )
 
     messages.success(request, "Ariza muvaffaqiyatli qabul qilindi")
@@ -474,9 +477,11 @@ def order_material_post(request):
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
             order.sender.telegram_chat,
+            f"<b>🔔 Yangi bildirishnoma</b>\n\n"
             f"✅ ATMga yuborgan #{order.id} - arizangiz bajarildi.\n"
-            f"Bajaruvchi: <b>{employee.full_name}</b>\n\n"
-            f"Iltimos, xizmatni sifatini baholang:",
+            f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n"
+            f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}\n\n"
+            f"⭐ <b>Iltimos, xizmat sifatini baholang:</b>",
             reply_markup=rating_markup(order.id),
         )
 
@@ -1048,15 +1053,20 @@ def order_accepted_barn(request, pk):
         if action == "process":
             send_telegram_message(
                 order.sender.telegram_chat,
+                f"<b>🔔 Yangi bildirishnoma</b>\n\n"
                 f"✅ Omborxonaga yuborilgan #{order.id} - arizangiz qabul qilindi.\n"
-                f"Bajaruvchi: <b>{employee.full_name}</b>",
+                f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
+                f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
             )
         else:
             send_telegram_message(
                 order.sender.telegram_chat,
+                f"<b>🔔 Yangi bildirishnoma</b>\n\n"
                 f"❌ Omborxonaga yuborilgan #{order.id} - arizangiz rad etildi.\n"
-                f"Ko'rib chiqdi: <b>{employee.full_name}</b>",
+                f"👤 <b>Ko'rib chiqdi:</b> {employee.full_name}\n\n"
+                f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
             )
+
 
     if action == "process":
         messages.success(request, "Ariza qabul qilindi")
@@ -1253,8 +1263,10 @@ def order_material_barn(request):
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
             order.sender.telegram_chat,
+            f"<b>🔔 Yangi bildirishnoma</b>\n\n"
             f"✅ Omborxonaga yuborilgan #{order.id} - arizangiz bajarildi.\n"
-            f"Bajaruvchi: <b>{employee.full_name}</b>",
+            f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
+            f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
         )
 
     messages.success(request, "Ariza tasdiqlandi")
@@ -1510,18 +1522,21 @@ def order_agrement_material(request):
         if action == "approved":
             send_telegram_message(
                 order.sender.telegram_chat,
+                f"<b>🔔 Yangi bildirishnoma</b>\n\n"
                 f"✅ Omborxonaga yuborilgan #{order.id} - arizangiz tasdiqlandi.\n"
-                f"Bajaruvchi: <b>{employee.full_name}</b>\n"
-                f"Tasdiqlovchi: <b>{employee.full_name}</b>\n\n"
-
-                f"<b>{order.message_receiver}</b>",
+                f"⚠️ <b>{order.message_receiver}</b>\n"
+                f"👤 <b>Bajaruvchi:</b> {order.receiver.full_name}\n"
+                f"✔️ <b>Tasdiqlovchi:</b> {employee.full_name}\n\n"
+                f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
                 reply_markup=barn_approved_markup(order.id),
             )
         else:
             send_telegram_message(
                 order.sender.telegram_chat,
+                f"<b>🔔 Yangi bildirishnoma</b>\n\n"
                 f"❌ Omborxonaga yuborilgan #{order.id} - arizangiz rad etildi.\n"
-                f"Ko'rib chiqdi: <b>{employee.full_name}</b>",
+                f"👤 <b>Ko'rib chiqdi:</b> {employee.full_name}\n\n"
+                f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
             )
 
     if action == "rejected":
