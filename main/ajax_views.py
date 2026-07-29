@@ -82,6 +82,7 @@ def order_mark_seen(request):
     if not employee:
         return JsonResponse({"status": "no_employee"}, status=400)
 
+    # Ijrochi (receiver) — worker (FIX: "viewed" qo'shildi)
     Order.objects.filter(
         receiver=employee,
         goal__organization__type="worker",
@@ -89,6 +90,7 @@ def order_mark_seen(request):
         receiver_seen=False,
     ).update(receiver_seen=True)
 
+    # Ijrochi (receiver) — client (FIX: "viewed" qo'shildi)
     Order.objects.filter(
         receiver=employee,
         goal__organization__type="client",
@@ -96,14 +98,26 @@ def order_mark_seen(request):
         receiver_seen=False,
     ).update(receiver_seen=True)
 
+    # Yuboruvchi (sender) — worker (FIX: "finished" qo'shildi, avval yo'q edi)
     Order.objects.filter(
         sender=employee,
-        status="rejected",
+        goal__organization__type="worker",
+        status__in=["finished", "rejected"],
         sender_seen=False,
     ).update(sender_seen=True)
 
+    # Yuboruvchi (sender) — client (FIX: "approved" qo'shildi, avval yo'q edi)
+    Order.objects.filter(
+        sender=employee,
+        goal__organization__type="client",
+        status__in=["approved", "rejected"],
+        sender_seen=False,
+    ).update(sender_seen=True)
+
+    # Tasdiqlovchi (user)
     Order.objects.filter(
         user=employee,
+        goal__organization__type="client",
         status="accepted",
         user_seen=False,
     ).update(user_seen=True)

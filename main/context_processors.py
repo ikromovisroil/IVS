@@ -55,15 +55,22 @@ def order_notifications(request):
     if not employee:
         return empty
 
-    if not getattr(employee, "rol", None):
-        return empty
-
     conditions = (
-        Q(receiver=employee,goal__organization__type="worker", status__in=["approved", "canceled"], receiver_seen=False) |
-        Q(receiver=employee, goal__organization__type="client", status__in=["accepted", "canceled", "rejected"], receiver_seen=False) |
-        Q(sender=employee, goal__organization__type="worker", status__in=["finished", "rejected"], sender_seen=False) |
-        Q(sender=employee, goal__organization__type="client", status__in=["approved", "rejected"], sender_seen=False) |
-        Q(user=employee, goal__organization__type="client", status="accepted", user_seen=False),
+        # Ijrochi (receiver) — yangi ariza kelganda ham ko'rsin (FIX: "viewed" qo'shildi)
+        Q(receiver=employee, goal__organization__type="worker",
+          status__in=["viewed", "approved", "canceled"], receiver_seen=False) |
+        Q(receiver=employee, goal__organization__type="client",
+          status__in=["viewed", "accepted", "canceled", "rejected"], receiver_seen=False) |
+
+        # Yuboruvchi (sender)
+        Q(sender=employee, goal__organization__type="worker",
+          status__in=["finished", "rejected"], sender_seen=False) |
+        Q(sender=employee, goal__organization__type="client",
+          status__in=["approved", "rejected"], sender_seen=False) |
+
+        # Tasdiqlovchi (user)
+        Q(user=employee, goal__organization__type="client",
+          status="accepted", user_seen=False)
     )
 
     all_notes = Order.objects.filter(conditions).distinct().order_by("-date_edit")

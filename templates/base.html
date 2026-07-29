@@ -79,30 +79,38 @@
               {# ================= LINK LOGIC ================= #}
               {% with link="#" %}
                 {% if o.sender.user_id == request.user.id %}
-                  {% if o.goal.organization.type == "worker" %}
-                      {% if o.status == "finished" %}
-                          {% url 'order_sender' as link %}
-                      {% elif o.status == "approved" or o.status == "rejected" %}
-                          {% url 'order_sender_arxiv' as link %}
-                      {% endif %}
-                  {% elif o.goal.organization.type == "client" %}
-                      {% if o.status == "finished" or o.status == "approved" %}
-                          {% url 'order_sender_barn' as link %}
-                      {% elif o.status == "rejected" %}
-                          {% url 'order_sender_arxiv_barn' as link %}
-                      {% endif %}
-                  {% endif %}
+                    {% if o.goal.organization.type == "worker" %}
+                        {% if o.status == "finished" %}
+                            {% url 'order_sender' as link %}
+                        {% elif o.status == "approved" or o.status == "rejected" %}
+                            {% url 'order_sender_arxiv' as link %}
+                        {% endif %}
+                    {% elif o.goal.organization.type == "client" %}
+                        {% if o.status == "finished" or o.status == "approved" %}
+                            {% url 'order_sender_barn' as link %}
+                        {% elif o.status == "rejected" %}
+                            {% url 'order_sender_arxiv_barn' as link %}
+                        {% endif %}
+                    {% endif %}
 
-              {% elif o.receiver.user_id == request.user.id %}
-                  {% if o.goal.organization.type == "worker" %}
-                      {% url 'order_receiver_arxiv' as link %}
-                  {% elif o.goal.organization.type == "client" %}
-                      {% url 'order_receiver_arxiv_barn' as link %}
-                  {% endif %}
+                {% elif o.receiver.user_id == request.user.id %}
+                    {% if o.goal.organization.type == "worker" %}
+                        {% if o.status == "viewed" or o.status == "process" %}
+                            {% url 'order_receiver' as link %}
+                        {% else %}
+                            {% url 'order_receiver_arxiv' as link %}
+                        {% endif %}
+                    {% elif o.goal.organization.type == "client" %}
+                        {% if o.status == "viewed" or o.status == "process" %}
+                            {% url 'order_receiver_barn' as link %}
+                        {% else %}
+                            {% url 'order_receiver_arxiv_barn' as link %}
+                        {% endif %}
+                    {% endif %}
 
-              {% elif o.user.user_id == request.user.id %}
-                  {% url 'order_agrement_arxiv' as link %}
-              {% endif %}
+                {% elif o.user.user_id == request.user.id %}
+                    {% url 'order_agrement_arxiv' as link %}
+                {% endif %}
 
               <a href="{{ link }}" class="d-flex align-items-start text-decoration-none">
 

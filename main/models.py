@@ -1,6 +1,4 @@
 from django.contrib.auth.models import User
-from traits.trait_types import false
-
 from .validators import *
 from django.utils import timezone
 import random

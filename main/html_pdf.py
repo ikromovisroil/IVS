@@ -157,6 +157,7 @@ def _create_deed_for_order(order, request=None):
     })
 
     deed = Deed(
+        organization=order.sender.organization,
         sender=order.sender,
         status_sender="approved",
         date_sender=order.date_accepted,

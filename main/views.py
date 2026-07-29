@@ -1758,7 +1758,6 @@ def material_create(request):
             user=employee,
             employee=employee,
             status='created',
-            balance=material.number,
             body=(
                 f"Tashkilot: {material.organization}\n"
                 f"Birligi: {material.unit.name if material.unit else '—'}\n"
@@ -1898,7 +1897,6 @@ def material_update(request, pk):
             status='edited',
             income=income,
             outcome=outcome,
-            balance=old_number if diff != 0 else None,
             body="\n".join(changes)
         )
 
@@ -2005,7 +2003,6 @@ def material_attach(request):
         status   = 'assigned',
         income   = None,
         outcome  = give_number_int,
-        balance  = src_qty,
         body=(
             f"Berildi: {employee}\n"
             f"Qabul qildi: {emp}\n"
@@ -2023,7 +2020,6 @@ def material_attach(request):
         status   = 'assigned',
         income   = give_number_int,
         outcome  = None,
-        balance  = dst_qty_before,
         body=(
             f"Qabul qildi: {emp}\n"
             f"Berdi: {employee}\n"
@@ -3332,10 +3328,10 @@ def material_import(request):
         messages.info(request, f"Faylni o'qishda xatolik: {e}")
         return redirect(back_url)
 
-    # Material.objects.filter(
-    #     employee=target_employee,
-    #     is_active=True,
-    # ).update(number=0)
+    Material.objects.filter(
+        employee=target_employee,
+        is_active=True,
+    ).update(number=0)
 
     created = 0
     updated = 0

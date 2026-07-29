@@ -190,6 +190,7 @@
                                   <th>Birligi</th>
                                   <th>So'ralgan</th>
                                   <th>Berildi</th>
+                                  <th>Omborda</th>
                                   <th>Narxi</th>
                                   <th class="pe-3">O'chirish</th>
                                 </tr>
@@ -206,6 +207,7 @@
                                         <input type="number" name="given[]" class="form-control form-control-sm"
                                                value="{{ m.given|default:m.number }}" min="1" style="width: 100px;">
                                     </td>
+                                    <td>{{ m.material.number }}</td>
                                     <td>{{ m.material.price|intcomma }}</td>
                                     <td class="pe-3"><button type="button"
                                             class="btn btn-danger btn-sm js-delete-om"
