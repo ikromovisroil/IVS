@@ -160,6 +160,16 @@
                                     {% endif %}
                                 {% endif %}
 
+                                {% if perms.main.change_deed %}
+                                    <span id="userEditIcon-{{ d.id }}">
+                                        {% if d.user_edit %}
+                                            <i class="bi bi-check-lg text-success"></i>
+                                        {% else %}
+                                            <i class="bi bi-x-lg text-danger"></i>
+                                        {% endif %}
+                                    </span>
+                                {% endif %}
+
                                 <div class="modal fade order-modal" id="modalcondition-r{{ d.id }}" tabindex="-1">
                                     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl modal-fullscreen-sm-down">
                                         <div class="modal-content">
@@ -189,7 +199,11 @@
                                                         <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-event"></i> Taxrirlash ruxsati</div>
                                                         <div class="col-12 col-md-7 info-value d-flex align-items-center gap-2">
                                                             <span class="badge {% if d.user_edit %}bg-success{% else %}bg-danger{% endif %}" id="userEditBadge-{{ d.id }}">
-                                                                {% if d.user_edit %}True{% else %}False{% endif %}
+                                                                {% if d.user_edit %}
+                                                                    <i class="bi bi-check-lg"></i>
+                                                                {% else %}
+                                                                    <i class="bi bi-x-lg"></i>
+                                                                {% endif %}
                                                             </span>
                                                             <div class="form-check form-switch mb-0">
                                                                 <input
@@ -417,14 +431,20 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .then(data => {
                 if (data.success) {
+                    const icon = document.getElementById("userEditIcon-" + deedId);
+
                     if (data.user_edit) {
-                        badge.textContent = "True";
+                        badge.innerHTML = '<i class="bi bi-check-lg"></i>';
                         badge.classList.remove("bg-danger");
                         badge.classList.add("bg-success");
+
+                        if (icon) icon.innerHTML = '<i class="bi bi-check-lg text-success"></i>';
                     } else {
-                        badge.textContent = "False";
+                        badge.innerHTML = '<i class="bi bi-x-lg"></i>';
                         badge.classList.remove("bg-success");
                         badge.classList.add("bg-danger");
+
+                        if (icon) icon.innerHTML = '<i class="bi bi-x-lg text-danger"></i>';
                     }
                 } else {
                     alert(data.error || "Xatolik yuz berdi");
