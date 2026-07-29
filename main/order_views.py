@@ -479,7 +479,7 @@ def order_material_post(request):
             order.sender.telegram_chat,
             f"<b>🔔 Yangi bildirishnoma</b>\n\n"
             f"✅ ATMga yuborgan #{order.id} - arizangiz bajarildi.\n"
-            f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n"
+            f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
             f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}\n\n"
             f"⭐ <b>Iltimos, xizmat sifatini baholang:</b>",
             reply_markup=rating_markup(order.id),
