@@ -1,8 +1,8 @@
 from django.contrib import admin
 from .models import *
 from django.utils.html import format_html
-from import_export.admin import ExportActionModelAdmin
-from import_export import resources
+from import_export import resources, fields
+from import_export.admin import ExportMixin
 # =========================
 # Inlines
 # =========================
@@ -104,15 +104,47 @@ class ContractAdmin(admin.ModelAdmin):
 # =========================
 
 class EmployeeResource(resources.ModelResource):
+    last_name = fields.Field(attribute='last_name', column_name='Familya')
+    first_name = fields.Field(attribute='first_name', column_name='Ism')
+    father_name = fields.Field(attribute='father_name', column_name="Sharif")
+
+    organization = fields.Field(column_name="Tashkilot")
+    department = fields.Field(column_name="Bo'lim")
+    directorate = fields.Field(column_name="Boshqarma")
+    division = fields.Field(column_name="Bo'linma")
+    rank = fields.Field(column_name="Unvon")
+    region = fields.Field(column_name="Viloyat")
+
     class Meta:
         model = Employee
         fields = (
-            "id", "last_name", "first_name", "father_name", "organization", "department",
-            "directorate", "division", "rank", "region", "pinfl", "date_creat"
+            "id", "last_name", "first_name", "father_name",
+            "organization", "department", "directorate",
+            "division", "rank", "region", "pinfl", "date_creat"
         )
+        export_order = fields
+
+    def dehydrate_organization(self, obj):
+        return str(obj.organization) if obj.organization else ""
+
+    def dehydrate_department(self, obj):
+        return str(obj.department) if obj.department else ""
+
+    def dehydrate_directorate(self, obj):
+        return str(obj.directorate) if obj.directorate else ""
+
+    def dehydrate_division(self, obj):
+        return str(obj.division) if obj.division else ""
+
+    def dehydrate_rank(self, obj):
+        return str(obj.rank) if obj.rank else ""
+
+    def dehydrate_region(self, obj):
+        return str(obj.region) if obj.region else ""
+
 
 @admin.register(Employee)
-class EmployeeAdmin(ExportActionModelAdmin):
+class EmployeeAdmin(ExportMixin, admin.ModelAdmin):
     resource_class = EmployeeResource
     list_display = (
         "id", "full_name", "user", "organization", "department",
@@ -130,6 +162,11 @@ class EmployeeAdmin(ExportActionModelAdmin):
         "user", "organization", "department", "directorate",
         "division", "rank", "region"
     )
+
+    def get_export_queryset(self, request):
+        # Filtrlangan (joriy sahifadagi) natijani export uchun olish
+        cl = self.get_changelist_instance(request)
+        return cl.get_queryset(request)
 
 
 
