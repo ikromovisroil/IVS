@@ -100,14 +100,14 @@ class ContractAdmin(admin.ModelAdmin):
 
 
 # =========================
-# Employee / Role
+# Employee
 # =========================
 
 class EmployeeResource(resources.ModelResource):
     class Meta:
         model = Employee
         fields = (
-            "id", "full_name", "user", "organization", "department",
+            "id", "last_name", "first_name", "father_name", "organization", "department",
             "directorate", "division", "rank", "region", "pinfl", "date_creat"
         )
 
