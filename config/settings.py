@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "api.apps.ApiConfig",
     "bot.apps.BotConfig",
+    'import_export',
 ]
 
 
