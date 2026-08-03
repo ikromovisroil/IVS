@@ -193,7 +193,7 @@
                         <th scope="row"
                             rowspan="{{ items|length }}"
                             class="align-middle text-center">
-                            {{ row_start|add:forloop.counter }}
+                            {{ row_start|add:forloop.parentloop.counter0 }}
                         </th>
                         {% endif %}
 
@@ -321,7 +321,7 @@
                   {% for emp in employees_without_technics %}
                   <tr class="table-warning">
                     <th scope="row" class="align-middle text-center">
-                      {{ page_obj.end_index|add:forloop.counter0 }}
+                      {{ row_start|add:grouped_count|add:forloop.counter0 }}
                     </th>
                     <td class="align-middle">
                       {{ emp.full_name|default:"—" }}

@@ -846,6 +846,8 @@ def barn_tex(request: HttpRequest):
             "grouped_technics": [],
             "employees_without_technics": [],
             "total_count": 0,
+            "row_start": 0,
+            "grouped_count": 0,
         })
 
     # ------------------------------------------------------------------ #
@@ -999,6 +1001,7 @@ def barn_tex(request: HttpRequest):
         "extratex": extratex,
         "total_count": total_count,
         "row_start": page_obj.start_index() if paginator.count else 0,
+        "grouped_count": len(grouped_technics),
     })
 
 
