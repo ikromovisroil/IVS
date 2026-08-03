@@ -998,6 +998,7 @@ def barn_tex(request: HttpRequest):
         "employees_without_technics": employees_without_technics,
         "extratex": extratex,
         "total_count": total_count,
+        "row_start": page_obj.start_index() if paginator.count else 0,
     })
 
 
