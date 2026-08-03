@@ -25,34 +25,28 @@ def export_technics_xlsx(request):
     qs = (
         Technics.objects
         .filter(is_active=True)
-        .select_related("organization", "category")
+        .select_related("organization", "category", "group", "employee",
+                         "employee__department", "employee__directorate", "employee__division")
+        .prefetch_related("structure_set")
         .order_by("-id")
     )
 
     if org_id.isdigit():
         qs = qs.filter(organization_id=int(org_id))
-
     if dep_id.isdigit():
         qs = qs.filter(department_id=int(dep_id))
-
     if reg_id.isdigit():
         qs = qs.filter(region_id=int(reg_id))
-
     if dir_id.isdigit():
         qs = qs.filter(directorate_id=int(dir_id))
-
     if div_id.isdigit():
         qs = qs.filter(division_id=int(div_id))
-
     if group_id.isdigit():
         qs = qs.filter(group_id=int(group_id))
-
     if category_id.isdigit():
         qs = qs.filter(category_id=int(category_id))
-
     if status:
         qs = qs.filter(status=status)
-
     if name:
         qs = qs.filter(name__icontains=name)
 
@@ -60,14 +54,24 @@ def export_technics_xlsx(request):
     ws = wb.active
     ws.title = "Technics"
 
-    headers = ["F.I.O", "Group", "Category", "Name", "Parametr", "I/N", "S/N", "Mac", "Status", "Manitor Name", "Manitor S/N"]
+    headers = [
+        "Tashkilot", "Departament", "Boshqarma", "Bo'lim", "F.I.O",
+        "Group", "Category", "Name", "Parametr", "I/N", "S/N", "Mac",
+        "Status", "Manitor Name", "Manitor S/N",
+    ]
     ws.append(headers)
 
     for t in qs:
+        emp = getattr(t, "employee", None)
         structures = list(t.structure_set.all())
         monitor = structures[0] if structures else None
+
         ws.append([
-            (t.employee.full_name if getattr(t, "employee", None) else ""),
+            (emp.organization.name if emp and emp.organization_id else ""),
+            (emp.department.name if emp and emp.department_id else ""),
+            (emp.directorate.name if emp and emp.directorate_id else ""),
+            (emp.division.name if emp and emp.division_id else ""),
+            (emp.full_name if emp else ""),
             (t.group.name if getattr(t, "group", None) else ""),
             (t.category.name if getattr(t, "category", None) else ""),
             (getattr(t, "name", "") or ""),
