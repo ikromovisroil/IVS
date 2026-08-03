@@ -124,11 +124,10 @@
                                 <div class="row info-row gx-3">
                                     <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
                                     <div class="col-12 col-md-7 info-value">
-                                        {{ o.sender.organization }}<br>
-                                        {% if o.sender.division %}<span class="text-muted">{{ o.sender.division }}</span>
-                                        {% elif o.sender.directorate %}<span class="text-muted">{{ o.sender.directorate }}</span>
-                                        {% elif o.sender.department %}<span class="text-muted">{{ o.sender.department }}</span>
-                                        {% endif %}
+                                        {% if o.sender.organization %}<span class="text-muted">{{ o.sender.organization }}</span><br>{% endif %}
+                                        {% if o.sender.department %}<span class="text-muted">{{ o.sender.department }}</span><br>{% endif %}
+                                        {% if o.sender.directorate %}<span class="text-muted">{{ o.sender.directorate }}</span><br>{% endif %}
+                                        {% if o.sender.division %}<span class="text-muted">{{ o.sender.division }}</span>{% endif %}
                                     </div>
                                 </div>
                                 <div class="row info-row gx-3">
@@ -159,11 +158,10 @@
                                 <div class="row info-row gx-3">
                                     <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
                                     <div class="col-12 col-md-7 info-value">
-                                        {{ o.receiver.organization }}<br>
-                                        {% if o.receiver.division %}<span class="text-muted">{{ o.receiver.division }}</span>
-                                        {% elif o.receiver.directorate %}<span class="text-muted">{{ o.receiver.directorate }}</span>
-                                        {% elif o.receiver.department %}<span class="text-muted">{{ o.receiver.department }}</span>
-                                        {% endif %}
+                                        {% if o.receiver.organization %}<span class="text-muted">{{ o.receiver.organization }}</span><br>{% endif %}
+                                        {% if o.receiver.department %}<span class="text-muted">{{ o.receiver.department }}</span><br>{% endif %}
+                                        {% if o.receiver.directorate %}<span class="text-muted">{{ o.receiver.directorate }}</span><br>{% endif %}
+                                        {% if o.receiver.division %}<span class="text-muted">{{ o.receiver.division }}</span>{% endif %}
                                     </div>
                                 </div>
                                 <div class="row info-row gx-3">
