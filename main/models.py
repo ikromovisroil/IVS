@@ -406,7 +406,7 @@ class Material(models.Model):
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
     name = models.CharField(max_length=300)
     number = models.PositiveIntegerField(default=1)
-    code = models.CharField(max_length=10, null=True, blank=True)
+    code = models.CharField(max_length=15, null=True, blank=True)
     price = models.DecimalField(max_digits=12,decimal_places=2,null=True, blank=True)
     year = models.CharField(max_length=50, null=True, blank=True)
     is_active = models.BooleanField(default=True)
