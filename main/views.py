@@ -1699,7 +1699,6 @@ def barn_mat(request):
         Material.objects.filter(
             is_active=True,
             organization=employee.organization,
-            number__gt=0,
         )
         .select_related("employee", "category", "unit")
         .annotate(
