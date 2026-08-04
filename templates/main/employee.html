@@ -380,6 +380,7 @@
 
     <!-- ✅ RUXSAT/ROL TAHRIRLASH MODALLARI -->
     {% for emp in page_obj %}
+
     {% if perms.main.permission_employee %}
     <div class="modal fade order-modal" id="empmadal-{{ emp.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
@@ -633,11 +634,9 @@
       </div>
     </div>
     {% endif %}
-    {% endfor %}
 
     <!-- ✅ TAHRIRLASH (asosiy ma'lumotlar) MODALLARI -->
     {% if perms.main.change_employee %}
-    {% for emp in page_obj %}
     <div class="modal fade" id="emptax-{{ emp.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
         <form class="modal-content" method="post" action="{% url 'employee_update' %}">
@@ -725,12 +724,10 @@
         </form>
       </div>
     </div>
-    {% endfor %}
     {% endif %}
 
     <!-- ✅ O'CHIRISH MODALLARI -->
     {% if perms.main.delete_employee %}
-    {% for emp in page_obj %}
     <div class="modal fade" id="empdel-{{ emp.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered">
         <form class="modal-content" method="post" action="{% url 'employee_delete' %}">
@@ -751,8 +748,9 @@
         </form>
       </div>
     </div>
-    {% endfor %}
     {% endif %}
+
+    {% endfor %}
 
 </main>
 

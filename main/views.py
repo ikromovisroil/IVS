@@ -3643,7 +3643,7 @@ def employee(request):
     if not request.user.has_perm("main.all_region"):
         regions = regions.filter(id=employee.region_id)
 
-    ranks = Rank.objects.only("id", "name").order_by("name")
+    ranks = Rank.objects.only("id", "name").order_by("name").distinct("name")
 
     querydict = request.GET.copy()
     querydict.pop("page", None)
