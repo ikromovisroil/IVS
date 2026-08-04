@@ -2064,10 +2064,6 @@ def material_delete(request):
         messages.info(request, "Material topilmadi")
         return redirect(back_url)
 
-    if mat.employee_id is not None and mat.employee_id != employee.id:
-        messages.info(request, "Sizga ruxsat yo'q")
-        return redirect(back_url)
-
     if mat.organization_id != employee.organization_id:
         messages.info(request, "Sizga ruxsat yo'q")
         return redirect(back_url)
