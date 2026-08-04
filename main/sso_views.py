@@ -179,6 +179,8 @@ def create_employee_from_gateway(pinfl, assigned_data, result):
 @never_cache
 @require_POST
 def sso_exchange(request):
+    from .gateway import GatewayClient, GatewayError
+
     try:
         flow    = request.session.get("SSO_FLOW") or {}
         purpose = (flow.get("purpose") or "").strip()
@@ -207,10 +209,6 @@ def sso_exchange(request):
                 status=400
             )
 
-        # FIX: redirect_uri foydalanuvchidan kelayotgani uchun,
-        # serverning o'zi kutayotgan qiymat bilan solishtiramiz
-        # (aks holda tashqi tomon token almashinuvini boshqa manzilga
-        # yo'naltirishga urinishi mumkin edi)
         expected_redirect_uri = get_sso_redirect_uri(request)
         if redirect_uri != expected_redirect_uri:
             return JsonResponse(
@@ -233,41 +231,60 @@ def sso_exchange(request):
         ).filter(pinfl=sso_pinfl).first()
 
         if not employee or not employee.user:
+
             try:
-                from .gateway import GatewayClient
-
                 gateway_data = GatewayClient.current_citizen(sso_pinfl)
-                result       = gateway_data.get("result") or {}
-                positions    = result.get("positions") or []
+            except GatewayError:
+                logger.exception(
+                    "Gateway bilan aloqa xatosi (pinfl=%s)", sso_pinfl
+                )
+                return JsonResponse(
+                    {
+                        "status": "error",
+                        "message": "Tashqi tizim bilan aloqada vaqtinchalik xatolik. "
+                                    "Birozdan keyin qayta urinib ko'ring.",
+                        "redirect": "/sso/login/",
+                    },
+                    status=503,
+                )
 
-                if not positions:
-                    return JsonResponse(
-                        {"status": "forbidden", "message": "Gatewayda ish joyi topilmadi", "redirect": "/sso/login/"},
-                        status=403
-                    )
+            result    = gateway_data.get("result") or {}
+            positions = result.get("positions") or []
 
-                assigned_data = _resolve_position(sso_pinfl, positions)
+            if not positions:
+                return JsonResponse(
+                    {"status": "forbidden", "message": "Gatewayda ish joyi topilmadi", "redirect": "/sso/login/"},
+                    status=403
+                )
 
-                if not assigned_data:
-                    logger.warning(
-                        "PINFL %s uchun hech qaysi pozitsiyada tashkilot topilmadi. positions=%s",
-                        sso_pinfl, positions
-                    )
-                    return JsonResponse(
-                        {"status": "forbidden", "message": "Tizimda tashkilot topilmadi", "redirect": "/sso/login/"},
-                        status=403
-                    )
+            assigned_data = _resolve_position(sso_pinfl, positions)
 
-                # FIX: takrorlangan employee-yaratish kodi endi umumiy
-                # funksiyaga chiqarilgan (create_employee_from_gateway)
+            if not assigned_data:
+                logger.warning(
+                    "PINFL %s uchun hech qaysi pozitsiyada tashkilot topilmadi. positions=%s",
+                    sso_pinfl, positions
+                )
+                return JsonResponse(
+                    {"status": "forbidden", "message": "Tizimda tashkilot topilmadi", "redirect": "/sso/login/"},
+                    status=403
+                )
+
+            try:
+
                 with transaction.atomic():
                     employee = create_employee_from_gateway(sso_pinfl, assigned_data, result)
+            except Exception:
 
-            except Exception as gateway_error:
-                logger.exception("Gateway yoki user yaratishda xatolik")
+                logger.exception(
+                    "Xodim yaratishda xatolik (pinfl=%s)", sso_pinfl
+                )
                 return JsonResponse(
-                    {"status": "forbidden", "message": str(gateway_error), "redirect": "/sso/login/"},
-                    status=403
+                    {
+                        "status": "error",
+                        "message": "Foydalanuvchi yaratishda xatolik yuz berdi",
+                        "redirect": "/sso/login/",
+                    },
+                    status=500,
                 )
 
         if not employee or not employee.user:
@@ -289,6 +306,18 @@ def sso_exchange(request):
 
     except PermissionDenied as e:
         return JsonResponse({"status": "error", "message": str(e), "redirect": "/sso/login/"}, status=403)
+    except GatewayError:
+
+        logger.exception("SSO Gateway xatosi")
+        return JsonResponse(
+            {
+                "status": "error",
+                "message": "Tashqi tizim bilan aloqada vaqtinchalik xatolik. "
+                            "Birozdan keyin qayta urinib ko'ring.",
+                "redirect": "/sso/login/",
+            },
+            status=503,
+        )
     except Exception as e:
         logger.exception("SSO ERROR")
         return JsonResponse({"status": "error", "message": f"SSO xatolik: {e}", "redirect": "/sso/login/"}, status=500)
