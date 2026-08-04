@@ -3454,6 +3454,7 @@ PERM_CODENAMES = {
     "boss_employee": "main.boss_employee",
     "shop_employee": "main.shop_employee",
     "status_employee": "main.status_employee",
+    "permission_employee": "main.permission_employee",   # YANGI
     # Xodimlar
     "add_employee": "main.add_employee",
     "view_employee": "main.view_employee",
@@ -3464,6 +3465,7 @@ PERM_CODENAMES = {
 DEPENDENT_PERMS = {
     "view_technics": ["add_technics", "change_technics", "delete_technics"],
     "view_material": ["add_material", "change_material", "delete_material"],
+    "view_employee": ["add_employee", "change_employee", "delete_employee"],   # YANGI
 }
 
 
@@ -3502,11 +3504,14 @@ def _visible_perm_fields(target_employee, current_employee):
         visible.discard("all_organization")
         visible.discard("all_region")
 
-    # "Maxsus rollar" - JORIY FOYDALANUVCHI tashkiloti worker bo'lsa
+    # "Maxsus rollar" (boss/shop/status/permission_employee) - JORIY
+    # FOYDALANUVCHI tashkiloti worker bo'lsa ko'rinadi (shablon:
+    # request.user.employee.organization.type == "worker")
     if current_org_type != "worker":
         visible.discard("boss_employee")
         visible.discard("shop_employee")
         visible.discard("status_employee")
+        visible.discard("permission_employee")   # YANGI
 
     return visible
 
@@ -3643,7 +3648,7 @@ def employee(request):
     if not request.user.has_perm("main.all_region"):
         regions = regions.filter(id=employee.region_id)
 
-    ranks = Rank.objects.only("id", "name").order_by("name").distinct("name")
+    ranks = Rank.objects.only("id", "name").order_by("name")
 
     querydict = request.GET.copy()
     querydict.pop("page", None)

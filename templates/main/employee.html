@@ -539,6 +539,42 @@
                 </div>
               </div>
 
+              <!-- ================= XODIMLAR ================= -->
+              <div class="section-title">Xodimlar</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Xodimlarni ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-perm-employee" type="checkbox" name="view_employee"
+                           {% if emp.has_view_employee %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Xodimlarni qo'shish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-employee-sub" type="checkbox" name="add_employee"
+                           {% if emp.has_add_employee %}checked{% endif %}
+                           {% if not emp.has_view_employee %}disabled{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Xodimlarni tahrirlash</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-employee-sub" type="checkbox" name="change_employee"
+                           {% if emp.has_change_employee %}checked{% endif %}
+                           {% if not emp.has_view_employee %}disabled{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Xodimlarni o'chirish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-employee-sub" type="checkbox" name="delete_employee"
+                           {% if emp.has_delete_employee %}checked{% endif %}
+                           {% if not emp.has_view_employee %}disabled{% endif %}>
+                  </div>
+                </div>
+              </div>
+
               <!-- ================= MAXSUS ================= -->
               {% if request.user.employee.organization.type == "worker" %}
               <div class="section-title">Maxsus rollar</div>
@@ -562,6 +598,13 @@
                   <div class="col-12 col-md-3 info-value">
                     <input class="form-check-input" type="checkbox" name="status_employee"
                            {% if emp.has_status_employee %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Xodimlarga rol berish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input" type="checkbox" name="permission_employee"
+                           {% if emp.has_permission_employee %}checked{% endif %}>
                   </div>
                 </div>
               </div>
@@ -789,6 +832,9 @@
     const $materialCheckbox = $modal.find('.js-perm-material');
     const $materialSubCheckboxes = $modal.find('.js-material-sub');
 
+    const $employeeCheckbox = $modal.find('.js-perm-employee');
+    const $employeeSubCheckboxes = $modal.find('.js-employee-sub');
+
     if (!$orderCheckbox.length || !$technicsCheckbox.length) return;
 
     toggleMultiSelect($orderCheckbox[0], $goalSelect);
@@ -799,6 +845,13 @@
       toggleSubCheckboxes($materialCheckbox[0], $materialSubCheckboxes);
       $materialCheckbox.off('change.permToggle').on('change.permToggle', function () {
         toggleSubCheckboxes(this, $materialSubCheckboxes);
+      });
+    }
+
+    if ($employeeCheckbox.length) {
+      toggleSubCheckboxes($employeeCheckbox[0], $employeeSubCheckboxes);
+      $employeeCheckbox.off('change.permToggle').on('change.permToggle', function () {
+        toggleSubCheckboxes(this, $employeeSubCheckboxes);
       });
     }
 
