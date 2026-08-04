@@ -179,6 +179,9 @@ urlpatterns = [
     path("material/import/post/", material_import, name="material_import"),
 
     path("employee/", employee, name="employee"),
+    path("employee/create/", employee_create, name="employee_create"),
     path("employee/update/", employee_update, name="employee_update"),
+    path("employee/delete/", employee_delete, name="employee_delete"),
+    path("employee/permission/", employee_permission, name="employee_permission"),
 ]
 

@@ -199,6 +199,7 @@ class Employee(models.Model):
             ("boss_employee", "Departamentiga tegishli texnikalarni ko'rish"),
             ("shop_employee", "Materialga javobgar shaxs"),
             ("status_employee", "Statistikani ko'rish"),
+            ("permission_employee", "Xodimlarga ruxsatlarni berish"),
         ]
 
 

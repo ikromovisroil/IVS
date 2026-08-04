@@ -593,7 +593,7 @@
           </a>
         </li>
 
-        {% if perms.main.change_employee %}
+        {% if perms.main.view_employee %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'employee' %}collapsed{% endif %}"
              href="{% url 'employee' %}">

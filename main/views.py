@@ -1,23 +1,26 @@
 from main.ajax_views import *
-from django.db.models import Prefetch, Model
-from django.contrib.auth.decorators import login_required, permission_required
+from django.db.models import Prefetch
 from main.forms import *
-from django.core.paginator import Paginator
 from decimal import Decimal, InvalidOperation
 from main.sso_views import *
-from django.db.models import Count, F, ExpressionWrapper
-from functools import wraps
-from django.shortcuts import render
+from django.db.models import Count, ExpressionWrapper
 from django.views.decorators.http import require_http_methods
-from django.contrib import messages
-from django.shortcuts import redirect
-from functools import wraps
-from django.contrib.auth.decorators import login_required
 from itertools import groupby
 from django.http import FileResponse, Http404
 from django.utils.dateparse import parse_date
 import base64
 import binascii
+import re
+import unicodedata
+from django.contrib.auth.decorators import login_required, permission_required
+from django.contrib.auth.models import Permission
+from django.core.exceptions import PermissionDenied
+from django.contrib import messages
+from django.db.models import Q, Exists, OuterRef
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_POST
+from .models import *
 
 @never_cache
 def error_403(request, exception=None):
@@ -2328,7 +2331,6 @@ def mat_arxiv_post(request):
     cart_qs = (
         MaterialMovement.objects
         .filter(user=employee, employee__isnull=True)
-        .select_related("material")
         .select_for_update()
     )
 
@@ -3427,35 +3429,41 @@ def material_import(request):
     return redirect(back_url)
 
 
-from django.contrib.auth.models import Permission
-from django.db.models import Exists, OuterRef
+# =========================================================================
+# RUXSATLAR (PERMISSIONS)
+# =========================================================================
+
 PERM_CODENAMES = {
     # Ariza
-    "add_order":          "main.add_order",
-    "change_order":       "main.change_order",
-    "confirm_order":      "main.confirm_order",
+    "add_order": "main.add_order",
+    "change_order": "main.change_order",
+    "confirm_order": "main.confirm_order",
     # Hujjat (Dalolatnoma)
-    "add_deed":           "main.add_deed",
-    "change_deed":        "main.change_deed",
+    "add_deed": "main.add_deed",
+    "change_deed": "main.change_deed",
     # Ko'rish doirasi
-    "all_organization":   "main.all_organization",
-    "all_region":         "main.all_region",
+    "all_organization": "main.all_organization",
+    "all_region": "main.all_region",
     # Texnika
-    "view_technics":      "main.view_technics",
-    "add_technics":       "main.add_technics",
-    "change_technics":    "main.change_technics",
-    "delete_technics":    "main.delete_technics",
+    "view_technics": "main.view_technics",
+    "add_technics": "main.add_technics",
+    "change_technics": "main.change_technics",
+    "delete_technics": "main.delete_technics",
     # Material
-    "view_material":      "main.view_material",
-    "add_material":       "main.add_material",
-    "change_material":    "main.change_material",
-    "delete_material":    "main.delete_material",
+    "view_material": "main.view_material",
+    "add_material": "main.add_material",
+    "change_material": "main.change_material",
+    "delete_material": "main.delete_material",
     # Maxsus
-    "boss_employee":      "main.boss_employee",
-    "shop_employee":      "main.shop_employee",
-    "status_employee":    "main.status_employee",
+    "boss_employee": "main.boss_employee",
+    "shop_employee": "main.shop_employee",
+    "status_employee": "main.status_employee",
+    # Xodimlar
+    "add_employee": "main.add_employee",
+    "view_employee": "main.view_employee",
+    "change_employee": "main.change_employee",
+    "delete_employee": "main.delete_employee",
 }
-
 
 DEPENDENT_PERMS = {
     "view_technics": ["add_technics", "change_technics", "delete_technics"],
@@ -3464,6 +3472,11 @@ DEPENDENT_PERMS = {
 
 
 def _visible_perm_fields(target_employee, current_employee):
+    """
+    employee.html shablonidagi {% if %} shartlarini SERVERDA aynan
+    takrorlaydi. Shablon shartini o'zgartirsangiz, shu yerni ham albatta
+    moslashtiring - aks holda ular bir-biriga mos kelmay qoladi.
+    """
     target_org_type = (
         target_employee.organization.type
         if target_employee.organization_id else None
@@ -3475,13 +3488,25 @@ def _visible_perm_fields(target_employee, current_employee):
 
     visible = set(PERM_CODENAMES.keys())
 
+    # "Ariza yaratish" - faqat target worker bo'lsa ko'rinadi
     if target_org_type != "worker":
         visible.discard("add_order")
 
+    # "Arizani tasdiqlash" - faqat target worker BO'LMASA ko'rinadi
+    if target_org_type == "worker":
+        visible.discard("confirm_order")
+
+    # "Hujjatlar" bo'limi - faqat target worker bo'lsa
+    if target_org_type != "worker":
+        visible.discard("add_deed")
+        visible.discard("change_deed")
+
+    # "Ko'rish doirasi" - faqat target worker bo'lsa
     if target_org_type != "worker":
         visible.discard("all_organization")
         visible.discard("all_region")
 
+    # "Maxsus rollar" - JORIY FOYDALANUVCHI tashkiloti worker bo'lsa
     if current_org_type != "worker":
         visible.discard("boss_employee")
         visible.discard("shop_employee")
@@ -3501,14 +3526,47 @@ def _annotate_permission_flags(employee_qs):
         employee_qs = employee_qs.annotate(**{
             f"has_{field_name}": Exists(perm_direct),
         })
-
     return employee_qs
 
+
+def _generate_username(pinfl, first_name, last_name):
+    """
+    Username "ism.familiya" formatida yaratiladi (lotin, kichik harf,
+    bo'sh joysiz). Band bo'lsa PINFL'ning oxirgi raqamlari qo'shiladi.
+    """
+
+    def _clean(value):
+        value = (value or "").strip().lower()
+        value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
+        value = re.sub(r"[^a-z0-9]", "", value)
+        return value
+
+    first = _clean(first_name)
+    last = _clean(last_name)
+    base = f"{first}.{last}".strip(".") or "employee"
+
+    username = base
+    if User.objects.filter(username=username).exists():
+        tail = (pinfl or "")[-4:] or "1"
+        username = f"{base}{tail}"
+
+    suffix_len = 4
+    while User.objects.filter(username=username).exists():
+        suffix_len += 1
+        tail = (pinfl or "")[-suffix_len:] or str(suffix_len)
+        username = f"{base}{tail}"
+
+    return username
+
+
+# =========================================================================
+# RO'YXAT SAHIFASI
+# =========================================================================
 
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.change_employee", raise_exception=True)
+@permission_required("main.view_employee", raise_exception=True)
 def employee(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -3589,6 +3647,8 @@ def employee(request):
     if not request.user.has_perm("main.all_region"):
         regions = regions.filter(id=employee.region_id)
 
+    ranks = Rank.objects.only("id", "name").order_by("name")
+
     querydict = request.GET.copy()
     querydict.pop("page", None)
     qs_params = querydict.urlencode()
@@ -3602,6 +3662,7 @@ def employee(request):
         "matcategory": MaterialCategory.objects.all(),
         "organizations": organizations,
         "regions": regions,
+        "ranks": ranks,
         "qs_params": qs_params,
         "selected_dep": department_id or "",
         "selected_dir": directorate_id or "",
@@ -3610,19 +3671,26 @@ def employee(request):
     return render(request, "main/employee.html", context)
 
 
+# =========================================================================
+# RUXSATLARNI SAQLASH
+# =========================================================================
+
 @never_cache
 @require_POST
 @login_required
 @permission_required("main.change_employee", raise_exception=True)
-def employee_update(request):
+def employee_permission(request):
     current_employee = getattr(request.user, "employee", None)
     if not current_employee:
         raise PermissionDenied("Employee yo'q")
 
+    if not request.user.has_perm("main.permission_employee"):
+        raise PermissionDenied("Ruxsatlarni boshqarish huquqi yo'q")
+
     back_url = request.META.get("HTTP_REFERER", "/")
     employee_id = request.POST.get("employee_id")
     if not employee_id:
-        messages.error(request, "Xodim aniqlanmadi")
+        messages.info(request, "Xodim aniqlanmadi")
         return redirect("employee")
 
     target_employee = get_object_or_404(
@@ -3634,7 +3702,7 @@ def employee_update(request):
             raise PermissionDenied("Boshqa tashkilot xodimini o'zgartira olmaysiz")
 
     if not target_employee.user_id:
-        messages.error(request, "Bu xodimga User biriktirilmagan")
+        messages.info(request, "Bu xodimga User biriktirilmagan")
         return redirect(back_url)
 
     visible_fields = _visible_perm_fields(target_employee, current_employee)
@@ -3686,7 +3754,6 @@ def employee_update(request):
                     id__in=category_ids
                 ).select_related("contract")
             }
-
             Liable.objects.bulk_create([
                 Liable(
                     employee=target_employee,
@@ -3707,5 +3774,174 @@ def employee_update(request):
                     for mcid in matcategory_ids
                 ])
 
-    messages.success(request, "Xodim muvaffaqiyatli yangilandi")
+    messages.success(request, "Xodim ruxsatlari muvaffaqiyatli yangilandi")
+    return redirect(back_url)
+
+
+# =========================================================================
+# YARATISH
+# =========================================================================
+from django.utils.crypto import get_random_string
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.add_employee", raise_exception=True)
+def employee_create(request):
+    current_employee = getattr(request.user, "employee", None)
+    if not current_employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    pinfl = (request.POST.get("pinfl") or "").strip()
+    first_name = (request.POST.get("first_name") or "").strip()
+    last_name = (request.POST.get("last_name") or "").strip()
+    father_name = (request.POST.get("father_name") or "").strip()
+    organization_id = (request.POST.get("organization") or "").strip()
+    department_id = (request.POST.get("department_id") or "").strip()
+    directorate_id = (request.POST.get("directorate_id") or "").strip()
+    division_id = (request.POST.get("division_id") or "").strip()
+    rank_id = (request.POST.get("rank_id") or "").strip()
+    phone = (request.POST.get("phone") or "").strip()
+
+    if not pinfl or not first_name or not last_name or not organization_id:
+        messages.info(request, "Majburiy maydonlar to'ldirilmagan (PINFL, Ism, Familiya, Tashkilot)")
+        return redirect(back_url)
+
+    if len(pinfl) != 14 or not pinfl.isdigit():
+        messages.info(request, "PINFL 14 ta raqamdan iborat bo'lishi kerak")
+        return redirect(back_url)
+
+    if Employee.objects.filter(pinfl=pinfl).exists():
+        messages.info(request, "Bu PINFL bilan xodim allaqachon mavjud")
+        return redirect(back_url)
+
+    organization = get_object_or_404(Organization, pk=organization_id)
+
+    if not request.user.has_perm("main.all_organization"):
+        if organization.id != current_employee.organization_id:
+            raise PermissionDenied("Boshqa tashkilotga xodim qo'sha olmaysiz")
+
+    with transaction.atomic():
+        username = _generate_username(pinfl, first_name, last_name)
+        random_password = get_random_string(
+            length=12,
+            allowed_chars="abcdefghjkmnpqrstuvwxyzABCDEFGHJKMNPQRSTUVWXYZ23456789"
+        )
+        user = User.objects.create_user(
+            username=username,
+            password=random_password,
+        )
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+        emp, _ = Employee.objects.get_or_create(user=user)
+        emp.pinfl = pinfl
+        emp.first_name = first_name
+        emp.last_name = last_name
+        emp.father_name = father_name or None
+        emp.organization = organization
+        emp.department_id = department_id or None
+        emp.directorate_id = directorate_id or None
+        emp.division_id = division_id or None
+        emp.rank_id = rank_id or None
+        emp.phone = phone or None
+        emp.save()
+
+    messages.success(request, f"Xodim muvaffaqiyatli qo'shildi (login: {username})")
+    return redirect(back_url)
+
+
+# =========================================================================
+# TAHRIRLASH (asosiy ma'lumotlar)
+# =========================================================================
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.change_employee", raise_exception=True)
+def employee_update(request):
+    current_employee = getattr(request.user, "employee", None)
+    if not current_employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+    employee_id = request.POST.get("employee_id")
+    if not employee_id:
+        messages.info(request, "Xodim aniqlanmadi")
+        return redirect("employee")
+
+    target_employee = get_object_or_404(
+        Employee.objects.select_related("organization"), pk=employee_id
+    )
+
+    if not request.user.has_perm("main.all_organization"):
+        if target_employee.organization_id != current_employee.organization_id:
+            raise PermissionDenied("Boshqa tashkilot xodimini o'zgartira olmaysiz")
+
+    first_name = (request.POST.get("first_name") or "").strip()
+    last_name = (request.POST.get("last_name") or "").strip()
+    father_name = (request.POST.get("father_name") or "").strip()
+    department_id = (request.POST.get("department_id") or "").strip()
+    directorate_id = (request.POST.get("directorate_id") or "").strip()
+    division_id = (request.POST.get("division_id") or "").strip()
+    rank_id = (request.POST.get("rank_id") or "").strip()
+    phone = (request.POST.get("phone") or "").strip()
+
+    if not first_name or not last_name:
+        messages.info(request, "Ism va familiya majburiy")
+        return redirect(back_url)
+
+    target_employee.first_name = first_name
+    target_employee.last_name = last_name
+    target_employee.father_name = father_name or None
+    target_employee.department_id = department_id or None
+    target_employee.directorate_id = directorate_id or None
+    target_employee.division_id = division_id or None
+    target_employee.rank_id = rank_id or None
+    target_employee.phone = phone or None
+    target_employee.save()
+
+    messages.success(request, "Xodim ma'lumotlari yangilandi")
+    return redirect(back_url)
+
+
+# =========================================================================
+# O'CHIRISH
+# =========================================================================
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.delete_employee", raise_exception=True)
+def employee_delete(request):
+    current_employee = getattr(request.user, "employee", None)
+    if not current_employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+    employee_id = request.POST.get("employee_id")
+    if not employee_id:
+        messages.info(request, "Xodim aniqlanmadi")
+        return redirect("employee")
+
+    target_employee = get_object_or_404(
+        Employee.objects.select_related("user", "organization"), pk=employee_id
+    )
+
+    if not request.user.has_perm("main.all_organization"):
+        if target_employee.organization_id != current_employee.organization_id:
+            raise PermissionDenied("Boshqa tashkilot xodimini o'chira olmaysiz")
+
+    if target_employee.id == current_employee.id:
+        messages.info(request, "O'zingizni o'chira olmaysiz")
+        return redirect(back_url)
+
+    with transaction.atomic():
+        user = target_employee.user
+        target_employee.delete()
+        if user:
+            user.is_active = False
+            user.save(update_fields=["is_active"])
+
+    messages.success(request, "Xodim o'chirildi")
     return redirect(back_url)

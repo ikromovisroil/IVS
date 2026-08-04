@@ -112,71 +112,117 @@
             <div class="card-body table-responsive">
               <div class="d-flex justify-content-between align-items-center">
                  <h5 class="card-title">Xodimlar: {{ total_count }} ta</h5>
+                 {% if perms.main.add_employee %}
                  <button type="button" class="btn btn-success"
                          data-bs-toggle="modal" data-bs-target="#verticalycenteredemploye">
                    + Xodim qo'shish
                  </button>
+                 {% endif %}
               </div>
 
               <table class="table table-bordered table-hover align-middle table-sm">
                 <thead class="table-secondary">
                   <tr>
                     <th scope="col">T/r</th>
+                    <th scope="col">Lavozimi</th>
                     <th scope="col">F.I.O</th>
-                    <th scope="col">Ariza bajarish</th>
-                    <th scope="col">Texnikalarni ko'rish</th>
-                    <th scope="col">Texnikalarni qo'shish</th>
-                    <th scope="col">Texnikalarni taxrirlash</th>
-                    <th scope="col">Texnika o'chirish</th>
+                    <th scope="col">Pinfil</th>
+                    <th scope="col">Holati</th>
+                    <th scope="col">Tafsif</th>
                   </tr>
                 </thead>
 
                 <tbody id="materialBody">
                 {% for emp in page_obj %}
+                {% if perms.main.permission_employee %}
                   <tr>
                     <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
-                    <td >
-                        {{ emp.full_name|default:"—" }}
-                        {% if emp.rank %}
-                        <span class="text-secondary small d-block mt-1">
-                          "{{ emp.rank.name|default:'' }}"
-                        </span>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        {{ emp.rank.name|default:"" }}
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        {{ emp.full_name|default:"" }}
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        {{ emp.pinfl|default:"" }}
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        {% if emp.user.is_active %}
+                          <span class="text-success">Faol</span>
+                        {% else %}
+                          <span class="text-danger">Nofaol</span>
                         {% endif %}
                     </td>
-                    <!-- has_change_order = "main.change_order" -->
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_change_order %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_change_order %}Bor{% else %}Yo'q{% endif %}
-                        </span>
-                    </td>
-                    <!-- has_view_technics = "main.view_technics" -->
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_view_technics %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_view_technics %}Bor{% else %}Yo'q{% endif %}
-                        </span>
-                    </td>
-                    <!-- has_change_technics = "main.change_technics" -->
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_add_technics %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_change_technics %}Bor{% else %}Yo'q{% endif %}
-                        </span>
-                    </td>
-
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_change_technics %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_change_technics %}Bor{% else %}Yo'q{% endif %}
-                        </span>
-                    </td>
-
-                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
-                        <span class="{% if emp.has_delete_technics %}text-success{% else %}text-danger{% endif %}">
-                            {% if emp.has_change_technics %}Bor{% else %}Yo'q{% endif %}
-                        </span>
+                    <td>
+                      <div class="filter">
+                        <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
+                          <i class="bi bi-stack" style="font-size:18px;"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                          {% if perms.main.delete_employee %}
+                            <li>
+                            <a class="dropdown-item" href="javascript:void(0)"
+                               data-bs-toggle="modal" data-bs-target="#empdel-{{ emp.id }}">
+                              <i class="bi bi-trash"></i> O'chirish
+                            </a>
+                          </li>
+                          {% endif %}
+                          {% if perms.main.change_employee %}
+                          <li>
+                            <a class="dropdown-item" href="javascript:void(0)"
+                               data-bs-toggle="modal" data-bs-target="#emptax-{{ emp.id }}">
+                              <i class="bi bi-brush"></i> Tahrirlash
+                            </a>
+                          </li>
+                          {% endif %}
+                        </ul>
+                      </div>
                     </td>
                   </tr>
+                {% else %}
+                  <tr>
+                    <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
+                    <td>{{ emp.rank.name|default:"" }}</td>
+                    <td>{{ emp.full_name|default:"" }}</td>
+                    <td>{{ emp.pinfl|default:"" }}</td>
+                    <td>
+                        {% if emp.user.is_active %}
+                          <span class="text-success">Faol</span>
+                        {% else %}
+                          <span class="text-danger">Nofaol</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                      <div class="filter">
+                        <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
+                          <i class="bi bi-stack" style="font-size:18px;"></i>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                          {% if perms.main.delete_employee %}
+                            <li>
+                            <a class="dropdown-item" href="javascript:void(0)"
+                               data-bs-toggle="modal" data-bs-target="#empdel-{{ emp.id }}">
+                              <i class="bi bi-trash"></i> O'chirish
+                            </a>
+                          </li>
+                          {% endif %}
+                          {% if perms.main.change_employee %}
+                          <li>
+                            <a class="dropdown-item" href="javascript:void(0)"
+                               data-bs-toggle="modal" data-bs-target="#emptax-{{ emp.id }}">
+                              <i class="bi bi-brush"></i> Tahrirlash
+                            </a>
+                          </li>
+                          {% endif %}
+                        </ul>
+                      </div>
+                    </td>
+                  </tr>
+                {% endif %}
+
                  {% empty %}
                   <tr>
-                    <td colspan="7" class="text-center text-muted py-4">
+                    <td colspan="6" class="text-center text-muted py-4">
                       <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                     </td>
                   </tr>
@@ -230,19 +276,99 @@
     <!-- EMPLOYEE CREATE MODAL -->
     <div class="modal fade" id="verticalycenteredemploye" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-lg">
-        <form class="modal-content" method="post" action="{% url 'employe_create' %}">
+        <form class="modal-content" method="post" action="{% url 'employee_create' %}">
           {% csrf_token %}
           <div class="modal-header">
             <h5 class="modal-title">Xodim qo'shish</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
+
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">PINFL</label>
+              <label class="col-md-4 col-lg-3 col-form-label">PINFL *</label>
               <div class="col-md-8 col-lg-9">
-                <input type="text" name="pinfl" class="form-control" placeholder="PINFL kiriting" required>
+                <input type="text" name="pinfl" class="form-control" placeholder="14 xonali PINFL"
+                       maxlength="14" pattern="\d{14}" required>
               </div>
             </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Ismi *</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="first_name" class="form-control" placeholder="Ismi ..." required>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Familiyasi *</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="last_name" class="form-control" placeholder="Familiyasi ..." required>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Otasini Ismi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="father_name" class="form-control" placeholder="Otasini Ismi ...">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Tashkilot *</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="organization" id="create_organization" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for org in organizations %}
+                    <option value="{{ org.id }}">{{ org.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="department_id"
+                        id="create_department"
+                        class="form-select create-department-select" required>
+                  <option value="">— Tashkilot tanlang —</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Boshqarma</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="directorate_id"
+                        id="create_directorate"
+                        class="form-select create-directorate-select">
+                  <option value="">— Tanlang —</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Bo'lim</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="division_id"
+                        id="create_division"
+                        class="form-select create-division-select">
+                  <option value="">— Tanlang —</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Lavozim</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="rank_id" class="form-select">
+                  <option value="">Tanlang...</option>
+                  {% for r in ranks %}
+                    <option value="{{ r.id }}">{{ r.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Telefon</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="phone" class="form-control" placeholder="+998 90 123 45 67">
+              </div>
+            </div>
+
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -252,11 +378,12 @@
       </div>
     </div>
 
-    <!-- ✅ RUXSAT/ROL TAHRIRLASH MODALLARI (JADVALDAN TASHQARIDA!) -->
+    <!-- ✅ RUXSAT/ROL TAHRIRLASH MODALLARI -->
     {% for emp in page_obj %}
+    {% if perms.main.permission_employee %}
     <div class="modal fade order-modal" id="empmadal-{{ emp.id }}" tabindex="-1">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
-        <form method="post" class="modal-content" action="{% url 'employee_update' %}">
+        <form method="post" class="modal-content" action="{% url 'employee_permission' %}">
           {% csrf_token %}
           <input type="hidden" name="employee_id" value="{{ emp.id }}">
 
@@ -349,8 +476,6 @@
                            {% if emp.has_view_technics %}checked{% endif %}>
                   </div>
                 </div>
-                <!-- FIX: quyidagi 3 tasi "Texnikalarni ko'rish" belgilanmaguncha
-                     DISABLED - ko'rish huquqisiz tahrirlash mantiqsiz -->
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9"><label class="form-check-label">Texnikalarni qo'shish</label></div>
                   <div class="col-12 col-md-3 info-value">
@@ -387,7 +512,6 @@
                            {% if emp.has_view_material %}checked{% endif %}>
                   </div>
                 </div>
-                <!-- Quyidagi 3 tasi "Materiallarni ko'rish" belgilanmaguncha DISABLED -->
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9"><label class="form-check-label">Materiallarni qo'shish</label></div>
                   <div class="col-12 col-md-3 info-value">
@@ -508,7 +632,127 @@
         </form>
       </div>
     </div>
+    {% endif %}
     {% endfor %}
+
+    <!-- ✅ TAHRIRLASH (asosiy ma'lumotlar) MODALLARI -->
+    {% if perms.main.change_employee %}
+    {% for emp in page_obj %}
+    <div class="modal fade" id="emptax-{{ emp.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form class="modal-content" method="post" action="{% url 'employee_update' %}">
+          {% csrf_token %}
+          <input type="hidden" name="employee_id" value="{{ emp.id }}">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ emp.full_name }} — tahrirlash</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Ismi *</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="first_name" class="form-control"
+                       value="{{ emp.first_name|default:'' }}" required>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Familiyasi *</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="last_name" class="form-control"
+                       value="{{ emp.last_name|default:'' }}" required>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Otasini Ismi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="father_name" class="form-control"
+                       value="{{ emp.father_name|default:'' }}">
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="department_id"
+                        class="form-select edit-department-select"
+                        data-selected="{{ emp.department_id|default:'' }}"
+                        data-org="{{ emp.organization_id|default:'' }}">
+                  <option value="">— Yuklanmoqda —</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Boshqarma</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="directorate_id"
+                        class="form-select edit-directorate-select"
+                        data-selected="{{ emp.directorate_id|default:'' }}">
+                  <option value="">— Tanlang —</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Bo'lim</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="division_id"
+                        class="form-select edit-division-select"
+                        data-selected="{{ emp.division_id|default:'' }}">
+                  <option value="">— Tanlang —</option>
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Lavozim</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="rank_id" class="form-select">
+                  <option value="">Tanlang...</option>
+                  {% for r in ranks %}
+                    <option value="{{ r.id }}" {% if r.id == emp.rank_id %}selected{% endif %}>{{ r.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Telefon</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="phone" class="form-control" value="{{ emp.phone|default:'' }}">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary">Saqlash</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
+
+    <!-- ✅ O'CHIRISH MODALLARI -->
+    {% if perms.main.delete_employee %}
+    {% for emp in page_obj %}
+    <div class="modal fade" id="empdel-{{ emp.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content" method="post" action="{% url 'employee_delete' %}">
+          {% csrf_token %}
+          <input type="hidden" name="employee_id" value="{{ emp.id }}">
+          <div class="modal-header">
+            <h5 class="modal-title">O'chirishni tasdiqlang</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body">
+            <p><strong>{{ emp.full_name }}</strong> xodimini o'chirmoqchimisiz?</p>
+            <p class="text-danger small mb-0">Bu amalni ortga qaytarib bo'lmaydi.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+            <button type="submit" class="btn btn-danger">O'chirish</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+    {% endif %}
 
 </main>
 
@@ -517,45 +761,35 @@
 
   function toggleMultiSelect(checkbox, $select) {
     const enabled = checkbox.checked;
-
     $select.prop('disabled', !enabled);
-
     if (!enabled) {
-      $select.val(null); // ruxsat olib tashlansa, tanlovlar ham tozalanadi
+      $select.val(null);
     }
-
     if ($select.hasClass('select2-hidden-accessible')) {
       $select.trigger('change.select2');
     }
   }
 
-  // FIX: yangi funksiya - checkbox guruhini boshqa checkbox holatiga qarab
-  // yoqadi/o'chiradi (multi-select emas, oddiy checkbox'lar uchun)
   function toggleSubCheckboxes(masterCheckbox, $subCheckboxes) {
     const enabled = masterCheckbox.checked;
-
     $subCheckboxes.prop('disabled', !enabled);
-
     if (!enabled) {
-      $subCheckboxes.prop('checked', false); // ko'rish o'chirilsa - qolganlari ham tozalanadi
+      $subCheckboxes.prop('checked', false);
     }
   }
 
   function initPermissionToggles(modal) {
     const $modal = $(modal);
 
-    const $orderCheckbox = $modal.find('.js-perm-order');       // "change_order"
+    const $orderCheckbox = $modal.find('.js-perm-order');
     const $goalSelect = $modal.find('.js-goal-select');
 
-    const $technicsCheckbox = $modal.find('.js-perm-technics'); // "view_technics"
+    const $technicsCheckbox = $modal.find('.js-perm-technics');
     const $categorySelect = $modal.find('.js-category-select');
-    const $technicsSubCheckboxes = $modal.find('.js-technics-sub'); // add/change/delete_technics
+    const $technicsSubCheckboxes = $modal.find('.js-technics-sub');
 
-    const $materialCheckbox = $modal.find('.js-perm-material'); // "view_material"
-    const $materialSubCheckboxes = $modal.find('.js-material-sub'); // add/change/delete_material
-
-    // NOTE: .js-matcategory-select har doim FAOL - u checkbox emas,
-    // "emp.organization.type != worker" shartiga bog'liq (template darajasida hal qilinadi)
+    const $materialCheckbox = $modal.find('.js-perm-material');
+    const $materialSubCheckboxes = $modal.find('.js-material-sub');
 
     if (!$orderCheckbox.length || !$technicsCheckbox.length) return;
 
@@ -589,7 +823,7 @@
 })(jQuery);
 </script>
 
-<!-- Filter: org → dep → dir → div -->
+<!-- Filter: org → dep → dir → div (yuqoridagi qidiruv formasi) -->
 <script>
 (() => {
   const orgSel = document.getElementById("organization");
@@ -688,6 +922,141 @@
   window.addEventListener("load", () => {
     closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
     document.activeElement && document.activeElement.blur();
+  });
+})();
+</script>
+
+<!-- Xodim QO'SHISH / TAHRIRLASH modallari uchun org → dep → dir → div (cascading, select2 bilan to'liq mos) -->
+<script>
+(() => {
+  const URL_DEPS = "{% url 'ajax_load_departments' %}";
+  const URL_DIRS = "{% url 'ajax_load_directorate' %}";
+  const URL_DIVS = "{% url 'ajax_load_division' %}";
+
+  function isSelect2(el) { return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible"); }
+  function refreshUI(el) { if (isSelect2(el)) window.jQuery(el).trigger("change.select2"); }
+  function closeSelect2(el) { if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} } }
+
+  async function getJSON(url) {
+    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
+    const ct = res.headers.get("content-type") || "";
+    if (!res.ok || !ct.includes("application/json")) return { results: [] };
+    return await res.json();
+  }
+  function setLoading(el, text = "— Yuklanmoqda —") {
+    el.innerHTML = `<option value="">${text}</option>`;
+    el.disabled = true; refreshUI(el); closeSelect2(el);
+  }
+  function setEmpty(el, text = "Tanlang...") {
+    el.innerHTML = `<option value="">${text}</option>`;
+    el.disabled = false; refreshUI(el); closeSelect2(el);
+  }
+  function fillOptions(el, items, placeholder, selectedValue = "") {
+    let html = `<option value="">${placeholder}</option>`;
+    for (const it of items) {
+      const sel = String(it.id) === String(selectedValue) ? "selected" : "";
+      html += `<option value="${it.id}" ${sel}>${it.name}</option>`;
+    }
+    el.innerHTML = html;
+    el.disabled = false; refreshUI(el); closeSelect2(el);
+  }
+  // select2 va oddiy select ikkalasida ham ishlaydigan universal "change" bog'lovchi
+  function bindChange(el, cb) {
+    if (!el) return;
+    if (window.jQuery) { window.jQuery(el).on("change select2:select select2:clear", cb); }
+    else { el.addEventListener("change", cb); }
+  }
+
+  // --- CREATE modal: Tashkilot tanlanganda -> Departament yuklash ---
+  const createOrg = document.getElementById("create_organization");
+  const createDep = document.getElementById("create_department");
+  const createDir = document.getElementById("create_directorate");
+  const createDiv = document.getElementById("create_division");
+
+  if (createOrg) {
+    bindChange(createOrg, async () => {
+      setEmpty(createDir, "— Tanlang —");
+      setEmpty(createDiv, "— Tanlang —");
+      const orgId = (createOrg.value || "").trim();
+      if (!orgId) {
+        setEmpty(createDep, "— Tashkilot tanlang —");
+        return;
+      }
+      setLoading(createDep);
+      const data = await getJSON(`${URL_DEPS}?organization=${encodeURIComponent(orgId)}`);
+      fillOptions(createDep, data.results || [], "Tanlang...");
+    });
+
+    bindChange(createDep, async () => {
+      setEmpty(createDiv, "— Tanlang —");
+      const depId = (createDep.value || "").trim();
+      if (!depId) { setEmpty(createDir, "— Tanlang —"); return; }
+      setLoading(createDir);
+      const data = await getJSON(`${URL_DIRS}?department=${encodeURIComponent(depId)}`);
+      fillOptions(createDir, data.results || [], "Tanlang...");
+    });
+
+    bindChange(createDir, async () => {
+      const dirId = (createDir.value || "").trim();
+      if (!dirId) { setEmpty(createDiv, "— Tanlang —"); return; }
+      setLoading(createDiv);
+      const data = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(dirId)}`);
+      fillOptions(createDiv, data.results || [], "Tanlang...");
+    });
+  }
+
+  // --- EDIT modallar: har bir modal ochilganda mavjud qiymatlarni yuklash ---
+  async function initEditModal(modal) {
+    const depSel = modal.querySelector(".edit-department-select");
+    const dirSel = modal.querySelector(".edit-directorate-select");
+    const divSel = modal.querySelector(".edit-division-select");
+    if (!depSel) return;
+
+    const orgId = depSel.dataset.org || "";
+    const selectedDep = depSel.dataset.selected || "";
+    const selectedDir = dirSel ? (dirSel.dataset.selected || "") : "";
+    const selectedDiv = divSel ? (divSel.dataset.selected || "") : "";
+
+    setLoading(depSel);
+    if (orgId) {
+      const data = await getJSON(`${URL_DEPS}?organization=${encodeURIComponent(orgId)}`);
+      fillOptions(depSel, data.results || [], "Tanlang...", selectedDep);
+    } else {
+      fillOptions(depSel, [], "Tanlang...", "");
+    }
+
+    if (selectedDep) {
+      const dirData = await getJSON(`${URL_DIRS}?department=${encodeURIComponent(selectedDep)}`);
+      fillOptions(dirSel, dirData.results || [], "Tanlang...", selectedDir);
+    }
+    if (selectedDir) {
+      const divData = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(selectedDir)}`);
+      fillOptions(divSel, divData.results || [], "Tanlang...", selectedDiv);
+    }
+
+    bindChange(depSel, async () => {
+      setEmpty(dirSel, "— Tanlang —");
+      setEmpty(divSel, "— Tanlang —");
+      const depId = (depSel.value || "").trim();
+      if (!depId) return;
+      setLoading(dirSel);
+      const data = await getJSON(`${URL_DIRS}?department=${encodeURIComponent(depId)}`);
+      fillOptions(dirSel, data.results || [], "Tanlang...");
+    });
+    bindChange(dirSel, async () => {
+      setEmpty(divSel, "— Tanlang —");
+      const dirId = (dirSel.value || "").trim();
+      if (!dirId) return;
+      setLoading(divSel);
+      const data = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(dirId)}`);
+      fillOptions(divSel, data.results || [], "Tanlang...");
+    });
+  }
+
+  document.addEventListener("shown.bs.modal", (e) => {
+    if (e.target.id && e.target.id.startsWith("emptax-")) {
+      initEditModal(e.target);
+    }
   });
 })();
 </script>

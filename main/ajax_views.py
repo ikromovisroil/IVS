@@ -201,6 +201,7 @@ def ajax_load_departments(request):
 
     org_id = (request.GET.get("organization") or "").strip()
 
+
     if not org_id or not org_id.isdigit():
         return JsonResponse({"results": []})
 
