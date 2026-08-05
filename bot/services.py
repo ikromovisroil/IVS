@@ -75,6 +75,17 @@ def unlink_telegram_chat(employee: Employee) -> None:
     employee.save(update_fields=["telegram_chat"])
 
 
+def save_employee_phone(employee: Employee, phone_number: str) -> None:
+    """Telegram orqali ulashilgan telefon raqamini xodimga saqlaydi."""
+    phone_number = (phone_number or "").strip()
+    if not phone_number:
+        return
+    if not phone_number.startswith("+"):
+        phone_number = "+" + phone_number
+    employee.phone = phone_number
+    employee.save(update_fields=["phone"])
+
+
 @dataclass
 class MenuFlags:
     pass
@@ -324,13 +335,19 @@ def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int 
             receiver__isnull=True,
             sender__region_id=employee.region_id,   # <-- har doim, istisnosiz
         )
-        .select_related("goal", "sender")
+        .select_related(
+            "goal", "sender", "sender__organization", "sender__department",
+            "sender__directorate", "sender__division", "sender__rank",
+        )
         .order_by("id")[:limit]
     )
     pending_orders = (
         Order.objects
         .filter(ctx_filter, status="process", receiver=employee)
-        .select_related("goal", "sender")
+        .select_related(
+            "goal", "sender", "sender__organization", "sender__department",
+            "sender__directorate", "sender__division", "sender__rank",
+        )
         .order_by("id")[:limit]
     )
     return list(new_orders) + list(pending_orders)
@@ -397,6 +414,9 @@ def list_completed_orders(employee: Employee, context: str = "atm", limit: int =
     return list(
         Order.objects
         .filter(ctx_filter, receiver=employee, status__in=["finished", "approved", "accepted", "rejected"])
-        .select_related("goal", "sender")
+        .select_related(
+            "goal", "sender", "sender__organization", "sender__department",
+            "sender__directorate", "sender__division", "sender__rank",
+        )
         .order_by("-id")[:limit]
     )

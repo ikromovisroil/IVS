@@ -1,8 +1,10 @@
 import asyncio
 import logging
 import os
+
 from asgiref.sync import sync_to_async
 from django.core.management.base import BaseCommand
+
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -18,7 +20,7 @@ from aiogram.types import (
 
 from bot.services import (
     find_employee_by_pinfl, link_telegram_chat, get_employee_by_chat_id,
-    unlink_telegram_chat,
+    unlink_telegram_chat, save_employee_phone,
     is_worker_employee, is_client_employee, can_execute_orders,
     list_atm_goals, list_warehouse_goals, create_order, list_my_orders,
     rate_order, list_pending_ratings, receive_order,
@@ -36,6 +38,7 @@ router = Router()
 
 class AuthStates(StatesGroup):
     waiting_pinfl = State()
+    waiting_phone = State()
 
 
 class MenuStates(StatesGroup):
@@ -87,6 +90,14 @@ def section_menu(show_execute: bool) -> ReplyKeyboardMarkup:
         rows.append([KeyboardButton(text=TXT_HISTORY)])
     rows.append([KeyboardButton(text=TXT_BACK)])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def phone_request_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[[KeyboardButton(text="📱 Telefon raqamni ulashish", request_contact=True)]],
+        resize_keyboard=True,
+        one_time_keyboard=True,
+    )
 
 
 def goals_keyboard(goals) -> InlineKeyboardMarkup:
@@ -174,9 +185,62 @@ async def process_pinfl(message: Message, state: FSMContext):
         return
 
     await sync_to_async(link_telegram_chat)(employee, message.chat.id)
+
+    # Agar xodimning telefon raqami bazada hali yo'q bo'lsa - Telegram
+    # orqali (haqiqiy, tasdiqlangan) raqamni so'raymiz.
+    has_phone = bool(getattr(employee, "phone", None))
+    if not has_phone:
+        await state.update_data(employee_id=employee.id)
+        await state.set_state(AuthStates.waiting_phone)
+        await message.answer(
+            f"Muvaffaqiyatli bog'landi! Salom, {employee.full_name}.\n\n"
+            f"Iltimos, telefon raqamingizni pastdagi tugma orqali ulashing:",
+            reply_markup=phone_request_keyboard(),
+        )
+        return
+
     await _send_main_menu(
         message, state, employee, f"Muvaffaqiyatli bog'landi! Salom, {employee.full_name}."
     )
+
+
+@router.message(StateFilter(AuthStates.waiting_phone), F.contact)
+async def process_phone_contact(message: Message, state: FSMContext):
+    employee = await sync_to_async(get_employee_by_chat_id)(message.chat.id)
+    if not employee:
+        await state.set_state(AuthStates.waiting_pinfl)
+        await message.answer(
+            "Sessiya topilmadi. Iltimos PINFL raqamingizni qayta kiriting:",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return
+
+    # Xavfsizlik: faqat foydalanuvchining O'Z kontaktini qabul qilamiz -
+    # boshqa birovning kontaktini forward qilib yuborishi mumkin emas.
+    if message.contact.user_id and message.contact.user_id != message.from_user.id:
+        await message.answer(
+            "Iltimos, faqat O'ZINGIZNING telefon raqamingizni ulashing.",
+        )
+        return
+
+    await sync_to_async(save_employee_phone)(employee, message.contact.phone_number)
+    await message.answer("Rahmat! Telefon raqamingiz saqlandi.")
+    await _send_main_menu(message, state, employee, "Asosiy menyu:")
+
+
+@router.message(StateFilter(AuthStates.waiting_phone))
+async def process_phone_skip(message: Message, state: FSMContext):
+    # Agar foydalanuvchi tugma bosish o'rniga biror matn yozsa - o'tkazib
+    # yuborish imkoniyati (majburiy emas).
+    employee = await sync_to_async(get_employee_by_chat_id)(message.chat.id)
+    if not employee:
+        await state.set_state(AuthStates.waiting_pinfl)
+        await message.answer(
+            "Sessiya topilmadi. Iltimos PINFL raqamingizni qayta kiriting:",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return
+    await _send_main_menu(message, state, employee, "Asosiy menyu:")
 
 
 async def _require_employee(message: Message, state: FSMContext):
@@ -256,7 +320,7 @@ async def cmd_new_order_atm(message: Message, state: FSMContext):
 
     await state.update_data(order_context="atm")
     await state.set_state(OrderStates.choosing_goal)
-    await message.answer("Ariza turini tanlang:", reply_markup=goals_keyboard(goals))
+    await message.answer("Ariza turini (kategoriyasini) tanlang:", reply_markup=goals_keyboard(goals))
 
 
 @router.message(StateFilter(MenuStates.warehouse_menu), F.text == TXT_NEW_ORDER)
@@ -267,12 +331,12 @@ async def cmd_new_order_warehouse(message: Message, state: FSMContext):
 
     goals = await sync_to_async(list_warehouse_goals)(employee)
     if not goals:
-        await message.answer("Hozircha ariza turi mavjud emas.")
+        await message.answer("Sizning tashkilotingiz uchun hozircha ariza turi mavjud emas.")
         return
 
     await state.update_data(order_context="warehouse")
     await state.set_state(OrderStates.choosing_goal)
-    await message.answer("Ariza turini tanlang:", reply_markup=goals_keyboard(goals))
+    await message.answer("Ariza turini (kategoriyasini) tanlang:", reply_markup=goals_keyboard(goals))
 
 
 @router.callback_query(StateFilter(OrderStates.choosing_goal), F.data.startswith("goal:"))
@@ -281,7 +345,7 @@ async def process_goal_choice(callback: CallbackQuery, state: FSMContext):
     await state.update_data(goal_id=goal_id)
     await state.set_state(OrderStates.typing_message)
     await callback.message.edit_reply_markup()
-    await callback.message.answer("Ariza matni (izoh) yozing:")
+    await callback.message.answer("Ariza matnini (izohni) yozing:")
     await callback.answer()
 
 
@@ -308,6 +372,7 @@ async def process_order_message(message: Message, state: FSMContext):
 # ---------------------------------------------------------------------------
 # ARIZALARIM (ikkala bo'limda ham bir xil - yuboruvchi sifatida)
 # ---------------------------------------------------------------------------
+
 STATUS_LABELS = {
     "viewed": "Yangi", "process": "Jarayonda", "finished": "Tayyorlandi",
     "approved": "Tasdiqlandi", "accepted": "Qabul qilindi",
@@ -347,6 +412,48 @@ async def cmd_my_orders(message: Message, state: FSMContext):
 # ARIZA BAJARISH (ikkala bo'limda ham, context bo'yicha ajratilgan)
 # ---------------------------------------------------------------------------
 
+def _format_order_card(o) -> str:
+    """
+    Ariza haqida to'liq, saytdagi ko'rinishga o'xshash ma'lumot kartochkasi.
+    HTML formatida (bot ParseMode.HTML bilan ishga tushirilgan).
+    """
+    sender = o.sender
+
+    rank_part = f" {sender.rank.name}" if sender and sender.rank else ""
+    author = f"{sender.full_name}{rank_part}" if sender else "-"
+
+    date_str = o.date_creat.strftime("%d.%m.%Y, %H:%M") if o.date_creat else "-"
+
+    # Tashkilot ierarxiyasi - saytdagidek, mavjud bo'lgan darajalar
+    # alohida qatorda ko'rsatiladi (bo'sh bo'lganlari tashlab ketiladi).
+    org_lines = []
+    if sender and sender.organization:
+        org_lines.append(sender.organization.name)
+    if sender and sender.department:
+        org_lines.append(sender.department.name)
+    if sender and sender.directorate:
+        org_lines.append(sender.directorate.name)
+    if sender and sender.division:
+        org_lines.append(sender.division.name)
+    org_text = "\n".join(org_lines) if org_lines else "-"
+
+    phone = sender.phone if sender and sender.phone else "-"
+    comment = o.message_sender or "-"
+    goal_name = o.goal.name if o.goal else "-"
+    status_text = STATUS_LABELS.get(o.status, o.status)
+
+    return (
+        f"<b>Ariza #{o.id}</b>\n\n"
+        f"ℹ️ <b>Ariza holati:</b> {status_text}\n"
+        f"🗓 <b>Ro'yxatga olingan sana:</b> {date_str}\n"
+        f"👤 <b>Ariza muallifi:</b> {author}\n"
+        f"🎯 <b>Ariza maqsadi:</b> {goal_name}\n"
+        f"🏢 <b>Tashkilot:</b>\n{org_text}\n"
+        f"📞 <b>Telefon raqami:</b> {phone}\n"
+        f"💬 <b>Qo'shimcha ma'lumot:</b> {comment}"
+    )
+
+
 async def _show_execute_orders(message: Message, employee, context: str):
     can_exec = await sync_to_async(can_execute_orders)(employee)
     if not can_exec:
@@ -359,12 +466,11 @@ async def _show_execute_orders(message: Message, employee, context: str):
         return
 
     for o in orders:
-        text = (
-            f"#{o.id} — {o.goal.name if o.goal else '-'}\n"
-            f"Yuboruvchi: {o.sender.full_name if o.sender else '-'}\n"
-            f"Izoh: {o.message_sender or ''}\n"
-            f"Holati: {STATUS_LABELS.get(o.status, o.status)}"
-        )
+        # DIQQAT: sync_to_async shart emas - barcha kerakli bog'liq
+        # obyektlar (sender, goal, organization va h.k.) list_orders_to_execute
+        # ichida select_related orqali OLDINDAN yuklab olingan, shuning
+        # uchun bu yerda qo'shimcha baza so'rovi yuz bermaydi.
+        text = _format_order_card(o)
         if o.status == "viewed":
             await message.answer(text, reply_markup=accept_keyboard(o.id))
         else:
