@@ -362,7 +362,7 @@ async def _show_execute_orders(message: Message, employee, context: str):
         text = (
             f"#{o.id} — {o.goal.name if o.goal else '-'}\n"
             f"Yuboruvchi: {o.sender.full_name if o.sender else '-'}\n"
-            f"Izoh: {o.message_sender or '-'}\n"
+            f"Izoh: {o.message_sender or ''}\n"
             f"Holati: {STATUS_LABELS.get(o.status, o.status)}"
         )
         if o.status == "viewed":

@@ -284,7 +284,7 @@ def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int 
 
     new_orders = (
         Order.objects
-        .filter(ctx_filter, status="viewed", goal_id__in=goal_ids, receiver__isnull=True)
+        .filter(ctx_filter,sender__region_id=employee.region_id, status="viewed", goal_id__in=goal_ids, receiver__isnull=True)
         .select_related("goal", "sender")
         .order_by("id")[:limit]
     )
