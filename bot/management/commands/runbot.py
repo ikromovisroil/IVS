@@ -503,8 +503,28 @@ async def cb_accept(callback: CallbackQuery):
 
     result = await sync_to_async(accept_order)(employee, int(order_id))
     await callback.answer(result.message, show_alert=not result.ok)
+
     if result.ok:
+        # Ariza muvaffaqiyatli qabul qilindi - tugmani "Yakunlash"ga almashtiramiz.
         await callback.message.edit_reply_markup(reply_markup=finish_keyboard(int(order_id)))
+    else:
+        # Ariza ALLAQACHON boshqa ijrochi tomonidan olingan (yoki boshqa
+        # sabab bilan mavjud emas). Bu xabar boshqa ijrochilarga OLDINDAN
+        # yuborilgan "eski" xabar bo'lishi mumkin - shuning uchun tugmani
+        # olib tashlaymiz, aks holda u "hali ham faol" ko'rinib, boshqa
+        # ijrochilarni chalg'itadi va qayta-qayta bosishga undaydi.
+        try:
+            await callback.message.edit_text(
+                callback.message.html_text + "\n\n⛔️ <i>Bu ariza allaqachon boshqa ijrochi tomonidan olingan.</i>",
+                reply_markup=None,
+            )
+        except Exception:
+            # Matn allaqachon bir xil bo'lsa yoki tahrirlab bo'lmasa - hech
+            # bo'lmasa tugmani olib tashlashga urinamiz.
+            try:
+                await callback.message.edit_reply_markup(reply_markup=None)
+            except Exception:
+                pass
 
 
 @router.callback_query(F.data.startswith("finish:"))
