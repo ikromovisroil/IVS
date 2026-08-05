@@ -38,7 +38,7 @@ def send_telegram_message(chat_id: int | None, text: str, reply_markup: dict | N
 
 
 def rating_markup(order_id: int) -> dict:
-    """FIX: faqat 1-5 baho tugmalari - "Bekor qilish" OLIB TASHLANDI,
+    """Faqat 1-5 baho tugmalari - "Bekor qilish" YO'Q,
     ATM arizasi bajarilgandan keyin bekor qilib bo'lmaydi, faqat baholanadi."""
     return {
         "inline_keyboard": [

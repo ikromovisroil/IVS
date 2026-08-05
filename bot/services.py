@@ -1,19 +1,8 @@
-"""
-bot/services.py
-
-Telegram bot uchun biznes-mantiq:
-1. Ariza yaratish - FAQAT ATM'ga
-2. Bajarilgan ATM arizasini baholash (bekor qilib bo'lmaydi)
-3. Ombor (client) arizasi tasdiqlangach - "qabul qildim" belgilash
-
-Barcha funksiyalar SINXRON - aiogram handler'larida
-`asgiref.sync.sync_to_async` bilan o'raladi.
-"""
+from __future__ import annotations
 from dataclasses import dataclass
-
 from django.db import transaction, DatabaseError
-
-from main.models import Employee, Order, Goal
+from django.db.models import Q
+from main.models import Employee, Order, Goal, OrderGoal
 
 
 # ---------------------------------------------------------------------------
@@ -64,12 +53,29 @@ def get_menu_flags(employee: Employee) -> MenuFlags:
 
 
 # ---------------------------------------------------------------------------
-# 1) ARIZA YARATISH - FAQAT ATM'GA
+# TASHKILOT TURI BO'YICHA YORDAMCHI FUNKSIYALAR
 # ---------------------------------------------------------------------------
 
-def list_available_goals(employee: Employee):
-    return list(Goal.objects.filter(organization__type="worker").order_by("name"))
+def is_worker_employee(employee: Employee) -> bool:
+    """Xodim 'worker' (xizmat ko'rsatuvchi) tashkilotdanmi."""
+    return bool(employee.organization_id and employee.organization.type == "worker")
 
+
+def is_client_employee(employee: Employee) -> bool:
+    """Xodim 'client' (mijoz) tashkilotdanmi."""
+    return bool(employee.organization_id and employee.organization.type == "client")
+
+
+def can_execute_orders(employee: Employee) -> bool:
+    """Xodimda 'Ariza bajarish' (main.change_order) huquqi bor-yo'qligini tekshiradi."""
+    if not employee.user_id:
+        return False
+    return employee.user.has_perm("main.change_order")
+
+
+# ---------------------------------------------------------------------------
+# UMUMIY NATIJA TIPI (barcha ariza amallari uchun)
+# ---------------------------------------------------------------------------
 
 @dataclass
 class OrderResult:
@@ -78,13 +84,46 @@ class OrderResult:
     order: Order | None = None
 
 
-def create_order(employee: Employee, goal_id: int, message_text: str) -> OrderResult:
+# ---------------------------------------------------------------------------
+# 1) ARIZA YARATISH - ATM (worker) va OMBORXONA (client) uchun ALOHIDA
+# ---------------------------------------------------------------------------
+
+def list_atm_goals(employee: Employee):
+    """ATM uchun - faqat 'worker' turidagi tashkilotlarning kategoriyalari."""
+    return list(Goal.objects.filter(organization__type="worker").order_by("name"))
+
+
+def list_warehouse_goals(employee: Employee):
+    """
+    Omborxona uchun - faqat 'client' turidagi VA aynan shu xodimning
+    O'Z tashkilotiga tegishli kategoriyalar.
+    """
+    if not employee.organization_id:
+        return []
+    return list(
+        Goal.objects
+        .filter(organization__type="client", organization_id=employee.organization_id)
+        .order_by("name")
+    )
+
+
+def create_order(employee: Employee, goal_id: int, message_text: str, context: str = ""
+                                                                                     "atm") -> OrderResult:
+    """
+    context="atm" - faqat ATM (worker) kategoriyalariga ruxsat beradi
+    context="warehouse" - faqat shu xodimning o'z tashkiloti (client)
+    kategoriyalariga ruxsat beradi
+    """
     goal = Goal.objects.filter(pk=goal_id).first()
     if not goal:
         return OrderResult(False, "Ariza turi topilmadi")
 
-    available_ids = {g.id for g in list_available_goals(employee)}
-    if goal.id not in available_ids:
+    if context == "warehouse":
+        allowed_ids = {g.id for g in list_warehouse_goals(employee)}
+    else:
+        allowed_ids = {g.id for g in list_atm_goals(employee)}
+
+    if goal.id not in allowed_ids:
         return OrderResult(False, "Sizga bu turdagi arizani yuborish ruxsat etilmagan")
 
     order = Order.objects.create(
@@ -106,7 +145,7 @@ def list_my_orders(employee: Employee, limit: int = 20):
 
 
 # ---------------------------------------------------------------------------
-# 2) BAHOLASH (ATM) - FAQAT baho, bekor qilish YO'Q
+# 2) BAHOLASH - FAQAT baho, bekor qilish YO'Q
 # ---------------------------------------------------------------------------
 
 def rate_order(employee: Employee, order_id: int, rating: int) -> OrderResult:
@@ -150,7 +189,6 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
     from main.html_pdf import _create_deed_for_order, HtmlPdfError
     import logging
 
-    # Tekshiruvlar transaction tashqarisida (web bilan bir xil)
     order = Order.objects.filter(pk=order_id).first()
     if not order:
         return OrderResult(False, "Ariza topilmadi")
@@ -166,7 +204,6 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
         with transaction.atomic():
             order = Order.objects.select_for_update().get(pk=order_id)
 
-            # Race condition — qayta tekshirish (web bilan bir xil)
             if order.status != "approved":
                 return OrderResult(False, "Ariza topilmadi yoki allaqachon qabul qilingan")
 
@@ -175,12 +212,8 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
 
             if order.materials.exists():
                 try:
-                    # request=None - bot HTTP so'rov konteksti bilan ishlamaydi,
-                    # sign_pdf_inplace SITE_BASE_URL orqali o'zi domenni oladi.
                     _create_deed_for_order(order, request=None)
                 except HtmlPdfError:
-                    # Web'dagi kabi: xatoni chiqarib, transaction'ni ROLLBACK qilamiz
-                    # (status "approved"ga qaytadi, "accepted" bo'lmay qoladi)
                     deed_error = "hujjat"
                     raise
                 except Exception:
@@ -189,7 +222,7 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
 
     except _DatabaseError:
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
-    except (HtmlPdfError, Exception) as e:
+    except (HtmlPdfError, Exception):
         if deed_error == "hujjat":
             return OrderResult(
                 False,
@@ -202,10 +235,121 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
                 "Ariza qabul qilinmadi — hujjatga imzo/QR urishda xatolik yuz berdi. "
                 "Qayta urinib ko'ring yoki saytga kiring.",
             )
-        # deed_error yo'q bo'lsa - kutilmagan boshqa xato
         logging.getLogger(__name__).exception(
             "receive_order kutilmagan xato (order=%s)", order_id
         )
         return OrderResult(False, "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring")
 
     return OrderResult(True, "Qabul qilinganligi belgilandi va hujjat yaratildi. Rahmat!", order)
+
+
+# ---------------------------------------------------------------------------
+# 4) ARIZA BAJARISH (ijrochi oqimi): Qabul qilish -> Yakunlash
+# ATM va Omborxona uchun ALOHIDA (context orqali)
+# ---------------------------------------------------------------------------
+
+def _allowed_goal_ids(employee: Employee):
+    return list(
+        OrderGoal.objects.filter(employee=employee).values_list("goal_id", flat=True)
+    )
+
+
+def _context_goal_filter(employee: Employee, context: str) -> Q:
+    """
+    context="atm" - faqat 'worker' turidagi tashkilot kategoriyalari
+    context="warehouse" - faqat 'client' turidagi VA shu xodimning
+    o'z tashkilotiga tegishli kategoriyalar
+    """
+    if context == "warehouse":
+        return Q(
+            goal__organization__type="client",
+            goal__organization_id=employee.organization_id,
+        )
+    return Q(goal__organization__type="worker")
+
+
+def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int = 20):
+    """
+    Bitta ro'yxatda ikkalasini birga qaytaradi (context bo'yicha filtrlangan):
+      1) YANGI arizalar (status=viewed, receiver bo'sh, ruxsat etilgan
+         kategoriya bo'yicha) - "Qabul qilish" tugmasi ko'rsatiladi
+      2) Shu xodim QABUL QILGAN, hali yakunlanmagan arizalar
+         (status=process, receiver=employee) - "Yakunlash" tugmasi
+    """
+    goal_ids = _allowed_goal_ids(employee)
+    if not goal_ids:
+        return []
+
+    ctx_filter = _context_goal_filter(employee, context)
+
+    new_orders = (
+        Order.objects
+        .filter(ctx_filter, status="viewed", goal_id__in=goal_ids, receiver__isnull=True)
+        .select_related("goal", "sender")
+        .order_by("id")[:limit]
+    )
+    pending_orders = (
+        Order.objects
+        .filter(ctx_filter, status="process", receiver=employee)
+        .select_related("goal", "sender")
+        .order_by("id")[:limit]
+    )
+    return list(new_orders) + list(pending_orders)
+
+
+def accept_order(employee: Employee, order_id: int) -> OrderResult:
+    """Yangi arizani qabul qiladi: receiver=employee, status -> process."""
+    if not can_execute_orders(employee):
+        return OrderResult(False, "Sizda arizalarni bajarish huquqi yo'q")
+
+    try:
+        with transaction.atomic():
+            order = Order.objects.select_for_update().filter(
+                pk=order_id, status="viewed", receiver__isnull=True,
+            ).first()
+            if not order:
+                return OrderResult(False, "Ariza topilmadi yoki allaqachon qabul qilingan")
+
+            if order.goal_id not in _allowed_goal_ids(employee):
+                return OrderResult(False, "Sizga ushbu turdagi arizani qabul qilish ruxsat etilmagan")
+
+            order.receiver = employee
+            order.status = "process"
+            order.save(update_fields=["receiver", "status"])
+    except DatabaseError:
+        return OrderResult(False, "Xatolik, qayta urinib ko'ring")
+
+    return OrderResult(True, "Ariza qabul qilindi", order)
+
+
+def finish_order(employee: Employee, order_id: int) -> OrderResult:
+    """Qabul qilingan arizani yakunlaydi: status -> finished."""
+    try:
+        with transaction.atomic():
+            order = (
+                Order.objects
+                .select_for_update()
+                .select_related("sender", "goal")
+                .filter(pk=order_id, receiver=employee, status="process")
+                .first()
+            )
+            if not order:
+                return OrderResult(False, "Ariza topilmadi yoki allaqachon yakunlangan")
+
+            order.status = "finished"
+            order.save(update_fields=["status"])
+    except DatabaseError:
+        return OrderResult(False, "Xatolik, qayta urinib ko'ring")
+
+    return OrderResult(True, "Ish muvaffaqiyatli yakunlandi!", order)
+
+
+def list_completed_orders(employee: Employee, context: str = "atm", limit: int = 20):
+    """Shu xodim (ijrochi sifatida) yakunlagan arizalar tarixi (context bo'yicha)."""
+    ctx_filter = _context_goal_filter(employee, context)
+    return list(
+        Order.objects
+        .filter(ctx_filter, receiver=employee, status__in=["finished", "approved", "accepted", "rejected"])
+        .select_related("goal", "sender")
+        .order_by("-id")[:limit]
+    )

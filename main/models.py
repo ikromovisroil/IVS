@@ -427,7 +427,6 @@ class Material(models.Model):
         ]
 
 
-
 class MaterialEmployee(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)

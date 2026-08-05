@@ -1,10 +1,8 @@
 import asyncio
 import logging
 import os
-
 from asgiref.sync import sync_to_async
 from django.core.management.base import BaseCommand
-
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -20,9 +18,12 @@ from aiogram.types import (
 
 from bot.services import (
     find_employee_by_pinfl, link_telegram_chat, get_employee_by_chat_id,
-    unlink_telegram_chat, get_menu_flags,
-    list_available_goals, create_order, list_my_orders,
+    unlink_telegram_chat,
+    is_worker_employee, is_client_employee, can_execute_orders,
+    list_atm_goals, list_warehouse_goals, create_order, list_my_orders,
     rate_order, list_pending_ratings, receive_order,
+    list_orders_to_execute, accept_order, finish_order,
+    list_completed_orders,
 )
 
 logger = logging.getLogger(__name__)
@@ -37,21 +38,54 @@ class AuthStates(StatesGroup):
     waiting_pinfl = State()
 
 
+class MenuStates(StatesGroup):
+    main = State()
+    atm_menu = State()
+    warehouse_menu = State()
+
+
 class OrderStates(StatesGroup):
     choosing_goal = State()
     typing_message = State()
 
 
 # ---------------------------------------------------------------------------
-# Menyu
+# Menyu matnlari
 # ---------------------------------------------------------------------------
 
-def main_menu(menu_flags) -> ReplyKeyboardMarkup:
+TXT_ATM = "💻 Axborot texnologiyalari markazi"
+TXT_WAREHOUSE = "🏛️ Iqtisodiyot va Moliya vazirligi"
+TXT_LOGOUT = "🚪 CHIQISH"
+
+TXT_NEW_ORDER = "📝 ARIZA YUBORISH"
+TXT_MY_ORDERS = "📋 ARIZALARIM"
+TXT_EXECUTE = "🛠 ARIZA BAJARISH"
+TXT_HISTORY = "✅ BAJARILGAN ARIZALAR TARIXI"
+TXT_BACK = "⬅️ ORQAGA QAYTISH"
+
+
+# ---------------------------------------------------------------------------
+# Menyu klaviaturalari
+# ---------------------------------------------------------------------------
+
+def main_menu(show_warehouse: bool) -> ReplyKeyboardMarkup:
+    rows = [[KeyboardButton(text=TXT_ATM)]]
+    if show_warehouse:
+        rows.append([KeyboardButton(text=TXT_WAREHOUSE)])
+    rows.append([KeyboardButton(text=TXT_LOGOUT)])
+    return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
+
+
+def section_menu(show_execute: bool) -> ReplyKeyboardMarkup:
+    """ATM va Omborxona uchun bir xil tuzilishdagi menyu."""
     rows = [
-        [KeyboardButton(text="📝 Ariza yuborish")],
-        [KeyboardButton(text="📋 Mening arizalarim")],
-        [KeyboardButton(text="🚪 Chiqish")],
+        [KeyboardButton(text=TXT_NEW_ORDER)],
+        [KeyboardButton(text=TXT_MY_ORDERS)],
     ]
+    if show_execute:
+        rows.append([KeyboardButton(text=TXT_EXECUTE)])
+        rows.append([KeyboardButton(text=TXT_HISTORY)])
+    rows.append([KeyboardButton(text=TXT_BACK)])
     return ReplyKeyboardMarkup(keyboard=rows, resize_keyboard=True)
 
 
@@ -64,7 +98,6 @@ def goals_keyboard(goals) -> InlineKeyboardMarkup:
 
 
 def rating_keyboard(order_id: int) -> InlineKeyboardMarkup:
-    """Faqat 1-5 baho - "Bekor qilish" tugmasi YO'Q."""
     stars = [
         InlineKeyboardButton(text=str(i), callback_data=f"rate:{order_id}:{i}")
         for i in range(1, 6)
@@ -72,9 +105,42 @@ def rating_keyboard(order_id: int) -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[stars])
 
 
-async def _send_main_menu(message: Message, employee, greeting: str):
-    menu_flags = await sync_to_async(get_menu_flags)(employee)
-    await message.answer(greeting, reply_markup=main_menu(menu_flags))
+def accept_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="✅ Qabul qilish", callback_data=f"accept:{order_id}"),
+    ]])
+
+
+def finish_keyboard(order_id: int) -> InlineKeyboardMarkup:
+    return InlineKeyboardMarkup(inline_keyboard=[[
+        InlineKeyboardButton(text="🏁 Yakunlash", callback_data=f"finish:{order_id}"),
+    ]])
+
+
+# ---------------------------------------------------------------------------
+# Menyu yuborish yordamchilari (huquq/tashkilot turiga qarab dinamik)
+# ---------------------------------------------------------------------------
+
+async def _send_main_menu(message: Message, state: FSMContext, employee, greeting: str):
+    show_warehouse = await sync_to_async(is_client_employee)(employee)
+    await state.set_state(MenuStates.main)
+    await message.answer(greeting, reply_markup=main_menu(show_warehouse))
+
+
+async def _send_atm_menu(message: Message, state: FSMContext, employee, greeting: str):
+    is_worker = await sync_to_async(is_worker_employee)(employee)
+    can_exec = await sync_to_async(can_execute_orders)(employee)
+    show_execute = is_worker and can_exec
+    await state.set_state(MenuStates.atm_menu)
+    await message.answer(greeting, reply_markup=section_menu(show_execute))
+
+
+async def _send_warehouse_menu(message: Message, state: FSMContext, employee, greeting: str):
+    is_client = await sync_to_async(is_client_employee)(employee)
+    can_exec = await sync_to_async(can_execute_orders)(employee)
+    show_execute = is_client and can_exec
+    await state.set_state(MenuStates.warehouse_menu)
+    await message.answer(greeting, reply_markup=section_menu(show_execute))
 
 
 # ---------------------------------------------------------------------------
@@ -86,7 +152,7 @@ async def cmd_start(message: Message, state: FSMContext):
     employee = await sync_to_async(get_employee_by_chat_id)(message.chat.id)
 
     if employee:
-        await _send_main_menu(message, employee, f"Salom, {employee.full_name}!")
+        await _send_main_menu(message, state, employee, f"Salom, {employee.full_name}!")
         return
 
     await state.set_state(AuthStates.waiting_pinfl)
@@ -108,8 +174,9 @@ async def process_pinfl(message: Message, state: FSMContext):
         return
 
     await sync_to_async(link_telegram_chat)(employee, message.chat.id)
-    await state.clear()
-    await _send_main_menu(message, employee, f"Muvaffaqiyatli bog'landi! Salom, {employee.full_name}.")
+    await _send_main_menu(
+        message, state, employee, f"Muvaffaqiyatli bog'landi! Salom, {employee.full_name}."
+    )
 
 
 async def _require_employee(message: Message, state: FSMContext):
@@ -124,7 +191,7 @@ async def _require_employee(message: Message, state: FSMContext):
     return employee
 
 
-@router.message(F.text == "🚪 Chiqish")
+@router.message(F.text == TXT_LOGOUT)
 async def cmd_logout(message: Message, state: FSMContext):
     employee = await sync_to_async(get_employee_by_chat_id)(message.chat.id)
     if employee:
@@ -135,20 +202,75 @@ async def cmd_logout(message: Message, state: FSMContext):
 
 
 # ---------------------------------------------------------------------------
-# ARIZA YUBORISH
+# ASOSIY MENYU -> BO'LIMLARGA O'TISH
 # ---------------------------------------------------------------------------
 
-@router.message(F.text == "📝 Ariza yuborish")
-async def cmd_new_order(message: Message, state: FSMContext):
+@router.message(StateFilter(MenuStates.main), F.text == TXT_ATM)
+async def cmd_open_atm_menu(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+    await _send_atm_menu(message, state, employee, "ATM bo'limi:")
+
+
+@router.message(StateFilter(MenuStates.main), F.text == TXT_WAREHOUSE)
+async def cmd_open_warehouse_menu(message: Message, state: FSMContext):
     employee = await _require_employee(message, state)
     if not employee:
         return
 
-    goals = await sync_to_async(list_available_goals)(employee)
+    # Qo'shimcha himoya: worker xodim Omborxonaga kira olmaydi.
+    is_client = await sync_to_async(is_client_employee)(employee)
+    if not is_client:
+        await message.answer("Sizga bu bo'lim mavjud emas.")
+        return
+
+    await _send_warehouse_menu(message, state, employee, "Omborxona bo'limi:")
+
+
+@router.message(
+    StateFilter(MenuStates.atm_menu, MenuStates.warehouse_menu),
+    F.text == TXT_BACK,
+)
+async def cmd_back_to_main(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+    await _send_main_menu(message, state, employee, "Asosiy menyu:")
+
+
+# ---------------------------------------------------------------------------
+# ARIZA YUBORISH: kategoriya tanlash -> izoh yozish -> bo'lim menyusiga qaytish
+# ---------------------------------------------------------------------------
+
+@router.message(StateFilter(MenuStates.atm_menu), F.text == TXT_NEW_ORDER)
+async def cmd_new_order_atm(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+
+    goals = await sync_to_async(list_atm_goals)(employee)
     if not goals:
         await message.answer("Hozircha ariza turi mavjud emas.")
         return
 
+    await state.update_data(order_context="atm")
+    await state.set_state(OrderStates.choosing_goal)
+    await message.answer("Ariza turini tanlang:", reply_markup=goals_keyboard(goals))
+
+
+@router.message(StateFilter(MenuStates.warehouse_menu), F.text == TXT_NEW_ORDER)
+async def cmd_new_order_warehouse(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+
+    goals = await sync_to_async(list_warehouse_goals)(employee)
+    if not goals:
+        await message.answer("Hozircha ariza turi mavjud emas.")
+        return
+
+    await state.update_data(order_context="warehouse")
     await state.set_state(OrderStates.choosing_goal)
     await message.answer("Ariza turini tanlang:", reply_markup=goals_keyboard(goals))
 
@@ -159,7 +281,7 @@ async def process_goal_choice(callback: CallbackQuery, state: FSMContext):
     await state.update_data(goal_id=goal_id)
     await state.set_state(OrderStates.typing_message)
     await callback.message.edit_reply_markup()
-    await callback.message.answer("Ariza matnini (izohni) yozing:")
+    await callback.message.answer("Ariza matni (izoh) yozing:")
     await callback.answer()
 
 
@@ -171,18 +293,21 @@ async def process_order_message(message: Message, state: FSMContext):
 
     data = await state.get_data()
     goal_id = data.get("goal_id")
+    context = data.get("order_context", "atm")
 
-    result = await sync_to_async(create_order)(employee, goal_id, message.text)
-    await state.clear()
-
+    result = await sync_to_async(create_order)(employee, goal_id, message.text, context=context)
     text = f"✅ {result.message} (№{result.order.id})" if result.ok else f"⚠️ {result.message}"
-    await _send_main_menu(message, employee, text)
+    await message.answer(text)
+
+    if context == "warehouse":
+        await _send_warehouse_menu(message, state, employee, "Omborxona bo'limi:")
+    else:
+        await _send_atm_menu(message, state, employee, "ATM bo'limi:")
 
 
 # ---------------------------------------------------------------------------
-# MENING ARIZALARIM
+# ARIZALARIM (ikkala bo'limda ham bir xil - yuboruvchi sifatida)
 # ---------------------------------------------------------------------------
-
 STATUS_LABELS = {
     "viewed": "Yangi", "process": "Jarayonda", "finished": "Tayyorlandi",
     "approved": "Tasdiqlandi", "accepted": "Qabul qilindi",
@@ -190,7 +315,7 @@ STATUS_LABELS = {
 }
 
 
-@router.message(F.text == "📋 Mening arizalarim")
+@router.message(StateFilter(MenuStates.atm_menu, MenuStates.warehouse_menu), F.text == TXT_MY_ORDERS)
 async def cmd_my_orders(message: Message, state: FSMContext):
     employee = await _require_employee(message, state)
     if not employee:
@@ -219,7 +344,141 @@ async def cmd_my_orders(message: Message, state: FSMContext):
 
 
 # ---------------------------------------------------------------------------
-# BAHOLASH (ATM) - faqat 1-5, bekor qilish yo'q
+# ARIZA BAJARISH (ikkala bo'limda ham, context bo'yicha ajratilgan)
+# ---------------------------------------------------------------------------
+
+async def _show_execute_orders(message: Message, employee, context: str):
+    can_exec = await sync_to_async(can_execute_orders)(employee)
+    if not can_exec:
+        await message.answer("Sizda arizalarni bajarish huquqi yo'q.")
+        return
+
+    orders = await sync_to_async(list_orders_to_execute)(employee, context=context)
+    if not orders:
+        await message.answer("Hozircha bajarilishi kerak bo'lgan ariza yo'q.")
+        return
+
+    for o in orders:
+        text = (
+            f"#{o.id} — {o.goal.name if o.goal else '-'}\n"
+            f"Yuboruvchi: {o.sender.full_name if o.sender else '-'}\n"
+            f"Izoh: {o.message_sender or '-'}\n"
+            f"Holati: {STATUS_LABELS.get(o.status, o.status)}"
+        )
+        if o.status == "viewed":
+            await message.answer(text, reply_markup=accept_keyboard(o.id))
+        else:
+            await message.answer(text, reply_markup=finish_keyboard(o.id))
+
+
+@router.message(StateFilter(MenuStates.atm_menu), F.text == TXT_EXECUTE)
+async def cmd_execute_orders_atm(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+    await _show_execute_orders(message, employee, context="atm")
+
+
+@router.message(StateFilter(MenuStates.warehouse_menu), F.text == TXT_EXECUTE)
+async def cmd_execute_orders_warehouse(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+    await _show_execute_orders(message, employee, context="warehouse")
+
+
+@router.callback_query(F.data.startswith("accept:"))
+async def cb_accept(callback: CallbackQuery):
+    _, order_id = callback.data.split(":")
+    employee = await sync_to_async(get_employee_by_chat_id)(callback.message.chat.id)
+    if not employee:
+        await callback.answer("Sessiya tugagan, /start bosing", show_alert=True)
+        return
+
+    result = await sync_to_async(accept_order)(employee, int(order_id))
+    await callback.answer(result.message, show_alert=not result.ok)
+    if result.ok:
+        await callback.message.edit_reply_markup(reply_markup=finish_keyboard(int(order_id)))
+
+
+@router.callback_query(F.data.startswith("finish:"))
+async def cb_finish(callback: CallbackQuery):
+    _, order_id = callback.data.split(":")
+    employee = await sync_to_async(get_employee_by_chat_id)(callback.message.chat.id)
+    if not employee:
+        await callback.answer("Sessiya tugagan, /start bosing", show_alert=True)
+        return
+
+    result = await sync_to_async(finish_order)(employee, int(order_id))
+    await callback.answer(result.message, show_alert=True)
+    if not result.ok:
+        return
+
+    await callback.message.edit_reply_markup()
+
+    order = result.order
+    sender = order.sender
+    sender_chat_id = getattr(sender, "telegram_chat", None) if sender else None
+
+    if sender_chat_id:
+        goal_name = order.goal.name if order.goal else "-"
+        text = (
+            f"✅ Arizangiz (#{order.id} — {goal_name}) bajarildi!\n\n"
+            f"Iltimos, xizmat sifatini baholang:"
+        )
+        try:
+            await callback.bot.send_message(
+                sender_chat_id, text, reply_markup=rating_keyboard(order.id)
+            )
+        except Exception:
+            logger.exception(
+                "Yuboruvchiga (chat_id=%s) baholash xabari yuborilmadi (order=%s)",
+                sender_chat_id, order.id,
+            )
+
+
+# ---------------------------------------------------------------------------
+# BAJARILGAN ARIZALAR TARIXI (ikkala bo'limda ham, context bo'yicha)
+# ---------------------------------------------------------------------------
+
+async def _show_completed_orders(message: Message, employee, context: str):
+    can_exec = await sync_to_async(can_execute_orders)(employee)
+    if not can_exec:
+        await message.answer("Sizda bu bo'limni ko'rish huquqi yo'q.")
+        return
+
+    orders = await sync_to_async(list_completed_orders)(employee, context=context)
+    if not orders:
+        await message.answer("Siz hali hech qanday arizani bajarmagansiz.")
+        return
+
+    lines = [
+        f"#{o.id} — {o.goal.name if o.goal else '-'} — "
+        f"{STATUS_LABELS.get(o.status, o.status)}"
+        + (f" — baho: {o.rating}⭐" if o.rating else "")
+        for o in orders
+    ]
+    await message.answer("\n".join(lines))
+
+
+@router.message(StateFilter(MenuStates.atm_menu), F.text == TXT_HISTORY)
+async def cmd_completed_orders_atm(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+    await _show_completed_orders(message, employee, context="atm")
+
+
+@router.message(StateFilter(MenuStates.warehouse_menu), F.text == TXT_HISTORY)
+async def cmd_completed_orders_warehouse(message: Message, state: FSMContext):
+    employee = await _require_employee(message, state)
+    if not employee:
+        return
+    await _show_completed_orders(message, employee, context="warehouse")
+
+
+# ---------------------------------------------------------------------------
+# BAHOLASH - faqat 1-5, bekor qilish yo'q
 # ---------------------------------------------------------------------------
 
 @router.callback_query(F.data.startswith("rate:"))
@@ -238,7 +497,6 @@ async def cb_rate(callback: CallbackQuery):
 
 # ---------------------------------------------------------------------------
 # OMBOR ARIZASI - TASDIQLANGANDAN KEYIN "QABUL QILDIM"
-# (bildirishnoma orqali kelgan tugmadan bosiladi)
 # ---------------------------------------------------------------------------
 
 @router.callback_query(F.data.startswith("receive:"))
@@ -256,6 +514,28 @@ async def cb_receive(callback: CallbackQuery):
     await callback.answer(result.message, show_alert=not result.ok)
     if result.ok:
         await callback.message.edit_reply_markup()
+
+
+# ---------------------------------------------------------------------------
+# ZAXIRA (fallback) - hech qaysi handler'ga mos kelmagan xabarlar uchun.
+# Bu handler ENG OXIRIDA turishi shart.
+# ---------------------------------------------------------------------------
+
+@router.message()
+async def fallback_handler(message: Message, state: FSMContext):
+    employee = await sync_to_async(get_employee_by_chat_id)(message.chat.id)
+    if employee:
+        await message.answer(
+            "Kechirasiz, buyruq tushunarsiz yoki sessiya eskirgan. "
+            "Iltimos /start bosing.",
+        )
+        await _send_main_menu(message, state, employee, "Asosiy menyu:")
+    else:
+        await state.set_state(AuthStates.waiting_pinfl)
+        await message.answer(
+            "Iltimos /start bosing yoki PINFL raqamingizni kiriting:",
+            reply_markup=ReplyKeyboardRemove(),
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -279,6 +559,7 @@ class Command(BaseCommand):
                 logging.StreamHandler(),
                 logging.FileHandler("bot_debug.log", encoding="utf-8"),
             ],
+            force=True,
         )
         asyncio.run(self._run(token))
 
