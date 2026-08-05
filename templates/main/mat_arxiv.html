@@ -35,6 +35,7 @@
                       <th>Soni</th>
                       <th>Birligi</th>
                       <th>Code</th>
+                      <th>Amal</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -47,10 +48,21 @@
                         <td>{{ row.outcome }}</td>
                         <td>{{ row.material.unit|default:"-" }}</td>
                         <td>{{ row.material.code|default:"-" }}</td>
+                        <td>
+                          <form method="post"
+                                action="{% url 'mat_arxiv_delete' row.id %}"
+                                onsubmit="return confirm('Ushbu materialni savatdan o\'chirishni tasdiqlaysizmi?');"
+                                style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                              <i class="bi bi-trash"></i>
+                            </button>
+                          </form>
+                        </td>
                       </tr>
                     {% empty %}
                       <tr>
-                        <td colspan="7"
+                        <td colspan="8"
                             class="text-center text-muted py-4">
                           <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                         </td>

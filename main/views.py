@@ -19,8 +19,23 @@ from django.contrib import messages
 from django.db.models import Q, Exists, OuterRef
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
 from .models import *
+from django.core.paginator import Paginator
+from django.db.models import Sum, F
+from django.db.models.functions import Coalesce
+from django.utils.timezone import make_aware
+from datetime import datetime, time
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
+from django.http import HttpResponse, HttpResponseBadRequest
+from django.db.models import Avg
+import secrets
+from .tasks import _resolve_position
+import openpyxl
+from io import BytesIO
+from django.utils.crypto import get_random_string
+from django.http import HttpRequest
 
 @never_cache
 def error_403(request, exception=None):
@@ -740,7 +755,7 @@ def deedconsent_action(request, pk):
     return redirect(back_url)
 
 
-from django.http import HttpRequest
+
 @never_cache
 @require_GET
 @login_required
@@ -2087,11 +2102,7 @@ def material_delete(request):
     return redirect(back_url)
 
 
-from django.core.paginator import Paginator
-from django.db.models import Sum, F
-from django.db.models.functions import Coalesce
-from django.utils.timezone import make_aware, localdate
-from datetime import datetime, time
+
 @never_cache
 @require_GET
 @login_required
@@ -2178,6 +2189,7 @@ def mat_info(request):
             })
 
         materials = Material.objects.filter(
+            organization=employee.organization,
             is_active=True, employee_id=employee_id
         ).order_by("name")
 
@@ -2400,6 +2412,29 @@ def mat_arxiv_post(request):
     else:
         messages.info(request, "Hech qanday material biriktirilmadi")
 
+    return redirect(back_url)
+
+
+@never_cache
+@require_POST
+@login_required
+@transaction.atomic
+def mat_arxiv_delete(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+    back_url = request.META.get("HTTP_REFERER", "/")
+
+    material = get_object_or_404(
+        MaterialMovement, pk=pk,
+    )
+
+    if not material.user == employee:
+        raise PermissionDenied("Sizga ruxsat yo'q")
+
+    material.delete()
+
+    messages.success(request, "Material savatdan o'chirildi")
     return redirect(back_url)
 
 
@@ -2738,9 +2773,6 @@ def reestr_get(request):
     return render(request, 'main/reestr.html', context)
 
 
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
-from django.http import HttpResponse, HttpResponseBadRequest
 @login_required
 @require_POST
 @csrf_protect
@@ -2848,7 +2880,6 @@ def technics_get(request):
     return render(request, "main/technics_get.html", context)
 
 
-from django.db.models import Avg
 @never_cache
 @require_GET
 @login_required
@@ -3186,8 +3217,6 @@ def files(request):
     return render(request, "main/files.html", context)
 
 
-import secrets
-from .tasks import _resolve_position, cyrillic_to_latin
 @login_required
 @require_POST
 def employe_create(request):
@@ -3286,8 +3315,6 @@ def material_import_page(request):
     return render(request, "main/material_import.html", context)
 
 
-import openpyxl
-from io import BytesIO
 @never_cache
 @require_POST
 @login_required
@@ -3782,7 +3809,6 @@ def employee_permission(request):
 # =========================================================================
 # YARATISH
 # =========================================================================
-from django.utils.crypto import get_random_string
 @never_cache
 @require_POST
 @login_required
