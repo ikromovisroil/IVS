@@ -366,19 +366,26 @@ def finish_order(employee: Employee, order_id: int) -> OrderResult:
     """Qabul qilingan arizani yakunlaydi: status -> finished."""
     try:
         with transaction.atomic():
-            order = (
-                _locking_qs(Order.objects)
-                .select_related("sender", "goal")
-                .filter(pk=order_id, receiver=employee, status="process")
-                .first()
-            )
+            # DIQQAT: select_for_update() bilan select_related() birga
+            # ishlatilmaydi - sender/goal null=True (SET_NULL) bo'lgani
+            # uchun LEFT OUTER JOIN hosil bo'ladi, PostgreSQL esa
+            # "FOR UPDATE cannot be applied to the nullable side of an
+            # outer join" xatosini beradi. Avval FAQAT Order jadvalini
+            # (select_related'siz) qulflab olamiz.
+            order = _locking_qs(Order.objects).filter(
+                pk=order_id, receiver=employee, status="process"
+            ).first()
             if not order:
                 return OrderResult(False, "Ariza topilmadi yoki allaqachon yakunlangan")
 
             order.status = "finished"
             order.save(update_fields=["status"])
+
+            # Endi xabar yuborish uchun sender/goal'ni ALOHIDA,
+            # qulflashsiz so'rov bilan yuklab olamiz.
+            order = Order.objects.select_related("sender", "goal").get(pk=order.pk)
     except DatabaseError:
-        logger.exception("DatabaseError yuz berdi (order_id=%s)", order_id)
+        logger.exception("finish_order DatabaseError (order_id=%s)", order_id)
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
 
     return OrderResult(True, "Ish muvaffaqiyatli yakunlandi!", order)
