@@ -1,8 +1,40 @@
+"""
+bot/services.py
+
+Telegram bot uchun biznes-mantiq:
+1. Xodimni PINFL orqali aniqlash / Telegram chat bilan bog'lash
+2. Ariza yaratish - ATM (worker) va Omborxona (client) uchun ALOHIDA
+3. Bajarilgan arizani baholash (bekor qilib bo'lmaydi)
+4. Ombor (client) arizasi tasdiqlangach - "qabul qildim" belgilash
+5. Ariza bajarish (ijrochi oqimi): qabul qilish -> yakunlash - ATM va
+   Omborxona uchun ALOHIDA ro'yxatlar
+
+Barcha funksiyalar SINXRON - aiogram handler'larida
+`asgiref.sync.sync_to_async` bilan o'raladi.
+"""
 from __future__ import annotations
+
 from dataclasses import dataclass
-from django.db import transaction, DatabaseError
+import logging
+
+from django.db import transaction, DatabaseError, connection
 from django.db.models import Q
+
 from main.models import Employee, Order, Goal, OrderGoal
+
+logger = logging.getLogger(__name__)
+
+
+def _locking_qs(qs):
+    """
+    select_for_update() ni faqat shu ma'lumotlar bazasi qo'llab-quvvatlasa
+    ishlatadi (masalan PostgreSQL). SQLite kabi qo'llab-quvvatlamaydigan
+    bazalarda oddiy (qulflanmagan) queryset qaytaradi - development/local
+    test uchun yetarli, productionda (PostgreSQL) haqiqiy himoya ishlaydi.
+    """
+    if connection.features.has_select_for_update:
+        return qs.select_for_update()
+    return qs
 
 
 # ---------------------------------------------------------------------------
@@ -107,8 +139,7 @@ def list_warehouse_goals(employee: Employee):
     )
 
 
-def create_order(employee: Employee, goal_id: int, message_text: str, context: str = ""
-                                                                                     "atm") -> OrderResult:
+def create_order(employee: Employee, goal_id: int, message_text: str, context: str = "atm") -> OrderResult:
     """
     context="atm" - faqat ATM (worker) kategoriyalariga ruxsat beradi
     context="warehouse" - faqat shu xodimning o'z tashkiloti (client)
@@ -154,7 +185,7 @@ def rate_order(employee: Employee, order_id: int, rating: int) -> OrderResult:
 
     try:
         with transaction.atomic():
-            order = Order.objects.select_for_update().filter(
+            order = _locking_qs(Order.objects).filter(
                 pk=order_id, status="finished", sender=employee,
             ).first()
             if not order:
@@ -164,6 +195,7 @@ def rate_order(employee: Employee, order_id: int, rating: int) -> OrderResult:
             order.rating = rating
             order.save(update_fields=["status", "rating"])
     except DatabaseError:
+        logger.exception("DatabaseError yuz berdi (order_id=%s)", order_id)
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
 
     return OrderResult(True, "Rahmat! Bahoyingiz qabul qilindi", order)
@@ -202,7 +234,7 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
     deed_error = None
     try:
         with transaction.atomic():
-            order = Order.objects.select_for_update().get(pk=order_id)
+            order = _locking_qs(Order.objects).get(pk=order_id)
 
             if order.status != "approved":
                 return OrderResult(False, "Ariza topilmadi yoki allaqachon qabul qilingan")
@@ -272,7 +304,8 @@ def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int 
     """
     Bitta ro'yxatda ikkalasini birga qaytaradi (context bo'yicha filtrlangan):
       1) YANGI arizalar (status=viewed, receiver bo'sh, ruxsat etilgan
-         kategoriya bo'yicha) - "Qabul qilish" tugmasi ko'rsatiladi
+         kategoriya bo'yicha, FAQAT SHU XODIMNING O'Z HUDUDIDAN yuborilgan -
+         'all_region' huquqidan qat'iy nazar) - "Qabul qilish" tugmasi
       2) Shu xodim QABUL QILGAN, hali yakunlanmagan arizalar
          (status=process, receiver=employee) - "Yakunlash" tugmasi
     """
@@ -284,7 +317,13 @@ def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int 
 
     new_orders = (
         Order.objects
-        .filter(ctx_filter,sender__region_id=employee.region_id, status="viewed", goal_id__in=goal_ids, receiver__isnull=True)
+        .filter(
+            ctx_filter,
+            status="viewed",
+            goal_id__in=goal_ids,
+            receiver__isnull=True,
+            sender__region_id=employee.region_id,   # <-- har doim, istisnosiz
+        )
         .select_related("goal", "sender")
         .order_by("id")[:limit]
     )
@@ -304,7 +343,7 @@ def accept_order(employee: Employee, order_id: int) -> OrderResult:
 
     try:
         with transaction.atomic():
-            order = Order.objects.select_for_update().filter(
+            order = _locking_qs(Order.objects).filter(
                 pk=order_id, status="viewed", receiver__isnull=True,
             ).first()
             if not order:
@@ -317,6 +356,7 @@ def accept_order(employee: Employee, order_id: int) -> OrderResult:
             order.status = "process"
             order.save(update_fields=["receiver", "status"])
     except DatabaseError:
+        logger.exception("DatabaseError yuz berdi (order_id=%s)", order_id)
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
 
     return OrderResult(True, "Ariza qabul qilindi", order)
@@ -327,8 +367,7 @@ def finish_order(employee: Employee, order_id: int) -> OrderResult:
     try:
         with transaction.atomic():
             order = (
-                Order.objects
-                .select_for_update()
+                _locking_qs(Order.objects)
                 .select_related("sender", "goal")
                 .filter(pk=order_id, receiver=employee, status="process")
                 .first()
@@ -339,6 +378,7 @@ def finish_order(employee: Employee, order_id: int) -> OrderResult:
             order.status = "finished"
             order.save(update_fields=["status"])
     except DatabaseError:
+        logger.exception("DatabaseError yuz berdi (order_id=%s)", order_id)
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
 
     return OrderResult(True, "Ish muvaffaqiyatli yakunlandi!", order)
