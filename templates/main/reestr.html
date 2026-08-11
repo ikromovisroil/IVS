@@ -188,6 +188,28 @@
                   <b><span id="date_contract">_</span>ga muvofiq</b>
                 </div>
 
+               {% if request.user.employee.id != 5 and request.user.employee.department.id == 298 %}
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Kelishildi</b><br>
+                          <b>Boshqarma boshlig'i</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Narzullayev A.</b><br>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                {% endif %}
+
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
