@@ -17,8 +17,8 @@
   </div>
 
   <section class="section">
-    {% csrf_token %}
-    <div class="row">
+    <form class="row" action="{% url 'reest_post' %}" method="post">
+      {% csrf_token %}
 
       <div class="col-lg-4">
         <div class="card">
@@ -34,7 +34,7 @@
                     <option
                       value="{{ org.id }}"
                       data-contract="{{ org.contract|default:'' }}"
-                      {% if selected_org == org.id|stringformat:'s' %}selected{% endif %}
+                      {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}
                     >
                       {{ org.name }}
                     </option>
@@ -62,11 +62,46 @@
               <div class="text-center">
                 <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">Imzolashga yuborish</h5>
+
+            <div class="row g-3">
+              <div class="col-12">
+                <label for="sender" class="form-label">Imzolovchi xodim :</label>
+                <select id="sender" name="sender" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for emp in employee %}
+                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label for="agreements" class="form-label">Kelishuvchilar :</label>
+                <select id="agreements" name="agreements[]" class="form-select" multiple>
+                  {% for emp in employee %}
+                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12">
+                <label for="message" class="form-label">Izox :</label>
+                <textarea class="form-control" id="message" name="message" rows="4" placeholder="Izoh yozing..."></textarea>
+              </div>
+
               <div class="text-center">
-                <button type="button" id="btnDownloadPdf" class="btn btn-secondary w-100">yuklab olish</button>
+                <button type="submit" class="btn btn-primary w-100"
+                onclick="return confirm('Imzolashga yuborishni tasdiqlang?')">
+                    Imzolashga yuborish
+                </button>
               </div>
             </div>
-
           </div>
         </div>
       </div>
@@ -97,7 +132,7 @@
                   <b>{{ request.user.employee.region.name }}</b>
                 </div>
                 <div style="text-align:center;">
-                  <b id="report_period">2026 yil dekabir oyi uchun</b>
+                  <b id="report_period">2026 yil dekabr oyi uchun</b>
                 </div>
 
                 <div>
@@ -228,7 +263,7 @@
         </div>
       </div>
 
-    </div>
+    </form>
   </section>
 </main>
 
@@ -536,59 +571,6 @@ function searchMaterials() {
   });
 }
 
-// ─── PDF YUKLAB OLISH ──────────────────────────────────────────────────────────
-
-function downloadReestrPdf() {
-  const ed = editorGet();
-  if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
-
-  const rawBody = ($('#body').val() || '').trim();
-
-  if (!rawBody) {
-    alert('Avval "Qidirish" tugmasini bosib, jadvalni shakllantiring!');
-    return;
-  }
-
-  // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
-  const encoded = btoa(unescape(encodeURIComponent(rawBody)));
-
-  const $btn = $('#btnDownloadPdf');
-  const originalText = $btn.text();
-  $btn.prop('disabled', true).text('Yuklanmoqda...');
-
-  fetch("{% url 'reestr_pdf_download' %}", {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': $('input[name=csrfmiddlewaretoken]').val(),
-    },
-    body: new URLSearchParams({ body_encoded: encoded }),
-  })
-    .then(function (response) {
-      if (!response.ok) {
-        return response.text().then(function (text) {
-          throw new Error(text || `Server xatoligi (${response.status})`);
-        });
-      }
-      return response.blob();
-    })
-    .then(function (blob) {
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'reestr.pdf';
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    })
-    .catch(function (err) {
-      console.error('PDF yuklab olishda xatolik:', err);
-      alert('PDF yuklab olishda xatolik yuz berdi: ' + err.message);
-    })
-    .finally(function () {
-      $btn.prop('disabled', false).text(originalText);
-    });
-}
 
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
@@ -629,9 +611,32 @@ $(function () {
     searchMaterials();
   });
 
-  $('#btnDownloadPdf').on('click', function (e) {
+  // ─── FORM SUBMIT: body ni Base64 qilib yuboramiz (svod.html bilan bir xil,
+  //     WAF/firewall'ni chetlab o'tish uchun) ─────────────────────────────────
+
+  $('form').on('submit', function (e) {
     e.preventDefault();
-    downloadReestrPdf();
+
+    const ed = editorGet();
+    if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+
+    const rawBody = $('#body').val() || '';
+
+    // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
+    const encoded = btoa(unescape(encodeURIComponent(rawBody)));
+
+    // yashirin maydonga joylaymiz
+    let $hidden = $(this).find('input[name="body_encoded"]');
+    if ($hidden.length === 0) {
+      $hidden = $('<input type="hidden" name="body_encoded">').appendTo(this);
+    }
+    $hidden.val(encoded);
+
+    // asl 'body' maydonini yuborilishdan chiqarib tashlaymiz
+    $('#body').removeAttr('name');
+
+    // haqiqiy (native) yuborish
+    this.submit();
   });
 
   // ─── INITIAL LOAD ─────────────────────────────────────────────────────────

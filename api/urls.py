@@ -1,48 +1,29 @@
-from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-
-from . import views
+from .views import *
 
 router = DefaultRouter()
+router.register('organizations', OrganizationViewSet, basename='organization')
+router.register('regions', RegionViewSet, basename='region')
+router.register('departments', DepartmentViewSet, basename='department')
+router.register('directorates', DirectorateViewSet, basename='directorate')
+router.register('divisions', DivisionViewSet, basename='division')
+router.register('groups', GroupViewSet, basename='group')
+router.register('contracts', ContractViewSet, basename='contract')
+router.register('categories', CategoryViewSet, basename='category')
+router.register('technics', TechnicsViewSet, basename='technics')
+router.register('structure-categories', StructureCategoryViewSet, basename='structurecategory')
+router.register('structures', StructureViewSet, basename='structure')
+router.register('units', UnitViewSet, basename='unit')
+router.register('material-categories', MaterialCategoryViewSet, basename='materialcategory')
+router.register('materials', MaterialViewSet, basename='material')
+router.register('material-employees', MaterialEmployeeViewSet, basename='materialemployee')
+router.register('goals', GoalViewSet, basename='goal')
+router.register('orders', OrderViewSet, basename='order')
+router.register('order-goals', OrderGoalViewSet, basename='ordergoal')
+router.register('material-users', MaterialUserViewSet, basename='materialuser')
+router.register('deeds', DeedViewSet, basename='deed')
+router.register('deed-consents', DeedConsentViewSet, basename='deedconsent')
+router.register('liables', LiableViewSet, basename='liable')
+router.register('material-movements', MaterialMovementViewSet, basename='materialmovement')
 
-# Tuzilma (spravochnik)
-router.register('organizations', views.OrganizationViewSet)
-router.register('regions', views.RegionViewSet)
-router.register('departments', views.DepartmentViewSet)
-router.register('directorates', views.DirectorateViewSet)
-router.register('divisions', views.DivisionViewSet)
-router.register('ranks', views.RankViewSet)
-router.register('groups', views.GroupViewSet)
-router.register('categories', views.CategoryViewSet)
-router.register('structure-categories', views.StructureCategoryViewSet)
-router.register('units', views.UnitViewSet)
-router.register('material-categories', views.MaterialCategoryViewSet)
-router.register('goals', views.GoalViewSet)
-router.register('contracts', views.ContractViewSet)
-
-# Xodim
-router.register('employees', views.EmployeeViewSet)
-
-# Texnika
-router.register('technics', views.TechnicsViewSet)
-router.register('structures', views.StructureViewSet)
-
-# Material
-router.register('materials', views.MaterialViewSet)
-router.register('material-employees', views.MaterialEmployeeViewSet)
-router.register('material-movements', views.MaterialMovementViewSet)
-
-# Ariza
-router.register('orders', views.OrderViewSet)
-router.register('order-materials', views.OrderMaterialViewSet)
-router.register('order-goals', views.OrderGoalViewSet)
-router.register('material-users', views.MaterialUserViewSet)
-
-# Xujat
-router.register('deeds', views.DeedViewSet)
-router.register('deed-consents', views.DeedConsentViewSet)
-router.register('liables', views.LiableViewSet)
-
-urlpatterns = [
-    path('', include(router.urls)),
-]
+urlpatterns = router.urls

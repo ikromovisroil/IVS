@@ -2767,39 +2767,77 @@ def reestr_get(request):
 
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
-        "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
-        "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
+        "employee": Employee.objects.filter(organization_id=employee.organization_id).select_related("rank"),
     }
     return render(request, 'main/reestr.html', context)
 
 
-@login_required
+@never_cache
 @require_POST
-@csrf_protect
-def reestr_pdf_download(request):
+@login_required
+@permission_required("main.shop_employee", raise_exception=True)
+def reest_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        return HttpResponseBadRequest("Employee yo'q")
+        raise PermissionDenied("Employee yo'q")
 
+    org_id = (request.POST.get("organization") or "").strip()
+    sender_id  = (request.POST.get("sender")  or "").strip()
+    message    = (request.POST.get("message") or "").strip() or None
+    agreements = request.POST.getlist("agreements[]")
+
+    # FIX: to'g'ri kalit ("body_encoded") o'qiladi, natija alohida
+    # "body" o'zgaruvchisiga yoziladi — ular endi bir-birini bekor qilmaydi.
     body_encoded = (request.POST.get("body_encoded") or "").strip()
-    if not body_encoded:
-        return HttpResponseBadRequest("Body topilmadi")
+    body = ""
+    if body_encoded:
+        try:
+            body = base64.b64decode(body_encoded).decode("utf-8").strip()
+        except (binascii.Error, UnicodeDecodeError, ValueError):
+            body = ""
+
+    org = Organization.objects.filter(id=org_id).first() if org_id.isdigit() else None
+    if not org:
+        messages.info(request, "Tashkilot topilmadi")
+        return redirect("reestr_get")
+
+    sender = Employee.objects.filter(id=sender_id).first() if sender_id.isdigit() else None
+    if not sender:
+        messages.info(request, "Imzolovchi xodim tanlanmadi")
+        return redirect("reestr_get")
+
+    if not body:
+        messages.info(request, "Hujjat matni bo'sh bo'lmasin")
+        return redirect("reestr_get")
+
+    with transaction.atomic():
+        deed = Deed.objects.create(
+            organization=org,
+            sender=sender,
+            user=employee,
+            message_user=message,
+            body=body,
+            status='reestr',
+        )
+
+        ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
+        ids = [i for i in ids if i != sender.id]
+
+        if ids:
+            emps = Employee.objects.filter(id__in=ids).only("id")
+            objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+            DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
     try:
-        body_html = base64.b64decode(body_encoded).decode("utf-8")
-    except (binascii.Error, UnicodeDecodeError):
-        return HttpResponseBadRequest("Body noto'g'ri kodlangan (Base64/UTF-8 xatosi)")
-
-    try:
-        pdf_bytes = html_to_pdf_bytes(body_html, orientation="Landscape")
+        pdf_bytes = deed_to_pdf_bytes(deed)
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
+        pdf_name  = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
+        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
     except HtmlPdfError as e:
-        return HttpResponseBadRequest(f"PDF yaratishda xatolik: {e}")
+        messages.info(request, f"PDF yaratilmadi: {e}")
 
-    filename = f"reestr_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-
-    response = HttpResponse(pdf_bytes, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
-    return response
+    messages.success(request, "Imzolashga yuborildi")
+    return redirect("contact_user")
 
 
 @never_cache
@@ -3220,6 +3258,8 @@ def files(request):
 @login_required
 @require_POST
 def employe_create(request):
+    from .gateway import GatewayClient, GatewayError
+
     pinfl = request.POST.get("pinfl", "").strip()
 
     if not pinfl:
@@ -3230,23 +3270,37 @@ def employe_create(request):
         messages.info(request, "Bu PINFL allaqachon ro'yxatda bor")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
+    # DIQQAT: GatewayClient chaqiruvi endi ALOHIDA try/except bilan
+    # o'ralgan. Sabab: Gateway bilan aloqa xatosi (SSL/tarmoq/timeout)
+    # foydalanuvchining/adminning aybi emas - bu vaqtinchalik tashqi
+    # tizim muammosi. Buni boshqa (dasturiy) xatolardan ajratib,
+    # tushunarli xabar bilan qaytarish kerak, xom texnik matnni
+    # ko'rsatish o'rniga.
     try:
-        from .gateway import GatewayClient
-
         gateway_data = GatewayClient.current_citizen(pinfl)
-        result       = gateway_data.get("result") or {}
-        positions    = result.get("positions") or []
+    except GatewayError:
+        logger.exception("Gateway bilan aloqa xatosi (pinfl=%s)", pinfl)
+        messages.info(
+            request,
+            "Tashqi tizim (Gateway) bilan aloqada vaqtinchalik xatolik yuz berdi. "
+            "Birozdan keyin qayta urinib ko'ring."
+        )
+        return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        if not positions:
-            messages.info(request, "Gatewayda ish joyi topilmadi")
-            return redirect(request.META.get("HTTP_REFERER", "/"))
+    result = gateway_data.get("result") or {}
+    positions = result.get("positions") or []
 
-        assigned_data = _resolve_position(pinfl, positions)
+    if not positions:
+        messages.info(request, "Gatewayda ish joyi topilmadi")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
 
-        if not assigned_data:
-            messages.info(request, "Tizimda tashkilot topilmadi")
-            return redirect(request.META.get("HTTP_REFERER", "/"))
+    assigned_data = _resolve_position(pinfl, positions)
 
+    if not assigned_data:
+        messages.info(request, "Tizimda tashkilot topilmadi")
+        return redirect(request.META.get("HTTP_REFERER", "/"))
+
+    try:
         with transaction.atomic():
             base_username = (
                 f"{result.get('surname', '').lower()}"
@@ -3293,6 +3347,8 @@ def employe_create(request):
         messages.success(request, f"{employee.full_name} xodim yaratildi")
 
     except Exception as e:
+        # Bu yerda endi FAQAT dasturiy/baza xatolari qoladi (Gateway
+        # xatosi yuqorida allaqachon ajratib olingan).
         logger.exception("Xodim yaratishda xatolik")
         messages.info(request, str(e))
 
@@ -3935,7 +3991,6 @@ def employee_update(request):
 # =========================================================================
 # O'CHIRISH
 # =========================================================================
-
 @never_cache
 @require_POST
 @login_required

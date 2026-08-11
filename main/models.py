@@ -314,11 +314,16 @@ class Technics(models.Model):
             self.serial = "B/N"
 
         if self.employee:
-            self.status = 'active'
             self.organization_id = self.employee.organization_id
             self.department_id = self.employee.department_id
             self.directorate_id = self.employee.directorate_id
             self.division_id = self.employee.division_id
+
+        # employee/department/directorate/division dan biror-biri bo'lsa ham — aktiv
+        if self.employee_id or self.department_id or self.directorate_id or self.division_id:
+            self.status = 'active'
+        else:
+            self.status = 'free'
 
         super().save(*args, **kwargs)
 
@@ -367,6 +372,11 @@ class Structure(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if self.status not in ('repair', 'defect'):
+            self.status = 'active' if self.technics_id else 'free'
+        super().save(*args, **kwargs)
 
     class Meta:
         db_table = 'structure'

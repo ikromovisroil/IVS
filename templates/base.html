@@ -108,6 +108,14 @@
                         {% endif %}
                     {% endif %}
 
+                {% elif not o.receiver_id %}
+                    {# hali receiver tayinlanmagan, lekin employee shu goal'ga ruxsatli #}
+                    {% if o.goal.organization.type == "worker" and o.status == "viewed" %}
+                        {% url 'order_receiver' as link %}
+                    {% elif o.goal.organization.type == "client" and o.status == "viewed" %}
+                        {% url 'order_receiver_barn' as link %}
+                    {% endif %}
+
                 {% elif o.user.user_id == request.user.id %}
                     {% url 'order_agrement_arxiv' as link %}
                 {% endif %}
@@ -146,6 +154,8 @@
                   {% if o.sender.user_id == request.user.id %}
                   <h4 class="mb-1">{{ o.receiver.full_name }}</h4>
                   {% elif o.receiver.user_id == request.user.id %}
+                  <h4 class="mb-1">{{ o.sender.full_name }}</h4>
+                  {% elif not o.receiver_id %}
                   <h4 class="mb-1">{{ o.sender.full_name }}</h4>
                   {% elif o.user.user_id == request.user.id %}
                   <h4 class="mb-1">{{ o.sender.full_name }}</h4>
@@ -334,11 +344,16 @@
 
         <!-- Arizalar -->
         <li class="nav-item">
-          <a class="nav-link {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_barn' or url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_sender_barn' or url_name == 'order_sender_arxiv_barn' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_barn' or url_name == 'order_sender_basket_barn' or url_name == 'order_sender_user' %}active{% else %}collapsed{% endif %}"
+          <a class="nav-link d-flex align-items-center {% if url_name == 'order_agrement_arxiv' or url_name == 'order_agrement' or url_name == 'order_receiver_arxiv_barn' or url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_sender_barn' or url_name == 'order_sender_arxiv_barn' or url_name == 'order_sender' or url_name == 'order_sender_arxiv' or url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' or url_name == 'order_sender_material_barn' or url_name == 'order_sender_basket_barn' or url_name == 'order_sender_user' %}active{% else %}collapsed{% endif %}"
              data-bs-target="#forms-nav-order"
              data-bs-toggle="collapse"
              href="#">
-            <i class="bi bi-journal-text"></i>
+            <span style="position:relative; display:inline-block;">
+              <i class="bi bi-journal-text"></i>
+              {% if order_notification_count > 0 %}
+              <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background-color:#dc3545; border-radius:50%; display:inline-block;"></span>
+              {% endif %}
+            </span>
             <span>Arizalar</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
@@ -366,9 +381,12 @@
               {% if request.user.employee.organization.type == "worker" %}
               {% if perms.main.change_order %}
               <li>
-                <a class="{% if url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% endif %}"
+                <a class="d-flex align-items-center {% if url_name == 'order_receiver' or url_name == 'order_receiver_activ' or url_name == 'order_receiver_arxiv' %}active{% endif %}"
                    href="{% url 'order_receiver' %}">
                   <i class="bi bi-circle"></i><span>Arizalarni Bajarish</span>
+                  {% if order_receiver_badge_count > 0 %}
+                  <span class="badge bg-danger ms-auto">{{ order_receiver_badge_count }}</span>
+                  {% endif %}
                 </a>
               </li>
               {% endif %}
@@ -377,9 +395,12 @@
               {% if request.user.employee.organization.type == "client" %}
               {% if perms.main.change_order %}
               <li>
-                <a class="{% if url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_receiver_arxiv_barn' %}active{% endif %}"
+                <a class="d-flex align-items-center {% if url_name == 'order_receiver_barn' or url_name == 'order_receiver_activ_barn' or url_name == 'order_receiver_arxiv_barn' %}active{% endif %}"
                    href="{% url 'order_receiver_barn' %}">
                   <i class="bi bi-circle"></i><span>Arizalarni Bajarish</span>
+                  {% if order_receiver_badge_count > 0 %}
+                  <span class="badge bg-danger ms-auto">{{ order_receiver_badge_count }}</span>
+                  {% endif %}
                 </a>
               </li>
               {% endif %}

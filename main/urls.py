@@ -118,7 +118,7 @@ urlpatterns = [
 
     # REESTR
     path("reestr/", reestr_get, name="reestr_get"),
-    path("reestr/post/", reestr_pdf_download, name="reestr_pdf_download"),
+    path("reestr/post/", reest_post, name="reest_post"),
 
     # =========================
     # ZAYAVKA / ORDER create_order_sender_from   order_sender_user
