@@ -36,6 +36,8 @@ import openpyxl
 from io import BytesIO
 from django.utils.crypto import get_random_string
 from django.http import HttpRequest
+from .push_views import *
+
 
 @never_cache
 def error_403(request, exception=None):
@@ -2576,6 +2578,12 @@ def document_post(request):
             objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
             DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_deed_sender(deed)
+    if ids:
+        notify_deed_watchers(deed, emps)
+    # ─────────────────────────────────────────────────────────────────
+
     # 2. PDF — transaction tashqarisida
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
@@ -2661,6 +2669,12 @@ def akt_post(request):
             objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
             DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_deed_sender(deed)
+    if ids:
+        notify_deed_watchers(deed, emps)
+    # ─────────────────────────────────────────────────────────────────
+
     # 2. PDF — transaction tashqarisida
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
@@ -2745,6 +2759,12 @@ def svod_post(request):
             objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
             DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_deed_sender(deed)
+    if ids:
+        notify_deed_watchers(deed, emps)
+    # ─────────────────────────────────────────────────────────────────
+
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
         pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
@@ -2828,6 +2848,12 @@ def reest_post(request):
             emps = Employee.objects.filter(id__in=ids).only("id")
             objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
             DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_deed_sender(deed)
+    if ids:
+        notify_deed_watchers(deed, emps)
+    # ─────────────────────────────────────────────────────────────────
 
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)

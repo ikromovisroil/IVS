@@ -19,7 +19,7 @@ from django.utils import timezone
 def order_sender(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     page_number = request.GET.get("page", 1)
 
@@ -89,6 +89,10 @@ def order_decide(request, pk):
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_order_status_change(order)
+    # ─────────────────────────────────────────────────────────────────
+
     if action == "canceled":
         messages.success(request, "Ariza bekor qilindi")
     else:
@@ -149,13 +153,15 @@ def order_post(request):
 
     goal = get_object_or_404(Goal, pk=int(goal_id))
 
-    Order.objects.create(
+    order = Order.objects.create(
         sender_id=employee.id,
         goal=goal,
         message_sender=body,
         status="viewed",
     )
-
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_eligible_employees_new_order(order)
+    # ─────────────────────────────────────────────────────────────────
     messages.success(request, "Ariza Yaratish")
     return redirect(back_url)
 
@@ -168,7 +174,7 @@ def order_post(request):
 def order_sender_user(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     page_number = request.GET.get("page", 1)
 
@@ -236,7 +242,7 @@ def order_user_post(request):
 def order_receiver(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
@@ -310,6 +316,10 @@ def order_accepted(request, pk):
     except DatabaseError:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
+
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_order_status_change(order)
+    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
@@ -473,6 +483,10 @@ def order_material_post(request):
 
     order.status = "finished"
     order.save(update_fields=["status", "technics_id"])
+
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_order_status_change(order)
+    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
@@ -652,6 +666,10 @@ def order_receiver_deed_post(request):
                     date_creat=order.date_finished
                 )
 
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_deed_sender(deed)
+    # ─────────────────────────────────────────────────────────────────
+
     try:
         pdf_bytes = deed_to_pdf_bytes(deed)
         pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
@@ -762,6 +780,10 @@ def order_decide_barn(request, pk):
     except DatabaseError:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
+
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_order_status_change(order)
+    # ─────────────────────────────────────────────────────────────────
 
     if action == "canceled":
         messages.success(request, "Ariza bekor qilindi")
@@ -938,6 +960,10 @@ def create_order_sender_from(request):
 
     OrderMaterial.objects.bulk_update(cart_items, ["number", "order"])
 
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_eligible_employees_new_order(order)
+    # ─────────────────────────────────────────────────────────────────
+
     messages.success(request, "Ariza yuborildi")
     return redirect("order_sender_barn")
 
@@ -1048,6 +1074,10 @@ def order_accepted_barn(request, pk):
     except DatabaseError:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
+
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_order_status_change(order)
+    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         if action == "process":
@@ -1259,6 +1289,10 @@ def order_material_barn(request):
     except DatabaseError:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
+
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_order_status_change(order)
+    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
@@ -1517,6 +1551,10 @@ def order_agrement_material(request):
     except DatabaseError as e:
         messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
+
+    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    notify_order_status_change(order)
+    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         if action == "approved":
