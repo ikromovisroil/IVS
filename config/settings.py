@@ -117,6 +117,7 @@ TEMPLATES = [
                 "main.context_processors.deed_notifications",
                 "main.context_processors.order_notifications",
                 "main.context_processors.order_receiver_count",
+                "main.context_processors.vapid_context",
             ],
         },
     },
@@ -535,4 +536,15 @@ JAZZMIN_UI_TWEAKS = {
         "danger": "btn-danger",
         "success": "btn-success",
     },
+}
+
+VAPID_PRIVATE_KEY_PEM = """
+MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/jQVoEQJ1zytrNja
+LLERk8Nl90RBXmTDEwjQ1IT2vZyhRANCAATRi6+0QnfNk6t0glSCupzvltYVaUTp
+VkoULHENqoaFGBFgZtcpHZBsjgCKD/fqBVOCT8R4ZBA5SJxvVMfiz1c+"""
+
+VAPID_PUBLIC_KEY = "BNGLr7RCd82Tq3SCVIK6nO-W1hVpROlWShQscQ2qhoUYEWBm1ykdkGyOAIoP9-oFU4JPxHhkEDlInG9Ux-LPVz4"
+
+VAPID_CLAIMS = {
+    "sub": "mailto:admin@yatm.uz"
 }

@@ -82,3 +82,28 @@ class SyncEmployeeLog(models.Model):
         verbose_name        = "Xodim sync yozuvi"
         verbose_name_plural = "Xodim sync yozuvlari"
         ordering            = ["-date_creat"]
+
+
+class PushSubscription(models.Model):
+    """
+    Har bir brauzer/qurilma uchun push obunasi.
+    Bitta xodim bir nechta qurilmadan kirishi mumkin (telefon, kompyuter),
+    shuning uchun employee -> ko'p PushSubscription bo'lishi mumkin.
+    """
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE,
+        related_name="push_subscriptions", db_index=True
+    )
+    endpoint = models.URLField(max_length=1000, unique=True)
+    p256dh = models.CharField(max_length=200)
+    auth = models.CharField(max_length=200)
+    user_agent = models.CharField(max_length=300, null=True, blank=True)
+    date_creat = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.employee} - {self.endpoint[:50]}..."
+
+    class Meta:
+        db_table = 'push_subscription'
+        verbose_name = "Push obunasi"
+        verbose_name_plural = "Push obunalari"

@@ -1,8 +1,7 @@
 # core/admin.py
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import AuditLog, SyncLog, SyncEmployeeLog
-
+from .models import *
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
@@ -162,3 +161,23 @@ class SyncEmployeeLogAdmin(admin.ModelAdmin):
         text = obj.changes or obj.error_msg or "—"
         return text[:80] + "..." if len(text) > 80 else text
     changes_short.short_description = "Tafsilot"
+
+
+
+@admin.register(PushSubscription)
+class PushSubscriptionAdmin(admin.ModelAdmin):
+    list_display = ("id", "employee", "short_endpoint", "user_agent", "date_creat")
+    list_filter = ("date_creat",)
+    search_fields = (
+        "employee__last_name",
+        "employee__first_name",
+        "employee__father_name",
+        "endpoint",
+    )
+    autocomplete_fields = ("employee",)
+    readonly_fields = ("endpoint", "p256dh", "auth", "user_agent", "date_creat")
+    ordering = ("-date_creat",)
+
+    def short_endpoint(self, obj):
+        return obj.endpoint[:60] + "..." if len(obj.endpoint) > 60 else obj.endpoint
+    short_endpoint.short_description = "Endpoint"

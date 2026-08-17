@@ -4,6 +4,7 @@ from .ajax_xlsx import *
 from .sso_views import *
 from .order_views import *
 from .views import *
+from .push_views import *
 
 urlpatterns = [
     # =========================
@@ -184,5 +185,9 @@ urlpatterns = [
     path("employee/update/", employee_update, name="employee_update"),
     path("employee/delete/", employee_delete, name="employee_delete"),
     path("employee/permission/", employee_permission, name="employee_permission"),
+
+    path('sw.js', service_worker_js, name='service_worker_js'),
+    path('ajax/push-subscribe/', save_push_subscription, name='save_push_subscription'),
+    path('ajax/push-unsubscribe/', remove_push_subscription, name='remove_push_subscription'),
 ]
 

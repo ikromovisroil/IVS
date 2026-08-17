@@ -1,5 +1,7 @@
 from .models import *
 from django.db.models import Q
+from django.conf import settings
+
 
 def deed_notifications(request):
     if not request.user.is_authenticated:
@@ -27,7 +29,7 @@ def deed_notifications(request):
         status_sender="viewed"
     )
 
-    # 3️⃣ KUZATUVCHI: kelishuv talab qilinayotgan yoki o‘zgargan
+    # KUZATUVCHI: kelishuv talab qilinayotgan yoki o‘zgargan
     watcher_notes = Deed.objects.filter(
         deedconsent__employee=employee,
         deedconsent__status='viewed'
@@ -162,3 +164,12 @@ def order_receiver_count(request):
         return {"order_receiver_badge_count": count}
 
     return empty
+
+
+def vapid_context(request):
+    """
+    VAPID public key'ni har bir sahifaga yetkazadi - frontend JS
+    (base.html'dagi push subscription kodi) buni push obunasi
+    yaratishda ishlatadi.
+    """
+    return {"vapid_public_key": getattr(settings, "VAPID_PUBLIC_KEY", "")}

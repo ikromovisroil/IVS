@@ -672,6 +672,117 @@
       {% endif %}
   </div>
 
+  <!-- ======================= BRAUZER BILDIRISHNOMALARI BANNERI ======================= -->
+<div id="notificationPermissionBanner"
+     style="display:none; position:fixed; bottom:20px; right:20px; z-index:9999; background:#fff; border:1px solid #dee2e6; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,0.12); padding:14px 18px; align-items:center; gap:12px; max-width:320px;">
+  <div style="display:flex; align-items:center; gap:12px; cursor:pointer;" id="notificationPermissionAction">
+    <i class="bi bi-bell" style="font-size:20px; color:#495057;"></i>
+    <span style="color:#495057; font-size:14px;">Bildirishnomalarni yoqish</span>
+  </div>
+  <button id="notificationPermissionClose" type="button"
+          style="position:absolute; top:4px; right:6px; border:none; background:none; color:#adb5bd; font-size:16px; line-height:1; cursor:pointer;">
+    &times;
+  </button>
+</div>
+
+<script>
+(function () {
+    const VAPID_PUBLIC_KEY = "{{ vapid_public_key }}";
+    const DISMISS_KEY = "ivs_notification_banner_dismissed";
+    const SUBSCRIBE_URL   = "{% url 'save_push_subscription' %}";
+
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+
+    const banner       = document.getElementById("notificationPermissionBanner");
+    const bannerAction = document.getElementById("notificationPermissionAction");
+    const bannerClose  = document.getElementById("notificationPermissionClose");
+
+    function urlBase64ToUint8Array(base64String) {
+        const padding = "=".repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+        const rawData = atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+        for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+        return outputArray;
+    }
+
+    function hideBanner() { if (banner) banner.style.display = "none"; }
+    function showBanner() { if (banner) banner.style.display = "flex"; }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(";").shift();
+        return "";
+    }
+
+    function sendSubscriptionToServer(subscription) {
+        fetch(SUBSCRIBE_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": getCookie("csrftoken"),
+            },
+            body: JSON.stringify(subscription),
+            credentials: "same-origin",
+        });
+    }
+
+    function subscribeUser(registration) {
+        registration.pushManager.getSubscription().then(function (existingSub) {
+            if (existingSub) {
+                sendSubscriptionToServer(existingSub);
+                return;
+            }
+            registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+            }).then(function (subscription) {
+                sendSubscriptionToServer(subscription);
+            }).catch(function (err) {
+                console.log("Push obuna xatosi:", err);
+            });
+        });
+    }
+
+    function registerServiceWorkerAndSubscribe() {
+        navigator.serviceWorker.register("/sw.js").then(function (registration) {
+            subscribeUser(registration);
+        }).catch(function (err) {
+            console.log("Service Worker xatosi:", err);
+        });
+    }
+
+    if (Notification.permission === "granted") {
+        registerServiceWorkerAndSubscribe();
+    } else if (Notification.permission === "denied") {
+        // hech narsa
+    } else {
+        if (!localStorage.getItem(DISMISS_KEY)) showBanner();
+    }
+
+    if (bannerAction) {
+        bannerAction.addEventListener("click", function () {
+            Notification.requestPermission().then(function (permission) {
+                hideBanner();
+                if (permission === "granted") {
+                    registerServiceWorkerAndSubscribe();
+                } else {
+                    localStorage.setItem(DISMISS_KEY, "1");
+                }
+            });
+        });
+    }
+
+    if (bannerClose) {
+        bannerClose.addEventListener("click", function () {
+            hideBanner();
+            localStorage.setItem(DISMISS_KEY, "1");
+        });
+    }
+})();
+</script>
+
   <!-- ======= Footer ======= -->
 
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
