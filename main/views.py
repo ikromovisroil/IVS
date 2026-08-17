@@ -378,6 +378,7 @@ def contact_post_deed(request):
 
     with transaction.atomic():
         deed = Deed.objects.create(
+            organization=sender.organization,
             user=employee,
             sender=sender,
             status=status,
