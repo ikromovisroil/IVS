@@ -715,10 +715,11 @@
               <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
               <div class="col-md-8 col-lg-9">
                 <select name="department_id"
-                        class="form-select edit-department-select"
-                        data-selected="{{ emp.department_id|default:'' }}"
-                        data-org="{{ emp.organization_id|default:'' }}">
-                  <option value="">— Yuklanmoqda —</option>
+                      class="form-select edit-department-select"
+                      data-selected="{{ emp.department_id|default:'' }}"
+                      data-org="{{ emp.organization_id|default:'' }}"
+                      data-region="{{ emp.region_id|default:'' }}">
+                <option value="">— Yuklanmoqda —</option>
                 </select>
               </div>
             </div>
@@ -1064,13 +1065,16 @@
     if (!depSel) return;
 
     const orgId = depSel.dataset.org || "";
+    const regionId = depSel.dataset.region || "";
     const selectedDep = depSel.dataset.selected || "";
     const selectedDir = dirSel ? (dirSel.dataset.selected || "") : "";
     const selectedDiv = divSel ? (divSel.dataset.selected || "") : "";
 
     setLoading(depSel);
     if (orgId) {
-      const data = await getJSON(`${URL_DEPS}?organization=${encodeURIComponent(orgId)}`);
+      let qs = `organization=${encodeURIComponent(orgId)}`;
+      if (regionId) qs += `&region=${encodeURIComponent(regionId)}`; 
+      const data = await getJSON(`${URL_DEPS}?${qs}`);
       fillOptions(depSel, data.results || [], "Tanlang...", selectedDep);
     } else {
       fillOptions(depSel, [], "Tanlang...", "");
