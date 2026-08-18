@@ -1073,7 +1073,7 @@
     setLoading(depSel);
     if (orgId) {
       let qs = `organization=${encodeURIComponent(orgId)}`;
-      if (regionId) qs += `&region=${encodeURIComponent(regionId)}`; 
+      if (regionId) qs += `&region=${encodeURIComponent(regionId)}`;
       const data = await getJSON(`${URL_DEPS}?${qs}`);
       fillOptions(depSel, data.results || [], "Tanlang...", selectedDep);
     } else {
