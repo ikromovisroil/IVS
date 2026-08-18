@@ -198,14 +198,14 @@ def ajax_load_departments(request):
         raise PermissionDenied("Employee yo'q")
 
     org_id = (request.GET.get("organization") or "").strip()
-
+    reg_id = (request.GET.get("region") or "").strip()
 
     if not org_id or not org_id.isdigit():
         return JsonResponse({"results": []})
 
     qs = Department.objects.filter(
         organization_id=org_id,
-        region_id=employee.region_id,
+        region_id=reg_id,
     ).values("id", "name").order_by("id")
 
     return JsonResponse({"results": list(qs)})
