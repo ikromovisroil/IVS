@@ -70,7 +70,7 @@ def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
         "enable-local-file-access": "",
         "margin-top": "15mm",
         "margin-right": "10mm",
-        "margin-bottom": "15mm",
+        "margin-bottom": "25mm",
         "margin-left": "15mm",
         "load-error-handling": "ignore",
         "load-media-error-handling": "ignore",

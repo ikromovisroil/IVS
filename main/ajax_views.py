@@ -203,10 +203,16 @@ def ajax_load_departments(request):
     if not org_id or not org_id.isdigit():
         return JsonResponse({"results": []})
 
-    qs = Department.objects.filter(
-        organization_id=org_id,
-        region_id=reg_id,
-    ).values("id", "name").order_by("id")
+    # region kelmasa — joriy foydalanuvchining regionini ishlatamiz
+    if not reg_id or not reg_id.isdigit():
+        reg_id = str(employee.region_id) if employee.region_id else ""
+
+    filters = {"organization_id": org_id}
+
+    if reg_id and reg_id.isdigit():
+        filters["region_id"] = reg_id
+
+    qs = Department.objects.filter(**filters).values("id", "name").order_by("id")
 
     return JsonResponse({"results": list(qs)})
 

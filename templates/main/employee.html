@@ -322,6 +322,17 @@
               </div>
             </div>
             <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Hudud *</label>
+              <div class="col-md-8 col-lg-9">
+                <select name="region" id="create_region" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for r in regions %}
+                    <option value="{{ r.id }}">{{ r.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Departament</label>
               <div class="col-md-8 col-lg-9">
                 <select name="department_id"

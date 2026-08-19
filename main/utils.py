@@ -88,7 +88,7 @@ def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: st
             c.drawString(x, y, line)
             y -= line_gap
 
-        qr_size = 65
+        qr_size = 60
         x_center = (page_w - qr_size) / 2
         c.drawImage(qr_reader, x_center, 5, width=qr_size, height=qr_size, mask="auto")
 
