@@ -2500,9 +2500,13 @@ def document_get(request):
     if not employee.liable_set.exists():
         raise PermissionDenied("Ruxsat yo'q")
 
+    emp_sender = Employee.objects.filter(
+        Q(department_id=283) | Q(department_id=298, region=employee.region)
+    )
+
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
-        "emp_bos_sender": Employee.objects.filter(department_id=283),
+        "emp_bos_sender": emp_sender,
     }
     return render(request, "main/document.html", context)
 
