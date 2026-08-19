@@ -271,6 +271,7 @@ class Technics(models.Model):
     year = models.CharField(max_length=50,null=True,blank=True)
     address = models.CharField(max_length=100, null=True, blank=True)
     is_active = models.BooleanField(default=True)
+    is_online = models.BooleanField(default=True)
     qr_code = models.ImageField(upload_to='qk/', blank=True, null=True)
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)

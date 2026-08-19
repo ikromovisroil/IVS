@@ -689,7 +689,17 @@
             <h5 class="modal-title">Xodimni tahrirlash</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
+
           <div class="modal-body">
+            <div class="row mb-3">
+            <label class="col-md-4 col-lg-3 col-form-label">PINFL *</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="pinfl" class="form-control" placeholder="14 xonali PINFL"
+                     value="{{ emp.pinfl|default:'' }}"
+                     maxlength="14" pattern="\d{14}" required>
+              </div>
+            </div>
+
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Ismi *</label>
               <div class="col-md-8 col-lg-9">

@@ -3979,6 +3979,7 @@ def employee_update(request):
         if target_employee.organization_id != current_employee.organization_id:
             raise PermissionDenied("Boshqa tashkilot xodimini o'zgartira olmaysiz")
 
+    pinfl = (request.POST.get("pinfl") or "").strip()
     first_name = (request.POST.get("first_name") or "").strip()
     last_name = (request.POST.get("last_name") or "").strip()
     father_name = (request.POST.get("father_name") or "").strip()
@@ -3992,6 +3993,16 @@ def employee_update(request):
         messages.info(request, "Ism va familiya majburiy")
         return redirect(back_url)
 
+    if not pinfl or not pinfl.isdigit() or len(pinfl) != 14:
+        messages.info(request, "PINFL 14 xonali raqamdan iborat bo'lishi kerak")
+        return redirect(back_url)
+
+    # boshqa xodimda shu PINFL borligini tekshiramiz (o'zidan tashqari)
+    if Employee.objects.filter(pinfl=pinfl).exclude(pk=target_employee.pk).exists():
+        messages.info(request, "Bu PINFL boshqa xodimga tegishli")
+        return redirect(back_url)
+
+    target_employee.pinfl = pinfl
     target_employee.first_name = first_name
     target_employee.last_name = last_name
     target_employee.father_name = father_name or None
