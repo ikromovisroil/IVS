@@ -4,12 +4,15 @@ from django.core.exceptions import PermissionDenied
 from datetime import datetime, timedelta
 from django.db.models import Sum, F, DecimalField, ExpressionWrapper, Value,CharField
 from django.db.models.functions import Coalesce, Cast,Concat
-from django.http import JsonResponse
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import get_object_or_404
-from django.views.decorators.http import require_POST, require_GET
+from django.views.decorators.http import require_GET
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
+from django.contrib.auth.decorators import permission_required
 
 @never_cache
 @require_GET
@@ -878,10 +881,6 @@ def delete_material_from_cart(request):
     })
 
 
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
-from django.contrib.auth.decorators import permission_required
 @require_POST
 @csrf_protect
 @login_required

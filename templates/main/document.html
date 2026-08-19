@@ -169,7 +169,7 @@
               <div></div>
 
               {% for l in liable %}
-                <div style="text-align:left;">
+                <div id="block1_c{{ l.contract.id }}" style="text-align:left;">
                   <b>
                     <span>{{ l.contract.name }}</span>
                     <span id="count_c{{ l.contract.id }}">_</span> dona.
@@ -228,47 +228,49 @@
               </div>
 
               {% for l in liable %}
-                <div style="text-align:left;">
-                  <b>{{ l.contract.name }}</b>
-                </div>
+                <div id="block2_c{{ l.contract.id }}">
+                  <div style="text-align:left;">
+                    <b>{{ l.contract.name }}</b>
+                  </div>
 
-                {% if l.contract.id == 1 %}
-                  <div>
-                    <table style="border-collapse:collapse;width:100%;" border="1">
-                      <colgroup>
-                        <col style="width:8%;">
-                        <col style="width:30%;">
-                        <col style="width:31%;">
-                        <col style="width:31%;">
-                      </colgroup>
-                      <tbody id="tbody_c{{ l.contract.id }}">
-                        <tr>
-                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
-                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div><br>
-                {% else %}
-                  <div>
-                    <table style="border-collapse:collapse;width:100%;" border="1">
-                      <colgroup>
-                        <col style="width:8%;">
-                        <col style="width:46%;">
-                        <col style="width:46%;">
-                      </colgroup>
-                      <tbody id="tbody_c{{ l.contract.id }}">
-                        <tr>
-                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
-                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
-                          <td style="border:1px solid #000;font-size:12pt;text-align:center;">Seriya raqami</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div><br>
-                {% endif %}
+                  {% if l.contract.id == 1 %}
+                    <div>
+                      <table style="border-collapse:collapse;width:100%;" border="1">
+                        <colgroup>
+                          <col style="width:8%;">
+                          <col style="width:30%;">
+                          <col style="width:31%;">
+                          <col style="width:31%;">
+                        </colgroup>
+                        <tbody id="tbody_c{{ l.contract.id }}">
+                          <tr>
+                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>
+                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div><br>
+                  {% else %}
+                    <div>
+                      <table style="border-collapse:collapse;width:100%;" border="1">
+                        <colgroup>
+                          <col style="width:8%;">
+                          <col style="width:46%;">
+                          <col style="width:46%;">
+                        </colgroup>
+                        <tbody id="tbody_c{{ l.contract.id }}">
+                          <tr>
+                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>
+                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>
+                            <td style="border:1px solid #000;font-size:12pt;text-align:center;">Seriya raqami</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div><br>
+                  {% endif %}
+                </div>
               {% endfor %}
 
             </textarea>
@@ -583,11 +585,36 @@
             console.warn("Hech qanday contract ma'lumoti qaytmadi");
             return;
           }
+
+          const ed = getEditor();
+
           Object.values(contracts).forEach(function (contract) {
             const cid = String(contract.contract_id);
-            setInEditor('#count_c' + cid, String(contract.count));
-            setTbodyHtml('tbody_c' + cid, buildRows(contract));
+            const count = contract.count;
+
+            if (count === 0) {
+              // 0 dona bo'lsa — ikkala sahifadagi blokni butunlay o'chirib tashlaymiz
+              if (ed) {
+                try {
+                  const b1 = ed.getBody().querySelector('#block1_c' + cid);
+                  if (b1) b1.remove();
+                  const b2 = ed.getBody().querySelector('#block2_c' + cid);
+                  if (b2) {
+                    // b2 dan keyingi <br> ham bo'lishi mumkin, uni ham olib tashlaymiz
+                    const nextBr = b2.nextElementSibling;
+                    if (nextBr && nextBr.tagName === 'BR') nextBr.remove();
+                    b2.remove();
+                  }
+                } catch (e) {}
+              }
+            } else {
+              // count > 0 bo'lsa — oddiy holatdagidek to'ldiramiz
+              setInEditor('#count_c' + cid, String(count));
+              setTbodyHtml('tbody_c' + cid, buildRows(contract));
+            }
           });
+
+          if (ed) ed.nodeChanged();
         },
         error: function (xhr) {
           let msg = "Xatolik yuz berdi";
