@@ -725,6 +725,7 @@ def ajax_document_preview(request):
         Liable.objects
         .filter(employee=employee, category__isnull=False, contract__isnull=False)
         .select_related("contract", "category")
+        .order_by("contract_id")          # ✅ tartib kafolatlanadi
         .values("contract_id", "contract__name", "category_id")
     )
 

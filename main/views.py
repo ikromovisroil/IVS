@@ -2500,16 +2500,7 @@ def document_get(request):
     if not employee.liable_set.exists():
         raise PermissionDenied("Ruxsat yo'q")
 
-    liable = (
-        Liable.objects
-        .filter(employee=employee,category__isnull=False, contract__isnull=False)
-        .select_related("contract")
-        .order_by("contract_id")
-        .distinct("contract")
-    )
-
     context = {
-        "liable": liable,
         "organizations": Organization.objects.only("id", "name").order_by("id"),
         "emp_bos_sender": Employee.objects.filter(department_id=283),
     }
