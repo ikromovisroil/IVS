@@ -148,7 +148,7 @@ class SyncEmployeeLogAdmin(admin.ModelAdmin):
         "date_creat", "full_name", "pinfl", "result_badge",
         "changes_short", "edit_employee_link"
     )
-    list_filter     = ("result", "date_creat")
+    list_filter = ("employee__organization", "employee__region", "result", "date_creat")
     search_fields   = ("full_name", "pinfl")
     readonly_fields = (
         "sync", "employee", "pinfl", "full_name",
