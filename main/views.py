@@ -519,24 +519,18 @@ def deed_edit(request, pk):
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     sender_org_id = deed.sender.organization_id if deed.sender_id else None
-    sender_dep_id = deed.sender.department_id if deed.sender_id else None
     receiver_org_id = deed.receiver.organization_id if deed.receiver_id else None
-    receiver_dep_id = deed.receiver.department_id if deed.receiver_id else None
     my_org_id = employee.organization_id or None
 
     sender_qs = (
-        Employee.objects.filter(
-            organization_id=sender_org_id,
-            department=deed.sender.department,
-        ).order_by("last_name", "first_name", "father_name")
+        Employee.objects.filter(organization_id=sender_org_id)
+        .order_by("last_name", "first_name", "father_name")
         if sender_org_id else Employee.objects.none()
     )
 
     receiver_qs = (
-        Employee.objects.filter(
-            organization_id=receiver_org_id,
-            department=deed.receiver.department,
-        ).order_by("last_name", "first_name", "father_name")
+        Employee.objects.filter(organization_id=receiver_org_id)
+        .order_by("last_name", "first_name", "father_name")
         if receiver_org_id else Employee.objects.none()
     )
 
@@ -575,10 +569,10 @@ def deed_edit(request, pk):
             messages.info(request, "Imzolovchi xodim tanlanmadi")
             return redirect("deed_edit", pk=deed.pk)
 
+        # ✅ FIX: endi faqat organization bo'yicha tekshiriladi, department shart emas
         new_sender = Employee.objects.filter(
             id=int(sender_id),
             organization_id=sender_org_id,
-            department_id=sender_dep_id,
         ).first()
 
         if not new_sender:
@@ -591,10 +585,10 @@ def deed_edit(request, pk):
                 messages.info(request, "Qabul qiluvchi tanlanmadi")
                 return redirect("deed_edit", pk=deed.pk)
 
+            # ✅ FIX: endi faqat organization bo'yicha tekshiriladi, department shart emas
             new_receiver = Employee.objects.filter(
                 id=int(receiver_id),
                 organization_id=receiver_org_id,
-                department_id=receiver_dep_id,
             ).first()
 
             if not new_receiver:
@@ -618,6 +612,7 @@ def deed_edit(request, pk):
                 sender_changed = (deed.sender_id != new_sender.id)
                 receiver_changed = (
                     deed.receiver_id is not None
+                    and new_receiver is not None
                     and deed.receiver_id != new_receiver.id
                 )
 
@@ -631,7 +626,7 @@ def deed_edit(request, pk):
                 if sender_changed:
                     update_fields += ["status_sender", "message_sender", "date_sender"]
 
-                if deed.receiver_id:
+                if deed.receiver_id and new_receiver:
                     deed.receiver = new_receiver
                     if receiver_changed:
                         deed.status_receiver = "viewed"
@@ -669,16 +664,20 @@ def deed_edit(request, pk):
                     ])
 
             # 2. PDF — transaction tashqarisida
-            try:
-                if deed.file:
-                    deed.file.delete(save=False)
-            except Exception:
-                logger.exception("Deed #%s eski faylini o'chirishda xatolik", deed.pk)
-
+            # ✅ FIX: eski fayl endi yangisi MUVAFFAQIYATLI yaratilgandan keyin
+            # o'chiriladi — PDF generatsiya xato bersa ham eski fayl saqlanib qoladi.
             pdf_bytes = deed_to_pdf_bytes(deed)
             pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
             pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(8)}.pdf"
+
+            old_file = deed.file
             deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+
+            if old_file:
+                try:
+                    old_file.delete(save=False)
+                except Exception:
+                    logger.exception("Deed #%s eski faylini o'chirishda xatolik", deed.pk)
 
             messages.success(request, "Hujjat muvaffaqiyatli tahrirlandi")
             return redirect("contact_user")
