@@ -14,10 +14,6 @@ logger = logging.getLogger(__name__)
 # =========================================================
 # KONSTANTALAR
 # =========================================================
-# FIX: avval kod ichida tarqoq "magic number" (Region id=3, Organization id=4)
-# sifatida yozilgan edi. Endi bitta joyda, aniq nom bilan - shu bilan hech
-# bo'lmasa kelajakda o'zgartirish kerak bo'lsa, faqat shu bitta qatorni
-# tahrirlash kifoya, kod ichida qidirib yurish shart emas.
 DEFAULT_REGION_ID = 3
 
 SYNC_LOCK_KEY = "sync_all_employees_lock"
@@ -48,7 +44,7 @@ def cyrillic_to_latin(text: str) -> str:
         if lower in CYRILLIC_TO_LATIN:
             converted = CYRILLIC_TO_LATIN[lower]
             if char.isupper() and converted:
-                converted = converted.upper()  # HAMMASI katta bo'lsin
+                converted = converted.upper()
             result.append(converted)
         else:
             result.append(char)
@@ -62,14 +58,22 @@ def has_cyrillic(text: str) -> bool:
 # =========================================================
 # CELERY TASK
 # =========================================================
+# ✅ O'ZGARDI: Endi bu task hech qachon Employee modeliga avtomatik
+# yozmaydi (lavozim/tashkilot o'zgartirmaydi, bloklamaydi/deaktiv
+# qilmaydi). Faqat Gateway'dagi ma'lumot bilan bazadagi ma'lumot
+# orasidagi FARQNI aniqlaydi va shu farqni SyncLog/SyncEmployeeLog
+# orqali "xabar" sifatida yozib qo'yadi. Xodimni qo'lda tahrirlash
+# yoki bloklash - admin (siz) tomonidan qo'lda amalga oshiriladi.
+#
+# `apply_changes=True` bilan chaqirilsa (masalan kelajakda admin
+# paneldan "Qo'llash" tugmasi orqali) - haqiqiy yozish ham amalga
+# oshadi. Lekin celery beat jadvali BU PARAMETRSIZ (ya'ni har doim
+# apply_changes=False bilan) chaqirilishi kerak.
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def sync_all_employees(self, dry_run=False):
+def sync_all_employees(self, apply_changes=False):
     from .models import Employee
     from core.models import SyncLog, SyncEmployeeLog
 
-    # FIX: parallel/qayta-qayta ishga tushishning oldini olish uchun cache-lock.
-    # Agar oldingi ishga tushish hali tugamagan bo'lsa (masalan Gateway sekin
-    # javob berayotganda), yangi ishga tushish o'tkazib yuboriladi.
     if not cache.add(SYNC_LOCK_KEY, "locked", timeout=SYNC_LOCK_TIMEOUT):
         logger.warning("sync_all_employees allaqachon ishlamoqda, bu ishga tushish o'tkazib yuborildi")
         return {"skipped_run": True}
@@ -80,68 +84,80 @@ def sync_all_employees(self, dry_run=False):
         ).filter(
             pinfl__isnull=False,
             user__isnull=False,
-            # user__is_active=True,
         ).exclude(pinfl="")
 
-        total      = employees.count()
-        updated    = 0
-        blocked    = 0
-        skipped    = 0
-        errors     = 0
-        start_time = time.time()
+        total       = employees.count()
+        changed     = 0   # avval "updated" - endi faqat FARQ ANIQLANDI degani, DBga yozilmadi
+        would_block = 0   # avval "blocked" - endi faqat "bloklanishi KERAK" degan taklif
+        skipped     = 0
+        errors      = 0
+        start_time  = time.time()
 
-        # DRY-RUN da SyncLog ham yozilmaydi - chunki bu "hech narsa
-        # o'zgarmadi" degan soxta audit yozuvi yaratib qo'yardi
-        sync_log = None if dry_run else SyncLog.objects.create(total=total)
+        sync_log = SyncLog.objects.create(total=total)
 
         logger.info(
-            "sync_all_employees boshlandi: %d xodim%s",
-            total, " (DRY-RUN, DBga yozilmaydi)" if dry_run else ""
+            "sync_all_employees boshlandi: %d xodim (apply_changes=%s)",
+            total, apply_changes
         )
 
         for emp in employees.iterator(chunk_size=50):
             try:
-                result, changes = _sync_single_employee(emp, dry_run=dry_run)
+                result, changes = _sync_single_employee(emp, apply_changes=apply_changes)
 
-                if result == "blocked":
-                    blocked += 1
-                    if not dry_run:
-                        SyncEmployeeLog.objects.create(
-                            sync      = sync_log,
-                            employee  = emp,
-                            pinfl     = emp.pinfl,
-                            full_name = emp.full_name,
-                            result    = "blocked",
-                            changes   = "Gatewayda ish joyi topilmadi",
-                        )
-                elif result == "updated":
-                    updated += 1
-                    if not dry_run:
-                        SyncEmployeeLog.objects.create(
-                            sync      = sync_log,
-                            employee  = emp,
-                            pinfl     = emp.pinfl,
-                            full_name = emp.full_name,
-                            result    = "updated",
-                            changes   = changes,
-                        )
-                    else:
-                        logger.info("[DRY-RUN] PINFL %s o'zgargan bo'lardi: %s", emp.pinfl, changes)
+                if result == "would_block":
+                    would_block += 1
+                    SyncEmployeeLog.objects.create(
+                        sync      = sync_log,
+                        employee  = emp,
+                        pinfl     = emp.pinfl,
+                        full_name = emp.full_name,
+                        result    = "blocked",
+                        changes   = "Gatewayda ish joyi topilmadi (avtomatik bloklanmadi - qo'lda ko'rib chiqing)",
+                    )
+                elif result == "changed":
+                    changed += 1
+                    SyncEmployeeLog.objects.create(
+                        sync      = sync_log,
+                        employee  = emp,
+                        pinfl     = emp.pinfl,
+                        full_name = emp.full_name,
+                        result    = "updated",
+                        changes   = f"[Aniqlandi, avtomatik qo'llanilmadi] {changes}",
+                    )
+                elif result == "applied":
+                    changed += 1
+                    SyncEmployeeLog.objects.create(
+                        sync      = sync_log,
+                        employee  = emp,
+                        pinfl     = emp.pinfl,
+                        full_name = emp.full_name,
+                        result    = "updated",
+                        changes   = changes,
+                    )
+                elif result == "blocked":
+                    would_block += 1
+                    SyncEmployeeLog.objects.create(
+                        sync      = sync_log,
+                        employee  = emp,
+                        pinfl     = emp.pinfl,
+                        full_name = emp.full_name,
+                        result    = "blocked",
+                        changes   = "Gatewayda ish joyi topilmadi",
+                    )
                 else:
                     skipped += 1
 
             except Exception as e:
                 errors += 1
                 logger.warning("PINFL %s sync xatosi: %s", emp.pinfl, e)
-                if not dry_run:
-                    SyncEmployeeLog.objects.create(
-                        sync      = sync_log,
-                        employee  = emp,
-                        pinfl     = emp.pinfl,
-                        full_name = emp.full_name,
-                        result    = "error",
-                        error_msg = str(e),
-                    )
+                SyncEmployeeLog.objects.create(
+                    sync      = sync_log,
+                    employee  = emp,
+                    pinfl     = emp.pinfl,
+                    full_name = emp.full_name,
+                    result    = "error",
+                    error_msg = str(e),
+                )
 
         duration = int(time.time() - start_time)
 
@@ -152,39 +168,37 @@ def sync_all_employees(self, dry_run=False):
         else:
             status = "failed"
 
-        if not dry_run:
-            SyncLog.objects.filter(pk=sync_log.pk).update(
-                updated  = updated,
-                blocked  = blocked,
-                skipped  = skipped,
-                errors   = errors,
-                duration = duration,
-                status   = status,
-            )
+        SyncLog.objects.filter(pk=sync_log.pk).update(
+            updated  = changed,
+            blocked  = would_block,
+            skipped  = skipped,
+            errors   = errors,
+            duration = duration,
+            status   = status,
+        )
 
         logger.info(
-            "sync tugadi%s | yangilandi=%d | bloklandi=%d | ozgarishsiz=%d | xato=%d | jami=%d | vaqt=%ds",
-            " (DRY-RUN)" if dry_run else "", updated, blocked, skipped, errors, total, duration
+            "sync tugadi | aniqlangan_farq=%d | bloklanishi_kerak=%d | ozgarishsiz=%d | xato=%d | jami=%d | vaqt=%ds | apply_changes=%s",
+            changed, would_block, skipped, errors, total, duration, apply_changes
         )
         return {
-            "dry_run":  dry_run,
-            "updated":  updated,
-            "blocked":  blocked,
-            "skipped":  skipped,
-            "errors":   errors,
-            "total":    total,
-            "duration": duration,
+            "apply_changes": apply_changes,
+            "changed":       changed,
+            "would_block":   would_block,
+            "skipped":       skipped,
+            "errors":        errors,
+            "total":         total,
+            "duration":      duration,
         }
 
     finally:
-        # FIX: xatolik yuz bersa ham qulf albatta bo'shatiladi
         cache.delete(SYNC_LOCK_KEY)
 
 
 # =========================================================
 # SYNC SINGLE EMPLOYEE
 # =========================================================
-def _sync_single_employee(emp, dry_run=False):
+def _sync_single_employee(emp, apply_changes=False):
     from .gateway import GatewayClient
 
     pinfl = emp.pinfl
@@ -198,36 +212,38 @@ def _sync_single_employee(emp, dry_run=False):
     positions = result.get("positions") or []
 
     if not positions:
-        _block_employee(emp, pinfl, dry_run=dry_run)
-        return "blocked", ""
+        if apply_changes:
+            _block_employee(emp, pinfl)
+            return "blocked", ""
+        return "would_block", ""
 
     assigned = _resolve_position(pinfl, positions)
 
     if not assigned:
-        _block_employee(emp, pinfl, dry_run=dry_run)
-        return "blocked", ""
+        if apply_changes:
+            _block_employee(emp, pinfl)
+            return "blocked", ""
+        return "would_block", ""
 
     if not _has_changed(emp, assigned, result=result):
         return "skipped", ""
 
-    if dry_run:
-        # DBga hech narsa yozilmaydi - faqat nima o'zgarishini matn
-        # ko'rinishida hisoblab qaytaramiz
-        changes = _describe_changes(emp, assigned, result=result)
-        return "updated", changes
+    # Har doim faqat MATN ko'rinishida farqni hisoblaymiz - DBga yozmaymiz
+    changes = _describe_changes(emp, assigned, result=result)
+
+    if not apply_changes:
+        return "changed", changes
 
     with transaction.atomic():
         changes = _apply_changes(emp, assigned, result=result)
 
-    return "updated", changes
+    return "applied", changes
 
 
 # =========================================================
 # RESOLVE POSITION
 # =========================================================
 def _get_default_region():
-    """Organization'da region ko'rsatilmagan bo'lsa, standart region (id
-    orqali, DEFAULT_REGION_ID konstantasi) qo'llaniladi."""
     return Region.objects.filter(id=DEFAULT_REGION_ID).first()
 
 
@@ -237,9 +253,9 @@ def _resolve_position(sso_pinfl, positions):
     for pos in positions:
         org_tin     = str(pos.get("org_tin")     or "").strip()
         dep_id      = str(pos.get("dep_id")      or "").strip()
-        dep_name    = cyrillic_to_latin((pos.get("dep_name") or "").strip())  # ← konvertatsiya
+        dep_name    = cyrillic_to_latin((pos.get("dep_name") or "").strip())
         position_id = str(pos.get("position_id") or "").strip()
-        position    = cyrillic_to_latin((pos.get("position") or "").strip())  # ← konvertatsiya
+        position    = cyrillic_to_latin((pos.get("position") or "").strip())
 
         if not org_tin:
             continue
@@ -260,7 +276,6 @@ def _resolve_position(sso_pinfl, positions):
             "_dep_name":    dep_name,
         }
 
-        # HOLAT A: Organization.inn == org_tin
         organization = Organization.objects.filter(inn=org_tin).first()
         if organization:
             data["organization"] = organization
@@ -293,7 +308,6 @@ def _resolve_position(sso_pinfl, positions):
                     data["department"] = department
                     return data
 
-                # Topilmadi → Department yaratamiz
                 region = getattr(organization, "region", None)
                 if not region:
                     region = _get_default_region()
@@ -302,7 +316,7 @@ def _resolve_position(sso_pinfl, positions):
                     code=dep_id,
                     organization=organization,
                     region=region,
-                    defaults={"name": dep_name or f"Bolim-{dep_id}"},  # ← allaqachon lotin
+                    defaults={"name": dep_name or f"Bolim-{dep_id}"},
                 )
                 if created:
                     logger.info("Department yaratildi: %s", department)
@@ -311,7 +325,6 @@ def _resolve_position(sso_pinfl, positions):
 
             return data
 
-        # HOLAT B: Department.inn == org_tin
         department = Department.objects.filter(inn=org_tin).first()
         if department:
             data["department"]   = department
@@ -326,7 +339,6 @@ def _resolve_position(sso_pinfl, positions):
                     data["directorate"] = directorate
                     return data
 
-                # Topilmadi → Directorate yaratamiz
                 directorate, created = Directorate.objects.get_or_create(
                     code=dep_id,
                     department=department,
@@ -379,8 +391,8 @@ def _has_changed(emp, assigned, result=None):
 
 def _describe_changes(emp, assigned, result=None):
     """Faqat matn ko'rinishida nima o'zgarishini hisoblaydi - DBga
-    HECH NARSA yozmaydi. Dry-run va _apply_changes ikkalasi ham shu
-    funksiyadan foydalanadi, shunda matn har doim bir xil chiqadi."""
+    HECH NARSA yozmaydi. Bu funksiya har doim shu tarzda ishlaydi,
+    apply_changes True yoki False bo'lishidan qat'iy nazar."""
     changes = []
 
     if result:
@@ -426,6 +438,10 @@ def _describe_changes(emp, assigned, result=None):
 # =========================================================
 # APPLY CHANGES
 # =========================================================
+# ⚠️ DIQQAT: Bu funksiya endi celery beat jadvalidan AVTOMATIK
+# chaqirilmaydi. Faqat kelajakda admin paneldan "Qo'llash" degan
+# tugma qo'shilsa va sync_all_employees(apply_changes=True) yoki
+# shunga o'xshash alohida chaqiruv qilinsa ishlaydi.
 def _apply_changes(emp, assigned, result=None):
     from .models import Rank
 
@@ -433,13 +449,12 @@ def _apply_changes(emp, assigned, result=None):
         assigned["rank"], _ = Rank.objects.get_or_create(
             code=assigned["_position_id"],
             defaults={
-                "name": assigned["_position"] or f"Lavozim-{assigned['_position_id']}"  # ← allaqachon lotin
+                "name": assigned["_position"] or f"Lavozim-{assigned['_position_id']}"
             },
         )
 
     changes_str = _describe_changes(emp, assigned, result=result)
 
-    # Kirill → Lotin konvertatsiya qilib saqlaymiz
     if result:
         emp.first_name  = cyrillic_to_latin((result.get("name")       or "").strip())
         emp.last_name   = cyrillic_to_latin((result.get("surname")    or "").strip())
@@ -464,20 +479,11 @@ def _apply_changes(emp, assigned, result=None):
 # =========================================================
 # BLOCK EMPLOYEE
 # =========================================================
-def _block_employee(emp, pinfl, dry_run=False):
+# ⚠️ DIQQAT: Bu funksiya endi celery beat jadvalidan AVTOMATIK
+# chaqirilmaydi. Faqat apply_changes=True bilan alohida chaqirilganda
+# ishlaydi (masalan kelajakda admin paneldan qo'lda tasdiqlash orqali).
+def _block_employee(emp, pinfl):
     from .models import Technics
-
-    if dry_run:
-        # DBga HECH NARSA yozilmaydi - faqat nima bo'lishi kerakligini
-        # log orqali ko'rsatamiz
-        active_technics_count = Technics.objects.filter(
-            employee=emp, is_active=True
-        ).count()
-        logger.info(
-            "[DRY-RUN] PINFL %s bloklangan bo'lardi (texnika bo'shatilardi: %d ta)",
-            pinfl, active_technics_count
-        )
-        return
 
     with transaction.atomic():
         Technics.objects.filter(

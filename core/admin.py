@@ -1,5 +1,6 @@
 # core/admin.py
 from django.contrib import admin
+from django.urls import reverse
 from django.utils.html import format_html
 from .models import *
 
@@ -25,14 +26,28 @@ class AuditLogAdmin(admin.ModelAdmin):
 
 
 # ---------------------------------------------------------
+# Xodimni tahrirlash havolasi — inline va alohida sahifada
+# birgalikda ishlatiladi, shu sabab alohida funksiya qilib
+# chiqarib qo'ydik (kod takrorlanmasin).
+# ---------------------------------------------------------
+def _employee_edit_link(obj):
+    if not obj.employee_id:
+        return "—"
+    url = reverse("admin:main_employee_change", args=[obj.employee_id])
+    return format_html(
+        '<a class="button" href="{}" target="_blank">✏️ Tahrirlash</a>', url
+    )
+
+
+# ---------------------------------------------------------
 # SyncEmployeeLog inline — SyncLog ichida
 # ---------------------------------------------------------
 class SyncEmployeeLogInline(admin.TabularInline):
     model           = SyncEmployeeLog
     extra           = 0
     can_delete      = False
-    readonly_fields = ("pinfl", "full_name", "result_badge", "changes", "error_msg")
-    fields          = ("pinfl", "full_name", "result_badge", "changes", "error_msg")
+    readonly_fields = ("pinfl", "full_name", "result_badge", "changes", "error_msg", "edit_link")
+    fields          = ("pinfl", "full_name", "result_badge", "changes", "error_msg", "edit_link")
     ordering        = ("-date_creat",)
 
     def result_badge(self, obj):
@@ -48,6 +63,10 @@ class SyncEmployeeLogInline(admin.TabularInline):
             color, obj.get_result_display()
         )
     result_badge.short_description = "Natija"
+
+    def edit_link(self, obj):
+        return _employee_edit_link(obj)
+    edit_link.short_description = "Xodimni tahrirlash"
 
     def has_add_permission(self, request, obj=None):
         return False
@@ -125,7 +144,10 @@ class SyncLogAdmin(admin.ModelAdmin):
 # ---------------------------------------------------------
 @admin.register(SyncEmployeeLog)
 class SyncEmployeeLogAdmin(admin.ModelAdmin):
-    list_display    = ("date_creat", "full_name", "pinfl", "result_badge", "changes_short")
+    list_display    = (
+        "date_creat", "full_name", "pinfl", "result_badge",
+        "changes_short", "edit_employee_link"
+    )
     list_filter     = ("result", "date_creat")
     search_fields   = ("full_name", "pinfl")
     readonly_fields = (
@@ -161,6 +183,10 @@ class SyncEmployeeLogAdmin(admin.ModelAdmin):
         text = obj.changes or obj.error_msg or "—"
         return text[:80] + "..." if len(text) > 80 else text
     changes_short.short_description = "Tafsilot"
+
+    def edit_employee_link(self, obj):
+        return _employee_edit_link(obj)
+    edit_employee_link.short_description = "Xodimni tahrirlash"
 
 
 
