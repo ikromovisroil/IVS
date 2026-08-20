@@ -307,38 +307,6 @@
                     </td>
                   </tr>
                   {% endfor %}
-
-                  {# ══════════════════════════════════════════════════════ #}
-                  {# Texnikasi yo'q xodimlar — FAQAT OXIRGI SAHIFADA      #}
-                  {# ══════════════════════════════════════════════════════ #}
-                  {% if not page_obj.has_next and employees_without_technics %}
-                  <tr>
-                    <td colspan="7"
-                        class="table-secondary fw-bold ps-2 text-center fst-italic align-middle">
-                        Texnikasi yo'q xodimlar
-                    </td>
-                  </tr>
-                  {% for emp in employees_without_technics %}
-                  <tr class="table-warning">
-                    <th scope="row" class="align-middle text-center">
-                      {{ row_start|add:grouped_count|add:forloop.counter0 }}
-                    </th>
-                    <td class="align-middle">
-                      {{ emp.full_name|default:"—" }}
-                      {% if emp.rank %}
-                      <span class="text-secondary small d-block mt-1">
-                        "{{ emp.rank.name|default:'' }}"
-                      </span>
-                      {% endif %}
-                    </td>
-                    <td colspan="5"
-                        class="text-center text-muted fst-italic align-middle">
-                      Texnika biriktirilmagan
-                    </td>
-                  </tr>
-                  {% endfor %}
-                  {% endif %}
-
                 </tbody>
               </table>
 
@@ -1056,7 +1024,6 @@
     const selDir   = (dirSel.dataset.selected || "").trim();
     const selDiv   = (divSel.dataset.selected || "").trim();
 
-    // --- filtrdagi helper funksiyalar ---
     function isSelect2(el) { return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible"); }
     function refreshUI(el) { if (isSelect2(el)) window.jQuery(el).trigger("change"); }
     function closeSelect2(el) { if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch(e){} } }
@@ -1085,10 +1052,9 @@
       return await res.json();
     }
 
-    // --- filtrdagi load funksiyalar ---
     async function loadDepartments(preselect = "") {
       setEmpty(depSel); setEmpty(dirSel); setEmpty(divSel);
-      if (!orgId && !regionId) return;        // && — bittasi bo'lsa ham ishlaydi
+      if (!orgId && !regionId) return;
       setLoading(depSel);
       let qs = "";
       if (orgId)    qs += `organization=${encodeURIComponent(orgId)}&`;
@@ -1117,7 +1083,6 @@
       fillOptions(divSel, data.results || [], preselect);
     }
 
-    // --- eventlar (filtrdagidek) ---
     function bindEvents(el, cb) {
       if (window.jQuery) { window.jQuery(el).off(".modalAttach").on("select2:select.modalAttach select2:clear.modalAttach", cb); }
       el.addEventListener("change", cb);
@@ -1133,7 +1098,6 @@
       await loadDivisions(dirSel.value || "");
     });
 
-    // --- sahifa yuklangandagidek boshlang'ich yuklash ---
     loadDepartments(selDep);
   }
 

@@ -103,10 +103,20 @@
 
   $(document).ready(function () {
 
-    // ── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ──
+    // Tugma bir necha marta bosilishi (shoshilib bosish) tufayli forma
+    // bir necha marta yuborilib, bir xil hujjat qayta-qayta tahrirlanib
+    // (PDF qayta yaratilib) qolishining oldini olish uchun qulflash.
 
     $('form').on('submit', function (e) {
       e.preventDefault();
+
+      const $form = $(this);
+
+      if ($form.data("locked")) {
+        return false;
+      }
+      $form.data("locked", true);
+      $form.find('button[type="submit"]').prop("disabled", true);
 
       const ed = getEditorSafe();
       if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi

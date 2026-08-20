@@ -1,43 +1,43 @@
-from main.ajax_views import *
-from django.db.models import Prefetch
-from main.forms import *
-from decimal import Decimal, InvalidOperation
-from main.sso_views import *
-from django.db.models import Count, ExpressionWrapper
-from django.views.decorators.http import require_http_methods
-from itertools import groupby
-from django.http import FileResponse, Http404
-from django.utils.dateparse import parse_date
 import base64
 import binascii
+import logging
+import os
 import re
+import secrets
 import unicodedata
+from datetime import datetime, time
+from decimal import Decimal, InvalidOperation
+from itertools import groupby
+import openpyxl
+from PyPDF2 import PdfReader
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Permission
 from django.core.exceptions import PermissionDenied
-from django.contrib import messages
-from django.db.models import Q, Exists, OuterRef
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.decorators.cache import never_cache
-from django.views.decorators.http import require_GET
-from .models import *
+from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
-from django.db.models import Sum, F
+from django.db import DatabaseError, transaction
+from django.db.models import Avg, Count, Exists, ExpressionWrapper, F, OuterRef, Prefetch, Q, Sum
 from django.db.models.functions import Coalesce
-from django.utils.timezone import make_aware
-from datetime import datetime, time
-from django.views.decorators.http import require_POST
-from django.views.decorators.csrf import csrf_protect
-from django.http import HttpResponse, HttpResponseBadRequest
-from django.db.models import Avg
-import secrets
-from .tasks import _resolve_position
-import openpyxl
-from io import BytesIO
+from django.http import FileResponse, Http404, HttpRequest
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.utils.crypto import get_random_string
-from django.http import HttpRequest
+from django.utils.dateparse import parse_date
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_http_methods, require_POST
+from main.ajax_views import *
+from main.forms import *
+from main.sso_views import *
 from .push_views import *
+from .html_pdf import HtmlPdfError, add_text_watermark_pdf_bytes, deed_to_pdf_bytes
+from .models import Deed, DeedConsent, Employee, Organization
+from .sanitizers import sanitize_deed_body
+from .tasks import _resolve_position
+from .validators import validate_file_extension
+from django.utils.timezone import make_aware
 
+logger = logging.getLogger(__name__)
 
 @never_cache
 def error_403(request, exception=None):
@@ -73,13 +73,28 @@ def profil(request):
     })
 
 
+DEED_SELECT_RELATED = (
+    "sender", "receiver", "user",
+    "sender__organization", "sender__rank",
+    "receiver__organization", "receiver__rank",
+    "user__rank",
+)
+
+DEEDCONSENT_PREFETCH = Prefetch(
+    "deedconsent_set",
+    queryset=DeedConsent.objects.select_related(
+        "employee", "employee__organization", "employee__rank"
+    )
+)
+
+
 @never_cache
 @require_GET
 @login_required
 def contact(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     qs = (
         Deed.objects
@@ -87,18 +102,8 @@ def contact(request):
             Q(sender_id=employee.id, status_sender="viewed") |
             Q(receiver_id=employee.id, status_receiver="viewed")
         )
-        .select_related(
-            "sender", "receiver", "user",
-            "sender__organization", "receiver__organization"
-        )
-        .prefetch_related(
-            Prefetch(
-                "deedconsent_set",
-                queryset=DeedConsent.objects.select_related(
-                    "employee", "employee__organization"
-                )
-            )
-        )
+        .select_related(*DEED_SELECT_RELATED)
+        .prefetch_related(DEEDCONSENT_PREFETCH)
         .distinct()
         .order_by("-id")
     )
@@ -124,7 +129,7 @@ def contact(request):
 def contact_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     qs = (
         Deed.objects
@@ -132,18 +137,8 @@ def contact_arxiv(request):
             Q(sender_id=employee.id, status_sender__in=["approved", "rejected"]) |
             Q(receiver_id=employee.id, status_receiver__in=["approved", "rejected"])
         )
-        .select_related(
-            "sender", "receiver", "user",
-            "sender__organization", "receiver__organization"
-        )
-        .prefetch_related(
-            Prefetch(
-                "deedconsent_set",
-                queryset=DeedConsent.objects.select_related(
-                    "employee", "employee__organization"
-                )
-            )
-        )
+        .select_related(*DEED_SELECT_RELATED)
+        .prefetch_related(DEEDCONSENT_PREFETCH)
         .distinct()
         .order_by("-id")
     )
@@ -169,7 +164,7 @@ def contact_arxiv(request):
 def contact_agrement(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     qs = (
         Deed.objects
@@ -177,18 +172,8 @@ def contact_agrement(request):
             deedconsent__employee_id=employee.id,
             deedconsent__status="viewed"
         )
-        .select_related(
-            "sender", "receiver", "user",
-            "sender__organization", "receiver__organization"
-        )
-        .prefetch_related(
-            Prefetch(
-                "deedconsent_set",
-                queryset=DeedConsent.objects.select_related(
-                    "employee", "employee__organization"
-                )
-            )
-        )
+        .select_related(*DEED_SELECT_RELATED)
+        .prefetch_related(DEEDCONSENT_PREFETCH)
         .distinct()
         .order_by("-id")
     )
@@ -214,7 +199,7 @@ def contact_agrement(request):
 def contact_agrement_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     qs = (
         Deed.objects
@@ -222,18 +207,8 @@ def contact_agrement_arxiv(request):
             deedconsent__employee_id=employee.id,
             deedconsent__status__in=["approved", "rejected"]
         )
-        .select_related(
-            "sender", "receiver", "user",
-            "sender__organization", "receiver__organization"
-        )
-        .prefetch_related(
-            Prefetch(
-                "deedconsent_set",
-                queryset=DeedConsent.objects.select_related(
-                    "employee", "employee__organization"
-                )
-            )
-        )
+        .select_related(*DEED_SELECT_RELATED)
+        .prefetch_related(DEEDCONSENT_PREFETCH)
         .distinct()
         .order_by("-id")
     )
@@ -259,7 +234,7 @@ def contact_agrement_arxiv(request):
 def contact_user(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     qs = (
         Deed.objects
@@ -268,18 +243,8 @@ def contact_user(request):
             Q(receiver__isnull=True, status_sender="viewed") |
             Q(receiver__isnull=False, status_sender="viewed", status_receiver="viewed")
         )
-        .select_related(
-            "sender", "receiver", "user",
-            "sender__organization", "receiver__organization"
-        )
-        .prefetch_related(
-            Prefetch(
-                "deedconsent_set",
-                queryset=DeedConsent.objects.select_related(
-                    "employee", "employee__organization"
-                )
-            )
-        )
+        .select_related(*DEED_SELECT_RELATED)
+        .prefetch_related(DEEDCONSENT_PREFETCH)
         .distinct()
         .order_by("-id")
     )
@@ -306,7 +271,7 @@ def contact_user(request):
 def contact_user_arxiv(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     qs = (
         Deed.objects
@@ -315,18 +280,8 @@ def contact_user_arxiv(request):
             Q(status_sender__in=["approved", "rejected"]) |
             Q(status_receiver__in=["approved", "rejected"])
         )
-        .select_related(
-            "sender", "receiver", "user",
-            "sender__organization", "receiver__organization"
-        )
-        .prefetch_related(
-            Prefetch(
-                "deedconsent_set",
-                queryset=DeedConsent.objects.select_related(
-                    "employee", "employee__organization"
-                )
-            )
-        )
+        .select_related(*DEED_SELECT_RELATED)
+        .prefetch_related(DEEDCONSENT_PREFETCH)
         .distinct()
         .order_by("-id")
     )
@@ -360,38 +315,57 @@ def contact_post_deed(request):
     agreement_ids = request.POST.getlist("agreements")
     uploaded_file = request.FILES.get("file")
 
-    # --- Validatsiya ---
     valid_statuses = dict(Deed._meta.get_field("status").choices)
     if status not in valid_statuses:
-        messages.info(request, "Ariza turi noto'g'ri tanlangan")
+        messages.error(request, "Ariza turi noto'g'ri tanlangan")
         return redirect("contact_user")
 
     if not sender_id or not sender_id.isdigit():
-        messages.info(request, "Xodim tanlanmagan")
+        messages.error(request, "Xodim tanlanmagan")
         return redirect("contact_user")
 
-    # Faqat bo'sh bo'lmagan ID'larni olamiz (select'da bo'sh option ham bo'lishi mumkin)
-    agreement_ids = [aid for aid in agreement_ids if aid.isdigit()]
     sender = get_object_or_404(Employee, pk=sender_id)
 
     if not uploaded_file:
-        messages.info(request, "Fayl biriktirilmagan")
+        messages.error(request, "Fayl biriktirilmagan")
         return redirect("contact_user")
 
-    with transaction.atomic():
-        deed = Deed.objects.create(
-            organization=sender.organization,
-            user=employee,
-            sender=sender,
-            status=status,
-            file=uploaded_file,
-        )
+    # Deed.objects.create() full_clean() ni chaqirmaydi, shuning uchun
+    # model maydonidagi validators=[validate_file_extension] avtomatik
+    # ishlamaydi — bu yerda MAJBURIY qo'lda chaqiramiz. Aks holda
+    # istalgan turdagi fayl (PDF bo'lmasa ham) yuklanishi mumkin edi.
+    try:
+        validate_file_extension(uploaded_file)
+    except Exception as e:
+        messages.error(request, str(e))
+        return redirect("contact_user")
 
-        if agreement_ids:
-            DeedConsent.objects.bulk_create([
-                DeedConsent(deed=deed, employee_id=aid)
-                for aid in agreement_ids
-            ])
+    # Faqat mavjud xodimlarga tegishli ID'lar qabul qilinadi — aks holda
+    # noto'g'ri ID kelsa bulk_create FK xatosi bilan (ushlanmagan holda)
+    # 500-xato berishi mumkin edi.
+    agreement_ids = [aid for aid in agreement_ids if aid.isdigit()]
+    valid_agreement_ids = set(
+        Employee.objects.filter(id__in=agreement_ids).values_list("id", flat=True)
+    )
+
+    try:
+        with transaction.atomic():
+            deed = Deed.objects.create(
+                organization=sender.organization,
+                user=employee,
+                sender=sender,
+                status=status,
+                file=uploaded_file,
+            )
+
+            if valid_agreement_ids:
+                DeedConsent.objects.bulk_create([
+                    DeedConsent(deed=deed, employee_id=aid)
+                    for aid in valid_agreement_ids
+                ])
+    except DatabaseError:
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        return redirect("contact_user")
 
     messages.success(request, "Ariza muvaffaqiyatli yuborildi")
     return redirect("contact_user")
@@ -406,18 +380,18 @@ def deed_status(request, code, pk):
 
 def validate_pdf_file(file_field):
     if not file_field:
-        return False, "PDF yo‘q"
+        return False, "PDF yo'q"
 
     try:
         file_path = file_field.path
     except Exception:
-        return False, "PDF yo‘li topilmadi"
+        return False, "PDF yo'li topilmadi"
 
     if not file_path or not os.path.exists(file_path):
         return False, "PDF topilmadi"
 
     if not file_path.lower().endswith(".pdf"):
-        return False, "PDF noto‘g‘ri"
+        return False, "PDF noto'g'ri"
 
     if os.path.getsize(file_path) < 1024:
         return False, "PDF buzilgan"
@@ -425,7 +399,7 @@ def validate_pdf_file(file_field):
     try:
         PdfReader(file_path)
     except Exception:
-        return False, "PDF o‘qilmadi"
+        return False, "PDF o'qilmadi"
 
     return True, None
 
@@ -454,28 +428,32 @@ def deed_action(request, pk):
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     if current_status != "viewed":
-        messages.info(request, "Bu dalolatnoma holatida amal bajarib bo'lmaydi")
+        messages.error(request, "Bu dalolatnoma holatida amal bajarib bo'lmaydi")
         return redirect(back_url)
 
     if action == "reject":
         now = timezone.now()
-        with transaction.atomic():
-            deed = Deed.objects.select_for_update().get(pk=pk)
-            update_fields = ["date_edit"]
+        try:
+            with transaction.atomic():
+                deed = Deed.objects.select_for_update(of=("self",)).get(pk=pk)
+                update_fields = ["date_edit"]
 
-            if role == "receiver":
-                deed.status_receiver = "rejected"
-                deed.message_receiver = message
-                deed.date_receiver = now
-                update_fields += ["status_receiver", "message_receiver", "date_receiver"]
-            else:
-                deed.status_sender = "rejected"
-                deed.message_sender = message
-                deed.date_sender = now
-                update_fields += ["status_sender", "message_sender", "date_sender"]
+                if role == "receiver":
+                    deed.status_receiver = "rejected"
+                    deed.message_receiver = message
+                    deed.date_receiver = now
+                    update_fields += ["status_receiver", "message_receiver", "date_receiver"]
+                else:
+                    deed.status_sender = "rejected"
+                    deed.message_sender = message
+                    deed.date_sender = now
+                    update_fields += ["status_sender", "message_sender", "date_sender"]
 
-            deed.date_edit = now
-            deed.save(update_fields=update_fields)
+                deed.date_edit = now
+                deed.save(update_fields=update_fields)
+        except DatabaseError:
+            messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+            return redirect(back_url)
 
         messages.success(request, "Dalolatnoma rad etildi")
         return redirect(back_url)
@@ -483,7 +461,7 @@ def deed_action(request, pk):
     if action == "approve":
         is_valid_pdf, error_message = validate_pdf_file(deed.file)
         if not is_valid_pdf:
-            messages.info(request, error_message)
+            messages.error(request, error_message)
             return redirect(back_url)
 
         request.session["PENDING_APPROVE"] = {
@@ -495,13 +473,10 @@ def deed_action(request, pk):
         request.session.modified = True
         return redirect("sso_start_approve")
 
-    messages.info(request, "Noto'g'ri amal")
+    messages.error(request, "Noto'g'ri amal")
     return redirect(back_url)
 
 
-
-import logging
-logger = logging.getLogger(__name__)
 @never_cache
 @require_http_methods(["GET", "POST"])
 @login_required
@@ -554,7 +529,6 @@ def deed_edit(request, pk):
         receiver_id = (request.POST.get("receiver") or "").strip()
         agreements_ids = request.POST.getlist("agreements[]")
 
-        # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
         body_encoded = (request.POST.get("body_encoded") or "").strip()
         body = ""
         if body_encoded:
@@ -562,13 +536,15 @@ def deed_edit(request, pk):
                 body = base64.b64decode(body_encoded).decode("utf-8").strip()
             except (binascii.Error, UnicodeDecodeError, ValueError):
                 body = ""
+        if body:
+            body = sanitize_deed_body(body)
 
         if not body:
-            messages.info(request, "Hujjat matni bo'sh bo'lmasin")
+            messages.error(request, "Hujjat matni bo'sh bo'lmasin")
             return redirect("deed_edit", pk=deed.pk)
 
         if not sender_id.isdigit():
-            messages.info(request, "Imzolovchi xodim tanlanmadi")
+            messages.error(request, "Imzolovchi xodim tanlanmadi")
             return redirect("deed_edit", pk=deed.pk)
 
         new_sender = Employee.objects.filter(
@@ -578,13 +554,13 @@ def deed_edit(request, pk):
         ).first()
 
         if not new_sender:
-            messages.info(request, "Imzolovchi topilmadi yoki ruxsat etilmagan")
+            messages.error(request, "Imzolovchi topilmadi yoki ruxsat etilmagan")
             return redirect("deed_edit", pk=deed.pk)
 
         new_receiver = None
         if deed.receiver_id:
             if not receiver_id.isdigit():
-                messages.info(request, "Qabul qiluvchi tanlanmadi")
+                messages.error(request, "Qabul qiluvchi tanlanmadi")
                 return redirect("deed_edit", pk=deed.pk)
 
             new_receiver = Employee.objects.filter(
@@ -594,7 +570,7 @@ def deed_edit(request, pk):
             ).first()
 
             if not new_receiver:
-                messages.info(request, "Qabul qiluvchi topilmadi yoki ruxsat etilmagan")
+                messages.error(request, "Qabul qiluvchi topilmadi yoki ruxsat etilmagan")
                 return redirect("deed_edit", pk=deed.pk)
 
         clean_agreement_ids = [int(x) for x in agreements_ids if str(x).isdigit()]
@@ -605,16 +581,14 @@ def deed_edit(request, pk):
                     organization_id__in=org_ids,
                 ).values_list("id", flat=True)
             )
-
         try:
-            # 1. DB operatsiyalar — transaction ichida
             with transaction.atomic():
-                deed = Deed.objects.select_for_update().get(pk=deed.pk)
+                deed = Deed.objects.select_for_update(of=("self",)).get(pk=deed.pk)
 
                 sender_changed = (deed.sender_id != new_sender.id)
                 receiver_changed = (
-                    deed.receiver_id is not None
-                    and deed.receiver_id != new_receiver.id
+                        deed.receiver_id is not None
+                        and deed.receiver_id != new_receiver.id
                 )
 
                 deed.sender = new_sender
@@ -638,6 +612,12 @@ def deed_edit(request, pk):
                         update_fields.append("receiver")
 
                 deed.body = body
+                pdf_bytes = deed_to_pdf_bytes(deed)
+                pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
+                pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(8)}.pdf"
+
+                old_file = deed.file
+
                 deed.save(update_fields=update_fields)
 
                 exclude_ids = {deed.sender_id}
@@ -650,7 +630,6 @@ def deed_edit(request, pk):
                     DeedConsent.objects.filter(deed_id=deed.id).values_list("employee_id", flat=True)
                 )
 
-                # Ro'yxatdan chiqarilganlarni o'chirish
                 DeedConsent.objects.filter(deed_id=deed.id).exclude(
                     employee_id__in=final_ids
                 ).delete()
@@ -663,29 +642,24 @@ def deed_edit(request, pk):
                         DeedConsent(deed_id=deed.id, employee_id=eid, status="viewed")
                         for eid in new_employee_ids
                     ])
+                if old_file:
+                    try:
+                        old_file.delete(save=False)
+                    except Exception:
+                        logger.exception("Deed #%s eski faylini o'chirishda xatolik", deed.pk)
 
-            # 2. PDF — transaction tashqarisida
-            try:
-                if deed.file:
-                    deed.file.delete(save=False)
-            except Exception:
-                logger.exception("Deed #%s eski faylini o'chirishda xatolik", deed.pk)
-
-            pdf_bytes = deed_to_pdf_bytes(deed)
-            pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
-            pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(8)}.pdf"
-            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+                deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
             messages.success(request, "Hujjat muvaffaqiyatli tahrirlandi")
             return redirect("contact_user")
 
         except HtmlPdfError as e:
-            messages.info(request, f"Hujjat yangilanmadi: {e}")
+            messages.error(request, f"Hujjat yangilanmadi: {e}")
             return redirect("deed_edit", pk=deed.pk)
 
         except Exception:
             logger.exception("Deed #%s tahrirlashda kutilmagan xatolik", deed.pk)
-            messages.info(request, "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.")
+            messages.error(request, "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring.")
             return redirect("deed_edit", pk=deed.pk)
 
     context = {
@@ -696,7 +670,6 @@ def deed_edit(request, pk):
         "selected_agreement_ids": selected_agreement_ids,
     }
     return render(request, "main/deed_edit.html", context)
-
 
 
 @never_cache
@@ -712,38 +685,40 @@ def deedconsent_action(request, pk):
     message = (request.POST.get("message") or "").strip()
 
     if action not in {"approve", "reject"}:
-        messages.info(request, "Noto'g'ri amal")
+        messages.error(request, "Noto'g'ri amal")
         return redirect(back_url)
 
-    # Tekshiruvlar transaction tashqarisida
     consent = get_object_or_404(DeedConsent, pk=pk)
 
     if consent.employee_id != employee.id:
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     if consent.status != "viewed":
-        messages.info(request, "Bu kelishuv allaqachon ko'rib chiqilgan")
+        messages.error(request, "Bu kelishuv allaqachon ko'rib chiqilgan")
         return redirect(back_url)
 
     if action == "reject" and not message:
-        messages.info(request, "Rad etish uchun izoh yozing")
+        messages.error(request, "Rad etish uchun izoh yozing")
         return redirect(back_url)
 
     try:
         with transaction.atomic():
-            consent = DeedConsent.objects.select_for_update().get(pk=pk)
+            consent = DeedConsent.objects.select_for_update(of=("self",)).get(pk=pk)
 
-            # Race condition: boshqa so'rov o'zgartirgan bo'lishi mumkin
             if consent.status != "viewed":
-                messages.info(request, "Bu kelishuv allaqachon ko'rib chiqilgan")
+                messages.error(request, "Bu kelishuv allaqachon ko'rib chiqilgan")
                 return redirect(back_url)
 
             consent.status = "approved" if action == "approve" else "rejected"
             consent.message = message
             consent.save(update_fields=["status", "message"])
 
-    except Exception as e:
-        messages.info(request, f"Kutilmagan xatolik: {e}")
+    except DatabaseError:
+        # Xato matnini (str(e)) foydalanuvchiga ko'rsatmaymiz — bu ichki
+        # tafsilotlarni (DB struktura, fayl yo'llari) oshkor qilishi
+        # mumkin edi. O'rniga umumiy xabar, sabab esa log'ga yoziladi.
+        logger.exception("DeedConsent #%s ustida amal bajarishda xatolik", pk)
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
     if action == "approve":
@@ -753,6 +728,13 @@ def deedconsent_action(request, pk):
 
     return redirect(back_url)
 
+
+def _employee_has_full_scope(request):
+    """organization va region bo'yicha to'liq ko'rish huquqi bormi."""
+    return (
+        request.user.has_perm("main.all_organization"),
+        request.user.has_perm("main.all_region"),
+    )
 
 
 @never_cache
@@ -792,15 +774,17 @@ def barn_tex(request: HttpRequest):
         or division_id or status or category_id or group_id or name
     )
 
+    has_full_org, has_full_region = _employee_has_full_scope(request)
+
     organizations = Organization.objects.only("id", "name").order_by("id")
-    if not request.user.has_perm("main.all_organization"):
+    if not has_full_org:
         organizations = organizations.filter(id=employee.organization_id)
 
     groups = Group.objects.only("id", "name").order_by("id")
     technics_form = TechnicsForm()
 
     regions = Region.objects.only("id", "name").order_by("id")
-    if not request.user.has_perm("main.all_region"):
+    if not has_full_region:
         regions = regions.filter(id=employee.region_id)
 
     departments = Department.objects.none()
@@ -876,8 +860,11 @@ def barn_tex(request: HttpRequest):
 
     base_qs = Technics.objects.filter(category_id__in=liable_ids, is_active=True)
 
-    if not request.user.has_perm("main.all_organization"):
+    if not has_full_org:
         base_qs = base_qs.filter(organization_id=employee.organization_id)
+
+    if not has_full_region:
+        base_qs = base_qs.filter(region_id=employee.region_id)
 
     if organization_id:
         base_qs = base_qs.filter(organization_id=organization_id)
@@ -901,14 +888,14 @@ def barn_tex(request: HttpRequest):
         q = Q()
         for w in words:
             q &= (
-                Q(employee__last_name__icontains=w) |
-                Q(employee__first_name__icontains=w) |
-                Q(employee__father_name__icontains=w) |
-                Q(name__icontains=w) |
-                Q(inventory__icontains=w) |
-                Q(serial__icontains=w) |
-                Q(mac__icontains=w) |
-                Q(ip__icontains=w)
+                    Q(employee__last_name__icontains=w) |
+                    Q(employee__first_name__icontains=w) |
+                    Q(employee__father_name__icontains=w) |
+                    Q(name__icontains=w) |
+                    Q(inventory__icontains=w) |
+                    Q(serial__icontains=w) |
+                    Q(mac__icontains=w) |
+                    Q(ip__icontains=w)
             )
         base_qs = base_qs.filter(q)
 
@@ -918,8 +905,9 @@ def barn_tex(request: HttpRequest):
         base_qs
         .select_related(
             "organization", "region", "department",
-            "directorate", "division", "category", "employee",
+            "directorate", "division", "category", "employee", "group",
         )
+        .prefetch_related("structure_set", "group__category_set")
         .only(
             "id", "name", "parametr", "inventory", "serial",
             "ip", "mac", "status", "year", "price", "employee_id",
@@ -929,6 +917,7 @@ def barn_tex(request: HttpRequest):
             "directorate__id", "directorate__name",
             "division__id", "division__name",
             "category__id", "category__name",
+            "group__id", "group__name",
             "employee__id", "employee__first_name",
             "employee__last_name", "employee__father_name",
         )
@@ -940,49 +929,6 @@ def barn_tex(request: HttpRequest):
     # ------------------------------------------------------------------ #
     paginator = Paginator(tech_qs, 20)
     page_obj = paginator.get_page(page_number)
-
-    # ------------------------------------------------------------------ #
-    #  3. Texnikasi yo'q xodimlar                                         #
-    # ------------------------------------------------------------------ #
-    all_assigned_emp_ids = set(
-        base_qs
-        .exclude(employee_id=None)
-        .values_list("employee_id", flat=True)
-        .distinct()
-    )
-
-    emp_filter = Q()
-    if not request.user.has_perm("main.all_organization"):
-        emp_filter &= Q(organization_id=employee.organization_id)
-    if organization_id:
-        emp_filter &= Q(organization_id=organization_id)
-    if region_id:
-        emp_filter &= Q(region_id=region_id)
-    if department_id:
-        emp_filter &= Q(department_id=department_id)
-    if directorate_id:
-        emp_filter &= Q(directorate_id=directorate_id)
-    if division_id:
-        emp_filter &= Q(division_id=division_id)
-
-    if name:
-        words = [w for w in name.split() if w]
-        emp_name_q = Q()
-        for w in words:
-            emp_name_q &= (
-                Q(last_name__icontains=w) |
-                Q(first_name__icontains=w) |
-                Q(father_name__icontains=w)
-            )
-        emp_filter &= emp_name_q
-
-    employees_without_technics = (
-        Employee.objects
-        .filter(emp_filter)
-        .exclude(id__in=all_assigned_emp_ids)
-        .only("id", "first_name", "last_name", "father_name")
-        .order_by("last_name", "first_name")
-    )
 
     # ------------------------------------------------------------------ #
     #  4. grouped_technics — faqat sahifadagi texnikalar                  #
@@ -1014,12 +960,20 @@ def barn_tex(request: HttpRequest):
         **base_context,
         "page_obj": page_obj,
         "grouped_technics": grouped_technics,
-        "employees_without_technics": employees_without_technics,
         "extratex": extratex,
         "total_count": total_count,
-        "row_start": page_obj.start_index() if paginator.count else 0,
+        "row_start": page_obj.start_index() if paginator.count else 1,
         "grouped_count": len(grouped_technics),
     })
+
+
+def _check_technics_scope(request, employee, tex):
+
+    has_full_org, has_full_region = _employee_has_full_scope(request)
+    if not has_full_org and tex.organization_id != employee.organization_id:
+        raise PermissionDenied("Bu texnika sizning tashkilotingizga tegishli emas")
+    if not has_full_region and tex.region_id != employee.region_id:
+        raise PermissionDenied("Bu texnika sizning hududingizga tegishli emas")
 
 
 @never_cache
@@ -1029,7 +983,7 @@ def barn_tex(request: HttpRequest):
 def technics_create(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo‘q")
+        raise PermissionDenied("Employee yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
     form = TechnicsForm(request.POST)
@@ -1042,18 +996,22 @@ def technics_create(request):
         if employee.region_id:
             technics.region_id = employee.region_id
 
-        if serial and Technics.objects.filter(
-                is_active=True,
-                serial__iexact=serial,
-                organization=organization
-        ).exists():
-            messages.info(request, "Bu texnika allaqachon mavjud!")
-            return redirect(back_url)
+        with transaction.atomic():
+            if serial:
+                existing = (
+                    Technics.objects
+                    .select_for_update(of=("self",))
+                    .filter(is_active=True, serial__iexact=serial, organization=organization)
+                )
+                if existing.exists():
+                    messages.error(request, "Bu texnika allaqachon mavjud!")
+                    return redirect(back_url)
 
-        technics.save()
-        messages.success(request, "Uskuna qo‘shildi")
+            technics.save()
+
+        messages.success(request, "Uskuna qo'shildi")
     else:
-        messages.info(request, f"Xatolik: {form.errors}")
+        messages.error(request, "Formada xatolik bor, maydonlarni tekshiring")
 
     return redirect(back_url)
 
@@ -1072,13 +1030,15 @@ def technics_delete(request):
     tex_id = request.POST.get("texnika_id")
 
     try:
-        tex = Technics.objects.select_for_update().get(pk=int(tex_id))
+        tex = Technics.objects.select_for_update(of=("self",)).get(pk=int(tex_id))
     except (Technics.DoesNotExist, TypeError, ValueError):
-        messages.info(request, "Uskuna topilmadi")
+        messages.error(request, "Uskuna topilmadi")
         return redirect(back_url)
 
+    _check_technics_scope(request, employee, tex)
+
     if not tex.is_active:
-        messages.info(request, "Uskuna allaqachon o'chirilgan")
+        messages.error(request, "Uskuna allaqachon o'chirilgan")
         return redirect(back_url)
 
     update_fields = ["is_active"]
@@ -1114,92 +1074,86 @@ def technics_attach(request):
     emp_id = (request.POST.get("employee_id") or "").strip()
 
     if not tex_id.isdigit():
-        messages.info(request, "Uskuna topilmadi")
+        messages.error(request, "Uskuna topilmadi")
         return redirect(back_url)
 
     if dep_id and not dep_id.isdigit():
-        messages.info(request, "Bo'lim noto'g'ri tanlandi")
+        messages.error(request, "Bo'lim noto'g'ri tanlandi")
         return redirect(back_url)
 
     if dir_id and not dir_id.isdigit():
-        messages.info(request, "Boshqarma noto'g'ri tanlandi")
+        messages.error(request, "Boshqarma noto'g'ri tanlandi")
         return redirect(back_url)
 
     if div_id and not div_id.isdigit():
-        messages.info(request, "Bo'linma noto'g'ri tanlandi")
+        messages.error(request, "Bo'linma noto'g'ri tanlandi")
         return redirect(back_url)
 
     if emp_id and not emp_id.isdigit():
-        messages.info(request, "Xodim noto'g'ri tanlandi")
+        messages.error(request, "Xodim noto'g'ri tanlandi")
         return redirect(back_url)
 
-    tex = get_object_or_404(Technics.objects.select_for_update(), id=int(tex_id))
+    tex = get_object_or_404(Technics.objects.select_for_update(of=("self",)), id=int(tex_id))
+    _check_technics_scope(request, employee, tex)
 
-    # Har uch holatda bir xil update_fields
     update_fields = ["employee", "department", "directorate", "division", "status"]
 
-    # 1. Xodimga biriktirish
     if emp_id:
         emp = get_object_or_404(
             Employee.objects.select_related("organization", "region"),
             id=int(emp_id)
         )
 
-        # Xodim shu tashkilotga tegishlimi?
         if emp.organization_id != tex.organization_id:
             raise PermissionDenied("Xodim bu tashkilotga tegishli emas")
 
-        tex.employee    = emp
-        tex.department  = None
+        tex.employee = emp
+        tex.department = None
         tex.directorate = None
-        tex.division    = None
-        tex.status      = "active"
+        tex.division = None
+        tex.status = "active"
         tex.save(update_fields=update_fields)
 
         messages.success(request, "Uskuna xodimga biriktirildi")
         return redirect(back_url)
 
-    # 2. Strukturaga biriktirish
     if dep_id or dir_id or div_id:
-        department_obj  = None
+        department_obj = None
         directorate_obj = None
-        division_obj    = None
+        division_obj = None
 
         if dep_id:
             department_obj = get_object_or_404(
-                Department,
-                id=int(dep_id),
-                organization_id=tex.organization_id
+                Department, id=int(dep_id), organization_id=tex.organization_id
             )
 
         if dir_id:
             directorate_obj = get_object_or_404(Directorate, id=int(dir_id))
             if department_obj and directorate_obj.department_id != department_obj.id:
-                messages.info(request, "Boshqarma tanlangan bo'limga tegishli emas")
+                messages.error(request, "Boshqarma tanlangan bo'limga tegishli emas")
                 return redirect(back_url)
 
         if div_id:
             division_obj = get_object_or_404(Division, id=int(div_id))
             if directorate_obj and division_obj.directorate_id != directorate_obj.id:
-                messages.info(request, "Bo'linma tanlangan boshqarmaga tegishli emas")
+                messages.error(request, "Bo'linma tanlangan boshqarmaga tegishli emas")
                 return redirect(back_url)
 
-        tex.employee    = None
-        tex.department  = department_obj
+        tex.employee = None
+        tex.department = department_obj
         tex.directorate = directorate_obj
-        tex.division    = division_obj
-        tex.status      = "active"
+        tex.division = division_obj
+        tex.status = "active"
         tex.save(update_fields=update_fields)
 
         messages.success(request, "Uskuna strukturaga biriktirildi")
         return redirect(back_url)
 
-    # 3. Bo'shatish
-    tex.employee    = None
-    tex.department  = None
+    tex.employee = None
+    tex.department = None
     tex.directorate = None
-    tex.division    = None
-    tex.status      = "free"
+    tex.division = None
+    tex.status = "free"
     tex.save(update_fields=update_fields)
 
     messages.success(request, "Uskuna bo'shatildi")
@@ -1217,15 +1171,15 @@ def technics_update(request, pk):
         raise PermissionDenied("Employee yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    tex = get_object_or_404(Technics.objects.select_for_update(), pk=pk)
+    tex = get_object_or_404(Technics.objects.select_for_update(of=("self",)), pk=pk)
+    _check_technics_scope(request, employee, tex)
 
-    category_id     = (request.POST.get("category")     or "").strip()
+    category_id = (request.POST.get("category") or "").strip()
     organization_id = (request.POST.get("organization") or "").strip()
 
-    # FK lar
     if category_id:
         if not category_id.isdigit():
-            messages.info(request, "Kategoriya noto'g'ri")
+            messages.error(request, "Kategoriya noto'g'ri")
             return redirect(back_url)
         tex.category = get_object_or_404(Category, pk=int(category_id))
     else:
@@ -1233,50 +1187,47 @@ def technics_update(request, pk):
 
     if organization_id:
         if not organization_id.isdigit():
-            messages.info(request, "Tashkilot noto'g'ri")
+            messages.error(request, "Tashkilot noto'g'ri")
             return redirect(back_url)
         tex.organization = get_object_or_404(Organization, pk=int(organization_id))
     else:
         tex.organization = None
 
-    # Oddiy maydonlar
-    tex.name      = (request.POST.get("name")      or "").strip()
-    tex.parametr  = (request.POST.get("parametr")  or "").strip() or None
+    tex.name = (request.POST.get("name") or "").strip()
+    tex.parametr = (request.POST.get("parametr") or "").strip() or None
     tex.inventory = (request.POST.get("inventory") or "").strip() or None
-    tex.serial    = (request.POST.get("serial")    or "").strip() or None
-    tex.mac       = (request.POST.get("mac")       or "").strip() or None
-    tex.ip        = (request.POST.get("ip")        or "").strip() or None
-    tex.year      = (request.POST.get("year")      or "").strip() or None
-    tex.address   = (request.POST.get("address")   or "").strip() or None
-    tex.status    = (request.POST.get("status")    or "").strip()
+    tex.serial = (request.POST.get("serial") or "").strip() or None
+    tex.mac = (request.POST.get("mac") or "").strip() or None
+    tex.ip = (request.POST.get("ip") or "").strip() or None
+    tex.year = (request.POST.get("year") or "").strip() or None
+    tex.address = (request.POST.get("address") or "").strip() or None
+    tex.status = (request.POST.get("status") or "").strip()
 
     if not tex.name:
-        messages.info(request, "Nomi bo'sh bo'lmasin")
+        messages.error(request, "Nomi bo'sh bo'lmasin")
         return redirect(back_url)
 
     allowed_status = ["free", "active", "repair", "defect"]
     if tex.status not in allowed_status:
-        messages.info(request, "Holat noto'g'ri")
+        messages.error(request, "Holat noto'g'ri")
         return redirect(back_url)
 
     has_real_serial = tex.serial and tex.serial.strip().upper() != "B/N"
 
-    # Serial tekshiruvi
     if has_real_serial and tex.organization and Technics.objects.filter(
             serial__iexact=tex.serial,
             organization=tex.organization
     ).exclude(pk=tex.pk).exists():
-        messages.info(request, f"Bu serial raqamli uskuna allaqachon mavjud: {tex.serial}")
+        messages.error(request, f"Bu serial raqamli uskuna allaqachon mavjud: {tex.serial}")
         return redirect(back_url)
 
-    # Narx
     raw_price = (request.POST.get("price") or "").strip().replace(" ", "").replace(",", ".")
     try:
         tex.price = Decimal(raw_price) if raw_price else Decimal("0")
         if tex.price < 0:
             raise InvalidOperation
     except (InvalidOperation, ValueError):
-        messages.info(request, "Narx noto'g'ri kiritildi (misol: 14.45 yoki 14,45)")
+        messages.error(request, "Narx noto'g'ri kiritildi (misol: 14.45 yoki 14,45)")
         return redirect(back_url)
 
     tex.save(update_fields=[
@@ -1299,6 +1250,7 @@ def technics_download(request, pk):
         raise PermissionDenied("Employee yo'q")
 
     tex = get_object_or_404(Technics, pk=pk, is_active=True)
+    _check_technics_scope(request, employee, tex)
 
     if not tex.qr_code:
         raise Http404("Fayl topilmadi")
