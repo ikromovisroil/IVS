@@ -26,7 +26,6 @@ from .models import (
 from .push_views import notify_order_status_change, notify_eligible_employees_new_order, notify_deed_sender
 from .sanitizers import sanitize_deed_body
 
-
 FULL_SENDER_RECEIVER_RELATED = (
     "goal", "technics", "user", "receiver", "sender",
     "sender__rank", "sender__organization", "sender__department",
@@ -194,6 +193,7 @@ def order_post(request):
         message_sender=body,
         status="viewed",
     )
+
     notify_eligible_employees_new_order(order)
     messages.success(request, "Ariza Yaratish")
     return redirect(back_url)
@@ -353,7 +353,7 @@ def order_accepted(request, pk):
         with transaction.atomic():
             order = (
                 Order.objects
-                .select_for_update()
+                .select_for_update(of=("self",))
                 .select_related("goal__organization", "sender")
                 .get(pk=pk)
             )
@@ -995,7 +995,7 @@ def create_order_sender_from(request):
     with transaction.atomic():
         cart_items = list(
             OrderMaterial.objects
-            .select_for_update()
+            .select_for_update(of=("self",))
             .filter(user=employee, order__isnull=True, material__isnull=False)
             .select_related("material")
         )
@@ -1119,7 +1119,7 @@ def order_accepted_barn(request, pk):
         with transaction.atomic():
             order = (
                 Order.objects
-                .select_for_update()
+                .select_for_update(of=("self",))
                 .select_related("goal__organization", "sender")
                 .get(pk=pk)
             )
@@ -1254,7 +1254,7 @@ def order_material_barn(request):
     try:
         with transaction.atomic():
             order = get_object_or_404(
-                Order.objects.select_for_update().select_related("goal__organization"),
+                Order.objects.select_for_update(of=("self",)).select_related("goal__organization"),
                 pk=int(order_id)
             )
 
@@ -1488,7 +1488,7 @@ def order_agrement_material(request):
     try:
         with transaction.atomic():
             order = get_object_or_404(
-                Order.objects.select_for_update().select_related("goal__organization", "receiver"),
+                Order.objects.select_for_update(of=("self",)).select_related("goal__organization", "receiver"),
                 pk=int(order_id)
             )
 
