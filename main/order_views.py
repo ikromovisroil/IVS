@@ -9,10 +9,9 @@ import binascii
 from .html_pdf import _create_deed_for_order
 from django.utils import timezone
 from bot.notify import send_telegram_message, rating_markup, barn_approved_markup
-from django.utils import timezone
+from .push_views import *
 
-
-# yangi arizalar
+# yangi arizalarni korish
 @never_cache
 @require_GET
 @login_required
@@ -25,9 +24,20 @@ def order_sender(request):
 
     orders_qs = (
         Order.objects
-        .filter(sender=employee, goal__organization__type="worker",
-                status__in=["viewed", "process", "finished"],)
-        .select_related( "goal", "technics","user", "receiver", "sender")
+        .filter(
+            sender=employee, goal__organization__type="worker",
+            status__in=["viewed", "process", "finished"],
+        )
+        .select_related(
+            "goal", "technics", "user", "receiver", "sender",
+            "sender__rank", "sender__organization", "sender__department",
+            "sender__directorate", "sender__division",
+            "receiver__rank", "receiver__organization", "receiver__department",
+            "receiver__directorate", "receiver__division",
+        )
+        .prefetch_related(
+            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material"))
+        )
         .order_by("-id")
     )
 
@@ -37,11 +47,11 @@ def order_sender(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.filter(organization__type="worker").order_by("id"),
+        "goal": Goal.objects.filter(organization__type="worker").order_by("id"),
     }
     return render(request, "main/order_sender.html", context)
 
-
+# arizani baxolash
 @never_cache
 @require_POST
 @login_required
@@ -51,42 +61,47 @@ def order_decide(request, pk):
         raise PermissionDenied("Employee yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    action   = (request.POST.get("action") or "").strip()
+    action = (request.POST.get("action") or "").strip()
 
-    if action not in {"approved", "canceled"}:
-        messages.info(request, "Noma'lum amal")
+    if action not in {"accepted", "canceled"}:
+        messages.error(request, "Noma'lum amal")
         return redirect(back_url)
 
-    order = get_object_or_404(Order, pk=pk)
-
-    if order.sender_id != employee.id and order.user_id != employee.id:
-        raise PermissionDenied("Sizda bu arizani o'zgartirish huquqi yo'q")
-
-    if action == "canceled":
-        rating = None
-    else:
+    rating = None
+    if action == "accepted":
         rating_raw = (request.POST.get("rating") or "").strip()
         try:
             rating = int(rating_raw)
         except (TypeError, ValueError):
-            messages.info(request, "Baho noto'g'ri")
+            messages.error(request, "Baho noto'g'ri")
             return redirect(back_url)
 
         if rating not in {1, 2, 3, 4, 5}:
-            messages.info(request, "Baho 1 dan 5 gacha bo'lishi kerak")
+            messages.error(request, "Baho 1 dan 5 gacha bo'lishi kerak")
             return redirect(back_url)
 
     try:
         with transaction.atomic():
-            order = Order.objects.select_for_update().get(pk=pk)
 
+            try:
+                order = Order.objects.select_for_update().get(pk=pk)
+            except Order.DoesNotExist:
+                messages.error(request, "Ariza topilmadi")
+                return redirect(back_url)
+
+            if order.sender_id != employee.id and order.user_id != employee.id:
+                raise PermissionDenied("Sizda bu arizani o'zgartirish huquqi yo'q")
+
+            update_fields = ["status"]
             order.status = action
-            if rating:
+            if rating is not None:
                 order.rating = rating
-            order.save(update_fields=["status", "rating"])
+                update_fields.append("rating")
+
+            order.save(update_fields=update_fields)
 
     except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
     # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
@@ -96,7 +111,7 @@ def order_decide(request, pk):
     if action == "canceled":
         messages.success(request, "Ariza bekor qilindi")
     else:
-        messages.success(request, "Ariza tasdiqlandi")
+        messages.success(request, "Ariza qabul qilindi")
 
     return redirect(back_url)
 
@@ -119,14 +134,20 @@ def order_sender_arxiv(request):
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
         .select_related(
-            "goal", "technics",
-            "user", "receiver", "sender"
+            "goal", "technics", "user", "receiver", "sender",
+            "sender__rank", "sender__organization", "sender__department",
+            "sender__directorate", "sender__division",
+            "receiver__rank", "receiver__organization", "receiver__department",
+            "receiver__directorate", "receiver__division",
+        )
+        .prefetch_related(
+            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material"))
         )
         .order_by("-id")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
@@ -135,6 +156,7 @@ def order_sender_arxiv(request):
     return render(request, "main/order_sender_arxiv.html", context)
 
 
+# yangi ariza yaratish sender
 @never_cache
 @require_POST
 @login_required
@@ -144,14 +166,14 @@ def order_post(request):
         raise PermissionDenied("Employee yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    goal_id  = (request.POST.get("goal") or "").strip()
-    body     = (request.POST.get("body") or "").strip() or None
+    goal_id = (request.POST.get("goal") or "").strip()
+    body = (request.POST.get("body") or "").strip() or None
 
     if not goal_id.isdigit():
-        messages.info(request, "Ariza turi tanlanmadi")
+        messages.error(request, "Ariza turi tanlanmadi")
         return redirect(back_url)
 
-    goal = get_object_or_404(Goal, pk=int(goal_id))
+    goal = get_object_or_404(Goal, pk=int(goal_id), organization__type="worker")
 
     order = Order.objects.create(
         sender_id=employee.id,
@@ -180,8 +202,17 @@ def order_sender_user(request):
 
     orders_qs = (
         Order.objects
-        .filter(user=employee, goal__organization__type="worker",)
-        .select_related("goal", "technics", "user", "receiver", "sender")
+        .filter(user=employee, goal__organization__type="worker")
+        .select_related(
+            "goal", "technics", "user", "receiver", "sender",
+            "sender__rank", "sender__organization", "sender__department",
+            "sender__directorate", "sender__division",
+            "receiver__rank", "receiver__organization", "receiver__department",
+            "receiver__directorate", "receiver__division",
+        )
+        .prefetch_related(
+            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material"))
+        )
         .order_by("-id")
     )
 
@@ -191,12 +222,13 @@ def order_sender_user(request):
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        "goal":     Goal.objects.filter(organization__type="worker").order_by("id"),
+        "goal": Goal.objects.filter(organization__type="worker").order_by("id"),
         "organizations": Organization.objects.only("id", "name").order_by("id"),
     }
     return render(request, "main/order_sender_user.html", context)
 
 
+# yangi ariza yaratish user
 @never_cache
 @require_POST
 @login_required
@@ -207,21 +239,20 @@ def order_user_post(request):
         raise PermissionDenied("Employee yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    goal_id  = (request.POST.get("goal") or "").strip()
+    goal_id = (request.POST.get("goal") or "").strip()
     emp_id = (request.POST.get("employee") or "").strip()
-    body     = (request.POST.get("body") or "").strip() or None
+    body = (request.POST.get("body") or "").strip() or None
 
     if not goal_id.isdigit():
-        messages.info(request, "Ariza turi tanlanmadi")
+        messages.error(request, "Ariza turi tanlanmadi")
         return redirect(back_url)
 
     if not emp_id.isdigit():
-        messages.info(request, "Xodim tanlanmadi")
+        messages.error(request, "Xodim tanlanmadi")
         return redirect(back_url)
 
-    goal = get_object_or_404(Goal, pk=int(goal_id))
+    goal = get_object_or_404(Goal, pk=int(goal_id), organization__type="worker")
     emp = get_object_or_404(Employee, pk=int(emp_id))
-
 
     Order.objects.create(
         sender_id=emp.id,

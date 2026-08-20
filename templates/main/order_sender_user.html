@@ -356,11 +356,11 @@
                                     </div>
                                     <div class="modal-footer d-flex flex-row justify-content-center gap-2">
                                         <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle me-1"></i> Etiborsiz qoldirish</button>
-                                        {% if o.status in 'viewed process' %}
+                                        {% if o.status == 'viewed' or o.status == 'process' %}
                                         <button type="submit" name="action" value="canceled" class="btn btn-danger flex-fill"><i class="bi bi-x-circle me-1"></i> Bekor qilish</button>
                                         {% endif %}
                                         {% if o.status == 'finished' %}
-                                        <button type="submit" name="action" value="approved" class="btn btn-primary flex-fill"><i class="bi bi-check-circle me-1"></i> Tasdiqlash</button>
+                                        <button type="submit" name="action" value="accepted" class="btn btn-primary flex-fill"><i class="bi bi-check-circle me-1"></i> Qabul qilish</button>
                                         {% endif %}
                                     </div>
                                   </form>

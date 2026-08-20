@@ -1,4 +1,6 @@
 import json
+import logging
+
 from pywebpush import webpush, WebPushException
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
@@ -7,6 +9,8 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse
 from core.models import PushSubscription
 from .models import *
+
+logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -109,6 +113,18 @@ def send_push_notification(employee, title, body, url="/"):
             status_code = getattr(ex.response, "status_code", None)
             if status_code in (404, 410):
                 dead_ids.append(sub.id)
+        except Exception:
+            # VAPID kalit noto'g'ri formatda bo'lsa (masalan py_vapid'dan
+            # ValueError: "Invalid key") yoki boshqa kutilmagan xato chiqsa
+            # ham, push bildirishnoma — asosiy operatsiya (ariza yaratish,
+            # statusni o'zgartirish va h.k.) uchun HAL QILUVCHI emas.
+            # Shu sababli bu yerda ushlab, faqat log'ga yozamiz — bitta
+            # noto'g'ri sozlama yoki obuna butun so'rovni (masalan
+            # order_post) 500-xato bilan yiqitmasligi kerak.
+            logger.exception(
+                "Push yuborishda kutilmagan xato: employee_id=%s, endpoint=%s",
+                employee.id, sub.endpoint,
+            )
 
     if dead_ids:
         PushSubscription.objects.filter(id__in=dead_ids).delete()

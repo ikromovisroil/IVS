@@ -371,14 +371,26 @@ def ajax_agreements_employees(request):
     } for e in qs]
     return JsonResponse(data, safe=False)
 
+
 @login_required
 @require_POST
 @transaction.atomic
 def ordermaterial_delete(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return JsonResponse({"status": "no_employee"}, status=403)
+
     om = get_object_or_404(
         OrderMaterial.objects.select_related("material", "order"),
         pk=pk
     )
+
+    order = om.order
+    if order is None:
+        return JsonResponse({"status": "error", "message": "Ariza topilmadi"}, status=400)
+
+    if order.receiver != employee:
+        raise PermissionDenied("Sizda bu materialni o'chirish huquqi yo'q")
 
     material = om.material
     material.number = (material.number or 0) + (om.number or 0)
