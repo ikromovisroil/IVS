@@ -522,6 +522,9 @@ def deed_edit(request, pk):
     receiver_org_id = deed.receiver.organization_id if deed.receiver_id else None
     my_org_id = employee.organization_id or None
 
+    # ✅ FIX: sender.organization / receiver.organization to'g'ridan-to'g'ri
+    # chaqirilmaydi — deed.sender yoki deed.receiver None bo'lsa AttributeError
+    # chiqmasligi uchun oldindan olingan *_org_id ishlatiladi.
     sender_qs = (
         Employee.objects.filter(organization_id=sender_org_id)
         .order_by("last_name", "first_name", "father_name")
@@ -664,20 +667,18 @@ def deed_edit(request, pk):
                     ])
 
             # 2. PDF — transaction tashqarisida
-            # ✅ FIX: eski fayl endi yangisi MUVAFFAQIYATLI yaratilgandan keyin
-            # o'chiriladi — PDF generatsiya xato bersa ham eski fayl saqlanib qoladi.
+            # ✅ FIX: PDF avval yangi nom bilan diskka yoziladi (save=False),
+            # keyin faqat 'file' maydoni yangilanadi (update_fields=["file"]).
+            # Bu Deed.save() modelidagi avtomatik "eski faylni o'chirish"
+            # logikasini FAQAT BIR MARTA ishga tushiradi (view darajasida
+            # qo'shimcha, qo'lda o'chirish endi kerak emas - takrorlanish
+            # va ortiqcha xato xavfini yo'qotadi).
             pdf_bytes = deed_to_pdf_bytes(deed)
             pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
             pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(8)}.pdf"
 
-            old_file = deed.file
-            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
-
-            if old_file:
-                try:
-                    old_file.delete(save=False)
-                except Exception:
-                    logger.exception("Deed #%s eski faylini o'chirishda xatolik", deed.pk)
+            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=False)
+            deed.save(update_fields=["file"])
 
             messages.success(request, "Hujjat muvaffaqiyatli tahrirlandi")
             return redirect("contact_user")

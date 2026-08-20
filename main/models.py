@@ -4,11 +4,13 @@ from django.utils import timezone
 from django.db import IntegrityError
 import secrets
 import string
+import logging
 import qrcode
 from io import BytesIO
 from django.core.files import File
 from django.db import models, transaction
 from django.urls import reverse
+logger = logging.getLogger(__name__)
 
 
 # Organizator.
@@ -616,19 +618,12 @@ class Deed(models.Model):
     date_edit = models.DateTimeField(auto_now=True)
 
     def generate_code(self):
-        # secrets — kriptografik jihatdan xavfsiz generator (random modulidan farqli).
-        # Bashorat qilib bo'lmaydigan kod kerak bo'lgan joylarda (masalan tashqi
-        # tomondan hujjatni tasdiqlash/kirish uchun ishlatilsa) shu ishlatiladi.
+
         chars = string.ascii_uppercase + string.digits
         return ''.join(secrets.choice(chars) for _ in range(10))
 
     def save(self, *args, **kwargs):
         # --- Fayl validatsiyasini majburiy qilish ---
-        # validators=[...] faqat ModelForm/admin orqali saqlanganda avtomatik
-        # ishga tushadi. API yoki boshqa joydan to'g'ridan-to'g'ri .save()
-        # chaqirilsa validator chetlab o'tiladi — shu sabab bu yerda ochiqchasiga
-        # chaqiramiz. Faqat 'file' maydonini tekshiramiz, boshqa maydonlarga
-        # taalluqli emas (ular boshqa joyda / formada tekshiriladi deb hisoblanadi).
         if self.file:
             self.clean_fields(exclude=[
                 f.name for f in self._meta.get_fields()
@@ -638,12 +633,14 @@ class Deed(models.Model):
         if self.pk:
             old = Deed.objects.filter(pk=self.pk).first()
             if old and self.file and old.file and old.file != self.file:
-                old.file.delete(save=False)
+                try:
+                    old.file.delete(save=False)
+                except Exception:
+                    logger.exception(
+                        "Deed #%s eski faylini o'chirishda xatolik (model save() ichida): %s",
+                        self.pk, old.file.name
+                    )
 
-        # --- Kod generatsiyasi: race condition'dan himoyalangan ---
-        # Ikkita parallel so'rov bir xil kodni "bo'sh" deb topib qolish
-        # ehtimoli bor edi (TOCTOU). Endi IntegrityError ushlanadi va qayta
-        # urinadi — bazadagi unique constraint yakuniy hakam bo'lib qoladi.
         if not self.code:
             max_attempts = 5
             for attempt in range(max_attempts):
