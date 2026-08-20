@@ -197,35 +197,32 @@ def _sync_single_employee(emp, apply_changes=False):
     except Exception as e:
         raise Exception(f"Gateway xatosi: {e}")
 
-    result    = (gateway_data or {}).get("result") or {}
+    result = (gateway_data or {}).get("result") or {}
     positions = result.get("positions") or []
 
     if not positions:
-        if apply_changes:
-            _block_employee(emp, pinfl)
-            return "blocked", ""
         return "would_block", ""
 
-    assigned = _resolve_position(pinfl, positions, create_missing=False)
+    assigned = _resolve_position(
+        pinfl,
+        positions,
+        create_missing=False
+    )
 
     if not assigned:
-        if apply_changes:
-            _block_employee(emp, pinfl)
-            return "blocked", ""
         return "would_block", ""
 
     if not _has_changed(emp, assigned, result=result):
         return "skipped", ""
 
-    changes = _describe_changes(emp, assigned, result=result)
+    changes = _describe_changes(
+        emp,
+        assigned,
+        result=result
+    )
 
-    if not apply_changes:
-        return "changed", changes
-
-    with transaction.atomic():
-        changes = _apply_changes(emp, assigned, result=result)
-
-    return "applied", changes
+    # FAQAT TEKSHIRADI, BAZAGA SAQLAMAYDI
+    return "changed", changes
 
 
 # =========================================================
