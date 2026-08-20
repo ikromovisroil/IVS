@@ -1,16 +1,13 @@
 from django.contrib.auth.models import User
 from .validators import *
 from django.utils import timezone
-from django.db import IntegrityError
-import secrets
+import random
 import string
-import logging
 import qrcode
 from io import BytesIO
 from django.core.files import File
-from django.db import models, transaction
+from django.db import models,transaction
 from django.urls import reverse
-logger = logging.getLogger(__name__)
 
 
 # Organizator.
@@ -577,10 +574,11 @@ class MaterialUser(models.Model):
         verbose_name_plural = "Material userlar"
 
 
-class Deed(models.Model):
-    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
 
-    sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_sender', null=True, blank=True, db_index=True)
+class Deed(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
+
+    sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_sender', null=True, blank=True ,db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     status_sender = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
@@ -612,50 +610,29 @@ class Deed(models.Model):
 
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
     code = models.CharField(max_length=10, null=True, blank=True, unique=True, db_index=True)
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, related_name='order', null=True, blank=True, db_index=True)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, related_name='order', null=True, blank=True ,db_index=True)
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
     def generate_code(self):
-
         chars = string.ascii_uppercase + string.digits
-        return ''.join(secrets.choice(chars) for _ in range(10))
+        return ''.join(random.choices(chars, k=10))
 
     def save(self, *args, **kwargs):
-        # --- Fayl validatsiyasini majburiy qilish ---
-        if self.file:
-            self.clean_fields(exclude=[
-                f.name for f in self._meta.get_fields()
-                if getattr(f, "attname", f.name) != "file"
-            ])
-
         if self.pk:
             old = Deed.objects.filter(pk=self.pk).first()
             if old and self.file and old.file and old.file != self.file:
-                try:
-                    old.file.delete(save=False)
-                except Exception:
-                    logger.exception(
-                        "Deed #%s eski faylini o'chirishda xatolik (model save() ichida): %s",
-                        self.pk, old.file.name
-                    )
+                old.file.delete(save=False)
 
         if not self.code:
-            max_attempts = 5
-            for attempt in range(max_attempts):
-                self.code = self.generate_code()
-                try:
-                    with transaction.atomic():
-                        super().save(*args, **kwargs)
+            while True:
+                new_code = self.generate_code()
+                if not Deed.objects.filter(code=new_code).exists():
+                    self.code = new_code
                     break
-                except IntegrityError:
-                    self.code = None
-                    if attempt == max_attempts - 1:
-                        raise
-                    continue
-        else:
-            super().save(*args, **kwargs)
+
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Dalolatnoma {self.code}"
@@ -664,6 +641,7 @@ class Deed(models.Model):
         db_table = 'deed'
         verbose_name = "Xujat"
         verbose_name_plural = "Xujatlar"
+
 
 
 class DeedConsent(models.Model):

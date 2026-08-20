@@ -519,12 +519,11 @@ def deed_edit(request, pk):
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     sender_org_id = deed.sender.organization_id if deed.sender_id else None
+    sender_dep_id = deed.sender.department_id if deed.sender_id else None
     receiver_org_id = deed.receiver.organization_id if deed.receiver_id else None
+    receiver_dep_id = deed.receiver.department_id if deed.receiver_id else None
     my_org_id = employee.organization_id or None
 
-    # ✅ FIX: sender.organization / receiver.organization to'g'ridan-to'g'ri
-    # chaqirilmaydi — deed.sender yoki deed.receiver None bo'lsa AttributeError
-    # chiqmasligi uchun oldindan olingan *_org_id ishlatiladi.
     sender_qs = (
         Employee.objects.filter(organization_id=sender_org_id)
         .order_by("last_name", "first_name", "father_name")
@@ -572,10 +571,10 @@ def deed_edit(request, pk):
             messages.info(request, "Imzolovchi xodim tanlanmadi")
             return redirect("deed_edit", pk=deed.pk)
 
-        # ✅ FIX: endi faqat organization bo'yicha tekshiriladi, department shart emas
         new_sender = Employee.objects.filter(
             id=int(sender_id),
             organization_id=sender_org_id,
+            department_id=sender_dep_id,
         ).first()
 
         if not new_sender:
@@ -588,10 +587,10 @@ def deed_edit(request, pk):
                 messages.info(request, "Qabul qiluvchi tanlanmadi")
                 return redirect("deed_edit", pk=deed.pk)
 
-            # ✅ FIX: endi faqat organization bo'yicha tekshiriladi, department shart emas
             new_receiver = Employee.objects.filter(
                 id=int(receiver_id),
                 organization_id=receiver_org_id,
+                department_id=receiver_dep_id,
             ).first()
 
             if not new_receiver:
@@ -615,7 +614,6 @@ def deed_edit(request, pk):
                 sender_changed = (deed.sender_id != new_sender.id)
                 receiver_changed = (
                     deed.receiver_id is not None
-                    and new_receiver is not None
                     and deed.receiver_id != new_receiver.id
                 )
 
@@ -629,7 +627,7 @@ def deed_edit(request, pk):
                 if sender_changed:
                     update_fields += ["status_sender", "message_sender", "date_sender"]
 
-                if deed.receiver_id and new_receiver:
+                if deed.receiver_id:
                     deed.receiver = new_receiver
                     if receiver_changed:
                         deed.status_receiver = "viewed"
@@ -667,18 +665,16 @@ def deed_edit(request, pk):
                     ])
 
             # 2. PDF — transaction tashqarisida
-            # ✅ FIX: PDF avval yangi nom bilan diskka yoziladi (save=False),
-            # keyin faqat 'file' maydoni yangilanadi (update_fields=["file"]).
-            # Bu Deed.save() modelidagi avtomatik "eski faylni o'chirish"
-            # logikasini FAQAT BIR MARTA ishga tushiradi (view darajasida
-            # qo'shimcha, qo'lda o'chirish endi kerak emas - takrorlanish
-            # va ortiqcha xato xavfini yo'qotadi).
+            try:
+                if deed.file:
+                    deed.file.delete(save=False)
+            except Exception:
+                logger.exception("Deed #%s eski faylini o'chirishda xatolik", deed.pk)
+
             pdf_bytes = deed_to_pdf_bytes(deed)
             pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
             pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(8)}.pdf"
-
-            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=False)
-            deed.save(update_fields=["file"])
+            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
 
             messages.success(request, "Hujjat muvaffaqiyatli tahrirlandi")
             return redirect("contact_user")
