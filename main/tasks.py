@@ -58,18 +58,6 @@ def has_cyrillic(text: str) -> bool:
 # =========================================================
 # CELERY TASK
 # =========================================================
-# ✅ Bu task hech qachon bazaga avtomatik yozmaydi:
-#   - Employee'ning organization/department/directorate/division/rank
-#     maydonlarini o'zgartirmaydi.
-#   - Xodimni bloklamaydi/deaktiv qilmaydi.
-#   - Yangi Department/Directorate yozuvlarini YARATMAYDI (bu avvalgi
-#     versiyada eng katta muammo edi - "faqat ko'rsatish" rejimida ham
-#     tizimga yangi Department/Directorate qo'shib qo'yardi).
-# Faqat Gateway'dagi ma'lumot bilan bazadagi ma'lumot orasidagi FARQNI
-# aniqlaydi va shu farqni SyncLog/SyncEmployeeLog orqali "xabar"
-# sifatida yozib qo'yadi. Xodimni tahrirlash, bloklash yoki yangi
-# Department/Directorate yaratish - FAQAT admin tomonidan qo'lda
-# amalga oshiriladi.
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def sync_all_employees(self, apply_changes=False):
     from .models import Employee
@@ -218,14 +206,9 @@ def _sync_single_employee(emp, apply_changes=False):
             return "blocked", ""
         return "would_block", ""
 
-    # ✅ FIX: create_missing=False - hech qanday yangi Department/Directorate
-    # yozuvi yaratilmaydi, faqat MAVJUDLARI qidiriladi.
     assigned = _resolve_position(pinfl, positions, create_missing=False)
 
     if not assigned:
-        # Bu holat FAQAT org_tin butunlay hech qaysi Organization/Department
-        # bilan mos kelmasa yuz beradi (tizimda bu tashkilot umuman yo'q) -
-        # haqiqatan "ish joyi aniqlanmadi" degani.
         if apply_changes:
             _block_employee(emp, pinfl)
             return "blocked", ""
@@ -234,23 +217,10 @@ def _sync_single_employee(emp, apply_changes=False):
     if not _has_changed(emp, assigned, result=result):
         return "skipped", ""
 
-    # Har doim faqat MATN ko'rinishida farqni hisoblaymiz - DBga yozmaymiz
     changes = _describe_changes(emp, assigned, result=result)
 
     if not apply_changes:
         return "changed", changes
-
-    # apply_changes=True bo'lganda ham, agar department/directorate topilmagan
-    # (faqat nomi/kodi ma'lum, lekin bazada mavjud emas) bo'lsa - buni ham
-    # avtomatik yaratmaymiz, chunki bu qo'lda tekshirilishi kerak bo'lgan
-    # holat. Shunday holatda "applied" emas, balki xabar bilan qaytaramiz.
-    if assigned.get("_dep_unresolved"):
-        note = (
-            f"{changes} | DIQQAT: Departament/Boshqarma bazada topilmadi "
-            f"(kod={assigned.get('_dep_id')!r}, nomi={assigned.get('_dep_name')!r}) - "
-            f"avval uni qo'lda yarating, keyin qayta urinib ko'ring."
-        )
-        return "changed", note
 
     with transaction.atomic():
         changes = _apply_changes(emp, assigned, result=result)
@@ -266,22 +236,7 @@ def _get_default_region():
 
 
 def _resolve_position(sso_pinfl, positions, create_missing=False):
-    """
-    Gateway'dan kelgan positions ro'yxati bo'yicha xodimning tashkiliy
-    joylashuvini ANIQLASHGA harakat qiladi.
 
-    create_missing=False (STANDART, tavsiya etiladi):
-        Department/Directorate topilmasa - HECH NARSA yaratilmaydi.
-        Qaytarilgan data'da mos maydon None qoladi va
-        "_dep_unresolved": True, "_dep_id"/"_dep_name" belgilanadi -
-        bu keyinchalik xabarda "qo'lda yarating" deb ko'rsatish uchun
-        ishlatiladi.
-
-    create_missing=True:
-        Eski xatti-harakat - topilmasa avtomatik yaratadi. Faqat
-        maxsus/kelajakdagi "to'liq avtomatik" senariylar uchun
-        qoldirilgan, ODATDAGI sync jarayonida ISHLATILMAYDI.
-    """
     from .models import Organization, Department, Directorate, Division, Rank
 
     for pos in positions:
@@ -423,9 +378,6 @@ def _has_changed(emp, assigned, result=None):
     if structure_changed:
         return True
 
-    # Department/Directorate hali "topilmadi" holatida bo'lsa ham,
-    # bu ADMIN uchun muhim signal - shuning uchun "o'zgargan" deb
-    # hisoblaymiz, shunda SyncEmployeeLog'da ko'rinadi.
     if assigned.get("_dep_unresolved"):
         return True
 
@@ -445,9 +397,6 @@ def _has_changed(emp, assigned, result=None):
 
 
 def _describe_changes(emp, assigned, result=None):
-    """Faqat matn ko'rinishida nima o'zgarishini hisoblaydi - DBga
-    HECH NARSA yozmaydi. Bu funksiya har doim shu tarzda ishlaydi,
-    apply_changes True yoki False bo'lishidan qat'iy nazar."""
     changes = []
 
     if result:
@@ -497,26 +446,8 @@ def _describe_changes(emp, assigned, result=None):
     return " | ".join(changes)
 
 
-# =========================================================
-# APPLY CHANGES
-# =========================================================
-# ⚠️ DIQQAT: Bu funksiya endi celery beat jadvalidan AVTOMATIK
-# chaqirilmaydi. Faqat kelajakda admin paneldan "Qo'llash" degan
-# tugma qo'shilsa va sync_all_employees(apply_changes=True) yoki
-# shunga o'xshash alohida chaqiruv qilinsa ishlaydi. Bunda ham,
-# agar department/directorate topilmagan (_dep_unresolved) bo'lsa,
-# _sync_single_employee bu funksiyani chaqirmaydi - avval xabar
-# qaytaradi ("qo'lda yarating").
 def _apply_changes(emp, assigned, result=None):
     from .models import Rank
-
-    if not assigned["rank"] and assigned.get("_position_id"):
-        assigned["rank"], _ = Rank.objects.get_or_create(
-            code=assigned["_position_id"],
-            defaults={
-                "name": assigned["_position"] or f"Lavozim-{assigned['_position_id']}"
-            },
-        )
 
     changes_str = _describe_changes(emp, assigned, result=result)
 
@@ -534,19 +465,13 @@ def _apply_changes(emp, assigned, result=None):
 
     if emp.user and not emp.user.is_active:
         emp.user.is_active = True
-        emp.user.save(update_fields=["is_active"])
+        emp.user.save()
         logger.info("PINFL %s qayta faollashtirildi", emp.pinfl)
 
     logger.info("PINFL %s yangilandi: %s", emp.pinfl, changes_str)
     return changes_str
 
 
-# =========================================================
-# BLOCK EMPLOYEE
-# =========================================================
-# ⚠️ DIQQAT: Bu funksiya endi celery beat jadvalidan AVTOMATIK
-# chaqirilmaydi. Faqat apply_changes=True bilan alohida chaqirilganda
-# ishlaydi (masalan kelajakda admin paneldan qo'lda tasdiqlash orqali).
 def _block_employee(emp, pinfl):
     from .models import Technics
 
@@ -558,7 +483,7 @@ def _block_employee(emp, pinfl):
 
         if emp.user and emp.user.is_active:
             emp.user.is_active = False
-            emp.user.save(update_fields=["is_active"])
+            emp.user.save()
 
         emp.organization = None
         emp.department = None
@@ -566,6 +491,6 @@ def _block_employee(emp, pinfl):
         emp.division = None
         emp.region = None
         emp.rank = None
-        emp.save(update_fields=["organization", "department", "directorate", "division", "region", "rank"])
+        emp.save()
 
     logger.info("PINFL %s bloklandi", pinfl)
