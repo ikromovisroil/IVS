@@ -1,7 +1,18 @@
+import logging
 import os
+
 import pdfkit
 import pymupdf
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.db import transaction
+from django.template.loader import render_to_string
+from django.utils import timezone
+
+from .models import Deed, DeedConsent
+from .utils import sign_pdf_inplace
+
+logger = logging.getLogger(__name__)
 
 
 class HtmlPdfError(Exception):
@@ -38,6 +49,10 @@ def _read_existing_file_bytes(deed):
         finally:
             file_field.close()
     except Exception:
+        logger.warning(
+            "Deed #%s uchun mavjud faylni o'qib bo'lmadi", getattr(deed, "id", None),
+            exc_info=True,
+        )
         return None
 
 
@@ -140,60 +155,50 @@ def add_text_watermark_pdf_bytes(pdf_bytes: bytes, text: str) -> bytes:
     return out
 
 
-import logging
-from django.core.files.base import ContentFile
-from django.template.loader import render_to_string
-from .models import Deed, DeedConsent
-from .html_pdf import deed_to_pdf_bytes, HtmlPdfError
-from django.utils import timezone
-
-logger = logging.getLogger(__name__)
-from .utils import sign_pdf_inplace
-
 def _create_deed_for_order(order, request=None):
     html_body = render_to_string("main/order_agrement_deed.html", {
         "order": order,
         "today": timezone.now(),
     })
-
-    deed = Deed(
-        organization=order.sender.organization,
-        sender=order.sender,
-        status_sender="approved",
-        date_sender=order.date_accepted,
-        receiver=order.user,
-        status_receiver="approved",
-        date_receiver=order.date_approved,
-        body=html_body,
-        order=order,
-        status="petition",
-    )
-
-    try:
-        pdf_bytes = deed_to_pdf_bytes(deed)
-    except HtmlPdfError as e:
-        logger.error("Order #%s uchun Deed PDF yaratilmadi: %s", order.id, e)
-        raise
-
-    deed.file.save(f"order_{order.id}.pdf", ContentFile(pdf_bytes), save=False)
-    deed.save()
-
-    if order.receiver_id:
-        DeedConsent.objects.create(
-            deed=deed,
-            employee=order.receiver,
-            status="approved",
+    with transaction.atomic():
+        deed = Deed(
+            organization=order.sender.organization,
+            sender=order.sender,
+            status_sender="approved",
+            date_sender=order.date_accepted,
+            receiver=order.user,
+            status_receiver="approved",
+            date_receiver=order.date_approved,
+            body=html_body,
+            order=order,
+            status="petition",
         )
 
-    try:
-        sign_pdf_inplace(
-            deed.file.path,
-            request,
-            approver_name=order.sender.full_name,
-            deed_id=deed.id,
-        )
-    except Exception as e:
-        logger.error("Deed #%s ga QR/imzo urishda xatolik: %s", deed.id, e)
-        raise
+        try:
+            pdf_bytes = deed_to_pdf_bytes(deed)
+        except HtmlPdfError as e:
+            logger.error("Order #%s uchun Deed PDF yaratilmadi: %s", order.id, e)
+            raise
+
+        deed.file.save(f"order_{order.id}.pdf", ContentFile(pdf_bytes), save=False)
+        deed.save()
+
+        if order.receiver_id:
+            DeedConsent.objects.create(
+                deed=deed,
+                employee=order.receiver,
+                status="approved",
+            )
+
+        try:
+            sign_pdf_inplace(
+                deed.file.path,
+                request,
+                approver_name=order.sender.full_name,
+                deed_id=deed.id,
+            )
+        except Exception as e:
+            logger.error("Deed #%s ga QR/imzo urishda xatolik: %s", deed.id, e)
+            raise
 
     return deed

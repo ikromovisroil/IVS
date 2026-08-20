@@ -150,4 +150,28 @@
     });
 })();
 </script>
+
+<script>
+document.addEventListener("click", function (e) {
+    const btn = e.target.closest('button[type="submit"], input[type="submit"]');
+    if (!btn) return;
+
+    const form = btn.closest("form");
+    if (!form) return;
+
+    if (form.dataset.locked === "true") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+    }
+
+    form.dataset.locked = "true";
+    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (b) {
+        b.style.pointerEvents = "none";
+        b.classList.add("disabled");
+        setTimeout(function () { b.disabled = true; }, 0);
+    });
+}, true);
+</script>
+
 {% endblock %}

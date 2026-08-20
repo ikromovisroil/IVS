@@ -5,7 +5,7 @@ from .sso_views import *
 from .order_views import *
 from .views import *
 from .push_views import *
-
+from .sanitizers import *
 urlpatterns = [
     # =========================
     # ASOSIY SAHIFALAR

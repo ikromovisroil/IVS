@@ -598,6 +598,19 @@ document.addEventListener("DOMContentLoaded", function () {
       alert("Material qo'shish uchun avval texnikani tanlang!");
       return false;
     }
+
+    // Tasodifiy ikki marta bosish (tarmoq sekinligi, qo'sh-klik) tufayli
+    // formaning ikki marta yuborilishining oldini olamiz — materiallar
+    // ombordan ikki marta ayirilib ketmasligi uchun. Qayta yakunlash
+    // (finished arizaga yangi material qo'shib, qayta submit qilish) hali
+    // ham ishlaydi — bu faqat BITTA submitni ikki marta yuborishdan
+    // saqlaydi, funksionallikni cheklamaydi.
+    const $submitBtn = $form.find('button[type="submit"]');
+    if ($submitBtn.prop("disabled")) {
+      e.preventDefault();
+      return false;
+    }
+    $submitBtn.prop("disabled", true);
   });
 
   $(document).on("click", ".js-delete-om", function () {
@@ -620,6 +633,30 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
 });
+</script>
+
+
+<script>
+document.addEventListener("click", function (e) {
+    const btn = e.target.closest('button[type="submit"], input[type="submit"]');
+    if (!btn) return;
+
+    const form = btn.closest("form");
+    if (!form) return;
+
+    if (form.dataset.locked === "true") {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        return false;
+    }
+
+    form.dataset.locked = "true";
+    form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(function (b) {
+        b.style.pointerEvents = "none";
+        b.classList.add("disabled");
+        setTimeout(function () { b.disabled = true; }, 0);
+    });
+}, true);
 </script>
 
 {% endblock %}

@@ -1,17 +1,51 @@
-from .views import *
-from main.ajax_views import *
-from django.contrib.auth.decorators import login_required, permission_required
-from django.core.paginator import Paginator
-from main.sso_views import *
-from django.db import transaction, DatabaseError
 import base64
 import binascii
-from .html_pdf import _create_deed_for_order
-from django.utils import timezone
-from bot.notify import send_telegram_message, rating_markup, barn_approved_markup
-from .push_views import *
+import secrets
+from datetime import datetime
 
-# yangi arizalarni korish
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, permission_required
+from django.core.exceptions import PermissionDenied
+from django.core.files.base import ContentFile
+from django.core.paginator import Paginator
+from django.db import transaction, DatabaseError
+from django.db.models import F, Prefetch
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
+from django.views.decorators.cache import never_cache
+from django.views.decorators.http import require_GET, require_POST
+
+from bot.notify import send_telegram_message, rating_markup, barn_approved_markup
+from .html_pdf import (
+    _create_deed_for_order, deed_to_pdf_bytes, add_text_watermark_pdf_bytes, HtmlPdfError,
+)
+from .models import (
+    Order, Goal, Employee, Organization, OrderGoal, OrderMaterial,
+    Material, MaterialEmployee, MaterialUser, Technics, Deed, DeedConsent,
+)
+from .push_views import notify_order_status_change, notify_eligible_employees_new_order, notify_deed_sender
+from .sanitizers import sanitize_deed_body
+
+
+FULL_SENDER_RECEIVER_RELATED = (
+    "goal", "technics", "user", "receiver", "sender",
+    "sender__rank", "sender__organization", "sender__department",
+    "sender__directorate", "sender__division",
+    "receiver__rank", "receiver__organization", "receiver__department",
+    "receiver__directorate", "receiver__division",
+)
+
+MATERIALS_PREFETCH = Prefetch(
+    "materials", queryset=OrderMaterial.objects.select_related("material")
+)
+
+DEED_PREFETCH = Prefetch("order", queryset=Deed.objects.only("id", "file", "order"))
+
+
+# ═══════════════════════════════════════════════════════════════════
+# SENDER (worker) — ariza yuboruvchi
+# ═══════════════════════════════════════════════════════════════════
+
 @never_cache
 @require_GET
 @login_required
@@ -28,16 +62,8 @@ def order_sender(request):
             sender=employee, goal__organization__type="worker",
             status__in=["viewed", "process", "finished"],
         )
-        .select_related(
-            "goal", "technics", "user", "receiver", "sender",
-            "sender__rank", "sender__organization", "sender__department",
-            "sender__directorate", "sender__division",
-            "receiver__rank", "receiver__organization", "receiver__department",
-            "receiver__directorate", "receiver__division",
-        )
-        .prefetch_related(
-            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material"))
-        )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH)
         .order_by("-id")
     )
 
@@ -51,7 +77,7 @@ def order_sender(request):
     }
     return render(request, "main/order_sender.html", context)
 
-# arizani baxolash
+
 @never_cache
 @require_POST
 @login_required
@@ -82,7 +108,6 @@ def order_decide(request, pk):
 
     try:
         with transaction.atomic():
-
             try:
                 order = Order.objects.select_for_update().get(pk=pk)
             except Order.DoesNotExist:
@@ -104,9 +129,7 @@ def order_decide(request, pk):
         messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
     notify_order_status_change(order)
-    # ─────────────────────────────────────────────────────────────────
 
     if action == "canceled":
         messages.success(request, "Ariza bekor qilindi")
@@ -116,7 +139,6 @@ def order_decide(request, pk):
     return redirect(back_url)
 
 
-# arizalar arxivi
 @never_cache
 @require_GET
 @login_required
@@ -133,16 +155,8 @@ def order_sender_arxiv(request):
             sender=employee, goal__organization__type="worker",
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
-        .select_related(
-            "goal", "technics", "user", "receiver", "sender",
-            "sender__rank", "sender__organization", "sender__department",
-            "sender__directorate", "sender__division",
-            "receiver__rank", "receiver__organization", "receiver__department",
-            "receiver__directorate", "receiver__division",
-        )
-        .prefetch_related(
-            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material"))
-        )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH)
         .order_by("-id")
     )
 
@@ -156,7 +170,6 @@ def order_sender_arxiv(request):
     return render(request, "main/order_sender_arxiv.html", context)
 
 
-# yangi ariza yaratish sender
 @never_cache
 @require_POST
 @login_required
@@ -181,14 +194,11 @@ def order_post(request):
         message_sender=body,
         status="viewed",
     )
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
     notify_eligible_employees_new_order(order)
-    # ─────────────────────────────────────────────────────────────────
     messages.success(request, "Ariza Yaratish")
     return redirect(back_url)
 
 
-# yangi arizalar
 @never_cache
 @require_GET
 @login_required
@@ -203,16 +213,8 @@ def order_sender_user(request):
     orders_qs = (
         Order.objects
         .filter(user=employee, goal__organization__type="worker")
-        .select_related(
-            "goal", "technics", "user", "receiver", "sender",
-            "sender__rank", "sender__organization", "sender__department",
-            "sender__directorate", "sender__division",
-            "receiver__rank", "receiver__organization", "receiver__department",
-            "receiver__directorate", "receiver__division",
-        )
-        .prefetch_related(
-            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material"))
-        )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH)
         .order_by("-id")
     )
 
@@ -228,7 +230,6 @@ def order_sender_user(request):
     return render(request, "main/order_sender_user.html", context)
 
 
-# yangi ariza yaratish user
 @never_cache
 @require_POST
 @login_required
@@ -266,6 +267,10 @@ def order_user_post(request):
     return redirect(back_url)
 
 
+# ═══════════════════════════════════════════════════════════════════
+# RECEIVER (worker) — ariza qabul qiluvchi/bajaruvchi
+# ═══════════════════════════════════════════════════════════════════
+
 @never_cache
 @require_GET
 @login_required
@@ -292,7 +297,7 @@ def order_receiver(request):
             goal__organization__type="worker",
             status="viewed"
         )
-        .select_related( "goal", "technics", "user", "receiver", "sender")
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
         .order_by("-id")
     )
 
@@ -324,33 +329,48 @@ def order_accepted(request, pk):
 
     back_url = request.META.get("HTTP_REFERER") or "/"
 
-    # Tekshiruvlar transaction tashqarisida
-    order = get_object_or_404(Order, pk=pk)
+    order_goal_ids = set(
+        OrderGoal.objects.filter(employee=employee).values_list("goal_id", flat=True)
+    )
 
-    if order.status != "viewed" or order.receiver_id is not None:
-        messages.info(request, "Bu ariza boshqa xodim tomonidan allaqachon qabul qilingan")
+    def is_order_eligible(order):
+        return (
+            order.status == "viewed"
+            and order.receiver_id is None
+            and order.goal_id in order_goal_ids
+            and order.goal.organization.type == "worker"
+            and order.sender_id is not None
+            and order.sender.region_id == employee.region_id
+        )
+
+    order = get_object_or_404(Order.objects.select_related("goal__organization", "sender"), pk=pk)
+
+    if not is_order_eligible(order):
+        messages.error(request, "Bu arizani qabul qilish huquqingiz yo'q yoki u allaqachon qabul qilingan")
         return redirect(back_url)
 
     try:
         with transaction.atomic():
-            order = Order.objects.select_for_update().get(pk=pk)
+            order = (
+                Order.objects
+                .select_for_update()
+                .select_related("goal__organization", "sender")
+                .get(pk=pk)
+            )
 
-            # Race condition — qayta tekshiramiz
-            if order.status != "viewed" or order.receiver_id is not None:
-                messages.info(request, "Bu ariza boshqa xodim tomonidan allaqachon qabul qilingan")
+            if not is_order_eligible(order):
+                messages.error(request, "Bu arizani qabul qilish huquqingiz yo'q yoki u allaqachon qabul qilingan")
                 return redirect(back_url)
 
-            order.status   = "process"
+            order.status = "process"
             order.receiver = employee
             order.save(update_fields=["status", "receiver"])
 
     except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
     notify_order_status_change(order)
-    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
@@ -374,7 +394,7 @@ def order_receiver_activ(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "client":
+    if getattr(employee.organization, "type", None) == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -384,8 +404,9 @@ def order_receiver_activ(request):
         .filter(receiver=employee,
                 goal__organization__type="worker",
                 goal__organization=employee.organization,
-                status__in=["process", "finished"],)
-        .select_related("goal", "technics","user", "receiver", "sender")
+                status__in=["process", "finished"], )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH)
         .order_by("-id")
     )
 
@@ -401,10 +422,10 @@ def order_receiver_activ(request):
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        "page_obj":  page_obj,
+        "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
         "materials": materials,
     }
@@ -415,109 +436,113 @@ def order_receiver_activ(request):
 @require_POST
 @login_required
 @permission_required("main.change_order", raise_exception=True)
-@transaction.atomic
 def order_material_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "client":
+    if getattr(employee.organization, "type", None) == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    back_url    = request.META.get("HTTP_REFERER") or "/"
-    order_id    = (request.POST.get("order_id")    or "").strip()
+    back_url = request.META.get("HTTP_REFERER") or "/"
+    order_id = (request.POST.get("order_id") or "").strip()
     technics_id = (request.POST.get("technics_id") or "").strip()
     material_ids = request.POST.getlist("material_id[]")
-    numbers      = request.POST.getlist("number[]")
+    numbers = request.POST.getlist("number[]")
 
     if not order_id.isdigit():
-        messages.info(request, "Ariza ID topilmadi")
+        messages.error(request, "Ariza ID topilmadi")
         return redirect(back_url)
 
     if technics_id and not technics_id.isdigit():
-        messages.info(request, "Texnika ID noto'g'ri")
+        messages.error(request, "Texnika ID noto'g'ri")
         return redirect(back_url)
 
-    order = get_object_or_404(
-        Order.objects.select_for_update(),
-        id=int(order_id)
-    )
-
-    if not order.receiver_id:
-        messages.info(request, "Ariza hali hech kimga biriktirilmagan")
-        return redirect(back_url)
-
-    if order.receiver_id != employee.id:
-        messages.info(request, "Bu arizani faqat uni qabul qilgan xodim yakunlay oladi")
-        return redirect(back_url)
-
-    if order.status not in ["process", "finished"]:
-        messages.info(request, "Bu ariza yakunlanishi mumkin emas")
-        return redirect(back_url)
-
-    # Texnika saqlash
     if technics_id:
-        order.technics_id = int(technics_id)
-
-    # Materiallar tozalash
-    pairs = []
-    seen  = set()
-
-    for m_id, num in zip(material_ids, numbers):
-        if not m_id:
-            continue
-        try:
-            m_id = int(m_id)
-            n    = int(num or 1)
-        except (ValueError, TypeError):
-            messages.info(request, "Material yoki son noto'g'ri kiritilgan")
+        if not Technics.objects.filter(pk=int(technics_id)).exists():
+            messages.error(request, "Texnika topilmadi")
             return redirect(back_url)
 
-        if n <= 0:
-            messages.info(request, "Material soni 0 yoki manfiy bo'lishi mumkin emas")
-            return redirect(back_url)
+    try:
+        with transaction.atomic():
+            order = get_object_or_404(
+                Order.objects.select_for_update(),
+                id=int(order_id)
+            )
 
-        if m_id in seen:
-            messages.info(request, "Bir xil materialni bir necha marta kiritmang")
-            return redirect(back_url)
-
-        seen.add(m_id)
-        pairs.append((m_id, n))
-
-    if pairs:
-        materials = list(
-            Material.objects
-            .select_for_update()
-            .filter(id__in=[m for m, _ in pairs], is_active=True)
-            .order_by("id")
-        )
-        materials_map = {m.id: m for m in materials}
-
-        # Yetarliligini tekshirish
-        for m_id, n in pairs:
-            mat = materials_map.get(m_id)
-            if not mat:
-                messages.info(request, "Material topilmadi yoki faol emas")
-                return redirect(back_url)
-            if (mat.number or 0) < n:
-                messages.info(request, f'"{mat.name}" yetarli emas. Omborda {mat.number} dona bor')
+            if not order.receiver_id:
+                messages.error(request, "Ariza hali hech kimga biriktirilmagan")
                 return redirect(back_url)
 
-        # Yozish
-        order_materials = []
-        for m_id, n in pairs:
-            mat = materials_map[m_id]
-            order_materials.append(OrderMaterial(order=order, material=mat, number=n))
-            Material.objects.filter(pk=mat.pk).update(number=F("number") - n)
+            if order.receiver_id != employee.id:
+                messages.error(request, "Bu arizani faqat uni qabul qilgan xodim yakunlay oladi")
+                return redirect(back_url)
 
-        OrderMaterial.objects.bulk_create(order_materials)
+            if order.status not in ["process", "finished"]:
+                messages.error(request, "Bu ariza yakunlanishi mumkin emas")
+                return redirect(back_url)
 
-    order.status = "finished"
-    order.save(update_fields=["status", "technics_id"])
+            if technics_id:
+                order.technics_id = int(technics_id)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+            pairs = []
+            seen = set()
+
+            for m_id, num in zip(material_ids, numbers):
+                if not m_id:
+                    continue
+                try:
+                    m_id = int(m_id)
+                    n = int(num or 1)
+                except (ValueError, TypeError):
+                    messages.error(request, "Material yoki son noto'g'ri kiritilgan")
+                    return redirect(back_url)
+
+                if n <= 0:
+                    messages.error(request, "Material soni 0 yoki manfiy bo'lishi mumkin emas")
+                    return redirect(back_url)
+
+                if m_id in seen:
+                    messages.error(request, "Bir xil materialni bir necha marta kiritmang")
+                    return redirect(back_url)
+
+                seen.add(m_id)
+                pairs.append((m_id, n))
+
+            if pairs:
+                materials = list(
+                    Material.objects
+                    .select_for_update()
+                    .filter(id__in=[m for m, _ in pairs], is_active=True)
+                    .order_by("id")
+                )
+                materials_map = {m.id: m for m in materials}
+
+                for m_id, n in pairs:
+                    mat = materials_map.get(m_id)
+                    if not mat:
+                        messages.error(request, "Material topilmadi yoki faol emas")
+                        return redirect(back_url)
+                    if (mat.number or 0) < n:
+                        messages.error(request, f'"{mat.name}" yetarli emas. Omborda {mat.number} dona bor')
+                        return redirect(back_url)
+
+                order_materials = []
+                for m_id, n in pairs:
+                    mat = materials_map[m_id]
+                    order_materials.append(OrderMaterial(order=order, material=mat, number=n))
+                    Material.objects.filter(pk=mat.pk).update(number=F("number") - n)
+
+                OrderMaterial.objects.bulk_create(order_materials)
+
+            order.status = "finished"
+            order.save(update_fields=["status", "technics_id"])
+
+    except DatabaseError:
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        return redirect(back_url)
+
     notify_order_status_change(order)
-    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
@@ -543,7 +568,7 @@ def order_receiver_arxiv(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "client":
+    if getattr(employee.organization, "type", None) == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -551,13 +576,14 @@ def order_receiver_arxiv(request):
     orders_qs = (
         Order.objects
         .filter(receiver=employee, goal__organization__type="worker",
-                status__in=["approved", "accepted", "canceled", "rejected"],)
-        .select_related("goal", "technics","user", "receiver", "sender")
+                status__in=["approved", "accepted", "canceled", "rejected"], )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH, DEED_PREFETCH)
         .order_by("-date_edit")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
@@ -565,6 +591,10 @@ def order_receiver_arxiv(request):
     }
     return render(request, "main/order_receiver_arxiv.html", context)
 
+
+# ═══════════════════════════════════════════════════════════════════
+# RECEIVER — hujjat (deed) imzolashga yuborish
+# ═══════════════════════════════════════════════════════════════════
 
 @never_cache
 @require_GET
@@ -583,6 +613,8 @@ def order_receiver_deed(request, pk):
             "sender", "sender__organization",
             "sender__department", "receiver", "receiver__rank",
             "technics",
+        ).prefetch_related(
+            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material", "material__unit"))
         ),
         pk=pk,
     )
@@ -624,7 +656,6 @@ def order_receiver_deed_post(request):
     sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
 
-    # --- Body Base64 orqali keladi (WAF'ni chetlab o'tish uchun) ---
     body_encoded = (request.POST.get("body_encoded") or "").strip()
     body = ""
     if body_encoded:
@@ -632,6 +663,9 @@ def order_receiver_deed_post(request):
             body = base64.b64decode(body_encoded).decode("utf-8").strip()
         except (binascii.Error, UnicodeDecodeError, ValueError):
             body = ""
+
+    if body:
+        body = sanitize_deed_body(body)
 
     order = (
         Order.objects
@@ -641,14 +675,14 @@ def order_receiver_deed_post(request):
         if order_id.isdigit() else None
     )
     if not order:
-        messages.info(request, "Ariza topilmadi")
+        messages.error(request, "Ariza topilmadi")
         return redirect(back_url)
 
     if order.receiver_id != employee.id:
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     if not order.sender_id:
-        messages.info(request, "Ariza jo'natuvchisi yo'q")
+        messages.error(request, "Ariza jo'natuvchisi yo'q")
         return redirect(back_url)
 
     sender = (
@@ -658,62 +692,61 @@ def order_receiver_deed_post(request):
         if sender_id.isdigit() else None
     )
     if not sender:
-        messages.info(request, "Imzolovchi xodim tanlanmadi")
+        messages.error(request, "Imzolovchi xodim tanlanmadi")
         return redirect(back_url)
 
     if not body:
-        messages.info(request, "Hujjat matni bo'sh bo'lmasin")
+        messages.error(request, "Hujjat matni bo'sh bo'lmasin")
         return redirect(back_url)
 
-    with transaction.atomic():
-        deed = Deed.objects.create(
-            organization=order.sender.organization,
-            sender_id=sender.id,
-            user_id=employee.id,
-            order_id=order.id,
-            message_user=message,
-            body=body,
-            status='act',
-        )
-
-        if order.sender_id != sender.id:
-            sender_consent = DeedConsent.objects.create(
-                deed=deed,
-                employee=order.sender,
-                status="approved",
-            )
-            if order.date_approved:
-                DeedConsent.objects.filter(pk=sender_consent.pk).update(
-                    date_creat=order.date_approved
-                )
-        if order.receiver_id != sender.id:
-            receiver_consent = DeedConsent.objects.create(
-                deed=deed,
-                employee=order.receiver,
-                status="approved",
-            )
-            if order.date_finished:
-                DeedConsent.objects.filter(pk=receiver_consent.pk).update(
-                    date_creat=order.date_finished
-                )
-
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
-    notify_deed_sender(deed)
-    # ─────────────────────────────────────────────────────────────────
-
     try:
-        pdf_bytes = deed_to_pdf_bytes(deed)
-        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
-        pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
-        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+        with transaction.atomic():
+            deed = Deed.objects.create(
+                organization=order.sender.organization,
+                sender_id=sender.id,
+                user_id=employee.id,
+                order_id=order.id,
+                message_user=message,
+                body=body,
+                status='act',
+            )
+
+            if order.sender_id != sender.id:
+                sender_consent = DeedConsent.objects.create(
+                    deed=deed, employee=order.sender, status="approved",
+                )
+                if order.date_approved:
+                    DeedConsent.objects.filter(pk=sender_consent.pk).update(
+                        date_creat=order.date_approved
+                    )
+            if order.receiver_id != sender.id:
+                receiver_consent = DeedConsent.objects.create(
+                    deed=deed, employee=order.receiver, status="approved",
+                )
+                if order.date_finished:
+                    DeedConsent.objects.filter(pk=receiver_consent.pk).update(
+                        date_creat=order.date_finished
+                    )
+
+            pdf_bytes = deed_to_pdf_bytes(deed)
+            pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
+            pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
+            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+
     except HtmlPdfError as e:
-        messages.info(request, f"PDF yaratilmadi: {e}")
+        messages.error(request, f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring")
+        return redirect(back_url)
+
+    notify_deed_sender(deed)
 
     messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
 
 
-# yangi arizalar imv
+# ═══════════════════════════════════════════════════════════════════
+# SENDER (client) — "barn"
+# ═══════════════════════════════════════════════════════════════════
+
 @never_cache
 @require_GET
 @login_required
@@ -722,7 +755,7 @@ def order_sender_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -734,12 +767,13 @@ def order_sender_barn(request):
             goal__organization__type="client",
             status__in=["viewed", "process", "finished", "approved"],
         )
-        .select_related("user", "receiver", "sender")
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH)
         .order_by("-id")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
@@ -756,70 +790,70 @@ def order_decide_barn(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url = request.META.get("HTTP_REFERER", "/")
-    action   = (request.POST.get("action") or "").strip()
+    action = (request.POST.get("action") or "").strip()
 
     if action not in {"canceled", "accepted"}:
-        messages.info(request, "Noma'lum amal")
+        messages.error(request, "Noma'lum amal")
         return redirect(back_url)
 
-    # Tekshiruvlar transaction tashqarisida
     order = get_object_or_404(Order, pk=pk)
 
     if order.sender_id != employee.id:
-        messages.info(request, "Ariza sizga tegishli emas")
+        messages.error(request, "Ariza sizga tegishli emas")
         return redirect(back_url)
 
     if action == "canceled" and order.status in {"accepted", "approved", "canceled", "rejected"}:
-        messages.info(request, "Bu ariza bo'yicha amal bajarilgan")
+        messages.error(request, "Bu ariza bo'yicha amal bajarilgan")
         return redirect(back_url)
 
     if action == "accepted" and order.status != "approved":
-        messages.info(request, "Bu ariza hozir qabul qilinmaydi")
+        messages.error(request, "Bu ariza hozir qabul qilinmaydi")
         return redirect(back_url)
 
     try:
         with transaction.atomic():
             order = Order.objects.select_for_update().get(pk=pk)
 
-            # Race condition — qayta tekshirish
             if action == "canceled" and order.status in {"accepted", "approved", "canceled", "rejected"}:
-                messages.info(request, "Bu ariza bo'yicha amal bajarilgan")
+                messages.error(request, "Bu ariza bo'yicha amal bajarilgan")
                 return redirect(back_url)
 
             if action == "accepted" and order.status != "approved":
-                messages.info(request, "Bu ariza hozir qabul qilinmaydi")
+                messages.error(request, "Bu ariza hozir qabul qilinmaydi")
                 return redirect(back_url)
 
             order.status = action
             order.save(update_fields=["status"])
 
-            if action == "accepted":
-                if order.materials.exists():
-                    try:
-                        _create_deed_for_order(order, request)
-                    except HtmlPdfError:
-                        messages.error(request, "Ariza qabul qilindi, lekin hujjat yaratilmadi. Qayta urinib ko'ring")
-                        raise
-                    except Exception:
-                        messages.error(request, "Ariza qabul qilindi, lekin hujjatga imzo/QR urishda xatolik yuz berdi")
-                        raise
-
     except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+    if action == "accepted" and order.materials.exists():
+        try:
+            _create_deed_for_order(order, request)
+        except HtmlPdfError:
+            messages.warning(
+                request,
+                "Ariza qabul qilindi, lekin hujjat yaratilmadi. "
+                "Hujjatni keyinroq qayta yaratishga urinib ko'ring."
+            )
+        except Exception:
+            messages.warning(
+                request,
+                "Ariza qabul qilindi, lekin hujjatga imzo/QR urishda xatolik yuz berdi. "
+                "Hujjatni keyinroq tekshiring."
+            )
+
     notify_order_status_change(order)
-    # ─────────────────────────────────────────────────────────────────
 
     if action == "canceled":
         messages.success(request, "Ariza bekor qilindi")
     else:
-
         messages.success(request, "Ariza yakunlandi")
 
     return redirect(back_url)
@@ -833,7 +867,7 @@ def order_sender_arxiv_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -845,15 +879,13 @@ def order_sender_arxiv_barn(request):
             goal__organization__type="client",
             status__in=["accepted", "canceled", "rejected"],
         )
-        .select_related(
-            "goal", "technics",
-            "user", "receiver", "sender"
-        )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH, DEED_PREFETCH)
         .order_by("-id")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
@@ -870,7 +902,7 @@ def order_sender_material_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     name = request.GET.get("name", "").strip()
@@ -882,10 +914,7 @@ def order_sender_material_barn(request):
 
     orders_qs = (
         Material.objects
-        .filter(
-            organization=employee.organization,
-            is_active=True,
-        )
+        .filter(organization=employee.organization, is_active=True)
         .filter(category_id__in=category_ids)
         .select_related("organization", "unit")
         .order_by("-id")
@@ -896,17 +925,15 @@ def order_sender_material_barn(request):
 
     cart_material_ids = set(
         OrderMaterial.objects.filter(
-            order__isnull=True,
-            user=employee,
-            material__isnull=False,
+            order__isnull=True, user=employee, material__isnull=False,
         ).values_list("material_id", flat=True)
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        "page_obj":          page_obj,
+        "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
         "cart_material_ids": cart_material_ids,
     }
@@ -921,24 +948,20 @@ def order_sender_basket_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
 
     orders_qs = (
         OrderMaterial.objects
-        .filter(
-            order__isnull=True,
-            user=employee,
-            material__isnull=False,
-        )
+        .filter(order__isnull=True, user=employee, material__isnull=False)
         .select_related("order", "user", "material", "material__unit")
         .order_by("-id")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
@@ -951,53 +974,57 @@ def order_sender_basket_barn(request):
 @never_cache
 @require_POST
 @login_required
-@transaction.atomic
 def create_order_sender_from(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    cart_items = list(
-        OrderMaterial.objects
-        .select_for_update()
-        .filter(
-            user=employee,
-            order__isnull=True,
-            material__isnull=False
-        )
-        .select_related("material")
-    )
-
+    back_url = request.META.get("HTTP_REFERER", "/")
     body = (request.POST.get("body") or "").strip() or None
-    goal_id  = (request.POST.get("goal") or "").strip()
+    goal_id = (request.POST.get("goal") or "").strip()
 
-    goal = get_object_or_404(Goal, pk=int(goal_id))
+    if not goal_id.isdigit():
+        messages.error(request, "Ariza turi tanlanmadi")
+        return redirect(back_url)
 
-    order = Order.objects.create(
-        goal=goal,
-        sender=employee,
-        message_sender=body,
-        status="viewed",
-    )
+    goal = get_object_or_404(Goal, pk=int(goal_id), organization__type="client")
 
-    for item in cart_items:
-        number = request.POST.get(f"number_{item.id}")
-        if number and number.isdigit():
-            item.number = max(int(number), 1)
-        item.order = order
+    with transaction.atomic():
+        cart_items = list(
+            OrderMaterial.objects
+            .select_for_update()
+            .filter(user=employee, order__isnull=True, material__isnull=False)
+            .select_related("material")
+        )
 
-    OrderMaterial.objects.bulk_update(cart_items, ["number", "order"])
+        if not cart_items:
+            messages.error(request, "Savat bo'sh — ariza yaratib bo'lmaydi")
+            return redirect(back_url)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
+        order = Order.objects.create(
+            goal=goal, sender=employee, message_sender=body, status="viewed",
+        )
+
+        for item in cart_items:
+            number = request.POST.get(f"number_{item.id}")
+            if number and number.isdigit():
+                item.number = max(int(number), 1)
+            item.order = order
+
+        OrderMaterial.objects.bulk_update(cart_items, ["number", "order"])
+
     notify_eligible_employees_new_order(order)
-    # ─────────────────────────────────────────────────────────────────
 
     messages.success(request, "Ariza yuborildi")
     return redirect("order_sender_barn")
 
+
+# ═══════════════════════════════════════════════════════════════════
+# RECEIVER — "barn"
+# ═══════════════════════════════════════════════════════════════════
 
 @never_cache
 @require_GET
@@ -1008,7 +1035,7 @@ def order_receiver_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     order_goal_ids = OrderGoal.objects.filter(
@@ -1027,17 +1054,14 @@ def order_receiver_barn(request):
                 sender__region_id=employee.region_id,
                 status="viewed",
             )
-            .select_related(
-                "goal", "technics",
-                "user", "receiver", "sender"
-            )
+            .select_related(*FULL_SENDER_RECEIVER_RELATED)
             .order_by("-id")
         )
     else:
         orders_qs = Order.objects.none()
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
@@ -1059,29 +1083,36 @@ def order_accepted_barn(request, pk):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     back_url = request.META.get("HTTP_REFERER") or "/"
-    action   = (request.POST.get("action") or "").strip()
+    action = (request.POST.get("action") or "").strip()
 
     if action not in {"process", "rejected"}:
-        messages.info(request, "Noto'g'ri amal tanlandi")
+        messages.error(request, "Noto'g'ri amal tanlandi")
         return redirect(back_url)
 
-    # Tekshiruvlar transaction tashqarisida
-    order = (
-        Order.objects
-        .filter(
-            pk=pk,
-            goal__organization_id=employee.organization_id,
-            status="viewed",
-        )
-        .first()
+    order_goal_ids = set(
+        OrderGoal.objects.filter(employee=employee).values_list("goal_id", flat=True)
     )
 
-    if not order:
-        messages.info(request, "Ariza topilmadi yoki allaqachon ko'rib chiqilgan")
+    def is_order_eligible(order):
+        return (
+            order.status == "viewed"
+            and order.goal_id in order_goal_ids
+            and order.goal.organization_id == employee.organization_id
+            and order.goal.organization.type == "client"
+            and order.sender_id is not None
+            and order.sender.region_id == employee.region_id
+        )
+
+    order = get_object_or_404(
+        Order.objects.select_related("goal__organization", "sender"), pk=pk
+    )
+
+    if not is_order_eligible(order):
+        messages.error(request, "Ariza topilmadi yoki allaqachon ko'rib chiqilgan")
         return redirect(back_url)
 
     try:
@@ -1089,26 +1120,23 @@ def order_accepted_barn(request, pk):
             order = (
                 Order.objects
                 .select_for_update()
-                .filter(pk=pk, status="viewed")
-                .first()
+                .select_related("goal__organization", "sender")
+                .get(pk=pk)
             )
 
-            # Race condition — qayta tekshirish
-            if not order:
-                messages.info(request, "Ariza allaqachon ko'rib chiqilgan")
+            if not is_order_eligible(order):
+                messages.error(request, "Ariza allaqachon ko'rib chiqilgan")
                 return redirect(back_url)
 
             order.receiver = employee
-            order.status   = action
+            order.status = action
             order.save(update_fields=["status", "receiver"])
 
     except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
     notify_order_status_change(order)
-    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         if action == "process":
@@ -1128,7 +1156,6 @@ def order_accepted_barn(request, pk):
                 f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
             )
 
-
     if action == "process":
         messages.success(request, "Ariza qabul qilindi")
         return redirect("order_receiver_activ_barn")
@@ -1146,7 +1173,7 @@ def order_receiver_activ_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1158,27 +1185,22 @@ def order_receiver_activ_barn(request):
             receiver=employee,
             status__in=["process", "finished"],
         )
-        .select_related(
-            "goal", "technics",
-            "user", "receiver", "sender"
-        )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH)
         .order_by("-id")
     )
 
     materials = (
         Material.objects
-        .filter(
-            organization=employee.organization,
-            is_active=True,
-        )
+        .filter(organization=employee.organization, is_active=True)
         .select_related("unit")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        "page_obj":  page_obj,
+        "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
         "materials": materials,
     }
@@ -1194,27 +1216,25 @@ def order_material_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    back_url          = request.META.get("HTTP_REFERER", "/")
-    order_id          = (request.POST.get("order_id") or "").strip()
-    date              = (request.POST.get("date") or "").strip()
+    back_url = request.META.get("HTTP_REFERER", "/")
+    order_id = (request.POST.get("order_id") or "").strip()
+    date = (request.POST.get("date") or "").strip()
     ordermaterial_ids = request.POST.getlist("ordermaterial_id[]")
-    givens            = request.POST.getlist("given[]")
-
-    body = "Materiallarni {{date}} da qabul qilib olishiz mumkin"
+    givens = request.POST.getlist("given[]")
 
     if not order_id.isdigit():
-        messages.info(request, "Ariza ID noto'g'ri")
+        messages.error(request, "Ariza ID noto'g'ri")
         return redirect(back_url)
 
     if len(ordermaterial_ids) != len(givens):
-        messages.info(request, "Yuborilgan ma'lumotlar mos emas")
+        messages.error(request, "Yuborilgan ma'lumotlar mos emas")
         return redirect(back_url)
 
     if len(ordermaterial_ids) != len(set(ordermaterial_ids)):
-        messages.info(request, "Takroriy materiallar yuborildi")
+        messages.error(request, "Takroriy materiallar yuborildi")
         return redirect(back_url)
 
     date_display = ""
@@ -1223,7 +1243,7 @@ def order_material_barn(request):
             parsed_dt = datetime.strptime(date, "%Y-%m-%dT%H:%M")
             date_display = parsed_dt.strftime("%d.%m.%Y %H:%M")
         except ValueError:
-            messages.info(request, "Sana formati noto'g'ri")
+            messages.error(request, "Sana formati noto'g'ri")
             return redirect(back_url)
 
     if date_display:
@@ -1234,9 +1254,21 @@ def order_material_barn(request):
     try:
         with transaction.atomic():
             order = get_object_or_404(
-                Order.objects.select_for_update(),
+                Order.objects.select_for_update().select_related("goal__organization"),
                 pk=int(order_id)
             )
+
+            if order.receiver_id != employee.id:
+                messages.error(request, "Bu arizani faqat uni qabul qilgan xodim yakunlay oladi")
+                return redirect(back_url)
+
+            if not order.goal or order.goal.organization_id != employee.organization_id:
+                messages.error(request, "Bu ariza sizning tashkilotingizga tegishli emas")
+                return redirect(back_url)
+
+            if order.status not in ["process", "finished"]:
+                messages.error(request, "Bu ariza yakunlanishi mumkin emas")
+                return redirect(back_url)
 
             order_materials = list(
                 OrderMaterial.objects
@@ -1247,50 +1279,50 @@ def order_material_barn(request):
             om_map = {str(item.id): item for item in order_materials}
 
             if len(om_map) != len(ordermaterial_ids):
-                messages.info(request, "Ba'zi materiallar topilmadi")
+                messages.error(request, "Ba'zi materiallar topilmadi")
                 return redirect(back_url)
 
             material_ids = [om.material_id for om in order_materials if om.material_id]
             if len(material_ids) != len(order_materials):
-                messages.info(request, "Ba'zi materiallarga bog'lanish topilmadi")
+                messages.error(request, "Ba'zi materiallarga bog'lanish topilmadi")
                 return redirect(back_url)
 
-            materials    = list(Material.objects.select_for_update().filter(id__in=material_ids))
+            materials = list(Material.objects.select_for_update().filter(id__in=material_ids))
             material_map = {m.id: m for m in materials}
 
             if len(material_map) != len(set(material_ids)):
-                messages.info(request, "Ba'zi materiallar bazada topilmadi")
+                messages.error(request, "Ba'zi materiallar bazada topilmadi")
                 return redirect(back_url)
 
             ordermaterial_to_update = []
-            material_changed_ids    = set()
+            material_changed_ids = set()
 
             for om_id, given_value in zip(ordermaterial_ids, givens):
                 om = om_map.get(str(om_id))
                 if not om:
-                    messages.info(request, f"Arizadagi material topilmadi: {om_id}")
+                    messages.error(request, f"Arizadagi material topilmadi: {om_id}")
                     return redirect(back_url)
 
                 material = material_map.get(om.material_id)
                 if not material:
-                    messages.info(request, "Material topilmadi")
+                    messages.error(request, "Material topilmadi")
                     return redirect(back_url)
 
                 try:
                     given = int(given_value)
                 except (TypeError, ValueError):
-                    messages.info(request, f"{material.name} uchun beriladigan son noto'g'ri")
+                    messages.error(request, f"{material.name} uchun beriladigan son noto'g'ri")
                     return redirect(back_url)
 
                 if given <= 0:
-                    messages.info(request, f"{material.name} uchun beriladigan son manfiy bo'lishi mumkin emas")
+                    messages.error(request, f"{material.name} uchun beriladigan son manfiy bo'lishi mumkin emas")
                     return redirect(back_url)
 
                 old_given = om.given or 0
-                delta     = given - old_given
+                delta = given - old_given
 
                 if delta > 0 and material.number < delta:
-                    messages.info(
+                    messages.error(
                         request,
                         f"{material.name} omborda yetarli emas. Omborda: {material.number}, kerak: {delta}"
                     )
@@ -1303,7 +1335,7 @@ def order_material_barn(request):
 
             for mid in material_changed_ids:
                 if material_map[mid].number < 0:
-                    messages.info(request, f"{material_map[mid].name} uchun qoldiq manfiy bo'lib qoldi")
+                    messages.error(request, f"{material_map[mid].name} uchun qoldiq manfiy bo'lib qoldi")
                     return redirect(back_url)
 
             if ordermaterial_to_update:
@@ -1315,15 +1347,13 @@ def order_material_barn(request):
 
             order.status = "finished"
             order.message_receiver = body
-            order.save(update_fields=["status","message_receiver"])
+            order.save(update_fields=["status", "message_receiver"])
 
     except DatabaseError:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
     notify_order_status_change(order)
-    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
@@ -1347,7 +1377,7 @@ def order_receiver_arxiv_barn(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1359,22 +1389,24 @@ def order_receiver_arxiv_barn(request):
             receiver=employee,
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
-        .select_related(
-            "goal", "technics",
-            "user", "receiver", "sender"
-        )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH, DEED_PREFETCH)
         .order_by("-id")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
-        }
+    }
     return render(request, "main/order_receiver_arxiv_barn.html", context)
 
+
+# ═══════════════════════════════════════════════════════════════════
+# AGREMENT — tasdiqlovchi
+# ═══════════════════════════════════════════════════════════════════
 
 @never_cache
 @require_GET
@@ -1385,7 +1417,7 @@ def order_agrement(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1399,17 +1431,15 @@ def order_agrement(request):
                 receiver__region_id=employee.region_id,
                 status="finished",
             )
-            .select_related(
-                "goal", "technics",
-                "user", "receiver", "sender"
-            )
+            .select_related(*FULL_SENDER_RECEIVER_RELATED)
+            .prefetch_related(MATERIALS_PREFETCH)
             .order_by("-id")
         )
     else:
         orders_qs = Order.objects.none()
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,
@@ -1427,47 +1457,53 @@ def order_agrement_material(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    back_url          = request.META.get("HTTP_REFERER", "/")
-    order_id          = (request.POST.get("order_id") or "").strip()
-    action            = (request.POST.get("action")   or "").strip()
+    back_url = request.META.get("HTTP_REFERER", "/")
+    order_id = (request.POST.get("order_id") or "").strip()
+    action = (request.POST.get("action") or "").strip()
     ordermaterial_ids = request.POST.getlist("ordermaterial_id[]")
-    givens            = request.POST.getlist("given[]")
+    givens = request.POST.getlist("given[]")
 
     if not order_id.isdigit():
-        messages.info(request, "Ariza ID noto'g'ri")
+        messages.error(request, "Ariza ID noto'g'ri")
         return redirect(back_url)
 
     if action not in ["approved", "rejected"]:
-        messages.info(request, "Amal noto'g'ri")
+        messages.error(request, "Amal noto'g'ri")
         return redirect(back_url)
 
-    # Tasdiqlash uchun validatsiya
     if action == "approved":
         if len(ordermaterial_ids) != len(givens):
-            messages.info(request, "Yuborilgan ma'lumotlar mos emas")
+            messages.error(request, "Yuborilgan ma'lumotlar mos emas")
             return redirect(back_url)
         if len(ordermaterial_ids) != len(set(ordermaterial_ids)):
-            messages.info(request, "Takroriy materiallar yuborildi")
+            messages.error(request, "Takroriy materiallar yuborildi")
             return redirect(back_url)
         if not all(str(x).isdigit() for x in ordermaterial_ids):
-            messages.info(request, "Material ID noto'g'ri")
+            messages.error(request, "Material ID noto'g'ri")
             return redirect(back_url)
 
     try:
         with transaction.atomic():
             order = get_object_or_404(
-                Order.objects.select_for_update(),
+                Order.objects.select_for_update().select_related("goal__organization", "receiver"),
                 pk=int(order_id)
             )
 
-            if order.status != "finished":
-                messages.info(request, "Bu arizani tasdiqlash yoki rad etish mumkin emas")
+            if not order.goal or order.goal.organization_id != employee.organization_id:
+                messages.error(request, "Bu ariza sizning tashkilotingizga tegishli emas")
                 return redirect(back_url)
 
-            # ── RAD ETISH ──────────────────────────────
+            if not order.receiver or order.receiver.region_id != employee.region_id:
+                messages.error(request, "Bu ariza sizning hududingizga tegishli emas")
+                return redirect(back_url)
+
+            if order.status != "finished":
+                messages.error(request, "Bu arizani tasdiqlash yoki rad etish mumkin emas")
+                return redirect(back_url)
+
             if action == "rejected":
                 order_materials = list(
                     OrderMaterial.objects
@@ -1480,10 +1516,10 @@ def order_agrement_material(request):
                     om.material_id for om in order_materials
                     if om.material_id and (om.given or 0) > 0
                 ]
-                materials    = list(Material.objects.select_for_update().filter(id__in=material_ids))
+                materials = list(Material.objects.select_for_update().filter(id__in=material_ids))
                 material_map = {m.id: m for m in materials}
 
-                changed_materials       = []
+                changed_materials = []
                 changed_order_materials = []
 
                 for om in order_materials:
@@ -1505,7 +1541,6 @@ def order_agrement_material(request):
                 order.user = employee
                 order.save(update_fields=["status", "user"])
 
-            # ── TASDIQLASH ─────────────────────────────
             else:
                 order_materials = list(
                     OrderMaterial.objects
@@ -1516,43 +1551,43 @@ def order_agrement_material(request):
                 om_map = {str(item.id): item for item in order_materials}
 
                 if len(om_map) != len(ordermaterial_ids):
-                    messages.info(request, "Ba'zi materiallar topilmadi")
+                    messages.error(request, "Ba'zi materiallar topilmadi")
                     return redirect(back_url)
 
                 material_ids = [om.material_id for om in order_materials if om.material_id]
                 if len(material_ids) != len(order_materials):
-                    messages.info(request, "Ba'zi materiallarga bog'lanish topilmadi")
+                    messages.error(request, "Ba'zi materiallarga bog'lanish topilmadi")
                     return redirect(back_url)
 
-                materials    = list(Material.objects.select_for_update().filter(id__in=material_ids))
+                materials = list(Material.objects.select_for_update().filter(id__in=material_ids))
                 material_map = {m.id: m for m in materials}
 
                 if len(material_map) != len(set(material_ids)):
-                    messages.info(request, "Ba'zi materiallar bazada topilmadi")
+                    messages.error(request, "Ba'zi materiallar bazada topilmadi")
                     return redirect(back_url)
 
                 ordermaterial_to_update = []
-                material_changed_ids    = set()
+                material_changed_ids = set()
 
                 for om_id, given_value in zip(ordermaterial_ids, givens):
-                    om       = om_map.get(str(om_id))
+                    om = om_map.get(str(om_id))
                     material = material_map.get(om.material_id)
 
                     try:
                         given = int(given_value)
                     except (TypeError, ValueError):
-                        messages.info(request, f"{material.name} uchun beriladigan son noto'g'ri")
+                        messages.error(request, f"{material.name} uchun beriladigan son noto'g'ri")
                         return redirect(back_url)
 
                     if given < 0:
-                        messages.info(request, f"{material.name} uchun beriladigan son manfiy bo'lishi mumkin emas")
+                        messages.error(request, f"{material.name} uchun beriladigan son manfiy bo'lishi mumkin emas")
                         return redirect(back_url)
 
                     old_given = om.given or 0
-                    delta     = given - old_given
+                    delta = given - old_given
 
                     if delta > 0 and (material.number or 0) < delta:
-                        messages.info(
+                        messages.error(
                             request,
                             f"{material.name} omborda yetarli emas. Omborda: {material.number}, kerak: {delta}"
                         )
@@ -1565,7 +1600,7 @@ def order_agrement_material(request):
 
                 for mid in material_changed_ids:
                     if material_map[mid].number < 0:
-                        messages.info(request, f"{material_map[mid].name} uchun qoldiq manfiy bo'lib qoldi")
+                        messages.error(request, f"{material_map[mid].name} uchun qoldiq manfiy bo'lib qoldi")
                         return redirect(back_url)
 
                 if ordermaterial_to_update:
@@ -1579,13 +1614,11 @@ def order_agrement_material(request):
                 order.user = employee
                 order.save(update_fields=["status", "user"])
 
-    except DatabaseError as e:
-        messages.info(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+    except DatabaseError:
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
 
-    # ── PUSH BILDIRISHNOMALAR ──────────────────────────────────────────
     notify_order_status_change(order)
-    # ─────────────────────────────────────────────────────────────────
 
     if order.sender_id and order.sender.telegram_chat:
         if action == "approved":
@@ -1625,7 +1658,7 @@ def order_agrement_arxiv(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    if employee.organization.type == "worker":
+    if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
     page_number = request.GET.get("page", 1)
@@ -1637,15 +1670,13 @@ def order_agrement_arxiv(request):
             goal__organization__type="client",
             status__in=["approved", "accepted", "canceled", "rejected"],
         )
-        .select_related(
-            "goal", "technics",
-            "user", "receiver", "sender"
-        )
+        .select_related(*FULL_SENDER_RECEIVER_RELATED)
+        .prefetch_related(MATERIALS_PREFETCH, DEED_PREFETCH)
         .order_by("-id")
     )
 
     paginator = Paginator(orders_qs, 20)
-    page_obj  = paginator.get_page(page_number)
+    page_obj = paginator.get_page(page_number)
 
     context = {
         "page_obj": page_obj,

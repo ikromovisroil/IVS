@@ -186,7 +186,8 @@
                                 </div>
                                 {% endif %}
 
-                                {% if o.materials_all.exists %}
+                                {% with mats=o.materials_all %}
+                                {% if mats %}
                                 <div class="section-title">Materiallar</div>
                                 <div class="table-responsive info-card p-2">
                                     <table class="table table-bordered align-middle table-sm mb-0">
@@ -199,7 +200,7 @@
                                       </tr>
                                     </thead>
                                     <tbody>
-                                      {% for m in o.materials_all.all %}
+                                      {% for m in mats %}
                                         <tr>
                                           <th scope="row">{{ forloop.counter }}</th>
                                           <td>{{ m.material.name }}</td>
@@ -211,6 +212,7 @@
                                   </table>
                                 </div>
                                 {% endif %}
+                                {% endwith %}
 
                                 <div class="section-title">Jarayon tarixi</div>
                                 <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-2 g-md-3">
@@ -299,7 +301,7 @@
                       </td>
                       <td>
                           {% if o.rating %}
-                          5/{{ o.rating }} ⭐
+                          {{ o.rating }}/5 ⭐
                           {% else %}
                           -
                           {% endif %}
@@ -307,18 +309,20 @@
                       <td>{{ o.date_creat|date:"d.m.Y, H:i" }}</td>
 
                       <td>
-                        {% if o.materials_all.exists and not o.order.exists %}
+                        {% with mats=o.materials_all %}
+                        {% if mats and not o.has_deed %}
                             <a href="{% url 'order_receiver_deed' o.pk %}"
                                class="btn btn-success btn-sm btn-send d-inline-flex align-items-center gap-2 px-3">
 
                                 <i class="bi bi-send-fill"></i>
                                 <span>Yuborish</span>
                             </a>
-                        {% elif o.order.exists %}
+                        {% elif o.has_deed %}
                             <span class="text-muted small">Yuborilgan</span>
                         {% else %}
                             <span class="text-muted small">Mavjud emas</span>
                         {% endif %}
+                        {% endwith %}
                       </td>
 
                     </tr>

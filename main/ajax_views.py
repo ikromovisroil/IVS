@@ -134,16 +134,22 @@ def order_check_new(request):
     if not employee:
         return JsonResponse({"error": "Employee yo‘q"}, status=400)
 
-    latest_order = (
-        Order.objects
-        .filter(sender__region=employee.region,goal__organization__type="worker", status="viewed")
-        .order_by("-id")
-        .values("id")
-        .first()
+    order_goal_ids = OrderGoal.objects.filter(
+        employee=employee
+    ).values_list("goal_id", flat=True)
+
+    orders_qs = Order.objects.filter(
+        sender__region=employee.region,
+        goal_id__in=order_goal_ids,
+        goal__organization__type="worker",
+        status="viewed",
     )
+
+    latest_order = orders_qs.order_by("-id").values("id").first()
 
     return JsonResponse({
         "latest_id": latest_order["id"] if latest_order else 0,
+        "count": orders_qs.count(),
     })
 
 
