@@ -58,17 +58,18 @@ def has_cyrillic(text: str) -> bool:
 # =========================================================
 # CELERY TASK
 # =========================================================
-# ✅ O'ZGARDI: Endi bu task hech qachon Employee modeliga avtomatik
-# yozmaydi (lavozim/tashkilot o'zgartirmaydi, bloklamaydi/deaktiv
-# qilmaydi). Faqat Gateway'dagi ma'lumot bilan bazadagi ma'lumot
-# orasidagi FARQNI aniqlaydi va shu farqni SyncLog/SyncEmployeeLog
-# orqali "xabar" sifatida yozib qo'yadi. Xodimni qo'lda tahrirlash
-# yoki bloklash - admin (siz) tomonidan qo'lda amalga oshiriladi.
-#
-# `apply_changes=True` bilan chaqirilsa (masalan kelajakda admin
-# paneldan "Qo'llash" tugmasi orqali) - haqiqiy yozish ham amalga
-# oshadi. Lekin celery beat jadvali BU PARAMETRSIZ (ya'ni har doim
-# apply_changes=False bilan) chaqirilishi kerak.
+# ✅ Bu task hech qachon bazaga avtomatik yozmaydi:
+#   - Employee'ning organization/department/directorate/division/rank
+#     maydonlarini o'zgartirmaydi.
+#   - Xodimni bloklamaydi/deaktiv qilmaydi.
+#   - Yangi Department/Directorate yozuvlarini YARATMAYDI (bu avvalgi
+#     versiyada eng katta muammo edi - "faqat ko'rsatish" rejimida ham
+#     tizimga yangi Department/Directorate qo'shib qo'yardi).
+# Faqat Gateway'dagi ma'lumot bilan bazadagi ma'lumot orasidagi FARQNI
+# aniqlaydi va shu farqni SyncLog/SyncEmployeeLog orqali "xabar"
+# sifatida yozib qo'yadi. Xodimni tahrirlash, bloklash yoki yangi
+# Department/Directorate yaratish - FAQAT admin tomonidan qo'lda
+# amalga oshiriladi.
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def sync_all_employees(self, apply_changes=False):
     from .models import Employee
@@ -87,8 +88,8 @@ def sync_all_employees(self, apply_changes=False):
         ).exclude(pinfl="")
 
         total       = employees.count()
-        changed     = 0   # avval "updated" - endi faqat FARQ ANIQLANDI degani, DBga yozilmadi
-        would_block = 0   # avval "blocked" - endi faqat "bloklanishi KERAK" degan taklif
+        changed     = 0
+        would_block = 0
         skipped     = 0
         errors      = 0
         start_time  = time.time()
@@ -217,9 +218,14 @@ def _sync_single_employee(emp, apply_changes=False):
             return "blocked", ""
         return "would_block", ""
 
-    assigned = _resolve_position(pinfl, positions)
+    # ✅ FIX: create_missing=False - hech qanday yangi Department/Directorate
+    # yozuvi yaratilmaydi, faqat MAVJUDLARI qidiriladi.
+    assigned = _resolve_position(pinfl, positions, create_missing=False)
 
     if not assigned:
+        # Bu holat FAQAT org_tin butunlay hech qaysi Organization/Department
+        # bilan mos kelmasa yuz beradi (tizimda bu tashkilot umuman yo'q) -
+        # haqiqatan "ish joyi aniqlanmadi" degani.
         if apply_changes:
             _block_employee(emp, pinfl)
             return "blocked", ""
@@ -234,6 +240,18 @@ def _sync_single_employee(emp, apply_changes=False):
     if not apply_changes:
         return "changed", changes
 
+    # apply_changes=True bo'lganda ham, agar department/directorate topilmagan
+    # (faqat nomi/kodi ma'lum, lekin bazada mavjud emas) bo'lsa - buni ham
+    # avtomatik yaratmaymiz, chunki bu qo'lda tekshirilishi kerak bo'lgan
+    # holat. Shunday holatda "applied" emas, balki xabar bilan qaytaramiz.
+    if assigned.get("_dep_unresolved"):
+        note = (
+            f"{changes} | DIQQAT: Departament/Boshqarma bazada topilmadi "
+            f"(kod={assigned.get('_dep_id')!r}, nomi={assigned.get('_dep_name')!r}) - "
+            f"avval uni qo'lda yarating, keyin qayta urinib ko'ring."
+        )
+        return "changed", note
+
     with transaction.atomic():
         changes = _apply_changes(emp, assigned, result=result)
 
@@ -247,7 +265,23 @@ def _get_default_region():
     return Region.objects.filter(id=DEFAULT_REGION_ID).first()
 
 
-def _resolve_position(sso_pinfl, positions):
+def _resolve_position(sso_pinfl, positions, create_missing=False):
+    """
+    Gateway'dan kelgan positions ro'yxati bo'yicha xodimning tashkiliy
+    joylashuvini ANIQLASHGA harakat qiladi.
+
+    create_missing=False (STANDART, tavsiya etiladi):
+        Department/Directorate topilmasa - HECH NARSA yaratilmaydi.
+        Qaytarilgan data'da mos maydon None qoladi va
+        "_dep_unresolved": True, "_dep_id"/"_dep_name" belgilanadi -
+        bu keyinchalik xabarda "qo'lda yarating" deb ko'rsatish uchun
+        ishlatiladi.
+
+    create_missing=True:
+        Eski xatti-harakat - topilmasa avtomatik yaratadi. Faqat
+        maxsus/kelajakdagi "to'liq avtomatik" senariylar uchun
+        qoldirilgan, ODATDAGI sync jarayonida ISHLATILMAYDI.
+    """
     from .models import Organization, Department, Directorate, Division, Rank
 
     for pos in positions:
@@ -274,8 +308,10 @@ def _resolve_position(sso_pinfl, positions):
             "_position":    position,
             "_dep_id":      dep_id,
             "_dep_name":    dep_name,
+            "_dep_unresolved": False,
         }
 
+        # HOLAT A: Organization.inn == org_tin
         organization = Organization.objects.filter(inn=org_tin).first()
         if organization:
             data["organization"] = organization
@@ -308,23 +344,30 @@ def _resolve_position(sso_pinfl, positions):
                     data["department"] = department
                     return data
 
-                region = getattr(organization, "region", None)
-                if not region:
-                    region = _get_default_region()
+                # Department topilmadi
+                if create_missing:
+                    region = getattr(organization, "region", None)
+                    if not region:
+                        region = _get_default_region()
 
-                department, created = Department.objects.get_or_create(
-                    code=dep_id,
-                    organization=organization,
-                    region=region,
-                    defaults={"name": dep_name or f"Bolim-{dep_id}"},
-                )
-                if created:
-                    logger.info("Department yaratildi: %s", department)
-                data["department"] = department
-                return data
+                    department, created = Department.objects.get_or_create(
+                        code=dep_id,
+                        organization=organization,
+                        region=region,
+                        defaults={"name": dep_name or f"Bolim-{dep_id}"},
+                    )
+                    if created:
+                        logger.info("Department yaratildi: %s", department)
+                    data["department"] = department
+                    return data
+                else:
+                    # Hech narsa yaratmaymiz - faqat "topilmadi" deb belgilaymiz
+                    data["_dep_unresolved"] = True
+                    return data
 
             return data
 
+        # HOLAT B: Department.inn == org_tin
         department = Department.objects.filter(inn=org_tin).first()
         if department:
             data["department"]   = department
@@ -339,15 +382,21 @@ def _resolve_position(sso_pinfl, positions):
                     data["directorate"] = directorate
                     return data
 
-                directorate, created = Directorate.objects.get_or_create(
-                    code=dep_id,
-                    department=department,
-                    defaults={"name": cyrillic_to_latin(dep_name or f"Boshqarma-{dep_id}")},
-                )
-                if created:
-                    logger.info("Directorate yaratildi: %s", directorate)
-                data["directorate"] = directorate
-                return data
+                # Directorate topilmadi
+                if create_missing:
+                    directorate, created = Directorate.objects.get_or_create(
+                        code=dep_id,
+                        department=department,
+                        defaults={"name": cyrillic_to_latin(dep_name or f"Boshqarma-{dep_id}")},
+                    )
+                    if created:
+                        logger.info("Directorate yaratildi: %s", directorate)
+                    data["directorate"] = directorate
+                    return data
+                else:
+                    # Hech narsa yaratmaymiz - faqat "topilmadi" deb belgilaymiz
+                    data["_dep_unresolved"] = True
+                    return data
 
             return data
 
@@ -372,6 +421,12 @@ def _has_changed(emp, assigned, result=None):
     )
 
     if structure_changed:
+        return True
+
+    # Department/Directorate hali "topilmadi" holatida bo'lsa ham,
+    # bu ADMIN uchun muhim signal - shuning uchun "o'zgargan" deb
+    # hisoblaymiz, shunda SyncEmployeeLog'da ko'rinadi.
+    if assigned.get("_dep_unresolved"):
         return True
 
     if result:
@@ -412,20 +467,27 @@ def _describe_changes(emp, assigned, result=None):
         new = str(assigned["organization"]) if assigned["organization"] else "—"
         changes.append(f"Tashkilot: {old} → {new}")
 
-    if emp.department_id != getattr(assigned["department"], "id", None):
-        old = str(emp.department) if emp.department else "—"
-        new = str(assigned["department"]) if assigned["department"] else "—"
-        changes.append(f"Departament: {old} → {new}")
+    if assigned.get("_dep_unresolved"):
+        changes.append(
+            f"Departament/Boshqarma BAZADA TOPILMADI "
+            f"(Gateway kod={assigned.get('_dep_id')!r}, nomi={assigned.get('_dep_name')!r}) "
+            f"- avval qo'lda yarating"
+        )
+    else:
+        if emp.department_id != getattr(assigned["department"], "id", None):
+            old = str(emp.department) if emp.department else "—"
+            new = str(assigned["department"]) if assigned["department"] else "—"
+            changes.append(f"Departament: {old} → {new}")
 
-    if emp.directorate_id != getattr(assigned["directorate"], "id", None):
-        old = str(emp.directorate) if emp.directorate else "—"
-        new = str(assigned["directorate"]) if assigned["directorate"] else "—"
-        changes.append(f"Boshqarma: {old} → {new}")
+        if emp.directorate_id != getattr(assigned["directorate"], "id", None):
+            old = str(emp.directorate) if emp.directorate else "—"
+            new = str(assigned["directorate"]) if assigned["directorate"] else "—"
+            changes.append(f"Boshqarma: {old} → {new}")
 
-    if emp.division_id != getattr(assigned["division"], "id", None):
-        old = str(emp.division) if emp.division else "—"
-        new = str(assigned["division"]) if assigned["division"] else "—"
-        changes.append(f"Bo'lim: {old} → {new}")
+        if emp.division_id != getattr(assigned["division"], "id", None):
+            old = str(emp.division) if emp.division else "—"
+            new = str(assigned["division"]) if assigned["division"] else "—"
+            changes.append(f"Bo'lim: {old} → {new}")
 
     if emp.rank_id != getattr(assigned.get("rank"), "id", None):
         old = str(emp.rank) if emp.rank else "—"
@@ -441,7 +503,10 @@ def _describe_changes(emp, assigned, result=None):
 # ⚠️ DIQQAT: Bu funksiya endi celery beat jadvalidan AVTOMATIK
 # chaqirilmaydi. Faqat kelajakda admin paneldan "Qo'llash" degan
 # tugma qo'shilsa va sync_all_employees(apply_changes=True) yoki
-# shunga o'xshash alohida chaqiruv qilinsa ishlaydi.
+# shunga o'xshash alohida chaqiruv qilinsa ishlaydi. Bunda ham,
+# agar department/directorate topilmagan (_dep_unresolved) bo'lsa,
+# _sync_single_employee bu funksiyani chaqirmaydi - avval xabar
+# qaytaradi ("qo'lda yarating").
 def _apply_changes(emp, assigned, result=None):
     from .models import Rank
 
