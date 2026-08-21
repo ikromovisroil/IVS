@@ -1,6 +1,8 @@
 from datetime import timedelta
 from pathlib import Path
 from dotenv import load_dotenv
+from django.contrib.messages import constants as message_constants
+
 import shutil
 import os
 
@@ -164,6 +166,14 @@ LOGIN_URL = "/sso/login/"
 LOGIN_REDIRECT_URL = "profil"
 LOGOUT_REDIRECT_URL = "/sso/login/"
 
+
+# =========================================================
+# MESSAGES FRAMEWORK
+# =========================================================
+from django.contrib.messages import constants as message_constants
+MESSAGE_TAGS = {
+    message_constants.ERROR: "danger",
+}
 
 # =========================================================
 # PASSWORD VALIDATION

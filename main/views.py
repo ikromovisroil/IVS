@@ -3003,6 +3003,13 @@ def emp_status(request):
         orders = orders.filter(date_creat__date__lte=date2)
         goal_orders = goal_orders.filter(date_creat__date__lte=date2)
 
+    org_type = getattr(employee.organization, "type", None)
+    if org_type == "worker":
+        approved_filter = Q(status="approved") | Q(status="accepted")
+    else:
+        approved_filter = Q(status="approved")
+        accepted_filter = Q(status="accepted")
+
     # FIX: "employee" o'rniga boshqa nom - Employee obyektini o'chirib yubormaslik uchun
     employee_stats = (
         orders
@@ -3018,7 +3025,7 @@ def emp_status(request):
             ),
             accepted_count=Count("id", filter=Q(status="process")),
             finished_count=Count("id", filter=Q(status="finished")),
-            approved_count=Count("id", filter=Q(status="approved")),
+            approved_count=Count("id", filter=approved_filter),
             rejected_count=Count("id", filter=Q(status="rejected") | Q(status="canceled")),
             total_count=Count("id"),
             avg_rating=Avg("rating"),
@@ -3619,12 +3626,7 @@ DEPENDENT_PERMS = {
     "view_employee": ["add_employee", "change_employee", "delete_employee"],   # YANGI
 }
 
-# Bu ruxsatlarni FAQAT o'zida ALLAQACHON shu ruxsat bor foydalanuvchi
-# boshqasiga berishi/olishi mumkin — aks holda "change_employee" +
-# "permission_employee"ga ega (lekin "all_organization"ga ega bo'lmagan)
-# xodim o'ziga yoki boshqasiga tashkilotlararo ko'rish huquqini yoki
-# hatto ruxsat boshqarish huquqining o'zini berib, imtiyozini
-# oshirishi (privilege escalation) mumkin edi.
+
 SUPER_PERMS = {"all_organization", "all_region", "permission_employee"}
 
 
