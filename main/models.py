@@ -132,15 +132,6 @@ class Employee(models.Model):
     date_edit = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        old_structure = None
-
-        if self.pk:
-            old_structure = Employee.objects.filter(pk=self.pk).values(
-                "organization_id",
-                "department_id",
-                "directorate_id",
-                "division_id",
-            ).first()
 
         if self.division and self.division.directorate:
             self.directorate = self.division.directorate
@@ -151,30 +142,17 @@ class Employee(models.Model):
         if self.department and self.department.organization:
             self.organization = self.department.organization
 
-            old_dep_id = old_structure["department_id"] if old_structure else None
+            old_dep_id = None
+            if self.pk:
+                old_dep_id = (
+                    Employee.objects.filter(pk=self.pk)
+                    .values_list("department_id", flat=True)
+                    .first()
+                )
             if not self.pk or old_dep_id != self.department_id:
                 self.region = self.department.region
 
-        new_structure = {
-            "organization_id": self.organization_id,
-            "department_id": self.department_id,
-            "directorate_id": self.directorate_id,
-            "division_id": self.division_id,
-        }
-
-        changed_structure = old_structure is not None and old_structure != new_structure
-
-        with transaction.atomic():
-            super().save(*args, **kwargs)
-
-            if changed_structure:
-                Technics.objects.filter(
-                    employee_id=self.pk,
-                    is_active=True
-                ).update(
-                    employee=None,
-                    status="free"
-                )
+        super().save(*args, **kwargs)
 
     def __str__(self):
         parts = [self.last_name, self.first_name, self.father_name]

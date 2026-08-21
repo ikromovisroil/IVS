@@ -770,6 +770,55 @@
                 <input type="text" name="phone" class="form-control" value="{{ emp.phone|default:'' }}">
               </div>
             </div>
+
+            <!-- Departament/boshqarma/bo'lim o'zgarsa, xodimga
+                 biriktirilgan texnikalar bilan nima qilish kerakligini
+                 tanlash. Faqat haqiqatan joylashuv o'zgargan holatda
+                 backend'da amalga oshiriladi (employee_update view). -->
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">
+                Texnikalar
+              </label>
+              <div class="col-md-8 col-lg-9">
+
+                <div class="form-check">
+                  <input class="form-check-input" type="radio"
+                         name="technics_action"
+                         id="tech_with_{{ emp.id }}"
+                         value="with">
+                  <label class="form-check-label" for="tech_with_{{ emp.id }}">
+                    Texnikalar bilan (xodim bilan birga ko'chsin)
+                  </label>
+                </div>
+
+                <div class="form-check">
+                  <input class="form-check-input" type="radio"
+                         name="technics_action"
+                         id="tech_stay_{{ emp.id }}"
+                         value="stay">
+                  <label class="form-check-label" for="tech_stay_{{ emp.id }}">
+                    Texnikalar activ holda departamentda qolsin
+                  </label>
+                </div>
+
+                <div class="form-check">
+                  <input class="form-check-input" type="radio"
+                         name="technics_action"
+                         id="tech_release_{{ emp.id }}"
+                         value="release"
+                         checked>
+                  <label class="form-check-label" for="tech_release_{{ emp.id }}">
+                    Texnikalar bo'shatilib skladga qaytarilsin
+                  </label>
+                </div>
+
+                <div class="form-text">
+                  Faqat departament/boshqarma/bo'lim haqiqatan
+                  o'zgargan holatda qo'llaniladi.
+                </div>
+              </div>
+            </div>
+
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>

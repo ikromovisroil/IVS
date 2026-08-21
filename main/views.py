@@ -3003,13 +3003,6 @@ def emp_status(request):
         orders = orders.filter(date_creat__date__lte=date2)
         goal_orders = goal_orders.filter(date_creat__date__lte=date2)
 
-    org_type = getattr(employee.organization, "type", None)
-    if org_type == "worker":
-        approved_filter = Q(status="approved") | Q(status="accepted")
-    else:
-        approved_filter = Q(status="approved")
-        accepted_filter = Q(status="accepted")
-
     # FIX: "employee" o'rniga boshqa nom - Employee obyektini o'chirib yubormaslik uchun
     employee_stats = (
         orders
@@ -3025,7 +3018,7 @@ def emp_status(request):
             ),
             accepted_count=Count("id", filter=Q(status="process")),
             finished_count=Count("id", filter=Q(status="finished")),
-            approved_count=Count("id", filter=approved_filter),
+            approved_count=Count("id", filter=Q(status="approved")),
             rejected_count=Count("id", filter=Q(status="rejected") | Q(status="canceled")),
             total_count=Count("id"),
             avg_rating=Avg("rating"),
@@ -3195,16 +3188,6 @@ def files(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
-    # DIQQAT: bu view avval hech qanday tashkilot bo'yicha standart
-    # cheklovga ega emas edi — foydalanuvchi organization filtrini
-    # TANLAMASA, butun tizimdagi BARCHA tashkilotlarning Deed
-    # (hujjat) yozuvlari ko'rinardi. Endi main.all_organization
-    # ruxsati bo'lmagan xodim uchun standart holatda faqat o'z
-    # tashkilotiga tegishli hujjatlar ko'rsatiladi — barn_tex/
-    # technics_get kabi boshqa cross-org sahifalardagi bilan bir xil
-    # naqsh.
-    has_full_org = request.user.has_perm("main.all_organization")
-
     name   = (request.GET.get("name")   or "").strip()[:120]
     date1  = (request.GET.get("date1")  or "").strip()
     date2  = (request.GET.get("date2")  or "").strip()
@@ -3215,8 +3198,6 @@ def files(request):
 
     regions = Region.objects.only("id", "name").order_by("id")
     organizations = Organization.objects.only("id", "name").order_by("id")
-    if not has_full_org:
-        organizations = organizations.filter(id=employee.organization_id)
 
     has_filter = bool(name or date1 or date2 or status or region_id or org_id)
 
@@ -3251,13 +3232,6 @@ def files(request):
         )
         .order_by("-id")
     )
-
-    # main.all_organization ruxsati bo'lmagan xodim uchun MAJBURIY
-    # tashkilot bo'yicha AND-filtr — foydalanuvchi organization
-    # parametrini tashlab qo'ysa ham, natija hech qachon boshqa
-    # tashkilotlarni o'z ichiga olmaydi.
-    if not has_full_org:
-        qs = qs.filter(organization_id=employee.organization_id)
 
     if name:
         qs = qs.annotate(
@@ -3626,7 +3600,12 @@ DEPENDENT_PERMS = {
     "view_employee": ["add_employee", "change_employee", "delete_employee"],   # YANGI
 }
 
-
+# Bu ruxsatlarni FAQAT o'zida ALLAQACHON shu ruxsat bor foydalanuvchi
+# boshqasiga berishi/olishi mumkin — aks holda "change_employee" +
+# "permission_employee"ga ega (lekin "all_organization"ga ega bo'lmagan)
+# xodim o'ziga yoki boshqasiga tashkilotlararo ko'rish huquqini yoki
+# hatto ruxsat boshqarish huquqining o'zini berib, imtiyozini
+# oshirishi (privilege escalation) mumkin edi.
 SUPER_PERMS = {"all_organization", "all_region", "permission_employee"}
 
 
@@ -4083,12 +4062,78 @@ def employee_update(request):
     target_employee.first_name = first_name
     target_employee.last_name = last_name
     target_employee.father_name = father_name or None
+
+    # Texnika-ko'chirish variantlarini hisoblash uchun ESKI joylashuvni
+    # o'zgartirishdan OLDIN saqlab qo'yamiz.
+    old_department_id = target_employee.department_id
+    old_directorate_id = target_employee.directorate_id
+    old_division_id = target_employee.division_id
+
     target_employee.department_id = department_id or None
     target_employee.directorate_id = directorate_id or None
     target_employee.division_id = division_id or None
     target_employee.rank_id = rank_id or None
     target_employee.phone = phone or None
-    target_employee.save()
+
+    technics_action = (request.POST.get("technics_action") or "release").strip()
+    if technics_action not in {"with", "stay", "release"}:
+        technics_action = "release"
+
+    location_changed = (
+        old_department_id != target_employee.department_id or
+        old_directorate_id != target_employee.directorate_id or
+        old_division_id != target_employee.division_id
+    )
+
+    # Xodimga biriktirilgan (hali saqlanmasdan oldingi) texnikalar ID'lari
+    # — joylashuv o'zgargan bo'lsagina keyinroq kerak bo'ladi.
+    affected_technics_ids = []
+    if location_changed:
+        affected_technics_ids = list(
+            Technics.objects.filter(
+                employee_id=target_employee.id, is_active=True
+            ).values_list("id", flat=True)
+        )
+
+    logger.warning(
+        "employee_update DEBUG: emp_id=%s old_dep=%s new_dep=%s "
+        "old_dir=%s new_dir=%s old_div=%s new_div=%s "
+        "location_changed=%s technics_action=%s affected_ids=%s",
+        target_employee.id,
+        old_department_id, target_employee.department_id,
+        old_directorate_id, target_employee.directorate_id,
+        old_division_id, target_employee.division_id,
+        location_changed, technics_action, affected_technics_ids,
+    )
+
+    with transaction.atomic():
+        target_employee.save()
+
+        if location_changed and affected_technics_ids:
+            if technics_action == "with":
+                Technics.objects.filter(id__in=affected_technics_ids).update(
+                    employee=target_employee,
+                    department_id=target_employee.department_id,
+                    directorate_id=target_employee.directorate_id,
+                    division_id=target_employee.division_id,
+                    status="active",
+                )
+            elif technics_action == "stay":
+                Technics.objects.filter(id__in=affected_technics_ids).update(
+                    employee=None,
+                    department_id=old_department_id,
+                    directorate_id=old_directorate_id,
+                    division_id=old_division_id,
+                    status="active",
+                )
+            else:  # "release"
+                Technics.objects.filter(id__in=affected_technics_ids).update(
+                    employee=None,
+                    department=None,
+                    directorate=None,
+                    division=None,
+                    status="free",
+                )
 
     messages.success(request, "Xodim ma'lumotlari yangilandi")
     return redirect(back_url)
