@@ -55,14 +55,6 @@ def has_cyrillic(text: str) -> bool:
     return bool(re.search('[а-яА-ЯёЁғқҳўҷҒҚҲЎҶ]', text or ''))
 
 
-# =========================================================
-# CELERY TASK
-# =========================================================
-# DIQQAT: Bu task FAQAT MA'LUMOT BERADI (read-only).
-# Gateway'dan kelgan farqlarni aniqlab, SyncEmployeeLog'ga yozadi, xolos.
-# Hech qanday holatda Employee, User yoki Technics jadvalini
-# O'ZGARTIRMAYDI va hech kimni bloklamaydi. Har qanday real
-# o'zgarish faqat admin tomonidan qo'lda ("Tahrirlash") amalga oshiriladi.
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def sync_all_employees(self):
     from .models import Employee
@@ -198,10 +190,6 @@ def _check_single_employee(emp):
     return "changed", changes
 
 
-# =========================================================
-# RESOLVE POSITION (faqat gateway ma'lumotini bazadagi
-# mavjud yozuvlarga moslashtiradi, hech narsa YARATMAYDI)
-# =========================================================
 def _get_default_region():
     return Region.objects.filter(id=DEFAULT_REGION_ID).first()
 
@@ -388,19 +376,3 @@ def _describe_changes(emp, assigned, result=None):
         changes.append(f"Lavozim: {old} → {new}")
 
     return " | ".join(changes)
-
-
-# =========================================================
-# ESLATMA:
-# Ilgari shu yerda _apply_changes() va _block_employee()
-# funksiyalari bo'lgan - ular xodimning bazadagi yozuvini
-# HAQIQATDA o'zgartirar yoki bloklar edi (emp.save(),
-# user.is_active = False, Technics.objects...update() va h.k.).
-#
-# Task endi FAQAT INFO REJIMIDA ishlashi kerakligi sababli,
-# bu funksiyalar butunlay OLIB TASHLANDI - shunda hech kim
-# (hatto xato bilan) ularni chaqirib, xodim ma'lumotini
-# avtomatik o'zgartira olmaydi. Har qanday real o'zgarish
-# yoki bloklash FAQAT admin panelda qo'lda ("Tahrirlash")
-# amalga oshirilishi kerak.
-# =========================================================
