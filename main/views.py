@@ -3301,12 +3301,7 @@ def files(request):
 @require_POST
 @permission_required("main.add_employee", raise_exception=True)
 def employe_create(request):
-    # DIQQAT: avval bu yerda @permission_required umuman yo'q edi —
-    # faqat login_required bilan himoyalangan edi. barn_tex.html dagi
-    # "+ Xodim qo'shish" tugmasi {% if perms.main.add_technics %} bilan
-    # yashirilgan bo'lsa-da, bu — faqat UI cheklovi. Har qanday login
-    # qilgan foydalanuvchi to'g'ridan-to'g'ri POST yuborib, tizimga
-    # yangi xodim va User hisobini yarata olar edi.
+
     from .gateway import GatewayClient, GatewayError
 
     pinfl = request.POST.get("pinfl", "").strip()
@@ -3319,12 +3314,6 @@ def employe_create(request):
         messages.info(request, "Bu PINFL allaqachon ro'yxatda bor")
         return redirect(request.META.get("HTTP_REFERER", "/"))
 
-    # DIQQAT: GatewayClient chaqiruvi endi ALOHIDA try/except bilan
-    # o'ralgan. Sabab: Gateway bilan aloqa xatosi (SSL/tarmoq/timeout)
-    # foydalanuvchining/adminning aybi emas - bu vaqtinchalik tashqi
-    # tizim muammosi. Buni boshqa (dasturiy) xatolardan ajratib,
-    # tushunarli xabar bilan qaytarish kerak, xom texnik matnni
-    # ko'rsatish o'rniga.
     try:
         gateway_data = GatewayClient.current_citizen(pinfl)
     except GatewayError:
@@ -3396,8 +3385,7 @@ def employe_create(request):
         messages.success(request, f"{employee.full_name} xodim yaratildi")
 
     except Exception as e:
-        # Bu yerda endi FAQAT dasturiy/baza xatolari qoladi (Gateway
-        # xatosi yuqorida allaqachon ajratib olingan).
+
         logger.exception("Xodim yaratishda xatolik")
         messages.info(request, str(e))
 
@@ -3600,21 +3588,11 @@ DEPENDENT_PERMS = {
     "view_employee": ["add_employee", "change_employee", "delete_employee"],   # YANGI
 }
 
-# Bu ruxsatlarni FAQAT o'zida ALLAQACHON shu ruxsat bor foydalanuvchi
-# boshqasiga berishi/olishi mumkin — aks holda "change_employee" +
-# "permission_employee"ga ega (lekin "all_organization"ga ega bo'lmagan)
-# xodim o'ziga yoki boshqasiga tashkilotlararo ko'rish huquqini yoki
-# hatto ruxsat boshqarish huquqining o'zini berib, imtiyozini
-# oshirishi (privilege escalation) mumkin edi.
 SUPER_PERMS = {"all_organization", "all_region", "permission_employee"}
 
 
 def _visible_perm_fields(target_employee, current_employee):
-    """
-    employee.html shablonidagi {% if %} shartlarini SERVERDA aynan
-    takrorlaydi. Shablon shartini o'zgartirsangiz, shu yerni ham albatta
-    moslashtiring - aks holda ular bir-biriga mos kelmay qoladi.
-    """
+
     target_org_type = (
         target_employee.organization.type
         if target_employee.organization_id else None
@@ -3644,9 +3622,6 @@ def _visible_perm_fields(target_employee, current_employee):
         visible.discard("all_organization")
         visible.discard("all_region")
 
-    # "Maxsus rollar" (boss/shop/status/permission_employee) - JORIY
-    # FOYDALANUVCHI tashkiloti worker bo'lsa ko'rinadi (shablon:
-    # request.user.employee.organization.type == "worker")
     if current_org_type != "worker":
         visible.discard("boss_employee")
         visible.discard("shop_employee")
@@ -3671,10 +3646,6 @@ def _annotate_permission_flags(employee_qs):
 
 
 def _generate_username(pinfl, first_name, last_name):
-    """
-    Username "ism.familiya" formatida yaratiladi (lotin, kichik harf,
-    bo'sh joysiz). Band bo'lsa PINFL'ning oxirgi raqamlari qo'shiladi.
-    """
 
     def _clean(value):
         value = (value or "").strip().lower()
@@ -3853,13 +3824,6 @@ def employee_permission(request):
         for field_name in visible_fields
     }
 
-    # Imtiyozni oshirishning (privilege escalation) oldini olish:
-    # SUPER_PERMS ("all_organization", "all_region",
-    # "permission_employee") faqat joriy foydalanuvchida ALLAQACHON
-    # mavjud bo'lsagina berish/olib qo'yishga ruxsat beriladi. Aks
-    # holda mos maydon target_employee'ning HOZIRGI holatiga
-    # qaytariladi (o'zgartirilmaydi) — foydalanuvchi o'zida yo'q
-    # ruxsatni boshqasiga (yoki o'ziga) bera olmaydi.
     for perm_key in SUPER_PERMS:
         if perm_key not in checked_fields:
             continue
@@ -4085,8 +4049,6 @@ def employee_update(request):
         old_division_id != target_employee.division_id
     )
 
-    # Xodimga biriktirilgan (hali saqlanmasdan oldingi) texnikalar ID'lari
-    # — joylashuv o'zgargan bo'lsagina keyinroq kerak bo'ladi.
     affected_technics_ids = []
     if location_changed:
         affected_technics_ids = list(
@@ -4095,7 +4057,7 @@ def employee_update(request):
             ).values_list("id", flat=True)
         )
 
-    logger.warning(
+    logger.error(
         "employee_update DEBUG: emp_id=%s old_dep=%s new_dep=%s "
         "old_dir=%s new_dir=%s old_div=%s new_div=%s "
         "location_changed=%s technics_action=%s affected_ids=%s",
@@ -4111,6 +4073,7 @@ def employee_update(request):
 
         if location_changed and affected_technics_ids:
             if technics_action == "with":
+
                 Technics.objects.filter(id__in=affected_technics_ids).update(
                     employee=target_employee,
                     department_id=target_employee.department_id,
