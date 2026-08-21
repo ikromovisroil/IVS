@@ -1,16 +1,5 @@
 """
 bot/services.py
-
-Telegram bot uchun biznes-mantiq:
-1. Xodimni PINFL orqali aniqlash / Telegram chat bilan bog'lash
-2. Ariza yaratish - ATM (worker) va Omborxona (client) uchun ALOHIDA
-3. Bajarilgan arizani baholash (bekor qilib bo'lmaydi)
-4. Ombor (client) arizasi tasdiqlangach - "qabul qildim" belgilash
-5. Ariza bajarish (ijrochi oqimi): qabul qilish -> yakunlash - ATM va
-   Omborxona uchun ALOHIDA ro'yxatlar
-
-Barcha funksiyalar SINXRON - aiogram handler'larida
-`asgiref.sync.sync_to_async` bilan o'raladi.
 """
 from __future__ import annotations
 
@@ -26,12 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 def _locking_qs(qs):
-    """
-    select_for_update() ni faqat shu ma'lumotlar bazasi qo'llab-quvvatlasa
-    ishlatadi (masalan PostgreSQL). SQLite kabi qo'llab-quvvatlamaydigan
-    bazalarda oddiy (qulflanmagan) queryset qaytaradi - development/local
-    test uchun yetarli, productionda (PostgreSQL) haqiqiy himoya ishlaydi.
-    """
+
     if connection.features.has_select_for_update:
         return qs.select_for_update()
     return qs
@@ -137,10 +121,7 @@ def list_atm_goals(employee: Employee):
 
 
 def list_warehouse_goals(employee: Employee):
-    """
-    Omborxona uchun - faqat 'client' turidagi VA aynan shu xodimning
-    O'Z tashkilotiga tegishli kategoriyalar.
-    """
+
     if not employee.organization_id:
         return []
     return list(
@@ -151,11 +132,7 @@ def list_warehouse_goals(employee: Employee):
 
 
 def create_order(employee: Employee, goal_id: int, message_text: str, context: str = "atm") -> OrderResult:
-    """
-    context="atm" - faqat ATM (worker) kategoriyalariga ruxsat beradi
-    context="warehouse" - faqat shu xodimning o'z tashkiloti (client)
-    kategoriyalariga ruxsat beradi
-    """
+
     goal = Goal.objects.filter(pk=goal_id).first()
     if not goal:
         return OrderResult(False, "Ariza turi topilmadi")
@@ -202,7 +179,7 @@ def rate_order(employee: Employee, order_id: int, rating: int) -> OrderResult:
             if not order:
                 return OrderResult(False, "Ariza topilmadi yoki allaqachon baholangan")
 
-            order.status = "approved"
+            order.status = "accepted"
             order.rating = rating
             order.save(update_fields=["status", "rating"])
     except DatabaseError:
@@ -298,11 +275,7 @@ def _allowed_goal_ids(employee: Employee):
 
 
 def _context_goal_filter(employee: Employee, context: str) -> Q:
-    """
-    context="atm" - faqat 'worker' turidagi tashkilot kategoriyalari
-    context="warehouse" - faqat 'client' turidagi VA shu xodimning
-    o'z tashkilotiga tegishli kategoriyalar
-    """
+
     if context == "warehouse":
         return Q(
             goal__organization__type="client",
@@ -312,14 +285,7 @@ def _context_goal_filter(employee: Employee, context: str) -> Q:
 
 
 def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int = 20):
-    """
-    Bitta ro'yxatda ikkalasini birga qaytaradi (context bo'yicha filtrlangan):
-      1) YANGI arizalar (status=viewed, receiver bo'sh, ruxsat etilgan
-         kategoriya bo'yicha, FAQAT SHU XODIMNING O'Z HUDUDIDAN yuborilgan -
-         'all_region' huquqidan qat'iy nazar) - "Qabul qilish" tugmasi
-      2) Shu xodim QABUL QILGAN, hali yakunlanmagan arizalar
-         (status=process, receiver=employee) - "Yakunlash" tugmasi
-    """
+
     goal_ids = _allowed_goal_ids(employee)
     if not goal_ids:
         return []
@@ -383,12 +349,7 @@ def finish_order(employee: Employee, order_id: int) -> OrderResult:
     """Qabul qilingan arizani yakunlaydi: status -> finished."""
     try:
         with transaction.atomic():
-            # DIQQAT: select_for_update() bilan select_related() birga
-            # ishlatilmaydi - sender/goal null=True (SET_NULL) bo'lgani
-            # uchun LEFT OUTER JOIN hosil bo'ladi, PostgreSQL esa
-            # "FOR UPDATE cannot be applied to the nullable side of an
-            # outer join" xatosini beradi. Avval FAQAT Order jadvalini
-            # (select_related'siz) qulflab olamiz.
+
             order = _locking_qs(Order.objects).filter(
                 pk=order_id, receiver=employee, status="process"
             ).first()
@@ -398,8 +359,6 @@ def finish_order(employee: Employee, order_id: int) -> OrderResult:
             order.status = "finished"
             order.save(update_fields=["status"])
 
-            # Endi xabar yuborish uchun sender/goal'ni ALOHIDA,
-            # qulflashsiz so'rov bilan yuklab olamiz.
             order = Order.objects.select_related("sender", "goal").get(pk=order.pk)
     except DatabaseError:
         logger.exception("finish_order DatabaseError (order_id=%s)", order_id)
