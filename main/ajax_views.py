@@ -2,6 +2,8 @@ from .models import *
 from django.db.models import Q
 from django.core.exceptions import PermissionDenied
 from datetime import datetime, timedelta
+from collections import defaultdict
+from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, ExpressionWrapper, Value,CharField
 from django.db.models.functions import Coalesce, Cast,Concat
 from django.views.decorators.cache import never_cache
@@ -50,7 +52,10 @@ def ajax_sender_technics(request):
     if not employee:
         raise PermissionDenied("Employee yo‘q")
 
-    sender_id = request.GET.get("sender_id")
+    sender_id = (request.GET.get("sender_id") or "").strip()
+    if not sender_id.isdigit():
+        return JsonResponse({"results": []})
+
     sender = Employee.objects.filter(id=sender_id).first()
 
     if not sender:
@@ -178,7 +183,9 @@ def order_check_all(request):
 @require_GET
 @login_required
 def get_department_employees(request):
-    emp_id = request.GET.get("employee_id")
+    emp_id = (request.GET.get("employee_id") or "").strip()
+    if not emp_id.isdigit():
+        return JsonResponse({"employees": []})
 
     try:
         receiver = Employee.objects.get(id=emp_id)
@@ -257,6 +264,10 @@ def ajax_dep_signatory(request):
     org_id = (request.GET.get("organization") or "").strip()
     dep_id = (request.GET.get("department") or "").strip()
 
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return JsonResponse([], safe=False)
+
     # ikkalasi ham bo'lmasa bo'sh
     if not org_id and not dep_id:
         return JsonResponse([], safe=False)
@@ -266,7 +277,7 @@ def ajax_dep_signatory(request):
     if dep_id:
         qs = qs.filter(department_id=dep_id)
     elif org_id:
-        qs = qs.filter(organization_id=org_id,region=request.user.employee.region)
+        qs = qs.filter(organization_id=org_id, region=employee.region)
     else:
         return JsonResponse([], safe=False)
 
@@ -290,6 +301,7 @@ def ajax_dep_negotiator(request):
 
     employee = getattr(request.user, "employee", None)
     my_dep_id = getattr(employee, "department_id", None)
+    my_org_id = getattr(employee, "organization_id", None)
 
     if not org_id and not dep_id:
         return JsonResponse([], safe=False)
@@ -299,7 +311,10 @@ def ajax_dep_negotiator(request):
     if dep_id:
         qs = qs.filter(Q(department_id=dep_id) | Q(department_id=my_dep_id))
     elif org_id:
-        qs = qs.filter(Q(organization_id=org_id) | Q(organization_id=my_dep_id))
+        # Bug tuzatildi: avval "organization_id=my_dep_id" edi — department
+        # ID organization ustunida qidirilardi (ikki ID fazosi mos
+        # kelmaydi, deyarli hech qachon to'g'ri natija bermas edi).
+        qs = qs.filter(Q(organization_id=org_id) | Q(organization_id=my_org_id))
     else:
         return JsonResponse([], safe=False)
 
@@ -338,7 +353,9 @@ def ajax_employees_org(request):
 @login_required
 def ajax_employees_org_user_region(request):
     org_id = (request.GET.get("organization") or "").strip()
-    reg_id = request.user.employee.region.id
+
+    employee = getattr(request.user, "employee", None)
+    reg_id = getattr(employee, "region_id", None)
 
     if not org_id:
         return JsonResponse({"results": []})
@@ -721,7 +738,6 @@ def ajax_reestr_materials(request):
     return JsonResponse(data, safe=False)
 
 
-from collections import defaultdict
 @never_cache
 @require_GET
 @login_required
@@ -828,7 +844,9 @@ def add_material_to_cart(request):
             "message": "Employee topilmadi"
         }, status=403)
 
-    material_id = request.POST.get("material_id")
+    material_id = (request.POST.get("material_id") or "").strip()
+    if not material_id.isdigit():
+        return JsonResponse({"ok": False, "message": "Noto'g'ri material ID"}, status=400)
 
     material = get_object_or_404(
         Material,
@@ -877,9 +895,9 @@ def delete_material_from_cart(request):
             "message": "Employee topilmadi"
         }, status=403)
 
-    item_id = request.POST.get("item_id")
+    item_id = (request.POST.get("item_id") or "").strip()
 
-    if not item_id:
+    if not item_id or not item_id.isdigit():
         return JsonResponse({
             "ok": False,
             "message": "ID kelmadi"

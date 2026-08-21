@@ -110,7 +110,13 @@
       <div class="col-lg-8">
         <div class="card">
           <div class="card-body">
-            <h5 class="card-title">TinyMCE Editor</h5>
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="card-title mb-0">TinyMCE Editor</h5>
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="editBodyToggle">
+                <label class="form-check-label" for="editBodyToggle">Qo'lda tahrirlash</label>
+              </div>
+            </div>
 
               <textarea id="body" name="body" class="tinymce-editor">
                 <div style="text-align:center;">
@@ -372,6 +378,37 @@ function updateEditorWithSelections() {
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
 $(function () {
+    // ── Qo'lda tahrirlash checkbox — TinyMCE'ni standart holatda
+    // faqat-o'qish (readonly) rejimida ushlab turadi, avtomatik
+    // to'ldirilgan matnni tasodifan o'zgartirib qo'ymaslik uchun.
+    // Checkbox belgilansa — tahrirlash ochiladi (design rejimi).
+    (function () {
+      const toggle = document.getElementById("editBodyToggle");
+      if (!toggle) return;
+
+      function applyEditMode() {
+        const ed = editorGet();
+        if (!ed) return;
+        try {
+          ed.mode.set(toggle.checked ? "design" : "readonly");
+        } catch (e) {
+          if (typeof ed.setMode === "function") {
+            ed.setMode(toggle.checked ? "design" : "readonly");
+          }
+        }
+      }
+
+      toggle.addEventListener("change", applyEditMode);
+
+      const waitEditor = setInterval(function () {
+        const ed = editorGet();
+        if (ed) {
+          clearInterval(waitEditor);
+          applyEditMode();
+        }
+      }, 300);
+    })();
+
 
   $('#organization, #department, #sender, #agreements').select2({
     width: '100%',
@@ -646,6 +683,17 @@ $(function () {
 
   $('form').on('submit', function (e) {
     e.preventDefault();
+
+    const $form = $(this);
+
+    // Tugma bir necha marta bosilishi (shoshilib bosish) tufayli
+    // forma bir necha marta yuborilib, bir xil hujjat qayta-qayta
+    // yaratilib qolishining oldini olish uchun qulflash.
+    if ($form.data("locked")) {
+      return false;
+    }
+    $form.data("locked", true);
+    $form.find('button[type="submit"]').prop("disabled", true);
 
     const ed = editorGet();
     if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
