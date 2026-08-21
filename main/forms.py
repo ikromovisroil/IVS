@@ -15,7 +15,6 @@ class TechnicsForm(forms.ModelForm):
             "group": forms.Select(attrs={"class": "form-select", "required": True}),
             "category": forms.Select(attrs={"class": "form-select", "required": True}),
             "organization": forms.Select(attrs={"class": "form-select", "required": True}),
-
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
             "parametr": forms.TextInput(attrs={"class": "form-control", "placeholder": "parametr"}),
             "inventory": forms.TextInput(attrs={"class": "form-control", "placeholder": "inventory"}),
@@ -27,9 +26,10 @@ class TechnicsForm(forms.ModelForm):
             "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "narxi"}),
         }
 
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.fields["organization"].queryset = Organization.objects.order_by("id")
+    # __init__ Meta ICHIDA emas, shu yerda - forma sinfining o'zida bo'lishi kerak
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["organization"].queryset = Organization.objects.order_by("id")
 
 
 class ExtraTechnicsForm(forms.ModelForm):
