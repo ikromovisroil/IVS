@@ -58,8 +58,13 @@ def has_cyrillic(text: str) -> bool:
 # =========================================================
 # CELERY TASK
 # =========================================================
+# DIQQAT: Bu task FAQAT MA'LUMOT BERADI (read-only).
+# Gateway'dan kelgan farqlarni aniqlab, SyncEmployeeLog'ga yozadi, xolos.
+# Hech qanday holatda Employee, User yoki Technics jadvalini
+# O'ZGARTIRMAYDI va hech kimni bloklamaydi. Har qanday real
+# o'zgarish faqat admin tomonidan qo'lda ("Tahrirlash") amalga oshiriladi.
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def sync_all_employees(self, apply_changes=False):
+def sync_all_employees(self):
     from .models import Employee
     from core.models import SyncLog, SyncEmployeeLog
 
@@ -84,14 +89,11 @@ def sync_all_employees(self, apply_changes=False):
 
         sync_log = SyncLog.objects.create(total=total)
 
-        logger.info(
-            "sync_all_employees boshlandi: %d xodim (apply_changes=%s)",
-            total, apply_changes
-        )
+        logger.info("sync_all_employees boshlandi (faqat info rejimida): %d xodim", total)
 
         for emp in employees.iterator(chunk_size=50):
             try:
-                result, changes = _sync_single_employee(emp, apply_changes=apply_changes)
+                result, changes = _check_single_employee(emp)
 
                 if result == "would_block":
                     would_block += 1
@@ -101,7 +103,7 @@ def sync_all_employees(self, apply_changes=False):
                         pinfl     = emp.pinfl,
                         full_name = emp.full_name,
                         result    = "blocked",
-                        changes   = "Gatewayda ish joyi topilmadi (avtomatik bloklanmadi - qo'lda ko'rib chiqing)",
+                        changes   = "DIQQAT: Gatewayda ish joyi topilmadi. Xodim AVTOMATIK bloklanmadi - qo'lda ko'rib chiqing va kerak bo'lsa qo'lda bloklang.",
                     )
                 elif result == "changed":
                     changed += 1
@@ -111,34 +113,14 @@ def sync_all_employees(self, apply_changes=False):
                         pinfl     = emp.pinfl,
                         full_name = emp.full_name,
                         result    = "updated",
-                        changes   = f"[Aniqlandi, avtomatik qo'llanilmadi] {changes}",
-                    )
-                elif result == "applied":
-                    changed += 1
-                    SyncEmployeeLog.objects.create(
-                        sync      = sync_log,
-                        employee  = emp,
-                        pinfl     = emp.pinfl,
-                        full_name = emp.full_name,
-                        result    = "updated",
-                        changes   = changes,
-                    )
-                elif result == "blocked":
-                    would_block += 1
-                    SyncEmployeeLog.objects.create(
-                        sync      = sync_log,
-                        employee  = emp,
-                        pinfl     = emp.pinfl,
-                        full_name = emp.full_name,
-                        result    = "blocked",
-                        changes   = "Gatewayda ish joyi topilmadi",
+                        changes   = f"DIQQAT: Farq aniqlandi, AVTOMATIK o'zgartirilmadi (faqat ma'lumot uchun): {changes}",
                     )
                 else:
                     skipped += 1
 
             except Exception as e:
                 errors += 1
-                logger.warning("PINFL %s sync xatosi: %s", emp.pinfl, e)
+                logger.warning("PINFL %s tekshiruv xatosi: %s", emp.pinfl, e)
                 SyncEmployeeLog.objects.create(
                     sync      = sync_log,
                     employee  = emp,
@@ -167,17 +149,16 @@ def sync_all_employees(self, apply_changes=False):
         )
 
         logger.info(
-            "sync tugadi | aniqlangan_farq=%d | bloklanishi_kerak=%d | ozgarishsiz=%d | xato=%d | jami=%d | vaqt=%ds | apply_changes=%s",
-            changed, would_block, skipped, errors, total, duration, apply_changes
+            "sync tugadi (faqat info) | aniqlangan_farq=%d | bloklanishi_kerak=%d | ozgarishsiz=%d | xato=%d | jami=%d | vaqt=%ds",
+            changed, would_block, skipped, errors, total, duration
         )
         return {
-            "apply_changes": apply_changes,
-            "changed":       changed,
-            "would_block":   would_block,
-            "skipped":       skipped,
-            "errors":        errors,
-            "total":         total,
-            "duration":      duration,
+            "changed":     changed,
+            "would_block": would_block,
+            "skipped":     skipped,
+            "errors":      errors,
+            "total":       total,
+            "duration":    duration,
         }
 
     finally:
@@ -185,9 +166,9 @@ def sync_all_employees(self, apply_changes=False):
 
 
 # =========================================================
-# SYNC SINGLE EMPLOYEE
+# CHECK SINGLE EMPLOYEE (read-only, hech narsa saqlamaydi)
 # =========================================================
-def _sync_single_employee(emp, apply_changes=False):
+def _check_single_employee(emp):
     from .gateway import GatewayClient
 
     pinfl = emp.pinfl
@@ -203,11 +184,7 @@ def _sync_single_employee(emp, apply_changes=False):
     if not positions:
         return "would_block", ""
 
-    assigned = _resolve_position(
-        pinfl,
-        positions,
-        create_missing=False
-    )
+    assigned = _resolve_position(pinfl, positions)
 
     if not assigned:
         return "would_block", ""
@@ -215,24 +192,21 @@ def _sync_single_employee(emp, apply_changes=False):
     if not _has_changed(emp, assigned, result=result):
         return "skipped", ""
 
-    changes = _describe_changes(
-        emp,
-        assigned,
-        result=result
-    )
+    changes = _describe_changes(emp, assigned, result=result)
 
-    # FAQAT TEKSHIRADI, BAZAGA SAQLAMAYDI
+    # FAQAT TEKSHIRADI VA XABAR BERADI - BAZAGA HECH NARSA YOZILMAYDI
     return "changed", changes
 
 
 # =========================================================
-# RESOLVE POSITION
+# RESOLVE POSITION (faqat gateway ma'lumotini bazadagi
+# mavjud yozuvlarga moslashtiradi, hech narsa YARATMAYDI)
 # =========================================================
 def _get_default_region():
     return Region.objects.filter(id=DEFAULT_REGION_ID).first()
 
 
-def _resolve_position(sso_pinfl, positions, create_missing=False):
+def _resolve_position(sso_pinfl, positions):
 
     from .models import Organization, Department, Directorate, Division, Rank
 
@@ -296,26 +270,10 @@ def _resolve_position(sso_pinfl, positions, create_missing=False):
                     data["department"] = department
                     return data
 
-                # Department topilmadi
-                if create_missing:
-                    region = getattr(organization, "region", None)
-                    if not region:
-                        region = _get_default_region()
-
-                    department, created = Department.objects.get_or_create(
-                        code=dep_id,
-                        organization=organization,
-                        region=region,
-                        defaults={"name": dep_name or f"Bolim-{dep_id}"},
-                    )
-                    if created:
-                        logger.info("Department yaratildi: %s", department)
-                    data["department"] = department
-                    return data
-                else:
-                    # Hech narsa yaratmaymiz - faqat "topilmadi" deb belgilaymiz
-                    data["_dep_unresolved"] = True
-                    return data
+                # Department topilmadi - HECH NARSA YARATMAYMIZ,
+                # faqat "topilmadi" deb belgilaymiz
+                data["_dep_unresolved"] = True
+                return data
 
             return data
 
@@ -334,21 +292,10 @@ def _resolve_position(sso_pinfl, positions, create_missing=False):
                     data["directorate"] = directorate
                     return data
 
-                # Directorate topilmadi
-                if create_missing:
-                    directorate, created = Directorate.objects.get_or_create(
-                        code=dep_id,
-                        department=department,
-                        defaults={"name": cyrillic_to_latin(dep_name or f"Boshqarma-{dep_id}")},
-                    )
-                    if created:
-                        logger.info("Directorate yaratildi: %s", directorate)
-                    data["directorate"] = directorate
-                    return data
-                else:
-                    # Hech narsa yaratmaymiz - faqat "topilmadi" deb belgilaymiz
-                    data["_dep_unresolved"] = True
-                    return data
+                # Directorate topilmadi - HECH NARSA YARATMAYMIZ,
+                # faqat "topilmadi" deb belgilaymiz
+                data["_dep_unresolved"] = True
+                return data
 
             return data
 
@@ -443,51 +390,17 @@ def _describe_changes(emp, assigned, result=None):
     return " | ".join(changes)
 
 
-def _apply_changes(emp, assigned, result=None):
-    from .models import Rank
-
-    changes_str = _describe_changes(emp, assigned, result=result)
-
-    if result:
-        emp.first_name  = cyrillic_to_latin((result.get("name")       or "").strip())
-        emp.last_name   = cyrillic_to_latin((result.get("surname")    or "").strip())
-        emp.father_name = cyrillic_to_latin((result.get("partonimic") or "").strip())
-
-    emp.organization = assigned["organization"]
-    emp.department   = assigned["department"]
-    emp.directorate  = assigned["directorate"]
-    emp.division     = assigned["division"]
-    emp.rank         = assigned.get("rank")
-    emp.save()
-
-    if emp.user and not emp.user.is_active:
-        emp.user.is_active = True
-        emp.user.save()
-        logger.info("PINFL %s qayta faollashtirildi", emp.pinfl)
-
-    logger.info("PINFL %s yangilandi: %s", emp.pinfl, changes_str)
-    return changes_str
-
-
-def _block_employee(emp, pinfl):
-    from .models import Technics
-
-    with transaction.atomic():
-        Technics.objects.filter(
-            employee=emp,
-            is_active=True
-        ).update(employee=None)
-
-        if emp.user and emp.user.is_active:
-            emp.user.is_active = False
-            emp.user.save()
-
-        emp.organization = None
-        emp.department = None
-        emp.directorate = None
-        emp.division = None
-        emp.region = None
-        emp.rank = None
-        emp.save()
-
-    logger.info("PINFL %s bloklandi", pinfl)
+# =========================================================
+# ESLATMA:
+# Ilgari shu yerda _apply_changes() va _block_employee()
+# funksiyalari bo'lgan - ular xodimning bazadagi yozuvini
+# HAQIQATDA o'zgartirar yoki bloklar edi (emp.save(),
+# user.is_active = False, Technics.objects...update() va h.k.).
+#
+# Task endi FAQAT INFO REJIMIDA ishlashi kerakligi sababli,
+# bu funksiyalar butunlay OLIB TASHLANDI - shunda hech kim
+# (hatto xato bilan) ularni chaqirib, xodim ma'lumotini
+# avtomatik o'zgartira olmaydi. Har qanday real o'zgarish
+# yoki bloklash FAQAT admin panelda qo'lda ("Tahrirlash")
+# amalga oshirilishi kerak.
+# =========================================================
