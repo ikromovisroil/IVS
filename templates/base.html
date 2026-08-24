@@ -728,20 +728,46 @@
         });
     }
 
+    function createNewSubscription(registration) {
+        registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        }).then(function (subscription) {
+            sendSubscriptionToServer(subscription);
+        }).catch(function (err) {
+            console.log("Push obuna xatosi:", err);
+        });
+    }
+
     function subscribeUser(registration) {
+        const expectedKey = urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+
         registration.pushManager.getSubscription().then(function (existingSub) {
             if (existingSub) {
-                sendSubscriptionToServer(existingSub);
+                let keysMatch = false;
+                try {
+                    const currentKey = new Uint8Array(existingSub.options.applicationServerKey);
+                    keysMatch = currentKey.length === expectedKey.length &&
+                        currentKey.every(function (val, i) { return val === expectedKey[i]; });
+                } catch (e) {
+                    keysMatch = false;
+                }
+
+                if (keysMatch) {
+                    sendSubscriptionToServer(existingSub);
+                    return;
+                }
+
+                // Kalit eski/mos kelmayapti - eski obunani o'chirib, yangisini yaratamiz
+                existingSub.unsubscribe().then(function () {
+                    createNewSubscription(registration);
+                }).catch(function (err) {
+                    console.log("Eski obunani o'chirishda xato:", err);
+                    createNewSubscription(registration);
+                });
                 return;
             }
-            registration.pushManager.subscribe({
-                userVisibleOnly: true,
-                applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-            }).then(function (subscription) {
-                sendSubscriptionToServer(subscription);
-            }).catch(function (err) {
-                console.log("Push obuna xatosi:", err);
-            });
+            createNewSubscription(registration);
         });
     }
 
