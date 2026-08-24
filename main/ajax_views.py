@@ -621,14 +621,9 @@ from collections import OrderedDict
 def ajax_svod_all_materials(request):
     """
     Bir nechta tashkilot bo'yicha materiallarni:
-    Tashkilot -> Hudud -> materiallar tartibida, tashkilot ID va hudud ID
-    bo'yicha tartiblab, ketma-ket guruhlab qaytaradi.
-
-    MUHIM: hech qanday hudud cheklovi YO'Q — tanlangan tashkilotlarning
-    BARCHA hududlari chiqadi. Bo'lim (department) darajasi chiqarilmaydi —
-    bir xil material bir nechta bo'limdan kelgan bo'lsa, hudud darajasida
-    birlashtirilib qo'shiladi. Faqat haqiqatda material berilgan (order
-    tugallangan) guruhlar chiqadi — bo'sh tashkilot/hudud chiqmaydi.
+    Tashkilot -> Hudud -> materiallar tartibida qaytaradi, shuningdek
+    shu materiallarni bajargan (order.sender) barcha xodimlarning
+    ro'yxatini ham alohida qaytaradi (dublikatsiz).
     """
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -639,7 +634,7 @@ def ajax_svod_all_materials(request):
     d2 = request.GET.get("date2")
 
     if not org_ids or not d1 or not d2:
-        return JsonResponse([], safe=False)
+        return JsonResponse({"organizations": [], "employees": []})
 
     try:
         date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
@@ -680,8 +675,8 @@ def ajax_svod_all_materials(request):
             )
         )
         .order_by(
-            "order__sender__organization_id",   # tashkilot ID bo'yicha
-            "order__sender__region_id",         # hudud ID bo'yicha
+            "order__sender__organization_id",
+            "order__sender__region_id",
             "material__code",
             "material__name",
         )
@@ -706,8 +701,6 @@ def ajax_svod_all_materials(request):
         txt = f'Akt №{r["order_id"]} ga {dt_str}y'
         order_map.setdefault(key, []).append(txt)
 
-    # OrderedDict — qs allaqachon organization_id, region_id bo'yicha
-    # tartiblangan, shuning uchun guruhlash paytida ham shu tartib saqlanadi.
     grouped = OrderedDict()
     for item in qs:
         org_key = (item["order__sender__organization_id"], item["order__sender__organization__name"])
@@ -740,7 +733,42 @@ def ajax_svod_all_materials(request):
             })
         result.append(org_block)
 
-    return JsonResponse(result, safe=False)
+    # ── Ariza bajargan (order.sender) barcha xodimlar, dublikatsiz ──
+    responsible_qs = (
+        OrderMaterial.objects.filter(**common_filters)
+        .values(
+            "order__sender_id",
+            "order__sender__last_name",
+            "order__sender__first_name",
+            "order__sender__father_name",
+            "order__sender__rank__name",
+        )
+        .distinct()
+    )
+
+    seen_ids = set()
+    employees = []
+    for r in responsible_qs:
+        sid = r.get("order__sender_id")
+        if not sid or sid in seen_ids:
+            continue
+        seen_ids.add(sid)
+
+        full_name = " ".join(filter(None, [
+            r.get("order__sender__last_name"),
+            r.get("order__sender__first_name"),
+            r.get("order__sender__father_name"),
+        ])) or "-"
+
+        employees.append({
+            "id": sid,
+            "full_name": full_name,
+            "rank": r.get("order__sender__rank__name") or "",
+        })
+
+    employees.sort(key=lambda e: e["full_name"])
+
+    return JsonResponse({"organizations": result, "employees": employees})
 
 
 @never_cache
