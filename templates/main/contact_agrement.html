@@ -1,412 +1,364 @@
 {% extends 'base.html' %}
-{% load humanize %}
 {% load static %}
 
 {% block title %}
-<title>Arizalar</title>
-{% endblock title %}
+<title>Xabarlar</title>
+{% endblock %}
 
 {% block css %}
-  {# Select2 CSS #}
-  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  <link rel="stylesheet" href="{% static 'css/order-modal.css' %}">
+<link rel="stylesheet" href="{% static 'css/order-modal.css' %}">
 {% endblock css %}
 
 {% block content %}
-
 <main id="main" class="main">
 
-  <div class="pagetitle">
-    <div class="d-flex justify-content-between align-items-center">
-      <h1>Arizalar</h1>
+    <div class="pagetitle">
+      <div class="d-flex justify-content-between align-items-center">
+        <h1>Kelishish uchun</h1>
+      </div>
     </div>
-  </div>
 
-  <section class="section profile">
-    <div class="row">
-      <div class="col-xl-12">
+    <section class="section profile">
+      <div class="row">
+        <div class="col-xl-12">
+          <div class="card">
+            <div class="card-body pt-3">
 
-        <div class="card">
-          <div class="card-body pt-3">
-
-            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div class="d-flex justify-content-between align-items-center mb-3">
                 <ul class="nav nav-pills gap-2 d-flex align-items-center mb-0">
-                  <li class="nav-pills">
-                    <a href="{% url 'order_agrement' %}" class="nav-link active">Arizalar</a>
-                  </li>
-                  <li class="nav-pills">
-                    <a href="{% url 'order_agrement_arxiv' %}" class="nav-link border border-primary">Tarix</a>
-                  </li>
+                    <li class="nav-item">
+                      <a href="{% url 'contact_agrement' %}" class="nav-link active">Kelishilmagan</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="{% url 'contact_agrement_arxiv' %}" class="nav-link border border-primary">Kelishilgan</a>
+                    </li>
                 </ul>
-            </div>
+              </div>
 
-            <div class="table-responsive tab-content pt-2">
+              <div class="tab-content pt-2">
+                <div class="table-responsive">
+                  <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-secondary">
+                        <tr>
+                            <th style="width: 70px;">T/r</th>
+                            <th>Jo'natuvchi</th>
+                            <th>Imzolovchi</th>
+                            <th style="width: 170px;">Yuborilgan sana</th>
+                            <th style="width: 120px;">Fayllar</th>
+                            <th style="width: 140px;">Holati</th>
+                            <th style="width: 160px;">Amallar</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for d in page_obj %}
+                        <tr>
+                            <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
+                            <td>{{ d.user.full_name }}</td>
+                            <td>
+                                {{ d.sender.full_name }}
+                                {% if d.receiver %}
+                                    <br>{{ d.receiver.full_name }}
+                                {% endif %}
+                            </td>
 
-              <table class="table table-bordered table-hover align-middle table-sm">
-                <thead class="table-secondary">
-                <tr>
-                  <th>T/r</th>
-                  <th scope="col">Ariza №</th>
-                  <th>Muallif</th>
-                  <th>Bajardi</th>
-                  <th>Xolati</th>
-                  <th>Yuborilgan sana</th>
-                </tr>
-                </thead>
+                            <td>{{ d.date_creat|date:"d-m-Y H:i" }}</td>
 
-                <tbody>
-                {% for o in page_obj %}
-                  <tr>
-                    <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
-                    <td>#{{ o.id }}</td>
-                    <td>{{ o.sender.full_name }}</td>
-                    <td>{{ o.receiver.full_name }}</td>
+                            <td>
+                                {% if d.file and d.file.url %}
+                                    <a href="{{ d.file.url }}" target="_blank">📄 Ko‘rish</a>
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </td>
 
-                    <td>
-                        <span type="button"
-                          class="badge rounded-pill px-3 py-2 fw-semibold
-                          {% if o.status == 'viewed' or o.status == 'process' %}bg-warning
-                          {% elif o.status == 'finished' %}bg-primary
-                          {% elif o.status == 'approved' or o.status == 'accepted' %}bg-success
-                          {% elif o.status == 'canceled' %}bg-secondary
-                          {% elif o.status == 'rejected' %}bg-danger
-                          {% endif %}
-                          text-white shadow-sm d-inline-flex align-items-center"
-                          style="cursor: pointer;"
-                          data-bs-toggle="modal"
-                          data-bs-target="#verticalmodal{{ o.id }}">
-                        <i class="
-                            {% if o.status == 'viewed' or o.status == 'process' %}bi bi-clock
-                            {% elif o.status == 'finished' or o.status == 'approved' or o.status == 'accepted' %}bi bi-check2-circle
-                            {% elif o.status == 'canceled' or o.status == 'rejected' %}bi bi-x-circle
-                            {% endif %}
-                            me-2"></i>
-                        {{ o.get_status_display }}
-                        </span>
-
-                      {# ===== MODAL ===== #}
-                      <div class="modal fade order-modal" id="verticalmodal{{ o.id }}" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl modal-fullscreen-sm-down">
-                          <form class="modal-content" action="{% url 'order_agrement_material' %}" method="post">
-                            {% csrf_token %}
-                            <input type="hidden" name="order_id" value="{{ o.id }}">
-                            <div class="modal-header">
-                              <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Ariza tafsilotlari &nbsp;<span class="opacity-75">#{{o.id}}</span></h5>
-                              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-
-                            <div class="modal-body">
-
-                              <div class="info-card">
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Ariza holati</div>
-                                    <div class="col-12 col-md-7 info-value">
-                                        <span class="badge rounded-pill px-3 py-2 fw-semibold
-                                          {% if o.status == 'viewed' or o.status == 'process' %}bg-warning
-                                          {% elif o.status == 'finished' %}bg-primary
-                                          {% elif o.status == 'approved' or o.status == 'accepted' %}bg-success
-                                          {% elif o.status == 'canceled' %}bg-secondary
-                                          {% elif o.status == 'rejected' %}bg-danger
-                                          {% endif %}
-                                          text-white shadow-sm">
-                                          {{ o.get_status_display }}
+                            <td>
+                                {% if d.receiver %}
+                                    {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected' %}
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Rad etildi
                                         </span>
-                                    </div>
-                                </div>
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-event"></i> Ro'yxatga olingan sana</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
-                                </div>
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> Ariza muallifi</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.sender.full_name }} <span class="text-muted">{{ o.sender.rank.name }}</span></div>
-                                </div>
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
-                                    <div class="col-12 col-md-7 info-value">
-                                        {% if o.sender.organization %}<span class="text-muted">{{ o.sender.organization }}</span><br>{% endif %}
-                                        {% if o.sender.department %}<span class="text-muted">{{ o.sender.department }}</span><br>{% endif %}
-                                        {% if o.sender.directorate %}<span class="text-muted">{{ o.sender.directorate }}</span><br>{% endif %}
-                                        {% if o.sender.division %}<span class="text-muted">{{ o.sender.division }}</span>{% endif %}
-                                    </div>
-                                </div>
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.sender.phone|default:"—" }}</div>
-                                </div>
-                                {% if o.technics %}
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-cpu"></i> Xizmat ko'rsatilgan texnika</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.technics.name }}</div>
-                                </div>
+                                    {% elif d.status_sender == 'approved' and d.status_receiver == 'approved' %}
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Tasdiqlandi
+                                        </span>
+                                    {% else %}
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Kutilmoqda
+                                        </span>
+                                    {% endif %}
+                                {% else %}
+                                    {% if d.status_sender == 'rejected' %}
+                                        <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Rad etildi
+                                        </span>
+                                    {% elif d.status_sender == 'approved' %}
+                                        <span class="btn badge bg-success" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Tasdiqlandi
+                                        </span>
+                                    {% else %}
+                                        <span class="btn badge bg-warning" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
+                                            Kutilmoqda
+                                        </span>
+                                    {% endif %}
                                 {% endif %}
-                                {% if o.message_sender %}
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.message_sender }}</div>
-                                </div>
-                                {% endif %}
-                              </div>
 
-                              {% if o.receiver %}
-                              <div class="section-title">Mas'ul xodim ma'lumotlari</div>
-                              <div class="info-card">
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-person-check"></i> Mas'ul xodim</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.receiver.full_name }} <span class="text-muted">{{ o.receiver.rank.name }}</span></div>
-                                </div>
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-building"></i> Tashkilot</div>
-                                    <div class="col-12 col-md-7 info-value">
-                                        {% if o.receiver.organization %}<span class="text-muted">{{ o.receiver.organization }}</span><br>{% endif %}
-                                        {% if o.receiver.department %}<span class="text-muted">{{ o.receiver.department }}</span><br>{% endif %}
-                                        {% if o.receiver.directorate %}<span class="text-muted">{{ o.receiver.directorate }}</span><br>{% endif %}
-                                        {% if o.receiver.division %}<span class="text-muted">{{ o.receiver.division }}</span>{% endif %}
+                                <div class="modal fade order-modal" id="modalcondition-r{{ d.id }}" tabindex="-1">
+                                    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl modal-fullscreen-sm-down">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title"><i class="bi bi-file-earmark-text me-2"></i>Dalolatnoma holati &nbsp;<span class="opacity-75">#{{d.code}}</span></h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+
+                                            <div class="modal-body">
+
+                                                <div class="section-title">Jo'natuvchi</div>
+                                                <div class="info-card">
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.user.full_name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.user.rank.name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-event"></i> Yuborilgan sana</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.date_creat|date:"d.m.Y H:i" }}</div>
+                                                    </div>
+                                                    {% if d.message_user %}
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                        <div class="col-12 col-md-7 info-value text-muted">{{ d.message_user }}</div>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+
+                                                <div class="section-title">Imzolovchi: {{ d.sender.organization }} vakili</div>
+                                                <div class="info-card">
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.sender.full_name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.sender.rank.name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
+                                                        <div class="col-12 col-md-7 info-value">
+                                                            {% if d.status_sender == 'viewed' %}
+                                                                <span class="badge bg-warning">Kutilmoqda</span>
+                                                            {% elif d.status_sender == 'approved' %}
+                                                                <span class="badge bg-success">Tasdiqlandi</span>
+                                                            {% elif d.status_sender == 'rejected' %}
+                                                                <span class="badge bg-danger">Rad etildi</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-check"></i> Imzolangan sana</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.date_sender|date:"d.m.Y H:i" }}</div>
+                                                    </div>
+                                                    {% if d.message_sender %}
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                        <div class="col-12 col-md-7 info-value text-muted">{{ d.message_sender }}</div>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+
+                                                {% if d.receiver %}
+                                                <div class="section-title">Imzolovchi: {{ d.receiver.organization }} vakili</div>
+                                                <div class="info-card">
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.receiver.full_name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.receiver.rank.name }}</div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
+                                                        <div class="col-12 col-md-7 info-value">
+                                                            {% if d.status_receiver == 'viewed' %}
+                                                                <span class="badge bg-warning">Kutilmoqda</span>
+                                                            {% elif d.status_receiver == 'approved' %}
+                                                                <span class="badge bg-success">Tasdiqlandi</span>
+                                                            {% elif d.status_receiver == 'rejected' %}
+                                                                <span class="badge bg-danger">Rad etildi</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </div>
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-check"></i> Imzolangan sana</div>
+                                                        <div class="col-12 col-md-7 info-value">{{ d.date_receiver|date:"d.m.Y H:i" }}</div>
+                                                    </div>
+                                                    {% if d.message_receiver %}
+                                                    <div class="row info-row gx-3">
+                                                        <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                        <div class="col-12 col-md-7 info-value text-muted">{{ d.message_receiver }}</div>
+                                                    </div>
+                                                    {% endif %}
+                                                </div>
+                                                {% endif %}
+
+                                                {% if d.deedconsent_set.count %}
+                                                    {% for dc in d.deedconsent_set.all %}
+                                                    <div class="section-title">Kelishuvchi: {{ dc.employee.organization.name }} vakili</div>
+                                                    <div class="info-card">
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-person"></i> F.I.O</div>
+                                                            <div class="col-12 col-md-7 info-value">{{ dc.employee.full_name }}</div>
+                                                        </div>
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-briefcase"></i> Lavozim</div>
+                                                            <div class="col-12 col-md-7 info-value">{{ dc.employee.rank.name }}</div>
+                                                        </div>
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-info-circle"></i> Holati</div>
+                                                            <div class="col-12 col-md-7 info-value">
+                                                                {% if dc.status == 'viewed' %}
+                                                                    <span class="badge bg-warning">Kutilmoqda</span>
+                                                                {% elif dc.status == 'approved' %}
+                                                                    <span class="badge bg-success">Kelishildi</span>
+                                                                {% elif dc.status == 'rejected' %}
+                                                                    <span class="badge bg-danger">Rad etildi</span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-calendar-check"></i> Kelishilgan sana</div>
+                                                            <div class="col-12 col-md-7 info-value">
+                                                                {% if dc.status == 'approved' or dc.status == 'rejected' %}
+                                                                    {{ dc.date_edit|date:"d.m.Y H:i" }}
+                                                                {% else %}—{% endif %}
+                                                            </div>
+                                                        </div>
+                                                        {% if dc.message %}
+                                                        <div class="row info-row gx-3">
+                                                            <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Izoh</div>
+                                                            <div class="col-12 col-md-7 info-value text-muted">{{ dc.message }}</div>
+                                                        </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% endfor %}
+                                                {% endif %}
+
+                                            </div>
+                                            <div class="modal-footer d-flex flex-row justify-content-center gap-2">
+                                               <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal"><i class="bi bi-exclamation-circle me-1"></i>Yopish</button>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-telephone"></i> Telefon raqami</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.receiver.phone|default:"—" }}</div>
-                                </div>
-                                {% if o.message_receiver %}
-                                <div class="row info-row gx-3">
-                                    <div class="col-12 col-md-5 info-label"><i class="bi bi-chat-left-text"></i> Qo'shimcha ma'lumot</div>
-                                    <div class="col-12 col-md-7 info-value">{{ o.message_receiver }}</div>
-                                </div>
-                                {% endif %}
-                              </div>
-                              {% endif %}
+                            </td>
 
-                              {% if o.materials_all.exists %}
-                              <div class="section-title">Materiallar</div>
-                              <div class="table-responsive info-card p-2">
-                                <table class="table table-bordered align-middle table-sm mb-0">
-                                <thead>
-                                <tr>
-                                  <th>T/r</th>
-                                  <th>Material nomi</th>
-                                  <th>Birligi</th>
-                                  <th>So'ralgan</th>
-                                  <th>Berildi</th>
-                                  <th>Narxi</th>
-                                  <th>O'chirish</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {% for m in o.materials_all %}
-                                  <tr>
-                                    <th scope="row">{{ forloop.counter }}</th>
-                                    <td>{{ m.material.name }}</td>
-                                    <td>{{ m.material.unit.name }}</td>
-                                    <td>{{ m.number }}</td>
-                                    <td>
-                                        <input type="hidden" name="ordermaterial_id[]" value="{{ m.id }}">
-                                        <input type="number" name="given[]" class="form-control form-control-sm"
-                                               value="{{ m.given|default:m.number }}" min="1" style="width: 100px;">
-                                    </td>
-                                    <td>{{ m.material.price|intcomma }}</td>
-                                    <td><button type="button"
-                                            class="btn btn-danger btn-sm js-delete-om"
-                                            data-url="{% url 'ordermaterial_delete' m.id %}">
-                                      X
-                                    </button></td>
-                                  </tr>
+                            <td>
+                                {% for dc in d.deedconsent_set.all %}
+                                    {% if dc.employee == request.user.employee and dc.status == "viewed" %}
+                                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#modal-c{{ dc.id }}">
+                                            Kelishish
+                                        </button>
+
+                                        <div class="modal fade order-modal" id="modal-c{{ dc.id }}" tabindex="-1">
+                                            <div class="modal-dialog modal-dialog-centered modal-lg modal-fullscreen-sm-down">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title"><i class="bi bi-pen me-2"></i>Kelishish</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="info-card">
+                                                            Kelishilgandan so'ng hujjat yuridik kuchga ega bo'ladi va rasmiylashtiriladi.
+                                                        </div>
+                                                        <form method="post" action="{% url 'deedconsent_action' dc.id %}">
+                                                            {% csrf_token %}
+                                                            <div class="mb-3">
+                                                                <textarea
+                                                                    name="message"
+                                                                    class="form-control"
+                                                                    style="height: 100px"
+                                                                    placeholder="Izoh yozing..."></textarea>
+                                                            </div>
+                                                            <div class="d-flex flex-row justify-content-center gap-2">
+                                                                <button name="action" value="reject" class="btn btn-danger flex-fill"
+                                                                        onclick="return confirm('Rad etishga rozimisiz?')">
+                                                                    <i class="bi bi-x-circle me-1"></i> Rad etish
+                                                                </button>
+                                                                <button name="action" value="approve" class="btn btn-primary flex-fill"
+                                                                        onclick="return confirm('Kelishishga rozimisiz?')">
+                                                                    <i class="bi bi-check-circle me-1"></i> Kelishish
+                                                                </button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                {% empty %}
+                                    <span class="text-muted">—</span>
                                 {% endfor %}
-                                </tbody>
-                              </table>
-                              </div>
-                              {% endif %}
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-4">
+                                Ma'lumot topilmadi
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
 
-                              <div class="section-title">Jarayon tarixi</div>
-                              <div class="row row-cols-2 row-cols-sm-3 row-cols-lg-4 g-2 g-md-3">
-                                    {% if o.date_creat %}
-                                    <div class="col">
-                                        <div class="timeline-item">
-                                            <div class="icon pending"><i class="bi bi-file-earmark-plus"></i></div>
-                                            <div class="time">{{ o.date_creat|date:"d.m.Y, H:i" }}</div>
-                                            <div class="label">Ariza yaratildi</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_process %}
-                                    <div class="col">
-                                        <div class="timeline-item">
-                                            <div class="icon process"><i class="bi bi-gear-fill"></i></div>
-                                            <div class="time">{{ o.date_process|date:"d.m.Y, H:i" }}</div>
-                                            <div class="label">Ish boshlandi</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_finished %}
-                                    <div class="col">
-                                        <div class="timeline-item">
-                                            <div class="icon done"><i class="bi bi-check2-circle"></i></div>
-                                            <div class="time">{{ o.date_finished|date:"d.m.Y, H:i" }}</div>
-                                            <div class="label">Ish tugallandi</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_approved %}
-                                    <div class="col">
-                                        <div class="timeline-item">
-                                            <div class="icon approved"><i class="bi bi-patch-check-fill"></i></div>
-                                            <div class="time">{{ o.date_approved|date:"d.m.Y, H:i" }}</div>
-                                            <div class="label">Ariza tasdiqlandi</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_accepted %}
-                                    <div class="col">
-                                        <div class="timeline-item">
-                                            <div class="icon accepted"><i class="bi bi-hand-thumbs-up-fill"></i></div>
-                                            <div class="time">{{ o.date_accepted|date:"d.m.Y, H:i" }}</div>
-                                            <div class="label">Qabul qilindi</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_canceled %}
-                                    <div class="col">
-                                        <div class="timeline-item">
-                                            <div class="icon bad"><i class="bi bi-x-circle-fill"></i></div>
-                                            <div class="time">{{ o.date_canceled|date:"d.m.Y, H:i" }}</div>
-                                            <div class="label">Bekor qilindi</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-
-                                    {% if o.date_rejected %}
-                                    <div class="col">
-                                        <div class="timeline-item">
-                                            <div class="icon rejected"><i class="bi bi-slash-circle-fill"></i></div>
-                                            <div class="time">{{ o.date_rejected|date:"d.m.Y, H:i" }}</div>
-                                            <div class="label">Rad etildi</div>
-                                        </div>
-                                    </div>
-                                    {% endif %}
-                                </div>
-
-                            </div>
-
-                            <div class="modal-footer d-flex flex-row justify-content-center gap-2">
-                              <button type="submit" name="action" value="rejected" class="btn btn-danger flex-fill"
-                              onclick="return confirm('Bekor qilish tasdiqlang?')">
-                                <i class="bi bi-x-circle me-1"></i> Bekor qilish
-                              </button>
-                              <button type="submit" name="action" value="approved" class="btn btn-primary flex-fill"
-                              onclick="return confirm('Yakunlashni tasdiqlang?')">
-                                <i class="bi bi-check-circle me-1"></i> Tasdiqlash
-                              </button>
-                            </div>
-
-                          </form>
-                        </div>
-                      </div>
-                      {# ===== /MODAL ===== #}
-                    </td>
-
-                    <td>{{ o.date_creat|date:"d-m-Y H:i" }}</td>
-                  </tr>
-                {% empty %}
-                  <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
-                      <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
-                    </td>
-                  </tr>
-                {% endfor %}
-                </tbody>
-              </table>
-
-              {# ===== PAGINATION ===== #}
-              {% if page_obj.paginator.num_pages > 1 %}
-                <nav aria-label="Order pagination" class="mt-3">
+                {% if page_obj.paginator.num_pages > 1 %}
+                <nav aria-label="Pagination" class="mt-3">
                   <ul class="pagination justify-content-center">
 
                     {% if page_obj.has_previous %}
                       <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">‹</a>
+                        <a class="page-link" href="?{% if qs_params %}{{ qs_params }}&{% endif %}page={{ page_obj.previous_page_number }}">‹</a>
                       </li>
                     {% else %}
-                      <li class="page-item disabled"><span class="page-link">‹</span></li>
+                      <li class="page-item disabled">
+                        <span class="page-link">‹</span>
+                      </li>
                     {% endif %}
 
                     {% for num in page_obj.paginator.page_range %}
                       {% if num == page_obj.number %}
                         <li class="page-item active"><span class="page-link">{{ num }}</span></li>
                       {% elif num >= page_obj.number|add:-3 and num <= page_obj.number|add:3 %}
-                        <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                        <li class="page-item">
+                          <a class="page-link" href="?{% if qs_params %}{{ qs_params }}&{% endif %}page={{ num }}">{{ num }}</a>
+                        </li>
                       {% endif %}
                     {% endfor %}
 
                     {% if page_obj.has_next %}
                       <li class="page-item">
-                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">›</a>
+                        <a class="page-link" href="?{% if qs_params %}{{ qs_params }}&{% endif %}page={{ page_obj.next_page_number }}">›</a>
                       </li>
                     {% else %}
-                      <li class="page-item disabled"><span class="page-link">›</span></li>
+                      <li class="page-item disabled">
+                        <span class="page-link">›</span>
+                      </li>
                     {% endif %}
 
                   </ul>
                 </nav>
-              {% endif %}
-              {# ===== /PAGINATION ===== #}
+                {% endif %}
 
-            </div><!-- End tab-content -->
+              </div>
 
+            </div>
           </div>
         </div>
-
       </div>
-    </div>
-  </section>
+    </section>
+
 </main>
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script>
-$(function () {
-
-  // =========================
-  // Materialni AJAX bilan o‘chirish
-  // =========================
-  $(document).on("click", ".js-delete-om", function () {
-
-    const $btn = $(this);
-    const url = $btn.data("url");
-
-    if (!url) {
-      alert("URL topilmadi!");
-      return;
-    }
-
-    if (!confirm("Biriktirilgan materialni o‘chirasizmi?")) return;
-
-    const csrf = $btn.closest("form")
-                     .find('input[name="csrfmiddlewaretoken"]')
-                     .val();
-
-    $btn.prop("disabled", true).text("...");
-
-    $.ajax({
-      url: url,
-      type: "POST",
-      data: { csrfmiddlewaretoken: csrf },
-      success: function () {
-        $btn.closest("tr").remove();
-      },
-      error: function (xhr) {
-        console.log(xhr.responseText);
-        alert("Xatolik! Status: " + xhr.status);
-        $btn.prop("disabled", false).text("X");
-      }
-    });
-
-  });
-
-});
-</script>
-
-
-{% endblock %}
+{% endblock content %}
