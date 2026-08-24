@@ -42,6 +42,7 @@
                     <thead class="table-secondary">
                         <tr>
                             <th style="width: 70px;">T/r</th>
+                            <th>Hujjat kodi</th>
                             <th>Jo'natuvchi</th>
                             <th>Imzolovchi</th>
                             <th style="width: 170px;">Yuborilgan sana</th>
@@ -53,6 +54,7 @@
                     {% for d in page_obj %}
                         <tr>
                             <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
+                            <td>{{ d.code }}</td>
                             <td>{{ d.user.full_name }}</td>
                             <td>
                                 {{ d.sender.full_name }}
