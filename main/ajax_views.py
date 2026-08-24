@@ -615,7 +615,6 @@ def ajax_svod_materials(request):
 
 
 from collections import OrderedDict
-
 @never_cache
 @require_GET
 @login_required
@@ -623,13 +622,12 @@ def ajax_svod_all_materials(request):
     """
     Bir nechta tashkilot bo'yicha materiallarni:
     Tashkilot -> Hudud -> materiallar tartibida, ketma-ket guruhlab qaytaradi.
+    Tartiblash tashkilot ID va hudud ID bo'yicha amalga oshiriladi.
 
-    MUHIM: bu yerda hech qanday hudud cheklovi YO'Q — tanlangan
-    tashkilotlarning BARCHA hududlari (joriy foydalanuvchining o'z
-    hududidan qat'i nazar) chiqadi. Bo'lim (department) darajasi
-    ham chiqarilmaydi — bir xil material bir nechta bo'limdan kelgan
-    bo'lsa, hudud darajasida birlashtirilib qo'shiladi.
-    Faqat haqiqatda material berilgan (order tugallangan) guruhlar chiqadi.
+    Hudud bo'yicha cheklov YO'Q — tanlangan tashkilotlarning BARCHA hududlari
+    chiqadi. Bo'lim (department) darajasi chiqarilmaydi — bir xil material
+    bir nechta bo'limdan kelgan bo'lsa, hudud darajasida birlashtirilib
+    qo'shiladi. Faqat haqiqatda material berilgan guruhlar chiqadi.
     """
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -648,7 +646,6 @@ def ajax_svod_all_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
-    # Hudud bo'yicha cheklov YO'Q — faqat tashkilot va sana oralig'i.
     common_filters = dict(
         order__date_finished__isnull=False,
         order__date_finished__gte=date1,
@@ -682,8 +679,8 @@ def ajax_svod_all_materials(request):
             )
         )
         .order_by(
-            "order__sender__organization__name",
-            "order__sender__region__name",
+            "order__sender__organization_id",   # tashkilot ID bo'yicha
+            "order__sender__region_id",         # hudud ID bo'yicha
             "material__code",
             "material__name",
         )
@@ -708,6 +705,8 @@ def ajax_svod_all_materials(request):
         txt = f'Akt №{r["order_id"]} ga {dt_str}y'
         order_map.setdefault(key, []).append(txt)
 
+    # OrderedDict — qs allaqachon organization_id, region_id bo'yicha tartiblangan,
+    # shuning uchun guruhlash paytida ham shu tartib saqlanib qoladi.
     grouped = OrderedDict()
     for item in qs:
         org_key = (item["order__sender__organization_id"], item["order__sender__organization__name"])
