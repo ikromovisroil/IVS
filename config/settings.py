@@ -558,3 +558,43 @@ VAPID_PUBLIC_KEY = "BNGLr7RCd82Tq3SCVIK6nO-W1hVpROlWShQscQ2qhoUYEWBm1ykdkGyOAIoP
 VAPID_CLAIMS = {
     "sub": "mailto:admin@yatm.uz"
 }
+
+
+# --- FAIL-FAST TEKSHIRUV ---
+# Bu kalit uzoq vaqt "eskirgan worker process" yoki noto'g'ri .env
+# tufayli JIM (hech qanday ochiq xatosiz) push bildirishnomalarni
+# muvaffaqiyatsiz qilib kelgan edi — sabab faqat chuqur log tahlili
+# orqali topilgan. Endi Django ISHGA TUSHGANDA kalitni py_vapid orqali
+# haqiqatan sinab ko'ramiz. Agar kalit noto'g'ri bo'lsa (bo'sh, noto'g'ri
+# uzunlik, buzilgan va h.k.) — server DARHOL, OCHIQ xato bilan ishga
+# tushmaydi, muammo push so'ralganda emas, DEPLOY paytida ko'rinadi.
+if VAPID_PRIVATE_KEY_PEM:
+    try:
+        from py_vapid import Vapid as _Vapid
+        _test_vapid = _Vapid.from_string(private_key=VAPID_PRIVATE_KEY_PEM)
+        # Sinov uchun haqiqiy imzolashni ham sinaymiz — from_string()
+        # o'zi ba'zi xato turlarini ushlamasligi mumkin.
+        import time as _time
+        _test_vapid.sign({
+            "sub": VAPID_CLAIMS["sub"],
+            "aud": "https://example.com",
+            "exp": int(_time.time()) + 3600,
+        })
+    except Exception as _vapid_error:
+        raise RuntimeError(
+            f"VAPID_PRIVATE_KEY_PEM yaroqsiz — server ishga tushirilmadi. "
+            f"Sabab: {_vapid_error}. "
+            f"Kalit uzunligi (xom): {len(VAPID_PRIVATE_KEY_PEM)}, "
+            f"\\n olib tashlangandan keyin: "
+            f"{len(VAPID_PRIVATE_KEY_PEM.replace(chr(10), ''))}. "
+            f".env dagi VAPID_PRIVATE_KEY_PEM qiymatini tekshiring, "
+            f"kerak bo'lsa 'npx web-push generate-vapid-keys' orqali "
+            f"yangi juftlik yarating."
+        ) from _vapid_error
+else:
+    import warnings as _warnings
+    _warnings.warn(
+        "VAPID_PRIVATE_KEY_PEM .env da o'rnatilmagan — push "
+        "bildirishnomalar ishlamaydi.",
+        RuntimeWarning,
+    )
