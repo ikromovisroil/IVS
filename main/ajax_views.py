@@ -623,8 +623,12 @@ def ajax_svod_all_materials(request):
     """
     Bir nechta tashkilot bo'yicha materiallarni:
     Tashkilot -> Hudud -> materiallar tartibida, ketma-ket guruhlab qaytaradi.
-    Bo'lim (department) darajasi chiqarilmaydi — bir xil material bir nechta
-    bo'limdan kelgan bo'lsa, hudud darajasida birlashtirilib qo'shiladi.
+
+    MUHIM: bu yerda hech qanday hudud cheklovi YO'Q — tanlangan
+    tashkilotlarning BARCHA hududlari (joriy foydalanuvchining o'z
+    hududidan qat'i nazar) chiqadi. Bo'lim (department) darajasi
+    ham chiqarilmaydi — bir xil material bir nechta bo'limdan kelgan
+    bo'lsa, hudud darajasida birlashtirilib qo'shiladi.
     Faqat haqiqatda material berilgan (order tugallangan) guruhlar chiqadi.
     """
     employee = getattr(request.user, "employee", None)
@@ -644,25 +648,20 @@ def ajax_svod_all_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
-    base_filter = (
-        Q(material__employee=employee) |
-        Q(order__sender__region=employee.region, order__goal__organization__type="worker")
-    )
-
+    # Hudud bo'yicha cheklov YO'Q — faqat tashkilot va sana oralig'i.
     common_filters = dict(
         order__date_finished__isnull=False,
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
         order__sender__organization_id__in=org_ids,
+        order__goal__organization__type="worker",
     )
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
 
-    # Tashkilot + hudud + material bo'yicha guruhlab yig'indi olamiz
-    # (bo'limdan qat'i nazar, bir xil material bo'lsa qo'shiladi).
     qs = (
-        OrderMaterial.objects.filter(base_filter, **common_filters)
+        OrderMaterial.objects.filter(**common_filters)
         .values(
             "order__sender__organization_id",
             "order__sender__organization__name",
@@ -690,9 +689,8 @@ def ajax_svod_all_materials(request):
         )
     )
 
-    # order_info tashkilot+hudud+material kesimida yig'iladi (bo'limdan qat'i nazar)
     rel = (
-        OrderMaterial.objects.filter(base_filter, **common_filters)
+        OrderMaterial.objects.filter(**common_filters)
         .values(
             "material_id",
             "order__sender__organization_id",
@@ -710,7 +708,6 @@ def ajax_svod_all_materials(request):
         txt = f'Akt №{r["order_id"]} ga {dt_str}y'
         order_map.setdefault(key, []).append(txt)
 
-    # Tashkilot -> Hudud -> materiallar (bo'lim darajasisiz)
     grouped = OrderedDict()
     for item in qs:
         org_key = (item["order__sender__organization_id"], item["order__sender__organization__name"])
