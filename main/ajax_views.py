@@ -622,7 +622,7 @@ def ajax_svod_all_materials(request):
     """
     Bir nechta tashkilot bo'yicha materiallarni:
     Tashkilot -> Hudud -> materiallar tartibida qaytaradi, shuningdek
-    shu materiallarni bajargan (order.sender) barcha xodimlarning
+    shu materiallarni bajargan (order.receiver) barcha xodimlarning
     ro'yxatini ham alohida qaytaradi (dublikatsiz, alifbo tartibida).
     """
     employee = getattr(request.user, "employee", None)
@@ -733,15 +733,15 @@ def ajax_svod_all_materials(request):
             })
         result.append(org_block)
 
-    # ── Ariza bajargan (order.sender) barcha xodimlar, dublikatsiz ──
+    # ── Ariza bajargan (order.receiver) barcha xodimlar, dublikatsiz ──
     responsible_qs = (
         OrderMaterial.objects.filter(**common_filters)
         .values(
-            "order__sender_id",
-            "order__sender__last_name",
-            "order__sender__first_name",
-            "order__sender__father_name",
-            "order__sender__rank__name",
+            "order__receiver_id",
+            "order__receiver__last_name",
+            "order__receiver__first_name",
+            "order__receiver__father_name",
+            "order__receiver__rank__name",
         )
         .distinct()
     )
@@ -749,21 +749,21 @@ def ajax_svod_all_materials(request):
     seen_ids = set()
     employees = []
     for r in responsible_qs:
-        sid = r.get("order__sender_id")
-        if not sid or sid in seen_ids:
+        rid = r.get("order__receiver_id")
+        if not rid or rid in seen_ids:
             continue
-        seen_ids.add(sid)
+        seen_ids.add(rid)
 
         full_name = " ".join(filter(None, [
-            r.get("order__sender__last_name"),
-            r.get("order__sender__first_name"),
-            r.get("order__sender__father_name"),
+            r.get("order__receiver__last_name"),
+            r.get("order__receiver__first_name"),
+            r.get("order__receiver__father_name"),
         ])) or "-"
 
         employees.append({
-            "id": sid,
+            "id": rid,
             "full_name": full_name,
-            "rank": r.get("order__sender__rank__name") or "",
+            "rank": r.get("order__receiver__rank__name") or "",
         })
 
     employees.sort(key=lambda e: e["full_name"])

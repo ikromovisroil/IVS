@@ -229,13 +229,16 @@
                   </table>
                 </div>
 
-                <div>
+                <!-- Ariza bajargan (order.receiver) xodimlar shu yerga
+                     "Kelishildi / Lavozim / F.I.Sh" formatida dinamik
+                     qo'shiladi, har biri alohida blok sifatida. -->
+                <div id="responsible_employees_block">
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
                       <col style="width:50%;">
                       <col style="width:50%;">
                     </colgroup>
-                    <tbody>
+                    <tbody id="responsible_employees_tbody">
                       <tr>
                         <td style="border:1px solid #fff;text-align:left;">
                           <b>Kelishildi</b><br>
@@ -243,34 +246,6 @@
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
                           <b>Ergasheva N.</b><br>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Ariza bajargan xodimlar ro'yxati (faqat ro'yxat, imzo bloki emas) -->
-                <div style="margin-top:15px;">
-                  <b>Ariza bajargan xodimlar:</b>
-                </div>
-                <div>
-                  <table style="border-collapse:collapse;width:100%;" border="1">
-                    <colgroup>
-                      <col style="width:8%;">
-                      <col style="width:62%;">
-                      <col style="width:30%;">
-                    </colgroup>
-                    <thead>
-                      <tr>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">№</td>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">F.I.Sh</td>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Lavozimi</td>
-                      </tr>
-                    </thead>
-                    <tbody id="responsible_employees_tbody">
-                      <tr>
-                        <td colspan="3" style="border:1px solid #000;text-align:center;color:#888;padding:8px;font-size:9pt;">
-                          Ma'lumot yuklanmagan
                         </td>
                       </tr>
                     </tbody>
@@ -424,7 +399,7 @@ function loadAgreementsByOrg(orgId, selectedIds = []) {
   });
 }
 
-// ─── AJAX: materiallar + ariza bajargan xodimlar ro'yxati ─────────────────────
+// ─── AJAX: materiallar + ariza bajargan (order.receiver) xodimlar ─────────────
 
 function searchMaterialsAll() {
   const orgIds = $('#organizations').val() || [];
@@ -447,7 +422,7 @@ function searchMaterialsAll() {
   `);
   editorSetResponsibleRows(`
     <tr>
-      <td colspan="3" style="border:1px solid #000;text-align:center;padding:8px;font-size:9pt;">
+      <td colspan="2" style="border:1px solid #fff;text-align:center;padding:8px;font-size:9pt;">
         <i>Yuklanmoqda...</i>
       </td>
     </tr>
@@ -473,7 +448,7 @@ function searchMaterialsAll() {
         `);
         editorSetResponsibleRows(`
           <tr>
-            <td colspan="3" style="border:1px solid #000;text-align:center;color:#888;padding:8px;font-size:9pt;">
+            <td colspan="2" style="border:1px solid #fff;text-align:center;color:#888;padding:8px;font-size:9pt;">
               Ariza bajargan xodimlar topilmadi
             </td>
           </tr>
@@ -559,23 +534,26 @@ function searchMaterialsAll() {
 
       editorSetTbodyRows(rows);
 
-      // ── Ariza bajargan barcha xodimlar ro'yxati (№, F.I.Sh, Lavozim) ──
+      // ── Ariza bajargan (order.receiver) xodimlar — "Kelishildi / Lavozim / F.I.Sh" ──
       let empRows = '';
       if (emps.length) {
-        let empIndex = 1;
         emps.forEach(function (emp) {
           empRows += `
             <tr>
-              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${empIndex++}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:left;">${escapeHtml(emp.full_name)}</td>
-              <td style="border:1px solid #000;font-size:8pt;text-align:left;">${escapeHtml(emp.rank || '-')}</td>
+              <td style="border:1px solid #fff;text-align:left;">
+                <b>Kelishildi</b><br>
+                <b>${escapeHtml(emp.rank || '')}</b>
+              </td>
+              <td style="border:1px solid #fff;text-align:left;">
+                <b>${escapeHtml(emp.full_name)}</b><br>
+              </td>
             </tr>
           `;
         });
       } else {
         empRows = `
           <tr>
-            <td colspan="3" style="border:1px solid #000;text-align:center;color:#888;padding:8px;font-size:9pt;">
+            <td colspan="2" style="border:1px solid #fff;text-align:center;color:#888;padding:8px;font-size:9pt;">
               Ariza bajargan xodimlar topilmadi
             </td>
           </tr>
@@ -601,7 +579,7 @@ function searchMaterialsAll() {
       `);
       editorSetResponsibleRows(`
         <tr>
-          <td colspan="3" style="border:1px solid #000;text-align:center;color:red;padding:8px;font-size:9pt;">
+          <td colspan="2" style="border:1px solid #fff;text-align:center;color:red;padding:8px;font-size:9pt;">
             ${msg}
           </td>
         </tr>
@@ -613,7 +591,10 @@ function searchMaterialsAll() {
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
 $(function () {
-    // ── Qo'lda tahrirlash checkbox ──
+    // ── Qo'lda tahrirlash checkbox — TinyMCE'ni standart holatda
+    // faqat-o'qish (readonly) rejimida ushlab turadi, avtomatik
+    // to'ldirilgan matnni tasodifan o'zgartirib qo'ymaslik uchun.
+    // Checkbox belgilansa — tahrirlash ochiladi (design rejimi).
     (function () {
       const toggle = document.getElementById("editBodyToggle");
       if (!toggle) return;
@@ -666,6 +647,7 @@ $(function () {
       $('#agreements').html('').trigger('change');
       return;
     }
+    // Kelishuvchilar ro'yxati birinchi tanlangan tashkilot bo'yicha yuklanadi.
     loadAgreementsByOrg(orgIds[0]);
   });
 
