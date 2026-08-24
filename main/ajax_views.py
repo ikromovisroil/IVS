@@ -621,13 +621,14 @@ from collections import OrderedDict
 def ajax_svod_all_materials(request):
     """
     Bir nechta tashkilot bo'yicha materiallarni:
-    Tashkilot -> Hudud -> materiallar tartibida, ketma-ket guruhlab qaytaradi.
-    Tartiblash tashkilot ID va hudud ID bo'yicha amalga oshiriladi.
+    Tashkilot -> Hudud -> materiallar tartibida, tashkilot ID va hudud ID
+    bo'yicha tartiblab, ketma-ket guruhlab qaytaradi.
 
-    Hudud bo'yicha cheklov YO'Q — tanlangan tashkilotlarning BARCHA hududlari
-    chiqadi. Bo'lim (department) darajasi chiqarilmaydi — bir xil material
-    bir nechta bo'limdan kelgan bo'lsa, hudud darajasida birlashtirilib
-    qo'shiladi. Faqat haqiqatda material berilgan guruhlar chiqadi.
+    MUHIM: hech qanday hudud cheklovi YO'Q — tanlangan tashkilotlarning
+    BARCHA hududlari chiqadi. Bo'lim (department) darajasi chiqarilmaydi —
+    bir xil material bir nechta bo'limdan kelgan bo'lsa, hudud darajasida
+    birlashtirilib qo'shiladi. Faqat haqiqatda material berilgan (order
+    tugallangan) guruhlar chiqadi — bo'sh tashkilot/hudud chiqmaydi.
     """
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -705,8 +706,8 @@ def ajax_svod_all_materials(request):
         txt = f'Akt №{r["order_id"]} ga {dt_str}y'
         order_map.setdefault(key, []).append(txt)
 
-    # OrderedDict — qs allaqachon organization_id, region_id bo'yicha tartiblangan,
-    # shuning uchun guruhlash paytida ham shu tartib saqlanib qoladi.
+    # OrderedDict — qs allaqachon organization_id, region_id bo'yicha
+    # tartiblangan, shuning uchun guruhlash paytida ham shu tartib saqlanadi.
     grouped = OrderedDict()
     for item in qs:
         org_key = (item["order__sender__organization_id"], item["order__sender__organization__name"])

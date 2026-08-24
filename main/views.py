@@ -2791,7 +2791,7 @@ def svod_post(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)  # kerak bo'lsa alohida "svod_all_employee" ruxsati qo'shing
+@permission_required("main.shop_employee", raise_exception=True)
 def svod_all_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -2845,8 +2845,8 @@ def svod_all_post(request):
     raw_ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
     raw_ids = [i for i in raw_ids if i != sender.id]
 
-    # Deed.organization bitta FK — bir nechta tashkilot tanlanganda
-    # bitta asosiy tashkilot sifatida birinchisini yozamiz, qolganlari
+    # Deed.organization — bitta FK. Bir nechta tashkilot tanlanganda
+    # birinchisini asosiy tashkilot sifatida yozamiz; barcha tashkilotlar
     # hujjat matnida (body) allaqachon ko'rinadi.
     primary_org = orgs.first()
 
@@ -2886,6 +2886,7 @@ def svod_all_post(request):
 
     messages.success(request, "Imzolashga yuborildi")
     return redirect("contact_user")
+
 
 # ═══════════════════════════════════════════════════════════════════
 # REESTR

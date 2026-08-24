@@ -450,11 +450,12 @@ function searchMaterialsAll() {
         return;
       }
 
-      let rows  = '';
-      let index = 1;
+      let rows       = '';
+      let index      = 1;
+      let grandTotal = 0;
 
-      // Har bir tashkilot uchun ketma-ket blok: Tashkilot -> Hudud -> materiallar
-      // -> Hudud jami -> (shu tashkilot uchun) UMUMIY JAMI, keyin navbatdagi tashkilot.
+      // Har bir tashkilot uchun ketma-ket blok:
+      // Tashkilot -> Hudud -> materiallar -> "{Hudud} jami" -> "{Tashkilot} jami"
       data.forEach(function (org) {
         rows += `
           <tr>
@@ -480,6 +481,7 @@ function searchMaterialsAll() {
           region.materials.forEach(function (item) {
             regionTotal += item.total_sum;
             orgTotal    += item.total_sum;
+            grandTotal  += item.total_sum;
 
             rows += `
               <tr>
@@ -495,24 +497,34 @@ function searchMaterialsAll() {
             `;
           });
 
+          // Hudud jami — hudud nomi bilan
           rows += `
             <tr>
-              <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(226,240,217);">Hudud jami (${escapeHtml(region.region_name)}):</td>
+              <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(226,240,217);">${escapeHtml(region.region_name)} jami:</td>
               <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(226,240,217);">${formatNumber(regionTotal)}</td>
               <td colspan="2" style="border:1px solid #000;background-color:rgb(226,240,217);"></td>
             </tr>
           `;
         });
 
-        // Shu tashkilot bo'yicha umumiy jami (barcha hududlar yig'indisi)
+        // Tashkilot jami — tashkilot nomi bilan
         rows += `
           <tr>
-            <td colspan="5" style="border:1px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">UMUMIY JAMI:</td>
+            <td colspan="5" style="border:1px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${escapeHtml(org.organization_name)} jami:</td>
             <td style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(orgTotal)}</td>
             <td colspan="2" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
           </tr>
         `;
       });
+
+      // Eng oxirida — barcha tashkilotlar bo'yicha umumiy "Jami:"
+      rows += `
+        <tr>
+          <td colspan="5" style="border:2px solid #000;font-size:10pt;text-align:right;font-weight:bold;background-color:rgb(255,199,132);">Jami:</td>
+          <td style="border:2px solid #000;font-size:10pt;text-align:center;font-weight:bold;background-color:rgb(255,199,132);">${formatNumber(grandTotal)}</td>
+          <td colspan="2" style="border:2px solid #000;background-color:rgb(255,199,132);"></td>
+        </tr>
+      `;
 
       editorSetTbodyRows(rows);
     },
