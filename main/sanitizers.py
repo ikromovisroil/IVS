@@ -14,6 +14,7 @@ ALLOWED_DEED_ATTRS = {
 
 ALLOWED_DEED_STYLES = [
     "text-align", "font-size", "width", "border", "border-collapse", "margin-top",
+    "background-color", "color", "font-weight", "font-style",
 ]
 
 
