@@ -2,7 +2,7 @@ import base64
 import binascii
 import secrets
 from datetime import datetime
-
+from django.db.models import Exists, OuterRef
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
@@ -578,7 +578,10 @@ def order_receiver_arxiv(request):
         .filter(receiver=employee, goal__organization__type="worker",
                 status__in=["approved", "accepted", "canceled", "rejected"], )
         .select_related(*FULL_SENDER_RECEIVER_RELATED)
-        .prefetch_related(MATERIALS_PREFETCH, DEED_PREFETCH)
+        .prefetch_related(MATERIALS_PREFETCH)
+        .annotate(
+            has_deed=Exists(Deed.objects.filter(order=OuterRef("pk")))
+        )
         .order_by("-date_edit")
     )
 
