@@ -2788,6 +2788,105 @@ def svod_post(request):
     return redirect("contact_user")
 
 
+@never_cache
+@require_GET
+@login_required
+@permission_required("main.shop_employee", raise_exception=True)  # kerak bo'lsa alohida "svod_all_employee" ruxsati qo'shing
+def svod_all_get(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    context = {
+        "organizations": Organization.objects.only("id", "name").order_by("id"),
+        "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
+        "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
+    }
+    return render(request, 'main/svod_all.html', context)
+
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.shop_employee", raise_exception=True)
+def svod_all_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    org_ids = [i for i in request.POST.getlist("organizations[]") if i.isdigit()]
+    sender_id = (request.POST.get("sender") or "").strip()
+    message = (request.POST.get("message") or "").strip() or None
+    agreements = request.POST.getlist("agreements[]")
+
+    body = _decode_body(request)
+
+    if not org_ids:
+        messages.error(request, "Kamida bitta tashkilot tanlang")
+        return redirect("svod_all_get")
+
+    orgs = Organization.objects.filter(id__in=org_ids)
+    if not orgs.exists():
+        messages.error(request, "Tashkilotlar topilmadi")
+        return redirect("svod_all_get")
+
+    sender = Employee.objects.filter(
+        Q(id=sender_id) & (Q(department_id=283) | Q(organization_id=4))
+    ).first() if sender_id.isdigit() else None
+
+    if not sender:
+        messages.error(request, "Imzolovchi xodim tanlanmadi yoki ruxsat etilmagan")
+        return redirect("svod_all_get")
+
+    if not body:
+        messages.error(request, "Hujjat matni bo'sh bo'lmasin")
+        return redirect("svod_all_get")
+
+    raw_ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
+    raw_ids = [i for i in raw_ids if i != sender.id]
+
+    # Deed.organization bitta FK — bir nechta tashkilot tanlanganda
+    # bitta asosiy tashkilot sifatida birinchisini yozamiz, qolganlari
+    # hujjat matnida (body) allaqachon ko'rinadi.
+    primary_org = orgs.first()
+
+    try:
+        with transaction.atomic():
+            deed = Deed.objects.create(
+                organization=primary_org,
+                sender=sender,
+                user=employee,
+                message_user=message,
+                body=body,
+                status='svod',
+            )
+
+            emps = (
+                Employee.objects.filter(
+                    Q(id__in=raw_ids) & (Q(department_id=283) | Q(organization_id=4))
+                ).only("id")
+                if raw_ids else Employee.objects.none()
+            )
+            if raw_ids:
+                objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+                DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+            _save_deed_pdf(deed)
+
+    except HtmlPdfError as e:
+        messages.error(request, f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring")
+        return redirect("svod_all_get")
+    except DatabaseError:
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        return redirect("svod_all_get")
+
+    notify_deed_sender(deed)
+    if raw_ids:
+        notify_deed_watchers(deed, emps)
+
+    messages.success(request, "Imzolashga yuborildi")
+    return redirect("contact_user")
+
 # ═══════════════════════════════════════════════════════════════════
 # REESTR
 # ═══════════════════════════════════════════════════════════════════
