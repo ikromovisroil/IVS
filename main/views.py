@@ -1714,7 +1714,8 @@ def barn_mat(request):
     if name:
         qs = qs.filter(
             Q(name__icontains=name) |
-            Q(code__icontains=name)
+            Q(code__icontains=name) |
+            Q(price__icontains=name)
         )
 
     total_count = qs.count()
