@@ -623,7 +623,7 @@ def ajax_svod_all_materials(request):
     Bir nechta tashkilot bo'yicha materiallarni:
     Tashkilot -> Hudud -> materiallar tartibida qaytaradi, shuningdek
     shu materiallarni bajargan (order.sender) barcha xodimlarning
-    ro'yxatini ham alohida qaytaradi (dublikatsiz).
+    ro'yxatini ham alohida qaytaradi (dublikatsiz, alifbo tartibida).
     """
     employee = getattr(request.user, "employee", None)
     if not employee:

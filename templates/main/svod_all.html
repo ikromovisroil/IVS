@@ -229,16 +229,13 @@
                   </table>
                 </div>
 
-                <!-- Ariza bajargan (order.sender) barcha xodimlar shu yerga
-                     JS orqali "Kelishildi / {Lavozim} / {F.I.Sh}" formatida
-                     dinamik ravishda, bir nechta qator sifatida qo'shiladi. -->
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
                       <col style="width:50%;">
                       <col style="width:50%;">
                     </colgroup>
-                    <tbody id="responsible_employees_tbody">
+                    <tbody>
                       <tr>
                         <td style="border:1px solid #fff;text-align:left;">
                           <b>Kelishildi</b><br>
@@ -252,6 +249,33 @@
                   </table>
                 </div>
 
+                <!-- Ariza bajargan xodimlar ro'yxati (faqat ro'yxat, imzo bloki emas) -->
+                <div style="margin-top:15px;">
+                  <b>Ariza bajargan xodimlar:</b>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;" border="1">
+                    <colgroup>
+                      <col style="width:8%;">
+                      <col style="width:62%;">
+                      <col style="width:30%;">
+                    </colgroup>
+                    <thead>
+                      <tr>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">№</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">F.I.Sh</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Lavozimi</td>
+                      </tr>
+                    </thead>
+                    <tbody id="responsible_employees_tbody">
+                      <tr>
+                        <td colspan="3" style="border:1px solid #000;text-align:center;color:#888;padding:8px;font-size:9pt;">
+                          Ma'lumot yuklanmagan
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
             </textarea>
 
           </div>
@@ -400,7 +424,7 @@ function loadAgreementsByOrg(orgId, selectedIds = []) {
   });
 }
 
-// ─── AJAX: materiallar + ariza bajargan xodimlar ──────────────────────────────
+// ─── AJAX: materiallar + ariza bajargan xodimlar ro'yxati ─────────────────────
 
 function searchMaterialsAll() {
   const orgIds = $('#organizations').val() || [];
@@ -423,7 +447,7 @@ function searchMaterialsAll() {
   `);
   editorSetResponsibleRows(`
     <tr>
-      <td colspan="2" style="border:1px solid #fff;text-align:center;padding:8px;font-size:9pt;">
+      <td colspan="3" style="border:1px solid #000;text-align:center;padding:8px;font-size:9pt;">
         <i>Yuklanmoqda...</i>
       </td>
     </tr>
@@ -449,7 +473,7 @@ function searchMaterialsAll() {
         `);
         editorSetResponsibleRows(`
           <tr>
-            <td colspan="2" style="border:1px solid #fff;text-align:center;color:#888;padding:8px;font-size:9pt;">
+            <td colspan="3" style="border:1px solid #000;text-align:center;color:#888;padding:8px;font-size:9pt;">
               Ariza bajargan xodimlar topilmadi
             </td>
           </tr>
@@ -535,26 +559,23 @@ function searchMaterialsAll() {
 
       editorSetTbodyRows(rows);
 
-      // ── Ariza bajargan barcha xodimlar — "Kelishildi / Lavozim / F.I.Sh" ──
+      // ── Ariza bajargan barcha xodimlar ro'yxati (№, F.I.Sh, Lavozim) ──
       let empRows = '';
       if (emps.length) {
+        let empIndex = 1;
         emps.forEach(function (emp) {
           empRows += `
             <tr>
-              <td style="border:1px solid #fff;text-align:left;">
-                <b>Kelishildi</b><br>
-                <b>${escapeHtml(emp.rank || '')}</b>
-              </td>
-              <td style="border:1px solid #fff;text-align:left;">
-                <b>${escapeHtml(emp.full_name)}</b><br>
-              </td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;">${empIndex++}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:left;">${escapeHtml(emp.full_name)}</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:left;">${escapeHtml(emp.rank || '-')}</td>
             </tr>
           `;
         });
       } else {
         empRows = `
           <tr>
-            <td colspan="2" style="border:1px solid #fff;text-align:center;color:#888;padding:8px;font-size:9pt;">
+            <td colspan="3" style="border:1px solid #000;text-align:center;color:#888;padding:8px;font-size:9pt;">
               Ariza bajargan xodimlar topilmadi
             </td>
           </tr>
@@ -580,7 +601,7 @@ function searchMaterialsAll() {
       `);
       editorSetResponsibleRows(`
         <tr>
-          <td colspan="2" style="border:1px solid #fff;text-align:center;color:red;padding:8px;font-size:9pt;">
+          <td colspan="3" style="border:1px solid #000;text-align:center;color:red;padding:8px;font-size:9pt;">
             ${msg}
           </td>
         </tr>
@@ -657,13 +678,16 @@ $(function () {
     searchMaterialsAll();
   });
 
-  // ─── FORM SUBMIT ─────────────────────────────────────────────────────────
+  // ─── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ─────
 
   $('form').on('submit', function (e) {
     e.preventDefault();
 
     const $form = $(this);
 
+    // Tugma bir necha marta bosilishi (shoshilib bosish) tufayli
+    // forma bir necha marta yuborilib, bir xil hujjat qayta-qayta
+    // yaratilib qolishining oldini olish uchun qulflash.
     if ($form.data("locked")) {
       return false;
     }
@@ -671,19 +695,24 @@ $(function () {
     $form.find('button[type="submit"]').prop("disabled", true);
 
     const ed = editorGet();
-    if (ed) ed.save();
+    if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
 
     const rawBody = $('#body').val() || '';
+
+    // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
     const encoded = btoa(unescape(encodeURIComponent(rawBody)));
 
+    // yashirin maydonga joylaymiz
     let $hidden = $(this).find('input[name="body_encoded"]');
     if ($hidden.length === 0) {
       $hidden = $('<input type="hidden" name="body_encoded">').appendTo(this);
     }
     $hidden.val(encoded);
 
+    // asl 'body' maydonini yuborilishdan chiqarib tashlaymiz
     $('#body').removeAttr('name');
 
+    // haqiqiy (native) yuborish
     this.submit();
   });
 
