@@ -1,12 +1,3 @@
-"""
-VAPID kalitlarini generatsiya qilish uchun skript.
-
-Ishlatish:
-    python generate_vapid_keys.py
-
-Natijada chiqqan VAPID_PRIVATE_KEY_PEM va VAPID_PUBLIC_KEY qiymatlarini
-settings.py fayliga qo'shing.
-"""
 from py_vapid import Vapid02
 from cryptography.hazmat.primitives import serialization
 import base64
