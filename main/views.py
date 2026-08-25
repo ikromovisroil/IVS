@@ -550,7 +550,6 @@ def deed_edit(request, pk):
         new_sender = Employee.objects.filter(
             id=int(sender_id),
             organization_id=sender_org_id,
-            department_id=sender_dep_id,
         ).first()
 
         if not new_sender:
@@ -2074,11 +2073,10 @@ def material_delete(request):
         status='deleted',
         body=f"Material o'chirildi: {mat.id}"
     )
-
     messages.success(request, "Material muvaffaqiyatli o'chirildi")
     return redirect(back_url)
 
-
+from datetime import datetime, time
 @never_cache
 @require_GET
 @login_required
