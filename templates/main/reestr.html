@@ -327,13 +327,43 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
-function formatMonthYear() {
+// Tanlangan sana oralig'i (date1 - date2) asosida oy/yil matnini hosil qiladi.
+// Bir oy ichida bo'lsa: "2026 yil avgust oyi uchun"
+// Bir necha oy bo'lsa: "2026 yil iyul-avgust oylari uchun"
+// Turli yillar bo'lsa: "2025 yil dekabr - 2026 yil yanvar oylari uchun"
+function formatMonthYearRange(date1Str, date2Str) {
   const months = [
     'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
     'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
   ];
-  const d = new Date();
-  return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+
+  if (!date1Str || !date2Str) {
+    const d = new Date();
+    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+  }
+
+  const d1 = new Date(date1Str);
+  const d2 = new Date(date2Str);
+
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) {
+    const d = new Date();
+    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+  }
+
+  const y1 = d1.getFullYear();
+  const m1 = d1.getMonth();
+  const y2 = d2.getFullYear();
+  const m2 = d2.getMonth();
+
+  if (y1 === y2 && m1 === m2) {
+    return `${y1} yil ${months[m1]} oyi uchun`;
+  }
+
+  if (y1 === y2) {
+    return `${y1} yil ${months[m1]}-${months[m2]} oylari uchun`;
+  }
+
+  return `${y1} yil ${months[m1]} - ${y2} yil ${months[m2]} oylari uchun`;
 }
 
 // ─── EDITOR ───────────────────────────────────────────────────────────────────
@@ -395,10 +425,13 @@ function updateEditorWithSelections() {
   const $regOpt = $('#region option:selected');
   const regName = $regOpt.text().trim();
 
+  const date1 = $('#date1').val();
+  const date2 = $('#date2').val();
+
   editorSetText('#org_id',        (orgName && orgName !== 'Tanlang...') ? orgName : 'Tashkilot');
   editorSetText('#reg_id',        (regName && regName !== 'Barcha hududlar') ? regName : '');
   editorSetText('#date_contract', contractText.trim() ? contractText : '_');
-  editorSetText('#report_period', formatMonthYear());
+  editorSetText('#report_period', formatMonthYearRange(date1, date2));
 }
 
 // ─── JADVAL QATORINI QURISH ───────────────────────────────────────────────────
@@ -452,23 +485,23 @@ function buildServiceEmployeeRow(rank, fullName) {
   `;
 }
 
-// Bo'lim jami — OCH sariq fon
+// Bo'lim jami — svod_all dagi "Tashkilot jami" bilan bir xil rang (o'rtacha sariq)
 function buildDeptTotalRow(label, sum) {
   return `
     <tr>
-      <td colspan="6" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(253,246,220);">${escapeHtml(label)}</td>
-      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(253,246,220);">${formatNumber(sum)}</td>
-      <td colspan="8" style="border:1px solid #000;background-color:rgb(253,246,220);"></td>
+      <td colspan="6" style="border:1px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${escapeHtml(label)}</td>
+      <td style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(sum)}</td>
+      <td colspan="8" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
     </tr>
   `;
 }
 
-// Umumiy jami — TO'Q sariq fon, qalinroq border
+// Umumiy jami — svod_all dagi "Jami" bilan bir xil rang (to'q sariq, qalin border)
 function buildGrandTotalRow(label, sum) {
   return `
     <tr>
-      <td colspan="6" style="border:2px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(245,199,86);">${escapeHtml(label)}</td>
-      <td style="border:2px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(245,199,86);">${formatNumber(sum)}</td>
+      <td colspan="6" style="border:2px solid #000;font-size:10pt;text-align:right;font-weight:bold;background-color:rgb(245,199,86);">${escapeHtml(label)}</td>
+      <td style="border:2px solid #000;font-size:10pt;text-align:center;font-weight:bold;background-color:rgb(245,199,86);">${formatNumber(sum)}</td>
       <td colspan="8" style="border:2px solid #000;background-color:rgb(245,199,86);"></td>
     </tr>
   `;
@@ -544,11 +577,11 @@ function searchMaterials() {
         });
 
         grandTotal += groupSum;
-        rows += buildDeptTotalRow(`JAMI BO'LIM: ${group.name}`, groupSum);
+        rows += buildDeptTotalRow(`${group.name} jami:`, groupSum);
       });
 
       // Barcha bo'limlar bo'yicha umumiy jami
-      rows += buildGrandTotalRow('JAMI:', grandTotal);
+      rows += buildGrandTotalRow('Jami:', grandTotal);
 
       editorSetTbodyRows(rows);
 
@@ -722,6 +755,10 @@ $(function () {
   });
 
   $('#region').on('change', function () {
+    updateEditorWithSelections();
+  });
+
+  $('#date1, #date2').on('change', function () {
     updateEditorWithSelections();
   });
 
