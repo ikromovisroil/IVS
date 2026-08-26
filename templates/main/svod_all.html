@@ -36,6 +36,16 @@
                 <div class="form-text">Bir nechta tashkilotni belgilashingiz mumkin.</div>
               </div>
 
+              {% if can_view_all_regions %}
+              <div class="col-md-12">
+                <div class="form-check">
+                  <input type="checkbox" name="all_regions" id="all_regions" class="form-check-input">
+                  <label for="all_regions" class="form-check-label">Barcha hududlar bo'yicha</label>
+                </div>
+                <div class="form-text">Belgilanmasa, faqat sizning hududingiz bo'yicha chiqadi.</div>
+              </div>
+              {% endif %}
+
               <div class="col-md-12">
                 <label for="date1" class="form-label">Boshlangich sanasi:</label>
                 <input type="date" name="date1" id="date1" required class="form-control">
@@ -138,9 +148,6 @@
                 </div>
                 <div style="text-align:center;">
                   <b>YAKUNIY HISOBOT</b>
-                </div>
-                <div style="text-align:center;">
-                  <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi</b>
                 </div>
                 <div style="text-align:center;">
                   <b id="report_period">2026 yil dekabir oyi uchun</b>
@@ -405,6 +412,7 @@ function searchMaterialsAll() {
   const orgIds = $('#organizations').val() || [];
   const date1 = $('#date1').val();
   const date2 = $('#date2').val();
+  const allRegions = $('#all_regions').is(':checked') ? '1' : '0';
 
   if (!orgIds.length || !date1 || !date2) {
     alert("Iltimos, kamida bitta tashkilot va sanalarni to'liq tanlang!");
@@ -432,7 +440,8 @@ function searchMaterialsAll() {
     url: "{% url 'ajax_svod_all_materials' %}",
     method: 'GET',
     dataType: 'json',
-    data: $.param({ 'organizations[]': orgIds }) + `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}`,
+    data: $.param({ 'organizations[]': orgIds }) +
+          `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}&all_regions=${allRegions}`,
 
     success: function (data) {
       const orgs = (data && data.organizations) || [];

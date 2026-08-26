@@ -615,6 +615,7 @@ def ajax_svod_materials(request):
 
 
 from collections import OrderedDict
+
 @never_cache
 @require_GET
 @login_required
@@ -624,6 +625,12 @@ def ajax_svod_all_materials(request):
     Tashkilot -> Hudud -> materiallar tartibida qaytaradi, shuningdek
     shu materiallarni bajargan (order.receiver) barcha xodimlarning
     ro'yxatini ham alohida qaytaradi (dublikatsiz, alifbo tartibida).
+
+    HUDUD CHEKLOVI:
+    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa VA
+      "all_regions=1" so'rov parametri yuborilgan bo'lsa -> barcha hududlar.
+    - Aks holda (ruxsat yo'q yoki checkbox belgilanmagan) -> faqat
+      foydalanuvchining o'z hududi (employee.region).
     """
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -632,6 +639,7 @@ def ajax_svod_all_materials(request):
     org_ids = [i for i in request.GET.getlist("organizations[]") if i.isdigit()]
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
+    all_regions_requested = request.GET.get("all_regions") == "1"
 
     if not org_ids or not d1 or not d2:
         return JsonResponse({"organizations": [], "employees": []})
@@ -642,6 +650,10 @@ def ajax_svod_all_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
+    # Ruxsatni serverda qayta tekshiramiz — clientga ishonmaymiz.
+    can_view_all_regions = request.user.has_perm("main.all_region")
+    use_all_regions = all_regions_requested and can_view_all_regions
+
     common_filters = dict(
         order__date_finished__isnull=False,
         order__date_finished__gte=date1,
@@ -649,6 +661,12 @@ def ajax_svod_all_materials(request):
         order__sender__organization_id__in=org_ids,
         order__goal__organization__type="worker",
     )
+
+    if not use_all_regions:
+        if not employee.region_id:
+            # Xodimning hududi yo'q bo'lsa, hech narsa qaytarmaymiz.
+            return JsonResponse({"organizations": [], "employees": []})
+        common_filters["order__sender__region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)

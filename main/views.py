@@ -2786,6 +2786,7 @@ def svod_post(request):
     return redirect("contact_user")
 
 
+
 @never_cache
 @require_GET
 @login_required
@@ -2799,6 +2800,8 @@ def svod_all_get(request):
         "organizations": Organization.objects.only("id", "name").order_by("id"),
         "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
+        # "Barcha hududlar" checkbox faqat shu ruxsat bo'lganda ko'rinadi
+        "can_view_all_regions": request.user.has_perm("main.all_region"),
     }
     return render(request, 'main/svod_all.html', context)
 
