@@ -386,7 +386,7 @@ def ajax_agreements_employees(request):
         return JsonResponse([], safe=False)
 
     qs = Employee.objects.filter(
-        Q(organization_id=org_id, region=my_region_id) |
+        Q(organization_id=org_id) |
         Q(organization_id=my_org_id)
     ).select_related("rank").order_by(
         "last_name", "first_name", "father_name"
