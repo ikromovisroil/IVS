@@ -620,18 +620,7 @@ from collections import OrderedDict
 @require_GET
 @login_required
 def ajax_svod_all_materials(request):
-    """
-    Bir nechta tashkilot bo'yicha materiallarni:
-    Tashkilot -> Hudud -> materiallar tartibida qaytaradi, shuningdek
-    shu materiallarni bajargan (order.receiver) barcha xodimlarning
-    ro'yxatini ham alohida qaytaradi (dublikatsiz, alifbo tartibida).
 
-    HUDUD CHEKLOVI:
-    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa VA
-      "all_regions=1" so'rov parametri yuborilgan bo'lsa -> barcha hududlar.
-    - Aks holda (ruxsat yo'q yoki checkbox belgilanmagan) -> faqat
-      foydalanuvchining o'z hududi (employee.region).
-    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -715,8 +704,8 @@ def ajax_svod_all_materials(request):
     for r in rel:
         key = (r["material_id"], r["order__sender__organization_id"], r["order__sender__region_id"])
         dt = r["order__date_finished"]
-        dt_str = dt.date().isoformat() if dt else ""
-        txt = f'Akt №{r["order_id"]} ga {dt_str}y'
+        dt_str = dt.strftime("%d.%m.%Y") if dt else ""
+        txt = f'Akt №{r["order_id"]} ga {dt_str} yil' if dt_str else f'Akt №{r["order_id"]}'
         order_map.setdefault(key, []).append(txt)
 
     grouped = OrderedDict()
