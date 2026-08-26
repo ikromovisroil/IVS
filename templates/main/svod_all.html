@@ -308,13 +308,43 @@ function todayDmy() {
   return `${dd}.${mm}.${yy} y`;
 }
 
-function formatMonthYear() {
+// Tanlangan sana oralig'i (date1 - date2) asosida oy/yil matnini hosil qiladi.
+// Bir oy ichida bo'lsa: "2026 yil avgust oyi uchun"
+// Bir necha oy bo'lsa: "2026 yil iyul-avgust oylari uchun"
+// Turli yillar bo'lsa: "2025 yil dekabr - 2026 yil yanvar oylari uchun"
+function formatMonthYearRange(date1Str, date2Str) {
   const months = [
     'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
     'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
   ];
-  const d = new Date();
-  return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+
+  if (!date1Str || !date2Str) {
+    const d = new Date();
+    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+  }
+
+  const d1 = new Date(date1Str);
+  const d2 = new Date(date2Str);
+
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) {
+    const d = new Date();
+    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+  }
+
+  const y1 = d1.getFullYear();
+  const m1 = d1.getMonth();
+  const y2 = d2.getFullYear();
+  const m2 = d2.getMonth();
+
+  if (y1 === y2 && m1 === m2) {
+    return `${y1} yil ${months[m1]} oyi uchun`;
+  }
+
+  if (y1 === y2) {
+    return `${y1} yil ${months[m1]}-${months[m2]} oylari uchun`;
+  }
+
+  return `${y1} yil ${months[m1]} - ${y2} yil ${months[m2]} oylari uchun`;
 }
 
 function escapeHtml(value) {
@@ -378,7 +408,10 @@ function waitForTinyMCE(callback, tries = 0) {
 
 function updateEditorWithSelections() {
   editorSetText('#doc_date', todayDmy());
-  editorSetText('#report_period', formatMonthYear());
+
+  const date1 = $('#date1').val();
+  const date2 = $('#date2').val();
+  editorSetText('#report_period', formatMonthYearRange(date1, date2));
 
   // Tanlangan tashkilotlarning shartnomalarini yig'ib, #date_contract ga qo'yamiz
   const contracts = [];
