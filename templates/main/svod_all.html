@@ -191,7 +191,7 @@
                 </div>
 
                 <div style="text-align:left;">
-                  <b><span id="date_contract">_</span></b>
+                  <b><span id="date_contract">_</span>ga muvofiq</b>
                 </div>
 
                 <div>
@@ -559,6 +559,13 @@ function searchMaterialsAll() {
             orgTotal    += item.total_sum;
             grandTotal  += item.total_sum;
 
+            // order_info endi massiv — har bir Akt alohida qatorda,
+            // oxirgisidan tashqari har birida vergul bilan.
+            const orderInfoList = item.order_info || [];
+            const orderInfoHtml = orderInfoList
+              .map(function (txt) { return escapeHtml(txt); })
+              .join(',<br>');
+
             rows += `
               <tr>
                 <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
@@ -567,7 +574,7 @@ function searchMaterialsAll() {
                 <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.total_number)}</td>
                 <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.material__price)}</td>
                 <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.total_sum)}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.order_info)}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:left;">${orderInfoHtml}</td>
                 <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__code)}</td>
               </tr>
             `;

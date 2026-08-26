@@ -615,12 +615,22 @@ def ajax_svod_materials(request):
 
 
 from collections import OrderedDict
-
 @never_cache
 @require_GET
 @login_required
 def ajax_svod_all_materials(request):
+    """
+    Bir nechta tashkilot bo'yicha materiallarni:
+    Tashkilot -> Hudud -> materiallar tartibida qaytaradi, shuningdek
+    shu materiallarni bajargan (order.receiver) barcha xodimlarning
+    ro'yxatini ham alohida qaytaradi (dublikatsiz, alifbo tartibida).
 
+    HUDUD CHEKLOVI:
+    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa VA
+      "all_regions=1" so'rov parametri yuborilgan bo'lsa -> barcha hududlar.
+    - Aks holda (ruxsat yo'q yoki checkbox belgilanmagan) -> faqat
+      foydalanuvchining o'z hududi (employee.region).
+    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -717,7 +727,7 @@ def ajax_svod_all_materials(request):
         grouped[org_key].setdefault(region_key, [])
 
         key = (item["material_id"], item["order__sender__organization_id"], item["order__sender__region_id"])
-        order_info = ", ".join(order_map.get(key, []))
+        order_info_list = order_map.get(key, [])
 
         grouped[org_key][region_key].append({
             "material__name": item.get("material__name", ""),
@@ -725,7 +735,7 @@ def ajax_svod_all_materials(request):
             "total_number": float(item.get("total_number") or 0),
             "material__price": float(item.get("material__price") or 0),
             "total_sum": float(item.get("total_sum") or 0),
-            "order_info": order_info,
+            "order_info": order_info_list,
             "material__code": item.get("material__code", ""),
         })
 
