@@ -137,7 +137,7 @@
                   <b>O‘zbekiston Respublikasi <span id="org_id"></span></b>
                 </div>
                 <div style="text-align:center;">
-                  <b><span id="dep_id"></span></b>
+                  <b><span id="reg_id"></span></b>
                 </div>
                 <div style="text-align:center;">
                   <b id="report_period">2026 yil dekabr oyi uchun</b>
@@ -390,7 +390,7 @@ function updateEditorWithSelections() {
   const regName = $regOpt.text().trim();
 
   editorSetText('#org_id',        (orgName && orgName !== 'Tanlang...') ? orgName : 'Tashkilot');
-  editorSetText('#dep_id',        (regName && regName !== 'Barcha hududlar') ? regName : '');
+  editorSetText('#reg_id',        (regName && regName !== 'Barcha hududlar') ? regName : '');
   editorSetText('#date_contract', contractText.trim() ? contractText : '_');
   editorSetText('#report_period', formatMonthYear());
 }
@@ -423,11 +423,11 @@ function buildMaterialRow(item, index) {
   `;
 }
 
-function buildGroupHeaderRow(regionName) {
+function buildGroupHeaderRow(deptName) {
   return `
     <tr>
       <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;background-color: rgb(191, 237, 210);">
-        ${escapeHtml(regionName)}
+        ${escapeHtml(deptName)}
       </td>
     </tr>
   `;
@@ -498,17 +498,17 @@ function searchMaterials() {
         return;
       }
 
-      // ── Hudud bo'yicha guruhlash, birinchi uchragan tartibda ──
+      // ── Bo'lim bo'yicha guruhlash, birinchi uchragan tartibda ──
       const groups = [];
       const groupIndexByName = {};
 
       data.forEach(function (item) {
-        const regionName = (item.region || '').trim() || "Noma'lum hudud";
-        if (!(regionName in groupIndexByName)) {
-          groupIndexByName[regionName] = groups.length;
-          groups.push({ name: regionName, items: [] });
+        const deptName = (item.department || '').trim() || "Bo'lim ko'rsatilmagan";
+        if (!(deptName in groupIndexByName)) {
+          groupIndexByName[deptName] = groups.length;
+          groups.push({ name: deptName, items: [] });
         }
-        groups[groupIndexByName[regionName]].items.push(item);
+        groups[groupIndexByName[deptName]].items.push(item);
       });
 
       let rows       = '';
@@ -526,10 +526,10 @@ function searchMaterials() {
         });
 
         grandTotal += groupSum;
-        rows += buildGroupTotalRow(`JAMI HUDUD: ${group.name}`, groupSum);
+        rows += buildGroupTotalRow(`JAMI BO'LIM: ${group.name}`, groupSum);
       });
 
-      // Barcha hududlar bo'yicha umumiy jami
+      // Barcha bo'limlar bo'yicha umumiy jami
       rows += buildGroupTotalRow('JAMI:', grandTotal);
 
       editorSetTbodyRows(rows);

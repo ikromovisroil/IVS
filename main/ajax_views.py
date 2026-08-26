@@ -829,14 +829,14 @@ def download_pdf(request):
     return response
 
 
-
 @never_cache
 @require_GET
 @login_required
 def ajax_reestr_materials(request):
     """
     Tashkilot (majburiy) va hudud (ixtiyoriy) bo'yicha reestr materiallarini
-    qaytaradi.
+    qaytaradi. Natija bo'lim (department) bo'yicha tartiblangan holda
+    keladi — frontend shu tartibga asoslanib guruhlab chiqaradi.
 
     HUDUD CHEKLOVI:
     - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa, "region"
@@ -928,6 +928,7 @@ def ajax_reestr_materials(request):
 
             "sender_full_name",
             "order__sender__rank__name",
+            "order__sender__department_id",
             "order__sender__department__name",
             "order__sender__region_id",
             "order__sender__region__name",
@@ -937,7 +938,10 @@ def ajax_reestr_materials(request):
 
             "total_sum",
         )
-        .order_by("order__sender__region_id", "material__code", "material__name", "order__id")
+        # ✅ Natija BO'LIM bo'yicha tartiblanadi — frontend shu tartibga
+        # asoslanib guruhlab chiqaradi (avval bitta bo'lim, keyin
+        # navbatdagi bo'lim, va h.k.)
+        .order_by("order__sender__department_id", "material__code", "material__name", "order__id")
     )
 
     data = []
@@ -961,7 +965,7 @@ def ajax_reestr_materials(request):
 
             "sender": (item.get("sender_full_name") or "").strip(),
             "sender_rank": item.get("order__sender__rank__name", ""),
-            "department": item.get("order__sender__department__name", ""),
+            "department": item.get("order__sender__department__name") or "Bo'lim ko'rsatilmagan",
             "region": item.get("order__sender__region__name") or "Noma'lum hudud",
 
             "receiver": (item.get("receiver_full_name") or "").strip(),
