@@ -119,6 +119,7 @@ urlpatterns = [
     path('svod-all/', svod_all_get, name='svod_all_get'),
     path('svod-all/post/', svod_all_post, name='svod_all_post'),
     path('ajax/svod-all-materials/', ajax_svod_all_materials, name='ajax_svod_all_materials'),
+    path('ajax/download-pdf/', download_pdf, name='download_pdf'),
 
     # REESTR
     path("reestr/", reestr_get, name="reestr_get"),

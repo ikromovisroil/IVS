@@ -57,6 +57,12 @@
               <div class="text-center">
                 <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
               </div>
+
+              <div class="text-center">
+                <button type="button" id="btnDownloadPdf" class="btn btn-outline-secondary w-100">
+                  <i class="bi bi-download"></i> PDF yuklab olish
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -309,9 +315,6 @@ function todayDmy() {
 }
 
 // Tanlangan sana oralig'i (date1 - date2) asosida oy/yil matnini hosil qiladi.
-// Bir oy ichida bo'lsa: "2026 yil avgust oyi uchun"
-// Bir necha oy bo'lsa: "2026 yil iyul-avgust oylari uchun"
-// Turli yillar bo'lsa: "2025 yil dekabr - 2026 yil yanvar oylari uchun"
 function formatMonthYearRange(date1Str, date2Str) {
   const months = [
     'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
@@ -559,8 +562,6 @@ function searchMaterialsAll() {
             orgTotal    += item.total_sum;
             grandTotal  += item.total_sum;
 
-            // order_info endi massiv — har bir Akt alohida qatorda,
-            // oxirgisidan tashqari har birida vergul bilan.
             const orderInfoList = item.order_info || [];
             const orderInfoHtml = orderInfoList
               .map(function (txt) { return escapeHtml(txt); })
@@ -665,6 +666,67 @@ function searchMaterialsAll() {
   });
 }
 
+// ─── PDF yuklab olish ──────────────────────────────────────────────────────────
+
+function downloadCurrentEditorAsPdf() {
+  const ed = editorGet();
+  if (!ed) {
+    alert("Hujjat hali tayyor emas, birozdan so'ng qayta urinib ko'ring.");
+    return;
+  }
+
+  ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+  const rawBody = $('#body').val() || '';
+
+  if (!rawBody.trim()) {
+    alert('Hujjat matni bo\'sh — avval "Qidirish" tugmasini bosing.');
+    return;
+  }
+
+  const $btn = $('#btnDownloadPdf');
+  const originalHtml = $btn.html();
+  $btn.prop('disabled', true).text('Tayyorlanmoqda...');
+
+  const csrfToken = $('form input[name="csrfmiddlewaretoken"]').val();
+
+  fetch("{% url 'download_pdf' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+    },
+    body: new URLSearchParams({
+      body_html: rawBody,
+      orientation: 'Landscape',
+      filename: 'svod_all',
+    }),
+  })
+    .then(function (response) {
+      if (!response.ok) {
+        return response.json().then(function (data) {
+          throw new Error(data.error || 'PDF yuklab olishda xatolik');
+        });
+      }
+      return response.blob();
+    })
+    .then(function (blob) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `svod_all_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(function (err) {
+      console.error(err);
+      alert(err.message || 'PDF yuklab olishda xatolik yuz berdi');
+    })
+    .finally(function () {
+      $btn.prop('disabled', false).html(originalHtml);
+    });
+}
+
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
 $(function () {
@@ -735,6 +797,11 @@ $(function () {
   $('#btnGenerate').on('click', function (e) {
     e.preventDefault();
     searchMaterialsAll();
+  });
+
+  $('#btnDownloadPdf').on('click', function (e) {
+    e.preventDefault();
+    downloadCurrentEditorAsPdf();
   });
 
   // ─── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ─────

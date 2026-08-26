@@ -787,6 +787,45 @@ def ajax_svod_all_materials(request):
 
     return JsonResponse({"organizations": result, "employees": employees})
 
+from .sanitizers import sanitize_deed_body
+@never_cache
+@require_POST
+@login_required
+def download_pdf(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    raw_body = request.POST.get("body_html", "")
+    body = sanitize_deed_body(raw_body)
+
+    if not body.strip():
+        return JsonResponse({"error": "Hujjat matni bo'sh"}, status=400)
+
+    orientation = request.POST.get("orientation", "Landscape")
+    if orientation not in ("Portrait", "Landscape"):
+        orientation = "Landscape"
+
+    base_filename = (request.POST.get("filename") or "hujjat").strip()
+    base_filename = "".join(
+        ch for ch in base_filename if ch.isalnum() or ch in ("_", "-")
+    ) or "hujjat"
+
+    try:
+        pdf_bytes = html_to_pdf_bytes(body, orientation=orientation)
+    except HtmlPdfError as e:
+        return JsonResponse({"error": f"PDF yaratilmadi: {e}"}, status=500)
+
+    filename = f"{base_filename}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+
+    response = FileResponse(
+        io.BytesIO(pdf_bytes),
+        as_attachment=True,
+        filename=filename,
+        content_type="application/pdf",
+    )
+    return response
+
 
 @never_cache
 @require_GET
