@@ -311,6 +311,7 @@ def contact_post_deed(request):
         raise PermissionDenied("Employee yo'q")
 
     status = request.POST.get("status", "").strip()
+    deed_org_id = request.POST.get("deed_organization", "").strip()
     sender_id = request.POST.get("employee", "").strip()
     agreement_ids = request.POST.getlist("agreements")
     uploaded_file = request.FILES.get("file")
@@ -319,6 +320,12 @@ def contact_post_deed(request):
     if status not in valid_statuses:
         messages.error(request, "Ariza turi noto'g'ri tanlangan")
         return redirect("contact_user")
+
+    if not deed_org_id or not deed_org_id.isdigit():
+        messages.error(request, "Hujjat tegishli tashkilot tanlanmagan")
+        return redirect("contact_user")
+
+    deed_organization = get_object_or_404(Organization, pk=deed_org_id)
 
     if not sender_id or not sender_id.isdigit():
         messages.error(request, "Xodim tanlanmagan")
@@ -329,20 +336,12 @@ def contact_post_deed(request):
     if not uploaded_file:
         messages.error(request, "Fayl biriktirilmagan")
         return redirect("contact_user")
-
-    # Deed.objects.create() full_clean() ni chaqirmaydi, shuning uchun
-    # model maydonidagi validators=[validate_file_extension] avtomatik
-    # ishlamaydi — bu yerda MAJBURIY qo'lda chaqiramiz. Aks holda
-    # istalgan turdagi fayl (PDF bo'lmasa ham) yuklanishi mumkin edi.
     try:
         validate_file_extension(uploaded_file)
     except Exception as e:
         messages.error(request, str(e))
         return redirect("contact_user")
 
-    # Faqat mavjud xodimlarga tegishli ID'lar qabul qilinadi — aks holda
-    # noto'g'ri ID kelsa bulk_create FK xatosi bilan (ushlanmagan holda)
-    # 500-xato berishi mumkin edi.
     agreement_ids = [aid for aid in agreement_ids if aid.isdigit()]
     valid_agreement_ids = set(
         Employee.objects.filter(id__in=agreement_ids).values_list("id", flat=True)
@@ -351,7 +350,7 @@ def contact_post_deed(request):
     try:
         with transaction.atomic():
             deed = Deed.objects.create(
-                organization=sender.organization,
+                organization=deed_organization,
                 user=employee,
                 sender=sender,
                 status=status,

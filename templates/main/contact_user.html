@@ -49,8 +49,18 @@
                                             <h5 class="modal-title">Hujjatlar Yaratish</h5>
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
-
                                         <div class="modal-body">
+                                            <div class="row mb-3">
+                                                <label class="col-sm-3 col-form-label">Hujjatlar qaysi tashkilotga tegishli:</label>
+                                                <div class="col-sm-9">
+                                                    <select class="form-select" name="organizations" required>
+                                                        <option value="">tanlang</option>
+                                                        {% for o in organization %}
+                                                            <option value="{{ o.id }}">{{ o.name }}</option>
+                                                        {% endfor %}
+                                                    </select>
+                                                </div>
+                                            </div>
                                             <div class="row mb-3">
                                                 <label class="col-sm-3 col-form-label">Hujjatlar turi:</label>
                                                 <div class="col-sm-9">
@@ -67,9 +77,9 @@
                                             <hr>
 
                                             <div class="row mb-3">
-                                                <label class="col-sm-3 col-form-label">Tashkilotlar:</label>
+                                                <label class="col-sm-3 col-form-label">Izlovchi qaysi tashkilotdan:</label>
                                                 <div class="col-sm-9">
-                                                    <select class="form-select" name="organizations" id="organizations-select" required>
+                                                    <select class="form-select" name="organizations" id="organizations-select">
                                                         <option value="">tanlang</option>
                                                         {% for o in organization %}
                                                             <option value="{{ o.id }}">{{ o.name }}</option>
@@ -79,7 +89,7 @@
                                             </div>
 
                                             <div class="row mb-3">
-                                                <label class="col-sm-3 col-form-label">Xodimlar:</label>
+                                                <label class="col-sm-3 col-form-label">Izlovchi xodim:</label>
                                                 <div class="col-sm-9">
                                                     <select class="form-select" name="employee" id="employee-select" required>
                                                         <option value="">Tashkilotni tanlang...</option>
