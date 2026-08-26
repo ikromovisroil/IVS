@@ -833,23 +833,14 @@ def download_pdf(request):
 @require_GET
 @login_required
 def ajax_reestr_materials(request):
-    """
-    Tashkilot bo'yicha reestr materiallarini qaytaradi.
-
-    HUDUD CHEKLOVI:
-    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa VA
-      "all_regions=1" so'rov parametri yuborilgan bo'lsa -> barcha hududlar.
-    - Aks holda (ruxsat yo'q yoki checkbox belgilanmagan) -> faqat
-      foydalanuvchining o'z hududi (employee.region).
-    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
 
     org_id = request.GET.get("organization")
+    dep_id = request.GET.get("department")
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
-    all_regions_requested = request.GET.get("all_regions") == "1"
 
     if not org_id or not d1 or not d2:
         return JsonResponse([], safe=False)
@@ -860,8 +851,11 @@ def ajax_reestr_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
-    can_view_all_regions = request.user.has_perm("main.all_region")
-    use_all_regions = all_regions_requested and can_view_all_regions
+    # OR mantig'i: o'z materiali BO'LSA HAM, o'z hududiga yopilgan bo'lsa ham
+    base_filter = (
+        Q(material__employee=employee) |
+        Q(order__sender__region=employee.region,order__goal__organization__type="worker")
+    )
 
     common_filters = dict(
         order__date_finished__isnull=False,
@@ -870,16 +864,14 @@ def ajax_reestr_materials(request):
         order__sender__organization_id=org_id,
     )
 
-    if not use_all_regions:
-        if not employee.region_id:
-            return JsonResponse([], safe=False)
-        common_filters["order__sender__region_id"] = employee.region_id
+    if dep_id and dep_id.isdigit():
+        common_filters["order__sender__department_id"] = dep_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
 
     qs = (
-        OrderMaterial.objects.filter(**common_filters)
+        OrderMaterial.objects.filter(base_filter, **common_filters)
         .annotate(
             total_sum=ExpressionWrapper(
                 Coalesce(F("material__price"), zero_dec) *
@@ -922,15 +914,13 @@ def ajax_reestr_materials(request):
             "sender_full_name",
             "order__sender__rank__name",
             "order__sender__department__name",
-            "order__sender__region_id",
-            "order__sender__region__name",
 
             "receiver_full_name",
             "order__receiver__rank__name",
 
             "total_sum",
         )
-        .order_by("order__sender__region_id", "material__code", "material__name", "order__id")
+        .order_by("material__code", "material__name", "order__id")
     )
 
     data = []
@@ -955,7 +945,6 @@ def ajax_reestr_materials(request):
             "sender": (item.get("sender_full_name") or "").strip(),
             "sender_rank": item.get("order__sender__rank__name", ""),
             "department": item.get("order__sender__department__name", ""),
-            "region": item.get("order__sender__region__name") or "Noma'lum hudud",
 
             "receiver": (item.get("receiver_full_name") or "").strip(),
             "receiver_rank": item.get("order__receiver__rank__name", ""),

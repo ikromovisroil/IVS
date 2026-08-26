@@ -2903,8 +2903,6 @@ def reestr_get(request):
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
         "employee": Employee.objects.filter(organization_id=employee.organization_id).select_related("rank"),
-        # "Barcha hududlar" checkbox faqat shu ruxsat bo'lganda ko'rinadi
-        "can_view_all_regions": request.user.has_perm("main.all_region"),
     }
     return render(request, 'main/reestr.html', context)
 

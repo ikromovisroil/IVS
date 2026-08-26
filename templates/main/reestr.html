@@ -42,14 +42,12 @@
                 </select>
               </div>
 
-              {% if can_view_all_regions %}
-              <div class="col-md-12">
-                <div class="form-check">
-                  <input type="checkbox" name="all_regions" id="all_regions" class="form-check-input">
-                  <label for="all_regions" class="form-check-label">Barcha hududlar bo'yicha</label>
-                </div>
+              <div class="col-12">
+                <label for="department" class="form-label">Bo'lim :</label>
+                <select id="department" name="department" class="form-select">
+                  <option value="">Tanlang...</option>
+                </select>
               </div>
-              {% endif %}
 
               <div class="col-md-12">
                 <label for="date1" class="form-label">Boshlangich sanasi:</label>
@@ -132,6 +130,12 @@
 
                 <div style="text-align:center;">
                   <b>O‘zbekiston Respublikasi <span id="org_id"></span></b>
+                </div>
+                <div style="text-align:center;">
+                  <b><span id="dep_id"></span></b>
+                </div>
+                <div style="text-align:center;">
+                  <b>{{ request.user.employee.region.name }}</b>
                 </div>
                 <div style="text-align:center;">
                   <b id="report_period">2026 yil dekabr oyi uchun</b>
@@ -380,9 +384,44 @@ function updateEditorWithSelections() {
   const orgName      = $opt.text().trim();
   const contractText = $opt.attr('data-contract') || '';
 
+  const $depOpt = $('#department option:selected');
+  const depName = $depOpt.text().trim();
+
   editorSetText('#org_id',        (orgName && orgName !== 'Tanlang...') ? orgName : 'Tashkilot');
+  editorSetText('#dep_id',        (depName && depName !== 'Tanlang...') ? depName : '');
   editorSetText('#date_contract', contractText.trim() ? contractText : '_');
   editorSetText('#report_period', formatMonthYear());
+}
+
+// ─── AJAX: BO'LIMLARNI YUKLASH ─────────────────────────────────────────────────
+
+function loadDepartmentsByOrg(orgId, selectedId = "") {
+  const $dep = $('#department');
+  $dep.html('<option value="">Tanlang...</option>').trigger('change');
+
+  if (!orgId) return;
+
+  $.ajax({
+    url: "{% url 'ajax_load_departments' %}",
+    method: 'GET',
+    dataType: 'json',
+    data: { organization: orgId },
+
+    success: function (data) {
+      let options = '<option value="">Tanlang...</option>';
+      (data.results || []).forEach(function (dep) {
+        const sel = String(dep.id) === String(selectedId) ? 'selected' : '';
+        options += `<option value="${dep.id}" ${sel}>${escapeHtml(dep.name)}</option>`;
+      });
+      $dep.html(options).trigger('change');
+      updateEditorWithSelections();
+    },
+
+    error: function (xhr) {
+      console.error('Bo\'limlar AJAX xatosi:', xhr.status, xhr.responseText);
+      $dep.html('<option value="">Tanlang...</option>').trigger('change');
+    }
+  });
 }
 
 // ─── JADVAL QATORINI QURISH ───────────────────────────────────────────────────
@@ -413,11 +452,11 @@ function buildMaterialRow(item, index) {
   `;
 }
 
-function buildGroupHeaderRow(regionName) {
+function buildGroupHeaderRow(deptName) {
   return `
     <tr>
       <td colspan="15" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;padding:4px;background-color: rgb(191, 237, 210);">
-        ${escapeHtml(regionName)}
+        ${escapeHtml(deptName)}
       </td>
     </tr>
   `;
@@ -450,9 +489,9 @@ function buildGroupTotalRow(label, sum) {
 
 function searchMaterials() {
   const orgId = $('#organization').val();
+  const depId = $('#department').val();
   const date1 = $('#date1').val();
   const date2 = $('#date2').val();
-  const allRegions = $('#all_regions').is(':checked') ? '1' : '0';
 
   if (!orgId || !date1 || !date2) {
     alert("Iltimos, tashkilot va sanalarni to'liq tanlang!");
@@ -473,7 +512,7 @@ function searchMaterials() {
     url: "{% url 'ajax_reestr_materials' %}",
     method: 'GET',
     dataType: 'json',
-    data: { organization: orgId, date1: date1, date2: date2, all_regions: allRegions },
+    data: { organization: orgId, department: depId, date1: date1, date2: date2 },
 
     success: function (data) {
       if (!Array.isArray(data) || !data.length) {
@@ -488,17 +527,17 @@ function searchMaterials() {
         return;
       }
 
-      // ── Hudud bo'yicha guruhlash, birinchi uchragan tartibda ──
+      // ── Bo'lim (boshqarma) bo'yicha guruhlash, birinchi uchragan tartibda ──
       const groups = [];
       const groupIndexByName = {};
 
       data.forEach(function (item) {
-        const regionName = (item.region || '').trim() || "Noma'lum hudud";
-        if (!(regionName in groupIndexByName)) {
-          groupIndexByName[regionName] = groups.length;
-          groups.push({ name: regionName, items: [] });
+        const deptName = (item.department || '').trim() || "Bo'lim ko'rsatilmagan";
+        if (!(deptName in groupIndexByName)) {
+          groupIndexByName[deptName] = groups.length;
+          groups.push({ name: deptName, items: [] });
         }
-        groups[groupIndexByName[regionName]].items.push(item);
+        groups[groupIndexByName[deptName]].items.push(item);
       });
 
       let rows       = '';
@@ -516,10 +555,10 @@ function searchMaterials() {
         });
 
         grandTotal += groupSum;
-        rows += buildGroupTotalRow(`JAMI HUDUD: ${group.name}`, groupSum);
+        rows += buildGroupTotalRow(`JAMI BOSHQARMA: ${group.name}`, groupSum);
       });
 
-      // Barcha hududlar bo'yicha umumiy jami
+      // Barcha bo'limlar bo'yicha umumiy jami
       rows += buildGroupTotalRow('JAMI:', grandTotal);
 
       editorSetTbodyRows(rows);
@@ -596,7 +635,7 @@ $(function () {
     })();
 
   if ($.fn.select2) {
-    $('#organization').select2({
+    $('#organization, #department').select2({
       width: '100%',
       placeholder: 'Tanlang...',
       allowClear: true
@@ -613,6 +652,16 @@ $(function () {
   // ─── EVENTS ───────────────────────────────────────────────────────────────
 
   $('#organization').on('change', function () {
+    const orgId = $(this).val();
+    updateEditorWithSelections();
+    if (!orgId) {
+      $('#department').html('<option value="">Tanlang...</option>').trigger('change');
+      return;
+    }
+    loadDepartmentsByOrg(orgId);
+  });
+
+  $('#department').on('change', function () {
     updateEditorWithSelections();
   });
 
@@ -663,9 +712,11 @@ $(function () {
   // ─── INITIAL LOAD ─────────────────────────────────────────────────────────
 
   const initialOrg = '{{ selected_org|default:"" }}';
+  const initialDep = '{{ selected_dep|default:"" }}';
 
   if (initialOrg) {
-    $('#organization').val(initialOrg).trigger('change');
+    $('#organization').val(initialOrg);
+    loadDepartmentsByOrg(initialOrg, initialDep);
   }
 
   waitForTinyMCE(function () {
