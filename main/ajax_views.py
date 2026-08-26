@@ -829,16 +829,29 @@ def download_pdf(request):
     return response
 
 
+
 @never_cache
 @require_GET
 @login_required
 def ajax_reestr_materials(request):
+    """
+    Tashkilot (majburiy) va hudud (ixtiyoriy) bo'yicha reestr materiallarini
+    qaytaradi.
+
+    HUDUD CHEKLOVI:
+    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa, "region"
+      parametri orqali istalgan hududni tanlashi (yoki bo'sh qoldirib
+      barcha hududlarni ko'rishi) mumkin.
+    - Aks holda (ruxsat yo'q) — "region" parametridan qat'i nazar,
+      MAJBURAN faqat foydalanuvchining o'z hududi qo'llaniladi
+      (frontend'dan kelgan qiymatga ishonilmaydi).
+    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
 
     org_id = request.GET.get("organization")
-    dep_id = request.GET.get("department")
+    region_id = request.GET.get("region")
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
 
@@ -851,11 +864,7 @@ def ajax_reestr_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
-    # OR mantig'i: o'z materiali BO'LSA HAM, o'z hududiga yopilgan bo'lsa ham
-    base_filter = (
-        Q(material__employee=employee) |
-        Q(order__sender__region=employee.region,order__goal__organization__type="worker")
-    )
+    has_full_region = request.user.has_perm("main.all_region")
 
     common_filters = dict(
         order__date_finished__isnull=False,
@@ -864,14 +873,20 @@ def ajax_reestr_materials(request):
         order__sender__organization_id=org_id,
     )
 
-    if dep_id and dep_id.isdigit():
-        common_filters["order__sender__department_id"] = dep_id
+    if has_full_region:
+        if region_id and region_id.isdigit():
+            common_filters["order__sender__region_id"] = region_id
+        # region_id bo'sh bo'lsa — barcha hududlar (cheklovsiz)
+    else:
+        if not employee.region_id:
+            return JsonResponse([], safe=False)
+        common_filters["order__sender__region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
 
     qs = (
-        OrderMaterial.objects.filter(base_filter, **common_filters)
+        OrderMaterial.objects.filter(**common_filters)
         .annotate(
             total_sum=ExpressionWrapper(
                 Coalesce(F("material__price"), zero_dec) *
@@ -914,13 +929,15 @@ def ajax_reestr_materials(request):
             "sender_full_name",
             "order__sender__rank__name",
             "order__sender__department__name",
+            "order__sender__region_id",
+            "order__sender__region__name",
 
             "receiver_full_name",
             "order__receiver__rank__name",
 
             "total_sum",
         )
-        .order_by("material__code", "material__name", "order__id")
+        .order_by("order__sender__region_id", "material__code", "material__name", "order__id")
     )
 
     data = []
@@ -945,6 +962,7 @@ def ajax_reestr_materials(request):
             "sender": (item.get("sender_full_name") or "").strip(),
             "sender_rank": item.get("order__sender__rank__name", ""),
             "department": item.get("order__sender__department__name", ""),
+            "region": item.get("order__sender__region__name") or "Noma'lum hudud",
 
             "receiver": (item.get("receiver_full_name") or "").strip(),
             "receiver_rank": item.get("order__receiver__rank__name", ""),

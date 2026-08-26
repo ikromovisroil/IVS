@@ -311,7 +311,7 @@ def contact_post_deed(request):
         raise PermissionDenied("Employee yo'q")
 
     status = request.POST.get("status", "").strip()
-    deed_org_id = request.POST.get("organizations", "").strip()
+    deed_org_id = request.POST.get("deed_organization", "").strip()
     sender_id = request.POST.get("employee", "").strip()
     agreement_ids = request.POST.getlist("agreements")
     uploaded_file = request.FILES.get("file")
@@ -2900,8 +2900,16 @@ def reestr_get(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
+    has_full_region = request.user.has_perm("main.all_region")
+
+    regions = Region.objects.only("id", "name").order_by("id")
+    if not has_full_region:
+        regions = regions.filter(id=employee.region_id)
+
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
+        "regions": regions,
+        "has_full_region": has_full_region,
         "employee": Employee.objects.filter(organization_id=employee.organization_id).select_related("rank"),
     }
     return render(request, 'main/reestr.html', context)
