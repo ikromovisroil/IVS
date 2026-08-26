@@ -27,9 +27,18 @@ class HtmlPdfError(Exception):
 
 _COMMON_CSS = """
     html, body { background-color: #fff; }
-    table { border-collapse: collapse; width: 100%; }
+    table {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+    }
     thead { display: table-row-group; }
     tr { page-break-inside: avoid; break-inside: avoid; }
+    td, th {
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        word-break: break-word;
+    }
 """
 
 
