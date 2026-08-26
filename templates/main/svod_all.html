@@ -33,7 +33,6 @@
                     <option value="{{ org.id }}">{{ org.name }}</option>
                   {% endfor %}
                 </select>
-                <div class="form-text">Bir nechta tashkilotni belgilashingiz mumkin.</div>
               </div>
 
               {% if can_view_all_regions %}
@@ -42,7 +41,6 @@
                   <input type="checkbox" name="all_regions" id="all_regions" class="form-check-input">
                   <label for="all_regions" class="form-check-label">Barcha hududlar bo'yicha</label>
                 </div>
-                <div class="form-text">Belgilanmasa, faqat sizning hududingiz bo'yicha chiqadi.</div>
               </div>
               {% endif %}
 
