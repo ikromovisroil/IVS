@@ -693,6 +693,7 @@ function downloadCurrentEditorAsPdf() {
     method: 'POST',
     headers: {
       'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
     },
     body: new URLSearchParams({
       body_html: rawBody,
@@ -701,11 +702,27 @@ function downloadCurrentEditorAsPdf() {
     }),
   })
     .then(function (response) {
+      const contentType = response.headers.get('content-type') || '';
+
       if (!response.ok) {
-        return response.json().then(function (data) {
-          throw new Error(data.error || 'PDF yuklab olishda xatolik');
+        if (contentType.includes('application/json')) {
+          return response.json().then(function (data) {
+            throw new Error(data.error || 'PDF yuklab olishda xatolik');
+          });
+        }
+        return response.text().then(function (text) {
+          console.error('Server javobi (HTML/text):', text.substring(0, 500));
+          throw new Error(`Server xatoligi: ${response.status} ${response.statusText}`);
         });
       }
+
+      if (!contentType.includes('application/pdf')) {
+        return response.text().then(function (text) {
+          console.error('Kutilmagan javob turi:', contentType, text.substring(0, 500));
+          throw new Error('Server PDF o\'rniga boshqa formatda javob qaytardi');
+        });
+      }
+
       return response.blob();
     })
     .then(function (blob) {

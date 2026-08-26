@@ -15,6 +15,11 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth.decorators import permission_required
+from .sanitizers import sanitize_deed_body
+from .html_pdf import html_to_pdf_bytes, HtmlPdfError
+import io
+from django.core.exceptions import PermissionDenied
+from django.http import FileResponse, JsonResponse
 
 @never_cache
 @require_GET
@@ -787,14 +792,14 @@ def ajax_svod_all_materials(request):
 
     return JsonResponse({"organizations": result, "employees": employees})
 
-from .sanitizers import sanitize_deed_body
+
 @never_cache
 @require_POST
 @login_required
 def download_pdf(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
-        raise PermissionDenied("Employee yo'q")
+        return JsonResponse({"error": "Employee yo'q"}, status=403)
 
     raw_body = request.POST.get("body_html", "")
     body = sanitize_deed_body(raw_body)
@@ -815,6 +820,8 @@ def download_pdf(request):
         pdf_bytes = html_to_pdf_bytes(body, orientation=orientation)
     except HtmlPdfError as e:
         return JsonResponse({"error": f"PDF yaratilmadi: {e}"}, status=500)
+    except Exception as e:
+        return JsonResponse({"error": f"Kutilmagan xatolik: {e}"}, status=500)
 
     filename = f"{base_filename}_{timezone.now().strftime('%Y%m%d_%H%M%S')}.pdf"
 
