@@ -69,7 +69,15 @@ def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
     html = (
         "<!doctype html>"
         "<html>"
-        "<head><meta charset='utf-8'></head>"
+        "<head><meta charset='utf-8'>"
+        "<style>"
+        "  html, body { background-color: #fff; }"
+        "  table { border-collapse: collapse; width: 100%; }"
+        "  thead { display: table-header-group; }"
+        "  tr { page-break-inside: avoid; }"
+        "  td, th { page-break-inside: avoid; }"
+        "</style>"
+        "</head>"
         f"<body>{body_html}</body>"
         "</html>"
     )
