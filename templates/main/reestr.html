@@ -199,11 +199,10 @@
                 </div>
 
                 <div style="text-align:left;">
-                  <b><span id="date_contract">_</span>ga muvofiq</b>
+                  <b><span id="date_contract">_</span></b>
                 </div>
 
-               {% if request.user.employee.id != 5 and request.user.employee.department.id == 298 %}
-                <div>
+                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
                       <col style="width:50%;">
@@ -216,40 +215,9 @@
                           <b>Boshqarma boshlig'i</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Narzullayev A.</b><br>
+                          <b>NARZULLAYEV ANVAR SHUHRAT O‘G‘LI.</b><br>
                         </td>
                       </tr>
-                    </tbody>
-                  </table>
-                </div>
-                {% endif %}
-
-                <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:50%;">
-                      <col style="width:50%;">
-                    </colgroup>
-                    <tbody>
-                      <tr>
-                        <td style="border:1px solid #fff;text-align:left;">
-                          <b>{{ request.user.employee.rank.name }}</b><br>
-                        </td>
-                        <td style="border:1px solid #fff;text-align:left;">
-                          <b>{{ request.user.employee.full_name }}</b><br>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:50%;">
-                      <col style="width:50%;">
-                    </colgroup>
-                    <tbody id="service_employees_tbody">
                     </tbody>
                   </table>
                 </div>
@@ -267,7 +235,7 @@
                           <b>Bosh mutaxassis</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Yakushina E.</b><br>
+                          <b>YAKUSHINA YELENA ANATOLEVNA.</b><br>
                         </td>
                       </tr>
                     </tbody>
@@ -287,12 +255,24 @@
                           <b>Bosh hisobchi</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Ergasheva N.</b><br>
+                          <b>ERGASHEVA NARGIZA RUSTAMOVNA.</b><br>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody id="service_employees_tbody">
+                    </tbody>
+                  </table>
+                </div>
+
             </textarea>
 
           </div>
