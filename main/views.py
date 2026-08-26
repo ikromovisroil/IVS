@@ -2797,7 +2797,7 @@ def svod_all_get(request):
         raise PermissionDenied("Employee yo'q")
 
     context = {
-        "organizations": Organization.objects.only("id", "name").order_by("id"),
+        "organizations": Organization.objects.only("id", "name", "contract").order_by("id"),
         "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
         # "Barcha hududlar" checkbox faqat shu ruxsat bo'lganda ko'rinadi

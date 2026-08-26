@@ -30,7 +30,7 @@
                 <label for="organizations" class="form-label">Tashkilotlar :</label>
                 <select id="organizations" name="organizations[]" class="form-select" multiple required>
                   {% for org in organizations %}
-                    <option value="{{ org.id }}">{{ org.name }}</option>
+                    <option value="{{ org.id }}" data-contract="{{ org.contract|default:'' }}">{{ org.name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -207,7 +207,7 @@
                           <b>Boshqarma boshlig'i</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Narzullayev A.</b><br>
+                          <b>NARZULLAYEV ANVAR SHUHRAT O‘G‘LI.</b><br>
                         </td>
                       </tr>
                     </tbody>
@@ -227,7 +227,27 @@
                           <b>Bosh mutaxassis</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Yakushina E.</b><br>
+                          <b>YAKUSHINA YELENA ANATOLEVNA.</b><br>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Kelishildi</b><br>
+                          <b>Bosh hisobchi</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>ERGASHEVA NARGIZA RUSTAMOVNA.</b><br>
                         </td>
                       </tr>
                     </tbody>
@@ -246,11 +266,11 @@
                     <tbody id="responsible_employees_tbody">
                       <tr>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Kelishildi</b><br>
-                          <b>Bosh hisobchi</b>
+                          <b></b><br>
+                          <b></b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Ergasheva N.</b><br>
+                          <b></b><br>
                         </td>
                       </tr>
                     </tbody>
@@ -359,6 +379,16 @@ function waitForTinyMCE(callback, tries = 0) {
 function updateEditorWithSelections() {
   editorSetText('#doc_date', todayDmy());
   editorSetText('#report_period', formatMonthYear());
+
+  // Tanlangan tashkilotlarning shartnomalarini yig'ib, #date_contract ga qo'yamiz
+  const contracts = [];
+  $('#organizations option:selected').each(function () {
+    const c = ($(this).attr('data-contract') || '').trim();
+    if (c) contracts.push(c);
+  });
+
+  const contractText = contracts.length ? contracts.join(', ') : '_';
+  editorSetText('#date_contract', contractText);
 }
 
 // ─── AJAX: kelishuvchilar ──────────────────────────────────────────────────────
