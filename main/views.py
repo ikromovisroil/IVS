@@ -311,7 +311,7 @@ def contact_post_deed(request):
         raise PermissionDenied("Employee yo'q")
 
     status = request.POST.get("status", "").strip()
-    deed_org_id = request.POST.get("deed_organization", "").strip()
+    deed_org_id = request.POST.get("organizations", "").strip()
     sender_id = request.POST.get("employee", "").strip()
     agreement_ids = request.POST.getlist("agreements")
     uploaded_file = request.FILES.get("file")
