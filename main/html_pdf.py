@@ -19,11 +19,13 @@ class HtmlPdfError(Exception):
 
 
 # ─── Umumiy CSS (bo'linish/page-break qoidalari, ikkala dvigatel uchun ham) ───
+# ESLATMA: "thead { display: table-header-group; }" ataylab qo'shilmagan —
+# shu sabab jadval sarlavhasi (№, Materialning nomi, ...) faqat BIR MARTA,
+# jadvalning boshida chiqadi va keyingi sahifalarda takrorlanmaydi.
 
 _COMMON_CSS = """
     html, body { background-color: #fff; }
     table { border-collapse: collapse; width: 100%; }
-    thead { display: table-header-group; }
     tr { page-break-inside: avoid; break-inside: avoid; }
     td, th { page-break-inside: avoid; }
 """
