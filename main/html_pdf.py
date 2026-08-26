@@ -80,7 +80,7 @@ def _html_to_pdf_bytes_weasyprint(body_html: str, orientation: str) -> bytes:
             size: {page_size};
             margin-top: 15mm;
             margin-right: 10mm;
-            margin-bottom: 15mm;
+            margin-bottom: 25mm;
             margin-left: 15mm;
         }}
         {_COMMON_CSS}
@@ -132,7 +132,7 @@ def _html_to_pdf_bytes_wkhtmltopdf(body_html: str, orientation: str) -> bytes:
         "enable-local-file-access": "",
         "margin-top": "15mm",
         "margin-right": "10mm",
-        "margin-bottom": "15mm",
+        "margin-bottom": "25mm",
         "margin-left": "15mm",
         "load-error-handling": "ignore",
         "load-media-error-handling": "ignore",
