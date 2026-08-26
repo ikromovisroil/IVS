@@ -67,6 +67,12 @@
               <div class="text-center">
                 <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
               </div>
+
+              <div class="text-center">
+                <button type="button" id="btnDownloadPdf" class="btn btn-secondary w-100">
+                  <i class="bi bi-download"></i> PDF yuklab olish
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -446,12 +452,24 @@ function buildServiceEmployeeRow(rank, fullName) {
   `;
 }
 
-function buildGroupTotalRow(label, sum) {
+// Bo'lim jami — OCH sariq fon
+function buildDeptTotalRow(label, sum) {
   return `
     <tr>
-      <td colspan="6" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${escapeHtml(label)}</td>
-      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(sum)}</td>
-      <td colspan="8" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
+      <td colspan="6" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(253,246,220);">${escapeHtml(label)}</td>
+      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(253,246,220);">${formatNumber(sum)}</td>
+      <td colspan="8" style="border:1px solid #000;background-color:rgb(253,246,220);"></td>
+    </tr>
+  `;
+}
+
+// Umumiy jami — TO'Q sariq fon, qalinroq border
+function buildGrandTotalRow(label, sum) {
+  return `
+    <tr>
+      <td colspan="6" style="border:2px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(245,199,86);">${escapeHtml(label)}</td>
+      <td style="border:2px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(245,199,86);">${formatNumber(sum)}</td>
+      <td colspan="8" style="border:2px solid #000;background-color:rgb(245,199,86);"></td>
     </tr>
   `;
 }
@@ -526,11 +544,11 @@ function searchMaterials() {
         });
 
         grandTotal += groupSum;
-        rows += buildGroupTotalRow(`JAMI BO'LIM: ${group.name}`, groupSum);
+        rows += buildDeptTotalRow(`JAMI BO'LIM: ${group.name}`, groupSum);
       });
 
       // Barcha bo'limlar bo'yicha umumiy jami
-      rows += buildGroupTotalRow('JAMI:', grandTotal);
+      rows += buildGrandTotalRow('JAMI:', grandTotal);
 
       editorSetTbodyRows(rows);
 
@@ -570,6 +588,83 @@ function searchMaterials() {
   });
 }
 
+// ─── PDF yuklab olish ──────────────────────────────────────────────────────────
+
+function downloadCurrentEditorAsPdf() {
+  const ed = editorGet();
+  if (!ed) {
+    alert("Hujjat hali tayyor emas, birozdan so'ng qayta urinib ko'ring.");
+    return;
+  }
+
+  ed.save();
+  const rawBody = $('#body').val() || '';
+
+  if (!rawBody.trim()) {
+    alert('Hujjat matni bo\'sh — avval "Qidirish" tugmasini bosing.');
+    return;
+  }
+
+  const $btn = $('#btnDownloadPdf');
+  const originalHtml = $btn.html();
+  $btn.prop('disabled', true).text('Tayyorlanmoqda...');
+
+  const csrfToken = $('form input[name="csrfmiddlewaretoken"]').val();
+
+  fetch("{% url 'download_pdf' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: new URLSearchParams({
+      body_html: rawBody,
+      orientation: 'Landscape',
+      filename: 'reestr',
+    }),
+  })
+    .then(function (response) {
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!response.ok) {
+        if (contentType.includes('application/json')) {
+          return response.json().then(function (data) {
+            throw new Error(data.error || 'PDF yuklab olishda xatolik');
+          });
+        }
+        return response.text().then(function (text) {
+          console.error('Server javobi (HTML/text):', text.substring(0, 500));
+          throw new Error(`Server xatoligi: ${response.status} ${response.statusText}`);
+        });
+      }
+
+      if (!contentType.includes('application/pdf')) {
+        return response.text().then(function (text) {
+          console.error('Kutilmagan javob turi:', contentType, text.substring(0, 500));
+          throw new Error('Server PDF o\'rniga boshqa formatda javob qaytardi');
+        });
+      }
+
+      return response.blob();
+    })
+    .then(function (blob) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `reestr_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(function (err) {
+      console.error(err);
+      alert(err.message || 'PDF yuklab olishda xatolik yuz berdi');
+    })
+    .finally(function () {
+      $btn.prop('disabled', false).html(originalHtml);
+    });
+}
 
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
@@ -633,6 +728,11 @@ $(function () {
   $('#btnGenerate').on('click', function (e) {
     e.preventDefault();
     searchMaterials();
+  });
+
+  $('#btnDownloadPdf').on('click', function (e) {
+    e.preventDefault();
+    downloadCurrentEditorAsPdf();
   });
 
   // ─── FORM SUBMIT: body ni Base64 qilib yuboramiz (svod.html bilan bir xil,

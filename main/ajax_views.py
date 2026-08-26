@@ -833,19 +833,7 @@ def download_pdf(request):
 @require_GET
 @login_required
 def ajax_reestr_materials(request):
-    """
-    Tashkilot (majburiy) va hudud (ixtiyoriy) bo'yicha reestr materiallarini
-    qaytaradi. Natija bo'lim (department) bo'yicha tartiblangan holda
-    keladi — frontend shu tartibga asoslanib guruhlab chiqaradi.
 
-    HUDUD CHEKLOVI:
-    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa, "region"
-      parametri orqali istalgan hududni tanlashi (yoki bo'sh qoldirib
-      barcha hududlarni ko'rishi) mumkin.
-    - Aks holda (ruxsat yo'q) — "region" parametridan qat'i nazar,
-      MAJBURAN faqat foydalanuvchining o'z hududi qo'llaniladi
-      (frontend'dan kelgan qiymatga ishonilmaydi).
-    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
