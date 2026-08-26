@@ -19,15 +19,17 @@ class HtmlPdfError(Exception):
 
 
 # ─── Umumiy CSS (bo'linish/page-break qoidalari, ikkala dvigatel uchun ham) ───
-# ESLATMA: "thead { display: table-header-group; }" ataylab qo'shilmagan —
-# shu sabab jadval sarlavhasi (№, Materialning nomi, ...) faqat BIR MARTA,
-# jadvalning boshida chiqadi va keyingi sahifalarda takrorlanmaydi.
+# MUHIM: <thead>ning brauzer/dvigatel darajasidagi standart "display" qiymati
+# allaqachon "table-header-group" bo'lib, bu paged media'da HAR SAHIFADA
+# avtomatik takrorlanishga sabab bo'ladi — buni CSS'da alohida yozmasak ham.
+# Shuning uchun "table-row-group" bilan buni MAJBURAN bekor qilamiz, shunda
+# sarlavha faqat bir marta, jadval boshida chiqadi.
 
 _COMMON_CSS = """
     html, body { background-color: #fff; }
     table { border-collapse: collapse; width: 100%; }
+    thead { display: table-row-group; }
     tr { page-break-inside: avoid; break-inside: avoid; }
-    td, th { page-break-inside: avoid; }
 """
 
 
@@ -78,7 +80,7 @@ def _html_to_pdf_bytes_weasyprint(body_html: str, orientation: str) -> bytes:
             size: {page_size};
             margin-top: 15mm;
             margin-right: 10mm;
-            margin-bottom: 25mm;
+            margin-bottom: 15mm;
             margin-left: 15mm;
         }}
         {_COMMON_CSS}
@@ -130,7 +132,7 @@ def _html_to_pdf_bytes_wkhtmltopdf(body_html: str, orientation: str) -> bytes:
         "enable-local-file-access": "",
         "margin-top": "15mm",
         "margin-right": "10mm",
-        "margin-bottom": "25mm",
+        "margin-bottom": "15mm",
         "margin-left": "15mm",
         "load-error-handling": "ignore",
         "load-media-error-handling": "ignore",
