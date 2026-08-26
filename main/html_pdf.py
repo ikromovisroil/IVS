@@ -1,7 +1,6 @@
 import logging
 import os
 
-import pdfkit
 import pymupdf
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -17,6 +16,17 @@ logger = logging.getLogger(__name__)
 
 class HtmlPdfError(Exception):
     pass
+
+
+# ─── Umumiy CSS (bo'linish/page-break qoidalari, ikkala dvigatel uchun ham) ───
+
+_COMMON_CSS = """
+    html, body { background-color: #fff; }
+    table { border-collapse: collapse; width: 100%; }
+    thead { display: table-header-group; }
+    tr { page-break-inside: avoid; break-inside: avoid; }
+    td, th { page-break-inside: avoid; }
+"""
 
 
 def _get_wkhtmltopdf_path():
@@ -56,36 +66,52 @@ def _read_existing_file_bytes(deed):
         return None
 
 
-def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
+def _html_to_pdf_bytes_weasyprint(body_html: str, orientation: str) -> bytes:
+    from weasyprint import HTML, CSS
 
-    body_html = (body_html or "").strip()
-    if not body_html:
-        raise HtmlPdfError("Body bo'sh — PDF qilib bo'lmaydi")
+    page_size = "A4 portrait" if orientation == "Portrait" else "A4 landscape"
+
+    css = CSS(string=f"""
+        @page {{
+            size: {page_size};
+            margin-top: 15mm;
+            margin-right: 10mm;
+            margin-bottom: 25mm;
+            margin-left: 15mm;
+        }}
+        {_COMMON_CSS}
+    """)
+
+    html = (
+        "<!doctype html>"
+        "<html>"
+        "<head><meta charset='utf-8'></head>"
+        f"<body>{body_html}</body>"
+        "</html>"
+    )
+
+    try:
+        pdf_bytes = HTML(string=html).write_pdf(stylesheets=[css])
+    except Exception as e:
+        raise HtmlPdfError(f"PDF qilishda xatolik (weasyprint): {e}")
+
+    if not pdf_bytes:
+        raise HtmlPdfError("PDF hosil bo'lmadi (weasyprint bo'sh qaytdi).")
+
+    return pdf_bytes
+
+
+def _html_to_pdf_bytes_wkhtmltopdf(body_html: str, orientation: str) -> bytes:
+    import pdfkit
 
     wkhtmltopdf_path = _ensure_wkhtmltopdf()
-
     config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
 
     html = (
         "<!doctype html>"
         "<html>"
         "<head><meta charset='utf-8'>"
-        "<style>"
-        "  html, body { background-color: #fff; }"
-        "  table {"
-        "    border-collapse: separate;"
-        "    border-spacing: 0;"
-        "    width: 100%;"
-        "  }"
-        "  thead { display: table-header-group; }"
-        "  tr {"
-        "    page-break-inside: avoid !important;"
-        "    -webkit-region-break-inside: avoid;"
-        "  }"
-        "  td, th {"
-        "    page-break-inside: avoid !important;"
-        "  }"
-        "</style>"
+        f"<style>{_COMMON_CSS}</style>"
         "</head>"
         f"<body>{body_html}</body>"
         "</html>"
@@ -116,12 +142,26 @@ def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
             configuration=config,
         )
     except Exception as e:
-        raise HtmlPdfError(f"PDF qilishda xatolik: {e}")
+        raise HtmlPdfError(f"PDF qilishda xatolik (wkhtmltopdf): {e}")
 
     if not pdf_bytes:
         raise HtmlPdfError("PDF hosil bo'lmadi (pdfkit bo'sh qaytdi).")
 
     return pdf_bytes
+
+
+def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
+
+    body_html = (body_html or "").strip()
+    if not body_html:
+        raise HtmlPdfError("Body bo'sh — PDF qilib bo'lmaydi")
+
+    engine = getattr(settings, "PDF_ENGINE", "weasyprint")
+
+    if engine == "wkhtmltopdf":
+        return _html_to_pdf_bytes_wkhtmltopdf(body_html, orientation)
+
+    return _html_to_pdf_bytes_weasyprint(body_html, orientation)
 
 
 def deed_to_pdf_bytes(deed) -> bytes:
