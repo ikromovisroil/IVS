@@ -15,6 +15,8 @@ ALLOWED_DEED_ATTRS = {
 ALLOWED_DEED_STYLES = [
     "text-align", "font-size", "width", "border", "border-collapse", "margin-top",
     "background-color", "color", "font-weight", "font-style",
+    "page-break-after", "page-break-before", "page-break-inside",
+    "break-after", "break-before", "break-inside",
 ]
 
 

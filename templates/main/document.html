@@ -145,7 +145,7 @@
             </div>
 
             <textarea id="body" name="body" class="tinymce-editor">
-
+             <div style="font-size:10pt;">
               <!-- ─── 1-SAHIFA: DALOLATNOMA ─── -->
               <div style="text-align:center;"><b>DALOLATNOMA</b></div>
 
@@ -226,7 +226,7 @@
 
               <div style="text-align:center;">
                 <b><u class="dep_name">_</u></b><br>
-                <span style="font-size:8pt;">(boshqarma nomi)</span>
+                <span>(boshqarma nomi)</span>
               </div>
 
               <div style="text-align:left;">
@@ -236,7 +236,7 @@
               <!-- ✅ DINAMIK: JS orqali to'ldiriladi. SKIP qilingan
                    (hide_page2=true) shartnomalar bu yerda CHIQMAYDI. -->
               <div id="liable_page2"></div>
-
+             </div>
             </textarea>
           </div>
         </div>
@@ -501,13 +501,13 @@
       const colspan = isPC ? 4 : 3;
 
       let html = '<tr>';
-      html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">№</td>';
-      html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Rusumi</td>';
+      html += '<td style="border:1px solid #000;font-size:10pt;text-align:center;">№</td>';
+      html += '<td style="border:1px solid #000;font-size:10pt;text-align:center;">Rusumi</td>';
       if (isPC) {
-        html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Kompyuter SR</td>';
-        html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Monitor SR</td>';
+        html += '<td style="border:1px solid #000;font-size:10pt;text-align:center;">Kompyuter SR</td>';
+        html += '<td style="border:1px solid #000;font-size:10pt;text-align:center;">Monitor SR</td>';
       } else {
-        html += '<td style="border:1px solid #000;font-size:12pt;text-align:center;">Seriya raqami</td>';
+        html += '<td style="border:1px solid #000;font-size:10pt;text-align:center;">Seriya raqami</td>';
       }
       html += '</tr>';
 
