@@ -2533,9 +2533,6 @@ def document_post(request):
 
     body = _decode_body(request)
 
-    # document_get dagi "emp_sender" mezoni bilan BIR XIL — aks holda
-    # foydalanuvchi cheklangan ro'yxatdan tashqaridagi xodimni ham
-    # sender sifatida tanlashi mumkin edi.
     allowed_sender_qs = Employee.objects.filter(
         Q(department_id=283) | Q(department_id=298, region=employee.region)
     )
@@ -2574,9 +2571,6 @@ def document_post(request):
                 objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
                 DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
-            # PDF yaratish — Deed/DeedConsent bilan BITTA tranzaksiyada.
-            # Xato bo'lsa hammasi orqaga qaytariladi, yarim tayyor
-            # (faylsiz) Deed bazada qolib ketmaydi.
             _save_deed_pdf(deed)
 
     except HtmlPdfError as e:
@@ -2694,11 +2688,13 @@ def akt_post(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)
 def svod_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
+        raise PermissionDenied("Ruxsat yo'q")
 
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
@@ -2711,11 +2707,13 @@ def svod_get(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)
 def svod_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
+        raise PermissionDenied("Ruxsat yo'q")
 
     org_id = (request.POST.get("organization") or "").strip()
     sender_id = (request.POST.get("sender") or "").strip()
@@ -2789,11 +2787,13 @@ def svod_post(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)
 def svod_all_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
+        raise PermissionDenied("Ruxsat yo'q")
 
     context = {
         "organizations": Organization.objects.only("id", "name", "contract").order_by("id"),
@@ -2808,11 +2808,13 @@ def svod_all_get(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)
 def svod_all_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
+        raise PermissionDenied("Ruxsat yo'q")
 
     org_ids = [i for i in request.POST.getlist("organizations[]") if i.isdigit()]
     sender_id = (request.POST.get("sender") or "").strip()
@@ -2894,11 +2896,13 @@ def svod_all_post(request):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)
 def reestr_get(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
+        raise PermissionDenied("Ruxsat yo'q")
 
     has_full_region = request.user.has_perm("main.all_region")
 
@@ -2918,11 +2922,13 @@ def reestr_get(request):
 @never_cache
 @require_POST
 @login_required
-@permission_required("main.shop_employee", raise_exception=True)
 def reest_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
+
+    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
+        raise PermissionDenied("Ruxsat yo'q")
 
     org_id = (request.POST.get("organization") or "").strip()
     sender_id = (request.POST.get("sender") or "").strip()

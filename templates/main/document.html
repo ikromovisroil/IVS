@@ -521,7 +521,6 @@
         if (isPC) {
           html += `<td style="border:1px solid #000;">${esc(x.serial)}</td>`;
 
-          // Monitor nomi va SR — har biri alohida qatorda
           const monitorsHtml = (x.extra_serials || []).map(function (s) {
             const parts = s.split('\n');
             return `<div>${parts.map(function(p){ return esc(p); }).join('<br>')}</div>`;
@@ -538,7 +537,6 @@
       return html;
     }
 
-    // 1-sahifadagi bitta shartnoma bloki (soni bilan)
     function buildBlock1(contract) {
       const cid = contract.contract_id;
       return `<div id="block1_c${cid}" style="text-align:left;">
@@ -549,7 +547,6 @@
       </div>`;
     }
 
-    // 2-sahifadagi bitta shartnoma bloki (jadval bilan)
     function buildBlock2(contract) {
       const cid  = contract.contract_id;
       const isPC = (cid === 1);
@@ -613,7 +610,6 @@
           const p2 = ed.getBody().querySelector('#liable_page2');
           if (!p1 || !p2) return;
 
-          // contract_id bo'yicha o'sish tartibida saralaymiz
           const sortedContracts = Object.values(contracts).sort(function (a, b) {
             return a.contract_id - b.contract_id;
           });
@@ -622,12 +618,10 @@
           let html2 = '';
 
           sortedContracts.forEach(function (contract) {
-            if (!contract.count || contract.count === 0) return; // ✅ 0 dona — chiqmaydi
             html1 += buildBlock1(contract);
             html2 += buildBlock2(contract);
           });
 
-          // Har safar qidiruvda to'liq qayta quramiz (eski holat qolib ketmasin)
           p1.innerHTML = html1;
           p2.innerHTML = html2;
 
@@ -679,9 +673,6 @@
 
       const $form = $(this);
 
-      // Tugma bir necha marta bosilishi (shoshilib bosish) tufayli
-      // forma bir necha marta yuborilib, bir xil hujjat qayta-qayta
-      // yaratilib qolishining oldini olish uchun qulflash.
       if ($form.data("locked")) {
         return false;
       }
@@ -689,24 +680,20 @@
       $form.find('button[type="submit"]').prop("disabled", true);
 
       const ed = getEditor();
-      if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+      if (ed) ed.save();
 
       const rawBody = $('#body').val() || '';
 
-      // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
       const encoded = btoa(unescape(encodeURIComponent(rawBody)));
 
-      // yashirin maydonga joylaymiz
       let $hidden = $(this).find('input[name="body_encoded"]');
       if ($hidden.length === 0) {
         $hidden = $('<input type="hidden" name="body_encoded">').appendTo(this);
       }
       $hidden.val(encoded);
 
-      // asl 'body' maydonini yuborilishdan chiqarib tashlaymiz
       $('#body').removeAttr('name');
 
-      // haqiqiy (native) yuborish
       this.submit();
     });
 

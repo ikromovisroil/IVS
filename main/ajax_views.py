@@ -829,6 +829,7 @@ def download_pdf(request):
     return response
 
 
+
 @never_cache
 @require_GET
 @login_required
@@ -963,10 +964,56 @@ def ajax_reestr_materials(request):
     return JsonResponse(data, safe=False)
 
 
+# is_online sharti bilan filtrlanadigan shartnomalar (kategoriya + is_online)
+ONLINE_FILTER_RULES = [
+    {"match": "A4 formatli printerlarga", "exclude_match": "tarmoq", "is_online": False},  # 1.2
+    {"match": "A4 formatli tarmoq printerlariga", "is_online": True},                        # 1.3
+]
+
+# Hozircha e'tiborsiz qoldiriladigan (ko'rsatilmaydigan) shartnomalar
+SKIP_RULES = [
+    "A3 formatli nusxa ko'paytirish",                                   # 1.5
+    "Umumiy tarmoqlarni ulanish nuqtalariga",                           # 2.4 — ✅ endi e'tiborsiz
+    "Umumtizimli serverlarga",                                          # 2.2
+    "Ma'lumotlar bazasi serverlariga",                                  # 2.3
+    "Aloqa kanallarini ma'murlash",                                     # 2.7
+    "Kalitlarni ro'yxatga olish markazi serveri",                       # 2.8 (server)
+    "Elektron raqamli imzo kalitlari",                                  # 2.8 (ERI)
+    "Virtual serverlar platformasining",                                # 2.10
+    "Yangi yoki joriy dasturiy ta'minotni ishlab chiqish",              # 3.1
+    "Amaldagi dasturiy ta'minotlarni kuzatib borish",                   # 3.2
+    "Dasturchilar, ma'lumotlar bazasi administratorlari",               # bir martalik (dasturchi)
+    "Bir marotabalik texnik ishlar",                                    # bir martalik (texnik)
+]
+
+
+def _match_any(name, keywords):
+    """name ichida keywords ro'yxatidan biror so'z bor-yo'qligini tekshiradi (case-insensitive)."""
+    name_lower = (name or "").lower()
+    for kw in keywords:
+        if kw.lower() in name_lower:
+            return kw
+    return None
+
+
+def _get_online_filter_rule(contract_name):
+    """Agar shartnoma is_online filtri bilan hisoblanishi kerak bo'lsa, qoidani qaytaradi."""
+    name_lower = (contract_name or "").lower()
+    for rule in ONLINE_FILTER_RULES:
+        match = rule["match"].lower()
+        exclude = rule.get("exclude_match")
+        if match in name_lower:
+            if exclude and exclude.lower() in name_lower:
+                continue
+            return rule
+    return None
+
+
 @never_cache
 @require_GET
 @login_required
 def ajax_document_preview(request):
+
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -980,21 +1027,24 @@ def ajax_document_preview(request):
             status=400,
         )
 
+    # category endi ixtiyoriy — category__isnull=False sharti OLIB TASHLANDI
     liables = (
         Liable.objects
-        .filter(employee=employee, category__isnull=False, contract__isnull=False)
+        .filter(employee=employee, contract__isnull=False)
         .select_related("contract", "category")
-        .order_by("contract_id")          # ✅ tartib kafolatlanadi
+        .order_by("contract_id")
         .values("contract_id", "contract__name", "category_id")
     )
 
     contract_map = {}
     for row in liables:
-        cid   = row["contract_id"]
+        cid = row["contract_id"]
         cname = row["contract__name"] or f"Shartnoma {cid}"
         if cid not in contract_map:
             contract_map[cid] = {"name": cname, "category_ids": []}
-        contract_map[cid]["category_ids"].append(row["category_id"])
+        cat_id = row["category_id"]
+        if cat_id is not None:
+            contract_map[cid]["category_ids"].append(cat_id)
 
     if not contract_map:
         return JsonResponse({"contracts": {}})
@@ -1007,52 +1057,88 @@ def ajax_document_preview(request):
         for cat_id in v["category_ids"]
     })
 
-    all_technics = (
-        Technics.objects
-        .filter(is_active=True, **loc_filter)
-        .filter(category_id__in=all_category_ids)
-        .select_related("category")
-        .prefetch_related("structure_set")
-    )
+    if all_category_ids:
+        all_technics = (
+            Technics.objects
+            .filter(is_active=True, **loc_filter)
+            .filter(category_id__in=all_category_ids)
+            .select_related("category")
+            .prefetch_related("structure_set")
+        )
+    else:
+        all_technics = Technics.objects.none()
 
     cat_to_technics = defaultdict(list)
     for tex in all_technics:
         cat_to_technics[tex.category_id].append(tex)
 
-    PC_CONTRACT_ID = 1
+    PC_CONTRACT_ID = 1  # kompyuter shartnomasi — 2-sahifada monitor/SR ustunlari uchun
+
     contracts_data = {}
 
     for cid, info in contract_map.items():
+        contract_name = info["name"]
+        category_ids = info["category_ids"]
+
+        # 1) E'TIBORSIZ QOLDIRILADIGAN shartnomalar — umuman chiqmaydi
+        if _match_any(contract_name, SKIP_RULES):
+            continue
+
+        # 2) Kategoriya UMUMAN BIRIKTIRILMAGAN — baribir chiqadi, bo'sh ro'yxat bilan
+        if not category_ids:
+            contracts_data[str(cid)] = {
+                "contract_id": cid,
+                "contract_name": contract_name,
+                "count": 0,
+                "items": [],
+            }
+            continue
+
+        # 3) Kategoriya bo'yicha texnikalarni yig'amiz
         items = []
         seen_ids = set()
 
-        for cat_id in info["category_ids"]:
+        for cat_id in category_ids:
             for tex in cat_to_technics.get(cat_id, []):
                 if tex.id in seen_ids:
                     continue
                 seen_ids.add(tex.id)
+                items.append(tex)
 
-                item = {
-                    "id":            tex.id,
-                    "name":          tex.name   or "",
-                    "serial":        tex.serial or "",
-                    "category_name": tex.category.name if tex.category else "",
-                }
+        # 4) is_online filtri kerak bo'lsa, qo'llaymiz (masalan A4 printer: oddiy/tarmoq)
+        online_rule = _get_online_filter_rule(contract_name)
+        if online_rule is not None:
+            wanted_online = online_rule["is_online"]
+            items = [tex for tex in items if bool(tex.is_online) == wanted_online]
 
-                if cid == PC_CONTRACT_ID:
-                    item["extra_serials"] = [
-                        f"{s['name']}\nSR: {s['serial']}"
-                        for s in tex.structure_set.filter(is_active=True).values("name", "serial")
-                        if s["serial"]
-                    ]
+        # 5) Kategoriya BOR, lekin mos texnika TOPILMADI — bu shartnoma chiqmaydi
+        if not items:
+            continue
 
-                items.append(item)
+        # 6) Natijaviy items'ni JSON formatiga o'giramiz
+        result_items = []
+        for tex in items:
+            item = {
+                "id": tex.id,
+                "name": tex.name or "",
+                "serial": tex.serial or "",
+                "category_name": tex.category.name if tex.category else "",
+            }
+
+            if cid == PC_CONTRACT_ID:
+                item["extra_serials"] = [
+                    f"{s['name']}\nSR: {s['serial']}"
+                    for s in tex.structure_set.filter(is_active=True).values("name", "serial")
+                    if s["serial"]
+                ]
+
+            result_items.append(item)
 
         contracts_data[str(cid)] = {
-            "contract_id":   cid,
-            "contract_name": info["name"],
-            "count":         len(items),
-            "items":         items,
+            "contract_id": cid,
+            "contract_name": contract_name,
+            "count": len(result_items),
+            "items": result_items,
         }
 
     return JsonResponse({"contracts": contracts_data})
