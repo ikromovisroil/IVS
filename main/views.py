@@ -2092,12 +2092,6 @@ def mat_info(request):
     date1 = parse_date(date1_raw) if date1_raw else None
     date2 = parse_date(date2_raw) if date2_raw else None
 
-    # Avval faqat "satr bo'sh emasmi" tekshirilardi, parse_date()
-    # muvaffaqiyatli parslanganmi — YO'Q. Noto'g'ri formatdagi sana
-    # jimgina e'tiborsiz qoldirilib, filtr butunlay o'tkazib
-    # yuborilardi (cheklovsiz natija chiqardi, foydalanuvchi buni
-    # sezmasdan). Endi parslash muvaffaqiyatsiz bo'lsa aniq xato
-    # xabari bilan qaytariladi.
     if date1_raw and not date1:
         messages.error(request, "Boshlanish sanasi noto'g'ri formatda")
         return redirect(request.path)
@@ -2148,6 +2142,7 @@ def mat_info(request):
         for mv in movements_detail_qs:
             movements_by_material.setdefault(mv.material_id, []).append({
                 "date": mv.date_creat,
+                "user": mv.user,
                 "employee": mv.employee,
                 "income": mv.income,
                 "outcome": mv.outcome,
