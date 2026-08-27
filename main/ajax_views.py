@@ -970,10 +970,10 @@ ONLINE_FILTER_RULES = [
     {"match": "A4 formatli tarmoq printerlariga", "is_online": True},                        # 1.3
 ]
 
-# Hozircha e'tiborsiz qoldiriladigan (ko'rsatilmaydigan) shartnomalar
+# Hozircha e'tiborsiz qoldiriladigan shartnomalar — bular 1-sahifada
 SKIP_RULES = [
     "A3 formatli nusxa ko'paytirish",                                   # 1.5
-    "Umumiy tarmoqlarni ulanish nuqtalariga",                           # 2.4 — ✅ endi e'tiborsiz
+    "Umumiy tarmoqlarni ulanish nuqtalariga",                           # 2.4
     "Umumtizimli serverlarga",                                          # 2.2
     "Ma'lumotlar bazasi serverlariga",                                  # 2.3
     "Aloqa kanallarini ma'murlash",                                     # 2.7
@@ -987,23 +987,40 @@ SKIP_RULES = [
 ]
 
 
+def _normalize(text):
+    """
+    Turli apostrof/tinish belgilarini (’, ‘, ‛, `) standart (') belgiga
+    almashtiradi va kichik harfga o'tkazadi — solishtirish ishonchli
+    bo'lishi uchun.
+    """
+    if not text:
+        return ""
+    return (
+        text.lower()
+        .replace("’", "'")
+        .replace("‘", "'")
+        .replace("‛", "'")
+        .replace("`", "'")
+    )
+
+
 def _match_any(name, keywords):
-    """name ichida keywords ro'yxatidan biror so'z bor-yo'qligini tekshiradi (case-insensitive)."""
-    name_lower = (name or "").lower()
+    """name ichida keywords ro'yxatidan biror so'z bor-yo'qligini tekshiradi (case/apostrof-insensitive)."""
+    name_norm = _normalize(name)
     for kw in keywords:
-        if kw.lower() in name_lower:
+        if _normalize(kw) in name_norm:
             return kw
     return None
 
 
 def _get_online_filter_rule(contract_name):
     """Agar shartnoma is_online filtri bilan hisoblanishi kerak bo'lsa, qoidani qaytaradi."""
-    name_lower = (contract_name or "").lower()
+    name_norm = _normalize(contract_name)
     for rule in ONLINE_FILTER_RULES:
-        match = rule["match"].lower()
+        match = _normalize(rule["match"])
         exclude = rule.get("exclude_match")
-        if match in name_lower:
-            if exclude and exclude.lower() in name_lower:
+        if match in name_norm:
+            if exclude and _normalize(exclude) in name_norm:
                 continue
             return rule
     return None
@@ -1013,7 +1030,21 @@ def _get_online_filter_rule(contract_name):
 @require_GET
 @login_required
 def ajax_document_preview(request):
+    """
+    Xodimga biriktirilgan (Liable) shartnomalar bo'yicha texnika ro'yxatini
+    qaytaradi.
 
+    QOIDALAR:
+    - SKIP_RULES'dagi shartnomalar — 1-sahifada (nomi bilan, sondan tashqari
+      "hide_page2": true belgisi bilan) chiqadi, lekin 2-sahifada
+      (texnika jadvali) CHIQMAYDI.
+    - Kategoriya BIRIKTIRILMAGAN (Liable.category = null) shartnoma —
+      baribir chiqadi (items bo'sh, count = 0), ikkala sahifada ham.
+    - Kategoriya BIRIKTIRILGAN, lekin mos texnika topilmasa — bu shartnoma
+      umuman CHIQMAYDI (na 1, na 2-sahifada).
+    - Kategoriya biriktirilgan VA mos texnika topilsa — to'liq ro'yxat
+      bilan, ikkala sahifada ham chiqadi.
+    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -1027,7 +1058,6 @@ def ajax_document_preview(request):
             status=400,
         )
 
-    # category endi ixtiyoriy — category__isnull=False sharti OLIB TASHLANDI
     liables = (
         Liable.objects
         .filter(employee=employee, contract__isnull=False)
@@ -1080,8 +1110,16 @@ def ajax_document_preview(request):
         contract_name = info["name"]
         category_ids = info["category_ids"]
 
-        # 1) E'TIBORSIZ QOLDIRILADIGAN shartnomalar — umuman chiqmaydi
+        # 1) E'TIBORSIZ QOLDIRILADIGAN shartnomalar — 1-sahifada nomi bilan
+        #    chiqadi (count/items'siz), 2-sahifada esa umuman chiqmaydi.
         if _match_any(contract_name, SKIP_RULES):
+            contracts_data[str(cid)] = {
+                "contract_id": cid,
+                "contract_name": contract_name,
+                "count": 0,
+                "items": [],
+                "hide_page2": True,
+            }
             continue
 
         # 2) Kategoriya UMUMAN BIRIKTIRILMAGAN — baribir chiqadi, bo'sh ro'yxat bilan
@@ -1091,6 +1129,7 @@ def ajax_document_preview(request):
                 "contract_name": contract_name,
                 "count": 0,
                 "items": [],
+                "hide_page2": False,
             }
             continue
 
@@ -1139,6 +1178,7 @@ def ajax_document_preview(request):
             "contract_name": contract_name,
             "count": len(result_items),
             "items": result_items,
+            "hide_page2": False,
         }
 
     return JsonResponse({"contracts": contracts_data})

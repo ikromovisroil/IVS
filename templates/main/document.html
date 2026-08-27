@@ -69,6 +69,12 @@
                 </button>
               </div>
 
+              <div class="text-center">
+                <button type="button" id="btnDownloadPdf" class="btn btn-secondary w-100">
+                  <i class="bi bi-download"></i> PDF yuklab olish
+                </button>
+              </div>
+
             </div>
           </div>
         </div>
@@ -174,7 +180,7 @@
 
               <div></div>
 
-              <!-- ✅ DINAMIK: JS orqali to'ldiriladi, 0 dona bo'lgan shartnomalar chiqmaydi -->
+              <!-- ✅ DINAMIK: JS orqali to'ldiriladi -->
               <div id="liable_page1"></div>
 
               <div></div>
@@ -227,7 +233,8 @@
                 <b>Xizmat ko'rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
               </div>
 
-              <!-- ✅ DINAMIK: JS orqali to'ldiriladi, 0 dona bo'lgan shartnomalar chiqmaydi -->
+              <!-- ✅ DINAMIK: JS orqali to'ldiriladi. SKIP qilingan
+                   (hide_page2=true) shartnomalar bu yerda CHIQMAYDI. -->
               <div id="liable_page2"></div>
 
             </textarea>
@@ -362,11 +369,9 @@
     function applyContractToEditor(t) { setInEditor('#date_contract', t || "Shartnoma ma'lumoti kiritilmagan"); }
 
     function applyDepToEditor(depText, orgText) {
-      // org_id — faqat tashkilot nomi
       const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
       setAllInEditor('.org_id', orgFinal);
 
-      // dep_id — faqat departament tanlansa, aks holda bo'sh/chiziq
       const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
       setInEditor('#dep_id',           depFinal);
       setInEditor('#dep_id2',          depFinal);
@@ -390,7 +395,7 @@
       const orgText = $('#organization option:selected').text() || '';
       const depText = $('#department option:selected').text()   || '';
       applyTodayDate();
-      applyDepToEditor(depText, orgText); // org_id va dep_id ni ichida boshqaradi
+      applyDepToEditor(depText, orgText);
       applyChorakToEditor($('#rim_id').val() || '');
       applyContractToEditor($('#organization option:selected').attr('data-contract') || '');
       applySenderToEditor();
@@ -537,6 +542,8 @@
       return html;
     }
 
+    // 1-sahifadagi bitta shartnoma bloki (soni bilan) — HAR DOIM chiqadi,
+    // SKIP qilingan (hide_page2=true) shartnomalar ham shu yerda ko'rinadi.
     function buildBlock1(contract) {
       const cid = contract.contract_id;
       return `<div id="block1_c${cid}" style="text-align:left;">
@@ -547,6 +554,8 @@
       </div>`;
     }
 
+    // 2-sahifadagi bitta shartnoma bloki (jadval bilan) — faqat
+    // hide_page2 = false bo'lganlar uchun chaqiriladi (chaqiruv joyida tekshiriladi).
     function buildBlock2(contract) {
       const cid  = contract.contract_id;
       const isPC = (cid === 1);
@@ -610,6 +619,7 @@
           const p2 = ed.getBody().querySelector('#liable_page2');
           if (!p1 || !p2) return;
 
+          // contract_id bo'yicha o'sish tartibida saralaymiz
           const sortedContracts = Object.values(contracts).sort(function (a, b) {
             return a.contract_id - b.contract_id;
           });
@@ -618,10 +628,16 @@
           let html2 = '';
 
           sortedContracts.forEach(function (contract) {
+            // 1-sahifa — HAMMASI chiqadi (SKIP qilinganlar ham, nomi bilan)
             html1 += buildBlock1(contract);
-            html2 += buildBlock2(contract);
+
+            // 2-sahifa — faqat hide_page2 belgilanmagan shartnomalar chiqadi
+            if (!contract.hide_page2) {
+              html2 += buildBlock2(contract);
+            }
           });
 
+          // Har safar qidiruvda to'liq qayta quramiz (eski holat qolib ketmasin)
           p1.innerHTML = html1;
           p2.innerHTML = html2;
 
@@ -635,6 +651,86 @@
           console.error('ajax_document_preview xatosi:', msg);
         }
       });
+    }
+
+    // ══════════════════════════════════════════════════════
+    // PDF YUKLAB OLISH
+    // ══════════════════════════════════════════════════════
+
+    function downloadCurrentEditorAsPdf() {
+      const ed = getEditor();
+      if (!ed) {
+        alert("Hujjat hali tayyor emas, birozdan so'ng qayta urinib ko'ring.");
+        return;
+      }
+
+      ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+      const rawBody = $('#body').val() || '';
+
+      if (!rawBody.trim()) {
+        alert('Hujjat matni bo\'sh — avval "Qidirish" tugmasini bosing.');
+        return;
+      }
+
+      const $btn = $('#btnDownloadPdf');
+      const originalHtml = $btn.html();
+      $btn.prop('disabled', true).text('Tayyorlanmoqda...');
+
+      const csrfToken = $('form input[name="csrfmiddlewaretoken"]').val();
+
+      fetch("{% url 'download_pdf' %}", {
+        method: 'POST',
+        headers: {
+          'X-CSRFToken': csrfToken,
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: new URLSearchParams({
+          body_html: rawBody,
+          orientation: 'Portrait',
+          filename: 'dalolatnoma',
+        }),
+      })
+        .then(function (response) {
+          const contentType = response.headers.get('content-type') || '';
+
+          if (!response.ok) {
+            if (contentType.includes('application/json')) {
+              return response.json().then(function (data) {
+                throw new Error(data.error || 'PDF yuklab olishda xatolik');
+              });
+            }
+            return response.text().then(function (text) {
+              console.error('Server javobi (HTML/text):', text.substring(0, 500));
+              throw new Error(`Server xatoligi: ${response.status} ${response.statusText}`);
+            });
+          }
+
+          if (!contentType.includes('application/pdf')) {
+            return response.text().then(function (text) {
+              console.error('Kutilmagan javob turi:', contentType, text.substring(0, 500));
+              throw new Error('Server PDF o\'rniga boshqa formatda javob qaytardi');
+            });
+          }
+
+          return response.blob();
+        })
+        .then(function (blob) {
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `dalolatnoma_${Date.now()}.pdf`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert(err.message || 'PDF yuklab olishda xatolik yuz berdi');
+        })
+        .finally(function () {
+          $btn.prop('disabled', false).html(originalHtml);
+        });
     }
 
     // ══════════════════════════════════════════════════════
@@ -666,6 +762,11 @@
       loadTechnicsToEditor($('#department').val());
     });
 
+    $('#btnDownloadPdf').on('click', function (e) {
+      e.preventDefault();
+      downloadCurrentEditorAsPdf();
+    });
+
     // ── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ──
 
     $('form').on('submit', function (e) {
@@ -673,6 +774,9 @@
 
       const $form = $(this);
 
+      // Tugma bir necha marta bosilishi (shoshilib bosish) tufayli
+      // forma bir necha marta yuborilib, bir xil hujjat qayta-qayta
+      // yaratilib qolishining oldini olish uchun qulflash.
       if ($form.data("locked")) {
         return false;
       }
@@ -680,20 +784,24 @@
       $form.find('button[type="submit"]').prop("disabled", true);
 
       const ed = getEditor();
-      if (ed) ed.save();
+      if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
 
       const rawBody = $('#body').val() || '';
 
+      // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
       const encoded = btoa(unescape(encodeURIComponent(rawBody)));
 
+      // yashirin maydonga joylaymiz
       let $hidden = $(this).find('input[name="body_encoded"]');
       if ($hidden.length === 0) {
         $hidden = $('<input type="hidden" name="body_encoded">').appendTo(this);
       }
       $hidden.val(encoded);
 
+      // asl 'body' maydonini yuborilishdan chiqarib tashlaymiz
       $('#body').removeAttr('name');
 
+      // haqiqiy (native) yuborish
       this.submit();
     });
 
