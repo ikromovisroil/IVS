@@ -1030,21 +1030,7 @@ def _get_online_filter_rule(contract_name):
 @require_GET
 @login_required
 def ajax_document_preview(request):
-    """
-    Xodimga biriktirilgan (Liable) shartnomalar bo'yicha texnika ro'yxatini
-    qaytaradi.
 
-    QOIDALAR:
-    - SKIP_RULES'dagi shartnomalar — 1-sahifada (nomi bilan, sondan tashqari
-      "hide_page2": true belgisi bilan) chiqadi, lekin 2-sahifada
-      (texnika jadvali) CHIQMAYDI.
-    - Kategoriya BIRIKTIRILMAGAN (Liable.category = null) shartnoma —
-      baribir chiqadi (items bo'sh, count = 0), ikkala sahifada ham.
-    - Kategoriya BIRIKTIRILGAN, lekin mos texnika topilmasa — bu shartnoma
-      umuman CHIQMAYDI (na 1, na 2-sahifada).
-    - Kategoriya biriktirilgan VA mos texnika topilsa — to'liq ro'yxat
-      bilan, ikkala sahifada ham chiqadi.
-    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -1090,7 +1076,7 @@ def ajax_document_preview(request):
     if all_category_ids:
         all_technics = (
             Technics.objects
-            .filter(is_active=True, **loc_filter)
+            .filter(is_active=True, region=employee.region, **loc_filter)
             .filter(category_id__in=all_category_ids)
             .select_related("category")
             .prefetch_related("structure_set")
