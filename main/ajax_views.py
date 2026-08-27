@@ -964,13 +964,12 @@ def ajax_reestr_materials(request):
     return JsonResponse(data, safe=False)
 
 
-# is_online sharti bilan filtrlanadigan shartnomalar (kategoriya + is_online)
 ONLINE_FILTER_RULES = [
     {"match": "A4 formatli printerlarga", "exclude_match": "tarmoq", "is_online": False},  # 1.2
     {"match": "A4 formatli tarmoq printerlariga", "is_online": True},                        # 1.3
 ]
 
-# Hozircha e'tiborsiz qoldiriladigan shartnomalar — bular 1-sahifada
+
 SKIP_RULES = [
     "A3 formatli nusxa ko'paytirish",                                   # 1.5
     "Umumiy tarmoqlarni ulanish nuqtalariga",                           # 2.4
@@ -988,11 +987,6 @@ SKIP_RULES = [
 
 
 def _normalize(text):
-    """
-    Turli apostrof/tinish belgilarini (’, ‘, ‛, `) standart (') belgiga
-    almashtiradi va kichik harfga o'tkazadi — solishtirish ishonchli
-    bo'lishi uchun.
-    """
     if not text:
         return ""
     return (
@@ -1005,7 +999,6 @@ def _normalize(text):
 
 
 def _match_any(name, keywords):
-    """name ichida keywords ro'yxatidan biror so'z bor-yo'qligini tekshiradi (case/apostrof-insensitive)."""
     name_norm = _normalize(name)
     for kw in keywords:
         if _normalize(kw) in name_norm:
@@ -1014,7 +1007,6 @@ def _match_any(name, keywords):
 
 
 def _get_online_filter_rule(contract_name):
-    """Agar shartnoma is_online filtri bilan hisoblanishi kerak bo'lsa, qoidani qaytaradi."""
     name_norm = _normalize(contract_name)
     for rule in ONLINE_FILTER_RULES:
         match = _normalize(rule["match"])
@@ -1030,19 +1022,40 @@ def _get_online_filter_rule(contract_name):
 @require_GET
 @login_required
 def ajax_document_preview(request):
+    """
+    Xodimga biriktirilgan (Liable) shartnomalar bo'yicha texnika ro'yxatini
+    qaytaradi.
 
+    HUDUD CHEKLOVI:
+    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa, "region" GET
+      parametri orqali istalgan hududni tanlashi mumkin.
+    - Aks holda (ruxsat yo'q) — "region" parametridan qat'i nazar,
+      MAJBURAN faqat foydalanuvchining o'z hududi (employee.region)
+      qo'llaniladi (frontend'dan kelgan qiymatga ishonilmaydi).
+    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
 
     dep_id = (request.GET.get("department") or "").strip()
     org_id = (request.GET.get("organization") or "").strip()
+    region_id = (request.GET.get("region") or "").strip()
 
     if not dep_id and not org_id:
         return JsonResponse(
             {"error": "Tashkilot yoki bo'lim tanlanmagan"},
             status=400,
         )
+
+    has_full_region = request.user.has_perm("main.all_region")
+
+    if has_full_region and region_id.isdigit():
+        effective_region_id = int(region_id)
+    else:
+        effective_region_id = employee.region_id
+
+    if not effective_region_id:
+        return JsonResponse({"error": "Hudud belgilanmagan"}, status=400)
 
     liables = (
         Liable.objects
@@ -1076,7 +1089,7 @@ def ajax_document_preview(request):
     if all_category_ids:
         all_technics = (
             Technics.objects
-            .filter(is_active=True, region=employee.region, **loc_filter)
+            .filter(is_active=True, region_id=effective_region_id, **loc_filter)
             .filter(category_id__in=all_category_ids)
             .select_related("category")
             .prefetch_related("structure_set")
@@ -1088,7 +1101,7 @@ def ajax_document_preview(request):
     for tex in all_technics:
         cat_to_technics[tex.category_id].append(tex)
 
-    PC_CONTRACT_ID = 1  # kompyuter shartnomasi — 2-sahifada monitor/SR ustunlari uchun
+    PC_CONTRACT_ID = 1
 
     contracts_data = {}
 
@@ -1096,8 +1109,6 @@ def ajax_document_preview(request):
         contract_name = info["name"]
         category_ids = info["category_ids"]
 
-        # 1) E'TIBORSIZ QOLDIRILADIGAN shartnomalar — 1-sahifada nomi bilan
-        #    chiqadi (count/items'siz), 2-sahifada esa umuman chiqmaydi.
         if _match_any(contract_name, SKIP_RULES):
             contracts_data[str(cid)] = {
                 "contract_id": cid,
@@ -1108,7 +1119,6 @@ def ajax_document_preview(request):
             }
             continue
 
-        # 2) Kategoriya UMUMAN BIRIKTIRILMAGAN — baribir chiqadi, bo'sh ro'yxat bilan
         if not category_ids:
             contracts_data[str(cid)] = {
                 "contract_id": cid,
@@ -1119,7 +1129,6 @@ def ajax_document_preview(request):
             }
             continue
 
-        # 3) Kategoriya bo'yicha texnikalarni yig'amiz
         items = []
         seen_ids = set()
 
@@ -1130,17 +1139,14 @@ def ajax_document_preview(request):
                 seen_ids.add(tex.id)
                 items.append(tex)
 
-        # 4) is_online filtri kerak bo'lsa, qo'llaymiz (masalan A4 printer: oddiy/tarmoq)
         online_rule = _get_online_filter_rule(contract_name)
         if online_rule is not None:
             wanted_online = online_rule["is_online"]
             items = [tex for tex in items if bool(tex.is_online) == wanted_online]
 
-        # 5) Kategoriya BOR, lekin mos texnika TOPILMADI — bu shartnoma chiqmaydi
         if not items:
             continue
 
-        # 6) Natijaviy items'ni JSON formatiga o'giramiz
         result_items = []
         for tex in items:
             item = {

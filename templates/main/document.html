@@ -41,9 +41,23 @@
               </div>
 
               <div class="col-12">
+                <label for="region" class="form-label">Hududlar :</label>
+                <select id="region" name="region" class="form-select" required>
+                  {% if has_full_region %}
+                    <option value="">Tanlang...</option>
+                  {% endif %}
+                  {% for reg in regions %}
+                    <option value="{{ reg.id }}"
+                      {% if selected_region == reg.id|stringformat:"s" %}selected{% endif %}
+                    >{{ reg.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12">
                 <label for="department" class="form-label">Departament :</label>
                 <select id="department" name="department" class="form-select">
-                  <option value="">Tanlang...</option>
+                  <option value="">Avval tashkilot va hududni tanlang</option>
                   {% for dep in departments %}
                     <option value="{{ dep.id }}"
                       {% if selected_dep == dep.id|stringformat:"s" %}selected{% endif %}
@@ -302,7 +316,7 @@
         window.initSelect2(document); return;
       }
       if (!$.fn.select2) return;
-      $('#organization,#department,#rim_id,#sender,#receiver,#agreements').each(function () {
+      $('#organization,#region,#department,#rim_id,#sender,#receiver,#agreements').each(function () {
         const $el = $(this);
         if ($el.data('select2')) return;
         $el.select2({
@@ -312,6 +326,13 @@
       });
     }
     safeInitSelect2();
+
+    // Agar #region da faqat bitta variant bo'lsa (to'liq hudud ruxsati
+    // yo'q holatida), uni avtomatik tanlab qo'yamiz — foydalanuvchi
+    // qo'lda tanlashi shart emas.
+    if ($('#region option').length === 1) {
+      $('#region').val($('#region option').first().val()).trigger('change.select2');
+    }
 
     // ══════════════════════════════════════════════════════
     // EDITOR UTILITIES
@@ -406,22 +427,22 @@
     // AJAX — DEPARTAMENTLAR, RECEIVER, AGREEMENTS
     // ══════════════════════════════════════════════════════
 
-    const userRegion = "{{ request.user.employee.region_id|default:'' }}";
-
-    function loadDepartments(orgId, selectedDepId, onSuccess) {
+    // Bo'limlar ro'yxati endi TASHKILOT va HUDUD ikkalasiga qarab yuklanadi
+    // — faqat ikkalasi ham tanlanganda AJAX so'rov yuboriladi.
+    function loadDepartments(orgId, regionId, selectedDepId, onSuccess) {
       const $dep = $('#department'), $rcv = $('#receiver'), $agr = $('#agreements');
       $dep.html('<option value="">Yuklanmoqda...</option>').trigger('change');
       $rcv.html('<option value="">Tanlang...</option>').trigger('change');
       $agr.html('').trigger('change');
 
-      if (!orgId) {
-        $dep.html('<option value="">Tanlang...</option>').trigger('change');
+      if (!orgId || !regionId) {
+        $dep.html('<option value="">Avval tashkilot va hududni tanlang</option>').trigger('change');
         return;
       }
 
       $.ajax({
         url: "{% url 'ajax_load_departments' %}", method: "GET", dataType: "json",
-        data: { organization: orgId, region: userRegion },
+        data: { organization: orgId, region: regionId },
         success: function (data) {
           const list = Array.isArray(data) ? data : (data.departments || data.results || []);
           let opts = '<option value="">Tanlang...</option>';
@@ -490,6 +511,25 @@
         },
         error: function () { $agr.html('').trigger('change'); }
       });
+    }
+
+    // Tashkilot va hudud ikkalasi ham tanlanganida bo'limlarni yuklaydi,
+    // aks holda bo'lim/kelishuvchi/imzolovchi ro'yxatlarini tozalaydi.
+    function tryLoadDepartments() {
+      const orgId = $('#organization').val();
+      const regionId = $('#region').val();
+
+      if (orgId && regionId) {
+        loadDepartments(orgId, regionId, null, function () {
+          const depId = $('#department').val();
+          loadReceiverByDepartment(depId);
+          loadAgreementsByDepartment(depId);
+        });
+      } else {
+        $('#department').html('<option value="">Avval tashkilot va hududni tanlang</option>').trigger('change');
+        $('#receiver').html('<option value="">Tanlang...</option>').trigger('change');
+        $('#agreements').html('').trigger('change');
+      }
     }
 
     // ══════════════════════════════════════════════════════
@@ -588,6 +628,7 @@
 
     function loadTechnicsToEditor(depId) {
       const orgId = $('#organization').val();
+      const regionId = $('#region').val();
       syncEditorTexts();
 
       const edCheck = getEditor();
@@ -604,6 +645,7 @@
       const payload = {};
       if (orgId) payload.organization = orgId;
       if (depId) payload.department   = depId;
+      if (regionId) payload.region    = regionId;
 
       $.ajax({
         url: "{% url 'ajax_document_preview' %}",
@@ -739,11 +781,12 @@
 
     $('#organization').on('change', function () {
       syncEditorTexts();
-      loadDepartments($(this).val(), null, function () {
-        const depId = $('#department').val();
-        loadReceiverByDepartment(depId);
-        loadAgreementsByDepartment(depId);
-      });
+      tryLoadDepartments();
+    });
+
+    $('#region').on('change', function () {
+      syncEditorTexts();
+      tryLoadDepartments();
     });
 
     $('#department').on('change', function () {
@@ -809,12 +852,19 @@
     // BOSHLANG'ICH YUKLASH
     // ══════════════════════════════════════════════════════
 
-    const initialOrg = '{{ selected_org|default:"" }}';
-    const initialDep = '{{ selected_dep|default:"" }}';
+    const initialOrg    = '{{ selected_org|default:"" }}';
+    const initialDep    = '{{ selected_dep|default:"" }}';
+    const initialRegion = '{{ selected_region|default:"" }}';
 
     if (initialOrg) {
       $('#organization').val(initialOrg);
-      loadDepartments(initialOrg, initialDep, function () {
+    }
+    if (initialRegion) {
+      $('#region').val(initialRegion);
+    }
+
+    if (initialOrg && $('#region').val()) {
+      loadDepartments(initialOrg, $('#region').val(), initialDep, function () {
         if (initialDep) {
           $('#department').val(initialDep).trigger('change');
           loadReceiverByDepartment(initialDep);

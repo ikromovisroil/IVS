@@ -2505,12 +2505,18 @@ def document_get(request):
         Q(department_id=283) | Q(department_id=298, region=employee.region)
     )
 
+    full_region = request.user.has_perm("main.all_region")
+
+    regions = Region.objects.only("id", "name").order_by("id")
+    if not full_region:
+        regions = regions.filter(id=employee.region_id)
+
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
         "emp_bos_sender": emp_sender,
+        "regions": regions,
     }
     return render(request, "main/document.html", context)
-
 
 @never_cache
 @require_POST
@@ -2904,16 +2910,15 @@ def reestr_get(request):
     if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
         raise PermissionDenied("Ruxsat yo'q")
 
-    has_full_region = request.user.has_perm("main.all_region")
+    full_region = request.user.has_perm("main.all_region")
 
     regions = Region.objects.only("id", "name").order_by("id")
-    if not has_full_region:
+    if not full_region:
         regions = regions.filter(id=employee.region_id)
 
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
         "regions": regions,
-        "has_full_region": has_full_region,
         "employee": Employee.objects.filter(organization_id=employee.organization_id).select_related("rank"),
     }
     return render(request, 'main/reestr.html', context)
