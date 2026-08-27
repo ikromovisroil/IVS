@@ -101,6 +101,7 @@ urlpatterns = [
     path("ajax/check-all/", order_check_all, name="order_check_all"),
     path("ajax/sender-technics/", ajax_sender_technics, name="ajax_sender_technics"),
     path('ajax/employees-org-user-region/', ajax_employees_org_user_region, name='ajax_employees_org_user_region'),
+    path('ajax/employees-org-user/', ajax_employees_org_user, name='ajax_employees_org_user'),
     path("deed/<int:deed_id>/toggle-user-edit/", toggle_user_edit, name="toggle_user_edit"),
 
     # =========================

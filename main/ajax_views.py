@@ -359,13 +359,33 @@ def ajax_employees_org(request):
 def ajax_employees_org_user_region(request):
     org_id = (request.GET.get("organization") or "").strip()
 
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
     if not org_id:
         return JsonResponse({"results": []})
 
-    qs = Employee.objects.filter(organization_id=org_id)
+    qs = Employee.objects.filter(organization_id=org_id,region=employee.region)
 
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})
+
+
+@never_cache
+@require_GET
+@login_required
+def ajax_employees_org_user(request):
+    org_id = (request.GET.get("organization") or "").strip()
+
+    if not org_id:
+        return JsonResponse({"results": []})
+
+    qs = Employee.objects.filter(organization_id=org_id,)
+
+    data = [{"id": e.id, "text": e.full_name} for e in qs]
+    return JsonResponse({"results": data})
+
 
 
 @never_cache
