@@ -970,9 +970,10 @@ ONLINE_FILTER_RULES = [
     {"match": "A4 formatli tarmoq printerlariga", "is_online": True},                        # 1.3
 ]
 
+# Hozircha e'tiborsiz qoldiriladigan (ko'rsatilmaydigan) shartnomalar
 SKIP_RULES = [
     "A3 formatli nusxa ko'paytirish",                                   # 1.5
-    "Umumiy tarmoqlarni ulanish nuqtalariga",                           # 2.4
+    "Umumiy tarmoqlarni ulanish nuqtalariga",                           # 2.4 — ✅ endi e'tiborsiz
     "Umumtizimli serverlarga",                                          # 2.2
     "Ma'lumotlar bazasi serverlariga",                                  # 2.3
     "Aloqa kanallarini ma'murlash",                                     # 2.7
@@ -985,35 +986,24 @@ SKIP_RULES = [
     "Bir marotabalik texnik ishlar",                                    # bir martalik (texnik)
 ]
 
-def _normalize(text):
-    if not text:
-        return ""
-    return (
-        text.lower()
-        .replace("’", "'")
-        .replace("‘", "'")
-        .replace("‛", "'")
-        .replace("`", "'")
-    )
-
 
 def _match_any(name, keywords):
-    """name ichida keywords ro'yxatidan biror so'z bor-yo'qligini tekshiradi (case/apostrof-insensitive)."""
-    name_norm = _normalize(name)
+    """name ichida keywords ro'yxatidan biror so'z bor-yo'qligini tekshiradi (case-insensitive)."""
+    name_lower = (name or "").lower()
     for kw in keywords:
-        if _normalize(kw) in name_norm:
+        if kw.lower() in name_lower:
             return kw
     return None
 
 
 def _get_online_filter_rule(contract_name):
     """Agar shartnoma is_online filtri bilan hisoblanishi kerak bo'lsa, qoidani qaytaradi."""
-    name_norm = _normalize(contract_name)
+    name_lower = (contract_name or "").lower()
     for rule in ONLINE_FILTER_RULES:
-        match = _normalize(rule["match"])
+        match = rule["match"].lower()
         exclude = rule.get("exclude_match")
-        if match in name_norm:
-            if exclude and _normalize(exclude) in name_norm:
+        if match in name_lower:
+            if exclude and exclude.lower() in name_lower:
                 continue
             return rule
     return None
