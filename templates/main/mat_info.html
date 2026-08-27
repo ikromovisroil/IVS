@@ -156,7 +156,8 @@
                   <tr>
                     <th scope="col">T/r</th>
                     <th scope="col">Sana</th>
-                    <th scope="col">F.I.O</th>
+                    <th scope="col">Kimdan</th>
+                    <th scope="col">Kimga</th>
                     <th scope="col">Kirim</th>
                     <th scope="col">Chiqim</th>
                     <th scope="col">Xolati</th>
@@ -167,6 +168,7 @@
                   <tr>
                     <td>{{ forloop.counter }}</td>
                     <td>{{ mv.date|date:"d.m.Y H:i" }}</td>
+                    <td>{{ mv.user.full_name|default:"-" }}</td>
                     <td>{{ mv.employee.full_name|default:"-" }}</td>
                     <td>{{ mv.income|default:"0" }}</td>
                     <td>{{ mv.outcome|default:"0" }}</td>
