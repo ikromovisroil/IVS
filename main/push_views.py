@@ -70,34 +70,12 @@ def remove_push_subscription(request):
 # ═══════════════════════════════════════════════════════════════════
 
 def send_push_notification(employee, title, body, url="/"):
-    """
-    Berilgan xodimning BARCHA qurilmalariga push xabar yuboradi.
-
-    Foydalanish namunasi:
-        send_push_notification(
-            order.receiver,
-            "Yangi ariza",
-            f"#{order.id} arizasi sizga tayinlandi",
-            url="/order-receiver/"
-        )
-    """
-    if not employee:
-        return
-
     subscriptions = PushSubscription.objects.filter(employee=employee)
-
-    payload = json.dumps({
-        "title": title,
-        "body": body,
-        "url": url,
-        "icon": "/static/img/apple-touch-icon.png",
-    })
-
     dead_ids = []
 
     for sub in subscriptions:
         try:
-            webpush(
+            response = webpush(
                 subscription_info={
                     "endpoint": sub.endpoint,
                     "keys": {
@@ -105,26 +83,18 @@ def send_push_notification(employee, title, body, url="/"):
                         "auth": sub.auth,
                     },
                 },
-                data=payload,
+                data=json.dumps({"title": title, "body": body, "url": url}),
                 vapid_private_key=settings.VAPID_PRIVATE_KEY_PEM,
                 vapid_claims=dict(settings.VAPID_CLAIMS),
             )
-        except WebPushException as ex:
-            status_code = getattr(ex.response, "status_code", None)
+            logger.error(f"[PUSH-DEBUG] webpush javobi: status={response.status_code}, employee_id={employee.id}")
+        except WebPushException as e:
+            status_code = e.response.status_code if e.response else None
+            logger.error(f"[PUSH-DEBUG] WebPushException: status={status_code}, employee_id={employee.id}, error={e}")
             if status_code in (404, 410):
                 dead_ids.append(sub.id)
-        except Exception:
-            # VAPID kalit noto'g'ri formatda bo'lsa (masalan py_vapid'dan
-            # ValueError: "Invalid key") yoki boshqa kutilmagan xato chiqsa
-            # ham, push bildirishnoma — asosiy operatsiya (ariza yaratish,
-            # statusni o'zgartirish va h.k.) uchun HAL QILUVCHI emas.
-            # Shu sababli bu yerda ushlab, faqat log'ga yozamiz — bitta
-            # noto'g'ri sozlama yoki obuna butun so'rovni (masalan
-            # order_post) 500-xato bilan yiqitmasligi kerak.
-            logger.exception(
-                "Push yuborishda kutilmagan xato: employee_id=%s, endpoint=%s",
-                employee.id, sub.endpoint,
-            )
+        except Exception as e:
+            logger.exception(f"[PUSH-DEBUG] Kutilmagan xato: employee_id={employee.id}, error={e}")
 
     if dead_ids:
         PushSubscription.objects.filter(id__in=dead_ids).delete()
@@ -206,16 +176,6 @@ def get_eligible_employees_for_new_order(order):
 
 
 def notify_eligible_employees_new_order(order):
-    """
-    Yangi ariza yaratilganda (receiver=None, status='viewed' holatda)
-    chaqiriladi. Ruxsatli BARCHA xodimlarga push yuboradi.
-
-    Foydalanish: ariza yaratiladigan view'da, order.save() dan KEYIN:
-
-        from main.push_views import notify_eligible_employees_new_order
-        order.save()
-        notify_eligible_employees_new_order(order)
-    """
     employees = get_eligible_employees_for_new_order(order)
 
     if not employees.exists():
