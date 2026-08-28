@@ -639,18 +639,7 @@ from collections import OrderedDict
 @require_GET
 @login_required
 def ajax_svod_all_materials(request):
-    """
-    Bir nechta tashkilot bo'yicha materiallarni:
-    Tashkilot -> Hudud -> materiallar tartibida qaytaradi, shuningdek
-    shu materiallarni bajargan (order.receiver) barcha xodimlarning
-    ro'yxatini ham alohida qaytaradi (dublikatsiz, alifbo tartibida).
 
-    HUDUD CHEKLOVI:
-    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa VA
-      "all_regions=1" so'rov parametri yuborilgan bo'lsa -> barcha hududlar.
-    - Aks holda (ruxsat yo'q yoki checkbox belgilanmagan) -> faqat
-      foydalanuvchining o'z hududi (employee.region).
-    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -658,7 +647,7 @@ def ajax_svod_all_materials(request):
     org_ids = [i for i in request.GET.getlist("organizations[]") if i.isdigit()]
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
-    all_regions_requested = request.GET.get("all_regions") == "1"
+    region_param = (request.GET.get("region") or "").strip()
 
     if not org_ids or not d1 or not d2:
         return JsonResponse({"organizations": [], "employees": []})
@@ -671,7 +660,7 @@ def ajax_svod_all_materials(request):
 
     # Ruxsatni serverda qayta tekshiramiz — clientga ishonmaymiz.
     can_view_all_regions = request.user.has_perm("main.all_region")
-    use_all_regions = all_regions_requested and can_view_all_regions
+    use_all_regions = can_view_all_regions and region_param == "all"
 
     common_filters = dict(
         order__date_finished__isnull=False,
@@ -682,10 +671,14 @@ def ajax_svod_all_materials(request):
     )
 
     if not use_all_regions:
-        if not employee.region_id:
-            # Xodimning hududi yo'q bo'lsa, hech narsa qaytarmaymiz.
-            return JsonResponse({"organizations": [], "employees": []})
-        common_filters["order__sender__region_id"] = employee.region_id
+        if can_view_all_regions and region_param.isdigit():
+            # Ruxsati bor foydalanuvchi aniq bitta hudud tanlagan
+            common_filters["order__sender__region_id"] = int(region_param)
+        else:
+            # Ruxsati yo'q — majburan o'z hududi
+            if not employee.region_id:
+                return JsonResponse({"organizations": [], "employees": []})
+            common_filters["order__sender__region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)

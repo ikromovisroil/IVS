@@ -2784,7 +2784,6 @@ def svod_post(request):
     return redirect("contact_user")
 
 
-
 @never_cache
 @require_GET
 @login_required
@@ -2796,12 +2795,18 @@ def svod_all_get(request):
     if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
         raise PermissionDenied("Ruxsat yo'q")
 
+    full_region = request.user.has_perm("main.all_region")
+
+    regions = Region.objects.only("id", "name").order_by("id")
+    if not full_region:
+        regions = regions.filter(id=employee.region_id)
+
     context = {
         "organizations": Organization.objects.only("id", "name", "contract").order_by("id"),
         "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
-        # "Barcha hududlar" checkbox faqat shu ruxsat bo'lganda ko'rinadi
-        "can_view_all_regions": request.user.has_perm("main.all_region"),
+        "regions": regions,
+        "full_region": full_region,
     }
     return render(request, 'main/svod_all.html', context)
 

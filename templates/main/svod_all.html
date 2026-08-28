@@ -35,14 +35,17 @@
                 </select>
               </div>
 
-              {% if can_view_all_regions %}
-              <div class="col-md-12">
-                <div class="form-check">
-                  <input type="checkbox" name="all_regions" id="all_regions" class="form-check-input">
-                  <label for="all_regions" class="form-check-label">Barcha hududlar bo'yicha</label>
-                </div>
+              <div class="col-12">
+                <label for="region" class="form-label">Hududlar :</label>
+                <select id="region" name="region" class="form-select" required>
+                  {% if full_region %}
+                    <option value="all">Barcha hududlar</option>
+                  {% endif %}
+                  {% for reg in regions %}
+                    <option value="{{ reg.id }}">{{ reg.name }}</option>
+                  {% endfor %}
+                </select>
               </div>
-              {% endif %}
 
               <div class="col-md-12">
                 <label for="date1" class="form-label">Boshlangich sanasi:</label>
@@ -476,7 +479,7 @@ function searchMaterialsAll() {
   const orgIds = $('#organizations').val() || [];
   const date1 = $('#date1').val();
   const date2 = $('#date2').val();
-  const allRegions = $('#all_regions').is(':checked') ? '1' : '0';
+  const regionVal = $('#region').val() || '';   // "all" yoki aniq hudud ID
 
   if (!orgIds.length || !date1 || !date2) {
     alert("Iltimos, kamida bitta tashkilot va sanalarni to'liq tanlang!");
@@ -505,7 +508,7 @@ function searchMaterialsAll() {
     method: 'GET',
     dataType: 'json',
     data: $.param({ 'organizations[]': orgIds }) +
-          `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}&all_regions=${allRegions}`,
+          `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}&region=${encodeURIComponent(regionVal)}`,
 
     success: function (data) {
       const orgs = (data && data.organizations) || [];
@@ -779,7 +782,7 @@ $(function () {
     })();
 
   if ($.fn.select2) {
-    $('#organizations, #sender, #agreements').select2({
+    $('#organizations, #region, #sender, #agreements').select2({
       width: '100%',
       placeholder: 'Tanlang...',
       allowClear: true
@@ -805,6 +808,10 @@ $(function () {
     }
     // Kelishuvchilar ro'yxati birinchi tanlangan tashkilot bo'yicha yuklanadi.
     loadAgreementsByOrg(orgIds[0]);
+  });
+
+  $('#region').on('change', function () {
+    updateEditorWithSelections();
   });
 
   $('#date1, #date2').on('change', function () {
