@@ -21,15 +21,8 @@ logger = logging.getLogger(__name__)
 # ─────────────────────────────────────────────────────────────────────────
 
 def service_worker_js(request):
-    """
-    Service worker faylini sayt ILDIZIDAN (/sw.js) xizmat qiladi.
-    Bu MUHIM — agar fayl /static/sw.js orqali xizmat qilinsa, u faqat
-    /static/ yo'lini nazorat qila oladi, butun saytni emas. Service
-    Worker API'ning "scope" cheklovi shunday ishlaydi: SW fayl qayerdan
-    xizmat qilingan bo'lsa, faqat o'sha va undan pastki yo'llarni
-    nazorat qila oladi.
-    """
-    sw_path = os.path.join(settings.BASE_DIR, "main", "static", "js", "sw.js")
+
+    sw_path = os.path.join(settings.BASE_DIR, "static", "js", "sw.js")
     with open(sw_path, "r", encoding="utf-8") as f:
         content = f.read()
     return HttpResponse(content, content_type="application/javascript")
