@@ -12,7 +12,13 @@ self.addEventListener('push', function (event) {
     icon: data.icon || '/static/img/apple-touch-icon.png',
     badge: '/static/img/apple-touch-icon.png',
     data: { url: data.url || '/' },
-    tag: title,
+    // Backend'dan kelgan unikal tag ishlatiladi (masalan "order-new-123").
+    // Agar backend tag yubormasa, fallback sifatida title ishlatiladi.
+    tag: data.tag || title,
+    // renotify: true — tag bir xil bo'lib qolgan holatlarda ham
+    // foydalanuvchiga baribir ovozli/vibratsion signal bilan xabar
+    // beriladi, notification JIM almashtirilmaydi.
+    renotify: true,
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
