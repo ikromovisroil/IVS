@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-    <title>Hisobot</title>
+    <title>Yakuniy hisobot (Barcha tashkilotlar)</title>
 {% endblock title %}
 
 {% block css %}
@@ -27,25 +27,23 @@
 
             <div class="row g-3">
               <div class="col-12">
-                <label for="organization" class="form-label">Tashkilot :</label>
-                <select id="organization" name="organization" class="form-select" required>
-                  <option value="">Tanlang...</option>
+                <label for="organizations" class="form-label">Tashkilotlar :</label>
+                <select id="organizations" name="organizations[]" class="form-select" multiple required>
                   {% for org in organizations %}
-                    <option
-                      value="{{ org.id }}"
-                      data-contract="{{ org.contract|default:'' }}"
-                      {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}
-                    >
-                      {{ org.name }}
-                    </option>
+                    <option value="{{ org.id }}" data-contract="{{ org.contract|default:'' }}">{{ org.name }}</option>
                   {% endfor %}
                 </select>
               </div>
 
               <div class="col-12">
-                <label for="department" class="form-label">Bo'lim :</label>
-                <select id="department" name="department" class="form-select">
-                  <option value="">Tanlang...</option>
+                <label for="region" class="form-label">Hududlar :</label>
+                <select id="region" name="region" class="form-select" required>
+                  {% if full_region %}
+                    <option value="all">Barcha hududlar</option>
+                  {% endif %}
+                  {% for reg in regions %}
+                    <option value="{{ reg.id }}">{{ reg.name }}</option>
+                  {% endfor %}
                 </select>
               </div>
 
@@ -61,6 +59,12 @@
 
               <div class="text-center">
                 <button type="button" id="btnGenerate" class="btn btn-primary w-100">Qidirish</button>
+              </div>
+
+              <div class="text-center">
+                <button type="button" id="btnDownloadPdf" class="btn btn-secondary w-100">
+                  <i class="bi bi-download"></i> PDF yuklab olish
+                </button>
               </div>
             </div>
           </div>
@@ -153,13 +157,6 @@
                   <b>YAKUNIY HISOBOT</b>
                 </div>
                 <div style="text-align:center;">
-                  <b>O‘zbekiston Respublikasi <span id="org_id">Iqtisodiyot va moliya vazirligi</span></b>
-
-                </div>
-                <div style="text-align:center;">
-                  <b><span id="dep_id"></span></b>
-                </div>
-                <div style="text-align:center;">
                   <b id="report_period">2026 yil dekabir oyi uchun</b>
                 </div>
 
@@ -196,9 +193,6 @@
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">7</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">8</td>
                       </tr>
-                      <tr>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center; background-color: rgb(191, 237, 210);" colspan="8">{{ request.user.employee.region.name }}</td>
-                      </tr>
                     </thead>
                     <tbody id="materials_tbody">
                     </tbody>
@@ -218,10 +212,11 @@
                     <tbody>
                       <tr>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>{{ request.user.employee.rank.name }}</b><br>
+                          <b>Kelishildi</b><br>
+                          <b>Boshqarma boshlig'i</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>{{ request.user.employee.full_name }}</b><br>
+                          <b>NARZULLAYEV ANVAR SHUHRAT O‘G‘LI.</b><br>
                         </td>
                       </tr>
                     </tbody>
@@ -241,7 +236,7 @@
                           <b>Bosh mutaxassis</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Yakushina E.</b><br>
+                          <b>YAKUSHINA YELENA ANATOLEVNA.</b><br>
                         </td>
                       </tr>
                     </tbody>
@@ -261,34 +256,35 @@
                           <b>Bosh hisobchi</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Ergasheva N.</b><br>
+                          <b>ERGASHEVA NARGIZA RUSTAMOVNA.</b><br>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
 
-                {% if request.user.employee.id != 5 and request.user.employee.department.id == 298 %}
-                <div>
+                <!-- Ariza bajargan (order.receiver) xodimlar shu yerga
+                     "Kelishildi / Lavozim / F.I.Sh" formatida dinamik
+                     qo'shiladi, har biri alohida blok sifatida. -->
+                <div id="responsible_employees_block">
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
                       <col style="width:50%;">
                       <col style="width:50%;">
                     </colgroup>
-                    <tbody>
+                    <tbody id="responsible_employees_tbody">
                       <tr>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Kelishildi</b><br>
-                          <b>Boshqarma boshlig'i</b>
+                          <b></b><br>
+                          <b></b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Narzullayev A.</b><br>
+                          <b></b><br>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
-                {% endif %}
             </textarea>
 
           </div>
@@ -321,13 +317,40 @@ function todayDmy() {
   return `${dd}.${mm}.${yy} y`;
 }
 
-function formatMonthYear() {
+// Tanlangan sana oralig'i (date1 - date2) asosida oy/yil matnini hosil qiladi.
+function formatMonthYearRange(date1Str, date2Str) {
   const months = [
     'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
     'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
   ];
-  const d = new Date();
-  return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+
+  if (!date1Str || !date2Str) {
+    const d = new Date();
+    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+  }
+
+  const d1 = new Date(date1Str);
+  const d2 = new Date(date2Str);
+
+  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) {
+    const d = new Date();
+    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
+  }
+
+  const y1 = d1.getFullYear();
+  const m1 = d1.getMonth();
+  const y2 = d2.getFullYear();
+  const m2 = d2.getMonth();
+
+  if (y1 === y2 && m1 === m2) {
+    return `${y1} yil ${months[m1]} oyi uchun`;
+  }
+
+  if (y1 === y2) {
+    return `${y1} yil ${months[m1]}-${months[m2]} oylari uchun`;
+  }
+
+  return `${y1} yil ${months[m1]} - ${y2} yil ${months[m2]} oylari uchun`;
 }
 
 function escapeHtml(value) {
@@ -360,15 +383,24 @@ function editorSetText(selector, text) {
   return false;
 }
 
-function editorSetTbodyRows(rowsHtml) {
+// Generic: berilgan selector bo'yicha tbody ichini almashtiradi.
+function editorSetRowsBySelector(selector, rowsHtml) {
   const ed = editorGet();
   if (!ed) return;
   try {
-    const tbody = ed.getBody().querySelector('#materials_tbody');
-    if (!tbody) { console.log('materials_tbody topilmadi'); return; }
+    const tbody = ed.getBody().querySelector(selector);
+    if (!tbody) { console.log(selector + ' topilmadi'); return; }
     tbody.innerHTML = rowsHtml;
     ed.nodeChanged();
-  } catch (e) { console.log('editorSetTbodyRows xatosi:', e); }
+  } catch (e) { console.log('editorSetRowsBySelector xatosi:', e); }
+}
+
+function editorSetTbodyRows(rowsHtml) {
+  editorSetRowsBySelector('#materials_tbody', rowsHtml);
+}
+
+function editorSetResponsibleRows(rowsHtml) {
+  editorSetRowsBySelector('#responsible_employees_tbody', rowsHtml);
 }
 
 function waitForTinyMCE(callback, tries = 0) {
@@ -381,21 +413,24 @@ function waitForTinyMCE(callback, tries = 0) {
 // ─── EDITOR UPDATE ────────────────────────────────────────────────────────────
 
 function updateEditorWithSelections() {
-  const $opt         = $('#organization option:selected');
-  const orgName      = $opt.text().trim();
-  const contractText = $opt.attr('data-contract') || '';
+  editorSetText('#doc_date', todayDmy());
 
-  const $depOpt = $('#department option:selected');
-  const depName = $depOpt.text().trim();
+  const date1 = $('#date1').val();
+  const date2 = $('#date2').val();
+  editorSetText('#report_period', formatMonthYearRange(date1, date2));
 
-  editorSetText('#org_id',        (orgName && orgName !== 'Tanlang...') ? orgName : '');
-  editorSetText('#dep_id',        (depName && depName !== 'Tanlang...') ? depName : '');
-  editorSetText('#date_contract', contractText.trim() ? contractText : '_');
-  editorSetText('#doc_date',      todayDmy());
-  editorSetText('#report_period', formatMonthYear());
+  // Tanlangan tashkilotlarning shartnomalarini yig'ib, #date_contract ga qo'yamiz
+  const contracts = [];
+  $('#organizations option:selected').each(function () {
+    const c = ($(this).attr('data-contract') || '').trim();
+    if (c) contracts.push(c);
+  });
+
+  const contractText = contracts.length ? contracts.join(', ') : '_';
+  editorSetText('#date_contract', contractText);
 }
 
-// ─── AJAX ─────────────────────────────────────────────────────────────────────
+// ─── AJAX: kelishuvchilar ──────────────────────────────────────────────────────
 
 function loadAgreementsByOrg(orgId, selectedIds = []) {
   const $agr = $('#agreements');
@@ -438,43 +473,16 @@ function loadAgreementsByOrg(orgId, selectedIds = []) {
   });
 }
 
-function loadDepartmentsByOrg(orgId, selectedId = "") {
-  const $dep = $('#department');
-  $dep.html('<option value="">Tanlang...</option>').trigger('change');
+// ─── AJAX: materiallar + ariza bajargan (order.receiver) xodimlar ─────────────
 
-  if (!orgId) return;
-
-  $.ajax({
-    url: "{% url 'ajax_load_departments' %}",
-    method: 'GET',
-    dataType: 'json',
-    data: { organization: orgId },
-
-    success: function (data) {
-      let options = '<option value="">Tanlang...</option>';
-      (data.results || []).forEach(function (dep) {
-        const sel = String(dep.id) === String(selectedId) ? 'selected' : '';
-        options += `<option value="${dep.id}" ${sel}>${escapeHtml(dep.name)}</option>`;
-      });
-      $dep.html(options).trigger('change');
-      updateEditorWithSelections();
-    },
-
-    error: function (xhr) {
-      console.error('Bo\'limlar AJAX xatosi:', xhr.status, xhr.responseText);
-      $dep.html('<option value="">Tanlang...</option>').trigger('change');
-    }
-  });
-}
-
-function searchMaterials() {
-  const orgId = $('#organization').val();
-  const depId = $('#department').val();
+function searchMaterialsAll() {
+  const orgIds = $('#organizations').val() || [];
   const date1 = $('#date1').val();
   const date2 = $('#date2').val();
+  const regionVal = $('#region').val() || '';   // "all" yoki aniq hudud ID
 
-  if (!orgId || !date1 || !date2) {
-    alert("Iltimos, tashkilot va sanalarni to'liq tanlang!");
+  if (!orgIds.length || !date1 || !date2) {
+    alert("Iltimos, kamida bitta tashkilot va sanalarni to'liq tanlang!");
     return;
   }
 
@@ -487,15 +495,26 @@ function searchMaterials() {
       </td>
     </tr>
   `);
+  editorSetResponsibleRows(`
+    <tr>
+      <td colspan="2" style="border:1px solid #fff;text-align:center;padding:8px;font-size:9pt;">
+        <i>Yuklanmoqda...</i>
+      </td>
+    </tr>
+  `);
 
   $.ajax({
     url: "{% url 'ajax_svod_materials' %}",
     method: 'GET',
     dataType: 'json',
-    data: { organization: orgId, department: depId, date1: date1, date2: date2 },
+    data: $.param({ 'organizations[]': orgIds }) +
+          `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}&region=${encodeURIComponent(regionVal)}`,
 
     success: function (data) {
-      if (!Array.isArray(data) || !data.length) {
+      const orgs = (data && data.organizations) || [];
+      const emps = (data && data.employees) || [];
+
+      if (!orgs.length) {
         editorSetTbodyRows(`
           <tr>
             <td colspan="8" style="border:1px solid #000;text-align:center;color:#888;padding:14px;font-size:10pt;">
@@ -503,42 +522,125 @@ function searchMaterials() {
             </td>
           </tr>
         `);
+        editorSetResponsibleRows(`
+          <tr>
+            <td colspan="2" style="border:1px solid #fff;text-align:center;color:#888;padding:8px;font-size:9pt;">
+              Ariza bajargan xodimlar topilmadi
+            </td>
+          </tr>
+        `);
         return;
       }
 
-      let rows     = '';
-      let totalSum = 0;
-      let index    = 1;
+      let rows       = '';
+      let index      = 1;
+      let grandTotal = 0;
 
-      data.forEach(function (item) {
-        const qty   = parseFloat(item.total_number   || 0) || 0;
-        const price = parseFloat(item.material__price || 0) || 0;
-        const sum   = parseFloat(item.total_sum       || 0) || 0;
-        totalSum += sum;
-
+      // Har bir tashkilot uchun ketma-ket blok:
+      // Tashkilot -> Hudud -> materiallar -> "{Hudud} jami" -> "{Tashkilot} jami"
+      orgs.forEach(function (org) {
         rows += `
           <tr>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__name       || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__unit__name || 'dona')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(qty)}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(price)}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(sum)}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.order_info          || '')}</td>
-            <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__code      || '')}</td>
+            <td colspan="8" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(191,237,210);">
+              ${escapeHtml(org.organization_name)}
+            </td>
+          </tr>
+        `;
+
+        let orgTotal = 0;
+
+        org.regions.forEach(function (region) {
+          rows += `
+            <tr>
+              <td colspan="8" style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(191,213,237);">
+                ${escapeHtml(region.region_name)}
+              </td>
+            </tr>
+          `;
+
+          let regionTotal = 0;
+
+          region.materials.forEach(function (item) {
+            regionTotal += item.total_sum;
+            orgTotal    += item.total_sum;
+            grandTotal  += item.total_sum;
+
+            const orderInfoList = item.order_info || [];
+            const orderInfoHtml = orderInfoList
+              .map(function (txt) { return escapeHtml(txt); })
+              .join(',<br>');
+
+            rows += `
+              <tr>
+                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__name)}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__unit__name || 'dona')}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.total_number)}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.material__price)}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.total_sum)}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:left;">${orderInfoHtml}</td>
+                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__code)}</td>
+              </tr>
+            `;
+          });
+
+          // Hudud jami — OCH sariq fon
+          rows += `
+            <tr>
+              <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(253,246,220);">${escapeHtml(region.region_name)} jami:</td>
+              <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(253,246,220);">${formatNumber(regionTotal)}</td>
+              <td colspan="2" style="border:1px solid #000;background-color:rgb(253,246,220);"></td>
+            </tr>
+          `;
+        });
+
+        // Tashkilot jami — sariq fon (o'rtacha to'qlik)
+        rows += `
+          <tr>
+            <td colspan="5" style="border:1px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${escapeHtml(org.organization_name)} jami:</td>
+            <td style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(orgTotal)}</td>
+            <td colspan="2" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
           </tr>
         `;
       });
 
+      // Umumiy jami — TO'Q sariq fon, qalinroq border
       rows += `
         <tr>
-          <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">JAMI:</td>
-          <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(totalSum)}</td>
-          <td colspan="2" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
+          <td colspan="5" style="border:2px solid #000;font-size:10pt;text-align:right;font-weight:bold;background-color:rgb(245,199,86);">Jami:</td>
+          <td style="border:2px solid #000;font-size:10pt;text-align:center;font-weight:bold;background-color:rgb(245,199,86);">${formatNumber(grandTotal)}</td>
+          <td colspan="2" style="border:2px solid #000;background-color:rgb(245,199,86);"></td>
         </tr>
       `;
 
       editorSetTbodyRows(rows);
+
+      // ── Ariza bajargan (order.receiver) xodimlar — "Kelishildi / Lavozim / F.I.Sh" ──
+      let empRows = '';
+      if (emps.length) {
+        emps.forEach(function (emp) {
+          empRows += `
+            <tr>
+              <td style="border:1px solid #fff;text-align:left;">
+                <b>Kelishildi</b><br>
+                <b>${escapeHtml(emp.rank || '')}</b>
+              </td>
+              <td style="border:1px solid #fff;text-align:left;">
+                <b>${escapeHtml(emp.full_name)}</b><br>
+              </td>
+            </tr>
+          `;
+        });
+      } else {
+        empRows = `
+          <tr>
+            <td colspan="2" style="border:1px solid #fff;text-align:center;color:#888;padding:8px;font-size:9pt;">
+              Ariza bajargan xodimlar topilmadi
+            </td>
+          </tr>
+        `;
+      }
+      editorSetResponsibleRows(empRows);
     },
 
     error: function (xhr) {
@@ -556,8 +658,93 @@ function searchMaterials() {
           </td>
         </tr>
       `);
+      editorSetResponsibleRows(`
+        <tr>
+          <td colspan="2" style="border:1px solid #fff;text-align:center;color:red;padding:8px;font-size:9pt;">
+            ${msg}
+          </td>
+        </tr>
+      `);
     }
   });
+}
+
+// ─── PDF yuklab olish ──────────────────────────────────────────────────────────
+
+function downloadCurrentEditorAsPdf() {
+  const ed = editorGet();
+  if (!ed) {
+    alert("Hujjat hali tayyor emas, birozdan so'ng qayta urinib ko'ring.");
+    return;
+  }
+
+  ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+  const rawBody = $('#body').val() || '';
+
+  if (!rawBody.trim()) {
+    alert('Hujjat matni bo\'sh — avval "Qidirish" tugmasini bosing.');
+    return;
+  }
+
+  const $btn = $('#btnDownloadPdf');
+  const originalHtml = $btn.html();
+  $btn.prop('disabled', true).text('Tayyorlanmoqda...');
+
+  const csrfToken = $('form input[name="csrfmiddlewaretoken"]').val();
+
+  fetch("{% url 'download_pdf' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: new URLSearchParams({
+      body_html: rawBody,
+      orientation: 'Landscape',
+      filename: 'svod',
+    }),
+  })
+    .then(function (response) {
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!response.ok) {
+        if (contentType.includes('application/json')) {
+          return response.json().then(function (data) {
+            throw new Error(data.error || 'PDF yuklab olishda xatolik');
+          });
+        }
+        return response.text().then(function (text) {
+          console.error('Server javobi (HTML/text):', text.substring(0, 500));
+          throw new Error(`Server xatoligi: ${response.status} ${response.statusText}`);
+        });
+      }
+
+      if (!contentType.includes('application/pdf')) {
+        return response.text().then(function (text) {
+          console.error('Kutilmagan javob turi:', contentType, text.substring(0, 500));
+          throw new Error('Server PDF o\'rniga boshqa formatda javob qaytardi');
+        });
+      }
+
+      return response.blob();
+    })
+    .then(function (blob) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `svod_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(function (err) {
+      console.error(err);
+      alert(err.message || 'PDF yuklab olishda xatolik yuz berdi');
+    })
+    .finally(function () {
+      $btn.prop('disabled', false).html(originalHtml);
+    });
 }
 
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
@@ -595,7 +782,7 @@ $(function () {
     })();
 
   if ($.fn.select2) {
-    $('#organization, #department, #sender, #agreements').select2({
+    $('#organizations, #region, #sender, #agreements').select2({
       width: '100%',
       placeholder: 'Tanlang...',
       allowClear: true
@@ -611,19 +798,19 @@ $(function () {
 
   // ─── EVENTS ───────────────────────────────────────────────────────────────
 
-  $('#organization').on('change', function () {
-    const orgId = $(this).val();
+  $('#organizations').on('change', function () {
     updateEditorWithSelections();
-    if (!orgId) {
+
+    const orgIds = $(this).val() || [];
+    if (!orgIds.length) {
       $('#agreements').html('').trigger('change');
-      $('#department').html('<option value="">Tanlang...</option>').trigger('change');
       return;
     }
-    loadAgreementsByOrg(orgId);
-    loadDepartmentsByOrg(orgId);
+    // Kelishuvchilar ro'yxati birinchi tanlangan tashkilot bo'yicha yuklanadi.
+    loadAgreementsByOrg(orgIds[0]);
   });
 
-  $('#department').on('change', function () {
+  $('#region').on('change', function () {
     updateEditorWithSelections();
   });
 
@@ -633,7 +820,12 @@ $(function () {
 
   $('#btnGenerate').on('click', function (e) {
     e.preventDefault();
-    searchMaterials();
+    searchMaterialsAll();
+  });
+
+  $('#btnDownloadPdf').on('click', function (e) {
+    e.preventDefault();
+    downloadCurrentEditorAsPdf();
   });
 
   // ─── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ─────
@@ -674,16 +866,7 @@ $(function () {
     this.submit();
   });
 
-  // ─── INITIAL LOAD ─────────────────────────────────────────────────────────
-
-  const initialOrg = '{{ selected_org|default:"" }}';
-  const initialDep = '{{ selected_dep|default:"" }}';
-
-  if (initialOrg) {
-    $('#organization').val(initialOrg);
-    loadAgreementsByOrg(initialOrg);
-    loadDepartmentsByOrg(initialOrg, initialDep);
-  }
+  // ─── INITIAL ────────────────────────────────────────────────────────────
 
   waitForTinyMCE(function () {
     updateEditorWithSelections();

@@ -2697,104 +2697,6 @@ def svod_get(request):
     if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
         raise PermissionDenied("Ruxsat yo'q")
 
-    context = {
-        "organizations": Organization.objects.only("id", "name").order_by("id"),
-        "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
-        "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
-    }
-    return render(request, 'main/svod.html', context)
-
-
-@never_cache
-@require_POST
-@login_required
-def svod_post(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo'q")
-
-    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
-        raise PermissionDenied("Ruxsat yo'q")
-
-    org_id = (request.POST.get("organization") or "").strip()
-    sender_id = (request.POST.get("sender") or "").strip()
-    message = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]")
-
-    body = _decode_body(request)
-
-    org = Organization.objects.filter(id=org_id).first() if org_id.isdigit() else None
-    if not org:
-        messages.error(request, "Tashkilot topilmadi")
-        return redirect("svod_get")
-
-    # svod_get dagi ikkita ro'yxat (department_id=283 YOKI
-    # organization_id=4) bilan BIR XIL — sender shulardan biriga
-    # tegishli bo'lishi kerak.
-    sender = Employee.objects.filter(
-        Q(id=sender_id) & (Q(department_id=283) | Q(organization_id=4))
-    ).first() if sender_id.isdigit() else None
-
-    if not sender:
-        messages.error(request, "Imzolovchi xodim tanlanmadi yoki ruxsat etilmagan")
-        return redirect("svod_get")
-
-    if not body:
-        messages.error(request, "Hujjat matni bo'sh bo'lmasin")
-        return redirect("svod_get")
-
-    raw_ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
-    raw_ids = [i for i in raw_ids if i != sender.id]
-
-    try:
-        with transaction.atomic():
-            deed = Deed.objects.create(
-                organization=org,
-                sender=sender,
-                user=employee,
-                message_user=message,
-                body=body,
-                status='svod',
-            )
-
-            emps = (
-                Employee.objects.filter(
-                    Q(id__in=raw_ids) & (Q(department_id=283) | Q(organization_id=4))
-                ).only("id")
-                if raw_ids else Employee.objects.none()
-            )
-            if raw_ids:
-                objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
-                DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
-
-            _save_deed_pdf(deed)
-
-    except HtmlPdfError as e:
-        messages.error(request, f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring")
-        return redirect("svod_get")
-    except DatabaseError:
-        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
-        return redirect("svod_get")
-
-    notify_deed_sender(deed)
-    if raw_ids:
-        notify_deed_watchers(deed, emps)
-
-    messages.success(request, "Imzolashga yuborildi")
-    return redirect("contact_user")
-
-
-@never_cache
-@require_GET
-@login_required
-def svod_all_get(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo'q")
-
-    if not (request.user.has_perm("main.shop_employee") or request.user.has_perm("main.report_employee")):
-        raise PermissionDenied("Ruxsat yo'q")
-
     full_region = request.user.has_perm("main.all_region")
 
     regions = Region.objects.only("id", "name").order_by("id")
@@ -2808,13 +2710,13 @@ def svod_all_get(request):
         "regions": regions,
         "full_region": full_region,
     }
-    return render(request, 'main/svod_all.html', context)
+    return render(request, 'main/svod.html', context)
 
 
 @never_cache
 @require_POST
 @login_required
-def svod_all_post(request):
+def svod_post(request):
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo'q")
@@ -2831,12 +2733,12 @@ def svod_all_post(request):
 
     if not org_ids:
         messages.error(request, "Kamida bitta tashkilot tanlang")
-        return redirect("svod_all_get")
+        return redirect("svod_get")
 
     orgs = Organization.objects.filter(id__in=org_ids)
     if not orgs.exists():
         messages.error(request, "Tashkilotlar topilmadi")
-        return redirect("svod_all_get")
+        return redirect("svod_get")
 
     sender = Employee.objects.filter(
         Q(id=sender_id) & (Q(department_id=283) | Q(organization_id=4))
@@ -2844,11 +2746,11 @@ def svod_all_post(request):
 
     if not sender:
         messages.error(request, "Imzolovchi xodim tanlanmadi yoki ruxsat etilmagan")
-        return redirect("svod_all_get")
+        return redirect("svod_get")
 
     if not body:
         messages.error(request, "Hujjat matni bo'sh bo'lmasin")
-        return redirect("svod_all_get")
+        return redirect("svod_get")
 
     raw_ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
     raw_ids = [i for i in raw_ids if i != sender.id]
@@ -2883,10 +2785,10 @@ def svod_all_post(request):
 
     except HtmlPdfError as e:
         messages.error(request, f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring")
-        return redirect("svod_all_get")
+        return redirect("svod_get")
     except DatabaseError:
         messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
-        return redirect("svod_all_get")
+        return redirect("svod_get")
 
     notify_deed_sender(deed)
     if raw_ids:

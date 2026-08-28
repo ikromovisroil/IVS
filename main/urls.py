@@ -117,9 +117,6 @@ urlpatterns = [
     # SVOD
     path("svod/", svod_get, name="svod_get"),
     path("svod/post/", svod_post, name="svod_post"),
-    path('svod-all/', svod_all_get, name='svod_all_get'),
-    path('svod-all/post/', svod_all_post, name='svod_all_post'),
-    path('ajax/svod-all-materials/', ajax_svod_all_materials, name='ajax_svod_all_materials'),
     path('ajax/download-pdf/', download_pdf, name='download_pdf'),
 
     # REESTR

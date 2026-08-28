@@ -541,104 +541,11 @@ def ajax_akt_materials(request):
     return JsonResponse(list(qs), safe=False)
 
 
-@never_cache
-@require_GET
-@login_required
-def ajax_svod_materials(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied
-
-    org_id = request.GET.get("organization")
-    dep_id = request.GET.get("department")
-    d1 = request.GET.get("date1")
-    d2 = request.GET.get("date2")
-
-    if not org_id or not d1 or not d2:
-        return JsonResponse([], safe=False)
-
-    try:
-        date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
-        date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
-    except ValueError:
-        return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
-
-    # OR mantig'i: o'z materiali BO'LSA HAM, o'z hududiga yopilgan bo'lsa ham
-    base_filter = (
-        Q(material__employee=employee) |
-        Q(order__sender__region=employee.region,order__goal__organization__type="worker")
-    )
-
-    common_filters = dict(
-        order__date_finished__isnull=False,
-        order__date_finished__gte=date1,
-        order__date_finished__lt=date2,
-        order__sender__organization_id=org_id,
-    )
-
-    if dep_id and dep_id.isdigit():
-        common_filters["order__sender__department_id"] = dep_id
-
-    dec = DecimalField(max_digits=18, decimal_places=2)
-    zero_dec = Value(0, output_field=dec)
-
-    qs = (
-        OrderMaterial.objects.filter(base_filter, **common_filters)
-        .values(
-            "material_id",
-            "material__code",
-            "material__name",
-            "material__unit__name",
-            "material__price",
-        )
-        .annotate(
-            total_number=Coalesce(Sum("number"), 0),
-        )
-        .annotate(
-            total_sum=ExpressionWrapper(
-                Coalesce(F("material__price"), zero_dec) *
-                Cast(Coalesce(F("total_number"), 0), output_field=dec),
-                output_field=dec,
-            )
-        )
-        .order_by("material__code", "material__name")
-    )
-
-    rel = (
-        OrderMaterial.objects.filter(base_filter, **common_filters)
-        .values("material_id", "order_id", "order__date_finished")
-        .distinct()
-    )
-    material_orders = {}
-    for r in rel:
-        mid = r["material_id"]
-        dt = r["order__date_finished"]
-        dt_str = dt.date().isoformat() if dt else ""
-        txt = f'Akt №{r["order_id"]} ga {dt_str}y'
-        material_orders.setdefault(mid, []).append(txt)
-
-    data = []
-    for item in qs:
-        mid = item["material_id"]
-        order_info = ", ".join(material_orders.get(mid, []))
-
-        data.append({
-            "material__name": item.get("material__name", ""),
-            "material__unit__name": item.get("material__unit__name", ""),
-            "total_number": float(item.get("total_number") or 0),
-            "material__price": float(item.get("material__price") or 0),
-            "total_sum": float(item.get("total_sum") or 0),
-            "order_info": order_info,
-            "material__code": item.get("material__code", ""),
-        })
-    return JsonResponse(data, safe=False)
-
-
 from collections import OrderedDict
 @never_cache
 @require_GET
 @login_required
-def ajax_svod_all_materials(request):
+def ajax_svod_materials(request):
 
     employee = getattr(request.user, "employee", None)
     if not employee:
@@ -650,7 +557,7 @@ def ajax_svod_all_materials(request):
     region_param = (request.GET.get("region") or "").strip()
 
     if not org_ids or not d1 or not d2:
-        return JsonResponse({"organizations": [], "employees": []})
+        return JsonResponse([], safe=False)
 
     try:
         date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
@@ -658,9 +565,7 @@ def ajax_svod_all_materials(request):
     except ValueError:
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
-    # Ruxsatni serverda qayta tekshiramiz — clientga ishonmaymiz.
     can_view_all_regions = request.user.has_perm("main.all_region")
-    use_all_regions = can_view_all_regions and region_param == "all"
 
     common_filters = dict(
         order__date_finished__isnull=False,
@@ -670,15 +575,12 @@ def ajax_svod_all_materials(request):
         order__goal__organization__type="worker",
     )
 
-    if not use_all_regions:
-        if can_view_all_regions and region_param.isdigit():
-            # Ruxsati bor foydalanuvchi aniq bitta hudud tanlagan
-            common_filters["order__sender__region_id"] = int(region_param)
-        else:
-            # Ruxsati yo'q — majburan o'z hududi
-            if not employee.region_id:
-                return JsonResponse({"organizations": [], "employees": []})
-            common_filters["order__sender__region_id"] = employee.region_id
+    if can_view_all_regions and region_param.isdigit():
+        common_filters["order__sender__region_id"] = int(region_param)
+    else:
+        if not employee.region_id:
+            return JsonResponse([], safe=False)
+        common_filters["order__sender__region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
@@ -686,10 +588,6 @@ def ajax_svod_all_materials(request):
     qs = (
         OrderMaterial.objects.filter(**common_filters)
         .values(
-            "order__sender__organization_id",
-            "order__sender__organization__name",
-            "order__sender__region_id",
-            "order__sender__region__name",
             "material_id",
             "material__code",
             "material__name",
@@ -704,101 +602,36 @@ def ajax_svod_all_materials(request):
                 output_field=dec,
             )
         )
-        .order_by(
-            "order__sender__organization_id",
-            "order__sender__region_id",
-            "material__code",
-            "material__name",
-        )
+        .order_by("material__code", "material__name")
     )
 
     rel = (
         OrderMaterial.objects.filter(**common_filters)
-        .values(
-            "material_id",
-            "order__sender__organization_id",
-            "order__sender__region_id",
-            "order_id",
-            "order__date_finished",
-        )
+        .values("material_id", "order_id", "order__date_finished")
         .distinct()
     )
     order_map = {}
     for r in rel:
-        key = (r["material_id"], r["order__sender__organization_id"], r["order__sender__region_id"])
+        mid = r["material_id"]
         dt = r["order__date_finished"]
         dt_str = dt.strftime("%d.%m.%Y") if dt else ""
         txt = f'Akt №{r["order_id"]} ga {dt_str} yil' if dt_str else f'Akt №{r["order_id"]}'
-        order_map.setdefault(key, []).append(txt)
+        order_map.setdefault(mid, []).append(txt)
 
-    grouped = OrderedDict()
+    data = []
     for item in qs:
-        org_key = (item["order__sender__organization_id"], item["order__sender__organization__name"])
-        region_key = (item["order__sender__region_id"], item["order__sender__region__name"] or "Noma'lum hudud")
-
-        grouped.setdefault(org_key, OrderedDict())
-        grouped[org_key].setdefault(region_key, [])
-
-        key = (item["material_id"], item["order__sender__organization_id"], item["order__sender__region_id"])
-        order_info_list = order_map.get(key, [])
-
-        grouped[org_key][region_key].append({
+        mid = item["material_id"]
+        data.append({
             "material__name": item.get("material__name", ""),
             "material__unit__name": item.get("material__unit__name", ""),
             "total_number": float(item.get("total_number") or 0),
             "material__price": float(item.get("material__price") or 0),
             "total_sum": float(item.get("total_sum") or 0),
-            "order_info": order_info_list,
+            "order_info": order_map.get(mid, []),
             "material__code": item.get("material__code", ""),
         })
 
-    result = []
-    for (org_id, org_name), regions in grouped.items():
-        org_block = {"organization_id": org_id, "organization_name": org_name, "regions": []}
-        for (region_id, region_name), materials in regions.items():
-            org_block["regions"].append({
-                "region_id": region_id,
-                "region_name": region_name,
-                "materials": materials,
-            })
-        result.append(org_block)
-
-    # ── Ariza bajargan (order.receiver) barcha xodimlar, dublikatsiz ──
-    responsible_qs = (
-        OrderMaterial.objects.filter(**common_filters)
-        .values(
-            "order__receiver_id",
-            "order__receiver__last_name",
-            "order__receiver__first_name",
-            "order__receiver__father_name",
-            "order__receiver__rank__name",
-        )
-        .distinct()
-    )
-
-    seen_ids = set()
-    employees = []
-    for r in responsible_qs:
-        rid = r.get("order__receiver_id")
-        if not rid or rid in seen_ids:
-            continue
-        seen_ids.add(rid)
-
-        full_name = " ".join(filter(None, [
-            r.get("order__receiver__last_name"),
-            r.get("order__receiver__first_name"),
-            r.get("order__receiver__father_name"),
-        ])) or "-"
-
-        employees.append({
-            "id": rid,
-            "full_name": full_name,
-            "rank": r.get("order__receiver__rank__name") or "",
-        })
-
-    employees.sort(key=lambda e: e["full_name"])
-
-    return JsonResponse({"organizations": result, "employees": employees})
+    return JsonResponse(data, safe=False)
 
 
 @never_cache
