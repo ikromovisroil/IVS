@@ -17,7 +17,7 @@
   </div>
 
   <section class="section">
-    <form class="row" action="{% url 'svod_all_post' %}" method="post">
+    <form class="row" action="{% url 'svod_post' %}" method="post">
       {% csrf_token %}
 
       <div class="col-lg-4">
@@ -701,7 +701,7 @@ function downloadCurrentEditorAsPdf() {
     body: new URLSearchParams({
       body_html: rawBody,
       orientation: 'Landscape',
-      filename: 'svod_all',
+      filename: 'svod',
     }),
   })
     .then(function (response) {
@@ -732,7 +732,7 @@ function downloadCurrentEditorAsPdf() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `svod_all_${Date.now()}.pdf`;
+      a.download = `svod_${Date.now()}.pdf`;
       document.body.appendChild(a);
       a.click();
       a.remove();
