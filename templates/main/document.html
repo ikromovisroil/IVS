@@ -103,7 +103,7 @@
                 <select id="sender" name="sender" class="form-select" required>
                   <option value="">Tanlang...</option>
                   {% for emp in emp_bos_sender %}
-                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                    <option value="{{ emp.id }}" data-rank="{{ emp.rank.name|default:'' }}">{{ emp.full_name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -197,7 +197,7 @@
               <!-- ✅ DINAMIK: JS orqali to'ldiriladi -->
               <div id="liable_page1"></div>
 
-              <div></div>
+              <div></div><div></div><div></div>
 
               <!-- Imzo jadvali -->
               <div>
@@ -214,7 +214,7 @@
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                        huzuridagi ATM direktori</b><br><br>
+                        huzuridagi ATM <span class="sender_rank">direktor</span>i </b><br><br>
                         <b class="sender_name">__</b>
                       </td>
                     </tr>
@@ -404,6 +404,12 @@
       let t = $('#sender option:selected').text() || '';
       if (!t || t === 'Tanlang...') t = '__';
       setAllInEditor('.sender_name', t);
+
+      // Tanlangan imzolovchi xodimning lavozimi — tanlanmagan holatda
+      // standart "direktor" matni saqlanib qoladi.
+      let rank = $('#sender option:selected').attr('data-rank') || '';
+      rank = rank.trim();
+      setAllInEditor('.sender_rank', rank || 'direktor');
     }
 
     function applyReceiverToEditor() {
@@ -671,8 +677,6 @@
 
           sortedContracts.forEach(function (contract) {
             // 1-sahifa — HAMMASI chiqadi (SKIP qilinganlar ham, nomi bilan)
-            // ketma-ket bloklar orasiga <br> qo'shiladi (birinchisidan oldin yo'q)
-            if (html1) html1 += '<br>';
             html1 += buildBlock1(contract);
 
             // 2-sahifa — faqat hide_page2 belgilanmagan shartnomalar chiqadi
