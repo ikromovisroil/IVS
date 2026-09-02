@@ -2697,6 +2697,10 @@ def akt_post(request):
     auto_agreement_ids = (material_sender_ids | service_receiver_ids)
     auto_agreement_ids.discard(sender.id)
 
+    # Shu AKTga tegishli bo'lgan barcha arizalar (Order) ID'lari —
+    # keyinchalik "ariza raqami" bo'yicha qidirish uchun deed.orders'ga bog'lanadi
+    order_ids = set(auto_qs.exclude(order__isnull=True).values_list("order_id", flat=True).distinct())
+
     try:
         with transaction.atomic():
             deed = Deed.objects.create(
@@ -2707,6 +2711,9 @@ def akt_post(request):
                 body=body,
                 status='act',
             )
+
+            if order_ids:
+                deed.orders.set(order_ids)
 
             emps = (
                 Employee.objects.filter(
@@ -3325,9 +3332,9 @@ def files(request):
         )
 
         if name.isdigit():
-            name_filter |= Q(order__id=int(name))
+            name_filter |= Q(order__id=int(name)) | Q(orders__id=int(name))
         else:
-            name_filter |= Q(order__id__icontains=name)
+            name_filter |= Q(order__id__icontains=name) | Q(orders__id__icontains=name)
 
         qs = qs.filter(name_filter)
 

@@ -708,11 +708,11 @@ def order_receiver_deed_post(request):
                 organization=order.sender.organization,
                 sender_id=sender.id,
                 user_id=employee.id,
-                order_id=order.id,
                 message_user=message,
                 body=body,
                 status='act',
             )
+            deed.orders.set([order.id])
 
             if order.sender_id != sender.id:
                 sender_consent = DeedConsent.objects.create(
