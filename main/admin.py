@@ -309,8 +309,8 @@ class OrderGoalAdmin(admin.ModelAdmin):
 @admin.register(Deed)
 class DeedAdmin(admin.ModelAdmin):
     list_display = (
-        "id","organization", "user__region", "code", "sender", "receiver", "user",
-        "colored_status_sender", "colored_status_receiver", "status", "order",
+        "id", "organization", "user__region", "code", "sender", "receiver", "user",
+        "colored_status_sender", "colored_status_receiver", "status", "orders_list",
         "date_creat"
     )
     list_filter = (
@@ -320,9 +320,11 @@ class DeedAdmin(admin.ModelAdmin):
         "code", "body", "message_sender", "message_receiver", "message_user",
         "sender__last_name", "sender__first_name",
         "receiver__last_name", "receiver__first_name",
-        "user__last_name", "user__first_name"
+        "user__last_name", "user__first_name",
+        "orders__id",
     )
     autocomplete_fields = ("sender", "receiver", "user")
+    filter_horizontal = ("orders",)
     readonly_fields = ("code", "date_creat", "date_edit")
     inlines = [DeedConsentInline]
 
@@ -331,6 +333,14 @@ class DeedAdmin(admin.ModelAdmin):
         "approved": "#28a745",   # yashil
         "rejected": "#dc3545",   # qizil
     }
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("orders")
+
+    def orders_list(self, obj):
+        ids = list(obj.orders.values_list("id", flat=True))
+        return ", ".join(str(i) for i in ids) if ids else "—"
+    orders_list.short_description = "Arizalar"
 
     def _status_badge(self, status):
         color = self.STATUS_COLORS.get(status, "#999")
