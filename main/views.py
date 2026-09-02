@@ -3332,9 +3332,9 @@ def files(request):
         )
 
         if name.isdigit():
-            name_filter |= Q(order__id=int(name)) | Q(orders__id=int(name))
+            name_filter |= Q(orders__id=int(name))
         else:
-            name_filter |= Q(order__id__icontains=name) | Q(orders__id__icontains=name)
+            name_filter |= Q(orders__id__icontains=name)
 
         qs = qs.filter(name_filter)
 
