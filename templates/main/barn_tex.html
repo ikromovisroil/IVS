@@ -216,6 +216,11 @@
                             data-bs-toggle="modal"
                             data-bs-target="#qkcentered{{ tex.id }}">
                           {{ tex.name|default:"-" }}
+                          {% if tex.is_online %}
+                            <span class="badge bg-info-subtle text-info-emphasis ms-1">
+                              <i class="bi bi-hdd-network"></i> tarmoq
+                            </span>
+                          {% endif %}
                           <span class="text-secondary small d-block mt-1">
                             {% for et in tex.structure_set.all %}
                               <i>{{ et.category.name|default:"" }} / {{ et.name|default:"-" }}</i><br>
@@ -420,6 +425,20 @@
               <label class="col-md-4 col-lg-3 col-form-label">Joylashuvi</label>
               <div class="col-md-8 col-lg-9">{{ technics_form.address }}</div>
             </div>
+
+            <!-- Tarmoq qurilmasi checkbox — forma orqali, default: False -->
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Tarmoq qurilmasi</label>
+              <div class="col-md-8 col-lg-9 pt-2">
+                <div class="form-check form-switch">
+                  {{ technics_form.is_online }}
+                  <label class="form-check-label" for="{{ technics_form.is_online.id_for_label }}">
+                    Ha (masalan: router, switch, IP-kamera va h.k.)
+                  </label>
+                </div>
+              </div>
+            </div>
+
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -702,6 +721,22 @@
                        value="{{ tex.address|default_if_none:'' }}">
               </div>
             </div>
+
+            <!-- Tarmoq qurilmasi checkbox — joriy qiymatga qarab belgilanadi -->
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Tarmoq qurilmasi</label>
+              <div class="col-md-8 col-lg-9 pt-2">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" role="switch"
+                         id="id_is_online_{{ tex.id }}" name="is_online"
+                         {% if tex.is_online %}checked{% endif %}>
+                  <label class="form-check-label" for="id_is_online_{{ tex.id }}">
+                    Ha (masalan: router, switch, IP-kamera va h.k.)
+                  </label>
+                </div>
+              </div>
+            </div>
+
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
@@ -928,6 +963,16 @@
                       <span class="badge bg-danger">Yaroqsiz</span>
                     {% else %}
                       <span class="badge bg-secondary">Noma'lum</span>
+                    {% endif %}
+                  </div>
+                </div>
+                <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Tarmoq qurilmasi</div>
+                  <div class="col-md-7">
+                    {% if tex.is_online %}
+                      <span class="badge bg-info">Ha</span>
+                    {% else %}
+                      <span class="badge bg-secondary">Yo'q</span>
                     {% endif %}
                   </div>
                 </div>

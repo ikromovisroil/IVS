@@ -9,7 +9,7 @@ class TechnicsForm(forms.ModelForm):
         fields = [
             "group", "category", "organization", "name",
             "parametr", "inventory", "serial",
-            "mac", "ip", "year", "price", "address"
+            "mac", "ip", "year", "price", "address", "is_online"
         ]
         widgets = {
             "group": forms.Select(attrs={"class": "form-select", "required": True}),
@@ -24,12 +24,14 @@ class TechnicsForm(forms.ModelForm):
             "year": forms.TextInput(attrs={"class": "form-control", "placeholder": "yili"}),
             "address": forms.TextInput(attrs={"class": "form-control", "placeholder": "joylashuv"}),
             "price": forms.NumberInput(attrs={"class": "form-control", "placeholder": "narxi"}),
+            "is_online": forms.CheckboxInput(attrs={"class": "form-check-input", "role": "switch"}),
         }
 
-    # __init__ Meta ICHIDA emas, shu yerda - forma sinfining o'zida bo'lishi kerak
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["organization"].queryset = Organization.objects.order_by("id")
+        self.fields["is_online"].required = False   # checkbox belgilanmasa ham xato bermasin
+        self.fields["is_online"].initial = False     # yangi forma ochilganda default FALSE
 
 
 class ExtraTechnicsForm(forms.ModelForm):

@@ -997,6 +997,7 @@ def technics_create(request):
         technics = form.save(commit=False)
         serial = (technics.serial or "").strip()
         organization = technics.organization
+        # is_online forma orqali avtomatik to'ldiriladi, qo'shimcha kod shart emas
 
         if employee.region_id:
             technics.region_id = employee.region_id
@@ -1207,6 +1208,7 @@ def technics_update(request, pk):
     tex.year = (request.POST.get("year") or "").strip() or None
     tex.address = (request.POST.get("address") or "").strip() or None
     tex.status = (request.POST.get("status") or "").strip()
+    tex.is_online = request.POST.get("is_online") == "on"
 
     if not tex.name:
         messages.error(request, "Nomi bo'sh bo'lmasin")
@@ -1238,7 +1240,8 @@ def technics_update(request, pk):
     tex.save(update_fields=[
         "category", "organization",
         "name", "parametr", "inventory", "serial",
-        "mac", "ip", "year", "price", "address", "status"
+        "mac", "ip", "year", "price", "address", "status",
+        "is_online",
     ])
 
     messages.success(request, "Uskuna tahrirlandi")
