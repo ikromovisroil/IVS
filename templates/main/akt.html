@@ -66,6 +66,12 @@
                 <div class="text-center">
                   <button type="button" id="btnSearch" class="btn btn-primary w-100">Qidirish</button>
                 </div>
+
+                <div class="text-center">
+                  <button type="button" id="btnDownloadPdf" class="btn btn-secondary w-100">
+                    <i class="bi bi-download"></i> PDF yuklab olish
+                  </button>
+                </div>
               </div>
 
             </div>
@@ -370,6 +376,84 @@ function updateEditorWithSelections() {
   }
 }
 
+// ─── PDF yuklab olish ──────────────────────────────────────────────────────────
+
+function downloadCurrentEditorAsPdf() {
+  const ed = editorGet();
+  if (!ed) {
+    alert("Hujjat hali tayyor emas, birozdan so'ng qayta urinib ko'ring.");
+    return;
+  }
+
+  ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+  const rawBody = $('#body').val() || '';
+
+  if (!rawBody.trim()) {
+    alert('Hujjat matni bo\'sh — avval "Qidirish" tugmasini bosing.');
+    return;
+  }
+
+  const $btn = $('#btnDownloadPdf');
+  const originalHtml = $btn.html();
+  $btn.prop('disabled', true).text('Tayyorlanmoqda...');
+
+  const csrfToken = $('form input[name="csrfmiddlewaretoken"]').val();
+
+  fetch("{% url 'download_pdf' %}", {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': csrfToken,
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    body: new URLSearchParams({
+      body_html: rawBody,
+      orientation: 'Landscape',
+      filename: 'akt',
+    }),
+  })
+    .then(function (response) {
+      const contentType = response.headers.get('content-type') || '';
+
+      if (!response.ok) {
+        if (contentType.includes('application/json')) {
+          return response.json().then(function (data) {
+            throw new Error(data.error || 'PDF yuklab olishda xatolik');
+          });
+        }
+        return response.text().then(function (text) {
+          console.error('Server javobi (HTML/text):', text.substring(0, 500));
+          throw new Error(`Server xatoligi: ${response.status} ${response.statusText}`);
+        });
+      }
+
+      if (!contentType.includes('application/pdf')) {
+        return response.text().then(function (text) {
+          console.error('Kutilmagan javob turi:', contentType, text.substring(0, 500));
+          throw new Error('Server PDF o\'rniga boshqa formatda javob qaytardi');
+        });
+      }
+
+      return response.blob();
+    })
+    .then(function (blob) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `akt_${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch(function (err) {
+      console.error(err);
+      alert(err.message || 'PDF yuklab olishda xatolik yuz berdi');
+    })
+    .finally(function () {
+      $btn.prop('disabled', false).html(originalHtml);
+    });
+}
+
 // ─── JQUERY READY ─────────────────────────────────────────────────────────────
 
 $(function () {
@@ -672,6 +756,11 @@ $(function () {
 
   $('#btnSearch').on('click', function () {
     searchMaterials();
+  });
+
+  $('#btnDownloadPdf').on('click', function (e) {
+    e.preventDefault();
+    downloadCurrentEditorAsPdf();
   });
 
   // ─── FORM SUBMIT: body ni Base64 qilib yuboramiz (WAF/firewall'ni chetlab o'tish uchun) ─────
