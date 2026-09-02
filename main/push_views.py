@@ -230,7 +230,7 @@ def notify_eligible_employees_new_order(order):
             employee,
             title="Yangi ariza yuborildi",
             body=f"#{order.id} {order.sender.full_name if order.sender else ''}",
-            url="/order-receiver/",
+            url="/order/receiver/",
             tag=f"order-new-{order.id}",
         )
 
@@ -251,7 +251,7 @@ def notify_order_status_change(order):
         order.sender,
         title="Ariza holati o'zgardi",
         body=f"#{order.id} — {status_display}",
-        url="/order-sender/",
+        url="/order/sender/",
         tag=f"order-status-{order.id}-{order.status}",
     )
 
@@ -268,7 +268,7 @@ def notify_deed_sender(deed):
         deed.sender,
         title="Hujjat imzolashga yuborildi",
         body=f"Hujjat #{deed.id} sizning imzoingizni kutmoqda",
-        url="/contact-user/",
+        url="/contact/user/",
         tag=f"deed-sender-{deed.id}",
     )
 
@@ -285,6 +285,6 @@ def notify_deed_watchers(deed, employees):
             employee,
             title="Hujjat kelishishga yuborildi",
             body=f"Hujjat #{deed.id} bo'yicha fikringiz kutilmoqda",
-            url="/contact-user/",
+            url="/contact/user/",
             tag=f"deed-watcher-{deed.id}",
         )
