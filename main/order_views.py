@@ -38,7 +38,7 @@ MATERIALS_PREFETCH = Prefetch(
     "materials", queryset=OrderMaterial.objects.select_related("material")
 )
 
-DEED_PREFETCH = Prefetch("order", queryset=Deed.objects.only("id", "file", "order"))
+DEED_PREFETCH = Prefetch("orders", queryset=Deed.objects.only("id", "file", "orders"))
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -580,7 +580,7 @@ def order_receiver_arxiv(request):
         .select_related(*FULL_SENDER_RECEIVER_RELATED)
         .prefetch_related(MATERIALS_PREFETCH)
         .annotate(
-            has_deed=Exists(Deed.objects.filter(order=OuterRef("pk")))
+            has_deed=Exists(Deed.objects.filter(orders=OuterRef("pk")))
         )
         .order_by("-date_edit")
     )
