@@ -2527,12 +2527,18 @@ def document_post(request):
     if not employee.liable_set.exists():
         raise PermissionDenied("Ruxsat yo'q")
 
+    org_id = (request.POST.get("organization") or "").strip()
     sender_id = (request.POST.get("sender") or "").strip()
     receiver_id = (request.POST.get("receiver") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
     agreements = request.POST.getlist("agreements[]")
 
     body = _decode_body(request)
+
+    org = Organization.objects.filter(id=org_id).first() if org_id.isdigit() else None
+    if not org:
+        messages.error(request, "Tashkilot topilmadi")
+        return redirect("document_get")
 
     allowed_sender_qs = Employee.objects.filter(
         Q(department_id=283) | Q(department_id=298, region=employee.region)
@@ -2559,6 +2565,7 @@ def document_post(request):
     try:
         with transaction.atomic():
             deed = Deed.objects.create(
+                organization=org,
                 sender=sender,
                 receiver=receiver,
                 user=employee,
@@ -2618,9 +2625,11 @@ def akt_post(request):
         raise PermissionDenied("Employee yo'q")
 
     org_id = (request.POST.get("organization") or "").strip()
+    dep_id = (request.POST.get("department") or "").strip()
     sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
-    agreements = request.POST.getlist("agreements[]")
+    d1 = (request.POST.get("date1") or "").strip()
+    d2 = (request.POST.get("date2") or "").strip()
 
     body = _decode_body(request)
 
@@ -2641,8 +2650,52 @@ def akt_post(request):
         messages.error(request, "Hujjat matni bo'sh bo'lmasin")
         return redirect("akt_get")
 
-    raw_ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
-    raw_ids = [i for i in raw_ids if i != sender.id]
+    if not d1 or not d2:
+        messages.error(request, "Sana oralig'i tanlanmagan")
+        return redirect("akt_get")
+
+    try:
+        date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
+        date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
+    except ValueError:
+        messages.error(request, "Sana formati noto'g'ri")
+        return redirect("akt_get")
+
+    # ── Kelishuvchilarni AVTOMATIK aniqlaymiz ──
+    # ajax_akt_materials'dagi bilan BIR XIL mantiq: joriy xodimga
+    # (employee) material orqali bog'langan sender'lar, sana oralig'i
+    # va hudud (employee.region) bo'yicha, tanlangan tashkilot/bo'limga
+    # tegishli material topshirilgan buyurtmalar.
+    sender_ids_material = MaterialUser.objects.filter(
+        receiver=employee
+    ).values_list("sender_id", flat=True)
+
+    auto_qs = OrderMaterial.objects.filter(
+        order__date_finished__gte=date1,
+        order__date_finished__lt=date2,
+        order__receiver__region=employee.region,
+        material__employee_id__in=sender_ids_material,
+        order__sender__organization_id=org.id,
+    )
+
+    if dep_id.isdigit():
+        auto_qs = auto_qs.filter(order__sender__department_id=dep_id)
+
+    # 1) Material topshirgan xodimlar (ariza yuboruvchi — order.sender)
+    material_sender_ids = set(
+        auto_qs.values_list("order__sender_id", flat=True).distinct()
+    )
+
+    # 2) Xizmat ko'rsatgan xodimlar (arizani bajaruvchi — order.receiver)
+    service_receiver_ids = set(
+        auto_qs.exclude(order__receiver__isnull=True)
+        .values_list("order__receiver_id", flat=True)
+        .distinct()
+    )
+
+    # Ikkala guruhni birlashtiramiz, imzolovchi (sender)ni chiqarib tashlaymiz
+    auto_agreement_ids = (material_sender_ids | service_receiver_ids)
+    auto_agreement_ids.discard(sender.id)
 
     try:
         with transaction.atomic():
@@ -2655,15 +2708,17 @@ def akt_post(request):
                 status='act',
             )
 
-            # agreements ham shu tashkilotga tegishli xodimlar bilan
-            # cheklanadi — bo'lmasa boshqa tashkilotdagi xodimlar ham
-            # kelishuvchi sifatida qo'shilib qolar edi.
             emps = (
-                Employee.objects.filter(id__in=raw_ids, organization_id=org.id).only("id")
-                if raw_ids else Employee.objects.none()
+                Employee.objects.filter(
+                    id__in=auto_agreement_ids, organization_id=org.id
+                ).only("id")
+                if auto_agreement_ids else Employee.objects.none()
             )
-            if raw_ids:
-                objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+            if auto_agreement_ids:
+                objs = [
+                    DeedConsent(deed=deed, employee=e, status="approved")
+                    for e in emps
+                ]
                 DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
 
             _save_deed_pdf(deed)
@@ -2676,7 +2731,7 @@ def akt_post(request):
         return redirect("akt_get")
 
     notify_deed_sender(deed)
-    if raw_ids:
+    if auto_agreement_ids:
         notify_deed_watchers(deed, emps)
 
     messages.success(request, "Imzolashga yuborildi")
