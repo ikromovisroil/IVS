@@ -2662,10 +2662,6 @@ def akt_post(request):
         return redirect("akt_get")
 
     # ── Kelishuvchilarni AVTOMATIK aniqlaymiz ──
-    # ajax_akt_materials'dagi bilan BIR XIL mantiq: joriy xodimga
-    # (employee) material orqali bog'langan sender'lar, sana oralig'i
-    # va hudud (employee.region) bo'yicha, tanlangan tashkilot/bo'limga
-    # tegishli material topshirilgan buyurtmalar.
     sender_ids_material = MaterialUser.objects.filter(
         receiver=employee
     ).values_list("sender_id", flat=True)
@@ -2681,20 +2677,20 @@ def akt_post(request):
     if dep_id.isdigit():
         auto_qs = auto_qs.filter(order__sender__department_id=dep_id)
 
-    # 1) Material topshirgan xodimlar (ariza yuboruvchi — order.sender)
-    material_sender_ids = set(
-        auto_qs.values_list("order__sender_id", flat=True).distinct()
+    # Kelishuvchilar — shu arizalarning sender va receiver'lari
+    sender_ids = set(
+        auto_qs.exclude(order__sender__isnull=True)
+        .values_list("order__sender_id", flat=True)
+        .distinct()
     )
-
-    # 2) Xizmat ko'rsatgan xodimlar (arizani bajaruvchi — order.receiver)
-    service_receiver_ids = set(
+    receiver_ids = set(
         auto_qs.exclude(order__receiver__isnull=True)
         .values_list("order__receiver_id", flat=True)
         .distinct()
     )
 
     # Ikkala guruhni birlashtiramiz, imzolovchi (sender)ni chiqarib tashlaymiz
-    auto_agreement_ids = (material_sender_ids | service_receiver_ids)
+    auto_agreement_ids = (sender_ids | receiver_ids)
     auto_agreement_ids.discard(sender.id)
 
     # Shu AKTga tegishli bo'lgan barcha arizalar (Order) ID'lari —
