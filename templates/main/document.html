@@ -618,7 +618,7 @@
             <colgroup>${colgroup}</colgroup>
             <tbody id="tbody_c${cid}">${rows}</tbody>
           </table>
-        </div><br>
+        </div>
       </div>`;
     }
 
@@ -671,10 +671,14 @@
 
           sortedContracts.forEach(function (contract) {
             // 1-sahifa — HAMMASI chiqadi (SKIP qilinganlar ham, nomi bilan)
+            // ketma-ket bloklar orasiga <br> qo'shiladi (birinchisidan oldin yo'q)
+            if (html1) html1 += '<br>';
             html1 += buildBlock1(contract);
 
             // 2-sahifa — faqat hide_page2 belgilanmagan shartnomalar chiqadi
+            // ketma-ket bloklar orasiga <br> qo'shiladi (birinchisidan oldin yo'q)
             if (!contract.hide_page2) {
+              if (html2) html2 += '<br>';
               html2 += buildBlock2(contract);
             }
           });
