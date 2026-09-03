@@ -254,12 +254,12 @@
               <!-- ✅ DINAMIK: JS orqali to'ldiriladi. SKIP qilingan
                    (hide_page2=true) shartnomalar bu yerda CHIQMAYDI. -->
               <div id="liable_page2"></div>
-             </div><div></div>
+             <div></div>
 
               <div id="imv_block">&nbsp;</div><div></div>
 
               <div id="ivs_block">&nbsp;</div>
-
+             </div>
             </textarea>
           </div>
         </div>
@@ -458,7 +458,7 @@
       $agr.html('').trigger('change');
 
       if (!orgId || !regionId) {
-        $dep.html('<option value="">Avval tashkilot va hududni tanlang</option>').trigger('change');
+        $dep.html('<option value=""></option>').trigger('change');
         return;
       }
 
@@ -548,17 +548,7 @@
         .join('');
       return initials ? `${surname} ${initials}` : surname;
     }
-
-    // Kelishuvchilar (agreements) ro'yxatidan tanlangan xodimlarni
-    // tashkilotiga qarab ikkita blokka taqsimlaydi:
-    //  - xodim.organization === tanlangan tashkilot  → imv_block
-    //  - aks holda (masalan ATM xodimi)               → ivs_block
-    // MUHIM: bo'sh bo'lgan blok CSS display:none bilan YASHIRILMAYDI —
-    // butunlay innerHTML='' qilib olib tashlanadi. Chunki display:none
-    // TinyMCE serializatsiyasi yoki PDF generatsiya bosqichida
-    // saqlanib qolmasligi mumkin va sarlavha bo'sh holda ham chiqib
-    // qolishi mumkin edi. HTML'da umuman mavjud bo'lmasa — na
-    // brauzerda, na PDF'da, na imzolashga yuborilgan hujjatda chiqadi.
+    
     function buildAgreementTables() {
       const ed = getEditor();
       if (!ed) return;
@@ -611,11 +601,11 @@
       }
 
       imvBlock.innerHTML = buildBlockHtml(
-        `O‘zbekiston Respublikasi ${esc(orgFinal)} ${esc(depFinal)} vakili:`,
+        `<b>O‘zbekiston Respublikasi ${esc(orgFinal)} ${esc(depFinal)} vakili:</b>`,
         imvRows
       );
       ivsBlock.innerHTML = buildBlockHtml(
-        `O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:`,
+        `<b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</b>`,
         ivsRows
       );
 
@@ -635,7 +625,7 @@
           loadAgreementsByDepartment(depId);
         });
       } else {
-        $('#department').html('<option value="">Avval tashkilot va hududni tanlang</option>').trigger('change');
+        $('#department').html('<option value=""></option>').trigger('change');
         $('#receiver').html('<option value="">Tanlang...</option>').trigger('change');
         $('#agreements').html('').trigger('change');
       }
