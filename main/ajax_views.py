@@ -884,7 +884,6 @@ def ajax_reestr_materials(request):
 
     return JsonResponse(data, safe=False)
 
-
 # ═══════════════════════════════════════════════════════════════════
 # YORDAMCHI QOIDALAR VA FUNKSIYALAR
 # ═══════════════════════════════════════════════════════════════════
@@ -893,10 +892,14 @@ ONLINE_FILTER_BY_CONTRACT_ID = {
     3: True,
 }
 
+NO_CATEGORY_USE_ALL_TECHNICS_IDS = {10}
+
 SKIP_CONTRACT_IDS = {5, 8, 9, 10, 13, 14, 15, 17, 19, 20, 21, 22}
+
 
 def _get_online_filter(contract_id):
     return ONLINE_FILTER_BY_CONTRACT_ID.get(contract_id)
+
 
 # ═══════════════════════════════════════════════════════════════════
 # AJAX_DOCUMENT_PREVIEW
@@ -905,6 +908,7 @@ def _get_online_filter(contract_id):
 @require_GET
 @login_required
 def ajax_document_preview(request):
+
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -973,6 +977,20 @@ def ajax_document_preview(request):
     for tex in all_technics:
         cat_to_technics[tex.category_id].append(tex)
 
+    needs_all_technics = any(
+        cid in NO_CATEGORY_USE_ALL_TECHNICS_IDS and not info["category_ids"]
+        for cid, info in contract_map.items()
+    )
+    if needs_all_technics:
+        all_technics_any_category = (
+            Technics.objects
+            .filter(is_active=True, region_id=effective_region_id, **loc_filter)
+            .select_related("category")
+            .prefetch_related("structure_set")
+        )
+    else:
+        all_technics_any_category = Technics.objects.none()
+
     PC_CONTRACT_ID = 1
 
     contracts_data = {}
@@ -983,7 +1001,19 @@ def ajax_document_preview(request):
 
         hide_page2 = cid in SKIP_CONTRACT_IDS
 
-        if not category_ids:
+        if category_ids:
+            items = []
+            seen_ids = set()
+            for cat_id in category_ids:
+                for tex in cat_to_technics.get(cat_id, []):
+                    if tex.id in seen_ids:
+                        continue
+                    seen_ids.add(tex.id)
+                    items.append(tex)
+        elif cid in NO_CATEGORY_USE_ALL_TECHNICS_IDS:
+
+            items = list(all_technics_any_category)
+        else:
             contracts_data[str(cid)] = {
                 "contract_id": cid,
                 "contract_name": contract_name,
@@ -993,21 +1023,12 @@ def ajax_document_preview(request):
             }
             continue
 
-        items = []
-        seen_ids = set()
-
-        for cat_id in category_ids:
-            for tex in cat_to_technics.get(cat_id, []):
-                if tex.id in seen_ids:
-                    continue
-                seen_ids.add(tex.id)
-                items.append(tex)
-
         wanted_online = _get_online_filter(cid)
         if wanted_online is not None:
             items = [tex for tex in items if bool(tex.is_online) == wanted_online]
 
         if not items:
+
             if hide_page2:
                 contracts_data[str(cid)] = {
                     "contract_id": cid,
@@ -1039,6 +1060,7 @@ def ajax_document_preview(request):
             "contract_id": cid,
             "contract_name": contract_name,
             "count": len(result_items),
+
             "items": [] if hide_page2 else result_items,
             "hide_page2": hide_page2,
         }
