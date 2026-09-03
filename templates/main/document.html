@@ -242,7 +242,7 @@
               </div>
 
               <div style="text-align:center;">
-                <b><u class="org_name">&nbsp;</u><br>
+                <b><u class="org_name">&nbsp;</u>
                    <u class="dep_name">_</u></b><br>
                 <span>(boshqarma nomi)</span>
               </div>
@@ -256,35 +256,9 @@
               <div id="liable_page2"></div>
              </div><div></div>
 
-              <div id="imv_block">
-                <div><b>O‘zbekiston Respublikasi <span class="org_name">&nbsp;</span> <span class="dep_name">&nbsp;</span> vakili:</b></div>
+              <div id="imv_block">&nbsp;</div><div></div>
 
-                <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:50%;">
-                      <col style="width:50%;">
-                    </colgroup>
-                    <tbody id="employees_imv">
-                    </tbody>
-                  </table>
-                </div>
-              </div><div></div>
-
-              <div id="ivs_block">
-                <div><b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</b></div>
-
-                <div>
-                  <table style="border-collapse:collapse;width:100%;">
-                    <colgroup>
-                      <col style="width:50%;">
-                      <col style="width:50%;">
-                    </colgroup>
-                    <tbody id="employees_ivs">
-                    </tbody>
-                  </table>
-                </div>
-              </div>
+              <div id="ivs_block">&nbsp;</div>
 
             </textarea>
           </div>
@@ -576,20 +550,29 @@
     }
 
     // Kelishuvchilar (agreements) ro'yxatidan tanlangan xodimlarni
-    // tashkilotiga qarab ikkita jadvalga taqsimlaydi:
-    //  - xodim.organization === tanlangan tashkilot  → employees_imv
-    //  - aks holda (masalan ATM xodimi)               → employees_ivs
-    // Har bir qator: chapda lavozimi, o'ngda qisqartirilgan F.I.Sh
-    // (Familya I.O.). Chegaralar ko'rinmaydi, matn qalin emas.
+    // tashkilotiga qarab ikkita blokka taqsimlaydi:
+    //  - xodim.organization === tanlangan tashkilot  → imv_block
+    //  - aks holda (masalan ATM xodimi)               → ivs_block
+    // MUHIM: bo'sh bo'lgan blok CSS display:none bilan YASHIRILMAYDI —
+    // butunlay innerHTML='' qilib olib tashlanadi. Chunki display:none
+    // TinyMCE serializatsiyasi yoki PDF generatsiya bosqichida
+    // saqlanib qolmasligi mumkin va sarlavha bo'sh holda ham chiqib
+    // qolishi mumkin edi. HTML'da umuman mavjud bo'lmasa — na
+    // brauzerda, na PDF'da, na imzolashga yuborilgan hujjatda chiqadi.
     function buildAgreementTables() {
       const ed = getEditor();
       if (!ed) return;
 
-      const imvBody = ed.getBody().querySelector('#employees_imv');
-      const ivsBody = ed.getBody().querySelector('#employees_ivs');
-      if (!imvBody || !ivsBody) return;
+      const imvBlock = ed.getBody().querySelector('#imv_block');
+      const ivsBlock = ed.getBody().querySelector('#ivs_block');
+      if (!imvBlock || !ivsBlock) return;
 
       const selectedOrgId = $('#organization').val();
+
+      const orgText = $('#organization option:selected').text() || '';
+      const depText = $('#department option:selected').text()   || '';
+      const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
+      const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
 
       let imvRows = '';
       let ivsRows = '';
@@ -616,14 +599,25 @@
         }
       });
 
-      imvBody.innerHTML = imvRows;
-      ivsBody.innerHTML = ivsRows;
+      function buildBlockHtml(headingText, rows) {
+        if (!rows) return '';
+        return `<div>${headingText}</div>
+          <div>
+            <table style="border-collapse:collapse;width:100%;">
+              <colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      }
 
-      // Kelishuvchi bo'lmasa — butun blok (sarlavha + jadval) yashiriladi.
-      const imvBlock = ed.getBody().querySelector('#imv_block');
-      const ivsBlock = ed.getBody().querySelector('#ivs_block');
-      if (imvBlock) imvBlock.style.display = imvRows ? '' : 'none';
-      if (ivsBlock) ivsBlock.style.display = ivsRows ? '' : 'none';
+      imvBlock.innerHTML = buildBlockHtml(
+        `O‘zbekiston Respublikasi ${esc(orgFinal)} ${esc(depFinal)} vakili:`,
+        imvRows
+      );
+      ivsBlock.innerHTML = buildBlockHtml(
+        `O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:`,
+        ivsRows
+      );
 
       ed.nodeChanged();
     }
