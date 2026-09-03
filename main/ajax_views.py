@@ -329,6 +329,7 @@ def ajax_dep_negotiator(request):
         "id": e.id,
         "full_name": getattr(e, "full_name", "") or f"{e.last_name} {e.first_name} {e.father_name}".strip(),
         "rank": (e.rank.name if getattr(e, "rank", None) else ""),
+        "organization_id": e.organization_id,   # ← YANGI: frontend'da data-org uchun
     } for e in qs]
     return JsonResponse(data, safe=False)
 
@@ -884,75 +885,26 @@ def ajax_reestr_materials(request):
     return JsonResponse(data, safe=False)
 
 
-ONLINE_FILTER_RULES = [
-    {"match": "A4 formatli printerlarga", "exclude_match": "tarmoq", "is_online": False},  # 1.2
-    {"match": "A4 formatli tarmoq printerlariga", "is_online": True},                        # 1.3
-]
+# ═══════════════════════════════════════════════════════════════════
+# YORDAMCHI QOIDALAR VA FUNKSIYALAR
+# ═══════════════════════════════════════════════════════════════════
+ONLINE_FILTER_BY_CONTRACT_ID = {
+    2: False,
+    3: True,
+}
 
+SKIP_CONTRACT_IDS = {5, 8, 9, 10, 13, 14, 15, 17, 19, 20, 21, 22}
 
-SKIP_RULES = [
-    "A3 formatli nusxa ko'paytirish",                                   # 1.5
-    "Umumiy tarmoqlarni ulanish nuqtalariga",                           # 2.4
-    "Umumtizimli serverlarga",                                          # 2.2
-    "Ma'lumotlar bazasi serverlariga",                                  # 2.3
-    "Aloqa kanallarini ma'murlash",                                     # 2.7
-    "Kalitlarni ro'yxatga olish markazi serveri",                       # 2.8 (server)
-    "Elektron raqamli imzo kalitlari",                                  # 2.8 (ERI)
-    "Virtual serverlar platformasining",                                # 2.10
-    "Yangi yoki joriy dasturiy ta'minotni ishlab chiqish",              # 3.1
-    "Amaldagi dasturiy ta'minotlarni kuzatib borish",                   # 3.2
-    "Dasturchilar, ma'lumotlar bazasi administratorlari",               # bir martalik (dasturchi)
-    "Bir marotabalik texnik ishlar",                                    # bir martalik (texnik)
-]
+def _get_online_filter(contract_id):
+    return ONLINE_FILTER_BY_CONTRACT_ID.get(contract_id)
 
-
-def _normalize(text):
-    if not text:
-        return ""
-    return (
-        text.lower()
-        .replace("’", "'")
-        .replace("‘", "'")
-        .replace("‛", "'")
-        .replace("`", "'")
-    )
-
-
-def _match_any(name, keywords):
-    name_norm = _normalize(name)
-    for kw in keywords:
-        if _normalize(kw) in name_norm:
-            return kw
-    return None
-
-
-def _get_online_filter_rule(contract_name):
-    name_norm = _normalize(contract_name)
-    for rule in ONLINE_FILTER_RULES:
-        match = _normalize(rule["match"])
-        exclude = rule.get("exclude_match")
-        if match in name_norm:
-            if exclude and _normalize(exclude) in name_norm:
-                continue
-            return rule
-    return None
-
-
+# ═══════════════════════════════════════════════════════════════════
+# AJAX_DOCUMENT_PREVIEW
+# ═══════════════════════════════════════════════════════════════════
 @never_cache
 @require_GET
 @login_required
 def ajax_document_preview(request):
-    """
-    Xodimga biriktirilgan (Liable) shartnomalar bo'yicha texnika ro'yxatini
-    qaytaradi.
-
-    HUDUD CHEKLOVI:
-    - Agar foydalanuvchida "main.all_region" ruxsati bo'lsa, "region" GET
-      parametri orqali istalgan hududni tanlashi mumkin.
-    - Aks holda (ruxsat yo'q) — "region" parametridan qat'i nazar,
-      MAJBURAN faqat foydalanuvchining o'z hududi (employee.region)
-      qo'llaniladi (frontend'dan kelgan qiymatga ishonilmaydi).
-    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
@@ -1029,15 +981,7 @@ def ajax_document_preview(request):
         contract_name = info["name"]
         category_ids = info["category_ids"]
 
-        if _match_any(contract_name, SKIP_RULES):
-            contracts_data[str(cid)] = {
-                "contract_id": cid,
-                "contract_name": contract_name,
-                "count": 0,
-                "items": [],
-                "hide_page2": True,
-            }
-            continue
+        hide_page2 = cid in SKIP_CONTRACT_IDS
 
         if not category_ids:
             contracts_data[str(cid)] = {
@@ -1045,7 +989,7 @@ def ajax_document_preview(request):
                 "contract_name": contract_name,
                 "count": 0,
                 "items": [],
-                "hide_page2": False,
+                "hide_page2": hide_page2,
             }
             continue
 
@@ -1059,12 +1003,19 @@ def ajax_document_preview(request):
                 seen_ids.add(tex.id)
                 items.append(tex)
 
-        online_rule = _get_online_filter_rule(contract_name)
-        if online_rule is not None:
-            wanted_online = online_rule["is_online"]
+        wanted_online = _get_online_filter(cid)
+        if wanted_online is not None:
             items = [tex for tex in items if bool(tex.is_online) == wanted_online]
 
         if not items:
+            if hide_page2:
+                contracts_data[str(cid)] = {
+                    "contract_id": cid,
+                    "contract_name": contract_name,
+                    "count": 0,
+                    "items": [],
+                    "hide_page2": True,
+                }
             continue
 
         result_items = []
@@ -1078,9 +1029,8 @@ def ajax_document_preview(request):
 
             if cid == PC_CONTRACT_ID:
                 item["extra_serials"] = [
-                    f"{s['name']}\nSR: {s['serial']}"
+                    f"{s['name']}\nSR: {s['serial'] or 'B/N'}"
                     for s in tex.structure_set.filter(is_active=True).values("name", "serial")
-                    if s["serial"]
                 ]
 
             result_items.append(item)
@@ -1089,8 +1039,8 @@ def ajax_document_preview(request):
             "contract_id": cid,
             "contract_name": contract_name,
             "count": len(result_items),
-            "items": result_items,
-            "hide_page2": False,
+            "items": [] if hide_page2 else result_items,
+            "hide_page2": hide_page2,
         }
 
     return JsonResponse({"contracts": contracts_data})

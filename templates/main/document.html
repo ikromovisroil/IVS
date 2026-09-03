@@ -113,7 +113,7 @@
                 <select id="receiver" name="receiver" class="form-select" required>
                   <option value="">Tanlang...</option>
                   {% for emp in emp_bos %}
-                    <option value="{{ emp.id }}">{{ emp.full_name }}</option>
+                    <option value="{{ emp.id }}" data-fullname="{{ emp.full_name }}">{{ emp.full_name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -169,19 +169,19 @@
 
               <div style="text-align:justify;">&nbsp; &nbsp; &nbsp; &nbsp;
                 Biz quyida imzo chekuvchilar, O'zbekiston Respublikasi
-                <span class="org_id">___</span>
-                <span id="dep_id">___</span> boshlig'i
-                <b class="receiver_name">__</b>,
+                <span class="org_name">&nbsp;</span>
+                <span class="dep_name">&nbsp;</span> boshlig'i
+                <b class="receiver_name">&nbsp;</b>,
                 va O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazi
-                <span class="sender_rank">direktor</span>i
-                <b class="sender_name">__</b>:
-                O'zbekiston Respublikasi <span class="org_id">___</span> hamda
+                <span class="sender_rank">&nbsp;</span>i
+                <b class="sender_name">&nbsp;</b>:
+                O'zbekiston Respublikasi <span class="org_name">&nbsp;</span> hamda
                 O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazlari tomonidan
-                <b><span id="date_contract">___</span>ga asosan</b>
-                <span id="dep_id2">___</span> bo'yicha
-                2026 yil <span id="chorak">__</span> chorak uchun quyidagi
+                <b><span id="date_contract">&nbsp;</span>ga asosan</b>
+                <span id="dep_id2">&nbsp;</span> bo'yicha
+                2026 yil <span id="chorak">&nbsp;</span> chorak uchun quyidagi
                 ishlar va xizmatlar bajarildi.
                 Ishlar texnologik xaritaga muvofiq amalga oshirildi.
               </div>
@@ -190,7 +190,7 @@
 
               <div style="text-align:left;">
                 <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va
-                tizimli xizmat ko'rsatish:</b>
+                tizimli xizmat ko'rsatish: (1-ilova varoqda)</b>
               </div>
 
               <div></div>
@@ -209,14 +209,16 @@
                   <tbody>
                     <tr>
                       <td style="border:1px solid #fff;text-align:center;">
-                        <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                        <span class="dep_name_text">___</span> boshlig'i</b><br><br>
-                        <b class="receiver_name">__</b>
+                        <b>O'zbekiston Respublikasi
+                          <span class="org_name">&nbsp;</span>
+                          <span class="dep_name">&nbsp;</span> boshlig'i
+                        </b><br><br>
+                        <b class="receiver_name">&nbsp;</b>
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                        huzuridagi ATM <span class="sender_rank">direktor</span>i </b><br><br>
-                        <b class="sender_name">__</b>
+                        huzuridagi ATM <span class="sender_rank">&nbsp;</span>i </b><br><br>
+                        <b class="sender_name">&nbsp;</b>
                       </td>
                     </tr>
                   </tbody>
@@ -227,7 +229,7 @@
 
               <!-- ─── 2-SAHIFA: TEXNIKALAR JADVALI ─── -->
               <div style="text-align:center;">
-                <b>DALOLATNOMA</b><br>
+                <b>DALOLATNOMAga 1-ilova</b><br>
               </div>
 
               <div style="text-align:right;">
@@ -240,7 +242,8 @@
               </div>
 
               <div style="text-align:center;">
-                <b><u class="dep_name">_</u></b><br>
+                <b><u class="org_name">&nbsp;</u>
+                   <u class="dep_name">_</u></b><br>
                 <span>(boshqarma nomi)</span>
               </div>
 
@@ -251,7 +254,38 @@
               <!-- ✅ DINAMIK: JS orqali to'ldiriladi. SKIP qilingan
                    (hide_page2=true) shartnomalar bu yerda CHIQMAYDI. -->
               <div id="liable_page2"></div>
-             </div>
+             </div><div></div>
+
+              <div id="imv_block">
+                <div>O‘zbekiston Respublikasi <span class="org_name">&nbsp;</span> <span class="dep_name">&nbsp;</span> vakili:</div>
+
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody id="employees_imv">
+                    </tbody>
+                  </table>
+                </div>
+              </div><div></div>
+
+              <div id="ivs_block">
+                <div>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</div>
+
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody id="employees_ivs">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
             </textarea>
           </div>
         </div>
@@ -359,8 +393,9 @@
     function setAllInEditor(selector, text) {
       const ed = getEditor(); if (!ed) return false;
       try {
-        ed.getBody().querySelectorAll(selector)
-          .forEach(function (el) { el.textContent = text; });
+        const nodes = ed.getBody().querySelectorAll(selector);
+        if (!nodes.length) return false;
+        nodes.forEach(function (el) { el.textContent = text; });
         ed.nodeChanged(); return true;
       } catch (e) { return false; }
     }
@@ -390,17 +425,20 @@
     function applyChorakToEditor(q)   { setInEditor('#chorak', q || ''); }
     function applyContractToEditor(t) { setInEditor('#date_contract', t || "Shartnoma ma'lumoti kiritilmagan"); }
 
+    // Tashkilot va departament nomi hujjatning barcha (bir nechta)
+    // joylariga bir vaqtda yoziladi — shablonda class="org_name" va
+    // class="dep_name" ishlatilgan barcha elementlar yangilanadi.
     function applyDepToEditor(depText, orgText) {
       const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
-      setAllInEditor('.org_id', orgFinal);
+      setAllInEditor('.org_name', orgFinal);
 
       const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
-      setInEditor('#dep_id',           depFinal);
-      setInEditor('#dep_id2',          depFinal);
-      setAllInEditor('.dep_name_text', depFinal);
-      setAllInEditor('.dep_name',      depFinal);
+      setInEditor('#dep_id2',     depFinal);
+      setAllInEditor('.dep_name', depFinal);
     }
 
+    // Yuboruvchi (sender) tanlanganda ismi va lavozimi hujjatning
+    // barcha class="sender_name" / class="sender_rank" joylariga yoziladi.
     function applySenderToEditor() {
       let t = $('#sender option:selected').text() || '';
       if (!t || t === 'Tanlang...') t = '__';
@@ -413,6 +451,8 @@
       setAllInEditor('.sender_rank', rank || 'direktor');
     }
 
+    // Qabul qiluvchi (receiver) tanlanganda ismi hujjatning barcha
+    // class="receiver_name" joylariga yoziladi.
     function applyReceiverToEditor() {
       let t = $('#receiver option:selected').attr('data-fullname') || '';
       if (!t || t === 'Tanlang...') t = '__';
@@ -428,6 +468,7 @@
       applyContractToEditor($('#organization option:selected').attr('data-contract') || '');
       applySenderToEditor();
       applyReceiverToEditor();
+      buildAgreementTables();
     }
 
     // ══════════════════════════════════════════════════════
@@ -475,10 +516,12 @@
         const id    = String(emp.id);
         const fn    = emp.full_name || '';
         const rank  = emp.rank || '';
+        const orgId = (emp.organization_id !== undefined && emp.organization_id !== null)
+                        ? emp.organization_id : '';
         const label = rank ? `${fn} (${rank})` : fn;
         const sel   = (selectedId && String(selectedId) === id) || current.includes(id);
         html += `<option value="${esc(emp.id)}" ${sel ? 'selected' : ''}
-                  data-fullname="${esc(fn)}" data-rank="${esc(rank)}">${esc(label)}</option>`;
+                  data-fullname="${esc(fn)}" data-rank="${esc(rank)}" data-org="${esc(orgId)}">${esc(label)}</option>`;
       });
       $sel.html(html).trigger('change');
       safeInitSelect2();
@@ -518,6 +561,71 @@
         },
         error: function () { $agr.html('').trigger('change'); }
       });
+    }
+
+    // "Familya Ism Otasi" → "Familya I.O." formatiga qisqartiradi
+    // (masalan "Ikromov Islom Islomovich" → "Ikromov I.I.")
+    function shortenFullName(fullname) {
+      const parts = (fullname || '').trim().split(/\s+/).filter(Boolean);
+      if (!parts.length) return '';
+      const surname = parts[0];
+      const initials = parts.slice(1)
+        .map(function (p) { return p.charAt(0).toUpperCase() + '.'; })
+        .join('');
+      return initials ? `${surname} ${initials}` : surname;
+    }
+
+    // Kelishuvchilar (agreements) ro'yxatidan tanlangan xodimlarni
+    // tashkilotiga qarab ikkita jadvalga taqsimlaydi:
+    //  - xodim.organization === tanlangan tashkilot  → employees_imv
+    //  - aks holda (masalan ATM xodimi)               → employees_ivs
+    // Har bir qator: chapda lavozimi, o'ngda qisqartirilgan F.I.Sh
+    // (Familya I.O.). Chegaralar ko'rinmaydi, matn qalin emas.
+    function buildAgreementTables() {
+      const ed = getEditor();
+      if (!ed) return;
+
+      const imvBody = ed.getBody().querySelector('#employees_imv');
+      const ivsBody = ed.getBody().querySelector('#employees_ivs');
+      if (!imvBody || !ivsBody) return;
+
+      const selectedOrgId = $('#organization').val();
+
+      let imvRows = '';
+      let ivsRows = '';
+
+      $('#agreements option:selected').each(function () {
+        const $opt = $(this);
+        const fullname = ($opt.attr('data-fullname') || $opt.text() || '').trim();
+        const rank = ($opt.attr('data-rank') || '').trim();
+        const orgId = $opt.attr('data-org') || '';
+
+        const rowHtml = `<tr>
+          <td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;">
+            ${esc(rank)}
+          </td>
+          <td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;">
+            ${esc(shortenFullName(fullname))}
+          </td>
+        </tr>`;
+
+        if (selectedOrgId && orgId && String(orgId) === String(selectedOrgId)) {
+          imvRows += rowHtml;
+        } else {
+          ivsRows += rowHtml;
+        }
+      });
+
+      imvBody.innerHTML = imvRows;
+      ivsBody.innerHTML = ivsRows;
+
+      // Kelishuvchi bo'lmasa — butun blok (sarlavha + jadval) yashiriladi.
+      const imvBlock = ed.getBody().querySelector('#imv_block');
+      const ivsBlock = ed.getBody().querySelector('#ivs_block');
+      if (imvBlock) imvBlock.style.display = imvRows ? '' : 'none';
+      if (ivsBlock) ivsBlock.style.display = ivsRows ? '' : 'none';
+
+      ed.nodeChanged();
     }
 
     // Tashkilot va hudud ikkalasi ham tanlanganida bo'limlarni yuklaydi,
@@ -791,6 +899,7 @@
     $('#organization').on('change', function () {
       syncEditorTexts();
       tryLoadDepartments();
+      buildAgreementTables();
     });
 
     $('#region').on('change', function () {
@@ -808,6 +917,7 @@
     $('#rim_id').on('change', syncEditorTexts);
     $('#sender').on('change', applySenderToEditor);
     $('#receiver').on('change', applyReceiverToEditor);
+    $('#agreements').on('change', buildAgreementTables);
 
     $('#btnSearch').on('click', function (e) {
       e.preventDefault();
