@@ -890,11 +890,12 @@ def ajax_reestr_materials(request):
 ONLINE_FILTER_BY_CONTRACT_ID = {
     2: False,
     3: True,
+    10: True,
 }
 
 NO_CATEGORY_USE_ALL_TECHNICS_IDS = {10}
 
-SKIP_CONTRACT_IDS = {5, 8, 9, 10, 13, 14, 15, 17, 19, 20, 21, 22}
+SKIP_CONTRACT_IDS = {5, 8, 9, 13, 14, 15, 17, 19, 20, 21, 22}
 
 
 def _get_online_filter(contract_id):
@@ -1011,7 +1012,7 @@ def ajax_document_preview(request):
                     seen_ids.add(tex.id)
                     items.append(tex)
         elif cid in NO_CATEGORY_USE_ALL_TECHNICS_IDS:
-
+    
             items = list(all_technics_any_category)
         else:
             contracts_data[str(cid)] = {
@@ -1028,7 +1029,6 @@ def ajax_document_preview(request):
             items = [tex for tex in items if bool(tex.is_online) == wanted_online]
 
         if not items:
-
             if hide_page2:
                 contracts_data[str(cid)] = {
                     "contract_id": cid,
@@ -1060,7 +1060,6 @@ def ajax_document_preview(request):
             "contract_id": cid,
             "contract_name": contract_name,
             "count": len(result_items),
-
             "items": [] if hide_page2 else result_items,
             "hide_page2": hide_page2,
         }
