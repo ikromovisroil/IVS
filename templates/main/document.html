@@ -256,9 +256,15 @@
               <div id="liable_page2"></div>
              <div></div>
 
-              <div id="imv_block">&nbsp;</div><div></div>
+              <div id="imv_block">
+                <b>O‘zbekiston Respublikasi <span class="org_name"></span> <span class="dep_name"></span> vakili:</b>
 
-              <div id="ivs_block">&nbsp;</div>
+              </div><div></div>
+
+              <div id="ivs_block">
+                <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</b>
+
+              </div>
              </div>
             </textarea>
           </div>
@@ -514,8 +520,8 @@
       if (depId) payload.department   = depId;
       $.ajax({
         url: "{% url 'ajax_dep_signatory' %}", method: "GET", dataType: "json", data: payload,
-        success: function (list) { fillEmployeeSelect($rcv, list, selectedId, true, false); applyReceiverToEditor(); },
-        error:   function ()     { $rcv.html('<option value="">Xatolik</option>').trigger('change'); applyReceiverToEditor(); }
+        success: function (list) { fillEmployeeSelect($rcv, list, selectedId, true, false); applyReceiverToEditor(); buildAgreementTables(); },
+        error:   function ()     { $rcv.html('<option value="">Xatolik</option>').trigger('change'); applyReceiverToEditor(); buildAgreementTables(); }
       });
     }
 
@@ -532,8 +538,9 @@
         success: function (list) {
           fillEmployeeSelect($agr, list, null, false, true);
           if (selectedIds && selectedIds.length) $agr.val(selectedIds.map(String)).trigger('change');
+          buildAgreementTables();
         },
-        error: function () { $agr.html('').trigger('change'); }
+        error: function () { $agr.html('').trigger('change'); buildAgreementTables(); }
       });
     }
 
@@ -549,6 +556,10 @@
       return initials ? `${surname} ${initials}` : surname;
     }
 
+    // imv_block  → 1-qator: RECEIVER (tashkilot vakili), keyin shu
+    //              tashkilotga tegishli kelishuvchilar ketma-ket qo'shiladi.
+    // ivs_block  → 1-qator: SENDER (xizmat ko'rsatuvchi vakili), keyin
+    //              boshqa tashkilotga tegishli kelishuvchilar ketma-ket qo'shiladi.
     function buildAgreementTables() {
       const ed = getEditor();
       if (!ed) return;
@@ -564,16 +575,8 @@
       const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
       const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
 
-      let imvRows = '';
-      let ivsRows = '';
-
-      $('#agreements option:selected').each(function () {
-        const $opt = $(this);
-        const fullname = ($opt.attr('data-fullname') || $opt.text() || '').trim();
-        const rank = ($opt.attr('data-rank') || '').trim();
-        const orgId = $opt.attr('data-org') || '';
-
-        const rowHtml = `<tr>
+      function makeRow(rank, fullname) {
+        return `<tr>
           <td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;">
             ${esc(rank)}
           </td>
@@ -581,6 +584,38 @@
             ${esc(shortenFullName(fullname))}
           </td>
         </tr>`;
+      }
+
+      // ── imv_block: birinchi qator — RECEIVER ──
+      let imvRows = '';
+      const $receiverOpt = $('#receiver option:selected');
+      if ($('#receiver').val()) {
+        const receiverFullname = $receiverOpt.attr('data-fullname') || $receiverOpt.text() || '';
+        const receiverRank     = $receiverOpt.attr('data-rank') || '';
+        if (receiverFullname && receiverFullname !== 'Tanlang...') {
+          imvRows += makeRow(receiverRank, receiverFullname);
+        }
+      }
+
+      // ── ivs_block: birinchi qator — SENDER ──
+      let ivsRows = '';
+      const $senderOpt = $('#sender option:selected');
+      if ($('#sender').val()) {
+        const senderFullname = $senderOpt.text() || '';
+        const senderRank     = $senderOpt.attr('data-rank') || '';
+        if (senderFullname && senderFullname !== 'Tanlang...') {
+          ivsRows += makeRow(senderRank, senderFullname);
+        }
+      }
+
+      // ── Kelishuvchilar — sender/receiverdan KEYIN, ketma-ket qo'shiladi ──
+      $('#agreements option:selected').each(function () {
+        const $opt = $(this);
+        const fullname = ($opt.attr('data-fullname') || $opt.text() || '').trim();
+        const rank = ($opt.attr('data-rank') || '').trim();
+        const orgId = $opt.attr('data-org') || '';
+
+        const rowHtml = makeRow(rank, fullname);
 
         if (selectedOrgId && orgId && String(orgId) === String(selectedOrgId)) {
           imvRows += rowHtml;
@@ -628,6 +663,7 @@
         $('#department').html('<option value=""></option>').trigger('change');
         $('#receiver').html('<option value="">Tanlang...</option>').trigger('change');
         $('#agreements').html('').trigger('change');
+        buildAgreementTables();
       }
     }
 
@@ -899,8 +935,17 @@
     });
 
     $('#rim_id').on('change', syncEditorTexts);
-    $('#sender').on('change', applySenderToEditor);
-    $('#receiver').on('change', applyReceiverToEditor);
+
+    $('#sender').on('change', function () {
+      applySenderToEditor();
+      buildAgreementTables();
+    });
+
+    $('#receiver').on('change', function () {
+      applyReceiverToEditor();
+      buildAgreementTables();
+    });
+
     $('#agreements').on('change', buildAgreementTables);
 
     $('#btnSearch').on('click', function (e) {
