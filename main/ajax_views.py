@@ -895,7 +895,7 @@ ONLINE_FILTER_BY_CONTRACT_ID = {
 
 NO_CATEGORY_USE_ALL_TECHNICS_IDS = {10}
 
-SKIP_CONTRACT_IDS = {5, 8, 9, 13, 14, 15, 17, 19, 20, 21, 22}
+SKIP_CONTRACT_IDS = {5, 8, 9,10, 13, 14, 15, 17, 19, 20, 21, 22}
 
 
 def _get_online_filter(contract_id):
