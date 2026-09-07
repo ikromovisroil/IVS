@@ -257,13 +257,9 @@
              <div></div>
 
               <div id="imv_block">
-                <b>O‘zbekiston Respublikasi <span class="org_name"></span> <span class="dep_name"></span> vakili:</b>
-
               </div><div></div>
 
               <div id="ivs_block">
-                <b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</b>
-
               </div>
              </div>
             </textarea>
@@ -550,7 +546,20 @@
       const parts = (fullname || '').trim().split(/\s+/).filter(Boolean);
       if (!parts.length) return '';
       const surname = parts[0];
-      const initials = parts.slice(1)
+
+      const APOSTROPHES = ["'", "\u2019", "\u2018", "\u02bb", "\u02bc", "`"];
+      function stripApostrophes(s) {
+        let r = s;
+        APOSTROPHES.forEach(function (a) { r = r.split(a).join(''); });
+        return r;
+      }
+      const SUFFIXES = ['ogli', 'qizi', 'ogil'];
+
+      const nameParts = parts.slice(1).filter(function (p) {
+        return SUFFIXES.indexOf(stripApostrophes(p).toLowerCase()) === -1;
+      });
+    
+      const initials = nameParts
         .map(function (p) { return p.charAt(0).toUpperCase() + '.'; })
         .join('');
       return initials ? `${surname} ${initials}` : surname;
