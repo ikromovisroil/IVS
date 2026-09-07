@@ -966,7 +966,7 @@ def ajax_document_preview(request):
     if all_category_ids:
         all_technics = (
             Technics.objects
-            .filter(is_active=True, region_id=effective_region_id, **loc_filter)
+            .filter(is_active=True, status="active", region_id=effective_region_id, **loc_filter)
             .filter(category_id__in=all_category_ids)
             .select_related("category")
             .prefetch_related("structure_set")
