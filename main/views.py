@@ -4012,9 +4012,9 @@ def employee_create(request):
         messages.info(request, "Majburiy maydonlar to'ldirilmagan (PINFL, Ism, Familiya, Tashkilot)")
         return redirect(back_url)
 
-    if len(pinfl) != 14 or not pinfl.isdigit():
-        messages.info(request, "PINFL 14 ta raqamdan iborat bo'lishi kerak")
-        return redirect(back_url)
+    # if len(pinfl) != 14 or not pinfl.isdigit():
+    #     messages.info(request, "PINFL 14 ta raqamdan iborat bo'lishi kerak")
+    #     return redirect(back_url)
 
     if Employee.objects.filter(pinfl=pinfl).exists():
         messages.info(request, "Bu PINFL bilan xodim allaqachon mavjud")
@@ -4039,7 +4039,7 @@ def employee_create(request):
         user.is_active = True
         user.save(update_fields=["is_active"])
         emp, _ = Employee.objects.get_or_create(user=user)
-        emp.pinfl = pinfl
+        emp.pinfl = pinfl or None
         emp.first_name = first_name
         emp.last_name = last_name
         emp.father_name = father_name or None
