@@ -17,6 +17,7 @@ ALLOWED_DEED_STYLES = [
     "background-color", "color", "font-weight", "font-style",
     "page-break-after", "page-break-before", "page-break-inside",
     "break-after", "break-before", "break-inside",
+    "line-height",
 ]
 
 
