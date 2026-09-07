@@ -558,7 +558,7 @@
       const nameParts = parts.slice(1).filter(function (p) {
         return SUFFIXES.indexOf(stripApostrophes(p).toLowerCase()) === -1;
       });
-    
+
       const initials = nameParts
         .map(function (p) { return p.charAt(0).toUpperCase() + '.'; })
         .join('');

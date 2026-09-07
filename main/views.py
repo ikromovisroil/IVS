@@ -4008,7 +4008,7 @@ def employee_create(request):
     rank_id = (request.POST.get("rank_id") or "").strip()
     phone = (request.POST.get("phone") or "").strip()
 
-    if not pinfl or not first_name or not last_name or not organization_id:
+    if not first_name or not last_name or not organization_id:
         messages.info(request, "Majburiy maydonlar to'ldirilmagan (PINFL, Ism, Familiya, Tashkilot)")
         return redirect(back_url)
 
