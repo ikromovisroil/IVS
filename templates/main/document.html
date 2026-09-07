@@ -163,7 +163,7 @@
               <!-- ─── 1-SAHIFA: DALOLATNOMA ─── -->
               <div style="text-align:center;"><b>DALOLATNOMA</b></div>
 
-              <div style="text-align:right;">
+              <div style="text-align:right;line-height:2;">
                 <span id="doc_date">__.__.____  y</span>
               </div>
 
@@ -228,7 +228,7 @@
               <div style="page-break-after:always;"></div>
 
               <!-- ─── 2-SAHIFA: TEXNIKALAR JADVALI ─── -->
-              <div style="text-align:center;">
+              <div style="text-align:center;line-height:2;">
                 <b>DALOLATNOMAga 1-ilova</b><br>
               </div>
 
@@ -244,10 +244,10 @@
               <div style="text-align:center;">
                 <b><u class="org_name">&nbsp;</u>
                    <u class="dep_name">_</u></b><br>
-                <span>(boshqarma nomi)</span>
-              </div>
+                <span style="font-size:7pt;">(boshqarma nomi)</span>
+              </div><br>
 
-              <div style="text-align:left;">
+              <div style="text-align:left;line-height:2;">
                 <b>Xizmat ko'rsatilayotgan texnikalarning rusumi va seriya raqami:</b>
               </div>
 
@@ -540,8 +540,9 @@
       });
     }
 
-    // "Familya Ism Otasi" → "Familya I.O." formatiga qisqartiradi
-    // (masalan "Ikromov Islom Islomovich" → "Ikromov I.I.")
+    // "Familya Ism Otasi [o'g'li/qizi]" → "Familya I.O." formatiga qisqartiradi
+    // (masalan "Ikromov Isroil Ilhom o'g'li" → "Ikromov I.I.")
+    // "o'g'li" / "qizi" so'zi qisqartirilmaydi va initialga aylantirilmaydi.
     function shortenFullName(fullname) {
       const parts = (fullname || '').trim().split(/\s+/).filter(Boolean);
       if (!parts.length) return '';
@@ -584,12 +585,14 @@
       const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
       const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
 
+      // line-height:2 — sender/receiver va kelishuvchilar qatorlari orasida
+      // ikki barobar interval (masalan tashkilot pastida ketma-ket keladigan xodimlar).
       function makeRow(rank, fullname) {
         return `<tr>
-          <td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;">
+          <td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;line-height:2;">
             ${esc(rank)}
           </td>
-          <td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;">
+          <td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;line-height:2;">
             ${esc(shortenFullName(fullname))}
           </td>
         </tr>`;
@@ -728,9 +731,10 @@
 
     // 1-sahifadagi bitta shartnoma bloki (soni bilan) — HAR DOIM chiqadi,
     // SKIP qilingan (hide_page2=true) shartnomalar ham shu yerda ko'rinadi.
+    // line-height:2 — ketma-ket kelgan bloklar orasida ikki barobar interval.
     function buildBlock1(contract) {
       const cid = contract.contract_id;
-      return `<div id="block1_c${cid}" style="text-align:left;">
+      return `<div id="block1_c${cid}" style="text-align:left;line-height:2;">
         <b>
           <span>${esc(contract.contract_name)}</span>
           <span id="count_c${cid}">${contract.count}</span> dona.
