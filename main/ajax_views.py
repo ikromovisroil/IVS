@@ -329,7 +329,8 @@ def ajax_dep_negotiator(request):
         "id": e.id,
         "full_name": getattr(e, "full_name", "") or f"{e.last_name} {e.first_name} {e.father_name}".strip(),
         "rank": (e.rank.name if getattr(e, "rank", None) else ""),
-        "organization_id": e.organization_id,   # ← YANGI: frontend'da data-org uchun
+        "organization_id": e.organization_id,   # frontend'da data-org uchun (imv_block filtri)
+        "region_id": e.region_id,               # frontend'da data-region uchun (ivs_block filtri)
     } for e in qs]
     return JsonResponse(data, safe=False)
 

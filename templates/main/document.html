@@ -489,15 +489,18 @@
       let current = keepSelected ? ($sel.val() || []).map(String) : [];
       let html = allowEmpty ? '<option value="">Tanlang...</option>' : '';
       (list || []).forEach(function (emp) {
-        const id    = String(emp.id);
-        const fn    = emp.full_name || '';
-        const rank  = emp.rank || '';
-        const orgId = (emp.organization_id !== undefined && emp.organization_id !== null)
-                        ? emp.organization_id : '';
-        const label = rank ? `${fn} (${rank})` : fn;
-        const sel   = (selectedId && String(selectedId) === id) || current.includes(id);
+        const id       = String(emp.id);
+        const fn       = emp.full_name || '';
+        const rank     = emp.rank || '';
+        const orgId    = (emp.organization_id !== undefined && emp.organization_id !== null)
+                           ? emp.organization_id : '';
+        const regionId = (emp.region_id !== undefined && emp.region_id !== null)
+                           ? emp.region_id : '';
+        const label    = rank ? `${fn} (${rank})` : fn;
+        const sel      = (selectedId && String(selectedId) === id) || current.includes(id);
         html += `<option value="${esc(emp.id)}" ${sel ? 'selected' : ''}
-                  data-fullname="${esc(fn)}" data-rank="${esc(rank)}" data-org="${esc(orgId)}">${esc(label)}</option>`;
+                  data-fullname="${esc(fn)}" data-rank="${esc(rank)}"
+                  data-org="${esc(orgId)}" data-region="${esc(regionId)}">${esc(label)}</option>`;
       });
       $sel.html(html).trigger('change');
       safeInitSelect2();
@@ -569,7 +572,9 @@
     // imv_block  → 1-qator: RECEIVER (tashkilot vakili), keyin shu
     //              tashkilotga tegishli kelishuvchilar ketma-ket qo'shiladi.
     // ivs_block  → 1-qator: SENDER (xizmat ko'rsatuvchi vakili), keyin
-    //              boshqa tashkilotga tegishli kelishuvchilar ketma-ket qo'shiladi.
+    //              joriy foydalanuvchi (request.user.employee.region)
+    //              hududiga teng bo'lgan kelishuvchilar ketma-ket qo'shiladi.
+    //              Region mos kelmagan kelishuvchilar HECH QAYERGA chiqmaydi.
     function buildAgreementTables() {
       const ed = getEditor();
       if (!ed) return;
@@ -626,13 +631,19 @@
         const fullname = ($opt.attr('data-fullname') || $opt.text() || '').trim();
         const rank = ($opt.attr('data-rank') || '').trim();
         const orgId = $opt.attr('data-org') || '';
+        const regionId = $opt.attr('data-region') || '';
 
         const rowHtml = makeRow(rank, fullname);
 
         if (selectedOrgId && orgId && String(orgId) === String(selectedOrgId)) {
           imvRows += rowHtml;
         } else {
-          ivsRows += rowHtml;
+          // ivs_block ga faqat xodimning hududi joriy foydalanuvchi
+          // (request.user.employee.region) hududiga teng bo'lsa chiqadi.
+          if (currentUserRegionId && regionId && String(regionId) === String(currentUserRegionId)) {
+            ivsRows += rowHtml;
+          }
+          // Aks holda — na imv_block, na ivs_block ga chiqmaydi (butunlay yashiriladi).
         }
       });
 
@@ -1016,6 +1027,7 @@
     const initialOrg    = '{{ selected_org|default:"" }}';
     const initialDep    = '{{ selected_dep|default:"" }}';
     const initialRegion = '{{ selected_region|default:"" }}';
+    const currentUserRegionId = '{{ request.user.employee.region_id|default:"" }}';
 
     if (initialOrg) {
       $('#organization').val(initialOrg);
