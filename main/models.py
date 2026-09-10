@@ -292,8 +292,6 @@ class Technics(models.Model):
 
         if self.employee_id or self.department_id or self.directorate_id or self.division_id:
             self.status = 'active'
-        else:
-            self.status = 'free'
 
         super().save(*args, **kwargs)
 
