@@ -188,14 +188,11 @@
 
               <div></div>
 
-              <div style="text-align:left;">
-                <b>1. Kompyuter va boshqa elektron qurilmalarga texnik va
-                tizimli xizmat ko'rsatish: (1-ilova varoqda)</b>
-              </div>
-
-              <div></div>
-
-              <!-- ✅ DINAMIK: JS orqali to'ldiriladi -->
+              <!-- ✅ DINAMIK: JS orqali to'ldiriladi. Guruh sarlavhalari
+                   (masalan "1. Kompyuter va boshqa elektron qurilmalarga...",
+                   "2. Server, umumiy va ma'lumot almashiladigan tarmoqlarlarga...")
+                   shartnoma raqamiga (contract_name boshidagi "1." / "2." kabi)
+                   qarab shu blok ichida avtomatik chiqadi. -->
               <div id="liable_page1"></div>
 
               <div></div><div></div><div></div>
@@ -691,6 +688,33 @@
     }
 
     // ══════════════════════════════════════════════════════
+    // TEXNIKALAR — GURUH SARLAVHALARI (1-sahifa)
+    // ══════════════════════════════════════════════════════
+
+    // Chorak hisobotida 1-sahifadagi shartnomalar guruh sarlavhalari.
+    // Kalit — contract_name boshidagi guruh raqami (masalan "1.1." -> "1",
+    // "2.10." -> "2"). Faqat shu yerda ro'yxatga olingan guruhlar uchun
+    // sarlavha chiqadi; boshqa (raqamlanmagan) shartnomalar sarlavhasiz,
+    // oddiy qator bo'lib chiqaveradi.
+    const GROUP_TITLES = {
+      '1': "1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko'rsatish: (1-ilova varoqda)",
+      '2': "2. Server, umumiy va ma'lumot almashiladigan tarmoqlarlarga texnik va tizimli xizmat ko'rsatish:",
+      // Kerak bo'lsa, keyingi guruhlar shu yerga qo'shiladi, masalan:
+      // '3': "3. Dasturiy ta'minot bilan ta'minlash:",
+    };
+
+    function getGroupKey(contractName) {
+      const m = (contractName || '').match(/^(\d+)\./);
+      return m ? m[1] : null;
+    }
+
+    function buildGroupHeading(groupKey) {
+      const title = GROUP_TITLES[groupKey];
+      if (!title) return '';
+      return `<div style="text-align:left;line-height:2;"><b>${esc(title)}</b></div><div></div>`;
+    }
+
+    // ══════════════════════════════════════════════════════
     // TEXNIKALAR — JADVAL VA BLOK QURILISHI
     // ══════════════════════════════════════════════════════
 
@@ -827,9 +851,17 @@
 
           let html1 = '';
           let html2 = '';
+          let currentGroup = null;
 
           sortedContracts.forEach(function (contract) {
-            // 1-sahifa — HAMMASI chiqadi (SKIP qilinganlar ham, nomi bilan)
+            // 1-sahifa — HAMMASI chiqadi (SKIP qilinganlar ham, nomi bilan).
+            // Shartnoma raqami guruhi (masalan "1." yoki "2.") o'zgarganda,
+            // shu guruh uchun sarlavha avtomatik qo'shiladi.
+            const groupKey = getGroupKey(contract.contract_name);
+            if (groupKey !== currentGroup) {
+              html1 += buildGroupHeading(groupKey);
+              currentGroup = groupKey;
+            }
             html1 += buildBlock1(contract);
 
             // 2-sahifa — faqat hide_page2 belgilanmagan shartnomalar chiqadi
