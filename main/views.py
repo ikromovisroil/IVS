@@ -564,7 +564,6 @@ def deed_edit(request, pk):
             new_receiver = Employee.objects.filter(
                 id=int(receiver_id),
                 organization_id=receiver_org_id,
-                department_id=receiver_dep_id,
             ).first()
 
             if not new_receiver:
