@@ -2640,9 +2640,6 @@ def akt_post(request):
         messages.error(request, "Tashkilot topilmadi")
         return redirect("akt_get")
 
-    # sender endi tanlangan tashkilotga tegishli bo'lishi SHART — aks
-    # holda istalgan tashkilotdagi xodim imzolovchi sifatida tanlanishi
-    # mumkin edi (IDOR).
     sender = Employee.objects.filter(id=sender_id, organization_id=org.id).first() if sender_id.isdigit() else None
     if not sender:
         messages.error(request, "Imzolovchi xodim tanlanmadi yoki bu tashkilotga tegishli emas")
@@ -2663,7 +2660,7 @@ def akt_post(request):
         messages.error(request, "Sana formati noto'g'ri")
         return redirect("akt_get")
 
-    # ── Kelishuvchilarni AVTOMATIK aniqlaymiz ──
+    # ── Materiallarni AVTOMATIK aniqlaymiz ──
     sender_ids_material = MaterialUser.objects.filter(
         receiver=employee
     ).values_list("sender_id", flat=True)
@@ -2679,25 +2676,15 @@ def akt_post(request):
     if dep_id.isdigit():
         auto_qs = auto_qs.filter(order__sender__department_id=dep_id)
 
-    # Kelishuvchilar — shu arizalarning sender va receiver'lari
-    sender_ids = set(
-        auto_qs.exclude(order__sender__isnull=True)
-        .values_list("order__sender_id", flat=True)
-        .distinct()
-    )
-    receiver_ids = set(
-        auto_qs.exclude(order__receiver__isnull=True)
-        .values_list("order__receiver_id", flat=True)
-        .distinct()
-    )
+    order_ids = set(auto_qs.exclude(order__isnull=True).values_list("order_id", flat=True).distinct())
 
-    # Ikkala guruhni birlashtiramiz, imzolovchi (sender)ni chiqarib tashlaymiz
+    orders_qs = Order.objects.filter(id__in=order_ids).select_related("sender", "receiver")
+
+    sender_ids = set(orders_qs.exclude(sender__isnull=True).values_list("sender_id", flat=True))
+    receiver_ids = set(orders_qs.exclude(receiver__isnull=True).values_list("receiver_id", flat=True))
+
     auto_agreement_ids = (sender_ids | receiver_ids)
     auto_agreement_ids.discard(sender.id)
-
-    # Shu AKTga tegishli bo'lgan barcha arizalar (Order) ID'lari —
-    # keyinchalik "ariza raqami" bo'yicha qidirish uchun deed.orders'ga bog'lanadi
-    order_ids = set(auto_qs.exclude(order__isnull=True).values_list("order_id", flat=True).distinct())
 
     try:
         with transaction.atomic():
@@ -2714,9 +2701,7 @@ def akt_post(request):
                 deed.orders.set(order_ids)
 
             emps = (
-                Employee.objects.filter(
-                    id__in=auto_agreement_ids, organization_id=org.id
-                ).only("id")
+                Employee.objects.filter(id__in=auto_agreement_ids).only("id")
                 if auto_agreement_ids else Employee.objects.none()
             )
             if auto_agreement_ids:
