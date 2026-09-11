@@ -3241,7 +3241,6 @@ def tex_status(request):
 
 @never_cache
 @require_GET
-@login_required
 def technics_detail(request, pk):
     technics = get_object_or_404(Technics, pk=pk, is_active=True)
     return render(request, "main/technics_detail.html", {"technics": technics})
