@@ -35,7 +35,6 @@
                     </div>
 
                     <!-- Kategory -->
-                    {% if request.user.employee.organization.type != "worker" %}
                     <div class="col-md-3">
                         <label class="form-label">Kategoriya</label>
                         <select name="category" class="form-select">
@@ -48,7 +47,6 @@
                             {% endfor %}
                         </select>
                     </div>
-                    {% endif %}
 
                     <!-- UNIT -->
                     <div class="col-md-3">
@@ -271,14 +269,12 @@
           </div>
 
           <div class="modal-body">
-            {% if request.user.employee.organization.type != "worker" %}
             <div class="row mb-3">
-              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
+              <label class="col-md-4 col-lg-3 col-form-label">Kategoriya *</label>
               <div class="col-md-8 col-lg-9">
                 {{ material_form.category }}
               </div>
             </div>
-            {% endif %}
 
             <div class="row mb-3">
               <label class="col-md-4 col-lg-3 col-form-label">Birligi *</label>
@@ -519,7 +515,6 @@
           </div>
           <div class="modal-body">
 
-            {% if request.user.employee.organization.type != "worker" %}
             <div class="row mb-3">
                 <label class="col-md-4 col-lg-3 col-form-label">Kategoriya</label>
                 <div class="col-md-8 col-lg-9">
@@ -533,7 +528,6 @@
                   </select>
                 </div>
             </div>
-            {% endif %}
 
             <div class="row mb-3">
                 <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>

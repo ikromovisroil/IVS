@@ -64,7 +64,7 @@ class MaterialForm(forms.ModelForm):
         ]
         widgets = {
             "unit": forms.Select(attrs={"class": "form-select", "required": True}),
-            "category": forms.Select(attrs={"class": "form-select"}),
+            "category": forms.Select(attrs={"class": "form-select", "required": True}),
 
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "nomi", "required": True}),
             "code": forms.TextInput(attrs={"class": "form-control", "placeholder": "code", "required": True}),
@@ -73,3 +73,10 @@ class MaterialForm(forms.ModelForm):
             "year": forms.TextInput(attrs={"class": "form-control", "placeholder": "year"}),
             "image": forms.ClearableFileInput(attrs={"class": "form-control","accept": "image/*"}),
         }
+
+    def __init__(self, *args, employee=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if employee is not None:
+            self.fields["category"].queryset = MaterialCategory.objects.filter(
+                organization=employee.organization
+            )

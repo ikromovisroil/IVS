@@ -364,6 +364,7 @@ class Unit(models.Model):
 
 
 class MaterialCategory(models.Model):
+    organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
