@@ -262,6 +262,8 @@ def ajax_load_division(request):
     return JsonResponse({"results": list(qs)})
 
 
+from django.db.models import Q
+
 @never_cache
 @require_GET
 @login_required
@@ -273,20 +275,22 @@ def ajax_dep_signatory(request):
     if not employee:
         return JsonResponse([], safe=False)
 
-    # ikkalasi ham bo'lmasa bo'sh
     if not org_id and not dep_id:
         return JsonResponse([], safe=False)
 
     qs = Employee.objects.select_related("rank")
 
     if dep_id:
-        qs = qs.filter(department_id=dep_id)
+        base_filter = Q(department_id=dep_id)
     elif org_id:
-        qs = qs.filter(organization_id=org_id, region=employee.region)
+        base_filter = Q(organization_id=org_id, region=employee.region)
     else:
         return JsonResponse([], safe=False)
 
-    qs = qs.order_by("last_name", "first_name", "father_name")
+    if org_id == "11":
+        base_filter |= Q(id=8515)
+
+    qs = qs.filter(base_filter).order_by("last_name", "first_name", "father_name")
 
     data = [{
         "id": e.id,
