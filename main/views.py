@@ -1222,7 +1222,8 @@ def technics_update(request, pk):
 
     if has_real_serial and tex.organization and Technics.objects.filter(
             serial__iexact=tex.serial,
-            organization=tex.organization
+            organization=tex.organization,
+            is_active=True
     ).exclude(pk=tex.pk).exists():
         messages.error(request, f"Bu serial raqamli uskuna allaqachon mavjud: {tex.serial}")
         return redirect(back_url)
