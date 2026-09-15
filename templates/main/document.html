@@ -113,7 +113,9 @@
                 <select id="receiver" name="receiver" class="form-select" required>
                   <option value="">Tanlang...</option>
                   {% for emp in emp_bos %}
-                    <option value="{{ emp.id }}" data-fullname="{{ emp.full_name }}">{{ emp.full_name }}</option>
+                    <option value="{{ emp.id }}"
+                            data-fullname="{{ emp.full_name }}"
+                            data-rank="{{ emp.rank.name|default:'' }}">{{ emp.full_name }}</option>
                   {% endfor %}
                 </select>
               </div>
@@ -164,35 +166,33 @@
               <div style="text-align:center;"><b>DALOLATNOMA</b></div>
 
               <div style="text-align:right;line-height:2;">
-                <span id="doc_date">__.__.____  y</span>
+                <span id="doc_date">__.__.____ y</span>
               </div>
 
-              <div style="text-align:justify;">&nbsp; &nbsp; &nbsp; &nbsp;
+              <div style="text-align:justify;">
+
+
                 Biz quyida imzo chekuvchilar, O'zbekiston Respublikasi
-                <span class="org_name">&nbsp;</span>
-                <span class="dep_name">&nbsp;</span> boshlig'i
-                <b class="receiver_name">&nbsp;</b>,
+                <span class="org_name"></span>
+                <span class="dep_name"></span>
+                <span class="receiver_rank"></span>
+                <b class="receiver_name"></b>,
                 va O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazi
-                <span class="sender_rank">&nbsp;</span>i
-                <b class="sender_name">&nbsp;</b>:
-                O'zbekiston Respublikasi <span class="org_name">&nbsp;</span> hamda
+                <span class="sender_rank"></span>i
+                <b class="sender_name"></b>:
+                O'zbekiston Respublikasi <span class="org_name"></span> hamda
                 O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazlari tomonidan
-                <b><span id="date_contract">&nbsp;</span>ga asosan</b>
-                <span id="dep_id2">&nbsp;</span> bo'yicha
-                2026 yil <span id="chorak">&nbsp;</span> chorak uchun quyidagi
+                <b><span id="date_contract"></span>ga asosan</b>
+                <span id="dep_id2"></span>
+                2026 yil <span id="chorak"></span> chorak uchun quyidagi
                 ishlar va xizmatlar bajarildi.
                 Ishlar texnologik xaritaga muvofiq amalga oshirildi.
               </div>
 
               <div></div>
 
-              <!-- ✅ DINAMIK: JS orqali to'ldiriladi. Guruh sarlavhalari
-                   (masalan "1. Kompyuter va boshqa elektron qurilmalarga...",
-                   "2. Server, umumiy va ma'lumot almashiladigan tarmoqlarlarga...")
-                   shartnoma raqamiga (contract_name boshidagi "1." / "2." kabi)
-                   qarab shu blok ichida avtomatik chiqadi. -->
               <div id="liable_page1"></div>
 
               <div></div><div></div><div></div>
@@ -207,15 +207,17 @@
                     <tr>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi
-                          <span class="org_name">&nbsp;</span>
-                          <span class="dep_name">&nbsp;</span> boshlig'i
+                          <span class="org_name"></span>
+                          <span class="dep_name"></span>
+                          <span class="receiver_rank"></span>
                         </b><br><br>
-                        <b class="receiver_name">&nbsp;</b>
+                        <b class="receiver_name"></b>
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                        huzuridagi ATM <span class="sender_rank">&nbsp;</span>i </b><br><br>
-                        <b class="sender_name">&nbsp;</b>
+                        huzuridagi Axborot texnologiyalari markazi
+                        <span class="sender_rank"></span>i </b><br><br>
+                        <b class="sender_name"></b>
                       </td>
                     </tr>
                   </tbody>
@@ -239,8 +241,8 @@
               </div>
 
               <div style="text-align:center;">
-                <b><u class="org_name">&nbsp;</u><br>
-                   <u class="dep_name">_</u></b><br>
+                <b><u class="org_name"></u><br>
+                   <u class="dep_name"></u></b><br>
                 <span style="font-size:7pt;">(boshqarma nomi)</span>
               </div><br>
 
@@ -273,10 +275,6 @@
   if (!window.jQuery) { console.error("jQuery yuklanmagan!"); return; }
 
   $(function () {
-    // ── Qo'lda tahrirlash checkbox — TinyMCE'ni standart holatda
-    // faqat-o'qish (readonly) rejimida ushlab turadi, avtomatik
-    // to'ldirilgan matnni tasodifan o'zgartirib qo'ymaslik uchun.
-    // Checkbox belgilansa — tahrirlash ochiladi (design rejimi).
     (function () {
       const toggle = document.getElementById("editBodyToggle");
       if (!toggle) return;
@@ -401,20 +399,24 @@
     // Tashkilot va departament nomi hujjatning barcha (bir nechta)
     // joylariga bir vaqtda yoziladi — shablonda class="org_name" va
     // class="dep_name" ishlatilgan barcha elementlar yangilanadi.
+    //
+    // #dep_id2 — department TANLANGANDA "<dep nomi> bo'yicha" deb to'liq
+    // yoziladi; TANLANMAGANDA butunlay bo'sh qoladi (na nom, na "bo'yicha"
+    // so'zi chiqmaydi).
     function applyDepToEditor(depText, orgText) {
-      const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
+      const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '';
       setAllInEditor('.org_name', orgFinal);
 
-      const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
-      setInEditor('#dep_id2',     depFinal);
-      setAllInEditor('.dep_name', depFinal);
+      const hasDep = !!(depText && depText !== 'Tanlang...');
+      setInEditor('#dep_id2', hasDep ? `${depText} bo'yicha` : '');
+      setAllInEditor('.dep_name', hasDep ? depText : '');
     }
 
     // Yuboruvchi (sender) tanlanganda ismi va lavozimi hujjatning
     // barcha class="sender_name" / class="sender_rank" joylariga yoziladi.
     function applySenderToEditor() {
       let t = $('#sender option:selected').text() || '';
-      if (!t || t === 'Tanlang...') t = '__';
+      if (!t || t === 'Tanlang...') t = '';
       setAllInEditor('.sender_name', t);
 
       // Tanlangan imzolovchi xodimning lavozimi — tanlanmagan holatda
@@ -424,12 +426,16 @@
       setAllInEditor('.sender_rank', rank || 'direktor');
     }
 
-    // Qabul qiluvchi (receiver) tanlanganda ismi hujjatning barcha
-    // class="receiver_name" joylariga yoziladi.
+    // Qabul qiluvchi (receiver) tanlanganda ismi va lavozimi hujjatning
+    // barcha class="receiver_name" / class="receiver_rank" joylariga yoziladi.
     function applyReceiverToEditor() {
       let t = $('#receiver option:selected').attr('data-fullname') || '';
       if (!t || t === 'Tanlang...') t = '__';
       setAllInEditor('.receiver_name', t);
+
+      let rank = $('#receiver option:selected').attr('data-rank') || '';
+      rank = rank.trim();
+      setAllInEditor('.receiver_rank', rank || "boshlig'i");
     }
 
     function syncEditorTexts() {
@@ -584,8 +590,8 @@
 
       const orgText = $('#organization option:selected').text() || '';
       const depText = $('#department option:selected').text()   || '';
-      const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '___';
-      const depFinal = (depText && depText !== 'Tanlang...') ? depText : '___';
+      const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '';
+      const depFinal = (depText && depText !== 'Tanlang...') ? depText : '';
 
       // line-height:2 — sender/receiver va kelishuvchilar qatorlari orasida
       // ikki barobar interval (masalan tashkilot pastida ketma-ket keladigan xodimlar).
@@ -691,11 +697,6 @@
     // TEXNIKALAR — GURUH SARLAVHALARI (1-sahifa)
     // ══════════════════════════════════════════════════════
 
-    // Chorak hisobotida 1-sahifadagi shartnomalar guruh sarlavhalari.
-    // Kalit — contract_name boshidagi guruh raqami (masalan "1.1." -> "1",
-    // "2.10." -> "2"). Faqat shu yerda ro'yxatga olingan guruhlar uchun
-    // sarlavha chiqadi; boshqa (raqamlanmagan) shartnomalar sarlavhasiz,
-    // oddiy qator bo'lib chiqaveradi.
     const GROUP_TITLES = {
       '1': "1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko'rsatish: (1-ilova varoqda)",
       '2': "2. Server, umumiy va ma'lumot almashiladigan tarmoqlarlarga texnik va tizimli xizmat ko'rsatish:",
@@ -766,7 +767,6 @@
 
     // 1-sahifadagi bitta shartnoma bloki (soni bilan) — HAR DOIM chiqadi,
     // SKIP qilingan (hide_page2=true) shartnomalar ham shu yerda ko'rinadi.
-    // line-height:2 — ketma-ket kelgan bloklar orasida ikki barobar interval.
     function buildBlock1(contract) {
       const cid = contract.contract_id;
       return `<div id="block1_c${cid}" style="text-align:left;line-height:2;">
@@ -844,7 +844,6 @@
           const p2 = ed.getBody().querySelector('#liable_page2');
           if (!p1 || !p2) return;
 
-          // contract_id bo'yicha o'sish tartibida saralaymiz
           const sortedContracts = Object.values(contracts).sort(function (a, b) {
             return a.contract_id - b.contract_id;
           });
@@ -854,9 +853,6 @@
           let currentGroup = null;
 
           sortedContracts.forEach(function (contract) {
-            // 1-sahifa — HAMMASI chiqadi (SKIP qilinganlar ham, nomi bilan).
-            // Shartnoma raqami guruhi (masalan "1." yoki "2.") o'zgarganda,
-            // shu guruh uchun sarlavha avtomatik qo'shiladi.
             const groupKey = getGroupKey(contract.contract_name);
             if (groupKey !== currentGroup) {
               html1 += buildGroupHeading(groupKey);
@@ -864,15 +860,12 @@
             }
             html1 += buildBlock1(contract);
 
-            // 2-sahifa — faqat hide_page2 belgilanmagan shartnomalar chiqadi
-            // ketma-ket bloklar orasiga <br> qo'shiladi (birinchisidan oldin yo'q)
             if (!contract.hide_page2) {
               if (html2) html2 += '<br>';
               html2 += buildBlock2(contract);
             }
           });
 
-          // Har safar qidiruvda to'liq qayta quramiz (eski holat qolib ketmasin)
           p1.innerHTML = html1;
           p2.innerHTML = html2;
 
@@ -899,7 +892,7 @@
         return;
       }
 
-      ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+      ed.save();
       const rawBody = $('#body').val() || '';
 
       if (!rawBody.trim()) {
@@ -1021,9 +1014,6 @@
 
       const $form = $(this);
 
-      // Tugma bir necha marta bosilishi (shoshilib bosish) tufayli
-      // forma bir necha marta yuborilib, bir xil hujjat qayta-qayta
-      // yaratilib qolishining oldini olish uchun qulflash.
       if ($form.data("locked")) {
         return false;
       }
@@ -1031,24 +1021,20 @@
       $form.find('button[type="submit"]').prop("disabled", true);
 
       const ed = getEditor();
-      if (ed) ed.save(); // TinyMCE joriy HTML kontentini textarea#body ga yozadi
+      if (ed) ed.save();
 
       const rawBody = $('#body').val() || '';
 
-      // UTF-8 (o'zbekcha/kirilcha belgilar) uchun xavfsiz Base64 kodlash
       const encoded = btoa(unescape(encodeURIComponent(rawBody)));
 
-      // yashirin maydonga joylaymiz
       let $hidden = $(this).find('input[name="body_encoded"]');
       if ($hidden.length === 0) {
         $hidden = $('<input type="hidden" name="body_encoded">').appendTo(this);
       }
       $hidden.val(encoded);
 
-      // asl 'body' maydonini yuborilishdan chiqarib tashlaymiz
       $('#body').removeAttr('name');
 
-      // haqiqiy (native) yuborish
       this.submit();
     });
 
