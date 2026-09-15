@@ -167,21 +167,21 @@
                 <span id="doc_date">__.__.____  y</span>
               </div>
 
-              <div style="text-align:justify;">&nbsp; &nbsp; &nbsp; &nbsp;
+              <div style="text-align:justify;">
                 Biz quyida imzo chekuvchilar, O'zbekiston Respublikasi
-                <span class="org_name">&nbsp;</span>
-                <span class="dep_name">&nbsp;</span> boshlig'i
-                <b class="receiver_name">&nbsp;</b>,
+                <span class="org_name"></span>
+                <span class="dep_name"></span> <span class="receiver_rank"></span>
+                <b class="receiver_name"></b>,
                 va O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazi
-                <span class="sender_rank">&nbsp;</span>i
-                <b class="sender_name">&nbsp;</b>:
-                O'zbekiston Respublikasi <span class="org_name">&nbsp;</span> hamda
+                <span class="sender_rank"></span>i
+                <b class="sender_name"></b>:
+                O'zbekiston Respublikasi <span class="org_name"></span> hamda
                 O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazlari tomonidan
-                <b><span id="date_contract">&nbsp;</span>ga asosan</b>
-                <span id="dep_id2">&nbsp;</span> bo'yicha
-                2026 yil <span id="chorak">&nbsp;</span> chorak uchun quyidagi
+                <b><span id="date_contract"></span>ga asosan</b>
+                <span id="dep_id2"></span> bo'yicha
+                2026 yil <span id="chorak"></span> chorak uchun quyidagi
                 ishlar va xizmatlar bajarildi.
                 Ishlar texnologik xaritaga muvofiq amalga oshirildi.
               </div>
@@ -207,15 +207,15 @@
                     <tr>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi
-                          <span class="org_name">&nbsp;</span>
-                          <span class="dep_name">&nbsp;</span> boshlig'i
+                          <span class="org_name"></span>
+                          <span class="dep_name"></span> <span class="receiver_rank"></span>
                         </b><br><br>
-                        <b class="receiver_name">&nbsp;</b>
+                        <b class="receiver_name"></b>
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-                        huzuridagi ATM <span class="sender_rank">&nbsp;</span>i </b><br><br>
-                        <b class="sender_name">&nbsp;</b>
+                        huzuridagi ATM <span class="sender_rank"></span>i </b><br><br>
+                        <b class="sender_name"></b>
                       </td>
                     </tr>
                   </tbody>
@@ -430,6 +430,10 @@
       let t = $('#receiver option:selected').attr('data-fullname') || '';
       if (!t || t === 'Tanlang...') t = '__';
       setAllInEditor('.receiver_name', t);
+
+      let rank = $('#receiver option:selected').attr('data-rank') || '';
+        rank = rank.trim();
+        setAllInEditor('.receiver_rank', rank || 'boshlig\'i');
     }
 
     function syncEditorTexts() {
