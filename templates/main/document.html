@@ -170,18 +170,16 @@
               </div>
 
               <div style="text-align:justify;">
-
-
                 Biz quyida imzo chekuvchilar, O'zbekiston Respublikasi
-                <span class="org_name"></span>
-                <span class="dep_name"></span>
-                <span class="receiver_rank"></span>
-                <b class="receiver_name"></b>,
+                <span id="org_name"></span>
+                <span id="dep_name"></span>
+                <span id="receiver_rank"></span>
+                <b id="receiver_name"></b>,
                 va O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazi
-                <span class="sender_rank"></span>i
-                <b class="sender_name"></b>:
-                O'zbekiston Respublikasi <span class="org_name"></span> hamda
+                <span id="sender_rank"></span>i
+                <b id="sender_name"></b>:
+                O'zbekiston Respublikasi <span id="org_name"></span> hamda
                 O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                 huzuridagi Axborot texnologiyalari markazlari tomonidan
                 <b><span id="date_contract"></span>ga asosan</b>
@@ -207,17 +205,17 @@
                     <tr>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi
-                          <span class="org_name"></span>
-                          <span class="dep_name"></span>
-                          <span class="receiver_rank"></span>
+                          <span id="org_name"></span>
+                          <span id="dep_name"></span>
+                          <span id="receiver_rank"></span>
                         </b><br><br>
-                        <b class="receiver_name"></b>
+                        <b id="receiver_name"></b>
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
                         <b>O'zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
                         huzuridagi Axborot texnologiyalari markazi
-                        <span class="sender_rank"></span>i </b><br><br>
-                        <b class="sender_name"></b>
+                        <span id="sender_rank"></span>i </b><br><br>
+                        <b id="sender_name"></b>
                       </td>
                     </tr>
                   </tbody>
@@ -241,8 +239,8 @@
               </div>
 
               <div style="text-align:center;">
-                <b><u class="org_name"></u><br>
-                   <u class="dep_name"></u></b><br>
+                <b><u id="org_name"></u><br>
+                   <u id="dep_name"></u></b><br>
                 <span style="font-size:7pt;">(boshqarma nomi)</span>
               </div><br>
 
@@ -361,6 +359,13 @@
       } catch (e) { return false; }
     }
 
+    // ⚠️ MUHIM: TinyMCE ba'zan "class" atributini tozalab (sanitize)
+    // tashlaydi, lekin "id" atributiga tegmaydi. Shuning uchun bir xil
+    // maydon bir necha joyda chiqishi kerak bo'lganda ham (masalan
+    // org_name uch xil joyda), hammasida bir xil id="..." ishlatiladi.
+    // HTML qat'iy qoidasi bo'yicha id noyob bo'lishi kerak, lekin
+    // querySelectorAll('#id') amalda barcha shunday id'li elementlarni
+    // topib beradi — shuning uchun bu yerda ishlaydi.
     function setAllInEditor(selector, text) {
       const ed = getEditor(); if (!ed) return false;
       try {
@@ -397,45 +402,44 @@
     function applyContractToEditor(t) { setInEditor('#date_contract', t || "Shartnoma ma'lumoti kiritilmagan"); }
 
     // Tashkilot va departament nomi hujjatning barcha (bir nechta)
-    // joylariga bir vaqtda yoziladi — shablonda class="org_name" va
-    // class="dep_name" ishlatilgan barcha elementlar yangilanadi.
+    // joylariga bir vaqtda yoziladi — shablonda id="org_name" va
+    // id="dep_name" ishlatilgan barcha elementlar yangilanadi.
     //
     // #dep_id2 — department TANLANGANDA "<dep nomi> bo'yicha" deb to'liq
-    // yoziladi; TANLANMAGANDA butunlay bo'sh qoladi (na nom, na "bo'yicha"
-    // so'zi chiqmaydi).
+    // yoziladi; TANLANMAGANDA butunlay bo'sh qoladi.
     function applyDepToEditor(depText, orgText) {
       const orgFinal = (orgText && orgText !== 'Tanlang...') ? orgText : '';
-      setAllInEditor('.org_name', orgFinal);
+      setAllInEditor('#org_name', orgFinal);
 
       const hasDep = !!(depText && depText !== 'Tanlang...');
       setInEditor('#dep_id2', hasDep ? `${depText} bo'yicha` : '');
-      setAllInEditor('.dep_name', hasDep ? depText : '');
+      setAllInEditor('#dep_name', hasDep ? depText : '');
     }
 
     // Yuboruvchi (sender) tanlanganda ismi va lavozimi hujjatning
-    // barcha class="sender_name" / class="sender_rank" joylariga yoziladi.
+    // barcha id="sender_name" / id="sender_rank" joylariga yoziladi.
     function applySenderToEditor() {
       let t = $('#sender option:selected').text() || '';
       if (!t || t === 'Tanlang...') t = '';
-      setAllInEditor('.sender_name', t);
+      setAllInEditor('#sender_name', t);
 
       // Tanlangan imzolovchi xodimning lavozimi — tanlanmagan holatda
       // standart "direktor" matni saqlanib qoladi.
       let rank = $('#sender option:selected').attr('data-rank') || '';
       rank = rank.trim();
-      setAllInEditor('.sender_rank', rank || 'direktor');
+      setAllInEditor('#sender_rank', rank || 'direktor');
     }
 
     // Qabul qiluvchi (receiver) tanlanganda ismi va lavozimi hujjatning
-    // barcha class="receiver_name" / class="receiver_rank" joylariga yoziladi.
+    // barcha id="receiver_name" / id="receiver_rank" joylariga yoziladi.
     function applyReceiverToEditor() {
       let t = $('#receiver option:selected').attr('data-fullname') || '';
-      if (!t || t === 'Tanlang...') t = '__';
-      setAllInEditor('.receiver_name', t);
+      if (!t || t === 'Tanlang...') t = '';
+      setAllInEditor('#receiver_name', t);
 
       let rank = $('#receiver option:selected').attr('data-rank') || '';
       rank = rank.trim();
-      setAllInEditor('.receiver_rank', rank || "boshlig'i");
+      setAllInEditor('#receiver_rank', rank || "boshlig'i");
     }
 
     function syncEditorTexts() {
