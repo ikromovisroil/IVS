@@ -249,7 +249,8 @@
               </div>
 
               <!-- ✅ DINAMIK: JS orqali to'ldiriladi. SKIP qilingan
-                   (hide_page2=true) shartnomalar bu yerda CHIQMAYDI. -->
+                   (hide_page2=true) va items bo'sh bo'lgan shartnomalar
+                   bu yerda CHIQMAYDI. -->
               <div id="liable_page2"></div>
              <div></div>
 
@@ -738,13 +739,6 @@
       }
       html += '</tr>';
 
-      if (!contract.items || !contract.items.length) {
-        html += `<tr><td colspan="${colspan}"
-          style="border:1px solid #000;text-align:center;color:#777;">
-          Ma'lumot topilmadi</td></tr>`;
-        return html;
-      }
-
       contract.items.forEach(function (x, i) {
         html += '<tr>';
         html += `<td style="border:1px solid #000;text-align:center;">${i + 1}</td>`;
@@ -782,7 +776,8 @@
     }
 
     // 2-sahifadagi bitta shartnoma bloki (jadval bilan) — faqat
-    // hide_page2 = false bo'lganlar uchun chaqiriladi (chaqiruv joyida tekshiriladi).
+    // hide_page2 = false BO'LGAN VA items bo'sh bo'lmagan shartnomalar
+    // uchun chaqiriladi (chaqiruv joyida ikkala shart ham tekshiriladi).
     function buildBlock2(contract) {
       const cid  = contract.contract_id;
       const isPC = (cid === 1);
@@ -864,7 +859,11 @@
             }
             html1 += buildBlock1(contract);
 
-            if (!contract.hide_page2) {
+            // 2-sahifa — faqat hide_page2 belgilanmagan VA items bo'sh
+            // bo'lmagan shartnomalar uchun chiqadi. Aks holda ("Ma'lumot
+            // topilmadi" qatori ham) butunlay chiqmaydi.
+            const hasItems = contract.items && contract.items.length > 0;
+            if (!contract.hide_page2 && hasItems) {
               if (html2) html2 += '<br>';
               html2 += buildBlock2(contract);
             }
