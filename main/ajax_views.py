@@ -1023,8 +1023,8 @@ def ajax_document_preview(request):
             contracts_data[str(cid)] = {
                 "contract_id": cid,
                 "contract_name": contract_name,
-                "count": 0,
-                "items": [],
+                "count": len(result_items),
+                "items": [] if hide_page2 else result_items,
                 "hide_page2": hide_page2,
             }
             continue
