@@ -1034,6 +1034,9 @@ def ajax_document_preview(request):
             items = [tex for tex in items if bool(tex.is_online) == wanted_online]
 
         if not items:
+            continue
+
+        if not items:
             if hide_page2:
                 contracts_data[str(cid)] = {
                     "contract_id": cid,
