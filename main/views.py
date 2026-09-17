@@ -236,12 +236,18 @@ def contact_user(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
+    pending_consent = DeedConsent.objects.filter(deed_id=OuterRef("pk"), status="viewed")
+
     qs = (
         Deed.objects
         .filter(user_id=employee.id)
+        .annotate(has_pending_consent=Exists(pending_consent))
         .filter(
             Q(receiver__isnull=True, status_sender="viewed") |
-            Q(receiver__isnull=False, status_sender="viewed", status_receiver="viewed")
+            Q(receiver__isnull=False) & (
+                    Q(status_sender="viewed") | Q(status_receiver="viewed")
+            ) |
+            Q(has_pending_consent=True)
         )
         .select_related(*DEED_SELECT_RELATED)
         .prefetch_related(DEEDCONSENT_PREFETCH)
@@ -273,13 +279,21 @@ def contact_user_arxiv(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
+    pending_consent = DeedConsent.objects.filter(deed_id=OuterRef("pk"), status="viewed")
+
     qs = (
         Deed.objects
         .filter(user_id=employee.id)
+        .annotate(has_pending_consent=Exists(pending_consent))
         .filter(
-            Q(status_sender__in=["approved", "rejected"]) |
-            Q(status_receiver__in=["approved", "rejected"])
+            Q(receiver__isnull=True, status_sender__in=["approved", "rejected"]) |
+            Q(
+                receiver__isnull=False,
+                status_sender__in=["approved", "rejected"],
+                status_receiver__in=["approved", "rejected"],
+            )
         )
+        .filter(has_pending_consent=False)
         .select_related(*DEED_SELECT_RELATED)
         .prefetch_related(DEEDCONSENT_PREFETCH)
         .distinct()

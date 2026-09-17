@@ -902,10 +902,8 @@ NO_CATEGORY_USE_ALL_TECHNICS_IDS = {10}
 
 SKIP_CONTRACT_IDS = {10, 13, 14, 15, 17, 19, 20, 21, 22}
 
-
 def _get_online_filter(contract_id):
     return ONLINE_FILTER_BY_CONTRACT_ID.get(contract_id)
-
 
 # ═══════════════════════════════════════════════════════════════════
 # AJAX_DOCUMENT_PREVIEW
