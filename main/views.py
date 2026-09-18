@@ -3797,7 +3797,8 @@ def employee(request):
                 query &= (
                         Q(last_name__icontains=term) |
                         Q(first_name__icontains=term) |
-                        Q(father_name__icontains=term)
+                        Q(father_name__icontains=term) |
+                        Q(pinfl__icontains=term)
                 )
             employee_qs = employee_qs.filter(query)
 
