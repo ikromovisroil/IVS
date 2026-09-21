@@ -97,6 +97,20 @@
                                                 </div>
                                             </div>
 
+                                            <div id="receiver-block" class="d-none">
+                                                <hr>
+
+                                                <div class="row mb-3">
+                                                    <label class="col-sm-3 col-form-label">Xizmat ko'rsatuvchi xodim:</label>
+                                                    <div class="col-sm-9">
+                                                        <select class="form-select" name="receiver" id="receiver-select" disabled>
+                                                            <option value="">Tanlang...</option>
+                                                        </select>
+                                                        <div class="form-text">Ixtiyoriy. Tanlansa, dalolatnoma ikki imzolovchi tomonidan imzolanadi.</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
                                             <hr>
 
                                             <div class="row mb-3">
@@ -112,6 +126,15 @@
                                                 <label class="col-sm-3 col-form-label">file:</label>
                                                 <div class="col-sm-9">
                                                     <input type="file" class="form-control" name="file">
+                                                </div>
+                                            </div>
+
+                                            <div class="row mb-3">
+                                                <label class="col-sm-3 col-form-label" for="attachments">Ilovalar:</label>
+                                                <div class="col-sm-9">
+                                                    <input type="file" class="form-control" name="attachments" id="attachments"
+                                                           multiple accept=".pdf,.doc,.docx,.xls,.xlsx">
+                                                    <div class="form-text">Ixtiyoriy. Word, Excel yoki PDF; bir nechta fayl tanlash mumkin (10 tagacha, har biri 10 MB gacha).</div>
                                                 </div>
                                             </div>
 
@@ -141,6 +164,7 @@
                                             <th>Imzolovchi</th>
                                             <th style="width: 170px;">Yuborilgan sana</th>
                                             <th style="width: 120px;">Fayllar</th>
+                                            <th style="width: 130px;">Ilovalar</th>
                                             <th style="width: 140px;">Holati</th>
                                             <th style="width: 140px;">Amallar</th>
                                         </tr>
@@ -167,6 +191,8 @@
                                                     —
                                                 {% endif %}
                                             </td>
+
+                                            {% include "main/partials/deed_attachments_cell.html" %}
 
                                             <td>
                                                 {% if d.receiver %}
@@ -379,7 +405,7 @@
                                         </tr>
                                     {% empty %}
                                         <tr>
-                                            <td colspan="8" class="text-center text-muted py-4">
+                                            <td colspan="9" class="text-center text-muted py-4">
                                                 <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                                             </td>
                                         </tr>
@@ -484,6 +510,57 @@ $(document).ready(function () {
 <script>
     const AGREEMENTS_URL = "{% url 'ajax_agreements_employees' %}";
 </script>
+
+<script>
+$(document).ready(function () {
+    const $status = $('#status');
+    const $block = $('#receiver-block');
+    const $rEmp = $('#receiver-select');
+    let workersLoaded = false;
+
+    if (!$rEmp.hasClass('select2-hidden-accessible')) {
+        $rEmp.select2({ dropdownParent: $rEmp.closest('.modal'), placeholder: 'Tanlang...', allowClear: true });
+    }
+
+    // Xizmat ko'rsatuvchi (worker) xodimlarini bir marta yuklaymiz
+    function loadWorkers() {
+        if (workersLoaded) return;
+        $rEmp.empty().append('<option value="">yuklanmoqda...</option>').trigger('change');
+        $.ajax({
+            url: "{% url 'ajax_employees_worker' %}",
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            dataType: 'json'
+        })
+        .done(function (data) {
+            $rEmp.empty().append('<option value="">Tanlang...</option>');
+            data.results.forEach(function (item) {
+                $rEmp.append(new Option(item.text, item.id, false, false));
+            });
+            workersLoaded = true;
+            $rEmp.trigger('change');
+        })
+        .fail(function (err) {
+            console.error(err);
+            $rEmp.empty().append('<option value="">xatolik yuz berdi</option>').trigger('change');
+        });
+    }
+
+    // Faqat "Dalolatnoma" tanlanganda ko'rinadi; boshqa turda maydon o'chirib qo'yiladi
+    function syncReceiverBlock() {
+        const show = $status.val() === 'document';
+        $block.toggleClass('d-none', !show);
+        $rEmp.prop('disabled', !show);
+        if (show) {
+            loadWorkers();
+        } else {
+            $rEmp.val('').trigger('change');
+        }
+    }
+    $status.on('change', syncReceiverBlock);
+    syncReceiverBlock();
+});
+</script>
+
 
 <script>
 $(document).ready(function () {

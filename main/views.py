@@ -4,7 +4,10 @@ import logging
 import os
 import re
 import secrets
+import shutil
+import tempfile
 import unicodedata
+import zipfile
 from datetime import datetime, time
 from decimal import Decimal, InvalidOperation
 from itertools import groupby
@@ -13,7 +16,7 @@ from PyPDF2 import PdfReader
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Permission
-from django.core.exceptions import PermissionDenied
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
@@ -31,13 +34,15 @@ from main.forms import *
 from main.sso_views import *
 from .push_views import *
 from .html_pdf import HtmlPdfError, add_text_watermark_pdf_bytes, deed_to_pdf_bytes
-from .models import Deed, DeedConsent, Employee, Organization
+from .models import Deed, DeedConsent, DeedFiles, Employee, Organization
 from .sanitizers import sanitize_deed_body
 from .tasks import _resolve_position
-from .validators import validate_file_extension
+from .validators import validate_attachment_extension, validate_file_extension
 from django.utils.timezone import make_aware
 
 logger = logging.getLogger(__name__)
+
+MAX_DEED_ATTACHMENTS = 10
 
 @never_cache
 def error_403(request, exception=None):
@@ -103,7 +108,7 @@ def contact(request):
             Q(receiver_id=employee.id, status_receiver="viewed")
         )
         .select_related(*DEED_SELECT_RELATED)
-        .prefetch_related(DEEDCONSENT_PREFETCH)
+        .prefetch_related(DEEDCONSENT_PREFETCH, "deedfiles_set")
         .distinct()
         .order_by("-id")
     )
@@ -138,7 +143,7 @@ def contact_arxiv(request):
             Q(receiver_id=employee.id, status_receiver__in=["approved", "rejected"])
         )
         .select_related(*DEED_SELECT_RELATED)
-        .prefetch_related(DEEDCONSENT_PREFETCH)
+        .prefetch_related(DEEDCONSENT_PREFETCH, "deedfiles_set")
         .distinct()
         .order_by("-id")
     )
@@ -173,7 +178,7 @@ def contact_agrement(request):
             deedconsent__status="viewed"
         )
         .select_related(*DEED_SELECT_RELATED)
-        .prefetch_related(DEEDCONSENT_PREFETCH)
+        .prefetch_related(DEEDCONSENT_PREFETCH, "deedfiles_set")
         .distinct()
         .order_by("-id")
     )
@@ -208,7 +213,7 @@ def contact_agrement_arxiv(request):
             deedconsent__status__in=["approved", "rejected"]
         )
         .select_related(*DEED_SELECT_RELATED)
-        .prefetch_related(DEEDCONSENT_PREFETCH)
+        .prefetch_related(DEEDCONSENT_PREFETCH, "deedfiles_set")
         .distinct()
         .order_by("-id")
     )
@@ -250,7 +255,7 @@ def contact_user(request):
             Q(has_pending_consent=True)
         )
         .select_related(*DEED_SELECT_RELATED)
-        .prefetch_related(DEEDCONSENT_PREFETCH)
+        .prefetch_related(DEEDCONSENT_PREFETCH, "deedfiles_set")
         .distinct()
         .order_by("-id")
     )
@@ -295,7 +300,7 @@ def contact_user_arxiv(request):
         )
         .filter(has_pending_consent=False)
         .select_related(*DEED_SELECT_RELATED)
-        .prefetch_related(DEEDCONSENT_PREFETCH)
+        .prefetch_related(DEEDCONSENT_PREFETCH, "deedfiles_set")
         .distinct()
         .order_by("-id")
     )
@@ -347,6 +352,23 @@ def contact_post_deed(request):
 
     sender = get_object_or_404(Employee, pk=sender_id)
 
+    # Xizmat ko'rsatuvchi xodim (ikkinchi imzolovchi) - faqat Dalolatnoma uchun, ixtiyoriy
+    receiver = None
+    receiver_id = request.POST.get("receiver", "").strip()
+    if status == "document" and receiver_id:
+        receiver = (
+            Employee.objects.filter(
+                pk=int(receiver_id) if receiver_id.isdigit() else 0,
+                organization__type="worker",
+            ).first()
+        )
+        if not receiver:
+            messages.error(request, "Xizmat ko'rsatuvchi xodim topilmadi")
+            return redirect("contact_user")
+        if receiver.pk == sender.pk:
+            messages.error(request, "Imzolovchi va xizmat ko'rsatuvchi bir xil xodim bo'lishi mumkin emas")
+            return redirect("contact_user")
+
     if not uploaded_file:
         messages.error(request, "Fayl biriktirilmagan")
         return redirect("contact_user")
@@ -356,10 +378,24 @@ def contact_post_deed(request):
         messages.error(request, str(e))
         return redirect("contact_user")
 
+    # Ilovalar (DeedFiles): PDF / Word / Excel, bir nechta
+    attachments = request.FILES.getlist("attachments")
+    if len(attachments) > MAX_DEED_ATTACHMENTS:
+        messages.error(request, f"Ilova fayllari {MAX_DEED_ATTACHMENTS} tadan ko'p bo'lmasligi kerak")
+        return redirect("contact_user")
+    for att in attachments:
+        try:
+            validate_attachment_extension(att)
+        except ValidationError as e:
+            messages.error(request, f"{att.name}: {' '.join(e.messages)}")
+            return redirect("contact_user")
+
     agreement_ids = [aid for aid in agreement_ids if aid.isdigit()]
     valid_agreement_ids = set(
         Employee.objects.filter(id__in=agreement_ids).values_list("id", flat=True)
     )
+    if receiver:
+        valid_agreement_ids.discard(receiver.id)
 
     try:
         with transaction.atomic():
@@ -367,6 +403,7 @@ def contact_post_deed(request):
                 organization=deed_organization,
                 user=employee,
                 sender=sender,
+                receiver=receiver,
                 status=status,
                 file=uploaded_file,
             )
@@ -376,6 +413,9 @@ def contact_post_deed(request):
                     DeedConsent(deed=deed, employee_id=aid)
                     for aid in valid_agreement_ids
                 ])
+
+            for att in attachments:
+                DeedFiles.objects.create(deed=deed, file=att)
     except DatabaseError:
         messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect("contact_user")
@@ -3328,7 +3368,8 @@ def files(request):
                 queryset=DeedConsent.objects.select_related(
                     "employee", "employee__organization"
                 )
-            )
+            ),
+            "deedfiles_set",
         )
         .order_by("-id")
     )
@@ -3395,6 +3436,58 @@ def files(request):
         "selected_organization": org_id,   # FIX: template uchun qo'shildi
     }
     return render(request, "main/files.html", context)
+
+
+@never_cache
+@require_GET
+@login_required
+def deed_attachments(request, pk):
+    """Hujjatning ilova fayllarini (Word/Excel/PDF) yuklab oladi:
+    bitta bo'lsa o'zini, bir nechta bo'lsa ZIP arxiv qilib."""
+    if not getattr(request.user, "employee", None):
+        raise PermissionDenied("Employee yo'q")
+
+    deed = get_object_or_404(Deed, pk=pk)
+
+    items = []
+    for item in deed.deedfiles_set.order_by("id"):
+        try:
+            if item.file and item.file.storage.exists(item.file.name):
+                items.append(item)
+        except Exception:
+            logger.exception("DeedFiles #%s faylini tekshirishda xatolik", item.pk)
+
+    if not items:
+        messages.error(request, "Bu hujjatga ilova fayllar topilmadi")
+        return redirect(request.META.get("HTTP_REFERER") or "files")
+
+    if len(items) == 1:
+        item = items[0]
+        return FileResponse(
+            item.file.open("rb"),
+            as_attachment=True,
+            filename=os.path.basename(item.file.name),
+        )
+
+    tmp = tempfile.SpooledTemporaryFile(max_size=20 * 1024 * 1024)
+    used = set()
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as zf:
+        for item in items:
+            base = os.path.basename(item.file.name)
+            name, i = base, 1
+            while name in used:
+                name = f"{i}_{base}"
+                i += 1
+            used.add(name)
+            with item.file.open("rb") as src, zf.open(name, "w") as dst:
+                shutil.copyfileobj(src, dst)
+    tmp.seek(0)
+    return FileResponse(
+        tmp,
+        as_attachment=True,
+        filename=f"ilovalar_{deed.code or deed.pk}.zip",
+        content_type="application/zip",
+    )
 
 
 @login_required

@@ -1,3 +1,5 @@
+import os
+
 from django.contrib import admin
 from .models import *
 from django.utils.html import format_html
@@ -16,6 +18,12 @@ class OrderMaterialInline(admin.TabularInline):
 class DeedConsentInline(admin.TabularInline):
     model = DeedConsent
     extra = 1
+
+
+class DeedFilesInline(admin.TabularInline):
+    model = DeedFiles
+    extra = 1
+    readonly_fields = ("date_creat",)
 
 
 # =========================
@@ -332,7 +340,7 @@ class DeedAdmin(admin.ModelAdmin):
     autocomplete_fields = ("sender", "receiver", "user")
     filter_horizontal = ("orders",)
     readonly_fields = ("code", "date_creat", "date_edit")
-    inlines = [DeedConsentInline]
+    inlines = [DeedConsentInline, DeedFilesInline]
 
     STATUS_COLORS = {
         "viewed": "#ffc107",     # sariq
@@ -366,6 +374,30 @@ class DeedAdmin(admin.ModelAdmin):
         return self._status_badge(obj.status_receiver)
     colored_status_receiver.short_description = "status receiver"
     colored_status_receiver.admin_order_field = "status_receiver"
+
+
+@admin.register(DeedFiles)
+class DeedFilesAdmin(admin.ModelAdmin):
+    list_display = ("id", "deed", "file_link", "file_type", "date_creat")
+    list_filter = ("date_creat",)
+    search_fields = ("deed__code", "file")
+    autocomplete_fields = ("deed",)
+    readonly_fields = ("date_creat", "date_edit")
+    list_select_related = ("deed",)
+
+    def file_link(self, obj):
+        if not obj.file:
+            return "—"
+        return format_html(
+            '<a href="{}" target="_blank" rel="noopener">{}</a>',
+            obj.file.url, os.path.basename(obj.file.name)
+        )
+    file_link.short_description = "Fayl"
+
+    def file_type(self, obj):
+        ext = os.path.splitext(obj.file.name)[1].lstrip(".").upper() if obj.file else ""
+        return ext or "—"
+    file_type.short_description = "Turi"
 
 
 @admin.register(DeedConsent)

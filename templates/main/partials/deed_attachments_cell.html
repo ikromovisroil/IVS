@@ -1,0 +1,10 @@
+<td class="text-nowrap">
+    {% with n=d.deedfiles_set.all|length %}
+        {% if n %}
+            <a href="{% url 'deed_attachments' d.pk %}" class="file-link file-link--attach"
+               title="Ilovalarni yuklab olish ({{ n }} ta fayl)">
+                <i class="bi bi-paperclip"></i> <span class="file-count">{{ n }} ta </span>
+            </a>
+        {% endif %}
+    {% endwith %}
+</td>

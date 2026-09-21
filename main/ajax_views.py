@@ -393,6 +393,28 @@ def ajax_employees_org_user(request):
     return JsonResponse({"results": data})
 
 
+@never_cache
+@require_GET
+@login_required
+def ajax_employees_worker(request):
+    """Xizmat ko'rsatuvchi (worker) tashkilotlar xodimlari."""
+    qs = (
+        Employee.objects
+        .filter(organization__type="worker")
+        .select_related("organization")
+        .order_by("last_name", "first_name", "father_name", "id")
+    )
+    several_orgs = qs.values("organization_id").distinct().count() > 1
+    data = [
+        {
+            "id": e.id,
+            "text": f"{e.full_name} ({e.organization.name})" if several_orgs else e.full_name,
+        }
+        for e in qs
+    ]
+    return JsonResponse({"results": data})
+
+
 
 @never_cache
 @require_GET

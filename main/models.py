@@ -621,6 +621,17 @@ class Deed(models.Model):
         verbose_name_plural = "Xujatlar"
 
 
+class DeedFiles(models.Model):
+    deed = models.ForeignKey(Deed, on_delete=models.CASCADE, null=True,blank=True,db_index=True)
+    file = models.FileField(upload_to='deed/', validators=[validate_attachment_extension])
+    date_creat = models.DateTimeField(auto_now_add=True)
+    date_edit = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'deedfiles'
+        verbose_name = "Xujat ilovasi"
+        verbose_name_plural = "Xujatlar ilovasi"
+
 
 class DeedConsent(models.Model):
     deed = models.ForeignKey(Deed, on_delete=models.CASCADE, db_index=True)
