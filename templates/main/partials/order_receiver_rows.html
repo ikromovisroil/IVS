@@ -184,11 +184,25 @@
                     </div>
 
                     <div class="modal-footer d-flex flex-row justify-content-center gap-2">
+                        {% if user.is_superuser %}
+                        <div class="w-100">
+                            <label for="assignee{{ o.id }}" class="form-label small text-muted mb-1">
+                                <i class="bi bi-person-check me-1"></i>Ijrochi xodim
+                            </label>
+                            <select id="assignee{{ o.id }}" name="receiver" form="accept-form-{{ o.id }}" class="form-select">
+                                <option value="">O'zimga qabul qilish</option>
+                                {% for e in o.assignees %}
+                                <option value="{{ e.id }}">{{ e.full_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
                         <button type="button" class="btn btn-secondary border flex-fill" data-bs-dismiss="modal">
                             <i class="bi bi-exclamation-circle me-1"></i> Etiborsiz qoldirish
                         </button>
 
-                        <form action="{% url 'order_accepted' o.pk %}" method="post" class="flex-fill">
+                        <form id="accept-form-{{ o.id }}" action="{% url 'order_accepted' o.pk %}" method="post" class="flex-fill">
                             {% csrf_token %}
                             <button
                                 type="submit"

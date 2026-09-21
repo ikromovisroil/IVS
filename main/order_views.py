@@ -2,7 +2,8 @@ import base64
 import binascii
 import secrets
 from datetime import datetime
-from django.db.models import Exists, OuterRef
+from django.db.models import Exists, OuterRef, Q
+from django.contrib.auth.models import Permission
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.exceptions import PermissionDenied
@@ -23,7 +24,10 @@ from .models import (
     Order, Goal, Employee, Organization, OrderGoal, OrderMaterial,
     Material, MaterialEmployee, MaterialUser, Technics, Deed, DeedConsent,
 )
-from .push_views import notify_order_status_change, notify_eligible_employees_new_order, notify_deed_sender
+from .push_views import (
+    notify_order_status_change, notify_eligible_employees_new_order, notify_deed_sender,
+    get_eligible_employees_for_new_order, send_push_notification,
+)
 from .sanitizers import sanitize_deed_body
 
 FULL_SENDER_RECEIVER_RELATED = (
@@ -271,6 +275,25 @@ def order_user_post(request):
 # RECEIVER (worker) — ariza qabul qiluvchi/bajaruvchi
 # ═══════════════════════════════════════════════════════════════════
 
+def _assignee_candidates(order):
+    """Superuser arizani biriktira oladigan xodimlar: arizaga ruxsatli (OrderGoal),
+    yuboruvchi bilan bir hududdagi, ariza kategoriyasi tashkilotidagi va
+    "Ariza bajarish" (change_order) huquqi bor xodimlar. Tashkilot mos bo'lmasa
+    ariza ijrochining "faol arizalar" ro'yxatida ko'rinmaydi, huquqsiz xodim esa
+    o'sha sahifani umuman ocha olmaydi."""
+    perm = Permission.objects.filter(codename="change_order", content_type__app_label="main").first()
+    perm_q = Q(user__is_superuser=True)
+    if perm:
+        perm_q |= Q(user__user_permissions=perm) | Q(user__groups__permissions=perm)
+    return (
+        get_eligible_employees_for_new_order(order)
+        .filter(user__isnull=False, organization_id=order.goal.organization_id)
+        .filter(perm_q)
+        .distinct()
+        .order_by("last_name", "first_name", "father_name")
+    )
+
+
 @never_cache
 @require_GET
 @login_required
@@ -304,6 +327,12 @@ def order_receiver(request):
     paginator = Paginator(orders_qs, 20)
     page_obj = paginator.get_page(page_number)
 
+    if request.user.is_superuser:
+        orders = list(page_obj.object_list)
+        for o in orders:
+            o.assignees = list(_assignee_candidates(o))
+        page_obj.object_list = orders
+
     context = {
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if paginator.count else 0,
@@ -329,8 +358,20 @@ def order_accepted(request, pk):
 
     back_url = request.META.get("HTTP_REFERER") or "/"
 
+    # Ijrochini tanlash faqat superuser uchun. Boshqalar uchun ariza doim
+    # o'ziga o'tadi (receiver yuborilmaydi).
+    receiver_raw = (request.POST.get("receiver") or "").strip()
+    assignee = employee
+    if receiver_raw:
+        if not request.user.is_superuser:
+            raise PermissionDenied("Ijrochini tanlash huquqingiz yo'q")
+        if not receiver_raw.isdigit():
+            messages.error(request, "Xodim noto'g'ri tanlandi")
+            return redirect(back_url)
+        assignee = get_object_or_404(Employee, pk=int(receiver_raw))
+
     order_goal_ids = set(
-        OrderGoal.objects.filter(employee=employee).values_list("goal_id", flat=True)
+        OrderGoal.objects.filter(employee=assignee).values_list("goal_id", flat=True)
     )
 
     def is_order_eligible(order):
@@ -340,13 +381,17 @@ def order_accepted(request, pk):
             and order.goal_id in order_goal_ids
             and order.goal.organization.type == "worker"
             and order.sender_id is not None
-            and order.sender.region_id == employee.region_id
+            and order.sender.region_id == assignee.region_id
         )
 
     order = get_object_or_404(Order.objects.select_related("goal__organization", "sender"), pk=pk)
 
     if not is_order_eligible(order):
         messages.error(request, "Bu arizani qabul qilish huquqingiz yo'q yoki u allaqachon qabul qilingan")
+        return redirect(back_url)
+
+    if assignee.pk != employee.pk and not _assignee_candidates(order).filter(pk=assignee.pk).exists():
+        messages.error(request, "Tanlangan xodim bu arizani bajara olmaydi (kategoriya, hudud yoki huquq mos emas)")
         return redirect(back_url)
 
     try:
@@ -363,7 +408,7 @@ def order_accepted(request, pk):
                 return redirect(back_url)
 
             order.status = "process"
-            order.receiver = employee
+            order.receiver = assignee
             order.save(update_fields=["status", "receiver"])
 
     except DatabaseError:
@@ -372,14 +417,36 @@ def order_accepted(request, pk):
 
     notify_order_status_change(order)
 
+    time_str = timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')
+
     if order.sender_id and order.sender.telegram_chat:
         send_telegram_message(
             order.sender.telegram_chat,
             f"<b>🔔 Yangi bildirishnoma</b>\n\n"
             f"✅ ATMga yuborgan #{order.id} - arizangiz qabul qilindi.\n"
-            f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
-            f"📅 <b>Vaqt:</b> {timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')}",
+            f"👤 <b>Bajaruvchi:</b> {assignee.full_name}\n\n"
+            f"📅 <b>Vaqt:</b> {time_str}",
         )
+
+    if assignee.pk != employee.pk:
+        send_push_notification(
+            assignee,
+            title="Sizga ariza biriktirildi",
+            body=f"#{order.id} {order.sender.full_name if order.sender else ''}",
+            url="/order/receiver/activ/",
+            tag=f"order-assign-{order.id}",
+        )
+        if assignee.telegram_chat:
+            send_telegram_message(
+                assignee.telegram_chat,
+                f"<b>🔔 Yangi bildirishnoma</b>\n\n"
+                f"📌 Sizga ATM arizasi #{order.id} biriktirildi.\n"
+                f"👤 <b>Ariza muallifi:</b> {order.sender.full_name if order.sender else '-'}\n"
+                f"👨‍💼 <b>Biriktirdi:</b> {employee.full_name}\n\n"
+                f"📅 <b>Vaqt:</b> {time_str}",
+            )
+        messages.success(request, f"Ariza {assignee.full_name}ga biriktirildi")
+        return redirect(back_url)
 
     messages.success(request, "Ariza muvaffaqiyatli qabul qilindi")
     return redirect("order_receiver_activ")
