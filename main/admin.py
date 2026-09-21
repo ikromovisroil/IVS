@@ -240,11 +240,11 @@ class MaterialUserAdmin(admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "sender", "receiver", "user",
+        "id","sender_region", "sender", "receiver", "user",
         "colored_status", "rating", "date_creat"
     )
     list_filter = (
-        "status", "goal", "date_creat"
+        "sender_region", "status", "goal", "date_creat"
     )
     search_fields = (
         "id",
