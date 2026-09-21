@@ -290,8 +290,6 @@ class Technics(models.Model):
             self.directorate_id = self.employee.directorate_id
             self.division_id = self.employee.division_id
 
-        if self.employee_id or self.department_id or self.directorate_id or self.division_id:
-            self.status = 'active'
 
         super().save(*args, **kwargs)
 
