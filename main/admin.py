@@ -240,12 +240,13 @@ class MaterialUserAdmin(admin.ModelAdmin):
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = (
-        "id","sender_region", "sender", "receiver", "user",
+        "id","sender__region", "sender", "receiver", "user",
         "colored_status", "rating", "date_creat"
     )
     list_filter = (
-        "sender_region", "status", "goal", "date_creat"
+        "sender__region", "status", "goal", "date_creat"
     )
+    list_select_related = ("sender__region", "receiver", "user")
     search_fields = (
         "id",
         "user__last_name", "user__first_name",
@@ -268,6 +269,11 @@ class OrderAdmin(admin.ModelAdmin):
         "canceled": "#6c757d",   # kulrang — bekor qilindi
         "rejected": "#dc3545",   # qizil — rad etildi
     }
+
+    def sender_region(self, obj):
+        return obj.sender.region if obj.sender_id and obj.sender.region_id else "—"
+    sender_region.short_description = "Yuboruvchi hududi"
+    sender_region.admin_order_field = "sender__region__name"
 
     def colored_status(self, obj):
         color = self.STATUS_COLORS.get(obj.status, "#999")
