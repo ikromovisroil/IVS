@@ -556,27 +556,9 @@ async def cb_finish(callback: CallbackQuery):
     if not result.ok:
         return
 
+    # Yuboruvchiga bildirishnoma (ATM uchun baholash bilan) finish_order
+    # ichida, saytdagi kabi yuboriladi.
     await callback.message.edit_reply_markup()
-
-    order = result.order
-    sender = order.sender
-    sender_chat_id = getattr(sender, "telegram_chat", None) if sender else None
-
-    if sender_chat_id:
-        goal_name = order.goal.name if order.goal else "-"
-        text = (
-            f"✅ Arizangiz (#{order.id} — {goal_name}) bajarildi!\n\n"
-            f"Iltimos, xizmat sifatini baholang:"
-        )
-        try:
-            await callback.bot.send_message(
-                sender_chat_id, text, reply_markup=rating_keyboard(order.id)
-            )
-        except Exception:
-            logger.exception(
-                "Yuboruvchiga (chat_id=%s) baholash xabari yuborilmadi (order=%s)",
-                sender_chat_id, order.id,
-            )
 
 
 # ---------------------------------------------------------------------------

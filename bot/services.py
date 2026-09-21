@@ -8,10 +8,14 @@ import logging
 
 from django.db import transaction, DatabaseError, connection
 from django.db.models import Q
+from django.utils import timezone
 
+from bot.notify import send_telegram_message, rating_markup
 from main.models import Employee, Order, Goal, OrderGoal
 
 logger = logging.getLogger(__name__)
+
+WAREHOUSE_FINISH_MESSAGE = "Materiallarni ombordan qabul qilib olishingiz mumkin"
 
 
 def _locking_qs(qs):
@@ -19,6 +23,27 @@ def _locking_qs(qs):
     if connection.features.has_select_for_update:
         return qs.select_for_update()
     return qs
+
+
+def _now_str() -> str:
+    return timezone.localtime(timezone.now()).strftime("%Y.%m.%d %H:%M:%S")
+
+
+def _goal_org_type(order: Order) -> str | None:
+    goal = order.goal
+    if goal is None or goal.organization_id is None:
+        return None
+    return goal.organization.type
+
+
+def _push_status_change(order: Order) -> None:
+    """Saytdagi kabi: ariza yuboruvchisiga web-push (holat o'zgarganda).
+    Holat allaqachon bazaga yozilgan, shuning uchun push xatosi natijani buzmasligi kerak."""
+    from main.push_views import notify_order_status_change
+    try:
+        notify_order_status_change(order)
+    except Exception:
+        logger.exception("notify_order_status_change xatosi (order=%s)", order.pk)
 
 
 # ---------------------------------------------------------------------------
@@ -173,8 +198,11 @@ def rate_order(employee: Employee, order_id: int, rating: int) -> OrderResult:
 
     try:
         with transaction.atomic():
+            # Baholash faqat ATM (worker) arizasi uchun. Ombor arizasi
+            # tasdiqlash (approved) bosqichidan o'tishi shart, saytdagi kabi.
             order = _locking_qs(Order.objects).filter(
                 pk=order_id, status="finished", sender=employee,
+                goal__organization__type="worker",
             ).first()
             if not order:
                 return OrderResult(False, "Ariza topilmadi yoki allaqachon baholangan")
@@ -186,13 +214,14 @@ def rate_order(employee: Employee, order_id: int, rating: int) -> OrderResult:
         logger.exception("DatabaseError yuz berdi (order_id=%s)", order_id)
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
 
+    _push_status_change(order)
     return OrderResult(True, "Rahmat! Bahoyingiz qabul qilindi", order)
 
 
 def list_pending_ratings(employee: Employee, limit: int = 10):
     return list(
         Order.objects
-        .filter(sender=employee, status="finished")
+        .filter(sender=employee, status="finished", goal__organization__type="worker")
         .select_related("goal", "receiver")
         .order_by("-id")[:limit]
     )
@@ -212,6 +241,9 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
     order = Order.objects.filter(pk=order_id).first()
     if not order:
         return OrderResult(False, "Ariza topilmadi")
+
+    if is_worker_employee(employee):
+        return OrderResult(False, "Sizga ruxsat yo'q")
 
     if order.sender_id != employee.id:
         return OrderResult(False, "Ariza sizga tegishli emas")
@@ -260,6 +292,7 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
         )
         return OrderResult(False, "Kutilmagan xatolik yuz berdi. Qayta urinib ko'ring")
 
+    _push_status_change(order)
     return OrderResult(True, "Qabul qilinganligi belgilandi va hujjat yaratildi. Rahmat!", order)
 
 
@@ -320,9 +353,27 @@ def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int 
 
 
 def accept_order(employee: Employee, order_id: int) -> OrderResult:
-    """Yangi arizani qabul qiladi: receiver=employee, status -> process."""
+    """Yangi arizani qabul qiladi: receiver=employee, status -> process.
+
+    Saytdagi order_accepted (ATM) va order_accepted_barn (ombor) bilan bir xil
+    shartlar: ariza turi, tashkilot va yuboruvchi hududi tekshiriladi."""
     if not can_execute_orders(employee):
         return OrderResult(False, "Sizda arizalarni bajarish huquqi yo'q")
+
+    def _eligible(o: Order) -> bool:
+        org_type = _goal_org_type(o)
+        if o.sender_id is None or o.sender.region_id != employee.region_id:
+            return False
+        if o.goal_id not in _allowed_goal_ids(employee):
+            return False
+        if org_type == "worker":
+            return not is_client_employee(employee)
+        if org_type == "client":
+            return (
+                not is_worker_employee(employee)
+                and o.goal.organization_id == employee.organization_id
+            )
+        return False
 
     try:
         with transaction.atomic():
@@ -332,21 +383,39 @@ def accept_order(employee: Employee, order_id: int) -> OrderResult:
             if not order:
                 return OrderResult(False, "Ariza topilmadi yoki allaqachon qabul qilingan")
 
-            if order.goal_id not in _allowed_goal_ids(employee):
-                return OrderResult(False, "Sizga ushbu turdagi arizani qabul qilish ruxsat etilmagan")
+            if not _eligible(order):
+                return OrderResult(False, "Bu arizani qabul qilish huquqingiz yo'q")
 
             order.receiver = employee
             order.status = "process"
             order.save(update_fields=["receiver", "status"])
+
+            order_kind = "ATMga yuborgan" if _goal_org_type(order) == "worker" else "Omborxonaga yuborilgan"
     except DatabaseError:
         logger.exception("DatabaseError yuz berdi (order_id=%s)", order_id)
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
+
+    _push_status_change(order)
+
+    if order.sender_id and order.sender.telegram_chat:
+        send_telegram_message(
+            order.sender.telegram_chat,
+            f"<b>🔔 Yangi bildirishnoma</b>\n\n"
+            f"✅ {order_kind} #{order.id} - arizangiz qabul qilindi.\n"
+            f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
+            f"📅 <b>Vaqt:</b> {_now_str()}",
+        )
 
     return OrderResult(True, "Ariza qabul qilindi", order)
 
 
 def finish_order(employee: Employee, order_id: int) -> OrderResult:
-    """Qabul qilingan arizani yakunlaydi: status -> finished."""
+    """Qabul qilingan arizani yakunlaydi: status -> finished.
+
+    Saytdagi order_material_post (ATM) va order_material_barn (ombor) mantiqi:
+    ATM - texnika/material ixtiyoriy; ombor - tashkilot tekshiriladi va
+    yakunlash matni yoziladi. Materiali bor ombor arizasida berilgan sonlar
+    (given) va ombor qoldig'i faqat saytda kiritiladi."""
     try:
         with transaction.atomic():
 
@@ -356,13 +425,49 @@ def finish_order(employee: Employee, order_id: int) -> OrderResult:
             if not order:
                 return OrderResult(False, "Ariza topilmadi yoki allaqachon yakunlangan")
 
-            order.status = "finished"
-            order.save(update_fields=["status"])
+            update_fields = ["status"]
+            if _goal_org_type(order) == "client":
+                if is_worker_employee(employee) or order.goal.organization_id != employee.organization_id:
+                    return OrderResult(False, "Bu ariza sizning tashkilotingizga tegishli emas")
+                if order.materials.exists():
+                    return OrderResult(
+                        False,
+                        "Bu arizada materiallar bor. Materiallar sonini kiritish uchun saytdan yakunlang",
+                    )
+                order.message_receiver = WAREHOUSE_FINISH_MESSAGE
+                update_fields.append("message_receiver")
+            elif is_client_employee(employee):
+                return OrderResult(False, "Sizga ruxsat yo'q")
 
-            order = Order.objects.select_related("sender", "goal").get(pk=order.pk)
+            order.status = "finished"
+            order.save(update_fields=update_fields)
+
+            order = Order.objects.select_related("sender", "goal", "goal__organization").get(pk=order.pk)
     except DatabaseError:
         logger.exception("finish_order DatabaseError (order_id=%s)", order_id)
         return OrderResult(False, "Xatolik, qayta urinib ko'ring")
+
+    _push_status_change(order)
+
+    if order.sender_id and order.sender.telegram_chat:
+        if _goal_org_type(order) == "client":
+            send_telegram_message(
+                order.sender.telegram_chat,
+                f"<b>🔔 Yangi bildirishnoma</b>\n\n"
+                f"✅ Omborxonaga yuborilgan #{order.id} - arizangiz bajarildi.\n"
+                f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
+                f"📅 <b>Vaqt:</b> {_now_str()}",
+            )
+        else:
+            send_telegram_message(
+                order.sender.telegram_chat,
+                f"<b>🔔 Yangi bildirishnoma</b>\n\n"
+                f"✅ ATMga yuborgan #{order.id} - arizangiz bajarildi.\n"
+                f"👤 <b>Bajaruvchi:</b> {employee.full_name}\n\n"
+                f"📅 <b>Vaqt:</b> {_now_str()}\n\n"
+                f"⭐ <b>Iltimos, xizmat sifatini baholang:</b>",
+                reply_markup=rating_markup(order.id),
+            )
 
     return OrderResult(True, "Ish muvaffaqiyatli yakunlandi!", order)
 

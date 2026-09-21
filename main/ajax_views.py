@@ -429,21 +429,41 @@ def ordermaterial_delete(request, pk):
     if not employee:
         return JsonResponse({"status": "no_employee"}, status=403)
 
-    om = get_object_or_404(
-        OrderMaterial.objects.select_related("material", "order"),
-        pk=pk
-    )
+    om = get_object_or_404(OrderMaterial.objects.select_for_update(of=("self",)), pk=pk)
 
-    order = om.order
-    if order is None:
+    if om.order_id is None:
         return JsonResponse({"status": "error", "message": "Ariza topilmadi"}, status=400)
 
-    if order.receiver != employee:
+    order = (
+        Order.objects
+        .select_for_update(of=("self",))
+        .select_related("goal__organization")
+        .get(pk=om.order_id)
+    )
+
+    if order.receiver_id != employee.id:
         raise PermissionDenied("Sizda bu materialni o'chirish huquqi yo'q")
 
-    material = om.material
-    material.number = (material.number or 0) + (om.number or 0)
-    material.save(update_fields=["number"])
+    if order.status not in ("process", "finished"):
+        return JsonResponse(
+            {"status": "error", "message": "Bu arizadagi materialni o'chirib bo'lmaydi"},
+            status=400,
+        )
+
+    # Omborga faqat haqiqatda AYIRIB OLINGAN miqdor qaytariladi:
+    # ATM arizasida material yakunlashda `number` bo'yicha ayriladi,
+    # ombor arizasida esa faqat berilgan (`given`) miqdor ayriladi
+    # (hali berilmagan bo'lsa - hech narsa ayrilmagan).
+    org_type = order.goal.organization.type if order.goal_id and order.goal.organization_id else None
+    if org_type == "client":
+        restore = om.given or 0
+    else:
+        restore = om.number or 0
+
+    if restore and om.material_id:
+        material = Material.objects.select_for_update().get(pk=om.material_id)
+        material.number = (material.number or 0) + restore
+        material.save(update_fields=["number"])
 
     om.delete()
     return JsonResponse({"status": "ok"})

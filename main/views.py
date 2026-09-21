@@ -2129,8 +2129,13 @@ def mat_info(request):
         start_dt = make_aware(datetime.combine(date1, time.min))
         end_dt = make_aware(datetime.combine(date2, time.max))
 
-        movements_qs = MaterialMovement.objects.exclude(status='deleted').filter(
-            material__employee_id=employee_id
+        # Biriktirilmagan "savat" qatorlari (assigned, employee=None) hali
+        # haqiqiy harakat emas - hisobotga kirmaydi.
+        movements_qs = (
+            MaterialMovement.objects
+            .exclude(status='deleted')
+            .exclude(status='assigned', employee__isnull=True)
+            .filter(material__employee_id=employee_id)
         )
         movements_qs = movements_qs.filter(date_creat__gte=start_dt, date_creat__lte=end_dt)
 
@@ -2351,6 +2356,14 @@ def mat_arxiv_post(request):
         if outcome <= 0:
             continue
 
+        if not mat.is_active:
+            messages.error(request, f"'{mat.name}' o'chirilgan, biriktirib bo'lmaydi")
+            continue
+
+        if mat.employee_id and mat.employee_id == get_employee.id:
+            messages.error(request, f"'{mat.name}' allaqachon shu xodimga tegishli")
+            continue
+
         if outcome > mat.number:
             messages.error(
                 request,
@@ -2371,7 +2384,11 @@ def mat_arxiv_post(request):
 
         if dst:
             dst.number = (dst.number or 0) + outcome
-            dst.save(update_fields=["number"])
+            if (dst.price in [None, 0, "0"]) and mat.price not in [None, 0, "0"]:
+                dst.price = mat.price
+            if not dst.unit_id and mat.unit_id:
+                dst.unit = mat.unit
+            dst.save(update_fields=["number", "price", "unit"])
             dst_material = dst
         else:
             dst_material = Material.objects.create(
@@ -2382,6 +2399,7 @@ def mat_arxiv_post(request):
                 number=outcome,
                 unit=mat.unit,
                 price=mat.price,
+                year=mat.year,
             )
 
         movement.employee = employee
