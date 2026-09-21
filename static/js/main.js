@@ -119,7 +119,7 @@
   /**
    * Initiate TinyMCE Editor
    */
-  const useDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const useDarkMode = document.documentElement.getAttribute('data-theme') === 'dark';
   const isSmallScreen = window.matchMedia('(max-width: 1023.5px)').matches;
 
   if (typeof tinymce !== 'undefined' && select('textarea.tinymce-editor')) tinymce.init({
@@ -212,7 +212,7 @@
     toolbar_mode: 'sliding',
     contextmenu: 'link image table',
     skin: useDarkMode ? 'oxide-dark' : 'oxide',
-    content_css: useDarkMode ? 'dark' : 'default',
+    content_css: 'default',
     content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:16px }'
   });
 

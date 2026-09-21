@@ -105,7 +105,7 @@
                             <th>Imzolovchi</th>
                             <th style="width: 170px;">Yuborilgan sana</th>
                             <th style="width: 120px;">Fayllar</th>
-                            <th style="width: 140px;">Holati</th>
+                            <th style="width: 190px;">Holati</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -125,13 +125,13 @@
 
                             <td>
                                 {% if d.file and d.file.url %}
-                                    <a href="{{ d.file.url }}" target="_blank">📄 Ko‘rish</a>
+                                    <a href="{{ d.file.url }}" target="_blank" rel="noopener" class="file-link"><i class="bi bi-file-earmark-pdf"></i> Ko‘rish</a>
                                 {% else %}
                                     —
                                 {% endif %}
                             </td>
 
-                            <td>
+                            <td class="text-nowrap">
                                 {% if d.receiver %}
                                     {% if d.status_receiver == 'rejected' or d.status_sender == 'rejected' %}
                                         <span class="btn badge bg-danger" data-bs-toggle="modal" data-bs-target="#modalcondition-r{{ d.id }}">
@@ -163,7 +163,7 @@
                                 {% endif %}
 
                                 {% if perms.main.change_deed %}
-                                    <span id="userEditIcon-{{ d.id }}">
+                                    <span id="userEditIcon-{{ d.id }}" class="ms-1 align-middle">
                                         {% if d.user_edit %}
                                             <i class="bi bi-check-lg text-success"></i>
                                         {% else %}
@@ -350,7 +350,7 @@
                     {% empty %}
                         <tr>
                             <td colspan="7" class="text-center text-muted py-4">
-                                Ma'lumot topilmadi
+                                <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                             </td>
                         </tr>
                     {% endfor %}

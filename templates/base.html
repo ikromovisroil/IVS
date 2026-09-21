@@ -4,6 +4,13 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <script>
+    (function () {
+      var t = "light";
+      try { if (localStorage.getItem("theme") === "dark") t = "dark"; } catch (e) {}
+      document.documentElement.setAttribute("data-theme", t);
+    })();
+  </script>
 
   {% block title %}
   {% endblock title %}
@@ -29,6 +36,7 @@
   <link href="{% static 'css/style.css' %}" rel="stylesheet">
   <link href="{% static 'css/order-modal.css' %}" rel="stylesheet">
   <link href="{% static 'css/select2.css' %}" rel="stylesheet">
+  <link href="{% static 'css/theme.css' %}" rel="stylesheet">
 </head>
 
 <body>
@@ -46,6 +54,12 @@
 
     <nav class="header-nav ms-auto">
       <ul class="d-flex align-items-center">
+        <li class="nav-item">
+          <button type="button" id="themeToggle" class="theme-toggle" aria-pressed="false"
+                  aria-label="Kunduzgi / tungi rejim" title="Tungi rejimga o'tish">
+            <i class="bi bi-moon-stars-fill"></i><i class="bi bi-sun-fill"></i>
+          </button>
+        </li>
         <li class="nav-item">
           <a class="nav-link nav-icon" href="https://t.me/report_yatm_bot" target="_blank" rel="noopener noreferrer" title="Telegram bot">
             <i class="bi bi-telegram"></i>
@@ -817,6 +831,29 @@
 
 <script src="{% static 'js/main.js' %}"></script>
 <script src="{% static 'js/select2.js' %}"></script>
+<script>
+(function () {
+  var root = document.documentElement, btn = document.getElementById("themeToggle");
+  if (!btn) return;
+  function sync() {
+    var dark = root.getAttribute("data-theme") === "dark";
+    btn.setAttribute("aria-pressed", dark ? "true" : "false");
+    btn.title = dark ? "Kunduzgi rejimga o'tish" : "Tungi rejimga o'tish";
+  }
+  sync();
+  btn.addEventListener("click", function () {
+    var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduce) {
+      root.classList.add("theme-anim");
+      setTimeout(function () { root.classList.remove("theme-anim"); }, 350);
+    }
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("theme", next); } catch (e) {}
+    sync();
+  });
+})();
+</script>
 
 {% block js %}{% endblock js %}
 

@@ -24,8 +24,9 @@
       display:flex;
       align-items:center;
       justify-content:center;
-      background: radial-gradient(1200px 500px at 50% 10%, rgba(255,255,255,0.08), transparent 60%),
-                  linear-gradient(135deg,#0e1f24,#203a43 45%,#2c5364);
+      background: radial-gradient(700px 500px at 12% 8%, rgba(34,184,255,.55), transparent 60%),
+                  radial-gradient(700px 500px at 92% 92%, rgba(236,72,153,.45), transparent 60%),
+                  linear-gradient(135deg,#3527d6,#6a3df0 50%,#2f7bf5);
       padding:24px;
     }
 
@@ -36,15 +37,17 @@
       grid-template-columns: 1fr 1.1fr;
       border-radius:24px;
       overflow:hidden;
-      box-shadow: 0 25px 80px rgba(0,0,0,.45);
-      background: rgba(255,255,255,0.06);
+      box-shadow: 0 30px 90px rgba(20,10,90,.5);
+      background: rgba(255,255,255,0.10);
       backdrop-filter: blur(14px);
-      border: 1px solid rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.25);
+      animation: rise .6s ease backwards;
     }
+    @keyframes rise{from{opacity:0;transform:translateY(18px) scale(.985)}to{opacity:1;transform:none}}
 
     /* LEFT */
     .left{
-      background: rgba(14,31,36,0.55);
+      background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.04));
       padding:64px 64px;
       display:inline-flex;
       flex-direction:column;
@@ -57,10 +60,11 @@
       font-size:clamp(26px, 4vw, 44px);
       line-height:1.05;
       letter-spacing:-0.5px;
-      font-weight:700;
+      font-weight:800;
+      text-shadow: 0 4px 24px rgba(20,10,90,.35);
     }
     .subtitle{
-      color:rgba(255,255,255,0.70);
+      color:rgba(255,255,255,0.88);
       font-size:clamp(14px, 2vw, 16px);
       line-height:1.5;
       max-width:420px;
@@ -75,22 +79,23 @@
       padding:16px 18px;
       border-radius:999px;
       background:#fff;
-      color:#1c3c47;
+      color:#2a2f6e;
       text-decoration:none;
-      font-weight:700;
-      box-shadow: 0 12px 30px rgba(0,0,0,.28);
+      font-weight:800;
+      box-shadow: 0 14px 34px rgba(20,10,90,.35);
       transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
     }
     .btn:hover{
       transform: translateY(-2px);
-      box-shadow: 0 18px 36px rgba(0,0,0,.35);
-      background:#f4f7f9;
+      box-shadow: 0 20px 44px rgba(20,10,90,.45), 0 0 0 4px rgba(255,255,255,.25);
+      background:#fff;
     }
     .btn .icon{
       width:40px;height:40px;border-radius:12px;
       flex-shrink:0;
       display:grid;place-items:center;
-      background: rgba(44,83,100,0.10);
+      background: linear-gradient(135deg,#4c5cff,#8a4dff);
+      filter:saturate(1.1);
       font-size:18px;
     }
     .btn .text{
@@ -108,7 +113,7 @@
 
     /* RIGHT */
     .right{
-      background: #ffffff;
+      background: linear-gradient(180deg,#ffffff,#f3f4ff);
       padding:64px 64px;
       display:flex;
       flex-direction:column;
@@ -121,10 +126,10 @@
 
     /* LOGO oq bo'lsa ham ko'rinsin */
     .logo-box{
-      background: #2c5364;
+      background: linear-gradient(135deg,#3527d6,#7c3aed);
       padding: clamp(14px, 3vw, 22px) clamp(16px, 3.5vw, 26px);
-      border-radius: 18px;
-      box-shadow: 0 12px 30px rgba(0,0,0,.18);
+      border-radius: 20px;
+      box-shadow: 0 16px 36px rgba(76,60,240,.35);
       display:inline-flex;
       align-items:center;
       justify-content:center;
@@ -139,7 +144,7 @@
     }
 
     .right h3{
-      color:#203a43;
+      color:#1c1a5c;
       font-size:clamp(16px, 2.4vw, 22px);
       font-weight:800;
       line-height:1.35;
@@ -148,10 +153,10 @@
 
     .contact{
       margin-top:14px;
-      color:#6b7280;
+      color:#6b6f9c;
       font-size:clamp(13px, 1.8vw, 15px);
     }
-    .contact strong{color:#374151;}
+    .contact strong{color:#3527d6;}
 
     /* footer tiny */
     .hint{
@@ -160,7 +165,7 @@
       left:0; right:0;
       text-align:center;
       font-size:12px;
-      color:#9aa3ad;
+      color:#9aa0c8;
     }
 
     /* RESPONSIVE - planshet va undan kichik */

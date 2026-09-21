@@ -162,9 +162,7 @@
 
                                             <td>
                                                 {% if d.file and d.file.url %}
-                                                    <a href="{{ d.file.url }}" target="_blank">
-                                                        📄 Ko‘rish
-                                                    </a>
+                                                    <a href="{{ d.file.url }}" target="_blank" rel="noopener" class="file-link"><i class="bi bi-file-earmark-pdf"></i> Ko‘rish</a>
                                                 {% else %}
                                                     —
                                                 {% endif %}
@@ -382,7 +380,7 @@
                                     {% empty %}
                                         <tr>
                                             <td colspan="8" class="text-center text-muted py-4">
-                                                Ma'lumot topilmadi
+                                                <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                                             </td>
                                         </tr>
                                     {% endfor %}

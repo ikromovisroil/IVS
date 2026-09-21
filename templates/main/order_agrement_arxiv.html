@@ -323,7 +323,7 @@
                       <td>
                         {% for d in o.order.all %}
                             {% if d.file %}
-                            <a href="{{ d.file.url }}" target="_blank">📄 Ko'rish</a><br>
+                            <a href="{{ d.file.url }}" target="_blank" rel="noopener" class="file-link"><i class="bi bi-file-earmark-pdf"></i> Ko‘rish</a><br>
                             {% endif %}
                         {% endfor %}
                       </td>
