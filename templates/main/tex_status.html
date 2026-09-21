@@ -112,7 +112,7 @@
 {{ bar_labels|json_script:"bar-labels" }}
 {{ bar_values|json_script:"bar-values" }}
 
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+<script src="{% static 'vendor/apexcharts/apexcharts.min.js' %}"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {

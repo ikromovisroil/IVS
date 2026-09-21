@@ -8,6 +8,8 @@
 {% block css %}
 {% endblock css %}
 
+{% block editor_js %}<script src="{% static 'vendor/tinymce/tinymce.min.js' %}"></script>{% endblock editor_js %}
+
 {% block content %}
 
 <main id="main" class="main">
@@ -806,7 +808,7 @@ $(function () {
   const initialOrg         = '{{ selected_org|default:"" }}';
   const initialDep         = '{{ selected_dep|default:"" }}';
   const initialSender      = '{{ selected_sender|default:"" }}';
-  const initialConsentList = {{ selected_employees|default:"[]"|safe }};
+  const initialConsentList = [];
 
   if (initialOrg) {
     $('#organization').val(initialOrg);
