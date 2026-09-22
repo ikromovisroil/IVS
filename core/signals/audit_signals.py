@@ -2,12 +2,17 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from core.models import AuditLog
+from core.request_context import get_current_employee, mark_signal_logged
 from main.models import Order, Deed
 
 
 def write_log(instance, action):
     try:
-        employee = (
+        # Avval - haqiqatda so'rovni bajarayotgan xodim (AuditMiddleware
+        # orqali o'rnatiladi). Faqat request tashqarisida (masalan
+        # management command/shell) chaqirilganda, eski taxmin usuliga
+        # qaytamiz.
+        employee = get_current_employee() or (
             getattr(instance, "sender", None)
             or getattr(instance, "receiver", None)
             or getattr(instance, "employee", None)
@@ -22,6 +27,7 @@ def write_log(instance, action):
             method="",
             description=f"{action} {instance.__class__.__name__} #{instance.pk}",
         )
+        mark_signal_logged()
     except Exception:
         pass
 
