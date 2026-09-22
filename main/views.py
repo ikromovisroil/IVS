@@ -2133,7 +2133,7 @@ from datetime import datetime, time
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.all_material_employee", raise_exception=True)
+@permission_required("main.view_material", raise_exception=True)
 def mat_info(request):
     employee = getattr(request.user, "employee", None)
     if not employee:

@@ -486,6 +486,11 @@ def ordermaterial_delete(request, pk):
         material = Material.objects.select_for_update().get(pk=om.material_id)
         material.number = (material.number or 0) + restore
         material.save(update_fields=["number"])
+        MaterialMovement.objects.create(
+            material=material, user=order.sender, employee=material.employee,
+            status="order", income=restore,
+            body=f"Ariza #{order.id} - material o'chirildi, omborga qaytarildi",
+        )
 
     om.delete()
     return JsonResponse({"status": "ok"})
