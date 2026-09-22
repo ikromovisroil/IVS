@@ -44,7 +44,7 @@
               <!-- RECEIVER -->
               {% if receiver %}
               <div class="col-12">
-                <label for="receiver" class="form-label">Qabul qiluvchi:</label>
+                <label for="receiver" class="form-label">Imzolovchi xodim:</label>
                 <select id="receiver" name="receiver" class="form-select" {% if deed.receiver_id %}required{% endif %}>
                   {% for emp in receiver %}
                     <option value="{{ emp.id }}" {% if deed.receiver_id == emp.id %}selected{% endif %}>
