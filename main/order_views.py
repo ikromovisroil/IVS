@@ -602,7 +602,7 @@ def order_material_post(request):
                     Material.objects.filter(pk=mat.pk).update(number=F("number") - n)
                     movements.append(MaterialMovement(
                         material=mat, user=employee, employee=order.sender,
-                        status="assigned", outcome=n,
+                        status="order", outcome=n,
                         body=f"Ariza #{order.id} orqali berildi",
                     ))
 
@@ -1414,13 +1414,13 @@ def order_material_barn(request):
                 if delta > 0:
                     movements.append(MaterialMovement(
                         material=material, user=employee, employee=order.sender,
-                        status="assigned", outcome=delta,
+                        status="order", outcome=delta,
                         body=f"Ariza #{order.id} orqali berildi",
                     ))
                 elif delta < 0:
                     movements.append(MaterialMovement(
                         material=material, user=order.sender, employee=material.employee,
-                        status="assigned", income=-delta,
+                        status="order", income=-delta,
                         body=f"Ariza #{order.id} - ortiqcha qaytarildi",
                     ))
 
@@ -1626,7 +1626,7 @@ def order_agrement_material(request):
                             changed_materials.append(mat)
                             movements.append(MaterialMovement(
                                 material=mat, user=order.sender, employee=mat.employee,
-                                status="assigned", income=old_given,
+                                status="order", income=old_given,
                                 body=f"Ariza #{order.id} rad etildi - qaytarildi",
                             ))
                         om.given = 0
@@ -1704,13 +1704,13 @@ def order_agrement_material(request):
                     if delta > 0:
                         movements.append(MaterialMovement(
                             material=material, user=order.receiver, employee=order.sender,
-                            status="assigned", outcome=delta,
+                            status="order", outcome=delta,
                             body=f"Ariza #{order.id} tasdiqlandi",
                         ))
                     elif delta < 0:
                         movements.append(MaterialMovement(
                             material=material, user=order.sender, employee=material.employee,
-                            status="assigned", income=-delta,
+                            status="order", income=-delta,
                             body=f"Ariza #{order.id} - ortiqcha qaytarildi",
                         ))
 

@@ -672,6 +672,7 @@ class MaterialMovement(models.Model):
         ('edited', 'Taxrirlandi'),
         ('deleted', "O'chirildi"),
         ('assigned', 'Biriktirildi'),
+        ('order', "Ariza orqali berildi"),
     ]
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True, related_name='movement_created')
     material = models.ForeignKey(Material, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
