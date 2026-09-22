@@ -3768,6 +3768,7 @@ PERM_CODENAMES = {
     "shop_employee": "main.shop_employee",
     "status_employee": "main.status_employee",
     "permission_employee": "main.permission_employee",   # YANGI
+    "report_employee": "main.report_employee",
     # Xodimlar
     "add_employee": "main.add_employee",
     "view_employee": "main.view_employee",
@@ -3820,6 +3821,7 @@ def _visible_perm_fields(target_employee, current_employee):
         visible.discard("shop_employee")
         visible.discard("status_employee")
         visible.discard("permission_employee")   # YANGI
+        visible.discard("report_employee")
 
     return visible
 
@@ -4063,24 +4065,42 @@ def employee_permission(request):
             ])
 
         Liable.objects.filter(employee=target_employee).delete()
-        if checked_fields.get("view_technics") and category_ids:
-            categories_by_id = {
-                str(cat.id): cat
-                for cat in Category.objects.filter(
-                    id__in=category_ids
-                ).select_related("contract")
-            }
-            Liable.objects.bulk_create([
-                Liable(
-                    employee=target_employee,
-                    category_id=cid,
-                    contract=(
-                        categories_by_id[cid].contract
-                        if cid in categories_by_id else None
-                    ),
-                )
-                for cid in category_ids
-            ])
+        if checked_fields.get("report_employee"):
+            liable_rows = []
+
+            if category_ids:
+                categories_by_id = {
+                    str(cat.id): cat
+                    for cat in Category.objects.filter(
+                        id__in=category_ids
+                    ).select_related("contract")
+                }
+                liable_rows += [
+                    Liable(
+                        employee=target_employee,
+                        category_id=cid,
+                        contract=(
+                            categories_by_id[cid].contract
+                            if cid in categories_by_id else None
+                        ),
+                    )
+                    for cid in category_ids
+                ]
+
+            # Hech qanday kategoriyaga bog'lanmagan shartnomalar ham
+            # ro'yxatda ko'rinishi uchun - category=None bilan alohida qator.
+            categoryless_contract_ids = Contract.objects.exclude(
+                id__in=Category.objects.filter(
+                    contract__isnull=False
+                ).values("contract_id")
+            ).values_list("id", flat=True)
+            liable_rows += [
+                Liable(employee=target_employee, category=None, contract_id=cid)
+                for cid in categoryless_contract_ids
+            ]
+
+            if liable_rows:
+                Liable.objects.bulk_create(liable_rows)
 
         if target_employee.organization_id and target_employee.organization.type != "worker":
             MaterialEmployee.objects.filter(employee=target_employee).delete()
