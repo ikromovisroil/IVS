@@ -22,7 +22,7 @@ from .html_pdf import (
 )
 from .models import (
     Order, Goal, Employee, Organization, OrderGoal, OrderMaterial,
-    Material, MaterialEmployee, MaterialUser, Technics, Deed, DeedConsent,
+    Material, MaterialEmployee, MaterialUser, MaterialMovement, Technics, Deed, DeedConsent,
 )
 from .push_views import (
     notify_order_status_change, notify_eligible_employees_new_order, notify_deed_sender,
@@ -595,12 +595,19 @@ def order_material_post(request):
                         return redirect(back_url)
 
                 order_materials = []
+                movements = []
                 for m_id, n in pairs:
                     mat = materials_map[m_id]
                     order_materials.append(OrderMaterial(order=order, material=mat, number=n))
                     Material.objects.filter(pk=mat.pk).update(number=F("number") - n)
+                    movements.append(MaterialMovement(
+                        material=mat, user=employee, employee=order.sender,
+                        status="assigned", outcome=n,
+                        body=f"Ariza #{order.id} orqali berildi",
+                    ))
 
                 OrderMaterial.objects.bulk_create(order_materials)
+                MaterialMovement.objects.bulk_create(movements)
 
             order.status = "finished"
             order.save(update_fields=["status", "technics_id"])
@@ -1366,6 +1373,7 @@ def order_material_barn(request):
 
             ordermaterial_to_update = []
             material_changed_ids = set()
+            movements = []
 
             for om_id, given_value in zip(ordermaterial_ids, givens):
                 om = om_map.get(str(om_id))
@@ -1403,6 +1411,19 @@ def order_material_barn(request):
                 om.given = given
                 ordermaterial_to_update.append(om)
 
+                if delta > 0:
+                    movements.append(MaterialMovement(
+                        material=material, user=employee, employee=order.sender,
+                        status="assigned", outcome=delta,
+                        body=f"Ariza #{order.id} orqali berildi",
+                    ))
+                elif delta < 0:
+                    movements.append(MaterialMovement(
+                        material=material, user=order.sender, employee=material.employee,
+                        status="assigned", income=-delta,
+                        body=f"Ariza #{order.id} - ortiqcha qaytarildi",
+                    ))
+
             for mid in material_changed_ids:
                 if material_map[mid].number < 0:
                     messages.error(request, f"{material_map[mid].name} uchun qoldiq manfiy bo'lib qoldi")
@@ -1414,6 +1435,9 @@ def order_material_barn(request):
             changed_materials = [material_map[mid] for mid in material_changed_ids]
             if changed_materials:
                 Material.objects.bulk_update(changed_materials, ["number"])
+
+            if movements:
+                MaterialMovement.objects.bulk_create(movements)
 
             order.status = "finished"
             order.message_receiver = body
@@ -1591,6 +1615,7 @@ def order_agrement_material(request):
 
                 changed_materials = []
                 changed_order_materials = []
+                movements = []
 
                 for om in order_materials:
                     old_given = om.given or 0
@@ -1599,6 +1624,11 @@ def order_agrement_material(request):
                         if mat:
                             mat.number = (mat.number or 0) + old_given
                             changed_materials.append(mat)
+                            movements.append(MaterialMovement(
+                                material=mat, user=order.sender, employee=mat.employee,
+                                status="assigned", income=old_given,
+                                body=f"Ariza #{order.id} rad etildi - qaytarildi",
+                            ))
                         om.given = 0
                         changed_order_materials.append(om)
 
@@ -1606,6 +1636,8 @@ def order_agrement_material(request):
                     Material.objects.bulk_update(changed_materials, ["number"])
                 if changed_order_materials:
                     OrderMaterial.objects.bulk_update(changed_order_materials, ["given"])
+                if movements:
+                    MaterialMovement.objects.bulk_create(movements)
 
                 order.status = "rejected"
                 order.user = employee
@@ -1638,6 +1670,7 @@ def order_agrement_material(request):
 
                 ordermaterial_to_update = []
                 material_changed_ids = set()
+                movements = []
 
                 for om_id, given_value in zip(ordermaterial_ids, givens):
                     om = om_map.get(str(om_id))
@@ -1668,6 +1701,19 @@ def order_agrement_material(request):
                     om.given = given
                     ordermaterial_to_update.append(om)
 
+                    if delta > 0:
+                        movements.append(MaterialMovement(
+                            material=material, user=order.receiver, employee=order.sender,
+                            status="assigned", outcome=delta,
+                            body=f"Ariza #{order.id} tasdiqlandi",
+                        ))
+                    elif delta < 0:
+                        movements.append(MaterialMovement(
+                            material=material, user=order.sender, employee=material.employee,
+                            status="assigned", income=-delta,
+                            body=f"Ariza #{order.id} - ortiqcha qaytarildi",
+                        ))
+
                 for mid in material_changed_ids:
                     if material_map[mid].number < 0:
                         messages.error(request, f"{material_map[mid].name} uchun qoldiq manfiy bo'lib qoldi")
@@ -1679,6 +1725,9 @@ def order_agrement_material(request):
                 changed_materials = [material_map[mid] for mid in material_changed_ids]
                 if changed_materials:
                     Material.objects.bulk_update(changed_materials, ["number"])
+
+                if movements:
+                    MaterialMovement.objects.bulk_create(movements)
 
                 order.status = "approved"
                 order.user = employee

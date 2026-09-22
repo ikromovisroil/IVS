@@ -20,7 +20,9 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
-from django.db.models import Avg, Count, Exists, ExpressionWrapper, F, OuterRef, Prefetch, Q, Sum
+from django.db.models import (
+    Avg, Count, Exists, ExpressionWrapper, F, OuterRef, Prefetch, Q, Sum, Value,
+)
 from django.db.models.functions import Coalesce
 from django.http import FileResponse, Http404, HttpRequest
 from django.shortcuts import get_object_or_404, redirect, render
@@ -1808,21 +1810,6 @@ def material_create(request):
         material.organization = employee.organization
         material.employee = employee
         material.save()
-
-        MaterialMovement.objects.create(
-            material=material,
-            user=employee,
-            employee=employee,
-            status='created',
-            body=(
-                f"Tashkilot: {material.organization}\n"
-                f"Birligi: {material.unit.name if material.unit else '—'}\n"
-                f"Nomi: {material.name}\n"
-                f"Soni: {material.number}\n"
-                f"Kodi: {material.code or '—'}\n"
-                f"Narxi: {material.price or '—'}"
-            )
-        )
         messages.success(request, "Material qo'shildi")
     else:
         messages.error(request, "Ma'lumotlarda xatolik bor!")
@@ -1938,16 +1925,23 @@ def material_update(request, pk):
         new_number = new["number"]
         diff = new_number - old_number
 
-        income = diff if diff > 0 else None
-        outcome = -diff if diff < 0 else None
+        if diff > 0:
+            movement_user, movement_employee = None, mat.employee
+            movement_income, movement_outcome = diff, None
+        elif diff < 0:
+            movement_user, movement_employee = mat.employee, None
+            movement_income, movement_outcome = None, -diff
+        else:
+            movement_user, movement_employee = None, None
+            movement_income, movement_outcome = None, None
 
         MaterialMovement.objects.create(
             material=mat,
-            user=employee,
-            employee=mat.employee,
+            user=movement_user,
+            employee=movement_employee,
             status='edited',
-            income=income,
-            outcome=outcome,
+            income=movement_income,
+            outcome=movement_outcome,
             body="\n".join(changes)
         )
 
@@ -2033,8 +2027,9 @@ def material_attach(request):
             dst.price = src.price
         if not dst.unit_id and src.unit_id:
             dst.unit = src.unit
+        dst.is_active = True
 
-        dst.save(update_fields=["number", "price", "unit"])
+        dst.save(update_fields=["number", "price", "unit", "is_active"])
         dst_material = dst
     else:
         dst_qty_before = 0
@@ -2052,12 +2047,13 @@ def material_attach(request):
     src.number = src_qty - give_number_int
     src.save(update_fields=["number"])
 
+    giver = src.employee
+
     MaterialMovement.objects.create(
         material=src,
-        user=employee,
-        employee=src.employee,
+        user=giver,
+        employee=emp,
         status='assigned',
-        income=None,
         outcome=give_number_int,
         body=(
             f"Berildi: {employee}\n"
@@ -2070,11 +2066,10 @@ def material_attach(request):
 
     MaterialMovement.objects.create(
         material=dst_material,
-        user=employee,
+        user=giver,
         employee=emp,
         status='assigned',
         income=give_number_int,
-        outcome=None,
         body=(
             f"Qabul qildi: {emp}\n"
             f"Berdi: {employee}\n"
@@ -2105,7 +2100,7 @@ def material_delete(request):
         mat = (
             Material.objects
             .select_for_update(of=("self",))
-            .only("id", "organization_id", "is_active")
+            .only("id", "organization_id", "is_active", "employee", "number")
             .get(pk=int(material_id))
         )
     except (Material.DoesNotExist, TypeError, ValueError):
@@ -2125,9 +2120,10 @@ def material_delete(request):
 
     MaterialMovement.objects.create(
         material=mat,
-        user=employee,
-        employee=mat.employee,
+        user=mat.employee,
+        employee=None,
         status='deleted',
+        outcome=mat.number,
         body=f"Material o'chirildi: {mat.id}"
     )
     messages.success(request, "Material muvaffaqiyatli o'chirildi")
@@ -2171,6 +2167,11 @@ def mat_info(request):
 
         # Biriktirilmagan "savat" qatorlari (assigned, employee=None) hali
         # haqiqiy harakat emas - hisobotga kirmaydi.
+        # Har bir yozuv shu material qatorining o'z yo'nalishiga mos keladi:
+        # "income" - shu qatorga kirim, "outcome" - shu qatordan chiqim.
+        # "user"/"employee" esa har doim "kimdan/kimga" ma'nosida - shu
+        # tufayli bitta real harakatning ikki tarafi (beruvchi va oluvchi
+        # tomonidagi qatorlar) bir xil user/employee'ni ko'rsatadi.
         movements_qs = (
             MaterialMovement.objects
             .exclude(status='deleted')
@@ -2184,18 +2185,6 @@ def mat_info(request):
             for row in movements_qs.values("material").annotate(
                 period_income=Sum("income"),
                 period_outcome=Sum("outcome"),
-            )
-        }
-
-        ordermaterial_qs = OrderMaterial.objects.filter(material__employee_id=employee_id)
-        ordermaterial_qs = ordermaterial_qs.filter(
-            order__date_finished__gte=start_dt, order__date_finished__lte=end_dt
-        )
-
-        order_period_map = {
-            row["material"]: row["period_given"] or 0
-            for row in ordermaterial_qs.values("material").annotate(
-                period_given=Sum(Coalesce(F("given"), F("number")))
             )
         }
 
@@ -2213,21 +2202,6 @@ def mat_info(request):
                 "body": mv.body,
             })
 
-        ordermaterial_detail_qs = ordermaterial_qs.select_related(
-            "order", "order__receiver"
-        ).order_by("order__date_finished")
-
-        for om in ordermaterial_detail_qs:
-            order = om.order
-            movements_by_material.setdefault(om.material_id, []).append({
-                "date": order.date_finished if order else None,
-                "employee": order.receiver if order else None,
-                "income": None,
-                "outcome": om.given if om.given is not None else om.number,
-                "status": "Ariza orqali berildi",
-                "body": f"Ariza #{order.id}" if order else "",
-            })
-
         materials = Material.objects.filter(
             organization=employee.organization,
             is_active=True, employee_id=employee_id
@@ -2238,10 +2212,8 @@ def mat_info(request):
         for m in materials:
             period = period_map.get(m.id, {})
             income = period.get("period_income") or 0
-            outcome = period.get("period_outcome") or 0
-            order_outcome = order_period_map.get(m.id, 0)
+            total_outcome = period.get("period_outcome") or 0
 
-            total_outcome = outcome + order_outcome
             current_count = m.number
             initial_balance = current_count - income + total_outcome
 
@@ -2411,6 +2383,8 @@ def mat_arxiv_post(request):
             )
             continue
 
+        giver = mat.employee
+
         mat.number -= outcome
         mat.save(update_fields=["number"])
 
@@ -2428,7 +2402,8 @@ def mat_arxiv_post(request):
                 dst.price = mat.price
             if not dst.unit_id and mat.unit_id:
                 dst.unit = mat.unit
-            dst.save(update_fields=["number", "price", "unit"])
+            dst.is_active = True
+            dst.save(update_fields=["number", "price", "unit", "is_active"])
             dst_material = dst
         else:
             dst_material = Material.objects.create(
@@ -2442,13 +2417,14 @@ def mat_arxiv_post(request):
                 year=mat.year,
             )
 
-        movement.employee = employee
+        movement.user = giver
+        movement.employee = get_employee
         if body:
             movement.body = body
-        movement.save(update_fields=["employee", "body"])
+        movement.save(update_fields=["user", "employee", "body"])
 
         MaterialMovement.objects.create(
-            user=employee,
+            user=giver,
             employee=get_employee,
             material=dst_material,
             status="assigned",
