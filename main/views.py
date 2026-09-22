@@ -2631,6 +2631,17 @@ def document_post(request):
         messages.error(request, "Hujjat matni bo'sh bo'lmasin")
         return redirect("document_get")
 
+    attachments = request.FILES.getlist("attachments")
+    if len(attachments) > MAX_DEED_ATTACHMENTS:
+        messages.error(request, f"Ilova fayllari {MAX_DEED_ATTACHMENTS} tadan ko'p bo'lmasligi kerak")
+        return redirect("document_get")
+    for att in attachments:
+        try:
+            validate_attachment_extension(att)
+        except ValidationError as e:
+            messages.error(request, f"{att.name}: {' '.join(e.messages)}")
+            return redirect("document_get")
+
     exclude_ids = {sender.id}
     if receiver:
         exclude_ids.add(receiver.id)
@@ -2654,6 +2665,9 @@ def document_post(request):
             if raw_ids:
                 objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
                 DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+            for att in attachments:
+                DeedFiles.objects.create(deed=deed, file=att)
 
             _save_deed_pdf(deed)
 

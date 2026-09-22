@@ -17,7 +17,7 @@
   </div>
 
   <section class="section">
-    <form class="row" action="{% url 'document_post' %}" method="post">
+    <form class="row" action="{% url 'document_post' %}" method="post" enctype="multipart/form-data">
       {% csrf_token %}
 
       <!-- ══════════════════ CHAP PANEL ══════════════════ -->
@@ -129,6 +129,13 @@
                     <option value="{{ emp.id }}">{{ emp.full_name }}</option>
                   {% endfor %}
                 </select>
+              </div>
+
+              <div class="col-12">
+                 <label for="message" class="form-label">Ilovalar:</label>
+                 <input type="file" class="form-control" name="attachments" id="attachments"
+                       multiple accept=".pdf,.doc,.docx,.xls,.xlsx">
+                 <div class="form-text">Ixtiyoriy. Word, Excel yoki PDF; bir nechta fayl tanlash mumkin (10 tagacha, har biri 10 MB gacha).</div>
               </div>
 
               <div class="col-12">
