@@ -537,6 +537,14 @@
                            {% if not emp.has_view_material %}disabled{% endif %}>
                   </div>
                 </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Materiallarni sarflash</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-material-sub" type="checkbox" name="material_service"
+                           {% if emp.has_material_service %}checked{% endif %}
+                           {% if not emp.has_view_material %}disabled{% endif %}>
+                  </div>
+                </div>
               </div>
 
               <!-- ================= XODIMLAR ================= -->

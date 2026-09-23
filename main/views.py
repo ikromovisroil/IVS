@@ -3951,6 +3951,7 @@ PERM_CODENAMES = {
     "add_material": "main.add_material",
     "change_material": "main.change_material",
     "delete_material": "main.delete_material",
+    "material_service": "main.material_service",
     # Maxsus
     "boss_employee": "main.boss_employee",
     "shop_employee": "main.shop_employee",
@@ -3966,7 +3967,7 @@ PERM_CODENAMES = {
 
 DEPENDENT_PERMS = {
     "view_technics": ["add_technics", "change_technics", "delete_technics"],
-    "view_material": ["add_material", "change_material", "delete_material"],
+    "view_material": ["add_material", "change_material", "delete_material", "material_service"],
     "view_employee": ["add_employee", "change_employee", "delete_employee"],   # YANGI
 }
 
