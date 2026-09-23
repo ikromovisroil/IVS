@@ -3952,6 +3952,7 @@ PERM_CODENAMES = {
     "change_material": "main.change_material",
     "delete_material": "main.delete_material",
     "material_service": "main.material_service",
+    "all_material_employee": "main.all_material_employee",
     # Maxsus
     "boss_employee": "main.boss_employee",
     "shop_employee": "main.shop_employee",
@@ -3967,11 +3968,11 @@ PERM_CODENAMES = {
 
 DEPENDENT_PERMS = {
     "view_technics": ["add_technics", "change_technics", "delete_technics"],
-    "view_material": ["add_material", "change_material", "delete_material", "material_service"],
+    "view_material": ["add_material", "change_material", "delete_material", "material_service", "all_material_employee"],
     "view_employee": ["add_employee", "change_employee", "delete_employee"],   # YANGI
 }
 
-SUPER_PERMS = {"all_organization", "all_region", "permission_employee"}
+SUPER_PERMS = {"all_organization", "all_region", "permission_employee", "all_material_employee"}
 
 
 def _visible_perm_fields(target_employee, current_employee):

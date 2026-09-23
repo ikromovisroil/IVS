@@ -545,6 +545,14 @@
                            {% if not emp.has_view_material %}disabled{% endif %}>
                   </div>
                 </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Barcha xodimlarning materialini ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-material-sub" type="checkbox" name="all_material_employee"
+                           {% if emp.has_all_material_employee %}checked{% endif %}
+                           {% if not emp.has_view_material %}disabled{% endif %}>
+                  </div>
+                </div>
               </div>
 
               <!-- ================= XODIMLAR ================= -->
