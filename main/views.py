@@ -2129,6 +2129,7 @@ def material_delete(request):
     messages.success(request, "Material muvaffaqiyatli o'chirildi")
     return redirect(back_url)
 
+
 from datetime import datetime, time
 @never_cache
 @require_GET
@@ -2459,6 +2460,67 @@ def mat_arxiv_delete(request, pk):
     material.delete()
 
     messages.success(request, "Material savatdan o'chirildi")
+    return redirect(back_url)
+
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.material_service", raise_exception=True)
+@transaction.atomic
+def material_service(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER") or "/"
+    mat_id = (request.POST.get("material_id") or "").strip()
+    body = (request.POST.get("body") or "").strip()
+    give_number = (request.POST.get("give_number") or "").strip()
+
+    try:
+        give_number = int(give_number)
+        if give_number <= 0:
+            raise ValueError
+    except ValueError:
+        messages.error(request, "Soni noto'g'ri kiritildi")
+        return redirect(back_url)
+
+    try:
+        mat = (
+            Material.objects
+            .select_for_update(of=("self",))
+            .only("id", "organization_id", "is_active", "employee", "number")
+            .get(pk=int(mat_id))
+        )
+    except (Material.DoesNotExist, TypeError, ValueError):
+        messages.error(request, "Material topilmadi")
+        return redirect(back_url)
+
+    if mat.organization_id != employee.organization_id:
+        messages.error(request, "Sizga ruxsat yo'q")
+        return redirect(back_url)
+
+    if not mat.is_active:
+        messages.error(request, "Material allaqachon o'chirilgan")
+        return redirect(back_url)
+
+    if give_number > mat.number:
+        messages.error(request, "Mavjud sonidan ko'p miqdor kiritildi")
+        return redirect(back_url)
+
+    MaterialMovement.objects.create(
+        material=mat,
+        user=mat.employee,
+        status='service',
+        outcome=give_number,
+        body=body,
+    )
+
+    mat.number -= give_number
+    mat.save(update_fields=["number"])
+
+    messages.success(request, "Material muvaffaqiyatli sarflandi")
     return redirect(back_url)
 
 
@@ -3013,6 +3075,111 @@ def reest_post(request):
     return redirect("contact_user")
 
 
+# ═══════════════════════════════════════════════════════════════════
+# SERVISE
+# ═══════════════════════════════════════════════════════════════════
+@never_cache
+@require_GET
+@login_required
+@permission_required("main.material_service", raise_exception=True)
+def service_get(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    if getattr(employee.organization, "type", None) != "worker":
+        raise PermissionDenied("Ruxsat yo'q")
+
+    context = {
+        "employee": Employee.objects.filter(organization__type="worker"),
+    }
+    return render(request, "main/service.html", context)
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.material_service", raise_exception=True)
+def service_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    if getattr(employee.organization, "type", None) != "worker":
+        raise PermissionDenied("Ruxsat yo'q")
+
+    employe_id = (request.POST.get("sender") or "").strip()
+    message = (request.POST.get("message") or "").strip() or None
+    agreements = request.POST.getlist("agreements[]")
+
+    body = _decode_body(request)
+
+
+    if not employe_id:
+        messages.error(request, "Imzolovchi xodim tanlanmadi yoki ruxsat etilmagan")
+        return redirect("service_get")
+
+    sender = Employee.objects.filter(id=employe_id).first() if employe_id.isdigit() else None
+
+    if not sender:
+        messages.error(request, "Imzolovchi xodim topilmadi")
+        return redirect("service_get")
+
+    if not body:
+        messages.error(request, "Hujjat matni bo'sh bo'lmasin")
+        return redirect("service_get")
+
+    attachments = request.FILES.getlist("attachments")
+    if len(attachments) > MAX_DEED_ATTACHMENTS:
+        messages.error(request, f"Ilova fayllari {MAX_DEED_ATTACHMENTS} tadan ko'p bo'lmasligi kerak")
+        return redirect("service_get")
+    for att in attachments:
+        try:
+            validate_attachment_extension(att)
+        except ValidationError as e:
+            messages.error(request, f"{att.name}: {' '.join(e.messages)}")
+            return redirect("service_get")
+
+    exclude_ids = {sender.id}
+
+    raw_ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
+    raw_ids = [i for i in raw_ids if i not in exclude_ids]
+
+    try:
+        with transaction.atomic():
+            deed = Deed.objects.create(
+                organization=employee.organization,
+                sender=sender,
+                user=employee,
+                message_user=message,
+                body=body,
+                status='service',
+            )
+
+            emps = Employee.objects.filter(id__in=raw_ids).only("id") if raw_ids else Employee.objects.none()
+            if raw_ids:
+                objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+                DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+            for att in attachments:
+                DeedFiles.objects.create(deed=deed, file=att)
+
+            _save_deed_pdf(deed)
+
+    except HtmlPdfError as e:
+        messages.error(request, f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring")
+        return redirect("service_get")
+    except DatabaseError:
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        return redirect("service_get")
+
+    notify_deed_sender(deed)
+    if raw_ids:
+        notify_deed_watchers(deed, emps)
+
+    messages.success(request, "Imzolashga yuborildi")
+    return redirect("contact_user")
+
+
 @never_cache
 @require_GET
 @login_required
@@ -3365,18 +3532,25 @@ def files(request):
     )
 
     if name:
-        qs = qs.annotate(
-            user_full_name=Concat(
-                "user__last_name", Value(" "),
-                "user__first_name", Value(" "),
-                "user__father_name",
-            ),
-        )
+        # Har bir so'z (F.I.O tartibiga qaramasdan) alohida - sender,
+        # receiver, user (uch tomon ham) ning familiya/ism/otasining
+        # ismidan biriga mos kelishi kerak.
+        terms = name.split()
+        person_query = Q()
+        for term in terms:
+            person_query &= (
+                Q(sender__last_name__icontains=term)   |
+                Q(sender__first_name__icontains=term)  |
+                Q(sender__father_name__icontains=term) |
+                Q(receiver__last_name__icontains=term)   |
+                Q(receiver__first_name__icontains=term)  |
+                Q(receiver__father_name__icontains=term) |
+                Q(user__last_name__icontains=term)   |
+                Q(user__first_name__icontains=term)  |
+                Q(user__father_name__icontains=term)
+            )
 
-        name_filter = (
-            Q(code__icontains=name)              |
-            Q(user_full_name__icontains=name)
-        )
+        name_filter = Q(code__icontains=name) | person_query
 
         if name.isdigit():
             name_filter |= Q(orders__id=int(name))

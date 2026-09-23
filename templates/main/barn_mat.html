@@ -207,6 +207,16 @@
                             </a>
                           </li>
                           {% endif %}
+                          {% if perms.main.material_service %}
+                          <li>
+                            <a class="dropdown-item"
+                               href="javascript:void(0)"
+                               data-bs-toggle="modal"
+                               data-bs-target="#matservice-{{ mat.id }}">
+                              <i class="bi bi-dash-circle"></i> Sarflash
+                            </a>
+                          </li>
+                          {% endif %}
                         </ul>
                       </div>
                     </td>
@@ -590,6 +600,83 @@
             onclick="return confirm('Materialni tahrirlaysizmi?')">
                 Saqlash</button>
           </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="modal fade" id="matservice-{{ mat.id }}" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <form method="post" class="modal-content" action="{% url 'material_service' %}">
+          {% csrf_token %}
+
+          <div class="modal-header">
+            <h5 class="modal-title">Materialni sarflash</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+
+          <div class="modal-body">
+            <input type="hidden" name="material_id" value="{{ mat.id }}">
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Soni *</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" name="give_number" class="form-control" min="1" max="{{ mat.number }}" required>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Izox *</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" name="body" class="form-control">
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Nomi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.name }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Mavjud soni</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" class="form-control" value="{{ mat.number }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Narxi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="number" step="0.01" name="price"
+                     class="form-control"
+                     value="{{ mat.price|default_if_none:''|stringformat:'s'|cut:',' }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Birligi</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.unit|default_if_none:'' }}" disabled>
+              </div>
+            </div>
+
+            <div class="row mb-3">
+              <label class="col-md-4 col-lg-3 col-form-label">Code</label>
+              <div class="col-md-8 col-lg-9">
+                <input type="text" class="form-control" value="{{ mat.code|default_if_none:'' }}" disabled>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+            <button type="submit" class="btn btn-primary"
+            onclick="return confirm('Materialni sarflashni tasdiqlaysizmi?')">
+                Sarflash</button>
+          </div>
+
         </form>
       </div>
     </div>

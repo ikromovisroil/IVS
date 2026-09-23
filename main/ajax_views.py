@@ -1208,3 +1208,66 @@ def toggle_user_edit(request, deed_id):
     deed.save(update_fields=["user_edit"])
 
     return JsonResponse({"success": True, "user_edit": deed.user_edit})
+
+
+@never_cache
+@require_GET
+@login_required
+@permission_required("main.material_service", raise_exception=True)
+def ajax_service_materials(request):
+
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied
+
+    d1 = request.GET.get("date1")
+    d2 = request.GET.get("date2")
+
+    try:
+        date1 = timezone.make_aware(datetime.strptime(d1, "%Y-%m-%d"))
+        date2 = timezone.make_aware(datetime.strptime(d2, "%Y-%m-%d") + timedelta(days=1))
+    except (ValueError, TypeError):
+        return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
+
+    # Tashkilot bo'yicha - shu tashkilotdagi barcha xodimlarning
+    # "sarflagan" materiallari ko'rinadi, faqat o'zinikida emas.
+    common_filters = dict(
+        status="service",
+        date_creat__isnull=False,
+        date_creat__gte=date1,
+        date_creat__lt=date2,
+        material__organization=employee.organization,
+    )
+
+    dec = DecimalField(max_digits=18, decimal_places=2)
+    zero_dec = Value(0, output_field=dec)
+
+    qs = (
+        MaterialMovement.objects.filter(**common_filters)
+        .select_related("material", "material__unit", "user")
+        .annotate(
+            total_sum=ExpressionWrapper(
+                Coalesce(F("material__price"), zero_dec) *
+                Cast(Coalesce(F("outcome"), 0), output_field=dec),
+                output_field=dec,
+            ),
+            full_name=Concat(
+                F("user__last_name"), Value(" "),
+                F("user__first_name"), Value(" "),
+                F("user__father_name"),
+                output_field=CharField(),
+            ),
+        )
+        .order_by("-date_creat")
+        .values(
+            "material__name",
+            "material__unit__name",
+            "outcome",
+            "material__price",
+            "total_sum",
+            "full_name",
+            "body",
+        )
+    )
+
+    return JsonResponse(list(qs), safe=False)

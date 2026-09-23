@@ -51,6 +51,7 @@ urlpatterns = [
     path("mat_arxiv/", mat_arxiv, name="mat_arxiv"),
     path("mat_arxiv/post/", mat_arxiv_post, name="mat_arxiv_post"),
     path("mat_arxiv/delete/<int:pk>/", mat_arxiv_delete, name="mat_arxiv_delete"),
+    path("materil/service/", material_service, name="material_service"),
 
     # =========================
     # NOTIFIKATSIYA / STATUS
@@ -94,6 +95,7 @@ urlpatterns = [
     path("ajax/akt-materials/", ajax_akt_materials, name="ajax_akt_materials"),
     path("ajax/svod_materials/", ajax_svod_materials, name="ajax_svod_materials"),
     path("ajax/reestr_materials/", ajax_reestr_materials, name="ajax_reestr_materials"),
+    path("ajax/service-materials/", ajax_service_materials, name="ajax_service_materials"),
 
     path("ajax/ajax_document/", ajax_document_preview, name="ajax_document_preview"),
     path("ajax/ordermaterial/<int:pk>/delete/", ordermaterial_delete, name="ordermaterial_delete"),
@@ -124,6 +126,10 @@ urlpatterns = [
     # REESTR
     path("reestr/", reestr_get, name="reestr_get"),
     path("reestr/post/", reest_post, name="reest_post"),
+
+    # REESTR
+    path("service/", service_get, name="service_get"),
+    path("service/post/", service_post, name="service_post"),
 
     # =========================
     # ZAYAVKA / ORDER create_order_sender_from   order_sender_user

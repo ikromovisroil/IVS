@@ -474,7 +474,7 @@
         {% if request.user.employee.organization.type == "worker" %}
         {% if perms.main.change_order %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' or url_name == 'service_get' %}collapsed{% endif %}"
              data-bs-target="#charts-nav"
              data-bs-toggle="collapse"
              href="#">
@@ -484,7 +484,7 @@
           </a>
 
           <ul id="charts-nav"
-              class="nav-content collapse {% if url_name == 'document_get' or url_name == 'svod_get' or url_name == 'reestr_get' or url_name == 'akt_get' %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'document_get' or url_name == 'svod_get' or url_name == 'reestr_get' or url_name == 'akt_get' or url_name == 'service_get' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
             {% if request.user.employee.liable_set.exists %}
             <li>
@@ -509,6 +509,13 @@
             <li>
               <a class="{% if url_name == 'akt_get' %}active{% endif %}" href="{% url 'akt_get' %}">
                 <i class="bi bi-circle"></i><span>Akt</span>
+              </a>
+            </li>
+            {% endif %}
+            {% if perms.main.material_service %}
+            <li>
+              <a class="{% if url_name == 'service_get' %}active{% endif %}" href="{% url 'service_get' %}">
+                <i class="bi bi-circle"></i><span>Sarf materiallar</span>
               </a>
             </li>
             {% endif %}

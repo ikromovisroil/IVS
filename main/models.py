@@ -398,6 +398,7 @@ class Material(models.Model):
         verbose_name_plural = "Materiallar"
         permissions = [
             ("all_material_employee", "Barcha xodimlarni ko'rish"),
+            ("material_service", "Material sarflash"),
         ]
 
 
@@ -582,6 +583,7 @@ class Deed(models.Model):
         ('reestr', 'Reestr'),
         ('act', 'Akt'),
         ('petition', 'Talabnoma'),
+        ('service', 'Sarf material'),
     ], default='act', db_index=True)
 
     file = models.FileField(upload_to='deed/', validators=[validate_file_extension])
@@ -673,6 +675,7 @@ class MaterialMovement(models.Model):
         ('deleted', "O'chirildi"),
         ('assigned', 'Biriktirildi'),
         ('order', "Ariza orqali berildi"),
+        ('service', "Xizmat ko‘rsatildi"),
     ]
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True, related_name='movement_created')
     material = models.ForeignKey(Material, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
