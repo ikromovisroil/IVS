@@ -1721,11 +1721,16 @@ def barn_mat(request):
             organization=employee.organization,
         ).distinct()
     else:
-        # Materialga o'zi javobgar bo'lmasa ham, MaterialUser orqali
-        # unga biriktirilgan xodim(lar)ning materialini ko'ra olsin.
+        # O'zi hech qanday materialga javobgar bo'lmasa, dropdownda o'zi
+        # chiqmasin — faqat MaterialUser orqali unga biriktirilgan
+        # xodim(lar)ning materiali (va o'zi haqiqatan javobgar bo'lsa, o'zinikidir).
         delegated_ids = MaterialUser.objects.filter(receiver=employee).values_list("sender_id", flat=True)
+        is_responsible = Material.objects.filter(employee=employee, organization=employee.organization).exists()
+        id_filter = Q(id__in=delegated_ids)
+        if is_responsible:
+            id_filter |= Q(id=employee.id)
         base_qs = Employee.objects.filter(
-            Q(id=employee.id) | Q(id__in=delegated_ids),
+            id_filter,
             organization=employee.organization,
         ).distinct()
 
