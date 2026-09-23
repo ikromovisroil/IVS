@@ -1721,7 +1721,18 @@ def barn_mat(request):
             organization=employee.organization,
         ).distinct()
     else:
-        base_qs = Employee.objects.filter(id=employee.id)
+        # Materialga o'zi javobgar bo'lmasa ham, MaterialUser orqali
+        # unga biriktirilgan xodim(lar)ning materialini ko'ra olsin.
+        delegated_ids = MaterialUser.objects.filter(receiver=employee).values_list("sender_id", flat=True)
+        base_qs = Employee.objects.filter(
+            Q(id=employee.id) | Q(id__in=delegated_ids),
+            organization=employee.organization,
+        ).distinct()
+
+    allowed_employee_ids = set(base_qs.values_list("id", flat=True))
+
+    if emp_id and emp_id.isdigit() and int(emp_id) not in allowed_employee_ids:
+        raise PermissionDenied("Sizga ruxsat yo'q")
 
     base_context = {
         "employee": employee,
@@ -2498,6 +2509,14 @@ def material_service(request):
         return redirect(back_url)
 
     if mat.organization_id != employee.organization_id:
+        messages.error(request, "Sizga ruxsat yo'q")
+        return redirect(back_url)
+
+    is_owner = mat.employee_id == employee.id
+    is_delegated = mat.employee_id is not None and MaterialUser.objects.filter(
+        sender_id=mat.employee_id, receiver=employee
+    ).exists()
+    if not (is_owner or is_delegated or request.user.has_perm("main.all_material_employee")):
         messages.error(request, "Sizga ruxsat yo'q")
         return redirect(back_url)
 
