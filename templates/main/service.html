@@ -110,6 +110,7 @@
             </div>
 
               <textarea id="body" name="body" class="tinymce-editor">
+              <div style="font-size:10pt;">
                 <div>
                   <table style="border-collapse:collapse;width:100%;">
                     <colgroup>
@@ -147,7 +148,7 @@
                 <div style="text-align:justify;">
                   Biz quyida imzo chekuvchilar ATM ning moddiy boyliklarini hisobdan chiqarish
                   bo‘yicha doimiy komissiya  a‘zolari, komissiya raisi –
-                  direktorning birinchi o’rinbosari A. Tursunov,  komissiya a‘zolari -
+                  direktorning birinchi o’rinbosari Tursunov A.A,  komissiya a‘zolari -
                   <span id="blok_1">_</span>
                   ushbu dalolatnomani HTvaTXK bo’limi yetakchi mutaxassisi A.Ismailov
                   ro‘yxatiga quyidagi miqdor va tarkibda kiritilgan inventarizatsiya
@@ -187,8 +188,29 @@
                   MIB buxgalteriya hisobida aks etishi va yuqoridagi tovar-moddiy zaxiralarni Ismailov Amanbay Turganbayevich hisobvarag‘idan chiqorilishi uchun.
                 </div><br>
 
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Komissiya raisi:</b><br>
+                          <b>:Direktorning birinchi o’rinbosari</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Tursunov A.A</b><br>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div><br>
+
                 <div id="blok_2">
                 </div>
+              </div>
               </textarea>
 
           </div>
@@ -343,11 +365,16 @@ function formatShortName(fullname) {
   return initials ? `${surname}.${initials}` : surname;
 }
 
-// "Narzullayev Anvar Shuhrat o'g'li" -> "NARZULLAYEV ANVAR SHUHRAT O'G'LI."
-function formatFullNameUpper(fullname) {
-  const name = (fullname || '').trim();
-  if (!name) return '';
-  return name.toUpperCase() + '.';
+// "Ikromov Isroil Ilhomovich" -> "IKROMOV I.I" (familiya BOSH HARFLARDA,
+// keyin probel, so'ng bosh harflar nuqta bilan, oxirida nuqtasiz).
+function formatShortNameUpper(fullname) {
+  const short = formatShortName(fullname);
+  if (!short) return '';
+  const dotIdx = short.indexOf('.');
+  if (dotIdx === -1) return short.toUpperCase();
+  const surname = short.slice(0, dotIdx).toUpperCase();
+  const initials = short.slice(dotIdx + 1);
+  return `${surname} ${initials}`;
 }
 
 // ─── KOMISSIYA A'ZOLARI (Kelishuvchilar tanlovidan) ───────────────────────────
@@ -359,8 +386,8 @@ function updateCommissionBlocks() {
     const fullname = $opt.attr('data-fullname') || $opt.text() || '';
     const rank = ($opt.attr('data-rank') || '').trim();
     const shortName = formatShortName(fullname);
-    const upperName = formatFullNameUpper(fullname);
-    if (shortName) members.push({ rank: rank, shortName: shortName, upperName: upperName });
+    const shortNameUpper = formatShortNameUpper(fullname);
+    if (shortName) members.push({ rank: rank, shortName: shortName, shortNameUpper: shortNameUpper });
   });
 
   // blok_1 - matn ichida, vergul bilan ajratilgan (masalan:
@@ -389,7 +416,7 @@ function updateCommissionBlocks() {
                   <b>${esc(m.rank)}</b>
                 </td>
                 <td style="border:1px solid #fff;text-align:left;">
-                  <b>${esc(m.upperName)}</b><br>
+                  <b>${esc(m.shortNameUpper)}</b><br>
                 </td>
               </tr>
             </tbody>
