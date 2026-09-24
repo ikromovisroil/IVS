@@ -2760,8 +2760,16 @@ def akt_get(request):
     if not employee:
         raise PermissionDenied("Employee yo'q")
 
+    has_full_region = request.user.has_perm("main.all_region")
+
+    regions = Region.objects.only("id", "name").order_by("id")
+    if not has_full_region:
+        regions = regions.filter(id=employee.region_id)
+
     context = {
         "organizations": Organization.objects.only("id", "name").order_by("id"),
+        "regions": regions,
+        "has_full_region": has_full_region,
         "user_region": employee.region_id,
     }
     return render(request, "main/akt.html", context)
@@ -2778,6 +2786,7 @@ def akt_post(request):
 
     org_id = (request.POST.get("organization") or "").strip()
     dep_id = (request.POST.get("department") or "").strip()
+    region_id = (request.POST.get("region") or "").strip()
     sender_id = (request.POST.get("sender") or "").strip()
     message = (request.POST.get("message") or "").strip() or None
     d1 = (request.POST.get("date1") or "").strip()
@@ -2789,6 +2798,15 @@ def akt_post(request):
     if not org:
         messages.error(request, "Tashkilot topilmadi")
         return redirect("akt_get")
+
+    has_full_region = request.user.has_perm("main.all_region")
+    if has_full_region:
+        region_filter_id = int(region_id) if region_id.isdigit() else None
+    else:
+        region_filter_id = employee.region_id
+        if not region_filter_id:
+            messages.error(request, "Hudud aniqlanmadi")
+            return redirect("akt_get")
 
     sender = Employee.objects.filter(id=sender_id, organization_id=org.id).first() if sender_id.isdigit() else None
     if not sender:
@@ -2818,10 +2836,12 @@ def akt_post(request):
     auto_qs = OrderMaterial.objects.filter(
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
-        order__receiver__region=employee.region,
         material__employee_id__in=sender_ids_material,
         order__sender__organization_id=org.id,
     )
+
+    if region_filter_id:
+        auto_qs = auto_qs.filter(order__receiver__region_id=region_filter_id)
 
     if dep_id.isdigit():
         auto_qs = auto_qs.filter(order__sender__department_id=dep_id)

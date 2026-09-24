@@ -534,6 +534,7 @@ def ajax_akt_materials(request):
 
     org_id = (request.GET.get("organization") or "").strip()
     dep_id = (request.GET.get("department") or "").strip()
+    region_id = (request.GET.get("region") or "").strip()
     d1 = (request.GET.get("date1") or "").strip()
     d2 = (request.GET.get("date2") or "").strip()
 
@@ -546,6 +547,12 @@ def ajax_akt_materials(request):
     except ValueError:
         return JsonResponse([], safe=False)
 
+    has_full_region = request.user.has_perm("main.all_region")
+    if has_full_region:
+        region_filter_id = int(region_id) if region_id.isdigit() else None
+    else:
+        region_filter_id = employee.region_id
+
     # Hozirgi userga bog'langan barcha senderlar
     sender_ids = MaterialUser.objects.filter(
         receiver=employee
@@ -555,7 +562,6 @@ def ajax_akt_materials(request):
         OrderMaterial.objects.filter(
             order__date_finished__gte=date1,
             order__date_finished__lt=date2,
-            order__receiver__region=employee.region,
             material__employee_id__in=sender_ids,
         )
         .annotate(
@@ -570,6 +576,9 @@ def ajax_akt_materials(request):
             rank_name=F("order__sender__rank__name"),
         )
     )
+
+    if region_filter_id:
+        qs = qs.filter(order__receiver__region_id=region_filter_id)
 
     if dep_id:
         qs = qs.filter(order__sender__department_id=dep_id)

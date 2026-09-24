@@ -31,7 +31,7 @@
               <div class="row g-3">
                 <div class="col-12">
                   <label for="organization" class="form-label">Tashkilot:</label>
-                  <select id="organization" name="organization" class="form-select">
+                  <select id="organization" name="organization" class="form-select" required>
                     <option value="">Tanlang...</option>
                     {% for org in organizations %}
                       <option value="{{ org.id }}"
@@ -39,6 +39,18 @@
                               {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>
                         {{ org.name }}
                       </option>
+                    {% endfor %}
+                  </select>
+                </div>
+
+                <div class="col-12">
+                  <label for="region" class="form-label">Hudud:</label>
+                  <select id="region" name="region" class="form-select" required>
+                    {% if has_full_region %}
+                      <option value="">Barcha hududlar</option>
+                    {% endif %}
+                    {% for reg in regions %}
+                      <option value="{{ reg.id }}">{{ reg.name }}</option>
                     {% endfor %}
                   </select>
                 </div>
@@ -491,7 +503,7 @@ $(function () {
     })();
 
 
-  $('#organization, #department, #sender, #agreements').select2({
+  $('#organization, #region, #department, #sender, #agreements').select2({
     width: '100%',
     placeholder: 'Tanlang...',
     allowClear: true
@@ -676,7 +688,7 @@ $(function () {
       url: "{% url 'ajax_akt_materials' %}",
       method: "GET",
       dataType: "json",
-      data: { organization: orgId, department: depId, date1: date1, date2: date2 },
+      data: { organization: orgId, department: depId, region: $('#region').val(), date1: date1, date2: date2 },
 
       success: function (data) {
         if (!data || !data.length) {
@@ -738,7 +750,16 @@ $(function () {
     updateEditorWithSelections();
     updateContractText();
 
-    loadDepartments(orgId, userRegion, null, function () {
+    loadDepartments(orgId, $('#region').val(), null, function () {
+      const depId = $('#department').val();
+      loadSignatories(depId);
+      loadNegotiators(depId);
+    });
+  });
+
+  $('#region').on('change', function () {
+    const orgId = $('#organization').val();
+    loadDepartments(orgId, $(this).val(), null, function () {
       const depId = $('#department').val();
       loadSignatories(depId);
       loadNegotiators(depId);
@@ -813,7 +834,7 @@ $(function () {
   if (initialOrg) {
     $('#organization').val(initialOrg);
 
-    loadDepartments(initialOrg, userRegion, initialDep, function () {
+    loadDepartments(initialOrg, $('#region').val() || userRegion, initialDep, function () {
       if (initialDep) {
         $('#department').val(initialDep).trigger('change');
         loadSignatories(initialDep, initialSender);
