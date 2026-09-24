@@ -159,10 +159,12 @@
                                     <thead class="table-secondary">
                                         <tr>
                                             <th style="width: 70px;">T/r</th>
-                                            <th>Hujjat kodi</th>
+                                            <th>Tashkilot</th>
+                                            <th>Hududlar</th>
                                             <th>Jo'natuvchi</th>
                                             <th>Imzolovchi</th>
                                             <th style="width: 170px;">Yuborilgan sana</th>
+                                            <th>Hujjat kodi</th>
                                             <th style="width: 120px;">Fayllar</th>
                                             <th style="width: 130px;">Ilovalar</th>
                                             <th style="width: 140px;">Holati</th>
@@ -173,7 +175,8 @@
                                     {% for d in page_obj %}
                                         <tr>
                                             <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
-                                            <td>{{ d.code }}</td>
+                                            <td>{{ d.organization.name }}</td>
+                                            <td>{{ d.user.region.name }}</td>
                                             <td>{{ d.user.full_name }}</td>
                                             <td>
                                                 {{ d.sender.full_name }}
@@ -183,6 +186,7 @@
                                             </td>
 
                                             <td>{{ d.date_creat|date:"d-m-Y H:i" }}</td>
+                                            <td>{{ d.code }}</td>
 
                                             <td>
                                                 {% if d.file and d.file.url %}
@@ -405,7 +409,7 @@
                                         </tr>
                                     {% empty %}
                                         <tr>
-                                            <td colspan="9" class="text-center text-muted py-4">
+                                            <td colspan="11" class="text-center text-muted py-4">
                                                 <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                                             </td>
                                         </tr>

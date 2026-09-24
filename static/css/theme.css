@@ -292,7 +292,7 @@ a:hover { color: var(--brand-strong); }
   --bs-table-border-color: var(--row-line);
   --bs-table-color: var(--ink-2);
   color: var(--ink-2);
-  font-size: .875rem;
+  font-size: .75rem;
   margin-bottom: 0;
 }
 .table > :not(caption) > * > * { padding: .78rem .9rem; }

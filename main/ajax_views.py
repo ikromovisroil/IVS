@@ -1245,6 +1245,7 @@ def ajax_service_materials(request):
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
     org_ids = [oid for oid in request.GET.getlist("organizations[]") if oid.isdigit()]
+    region_param = (request.GET.get("region") or "").strip()
 
     common_filters = dict(
         status="service",
@@ -1256,6 +1257,21 @@ def ajax_service_materials(request):
         common_filters["material__organization_id__in"] = org_ids
     else:
         common_filters["material__organization"] = employee.organization
+
+    # Svod'dagi kabi hudud bo'yicha ham filtrlaymiz (material javobgar
+    # xodimining hududi bo'yicha). region kelmasa (masalan Service
+    # sahifasidan chaqirilganda) - avvalgidek cheklovsiz.
+    if region_param:
+        can_view_all_regions = request.user.has_perm("main.all_region")
+        use_all_regions = can_view_all_regions and region_param == "all"
+
+        if not use_all_regions:
+            if can_view_all_regions and region_param.isdigit():
+                common_filters["user__region_id"] = int(region_param)
+            else:
+                if not employee.region_id:
+                    return JsonResponse([], safe=False)
+                common_filters["user__region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)

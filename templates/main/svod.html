@@ -525,7 +525,7 @@ function searchMaterialsAll() {
         method: 'GET',
         dataType: 'json',
         data: $.param({ 'organizations[]': orgIds }) +
-              `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}`,
+              `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}&region=${encodeURIComponent(regionVal)}`,
       })
         .done(function (serviceData) {
           renderSvodTable(orgs, Array.isArray(serviceData) ? serviceData : []);
