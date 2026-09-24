@@ -7,11 +7,14 @@ from django.http import Http404
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from django.http import FileResponse
 from bot.notify import send_telegram_message, rating_markup, barn_approved_markup
 from main.html_pdf import _create_deed_for_order, deed_to_pdf_bytes, add_text_watermark_pdf_bytes, HtmlPdfError
+from main.views import _save_deed_pdf
+from rest_framework.exceptions import ValidationError
 from rest_framework import viewsets, mixins
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
@@ -186,6 +189,46 @@ class DivisionViewSet(viewsets.ReadOnlyModelViewSet):
             qs = qs.filter(directorate__department__region_id=employee.region_id)
 
         return qs
+
+
+class RankViewSet(viewsets.ReadOnlyModelViewSet):
+    """Faqat KO'RISH — barcha autentifikatsiyadan o'tgan foydalanuvchilar ko'radi."""
+    queryset = Rank.objects.all()
+    serializer_class = RankSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardResultsPagination
+    filter_backends = [SearchFilter]
+    search_fields = ["name"]
+
+
+class EmployeeViewSet(viewsets.ModelViewSet):
+    """
+    Ko'rish — 'all_organization' bo'lsa hammasi, aks holda faqat o'z
+    tashkilotidagi xodimlar.
+    Qo'shish/Tahrirlash/O'chirish — tegishli permission (add/change/delete_employee).
+    """
+
+    serializer_class = EmployeeSerializer
+    permission_classes = [EmployeePermission]
+    pagination_class = StandardResultsPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ["organization", "department", "region", "rank"]
+    search_fields = ["last_name", "first_name", "father_name", "pinfl"]
+
+    def get_queryset(self):
+        qs = Employee.objects.select_related(
+            'organization', 'department', 'region', 'rank',
+        ).all()
+        user = self.request.user
+
+        if user.is_superuser or user.has_perm('main.all_organization'):
+            return qs
+
+        employee = getattr(user, "employee", None)
+        if not employee or not employee.organization_id:
+            return qs.none()
+
+        return qs.filter(organization_id=employee.organization_id)
 
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
@@ -1268,34 +1311,166 @@ class MaterialUserViewSet(viewsets.ModelViewSet):
 
 class DeedViewSet(viewsets.ModelViewSet):
     """
-    To'liq CRUD — har qanday employee profiliga ega xodim ko'radi, qo'shadi,
-    tahrirlaydi, o'chiradi. Cheklov yo'q.
+    Ko'rish/Tahrirlash/O'chirish — 'all_organization' bo'lsa hammasi, aks
+    holda faqat o'z tashkilotiga (Deed.organization) tegishli hujjatlar.
+    Yaratish — 'file'/'code' talab qilinmaydi: web-UI (masalan akt_post)
+    bilan bir xil qoida — body'dan PDF avtomatik generatsiya qilinadi
+    (main/views.py:_save_deed_pdf), bitta atomic tranzaksiya ichida.
+    PDF qayta generatsiya — POST /api/deeds/{id}/generate-pdf/.
     """
 
-    queryset = Deed.objects.select_related(
-        'organization', 'sender', 'receiver', 'user', 'order',
-    ).prefetch_related('deedconsent_set').all().order_by('-id')
-    serializer_class = DeedSerializer
     permission_classes = [DeedPermission]
     pagination_class = StandardResultsPagination
     parser_classes = [MultiPartParser, FormParser, JSONParser]  # fayl yuklash uchun
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ["organization", "sender", "receiver", "user", "status", "order"]
+    filterset_fields = ["organization", "sender", "receiver", "user", "status", "orders"]
     search_fields = ["code", "body", "message_sender", "message_receiver", "message_user"]
+
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return DeedCreateSerializer
+        return DeedSerializer
+
+    def perform_create(self, serializer):
+        with transaction.atomic():
+            deed = serializer.save()
+            try:
+                _save_deed_pdf(deed)
+            except HtmlPdfError as e:
+                raise ValidationError({"detail": str(e)})
+
+    def create(self, request, *args, **kwargs):
+        """DeedCreateSerializer input uchun ishlatiladi, lekin javobda
+        to'liq DeedSerializer (file/code bilan) qaytariladi."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(DeedSerializer(serializer.instance).data, status=201)
+
+    def get_queryset(self):
+        qs = Deed.objects.select_related(
+            'organization', 'sender', 'receiver', 'user',
+        ).prefetch_related('orders', 'deedconsent_set', 'deedfiles_set').all().order_by('-id')
+        user = self.request.user
+
+        if user.is_superuser or user.has_perm('main.all_organization'):
+            return qs
+
+        employee = getattr(user, "employee", None)
+        if not employee or not employee.organization_id:
+            return qs.none()
+
+        return qs.filter(organization_id=employee.organization_id)
+
+    @action(detail=True, methods=['post'], url_path='generate-pdf')
+    def generate_pdf(self, request, pk=None):
+        """PDF generatsiya qilib, deed.file ga saqlaydi: POST /api/deeds/{id}/generate-pdf/"""
+        deed = self.get_object()
+        try:
+            with transaction.atomic():
+                _save_deed_pdf(deed)
+        except HtmlPdfError as e:
+            return Response({"detail": str(e)}, status=400)
+
+        return Response(DeedSerializer(deed).data)
+
+
+class DeedFilesViewSet(viewsets.ModelViewSet):
+    """
+    Ko'rish/Qo'shish/O'chirish — bog'liq Deed qaysi tashkilotga tegishli
+    bo'lsa, o'sha ko'rish doirasi bo'yicha (DeedViewSet bilan bir xil qoida).
+    """
+
+    serializer_class = DeedFilesSerializer
+    permission_classes = [DeedPermission]
+    pagination_class = StandardResultsPagination
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["deed"]
+
+    def get_queryset(self):
+        qs = DeedFiles.objects.select_related('deed').all()
+        user = self.request.user
+
+        if user.is_superuser or user.has_perm('main.all_organization'):
+            return qs
+
+        employee = getattr(user, "employee", None)
+        if not employee or not employee.organization_id:
+            return qs.none()
+
+        return qs.filter(deed__organization_id=employee.organization_id)
 
 
 class DeedConsentViewSet(viewsets.ModelViewSet):
     """
-    To'liq CRUD — har qanday employee profiliga ega xodim ko'radi, qo'shadi,
-    tahrirlaydi, o'chiradi. Cheklov yo'q.
+    Ko'rish/Tahrirlash/O'chirish — 'all_organization' bo'lsa hammasi, aks
+    holda faqat o'z tashkilotiga tegishli hujjatlarning kelishuvlari.
+    Tasdiqlash/Rad etish — main/views.py:deedconsent_action() bilan bir xil
+    qoida (faqat belgilangan kelishuvchi, faqat 'viewed' holatida, rad
+    etishda izoh majburiy):
+      POST /api/deed-consents/{id}/approve/
+      POST /api/deed-consents/{id}/reject/
     """
 
-    queryset = DeedConsent.objects.select_related('deed', 'employee').all()
     serializer_class = DeedConsentSerializer
     permission_classes = [DeedConsentPermission]
     pagination_class = StandardResultsPagination
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["deed", "employee", "status"]
+
+    def get_queryset(self):
+        qs = DeedConsent.objects.select_related('deed', 'employee').all()
+        user = self.request.user
+
+        if user.is_superuser or user.has_perm('main.all_organization'):
+            return qs
+
+        employee = getattr(user, "employee", None)
+        if not employee or not employee.organization_id:
+            return qs.none()
+
+        return qs.filter(deed__organization_id=employee.organization_id)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        return self._resolve(request, pk, 'approved')
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        return self._resolve(request, pk, 'rejected')
+
+    def _resolve(self, request, pk, new_status):
+        employee = getattr(request.user, 'employee', None)
+        if not employee:
+            return Response({"detail": "Employee yo'q"}, status=400)
+
+        serializer = DeedConsentActionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message = serializer.validated_data.get('message', '')
+
+        if new_status == 'rejected' and not message:
+            return Response({"detail": "Rad etish uchun izoh yozing"}, status=400)
+
+        try:
+            with transaction.atomic():
+                consent = get_object_or_404(
+                    DeedConsent.objects.select_for_update(of=("self",)), pk=pk
+                )
+
+                if consent.employee_id != employee.id:
+                    return Response({"detail": "Sizga ruxsat yo'q"}, status=403)
+
+                if consent.status != "viewed":
+                    return Response({"detail": "Bu kelishuv allaqachon ko'rib chiqilgan"}, status=400)
+
+                consent.status = new_status
+                consent.message = message
+                consent.save(update_fields=["status", "message"])
+        except DatabaseError:
+            return Response({"detail": "Xatolik yuz berdi. Qayta urinib ko'ring"}, status=500)
+
+        return Response(DeedConsentSerializer(consent).data)
 
 
 class LiableViewSet(viewsets.ModelViewSet):
@@ -1353,3 +1528,23 @@ class MaterialMovementViewSet(viewsets.ReadOnlyModelViewSet):
             return qs.none()
 
         return qs.filter(material__organization_id=employee.organization_id)
+
+
+class MeView(APIView):
+    """
+    GET /api/me/ — joriy foydalanuvchining xodim profili va Django
+    ruxsatlari ro'yxati ("app_label.codename"). Frontend navigatsiya/ruxsat
+    tekshiruvi uchun ishlatadi — JWT o'zi Django permission'larni olib
+    yurmaydi, shu sabab bu alohida endpoint kerak.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        employee = getattr(request.user, "employee", None)
+        return Response({
+            "username": request.user.username,
+            "is_superuser": request.user.is_superuser,
+            "employee": EmployeeSerializer(employee).data if employee else None,
+            "permissions": sorted(request.user.get_all_permissions()),
+        })

@@ -31,6 +31,34 @@ class DirectorateSerializer(serializers.ModelSerializer):
         fields = ['id', 'department', 'department_name', 'code', 'name']
 
 
+class RankSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rank
+        fields = ['id', 'code', 'name']
+
+
+class EmployeeSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(read_only=True)
+    organization_name = serializers.CharField(source='organization.name', read_only=True)
+    department_name = serializers.CharField(source='department.name', read_only=True)
+    region_name = serializers.CharField(source='region.name', read_only=True)
+    rank_name = serializers.CharField(source='rank.name', read_only=True)
+
+    class Meta:
+        model = Employee
+        fields = [
+            'id', 'last_name', 'first_name', 'father_name', 'full_name',
+            'organization', 'organization_name',
+            'department', 'department_name',
+            'directorate', 'division',
+            'region', 'region_name',
+            'rank', 'rank_name',
+            'phone', 'pinfl',
+            'date_creat', 'date_edit',
+        ]
+        read_only_fields = ['pinfl']
+
+
 class DivisionSerializer(serializers.ModelSerializer):
     directorate_name = serializers.CharField(source='directorate.name', read_only=True)
 
@@ -349,6 +377,33 @@ class DeedConsentSerializer(serializers.ModelSerializer):
         ]
 
 
+class DeedConsentActionSerializer(serializers.Serializer):
+    """Kelishuvni tasdiqlash/rad etish uchun — main/views.py:deedconsent_action
+    bilan bir xil qoida: message ixtiyoriy, faqat rad etishda majburiy
+    (buni view action ichida tekshiramiz, chunki action turiga bog'liq)."""
+    message = serializers.CharField(required=False, allow_blank=True, default="")
+
+
+class DeedFilesSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeedFiles
+        fields = ['id', 'deed', 'file', 'date_creat', 'date_edit']
+
+
+class DeedCreateSerializer(serializers.ModelSerializer):
+    """Yaratish uchun — 'file' va 'code' bu yerda YO'Q, chunki serverning
+    o'zi (perform_create ichida, main/views.py:_save_deed_pdf() orqali)
+    body'dan PDF generatsiya qilib file'ni to'ldiradi va code'ni avtomatik
+    yaratadi — web-UI'dagi (masalan akt_post) bilan bir xil qoida."""
+
+    class Meta:
+        model = Deed
+        fields = [
+            'organization', 'sender', 'receiver', 'user',
+            'message_sender', 'message_receiver', 'message_user', 'body', 'status',
+        ]
+
+
 class DeedSerializer(serializers.ModelSerializer):
     organization_name = serializers.CharField(source='organization.name', read_only=True)
     sender_name = serializers.CharField(source='sender.full_name', read_only=True)
@@ -358,6 +413,7 @@ class DeedSerializer(serializers.ModelSerializer):
     status_sender_display = serializers.CharField(source='get_status_sender_display', read_only=True)
     status_receiver_display = serializers.CharField(source='get_status_receiver_display', read_only=True)
     consents = DeedConsentSerializer(source='deedconsent_set', many=True, read_only=True)
+    attachments = DeedFilesSerializer(source='deedfiles_set', many=True, read_only=True)
 
     class Meta:
         model = Deed
@@ -366,8 +422,8 @@ class DeedSerializer(serializers.ModelSerializer):
             'sender', 'sender_name', 'message_sender', 'status_sender', 'status_sender_display', 'date_sender',
             'receiver', 'receiver_name', 'message_receiver', 'status_receiver', 'status_receiver_display', 'date_receiver',
             'user', 'user_name', 'user_edit', 'message_user',
-            'body', 'status', 'status_display', 'file', 'code', 'order',
-            'date_creat', 'date_edit', 'consents',
+            'body', 'status', 'status_display', 'file', 'code', 'orders',
+            'date_creat', 'date_edit', 'consents', 'attachments',
         ]
         read_only_fields = ['code']
 

@@ -88,6 +88,30 @@ class MaterialPermission(permissions.BasePermission):
         return True
 
 
+class EmployeePermission(permissions.BasePermission):
+    """
+    Ko'rish (list/retrieve) — get_queryset orqali cheklanadi (o'z tashkiloti).
+    Qo'shish — 'add_employee' ruxsati kerak.
+    Tahrirlash — 'change_employee' ruxsati kerak.
+    O'chirish — 'delete_employee' ruxsati kerak.
+    """
+
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+
+        if view.action == 'create':
+            return request.user.is_superuser or request.user.has_perm('main.add_employee')
+
+        if view.action in ('update', 'partial_update'):
+            return request.user.is_superuser or request.user.has_perm('main.change_employee')
+
+        if view.action == 'destroy':
+            return request.user.is_superuser or request.user.has_perm('main.delete_employee')
+
+        return True
+
+
 class OrderPermission(permissions.BasePermission):
     """
     Ko'rish/Yaratish — employee profiliga ega har qanday xodim.

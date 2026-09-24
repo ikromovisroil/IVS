@@ -292,10 +292,14 @@ if DEBUG:
     CORS_ALLOWED_ORIGINS = [
         "http://127.0.0.1:8000",
         "http://localhost:8000",
+        "http://127.0.0.1:5173",  # frontend/ (Vite dev server)
+        "http://localhost:5173",
     ]
     CSRF_TRUSTED_ORIGINS = [
         "http://127.0.0.1:8000",
         "http://localhost:8000",
+        "http://127.0.0.1:5173",
+        "http://localhost:5173",
     ]
 else:
     CORS_ALLOWED_ORIGINS = env_list(

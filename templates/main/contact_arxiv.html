@@ -43,6 +43,7 @@
                             <th style="width: 70px;">T/r</th>
                             <th>Tashkilot</th>
                             <th>Hududlar</th>
+                            <th>Hujjat turi</th>
                             <th>Jo'natuvchi</th>
                             <th>Imzolovchi</th>
                             <th style="width: 170px;">Yuborilgan sana</th>
@@ -59,6 +60,7 @@
                             <td>{{ d.organization.name }}</td>
                             <td>{{ d.user.region.name }}</td>
                             <td>{{ d.user.full_name }}</td>
+                            <td>{{ d.get_status_display }}</td>
                             <td>
                                 {{ d.sender.full_name }}
                                 {% if d.receiver %}

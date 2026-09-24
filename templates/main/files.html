@@ -56,7 +56,7 @@
                   </div>
 
                   <div class="col-md-3">
-                      <label for="status" class="form-label">Xolati</label>
+                      <label for="status" class="form-label">Hujjat turi</label>
                       <select id="status" name="status" class="form-select">
                           <option value="">Tanlang...</option>
                           <option value="document" {% if status == "document" %}selected{% endif %}>Dalolatnoma</option>
@@ -103,6 +103,7 @@
                             <th style="width: 70px;">T/r</th>
                             <th>Tashkilot</th>
                             <th>Hududlar</th>
+                            <th>Hujjat turi</th>
                             <th>Jo'natuvchi</th>
                             <th>Imzolovchi</th>
                             <th style="width: 170px;">Yuborilgan sana</th>
@@ -118,6 +119,7 @@
                             <th scope="row">{{ row_start|add:forloop.counter0 }}</th>
                             <td>{{ d.organization.name }}</td>
                             <td>{{ d.user.region.name }}</td>
+                            <td>{{ d.get_status_display }}</td>
                             <td>{{ d.user.full_name }}</td>
                             <td>
                                 {{ d.sender.full_name }}
@@ -356,7 +358,7 @@
                         </tr>
                     {% empty %}
                         <tr>
-                            <td colspan="10" class="text-center text-muted py-4">
+                            <td colspan="11" class="text-center text-muted py-4">
                                 <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                             </td>
                         </tr>
