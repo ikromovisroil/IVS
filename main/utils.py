@@ -81,16 +81,19 @@ def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: st
 
         lines = (text or "").splitlines()
         x = 10
-        y = page_h - 15
+        y = page_h - 22
         line_gap = 10
 
         for line in lines:
             c.drawString(x, y, line)
             y -= line_gap
 
-        qr_size = 60
+        # Printerlarning aksariyati sahifa chetidan ~4-5mm ichkarida
+        # bosib chiqarolmaydi (non-printable zone) - shu sabab QR va
+        # yozuv sahifa chetidan yetarlicha ichkariga (~5-7mm) suriladi.
+        qr_size = 50
         x_center = (page_w - qr_size) / 2
-        c.drawImage(qr_reader, x_center, 5, width=qr_size, height=qr_size, mask="auto")
+        c.drawImage(qr_reader, x_center, 15, width=qr_size, height=qr_size, mask="auto")
 
         c.showPage()
         c.save()
