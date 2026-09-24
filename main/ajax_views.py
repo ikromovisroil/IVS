@@ -1222,12 +1222,18 @@ def toggle_user_edit(request, deed_id):
 @never_cache
 @require_GET
 @login_required
-@permission_required("main.material_service", raise_exception=True)
 def ajax_service_materials(request):
 
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied
+
+    if not (
+        request.user.has_perm("main.material_service")
+        or request.user.has_perm("main.shop_employee")
+        or request.user.has_perm("main.report_employee")
+    ):
+        raise PermissionDenied("Ruxsat yo'q")
 
     d1 = request.GET.get("date1")
     d2 = request.GET.get("date2")
@@ -1238,15 +1244,18 @@ def ajax_service_materials(request):
     except (ValueError, TypeError):
         return JsonResponse({"error": "Noto'g'ri sana formati"}, status=400)
 
-    # Tashkilot bo'yicha - shu tashkilotdagi barcha xodimlarning
-    # "sarflagan" materiallari ko'rinadi, faqat o'zinikida emas.
+    org_ids = [oid for oid in request.GET.getlist("organizations[]") if oid.isdigit()]
+
     common_filters = dict(
         status="service",
         date_creat__isnull=False,
         date_creat__gte=date1,
         date_creat__lt=date2,
-        material__organization=employee.organization,
     )
+    if org_ids:
+        common_filters["material__organization_id__in"] = org_ids
+    else:
+        common_filters["material__organization"] = employee.organization
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
@@ -1271,6 +1280,7 @@ def ajax_service_materials(request):
         .values(
             "material__name",
             "material__unit__name",
+            "material__code",
             "outcome",
             "material__price",
             "total_sum",
