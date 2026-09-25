@@ -450,7 +450,7 @@ def eimzo_return(request):
             if consent.status != "approved":
                 consent.status  = "approved"
                 consent.message = message or ""
-                consent.save(update_fields=["status", "message"])
+                consent.save(update_fields=["status", "message", "date_edit"])
 
             clear_session()
             messages.success(request, "Kelishuv muvaffaqiyatli tasdiqlandi")

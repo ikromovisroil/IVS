@@ -1466,7 +1466,7 @@ class DeedConsentViewSet(viewsets.ModelViewSet):
 
                 consent.status = new_status
                 consent.message = message
-                consent.save(update_fields=["status", "message"])
+                consent.save(update_fields=["status", "message", "date_edit"])
         except DatabaseError:
             return Response({"detail": "Xatolik yuz berdi. Qayta urinib ko'ring"}, status=500)
 

@@ -764,12 +764,10 @@ def deedconsent_action(request, pk):
 
             consent.status = "approved" if action == "approve" else "rejected"
             consent.message = message
-            consent.save(update_fields=["status", "message"])
+            consent.save(update_fields=["status", "message", "date_edit"])
 
     except DatabaseError:
-        # Xato matnini (str(e)) foydalanuvchiga ko'rsatmaymiz — bu ichki
-        # tafsilotlarni (DB struktura, fayl yo'llari) oshkor qilishi
-        # mumkin edi. O'rniga umumiy xabar, sabab esa log'ga yoziladi.
+
         logger.exception("DeedConsent #%s ustida amal bajarishda xatolik", pk)
         messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect(back_url)
