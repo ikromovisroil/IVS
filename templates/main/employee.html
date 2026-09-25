@@ -623,10 +623,17 @@
                            {% if emp.has_permission_employee %}checked{% endif %}>
                   </div>
                 </div>
+              </div>
+              {% endif %}
+
+              <!-- ================= HISOBOTLAR (faqat xizmat ko'rsatuvchi xodimga) ================= -->
+              {% if emp.organization.type == "worker" %}
+              <div class="section-title">Hisobotlar</div>
+              <div class="info-card">
                 <div class="row info-row gx-3">
                   <div class="col-12 col-md-9"><label class="form-check-label">Hisobotlarni ko'rish</label></div>
                   <div class="col-12 col-md-3 info-value">
-                    <input class="form-check-input" type="checkbox" name="report_employee"
+                    <input class="form-check-input js-perm-report" type="checkbox" name="report_employee"
                            {% if emp.has_report_employee %}checked{% endif %}>
                   </div>
                 </div>
@@ -658,13 +665,33 @@
                       {% for c in category %}
                       <option value="{{ c.id }}"
                         {% if c.id in emp.selected_category_ids %}selected{% endif %}>
-                        {{ c.name }}
+                        {{ c.name }}{% if c.group %} ({{ c.group.name }}){% endif %}
                       </option>
                       {% endfor %}
                     </select>
+                    <div class="form-text">"Texnikalarni ko'rish" belgilanganda yoqiladi. Xodim faqat tanlangan kategoriyalardagi texnikalarni ko'radi.</div>
                   </div>
                 </div>
               </div>
+
+              {% if emp.organization.type == "worker" %}
+              <div class="section-title">Shartnomalar (hisobotlar va Dalolatnoma uchun)</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-12 info-value">
+                    <select class="form-select js-contract-select" name="contract" multiple disabled>
+                      {% for ct in contracts %}
+                      <option value="{{ ct.id }}"
+                        {% if ct.id in emp.selected_contract_ids %}selected{% endif %}>
+                        {{ ct.name }}
+                      </option>
+                      {% endfor %}
+                    </select>
+                    <div class="form-text">"Hisobotlarni ko'rish" belgilanganda yoqiladi. Dalolatnoma tanlangan shartnomalar asosida shakllanadi. Hech narsa tanlanmasa - barcha shartnomalar.</div>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
 
               {% if emp.organization.type != "worker" %}
               <div class="section-title">Ruxsat etilgan material kategoriyasi</div>
@@ -920,9 +947,29 @@
 
     if (!$orderCheckbox.length || !$technicsCheckbox.length) return;
 
+    const $reportCheckbox = $modal.find('.js-perm-report');
+    const $contractSelect = $modal.find('.js-contract-select');
+
+    function setMulti($select, enabled) {
+      $select.prop('disabled', !enabled);
+      if (!enabled) $select.val(null);
+      if ($select.hasClass('select2-hidden-accessible')) $select.trigger('change.select2');
+    }
+
+    // Kategoriyalar - "Texnikalarni ko'rish", shartnomalar - "Hisobotlarni ko'rish"
+    // belgilanganda yoqiladi.
+    function syncCategoryAndContracts() {
+      const reportOn = $reportCheckbox.length > 0 && $reportCheckbox[0].checked;
+      const techOn = $technicsCheckbox[0].checked;
+      setMulti($categorySelect, techOn);
+      setMulti($contractSelect, reportOn);
+    }
+
     toggleMultiSelect($orderCheckbox[0], $goalSelect);
-    toggleMultiSelect($technicsCheckbox[0], $categorySelect);
+    syncCategoryAndContracts();
     toggleSubCheckboxes($technicsCheckbox[0], $technicsSubCheckboxes);
+
+    $reportCheckbox.off('change.permToggle').on('change.permToggle', syncCategoryAndContracts);
 
     if ($materialCheckbox.length) {
       toggleSubCheckboxes($materialCheckbox[0], $materialSubCheckboxes);
@@ -943,7 +990,7 @@
     });
 
     $technicsCheckbox.off('change.permToggle').on('change.permToggle', function () {
-      toggleMultiSelect(this, $categorySelect);
+      syncCategoryAndContracts();
       toggleSubCheckboxes(this, $technicsSubCheckboxes);
     });
   }

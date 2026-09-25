@@ -11,5 +11,3 @@ def create_employee(sender, instance, created, **kwargs):
     if not created:
         return
     Employee.objects.get_or_create(user=instance)
-
-

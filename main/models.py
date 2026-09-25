@@ -159,6 +159,11 @@ class Employee(models.Model):
         return " ".join(p for p in parts if p) or f"Xodim #{self.pk}"
 
     @property
+    def can_make_document(self):
+        """Dalolatnoma (Document) uchun kamida bitta shartnoma biriktirilgan bo'lishi kerak."""
+        return Liable.contracts.through.objects.filter(liable__employee=self).exists()
+
+    @property
     def full_name(self):
         parts = [self.last_name, self.first_name, self.father_name]
         return " ".join(p for p in parts if p) or self.user.username
@@ -188,23 +193,8 @@ class Group(models.Model):
         verbose_name_plural = "Uskuna turlari"
 
 
-class Contract(models.Model):
-    name = models.CharField(max_length=200, null=True, blank=True)
-    unit = models.CharField(max_length=100, null=True, blank=True)
-    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        db_table = 'contract'
-        verbose_name = "Shartnoma"
-        verbose_name_plural = "Shartnomalar"
-
-
 class Category(models.Model):
     group = models.ForeignKey(Group, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
-    contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     name = models.CharField(max_length=200)
 
     def __str__(self):
@@ -214,6 +204,23 @@ class Category(models.Model):
         db_table = 'category'
         verbose_name = "Uskuna kategoriyasi"
         verbose_name_plural = "Uskuna kategoriyalari"
+
+
+class Contract(models.Model):
+    name = models.CharField(max_length=200, null=True, blank=True)
+    unit = models.CharField(max_length=100, null=True, blank=True)
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    categories = models.ManyToManyField(
+        Category, blank=True, related_name="contracts", verbose_name="Kategoriyalar"
+    )
+
+    def __str__(self):
+        return self.name or f"Shartnoma {self.pk}"
+
+    class Meta:
+        db_table = 'contract'
+        verbose_name = "Shartnoma"
+        verbose_name_plural = "Shartnomalar"
 
 
 class Technics(models.Model):
@@ -656,11 +663,11 @@ class DeedConsent(models.Model):
 
 class Liable(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
-    contract = models.ForeignKey(Contract, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    categorys = models.ManyToManyField(Category, blank=True)
+    contracts = models.ManyToManyField(Contract, blank=True)
 
     def __str__(self):
-        return f"{self.employee} → {self.contract} → {self.category}"
+        return f"{self.employee}"
 
     class Meta:
         db_table = 'Liable'

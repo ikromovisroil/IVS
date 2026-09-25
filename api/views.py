@@ -253,12 +253,12 @@ class ContractViewSet(viewsets.ReadOnlyModelViewSet):
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """Faqat KO'RISH — barcha autentifikatsiyadan o'tgan foydalanuvchilar ko'radi."""
-    queryset = Category.objects.select_related('group', 'contract').all()
+    queryset = Category.objects.select_related('group').prefetch_related('contracts').all()
     serializer_class = CategorySerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsPagination
     filter_backends = [DjangoFilterBackend, SearchFilter]
-    filterset_fields = ["group", "contract"]
+    filterset_fields = ["group", "contracts"]
     search_fields = ["name"]
 
 
@@ -1483,10 +1483,10 @@ class LiableViewSet(viewsets.ModelViewSet):
     permission_classes = [LiablePermission]
     pagination_class = StandardResultsPagination
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["employee", "contract", "category"]
+    filterset_fields = ["employee", "contracts", "categorys"]
 
     def get_queryset(self):
-        qs = Liable.objects.select_related('employee', 'contract', 'category').all()
+        qs = Liable.objects.select_related('employee').prefetch_related('contracts', 'categorys').all()
         user = self.request.user
 
         if user.is_superuser:

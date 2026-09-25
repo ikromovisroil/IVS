@@ -930,8 +930,9 @@ def barn_tex(request: HttpRequest):
             "grouped_count": 0,
         })
 
-    liable_ids = Liable.objects.filter(
-        employee=employee
+    # Xodim ko'radigan kategoriyalar - unga to'g'ridan-to'g'ri biriktirilganlar.
+    liable_ids = Liable.categorys.through.objects.filter(
+        liable__employee=employee
     ).values_list("category_id", flat=True)
 
     base_qs = Technics.objects.filter(category_id__in=liable_ids, is_active=True)
@@ -2629,7 +2630,7 @@ def document_get(request):
     if getattr(employee.organization, "type", None) != "worker":
         raise PermissionDenied("Ruxsat yo'q")
 
-    if not employee.liable_set.exists():
+    if not employee.can_make_document:
         raise PermissionDenied("Ruxsat yo'q")
 
     emp_sender = Employee.objects.filter(
@@ -2660,7 +2661,7 @@ def document_post(request):
     if getattr(employee.organization, "type", None) != "worker":
         raise PermissionDenied("Ruxsat yo'q")
 
-    if not employee.liable_set.exists():
+    if not employee.can_make_document:
         raise PermissionDenied("Ruxsat yo'q")
 
     org_id = (request.POST.get("organization") or "").strip()
@@ -3928,6 +3929,11 @@ def _visible_perm_fields(target_employee, current_employee):
         visible.discard("shop_employee")
         visible.discard("status_employee")
         visible.discard("permission_employee")   # YANGI
+
+    # "Hisobotlarni ko'rish" va shartnoma biriktirish - faqat xizmat
+    # ko'rsatuvchi (worker) tashkilot xodimlariga beriladi; buni kim
+    # berayotgani (o'z tashkiloti turi) emas, NISHON xodim belgilaydi.
+    if target_org_type != "worker":
         visible.discard("report_employee")
 
     return visible
@@ -4033,17 +4039,23 @@ def employee(request):
     is_client = bool(employee.organization and employee.organization.type != "worker")
     goal = Goal.objects.filter(organization=employee.organization) if is_client else Goal.objects.all()
 
-    category = Category.objects.all()
-
     emp_ids = [e.id for e in page_obj]
 
     goal_map = {}
     for og in OrderGoal.objects.filter(employee_id__in=emp_ids).values("employee_id", "goal_id"):
         goal_map.setdefault(og["employee_id"], []).append(og["goal_id"])
 
+    contract_map = {}
+    for lb in Liable.contracts.through.objects.filter(
+        liable__employee_id__in=emp_ids
+    ).values("liable__employee_id", "contract_id"):
+        contract_map.setdefault(lb["liable__employee_id"], []).append(lb["contract_id"])
+
     category_map = {}
-    for lb in Liable.objects.filter(employee_id__in=emp_ids).values("employee_id", "category_id"):
-        category_map.setdefault(lb["employee_id"], []).append(lb["category_id"])
+    for lb in Liable.categorys.through.objects.filter(
+        liable__employee_id__in=emp_ids
+    ).values("liable__employee_id", "category_id"):
+        category_map.setdefault(lb["liable__employee_id"], []).append(lb["category_id"])
 
     matcategory_map = {}
     for mc in MaterialEmployee.objects.filter(employee_id__in=emp_ids).values("employee_id", "category_id"):
@@ -4051,6 +4063,7 @@ def employee(request):
 
     for emp in page_obj:
         emp.selected_goal_ids = goal_map.get(emp.id, [])
+        emp.selected_contract_ids = contract_map.get(emp.id, [])
         emp.selected_category_ids = category_map.get(emp.id, [])
         emp.selected_matcategory_ids = matcategory_map.get(emp.id, [])
 
@@ -4073,7 +4086,8 @@ def employee(request):
         "row_start": page_obj.start_index() if paginator.count else 0,
         "total_count": paginator.count,
         "goal": goal,
-        "category": category,
+        "category": Category.objects.select_related("group").order_by("name"),
+        "contracts": Contract.objects.order_by("id"),
         "matcategory": MaterialCategory.objects.all(),
         "organizations": organizations,
         "regions": regions,
@@ -4146,7 +4160,6 @@ def employee_permission(request):
                     checked_fields[sub_field] = False
 
     goal_ids = request.POST.getlist("goal")
-    category_ids = request.POST.getlist("category")
     matcategory_ids = request.POST.getlist("matcategory")
 
     with transaction.atomic():
@@ -4172,51 +4185,29 @@ def employee_permission(request):
             ])
 
         Liable.objects.filter(employee=target_employee).delete()
-        # "Texnika kategoriyasi" tanlovi formada "Texnikalarni ko'rish"
-        # belgilanganda yoqiladi (barn_tex ham shu Liable'ga tayanadi),
-        # shu sabab kategoriyalar faqat report_employee'ga emas, view_technics'ga
-        # ham bog'liq holda saqlanishi kerak.
-        wants_categories = (
-            checked_fields.get("report_employee") or checked_fields.get("view_technics")
-        )
-        if wants_categories:
-            liable_rows = []
-
-            if category_ids:
-                categories_by_id = {
-                    str(cat.id): cat
-                    for cat in Category.objects.filter(
-                        id__in=category_ids
-                    ).select_related("contract")
-                }
-                liable_rows += [
-                    Liable(
-                        employee=target_employee,
-                        category_id=cid,
-                        contract=(
-                            categories_by_id[cid].contract
-                            if cid in categories_by_id else None
-                        ),
-                    )
-                    for cid in category_ids
-                ]
-
-            # Hech qanday kategoriyaga bog'lanmagan shartnomalar ham
-            # ro'yxatda ko'rinishi uchun - category=None bilan alohida qator
-            # (faqat hisobotlarni ko'rish huquqi uchun).
-            if checked_fields.get("report_employee"):
-                categoryless_contract_ids = Contract.objects.exclude(
-                    id__in=Category.objects.filter(
-                        contract__isnull=False
-                    ).values("contract_id")
+        # "Texnikalarni ko'rish" - tanlangan kategoriyalar bo'yicha texnikalar (barn_tex);
+        # "Hisobotlarni ko'rish" - tanlangan shartnomalar bo'yicha Dalolatnoma/hisobotlar.
+        selected_category_ids = set()
+        if checked_fields.get("view_technics"):
+            selected_category_ids = set(
+                Category.objects.filter(
+                    id__in=[c for c in request.POST.getlist("category") if c.isdigit()]
                 ).values_list("id", flat=True)
-                liable_rows += [
-                    Liable(employee=target_employee, category=None, contract_id=cid)
-                    for cid in categoryless_contract_ids
-                ]
-
-            if liable_rows:
-                Liable.objects.bulk_create(liable_rows)
+            )
+        selected_contract_ids = set()
+        if checked_fields.get("report_employee"):
+            selected_contract_ids = set(
+                Contract.objects.filter(
+                    id__in=[c for c in request.POST.getlist("contract") if c.isdigit()]
+                ).values_list("id", flat=True)
+            )
+            # Shartnoma tanlanmasa - hammasi (Dalolatnoma uchun kamida bittasi kerak).
+            if not selected_contract_ids:
+                selected_contract_ids = set(Contract.objects.values_list("id", flat=True))
+        if selected_category_ids or selected_contract_ids:
+            liable = Liable.objects.create(employee=target_employee)
+            liable.categorys.set(selected_category_ids)
+            liable.contracts.set(selected_contract_ids)
 
         if target_employee.organization_id and target_employee.organization.type != "worker":
             MaterialEmployee.objects.filter(employee=target_employee).delete()

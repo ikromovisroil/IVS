@@ -1,6 +1,8 @@
 import os
 
+from django import forms
 from django.contrib import admin
+from django.contrib.admin.widgets import FilteredSelectMultiple
 from .models import *
 from django.utils.html import format_html
 from import_export import resources, fields
@@ -77,9 +79,16 @@ class GroupAdmin(admin.ModelAdmin):
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "group")
+    list_display = ("id", "name", "group", "contracts_list")
     list_filter = ("group",)
-    search_fields = ("name", "group__name")
+    search_fields = ("name", "group__name", "contracts__name")
+
+    @admin.display(description="Shartnomalar")
+    def contracts_list(self, obj):
+        return ", ".join(c.name or str(c.id) for c in obj.contracts.all()) or "-"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("group").prefetch_related("contracts")
 
 
 @admin.register(Unit)
@@ -102,9 +111,17 @@ class StructureCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Contract)
 class ContractAdmin(admin.ModelAdmin):
-    list_display = ("id", "name", "unit", "price")
-    search_fields = ("name", "unit")
+    list_display = ("id", "name", "unit", "price", "categories_list")
+    search_fields = ("name", "unit", "categories__name")
     list_filter = ("unit",)
+    filter_horizontal = ("categories",)
+
+    @admin.display(description="Kategoriyalar")
+    def categories_list(self, obj):
+        return ", ".join(c.name for c in obj.categories.all()) or "-"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).prefetch_related("categories")
 
 
 # =========================
@@ -435,13 +452,24 @@ class DeedConsentAdmin(admin.ModelAdmin):
 
 @admin.register(Liable)
 class LiableAdmin(admin.ModelAdmin):
-    list_display = ("id", "employee", "contract", "category")
-    list_filter = ("category", "contract")
+    list_display = ("id", "employee", "categories_list", "contracts_list")
+    list_filter = ("categorys", "contracts")
     search_fields = (
         "employee__last_name", "employee__first_name",
-        "contract__name", "category__name"
+        "contracts__name", "categorys__name"
     )
-    autocomplete_fields = ("employee", "contract", "category")
+    autocomplete_fields = ("employee", "contracts", "categorys")
+
+    @admin.display(description="Kategoriyalar")
+    def categories_list(self, obj):
+        return ", ".join(c.name for c in obj.categorys.all()) or "-"
+
+    @admin.display(description="Shartnomalar")
+    def contracts_list(self, obj):
+        return ", ".join(c.name or str(c.id) for c in obj.contracts.all()) or "-"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("employee").prefetch_related("contracts", "categorys")
 
 
 @admin.register(MaterialMovement)

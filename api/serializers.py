@@ -81,11 +81,14 @@ class ContractSerializer(serializers.ModelSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
     group_name = serializers.CharField(source='group.name', read_only=True)
-    contract_name = serializers.CharField(source='contract.name', read_only=True)
+    contract_names = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
-        fields = ['id', 'group', 'group_name', 'contract', 'contract_name', 'name']
+        fields = ['id', 'group', 'group_name', 'contracts', 'contract_names', 'name']
+
+    def get_contract_names(self, obj):
+        return [c.name for c in obj.contracts.all()]
 
 
 class TechnicsSerializer(serializers.ModelSerializer):
@@ -430,12 +433,18 @@ class DeedSerializer(serializers.ModelSerializer):
 
 class LiableSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.full_name', read_only=True)
-    contract_name = serializers.CharField(source='contract.name', read_only=True)
-    category_name = serializers.CharField(source='category.name', read_only=True)
+    contract_names = serializers.SerializerMethodField()
+    category_names = serializers.SerializerMethodField()
 
     class Meta:
         model = Liable
-        fields = ['id', 'employee', 'employee_name', 'contract', 'contract_name', 'category', 'category_name']
+        fields = ['id', 'employee', 'employee_name', 'categorys', 'category_names', 'contracts', 'contract_names']
+
+    def get_contract_names(self, obj):
+        return [c.name for c in obj.contracts.all()]
+
+    def get_category_names(self, obj):
+        return [c.name for c in obj.categorys.all()]
 
 
 class MaterialMovementSerializer(serializers.ModelSerializer):

@@ -32,8 +32,8 @@ def ajax_load_categories(request):
     group_id = request.GET.get("group")
     qs = Category.objects.none()
 
-    liable_ids = Liable.objects.filter(
-        employee=employee
+    liable_ids = Liable.categorys.through.objects.filter(
+        liable__employee=employee
     ).values_list("category_id", flat=True)
 
     if group_id:
@@ -998,23 +998,19 @@ def ajax_document_preview(request):
     if not effective_region_id:
         return JsonResponse({"error": "Hudud belgilanmagan"}, status=400)
 
-    liables = (
-        Liable.objects
-        .filter(employee=employee, contract__isnull=False)
-        .select_related("contract", "category")
-        .order_by("contract_id")
-        .values("contract_id", "contract__name", "category_id")
-    )
-
     contract_map = {}
-    for row in liables:
-        cid = row["contract_id"]
-        cname = row["contract__name"] or f"Shartnoma {cid}"
-        if cid not in contract_map:
-            contract_map[cid] = {"name": cname, "category_ids": []}
-        cat_id = row["category_id"]
-        if cat_id is not None:
-            contract_map[cid]["category_ids"].append(cat_id)
+    contracts = (
+        Contract.objects
+        .filter(liable__employee=employee)
+        .prefetch_related("categories")
+        .distinct()
+        .order_by("id")
+    )
+    for ct in contracts:
+        contract_map[ct.id] = {
+            "name": ct.name or f"Shartnoma {ct.id}",
+            "category_ids": [c.id for c in ct.categories.all()],
+        }
 
     if not contract_map:
         return JsonResponse({"contracts": {}})
