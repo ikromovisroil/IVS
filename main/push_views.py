@@ -187,9 +187,9 @@ def get_eligible_employees_for_new_order(order):
 
     goal_org_type = order.goal.organization.type
 
-    eligible_ids = OrderGoal.objects.filter(
+    eligible_ids = OrderGoal.goal.through.objects.filter(
         goal=order.goal
-    ).values_list("employee_id", flat=True)
+    ).values_list("ordergoal__employee_id", flat=True)
 
     if goal_org_type == "worker":
         if not order.sender or not order.sender.region_id:

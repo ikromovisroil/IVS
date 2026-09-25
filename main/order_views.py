@@ -306,9 +306,7 @@ def order_receiver(request):
     if employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    order_goal_ids = OrderGoal.objects.filter(
-        employee=employee
-    ).values_list("goal_id", flat=True)
+    order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
     page_number = request.GET.get("page", 1)
 
@@ -371,7 +369,7 @@ def order_accepted(request, pk):
         assignee = get_object_or_404(Employee, pk=int(receiver_raw))
 
     order_goal_ids = set(
-        OrderGoal.objects.filter(employee=assignee).values_list("goal_id", flat=True)
+        OrderGoal.goal.through.objects.filter(ordergoal__employee=assignee).values_list("goal_id", flat=True)
     )
 
     def is_order_eligible(order):
@@ -985,9 +983,9 @@ def order_sender_material_barn(request):
     name = request.GET.get("name", "").strip()
     page_number = request.GET.get("page", 1)
 
-    category_ids = MaterialEmployee.objects.filter(
-        employee=employee
-    ).values_list("category_id", flat=True)
+    category_ids = MaterialEmployee.category.through.objects.filter(
+        materialemployee__employee=employee
+    ).values_list("materialcategory_id", flat=True)
 
     orders_qs = (
         Material.objects
@@ -1115,9 +1113,7 @@ def order_receiver_barn(request):
     if getattr(employee.organization, "type", None) == "worker":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    order_goal_ids = OrderGoal.objects.filter(
-        employee=employee
-    ).values_list("goal_id", flat=True)
+    order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
     page_number = request.GET.get("page", 1)
 
@@ -1171,7 +1167,7 @@ def order_accepted_barn(request, pk):
         return redirect(back_url)
 
     order_goal_ids = set(
-        OrderGoal.objects.filter(employee=employee).values_list("goal_id", flat=True)
+        OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
     )
 
     def is_order_eligible(order):

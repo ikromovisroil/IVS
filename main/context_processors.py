@@ -59,19 +59,15 @@ def order_notifications(request):
 
     # order_receiver uchun (worker xodimlari)
     if employee.organization.type == "client":
-        worker_goal_ids = OrderGoal.objects.none().values_list("goal_id", flat=True)
+        worker_goal_ids = OrderGoal.goal.through.objects.none().values_list("goal_id", flat=True)
     else:
-        worker_goal_ids = OrderGoal.objects.filter(
-            employee=employee
-        ).values_list("goal_id", flat=True)
+        worker_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
     # order_receiver_barn uchun (client xodimlari, region majburiy)
     if employee.organization.type == "worker" or not employee.region_id:
-        barn_goal_ids = OrderGoal.objects.none().values_list("goal_id", flat=True)
+        barn_goal_ids = OrderGoal.goal.through.objects.none().values_list("goal_id", flat=True)
     else:
-        barn_goal_ids = OrderGoal.objects.filter(
-            employee=employee
-        ).values_list("goal_id", flat=True)
+        barn_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
     conditions = (
         Q(receiver=employee, goal__organization__type="worker",
@@ -131,9 +127,7 @@ def order_receiver_count(request):
 
     if employee.organization.type == "worker":
         # order_receiver view bilan bir xil filtr
-        order_goal_ids = OrderGoal.objects.filter(
-            employee=employee
-        ).values_list("goal_id", flat=True)
+        order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
         count = Order.objects.filter(
             sender__region=employee.region,
@@ -149,9 +143,7 @@ def order_receiver_count(request):
         if not employee.region_id:
             return empty
 
-        order_goal_ids = OrderGoal.objects.filter(
-            employee=employee
-        ).values_list("goal_id", flat=True)
+        order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
         count = Order.objects.filter(
             goal__organization__type="client",

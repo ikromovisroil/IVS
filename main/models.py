@@ -411,10 +411,10 @@ class Material(models.Model):
 
 class MaterialEmployee(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
-    category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    category = models.ManyToManyField(MaterialCategory, blank=True)
 
     def __str__(self):
-        return f"{self.employee} → {self.category}"
+        return f"{self.employee}"
 
     class Meta:
         db_table = 'materialemployee'
@@ -534,10 +534,10 @@ class OrderMaterial(models.Model):
 
 class OrderGoal(models.Model):
     employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
-    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    goal = models.ManyToManyField(Goal, blank=True)
 
     def __str__(self):
-        return f"{self.employee} → {self.goal}"
+        return f"{self.employee}"
 
     class Meta:
         db_table = 'OrderGoal'
@@ -547,10 +547,10 @@ class OrderGoal(models.Model):
 
 class MaterialUser(models.Model):
     sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='sender', null=True, blank=True, db_index=True)
-    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='receiver', null=True, blank=True, db_index=True)
+    receiver = models.ManyToManyField(Employee, blank=True)
 
     def __str__(self):
-        return f"{self.sender} - {self.receiver}"
+        return f"{self.sender}"
 
     class Meta:
         db_table = 'materialuser'

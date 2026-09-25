@@ -658,7 +658,7 @@ class MaterialEmployeeViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ["employee__last_name", "employee__first_name", "category__name"]
 
     def get_queryset(self):
-        qs = MaterialEmployee.objects.select_related('employee', 'category').all()
+        qs = MaterialEmployee.objects.select_related('employee').prefetch_related('category').all()
         user = self.request.user
 
         if user.is_superuser or user.has_perm("main.all_organization"):
@@ -1266,7 +1266,7 @@ class OrderGoalViewSet(viewsets.ModelViewSet):
     filterset_fields = ["employee", "goal"]
 
     def get_queryset(self):
-        qs = OrderGoal.objects.select_related('employee', 'goal').all()
+        qs = OrderGoal.objects.select_related('employee').prefetch_related('goal').all()
         user = self.request.user
 
         if user.is_superuser or user.has_perm('main.permission_employee'):
@@ -1293,7 +1293,7 @@ class MaterialUserViewSet(viewsets.ModelViewSet):
     filterset_fields = ["sender", "receiver"]
 
     def get_queryset(self):
-        qs = MaterialUser.objects.select_related('sender', 'receiver').all()
+        qs = MaterialUser.objects.select_related('sender').prefetch_related('receiver').all()
         user = self.request.user
 
         if user.is_superuser or user.has_perm('main.permission_employee'):

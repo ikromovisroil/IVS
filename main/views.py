@@ -4042,8 +4042,10 @@ def employee(request):
     emp_ids = [e.id for e in page_obj]
 
     goal_map = {}
-    for og in OrderGoal.objects.filter(employee_id__in=emp_ids).values("employee_id", "goal_id"):
-        goal_map.setdefault(og["employee_id"], []).append(og["goal_id"])
+    for og in OrderGoal.goal.through.objects.filter(
+        ordergoal__employee_id__in=emp_ids
+    ).values("ordergoal__employee_id", "goal_id"):
+        goal_map.setdefault(og["ordergoal__employee_id"], []).append(og["goal_id"])
 
     contract_map = {}
     for lb in Liable.contracts.through.objects.filter(
@@ -4058,8 +4060,10 @@ def employee(request):
         category_map.setdefault(lb["liable__employee_id"], []).append(lb["category_id"])
 
     matcategory_map = {}
-    for mc in MaterialEmployee.objects.filter(employee_id__in=emp_ids).values("employee_id", "category_id"):
-        matcategory_map.setdefault(mc["employee_id"], []).append(mc["category_id"])
+    for mc in MaterialEmployee.category.through.objects.filter(
+        materialemployee__employee_id__in=emp_ids
+    ).values("materialemployee__employee_id", "materialcategory_id"):
+        matcategory_map.setdefault(mc["materialemployee__employee_id"], []).append(mc["materialcategory_id"])
 
     for emp in page_obj:
         emp.selected_goal_ids = goal_map.get(emp.id, [])
@@ -4179,10 +4183,11 @@ def employee_permission(request):
 
         OrderGoal.objects.filter(employee=target_employee).delete()
         if checked_fields.get("change_order") and goal_ids:
-            OrderGoal.objects.bulk_create([
-                OrderGoal(employee=target_employee, goal_id=gid)
-                for gid in goal_ids
-            ])
+            valid_goal_ids = Goal.objects.filter(
+                id__in=[g for g in goal_ids if str(g).isdigit()]
+            ).values_list("id", flat=True)
+            if valid_goal_ids:
+                OrderGoal.objects.create(employee=target_employee).goal.set(valid_goal_ids)
 
         Liable.objects.filter(employee=target_employee).delete()
         # "Texnikalarni ko'rish" - tanlangan kategoriyalar bo'yicha texnikalar (barn_tex);
@@ -4211,11 +4216,11 @@ def employee_permission(request):
 
         if target_employee.organization_id and target_employee.organization.type != "worker":
             MaterialEmployee.objects.filter(employee=target_employee).delete()
-            if matcategory_ids:
-                MaterialEmployee.objects.bulk_create([
-                    MaterialEmployee(employee=target_employee, category_id=mcid)
-                    for mcid in matcategory_ids
-                ])
+            valid_matcategory_ids = MaterialCategory.objects.filter(
+                id__in=[m for m in matcategory_ids if str(m).isdigit()]
+            ).values_list("id", flat=True)
+            if valid_matcategory_ids:
+                MaterialEmployee.objects.create(employee=target_employee).category.set(valid_matcategory_ids)
 
     messages.success(request, "Xodim ruxsatlari muvaffaqiyatli yangilandi")
     return redirect(back_url)

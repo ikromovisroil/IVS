@@ -255,7 +255,15 @@ class MaterialAdmin(admin.ModelAdmin):
 
 @admin.register(MaterialUser)
 class MaterialUserAdmin(admin.ModelAdmin):
-    list_display = ("id", "sender", "receiver")
+    list_display = ("id", "sender", "receivers_list")
+    autocomplete_fields = ("sender", "receiver")
+
+    @admin.display(description="Qabul qiluvchilar")
+    def receivers_list(self, obj):
+        return ", ".join(str(e) for e in obj.receiver.all()) or "-"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("sender").prefetch_related("receiver")
 
 
 # =========================
@@ -324,13 +332,20 @@ class OrderMaterialAdmin(admin.ModelAdmin):
 
 @admin.register(OrderGoal)
 class OrderGoalAdmin(admin.ModelAdmin):
-    list_display = ("id", "employee", "goal")
+    list_display = ("id", "employee", "goals_list")
     list_filter = ("goal",)
     search_fields = (
         "employee__last_name", "employee__first_name",
         "goal__name"
     )
     autocomplete_fields = ("employee", "goal")
+
+    @admin.display(description="Maqsadlar")
+    def goals_list(self, obj):
+        return ", ".join(g.name for g in obj.goal.all()) or "-"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("employee").prefetch_related("goal")
 
 
 # =========================

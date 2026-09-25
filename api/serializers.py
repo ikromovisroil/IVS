@@ -240,11 +240,14 @@ class MaterialGiveSerializer(serializers.Serializer):
 
 class MaterialEmployeeSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.full_name', read_only=True)
-    category_name = serializers.CharField(source='category.name', read_only=True)
+    category_names = serializers.SerializerMethodField()
 
     class Meta:
         model = MaterialEmployee
-        fields = ['id', 'employee', 'employee_name', 'category', 'category_name']
+        fields = ['id', 'employee', 'employee_name', 'category', 'category_names']
+
+    def get_category_names(self, obj):
+        return [c.name for c in obj.category.all()]
 
 
 class GoalSerializer(serializers.ModelSerializer):
@@ -352,20 +355,26 @@ class OrderAcceptedSerializer(serializers.Serializer):
 
 class OrderGoalSerializer(serializers.ModelSerializer):
     employee_name = serializers.CharField(source='employee.full_name', read_only=True)
-    goal_name = serializers.CharField(source='goal.name', read_only=True)
+    goal_names = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderGoal
-        fields = ['id', 'employee', 'employee_name', 'goal', 'goal_name']
+        fields = ['id', 'employee', 'employee_name', 'goal', 'goal_names']
+
+    def get_goal_names(self, obj):
+        return [g.name for g in obj.goal.all()]
 
 
 class MaterialUserSerializer(serializers.ModelSerializer):
     sender_name = serializers.CharField(source='sender.full_name', read_only=True)
-    receiver_name = serializers.CharField(source='receiver.full_name', read_only=True)
+    receiver_names = serializers.SerializerMethodField()
 
     class Meta:
         model = MaterialUser
-        fields = ['id', 'sender', 'sender_name', 'receiver', 'receiver_name']
+        fields = ['id', 'sender', 'sender_name', 'receiver', 'receiver_names']
+
+    def get_receiver_names(self, obj):
+        return [e.full_name for e in obj.receiver.all()]
 
 
 class DeedConsentSerializer(serializers.ModelSerializer):

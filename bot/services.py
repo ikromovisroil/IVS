@@ -303,7 +303,7 @@ def receive_order(employee: Employee, order_id: int) -> OrderResult:
 
 def _allowed_goal_ids(employee: Employee):
     return list(
-        OrderGoal.objects.filter(employee=employee).values_list("goal_id", flat=True)
+        OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
     )
 
 

@@ -144,9 +144,7 @@ def order_check_new(request):
     if not employee:
         return JsonResponse({"error": "Employee yo‘q"}, status=400)
 
-    order_goal_ids = OrderGoal.objects.filter(
-        employee=employee
-    ).values_list("goal_id", flat=True)
+    order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
     orders_qs = Order.objects.filter(
         sender__region=employee.region,
