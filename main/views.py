@@ -2836,9 +2836,13 @@ def akt_post(request):
     auto_qs = OrderMaterial.objects.filter(
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
-        material__employee_id__in=sender_ids_material,
         order__sender__organization_id=org.id,
     )
+
+    # ajax_akt_materials bilan bir xil qoida: barcha hududlarni ko'ra oladigan
+    # xodimda MaterialUser bo'yicha cheklov yo'q.
+    if not has_full_region:
+        auto_qs = auto_qs.filter(material__employee_id__in=sender_ids_material)
 
     if region_filter_id:
         auto_qs = auto_qs.filter(order__receiver__region_id=region_filter_id)
@@ -4275,7 +4279,14 @@ def employee_permission(request):
             ])
 
         Liable.objects.filter(employee=target_employee).delete()
-        if checked_fields.get("report_employee"):
+        # "Texnika kategoriyasi" tanlovi formada "Texnikalarni ko'rish"
+        # belgilanganda yoqiladi (barn_tex ham shu Liable'ga tayanadi),
+        # shu sabab kategoriyalar faqat report_employee'ga emas, view_technics'ga
+        # ham bog'liq holda saqlanishi kerak.
+        wants_categories = (
+            checked_fields.get("report_employee") or checked_fields.get("view_technics")
+        )
+        if wants_categories:
             liable_rows = []
 
             if category_ids:
@@ -4298,16 +4309,18 @@ def employee_permission(request):
                 ]
 
             # Hech qanday kategoriyaga bog'lanmagan shartnomalar ham
-            # ro'yxatda ko'rinishi uchun - category=None bilan alohida qator.
-            categoryless_contract_ids = Contract.objects.exclude(
-                id__in=Category.objects.filter(
-                    contract__isnull=False
-                ).values("contract_id")
-            ).values_list("id", flat=True)
-            liable_rows += [
-                Liable(employee=target_employee, category=None, contract_id=cid)
-                for cid in categoryless_contract_ids
-            ]
+            # ro'yxatda ko'rinishi uchun - category=None bilan alohida qator
+            # (faqat hisobotlarni ko'rish huquqi uchun).
+            if checked_fields.get("report_employee"):
+                categoryless_contract_ids = Contract.objects.exclude(
+                    id__in=Category.objects.filter(
+                        contract__isnull=False
+                    ).values("contract_id")
+                ).values_list("id", flat=True)
+                liable_rows += [
+                    Liable(employee=target_employee, category=None, contract_id=cid)
+                    for cid in categoryless_contract_ids
+                ]
 
             if liable_rows:
                 Liable.objects.bulk_create(liable_rows)

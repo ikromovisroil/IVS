@@ -562,7 +562,6 @@ def ajax_akt_materials(request):
         OrderMaterial.objects.filter(
             order__date_finished__gte=date1,
             order__date_finished__lt=date2,
-            material__employee_id__in=sender_ids,
         )
         .annotate(
             full_name=Concat(
@@ -576,6 +575,12 @@ def ajax_akt_materials(request):
             rank_name=F("order__sender__rank__name"),
         )
     )
+
+    # Barcha hududlarni ko'ra oladigan xodim boshqa hududni tanlaganda ham
+    # natija chiqishi uchun MaterialUser bo'yicha cheklov qo'llanmaydi
+    # (boshqa hududdagi materiallar boshqa mas'ullarniki bo'ladi).
+    if not has_full_region:
+        qs = qs.filter(material__employee_id__in=sender_ids)
 
     if region_filter_id:
         qs = qs.filter(order__receiver__region_id=region_filter_id)

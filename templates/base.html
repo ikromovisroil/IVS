@@ -472,7 +472,7 @@
 
         <!-- Hisobotlar -->
         {% if request.user.employee.organization.type == "worker" %}
-        {% if perms.main.change_order %}
+        {% if perms.main.change_order or perms.main.report_employee or perms.main.shop_employee or perms.main.material_service %}
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'document_get' and url_name != 'svod_get' and url_name != 'reestr_get' and url_name != 'akt_get' or url_name == 'service_get' %}collapsed{% endif %}"
              data-bs-target="#charts-nav"
