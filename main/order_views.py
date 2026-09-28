@@ -482,6 +482,7 @@ def order_receiver_activ(request):
                 receiver=employee
             ).values("sender"),
             is_active=True,
+            number__gt=0,
         )
         .select_related("unit", "employee")
     )
