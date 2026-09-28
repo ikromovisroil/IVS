@@ -852,12 +852,22 @@ $(function () {
     });
   }
 
-  const today    = new Date();
-  const monthAgo = new Date();
-  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  // Sanalarni avtomatik to'ldirish - joriy oy (1-kundan bugungacha).
+  // Browser avtofill eskirgan qiymat qoldirib ketmasin uchun har doim qayta yoziladi.
+  // Eslatma: toISOString() UTC'ga o'giradi - UTC+5 kabi mintaqada mahalliy
+  // yarim tun bir kun orqaga surilib qoladi, shu sabab mahalliy sana qismlaridan
+  // to'g'ridan-to'g'ri satr yasaymiz.
+  function toLocalIsoDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  const today      = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  if (!$('#date1').val()) $('#date1').val(monthAgo.toISOString().split('T')[0]);
-  if (!$('#date2').val()) $('#date2').val(today.toISOString().split('T')[0]);
+  $('#date1').val(toLocalIsoDate(monthStart));
+  $('#date2').val(toLocalIsoDate(today));
 
   // ─── EVENTS ───────────────────────────────────────────────────────────────
 

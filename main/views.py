@@ -2158,6 +2158,14 @@ def mat_info(request):
     date1_raw = (request.GET.get("date1") or "").strip()
     date2_raw = (request.GET.get("date2") or "").strip()
     employee_id_raw = (request.GET.get("employee") or "").strip()
+    name = (request.GET.get("name") or "").strip()
+
+    # Sana kiritilmagan bo'lsa - joriy oy avtomatik qo'yiladi.
+    today = timezone.localdate()
+    if not date1_raw:
+        date1_raw = today.replace(day=1).isoformat()
+    if not date2_raw:
+        date2_raw = today.isoformat()
 
     date1 = parse_date(date1_raw) if date1_raw else None
     date2 = parse_date(date2_raw) if date2_raw else None
@@ -2223,6 +2231,9 @@ def mat_info(request):
             is_active=True, employee_id=employee_id
         ).select_related("unit", "category").order_by("name")
 
+        if name:
+            materials = materials.filter(Q(name__icontains=name) | Q(code__icontains=name))
+
         min_dt = timezone.make_aware(datetime.min.replace(year=1900))
 
         for m in materials:
@@ -2241,15 +2252,20 @@ def mat_info(request):
                 key=lambda x: x["date"] or min_dt
             )
 
+            price = m.price or 0
             table_rows.append({
                 "id": m.id,
                 "material": m,
                 "code": m.code,
                 "price": m.price,
+                "unit": m.unit.name if m.unit_id else "",
                 "initial_balance": initial_balance,
                 "income": income,
+                "income_sum": income * price,
                 "outcome": total_outcome,
+                "outcome_sum": total_outcome * price,
                 "current_balance": current_count,
+                "current_sum": current_count * price,
                 "movements": mat_movements,
             })
 
@@ -2284,6 +2300,7 @@ def mat_info(request):
         "employees_shop": base_qs,
         "date1": date1_raw,
         "date2": date2_raw,
+        "name": name,
         "has_search": has_search,
         "page_obj": page_obj,
         "row_start": page_obj.start_index() if page_obj else 0,

@@ -182,6 +182,8 @@ urlpatterns = [
     # =========================
     path("export/technics_xlsx/", export_technics_xlsx, name="export_technics_xlsx"),
     path("export/material_xlsx/", export_material_xlsx, name="export_material_xlsx"),
+    path("export/mat_info_xlsx/", export_mat_info_xlsx, name="export_mat_info_xlsx"),
+    path("export/employee_xlsx/", export_employee_xlsx, name="export_employee_xlsx"),
 
     path('employe/create/', employe_create, name='employe_create'),
 

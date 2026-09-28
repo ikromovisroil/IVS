@@ -97,6 +97,14 @@
                   <button type="submit" class="btn btn-primary w-100">Qidirish</button>
                 </div>
 
+                <div class="col-md-3 d-flex align-items-end">
+                  {% if request.GET.organization %}
+                  <a href="{% url 'export_employee_xlsx' %}?{{ qs_params }}" class="btn btn-secondary w-100">Excel</a>
+                  {% else %}
+                  <button type="button" class="btn btn-secondary w-100" disabled>Excel</button>
+                  {% endif %}
+                </div>
+
               </form>
             </div>
           </div>
