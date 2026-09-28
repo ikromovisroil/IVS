@@ -187,9 +187,6 @@ urlpatterns = [
 
     path('employe/create/', employe_create, name='employe_create'),
 
-    path("material/import/", material_import_page, name="material_import_page"),
-    path("material/import/post/", material_import, name="material_import"),
-
     path("employee/", employee, name="employee"),
     path("employee/create/", employee_create, name="employee_create"),
     path("employee/update/", employee_update, name="employee_update"),
