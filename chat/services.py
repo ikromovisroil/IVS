@@ -37,16 +37,58 @@ def get_or_create_ai_conversation(employee: Employee) -> Conversation:
     return Conversation.objects.create(kind=Conversation.KIND_AI, participant_1=employee)
 
 
+@transaction.atomic
+def create_group_conversation(creator: Employee, name: str, member_ids) -> Conversation:
+    """Yangi guruh suhbati yaratadi. Kamida yaratuvchidan tashqari 2 ta
+    a'zo bo'lishi kerak (aks holda oddiy shaxsiy suhbatdan farqi qolmaydi)."""
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("Guruh nomini kiriting")
+    if len(name) > 100:
+        raise ValueError("Guruh nomi juda uzun")
+
+    member_ids = set(int(m) for m in member_ids if str(m).isdigit())
+    member_ids.discard(creator.id)
+    if len(member_ids) < 2:
+        raise ValueError("Guruhda (o'zingizdan tashqari) kamida 2 ta a'zo bo'lishi kerak")
+
+    valid_ids = set(
+        Employee.objects.filter(id__in=member_ids).values_list("id", flat=True)
+    )
+    valid_ids.add(creator.id)
+
+    conv = Conversation.objects.create(kind=Conversation.KIND_GROUP, participant_1=creator, name=name)
+    conv.participants.set(valid_ids)
+    return conv
+
+
 def visible_conversations(employee: Employee):
-    """Shu xodim ishtirok etgan barcha suhbatlar, oxirgi faollik bo'yicha."""
+    """Shu xodim ishtirok etgan va o'zi uchun yashirmagan suhbatlar, oxirgi
+    faollik bo'yicha."""
     from django.db.models import Q
 
     return (
         Conversation.objects
-        .filter(Q(participant_1=employee) | Q(participant_2=employee))
+        .filter(Q(participant_1=employee) | Q(participant_2=employee) | Q(participants=employee))
+        .exclude(hidden_for=employee)
+        .distinct()
         .select_related("participant_1", "participant_2")
+        .prefetch_related("participants")
         .order_by("-date_edit")
     )
+
+
+def hide_conversation(conversation: Conversation, employee: Employee) -> None:
+    """Suhbatni faqat shu xodim uchun ro'yxatdan yashiradi (WhatsApp'dagi
+    "chatni o'chirish" kabi) - ma'lumot o'chmaydi, qarshi tomonga ta'sir
+    qilmaydi."""
+    conversation.hidden_for.add(employee)
+
+
+def unhide_conversation_for(conversation: Conversation, employee: Employee) -> None:
+    """Xodim yashirgan suhbatga yangi xabar kelganda, ro'yxatga qaytarish
+    uchun (agar yashirilmagan bo'lsa - no-op)."""
+    conversation.hidden_for.remove(employee)
 
 
 def unread_count(conversation: Conversation, employee: Employee) -> int:

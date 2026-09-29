@@ -15,11 +15,14 @@ from .ai import generate_ai_reply
 from .models import Conversation, Message
 from .realtime import push_delete, push_edit, push_message, push_read, serialize_message
 from .services import (
+    create_group_conversation,
     get_or_create_ai_conversation,
     get_or_create_direct_conversation,
+    hide_conversation,
     mark_read,
     online_info,
     touch_online,
+    unhide_conversation_for,
     unread_count,
     visible_conversations,
 )
@@ -37,11 +40,18 @@ def _serialize_conversation(conv: Conversation, employee: Employee) -> dict:
     other = conv.other_participant(employee)
     last_msg = conv.messages.order_by("-date_creat").first()
     status = online_info(other) if other else {"online": False, "last_seen": None}
+    if conv.kind == Conversation.KIND_AI:
+        title = "AI Yordamchi"
+    elif conv.kind == Conversation.KIND_GROUP:
+        title = conv.name or "Guruh"
+    else:
+        title = other.full_name if other else "-"
     return {
         "id": conv.id,
         "kind": conv.kind,
-        "title": "AI Yordamchi" if conv.kind == Conversation.KIND_AI else (other.full_name if other else "-"),
+        "title": title,
         "other_id": other.id if other else None,
+        "member_count": conv.participants.count() if conv.kind == Conversation.KIND_GROUP else None,
         "last_message": ("📎 Fayl" if (last_msg and last_msg.attachment and not last_msg.body) else (last_msg.body[:80] if last_msg else "")),
         "last_message_at": last_msg.date_creat.isoformat() if last_msg else None,
         "unread_count": unread_count(conv, employee),
@@ -122,6 +132,32 @@ def chat_open(request):
 
 
 @never_cache
+@require_POST
+@login_required
+def chat_create_group(request):
+    employee = _current_employee(request)
+    name = (request.POST.get("name") or "").strip()
+    member_ids_raw = request.POST.getlist("members[]") or request.POST.getlist("members")
+
+    member_ids = [m for m in member_ids_raw if str(m).isdigit()]
+    if not request.user.has_perm("main.all_organization"):
+        allowed_ids = set(
+            Employee.objects.filter(
+                id__in=member_ids, organization_id=employee.organization_id,
+            ).values_list("id", flat=True)
+        )
+        if len(allowed_ids) != len(set(int(m) for m in member_ids)):
+            raise PermissionDenied("Faqat o'z tashkilotingiz xodimlarini qo'sha olasiz")
+
+    try:
+        conv = create_group_conversation(employee, name, member_ids)
+    except ValueError as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+    return JsonResponse({"conversation_id": conv.id})
+
+
+@never_cache
 @require_GET
 @login_required
 def chat_messages(request, conversation_id):
@@ -172,6 +208,17 @@ def chat_send(request, conversation_id):
 
     msg = Message.objects.create(conversation=conv, sender=employee, body=body, attachment=attachment)
     conv.save(update_fields=["date_edit"])
+
+    # Qarshi tomon(lar) bu suhbatni "o'zidan o'chirgan" bo'lsa ham, yangi
+    # xabar kelganda ro'yxatiga qaytarib qo'yiladi (WhatsApp'dagi kabi).
+    if conv.kind == Conversation.KIND_GROUP:
+        for member in conv.participants.exclude(id=employee.id):
+            unhide_conversation_for(conv, member)
+    else:
+        other = conv.other_participant(employee)
+        if other:
+            unhide_conversation_for(conv, other)
+
     push_message(msg)
     _notify_recipients(conv, employee, msg)
 
@@ -189,15 +236,36 @@ def chat_send(request, conversation_id):
 
 
 def _notify_recipients(conv: Conversation, sender: Employee, msg: Message) -> None:
-    """Suhbatdagi boshqa (AI bo'lmagan) qatnashuvchiga push-bildirishnoma."""
-    other = conv.other_participant(sender)
-    if not other:
-        return
+    """Suhbatdagi boshqa (AI bo'lmagan) qatnashuvchi(lar)ga push-bildirishnoma."""
     body_preview = msg.body[:150] if msg.body else "📎 Fayl yuborildi"
-    send_push_notification(
-        other, title=f"{sender.full_name}", body=body_preview,
-        url="/chat/", tag=f"chat-{conv.id}",
-    )
+    title = sender.full_name if conv.kind != Conversation.KIND_GROUP else f"{conv.name}: {sender.full_name}"
+
+    if conv.kind == Conversation.KIND_GROUP:
+        recipients = conv.participants.exclude(id=sender.id)
+    else:
+        other = conv.other_participant(sender)
+        recipients = [other] if other else []
+
+    for recipient in recipients:
+        send_push_notification(
+            recipient, title=title, body=body_preview,
+            url="/chat/", tag=f"chat-{conv.id}",
+        )
+
+
+@never_cache
+@require_POST
+@login_required
+def chat_hide(request, conversation_id):
+    """Suhbatni faqat so'ragan xodim uchun ro'yxatdan yashiradi (ma'lumot
+    o'chmaydi, qarshi tomonga ta'sir qilmaydi)."""
+    employee = _current_employee(request)
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    if not conv.has_participant(employee):
+        raise PermissionDenied("Bu suhbat sizga tegishli emas")
+
+    hide_conversation(conv, employee)
+    return JsonResponse({"ok": True})
 
 
 @never_cache

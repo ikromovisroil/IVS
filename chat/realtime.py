@@ -10,6 +10,8 @@ def _group_name(employee_id: int) -> str:
 
 
 def _recipient_ids(conv: Conversation) -> set:
+    if conv.kind == Conversation.KIND_GROUP:
+        return set(conv.participants.values_list("id", flat=True))
     return {conv.participant_1_id, conv.participant_2_id} - {None}
 
 

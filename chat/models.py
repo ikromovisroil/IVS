@@ -13,12 +13,17 @@ class Conversation(models.Model):
 
     KIND_DIRECT = "direct"
     KIND_AI = "ai"
+    KIND_GROUP = "group"
     KIND_CHOICES = [
         (KIND_DIRECT, "Shaxsiy suhbat"),
         (KIND_AI, "AI Yordamchi"),
+        (KIND_GROUP, "Guruh"),
     ]
 
     kind = models.CharField(max_length=10, choices=KIND_CHOICES, default=KIND_DIRECT, db_index=True)
+    # direct/ai uchun: participant_1/participant_2 ikki tomon.
+    # group uchun: participant_1 - guruh yaratuvchisi, participant_2 - bo'sh,
+    # haqiqiy a'zolar ro'yxati - `participants` (M2M).
     participant_1 = models.ForeignKey(
         Employee, on_delete=models.CASCADE, related_name="conversations_as_p1", db_index=True,
     )
@@ -26,6 +31,9 @@ class Conversation(models.Model):
         Employee, on_delete=models.CASCADE, related_name="conversations_as_p2",
         null=True, blank=True, db_index=True,
     )
+    # Faqat kind="group" uchun:
+    name = models.CharField(max_length=100, null=True, blank=True, verbose_name="Guruh nomi")
+    participants = models.ManyToManyField(Employee, blank=True, related_name="group_conversations")
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
@@ -46,18 +54,28 @@ class Conversation(models.Model):
     def __str__(self):
         if self.kind == self.KIND_AI:
             return f"{self.participant_1} - AI Yordamchi"
+        if self.kind == self.KIND_GROUP:
+            return f"Guruh: {self.name}"
         return f"{self.participant_1} - {self.participant_2}"
 
     def other_participant(self, employee):
-        """Berilgan xodim uchun suhbatdoshi (AI suhbatida - None)."""
-        if self.kind == self.KIND_AI:
+        """Berilgan xodim uchun suhbatdoshi (AI suhbatida va guruhda - None)."""
+        if self.kind != self.KIND_DIRECT:
             return None
         if self.participant_1_id == employee.id:
             return self.participant_2
         return self.participant_1
 
     def has_participant(self, employee):
+        if self.kind == self.KIND_GROUP:
+            return self.participants.filter(id=employee.id).exists()
         return employee.id in (self.participant_1_id, self.participant_2_id)
+
+    # "O'zimdan o'chirish" (WhatsApp uslubida) - suhbat ma'lumoti o'chmaydi,
+    # faqat shu xodim uchun ro'yxatdan yashiriladi. Qarshi tomon yangi xabar
+    # yozsa, avtomatik qayta paydo bo'ladi (services.get_or_create_direct_conversation
+    # emas, chat_send o'zi tozalaydi).
+    hidden_for = models.ManyToManyField(Employee, blank=True, related_name="hidden_conversations")
 
 
 class Message(models.Model):
