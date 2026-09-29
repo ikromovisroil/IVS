@@ -240,7 +240,6 @@ def _create_deed_for_order(order, request=None):
             status_receiver="approved",
             date_receiver=order.date_approved,
             body=html_body,
-            order=order,
             status="petition",
         )
 
@@ -252,6 +251,7 @@ def _create_deed_for_order(order, request=None):
 
         deed.file.save(f"order_{order.id}.pdf", ContentFile(pdf_bytes), save=False)
         deed.save()
+        deed.orders.add(order)
 
         if order.receiver_id:
             DeedConsent.objects.create(
