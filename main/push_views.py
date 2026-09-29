@@ -8,7 +8,6 @@ from django.core.exceptions import PermissionDenied
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from pywebpush import webpush, WebPushException
 
 from .models import Employee, OrderGoal
 from core.models import PushSubscription
@@ -113,59 +112,14 @@ def send_push_notification(employee, title, body, url="/", tag=None):
     JIM (ekranga popup chiqarmasdan) yangisiga almashtiradi. Shuning uchun
     har bir HAQIQIY hodisa (ariza, hujjat) uchun UNIKAL tag berish shart,
     aks holda foydalanuvchi keyingi notification'larni ko'rmay qoladi.
+
+    Haqiqiy yuborish (webpush - tarmoqqa so'rov) Celery worker'da, orqa
+    fonda bajariladi (`main.tasks.send_push_notification_task`) - shu
+    view/request osilib qolmasligi uchun (masalan "Ariza Yaratish").
     """
-    subscriptions = PushSubscription.objects.filter(employee=employee)
-    if not subscriptions.exists():
-        return
+    from .tasks import send_push_notification_task
 
-    dead_ids = []
-
-    payload = {
-        "title": title,
-        "body": body,
-        "url": url,
-        "icon": "/static/img/apple-touch-icon.png",
-    }
-    if tag:
-        payload["tag"] = tag
-
-    for sub in subscriptions:
-        try:
-            response = webpush(
-                subscription_info={
-                    "endpoint": sub.endpoint,
-                    "keys": {
-                        "p256dh": sub.p256dh,
-                        "auth": sub.auth,
-                    },
-                },
-                data=json.dumps(payload),
-                vapid_private_key=settings.VAPID_PRIVATE_KEY_PEM,
-                vapid_claims=dict(settings.VAPID_CLAIMS),
-            )
-            logger.info(
-                "Push yuborildi: employee_id=%s, status=%s, tag=%s",
-                employee.id, response.status_code, tag,
-            )
-
-        except WebPushException as e:
-            status_code = e.response.status_code if e.response else None
-            response_text = e.response.text if e.response else None
-            logger.error(
-                "Push xatosi: employee_id=%s, endpoint=%s, status=%s, body=%s",
-                employee.id, sub.endpoint, status_code, response_text,
-            )
-            if status_code in (404, 410):
-                dead_ids.append(sub.id)
-
-        except Exception:
-            logger.exception(
-                "Push yuborishda kutilmagan xato: employee_id=%s, endpoint=%s",
-                employee.id, sub.endpoint,
-            )
-
-    if dead_ids:
-        PushSubscription.objects.filter(id__in=dead_ids).delete()
+    send_push_notification_task.delay(employee.id, title, body, url, tag)
 
 
 # ─────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 # main/tasks.py
+import json
 import logging
 import re
 import time
@@ -376,3 +377,103 @@ def _describe_changes(emp, assigned, result=None):
         changes.append(f"Lavozim: {old} → {new}")
 
     return " | ".join(changes)
+
+
+# =========================================================
+# PUSH BILDIRISHNOMA - orqa fonda yuborish
+# =========================================================
+# `push_views.send_push_notification()` avval webpush() so'rovini
+# to'g'ridan-to'g'ri HTTP request ichida (sinxron) yuborardi - agar push
+# xizmati sekin javob bersa yoki tarmoq muammosi bo'lsa, butun sahifa
+# (masalan "Ariza Yaratish") shu yerda osilib qolardi. Endi shu ish
+# Celery worker'ga topshiriladi, HTTP javobi darhol qaytadi.
+@shared_task(bind=True, max_retries=3, default_retry_delay=60)
+def send_push_notification_task(self, employee_id, title, body, url="/", tag=None):
+    from pywebpush import webpush, WebPushException
+    from core.models import PushSubscription
+
+    subscriptions = PushSubscription.objects.filter(employee_id=employee_id)
+    if not subscriptions.exists():
+        return
+
+    dead_ids = []
+    payload = {
+        "title": title,
+        "body": body,
+        "url": url,
+        "icon": "/static/img/apple-touch-icon.png",
+    }
+    if tag:
+        payload["tag"] = tag
+
+    for sub in subscriptions:
+        try:
+            response = webpush(
+                subscription_info={
+                    "endpoint": sub.endpoint,
+                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth},
+                },
+                data=json.dumps(payload),
+                vapid_private_key=settings.VAPID_PRIVATE_KEY_PEM,
+                vapid_claims=dict(settings.VAPID_CLAIMS),
+                timeout=5,
+            )
+            logger.info(
+                "Push yuborildi: employee_id=%s, status=%s, tag=%s",
+                employee_id, response.status_code, tag,
+            )
+
+        except WebPushException as e:
+            status_code = e.response.status_code if e.response else None
+            response_text = e.response.text if e.response else None
+            logger.error(
+                "Push xatosi: employee_id=%s, endpoint=%s, status=%s, body=%s",
+                employee_id, sub.endpoint, status_code, response_text,
+            )
+            if status_code in (404, 410):
+                dead_ids.append(sub.id)
+
+        except Exception:
+            logger.exception(
+                "Push yuborishda kutilmagan xato: employee_id=%s, endpoint=%s",
+                employee_id, sub.endpoint,
+            )
+
+    if dead_ids:
+        PushSubscription.objects.filter(id__in=dead_ids).delete()
+
+
+# =========================================================
+# TELEGRAM XABAR - orqa fonda yuborish
+# =========================================================
+# `bot.notify.send_telegram_message()` da timeout=5 bor - abadiy osilib
+# qolmaydi, lekin baribir HTTP so'rov ichida kutiladi (ba'zi view'larda
+# bir nechta xabar ketadi - masalan 2x5s). Push bilan bir xil naqsh:
+# haqiqiy yuborish Celery worker'da, HTTP javobi darhol qaytadi.
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_telegram_message_task(self, chat_id, text, reply_markup=None):
+    import os
+    import requests
+
+    if not chat_id:
+        return
+
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    if not token:
+        logger.warning("TELEGRAM_BOT_TOKEN topilmadi - bildirishnoma yuborilmadi")
+        return
+
+    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
+
+    try:
+        resp = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json=payload,
+            timeout=5,
+        )
+        if not resp.ok:
+            logger.warning("Telegram xabar yuborilmadi (chat_id=%s): %s", chat_id, resp.text)
+    except requests.RequestException:
+        logger.exception("Telegram xabar yuborishda tarmoq xatosi (chat_id=%s)", chat_id)
