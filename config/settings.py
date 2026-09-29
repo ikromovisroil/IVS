@@ -148,6 +148,7 @@ TEMPLATES = [
                 "main.context_processors.order_notifications",
                 "main.context_processors.order_receiver_count",
                 "main.context_processors.vapid_context",
+                "chat.context_processors.chat_notifications",
             ],
         },
     },

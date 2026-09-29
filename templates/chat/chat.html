@@ -342,6 +342,11 @@
       border-bottom: 2px solid transparent;
     }
     .chat-tabs .chat-tab.active { color: var(--chat-accent); border-bottom-color: var(--chat-accent); }
+    .chat-tab-badge {
+      display: inline-block; margin-left: 4px; background: #dc3545; color: #fff;
+      border-radius: 10px; font-size: .68rem; font-weight: 700; padding: 1px 5px;
+      min-width: 16px; text-align: center; vertical-align: middle;
+    }
     .chat-conv-item .chat-group-icon {
       background: var(--muted);
     }
@@ -384,10 +389,10 @@
       <div class="chat-sidebar">
         <div class="chat-tabs">
           <button type="button" class="chat-tab active" data-tab="direct">
-            <i class="bi bi-people me-1"></i>Xodimlar
+            <i class="bi bi-people me-1"></i>Xodimlar<span id="chatTabBadgeDirect" class="chat-tab-badge d-none"></span>
           </button>
           <button type="button" class="chat-tab" data-tab="group">
-            <i class="bi bi-people-fill me-1"></i>Guruhlar
+            <i class="bi bi-people-fill me-1"></i>Guruhlar<span id="chatTabBadgeGroup" class="chat-tab-badge d-none"></span>
           </button>
         </div>
 
@@ -594,6 +599,17 @@ document.addEventListener("DOMContentLoaded", function () {
       $item.on("click", function () { openConversation(c); });
       $list.append($item);
     });
+    updateTabBadges();
+  }
+
+  function updateTabBadges() {
+    let directUnread = 0, groupUnread = 0;
+    conversationsCache.forEach(function (c) {
+      if (c.kind === "group") groupUnread += (c.unread_count || 0);
+      else directUnread += (c.unread_count || 0);
+    });
+    $("#chatTabBadgeDirect").text(directUnread).toggleClass("d-none", directUnread === 0);
+    $("#chatTabBadgeGroup").text(groupUnread).toggleClass("d-none", groupUnread === 0);
   }
 
   // ---------------- Yorliqlar (Xodimlar / Guruhlar) ----------------

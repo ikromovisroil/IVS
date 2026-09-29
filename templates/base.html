@@ -634,7 +634,13 @@
         <li class="nav-item">
           <a class="nav-link d-flex align-items-center {% if url_name == 'chat_page' %}active{% else %}collapsed{% endif %}"
              href="{% url 'chat_page' %}">
-            <i class="bi bi-chat-dots"></i><span>Chat</span>
+            <span style="position:relative; display:inline-block;">
+              <i class="bi bi-chat-dots"></i>
+              {% if chat_unread_count > 0 %}
+              <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background-color:#dc3545; border-radius:50%; display:inline-block;"></span>
+              {% endif %}
+            </span>
+            <span>Chat</span>
           </a>
         </li>
 
