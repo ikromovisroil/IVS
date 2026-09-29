@@ -1,40 +1,18 @@
 import logging
-import os
-
-import requests
 
 logger = logging.getLogger(__name__)
 
-TELEGRAM_API_URL = "https://api.telegram.org/bot{token}/{method}"
-
-
-def _token() -> str | None:
-    return os.getenv("TELEGRAM_BOT_TOKEN")
-
 
 def send_telegram_message(chat_id: int | None, text: str, reply_markup: dict | None = None) -> None:
+    """Haqiqiy yuborish Celery worker'da, orqa fonda bajariladi
+    (`main.tasks.send_telegram_message_task`) - chaqirgan view/joy
+    Telegram API javobini kutib turmasligi uchun."""
     if not chat_id:
         return
 
-    token = _token()
-    if not token:
-        logger.warning("TELEGRAM_BOT_TOKEN topilmadi - bildirishnoma yuborilmadi")
-        return
+    from main.tasks import send_telegram_message_task
 
-    payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
-    if reply_markup:
-        payload["reply_markup"] = reply_markup
-
-    try:
-        resp = requests.post(
-            TELEGRAM_API_URL.format(token=token, method="sendMessage"),
-            json=payload,
-            timeout=5,
-        )
-        if not resp.ok:
-            logger.warning("Telegram xabar yuborilmadi (chat_id=%s): %s", chat_id, resp.text)
-    except requests.RequestException:
-        logger.exception("Telegram xabar yuborishda tarmoq xatosi (chat_id=%s)", chat_id)
+    send_telegram_message_task.delay(chat_id, text, reply_markup)
 
 
 def rating_markup(order_id: int) -> dict:
