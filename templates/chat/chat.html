@@ -412,14 +412,38 @@ document.addEventListener("DOMContentLoaded", function () {
     updateActiveHeaderStatus();
   }
 
+  let lastMessagesJson = null;
+
+  function renderMessageList(results) {
+    const $box = $("#chatMessages");
+    const nearBottom = $box[0].scrollHeight - $box.scrollTop() - $box.outerHeight() < 80;
+    $box.empty();
+    (results || []).forEach(function (m) { appendMessage(m); });
+    if (nearBottom) $box.scrollTop($box[0].scrollHeight);
+  }
+
   function loadMessages(id) {
-    const $box = $("#chatMessages").empty();
     $.getJSON(URLS.messages(id), function (resp) {
-      (resp.results || []).forEach(function (m) { appendMessage(m); });
-      $box.scrollTop($box[0].scrollHeight);
+      lastMessagesJson = JSON.stringify(resp.results || []);
+      renderMessageList(resp.results);
       loadConversations();
     });
   }
+
+  // WebSocket biror sababga ko'ra ulanmasa/uzilib qolsa ham (server ASGI
+  // rejimida ishlamasa, proksi WS'ni to'smasa va h.k.) ochiq suhbat
+  // "qotib" qolmasligi uchun zaxira sifatida davriy so'rov - o'zgarish
+  // bo'lmasa qayta chizmaydi (ekran "sakramaydi").
+  setInterval(function () {
+    if (!activeConversationId) return;
+    $.getJSON(URLS.messages(activeConversationId), function (resp) {
+      const json = JSON.stringify(resp.results || []);
+      if (json === lastMessagesJson) return;
+      lastMessagesJson = json;
+      renderMessageList(resp.results);
+      loadConversations();
+    });
+  }, 4000);
 
   function tickHtml(m) {
     if (m.is_ai) return "";
