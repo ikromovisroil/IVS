@@ -42,7 +42,7 @@ MATERIALS_PREFETCH = Prefetch(
     "materials", queryset=OrderMaterial.objects.select_related("material")
 )
 
-DEED_PREFETCH = Prefetch("orders", queryset=Deed.objects.only("id", "file", "orders"))
+DEED_PREFETCH = Prefetch("deeds", queryset=Deed.objects.only("id", "file", "orders"))
 
 
 # ═══════════════════════════════════════════════════════════════════

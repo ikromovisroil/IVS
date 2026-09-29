@@ -487,6 +487,24 @@ class LiableAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related("employee").prefetch_related("contracts", "categorys")
 
 
+@admin.register(MaterialEmployee)
+class MaterialEmployeeAdmin(admin.ModelAdmin):
+    list_display = ("id", "employee", "categories_list")
+    list_filter = ("category",)
+    search_fields = (
+        "employee__last_name", "employee__first_name",
+        "category__name",
+    )
+    autocomplete_fields = ("employee", "category")
+
+    @admin.display(description="Kategoriyalar")
+    def categories_list(self, obj):
+        return ", ".join(c.name for c in obj.category.all()) or "-"
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).select_related("employee").prefetch_related("category")
+
+
 @admin.register(MaterialMovement)
 class MaterialMovementAdmin(admin.ModelAdmin):
     list_display = [
