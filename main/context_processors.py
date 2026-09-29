@@ -158,6 +158,35 @@ def order_receiver_count(request):
     return empty
 
 
+def contact_badge_counts(request):
+    """Sidebardagi "Xabarlar" bo'limi uchun - "Imzolash uchun" va
+    "Kelishish uchun" view'laridagi bilan AYNAN bir xil querysetdan
+    hisoblangan sonlar (main/views.py: contact, contact_agrement)."""
+    empty = {"contact_badge_count": 0, "contact_agrement_badge_count": 0}
+
+    if not request.user.is_authenticated:
+        return empty
+
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        return empty
+
+    contact_count = Deed.objects.filter(
+        Q(sender_id=employee.id, status_sender="viewed") |
+        Q(receiver_id=employee.id, status_receiver="viewed")
+    ).distinct().count()
+
+    agrement_count = Deed.objects.filter(
+        deedconsent__employee_id=employee.id,
+        deedconsent__status="viewed",
+    ).distinct().count()
+
+    return {
+        "contact_badge_count": contact_count,
+        "contact_agrement_badge_count": agrement_count,
+    }
+
+
 def vapid_context(request):
     """
     VAPID public key'ni har bir sahifaga yetkazadi - frontend JS

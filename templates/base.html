@@ -438,7 +438,12 @@
              data-bs-target="#forms-nav-deed"
              data-bs-toggle="collapse"
              href="#">
-            <i class="bi bi-envelope"></i>
+            <span style="position:relative; display:inline-block;">
+              <i class="bi bi-envelope"></i>
+              {% if contact_badge_count > 0 or contact_agrement_badge_count > 0 %}
+              <span style="position:absolute; top:-2px; right:-2px; width:8px; height:8px; background-color:#dc3545; border-radius:50%; display:inline-block;"></span>
+              {% endif %}
+            </span>
             <span>Xabarlar</span>
             <i class="bi bi-chevron-down ms-auto"></i>
           </a>
@@ -455,16 +460,22 @@
             </li>
 
             <li>
-              <a class="{% if url_name == 'contact' or url_name == 'contact_arxiv' %}active{% endif %}"
+              <a class="d-flex align-items-center {% if url_name == 'contact' or url_name == 'contact_arxiv' %}active{% endif %}"
                  href="{% url 'contact' %}">
                 <i class="bi bi-circle"></i><span>Imzolash uchun</span>
+                {% if contact_badge_count > 0 %}
+                <span class="badge bg-danger ms-auto">{{ contact_badge_count }}</span>
+                {% endif %}
               </a>
             </li>
 
             <li>
-              <a class="{% if url_name == 'contact_agrement' or url_name == 'contact_agrement_arxiv' %}active{% endif %}"
+              <a class="d-flex align-items-center {% if url_name == 'contact_agrement' or url_name == 'contact_agrement_arxiv' %}active{% endif %}"
                  href="{% url 'contact_agrement' %}">
                 <i class="bi bi-circle"></i><span>Kelishish uchun</span>
+                {% if contact_agrement_badge_count > 0 %}
+                <span class="badge bg-danger ms-auto">{{ contact_agrement_badge_count }}</span>
+                {% endif %}
               </a>
             </li>
           </ul>
