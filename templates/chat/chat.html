@@ -324,6 +324,7 @@
       font-size: .68rem; color: var(--chat-accent); border: 1px solid var(--chat-accent);
       border-radius: 8px; padding: 0 6px; margin-right: 2px;
     }
+    .chat-member-creator-badge { color: #d4a017; border-color: #d4a017; }
     .chat-member-actions button {
       border: none; background: transparent; color: var(--muted); padding: 2px 4px; cursor: pointer;
     }
@@ -701,24 +702,32 @@ document.addEventListener("DOMContentLoaded", function () {
   function loadGroupMembers() {
     $.getJSON(URLS.groupMembers(activeConversationId), function (resp) {
       const amAdmin = resp.am_admin;
+      const amCreator = resp.am_creator;
       currentGroupMemberIds = new Set(resp.results.map(function (m) { return m.id; }));
       const $list = $("#chatMemberList").empty();
       resp.results.forEach(function (m) {
+        const badge = m.is_creator
+          ? '<span class="chat-member-admin-badge chat-member-creator-badge">yaratuvchi</span>'
+          : (m.is_admin ? '<span class="chat-member-admin-badge">admin</span>' : '');
         const $row = $(
           '<div class="chat-member-row">' +
             avatarHtml(m.name, m.id) +
-            (m.is_admin ? '<span class="chat-member-admin-badge">admin</span>' : '') +
+            badge +
             '<span class="chat-member-name">' + esc(m.name) + (m.is_me ? " (siz)" : "") + '</span>' +
             '<span class="chat-member-actions"></span>' +
           '</div>'
         );
         const $actions = $row.find(".chat-member-actions");
-        if (amAdmin && !m.is_me) {
+        // Admin tayinlash/tushirish - faqat yaratuvchi (super admin) qila oladi.
+        if (amCreator && !m.is_creator && !m.is_me) {
           const $adminBtn = $('<button type="button" title="' + (m.is_admin ? "Admindan tushirish" : "Admin qilish") + '"><i class="bi bi-star' + (m.is_admin ? "-fill" : "") + '"></i></button>');
           $adminBtn.on("click", function () { toggleGroupAdmin(m.id, !m.is_admin); });
           $actions.append($adminBtn);
         }
-        if (amAdmin || m.is_me) {
+        // Chiqarish - o'zini har doim, yaratuvchini hech kim, adminni faqat
+        // yaratuvchi, oddiy a'zoni admin yoki yaratuvchi chiqara oladi.
+        const canRemove = m.is_me || (!m.is_creator && (amCreator || (amAdmin && !m.is_admin)));
+        if (canRemove) {
           const $rmBtn = $('<button type="button" title="' + (m.is_me ? "Guruhdan chiqish" : "Guruhdan chiqarish") + '"><i class="bi bi-' + (m.is_me ? "box-arrow-right" : "x-lg") + '"></i></button>');
           $rmBtn.on("click", function () { removeGroupMember(m.id, m.is_me); });
           $actions.append($rmBtn);

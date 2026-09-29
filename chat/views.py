@@ -279,6 +279,13 @@ def _require_group_admin(conv, employee):
         raise PermissionDenied("Bu amal uchun guruh admini bo'lishingiz kerak")
 
 
+def _require_group_creator(conv, employee):
+    if conv.kind != Conversation.KIND_GROUP:
+        raise PermissionDenied("Bu guruh emas")
+    if not conv.is_group_creator(employee):
+        raise PermissionDenied("Bu amal uchun guruh yaratuvchisi (super admin) bo'lishingiz kerak")
+
+
 @never_cache
 @require_GET
 @login_required
@@ -291,13 +298,20 @@ def chat_group_members(request, conversation_id):
         return JsonResponse({"error": "Bu guruh emas"}, status=400)
 
     admin_ids = set(conv.admins.values_list("id", flat=True))
+    creator_id = conv.participant_1_id
     members = [
-        {"id": m.id, "name": m.full_name, "is_admin": m.id in admin_ids, "is_me": m.id == employee.id}
+        {
+            "id": m.id, "name": m.full_name,
+            "is_admin": m.id in admin_ids,
+            "is_creator": m.id == creator_id,
+            "is_me": m.id == employee.id,
+        }
         for m in conv.participants.all().order_by("last_name", "first_name")
     ]
     return JsonResponse({
         "results": members,
         "am_admin": employee.id in admin_ids,
+        "am_creator": employee.id == creator_id,
     })
 
 
@@ -322,20 +336,33 @@ def chat_group_add_members(request, conversation_id):
 @require_POST
 @login_required
 def chat_group_remove_member(request, conversation_id, member_id):
+    """A'zoni chiqarish - uch darajali huquq:
+    - Oddiy a'zo - hech kimni chiqara olmaydi (faqat o'zi chiqa oladi).
+    - Admin - faqat oddiy a'zolarni chiqara oladi (boshqa adminni yoki
+      yaratuvchini chiqara olmaydi).
+    - Guruh yaratuvchisi (super admin) - adminlarni ham, oddiy a'zolarni
+      ham chiqara oladi. Yaratuvchini hech kim (o'zidan tashqari) chiqara
+      olmaydi.
+    """
     employee = _current_employee(request)
     conv = get_object_or_404(Conversation, pk=conversation_id)
     if conv.kind != Conversation.KIND_GROUP:
         return JsonResponse({"error": "Bu guruh emas"}, status=400)
 
-    # Admin boshqa a'zoni chiqara oladi; xodim o'zini ham chiqara oladi
-    # ("guruhdan chiqish").
-    if member_id != employee.id and not conv.is_group_admin(employee):
-        raise PermissionDenied("Faqat admin boshqa a'zoni chiqara oladi")
-    if not conv.has_participant(employee) and member_id != employee.id:
+    is_self = member_id == employee.id
+    if not conv.has_participant(employee) and not is_self:
         raise PermissionDenied("Bu suhbat sizga tegishli emas")
 
-    if conv.admins.filter(id=member_id).exists() and conv.admins.count() <= 1:
-        return JsonResponse({"error": "Guruhda kamida bitta admin qolishi kerak"}, status=400)
+    if not is_self:
+        if conv.participant_1_id == member_id:
+            raise PermissionDenied("Guruh yaratuvchisini chiqarib bo'lmaydi")
+        if conv.is_group_creator(employee):
+            pass  # super admin - adminlarni ham, oddiy a'zolarni ham chiqara oladi
+        elif conv.is_group_admin(employee):
+            if conv.admins.filter(id=member_id).exists():
+                raise PermissionDenied("Admin boshqa adminni chiqara olmaydi - faqat guruh yaratuvchisi")
+        else:
+            raise PermissionDenied("Faqat admin boshqa a'zoni chiqara oladi")
 
     remove_group_member(conv, member_id)
     conv.save(update_fields=["date_edit"])
@@ -347,16 +374,18 @@ def chat_group_remove_member(request, conversation_id, member_id):
 @require_POST
 @login_required
 def chat_group_set_admin(request, conversation_id, member_id):
+    """Admin tayinlash/tushirish - faqat guruh yaratuvchisi (super admin)
+    huquqiga ega, oddiy adminlar bunga aralasha olmaydi."""
     employee = _current_employee(request)
     conv = get_object_or_404(Conversation, pk=conversation_id)
-    _require_group_admin(conv, employee)
+    _require_group_creator(conv, employee)
 
     if not conv.participants.filter(id=member_id).exists():
         return JsonResponse({"error": "Bu xodim guruh a'zosi emas"}, status=400)
+    if conv.participant_1_id == member_id:
+        return JsonResponse({"error": "Guruh yaratuvchisi doim admin hisoblanadi"}, status=400)
 
     is_admin = (request.POST.get("is_admin") or "").strip() == "1"
-    if not is_admin and conv.admins.count() <= 1 and conv.admins.filter(id=member_id).exists():
-        return JsonResponse({"error": "Guruhda kamida bitta admin qolishi kerak"}, status=400)
 
     set_group_admin(conv, member_id, is_admin)
     push_group_update(conv)

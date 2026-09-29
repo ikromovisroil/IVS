@@ -77,6 +77,13 @@ class Conversation(models.Model):
     def is_group_admin(self, employee):
         return self.kind == self.KIND_GROUP and self.admins.filter(id=employee.id).exists()
 
+    def is_group_creator(self, employee):
+        """Guruh yaratuvchisi - "super admin": oddiy adminlar boshqa
+        adminni chiqara olmaydi/admin qila olmaydi, faqat yaratuvchi
+        buni qila oladi (`participant_1` guruh uchun yaratuvchini
+        anglatadi, ko'ring yuqoridagi izoh)."""
+        return self.kind == self.KIND_GROUP and self.participant_1_id == employee.id
+
     # "O'zimdan o'chirish" (WhatsApp uslubida) - suhbat ma'lumoti o'chmaydi,
     # faqat shu xodim uchun ro'yxatdan yashiriladi. Qarshi tomon yangi xabar
     # yozsa, avtomatik qayta paydo bo'ladi (services.get_or_create_direct_conversation
