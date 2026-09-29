@@ -13,6 +13,11 @@ WKHTMLTOPDF_PATH = os.getenv("WKHTMLTOPDF_PATH", "")
 if not WKHTMLTOPDF_PATH:
     WKHTMLTOPDF_PATH = shutil.which("wkhtmltopdf") or ""
 
+# PDF hosil qilish "dvigateli". Standart - weasyprint (production, Linux, GTK3
+# o'rnatilgan). Windowsda GTK3 yo'q bo'lsa, .env'da PDF_ENGINE=wkhtmltopdf
+# qo'yib, WKHTMLTOPDF_PATH orqali wkhtmltopdf.exe bilan ishlatish mumkin.
+PDF_ENGINE = os.getenv("PDF_ENGINE", "weasyprint")
+
 
 SITE_BASE_URL = os.getenv("SITE_BASE_URL", "https://report.yatm.uz")
 # =========================================================
