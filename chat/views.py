@@ -13,14 +13,17 @@ from main.push_views import send_push_notification
 
 from .ai import generate_ai_reply
 from .models import Conversation, Message
-from .realtime import push_delete, push_edit, push_message, push_read, serialize_message
+from .realtime import push_delete, push_edit, push_group_update, push_message, push_read, serialize_message
 from .services import (
+    add_group_members,
     create_group_conversation,
     get_or_create_ai_conversation,
     get_or_create_direct_conversation,
     hide_conversation,
     mark_read,
     online_info,
+    remove_group_member,
+    set_group_admin,
     touch_online,
     unhide_conversation_for,
     unread_count,
@@ -52,6 +55,7 @@ def _serialize_conversation(conv: Conversation, employee: Employee) -> dict:
         "title": title,
         "other_id": other.id if other else None,
         "member_count": conv.participants.count() if conv.kind == Conversation.KIND_GROUP else None,
+        "is_admin": conv.is_group_admin(employee) if conv.kind == Conversation.KIND_GROUP else None,
         "last_message": ("📎 Fayl" if (last_msg and last_msg.attachment and not last_msg.body) else (last_msg.body[:80] if last_msg else "")),
         "last_message_at": last_msg.date_creat.isoformat() if last_msg else None,
         "unread_count": unread_count(conv, employee),
@@ -265,6 +269,97 @@ def chat_hide(request, conversation_id):
         raise PermissionDenied("Bu suhbat sizga tegishli emas")
 
     hide_conversation(conv, employee)
+    return JsonResponse({"ok": True})
+
+
+def _require_group_admin(conv, employee):
+    if conv.kind != Conversation.KIND_GROUP:
+        raise PermissionDenied("Bu guruh emas")
+    if not conv.is_group_admin(employee):
+        raise PermissionDenied("Bu amal uchun guruh admini bo'lishingiz kerak")
+
+
+@never_cache
+@require_GET
+@login_required
+def chat_group_members(request, conversation_id):
+    employee = _current_employee(request)
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    if not conv.has_participant(employee):
+        raise PermissionDenied("Bu suhbat sizga tegishli emas")
+    if conv.kind != Conversation.KIND_GROUP:
+        return JsonResponse({"error": "Bu guruh emas"}, status=400)
+
+    admin_ids = set(conv.admins.values_list("id", flat=True))
+    members = [
+        {"id": m.id, "name": m.full_name, "is_admin": m.id in admin_ids, "is_me": m.id == employee.id}
+        for m in conv.participants.all().order_by("last_name", "first_name")
+    ]
+    return JsonResponse({
+        "results": members,
+        "am_admin": employee.id in admin_ids,
+    })
+
+
+@never_cache
+@require_POST
+@login_required
+def chat_group_add_members(request, conversation_id):
+    employee = _current_employee(request)
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    _require_group_admin(conv, employee)
+
+    member_ids = request.POST.getlist("members[]") or request.POST.getlist("members")
+    allowed_org_id = None if request.user.has_perm("main.all_organization") else employee.organization_id
+    added = add_group_members(conv, member_ids, allowed_org_id=allowed_org_id)
+    if added:
+        conv.save(update_fields=["date_edit"])
+        push_group_update(conv)
+    return JsonResponse({"added": added})
+
+
+@never_cache
+@require_POST
+@login_required
+def chat_group_remove_member(request, conversation_id, member_id):
+    employee = _current_employee(request)
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    if conv.kind != Conversation.KIND_GROUP:
+        return JsonResponse({"error": "Bu guruh emas"}, status=400)
+
+    # Admin boshqa a'zoni chiqara oladi; xodim o'zini ham chiqara oladi
+    # ("guruhdan chiqish").
+    if member_id != employee.id and not conv.is_group_admin(employee):
+        raise PermissionDenied("Faqat admin boshqa a'zoni chiqara oladi")
+    if not conv.has_participant(employee) and member_id != employee.id:
+        raise PermissionDenied("Bu suhbat sizga tegishli emas")
+
+    if conv.admins.filter(id=member_id).exists() and conv.admins.count() <= 1:
+        return JsonResponse({"error": "Guruhda kamida bitta admin qolishi kerak"}, status=400)
+
+    remove_group_member(conv, member_id)
+    conv.save(update_fields=["date_edit"])
+    push_group_update(conv, removed_member_id=member_id)
+    return JsonResponse({"ok": True})
+
+
+@never_cache
+@require_POST
+@login_required
+def chat_group_set_admin(request, conversation_id, member_id):
+    employee = _current_employee(request)
+    conv = get_object_or_404(Conversation, pk=conversation_id)
+    _require_group_admin(conv, employee)
+
+    if not conv.participants.filter(id=member_id).exists():
+        return JsonResponse({"error": "Bu xodim guruh a'zosi emas"}, status=400)
+
+    is_admin = (request.POST.get("is_admin") or "").strip() == "1"
+    if not is_admin and conv.admins.count() <= 1 and conv.admins.filter(id=member_id).exists():
+        return JsonResponse({"error": "Guruhda kamida bitta admin qolishi kerak"}, status=400)
+
+    set_group_admin(conv, member_id, is_admin)
+    push_group_update(conv)
     return JsonResponse({"ok": True})
 
 

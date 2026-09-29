@@ -73,3 +73,22 @@ def push_read(conv: Conversation, reader_employee_id: int, message_ids: list) ->
         "reader_id": reader_employee_id,
         "message_ids": message_ids,
     })
+
+
+def push_group_update(conv: Conversation, removed_member_id: int = None) -> None:
+    """Guruh a'zolari/adminlari o'zgarganda - qolgan a'zolarga (va agar
+    biror kim chiqarilgan bo'lsa, o'sha kishiga ham, chunki u endi
+    `conv.participants` da yo'q - suhbatlar ro'yxatidagi holatini
+    yangilashi uchun) xabar beriladi."""
+    channel_layer = get_channel_layer()
+    if channel_layer is None:
+        return
+    ids = _recipient_ids(conv)
+    if removed_member_id is not None:
+        ids = ids | {removed_member_id}
+    payload = {"type": "chat.group_update", "conversation_id": conv.id}
+    for emp_id in ids:
+        try:
+            async_to_sync(channel_layer.group_send)(_group_name(emp_id), payload)
+        except Exception:
+            pass

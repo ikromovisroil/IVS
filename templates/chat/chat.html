@@ -125,8 +125,13 @@
       background-size: 22px 22px;
     }
     .chat-messages[data-wallpaper="waves"] {
-      background-image: repeating-radial-gradient(circle at 0 0, transparent 0, color-mix(in srgb, #2ecc71 16%, var(--surface)) 20px);
-      background-size: 34px 34px;
+      /* Aniqroq to'lqin (yuqori foiz) + ustiga "kopik" pufakchalari qatlami. */
+      background-image:
+        radial-gradient(circle, color-mix(in srgb, #2ecc71 55%, var(--surface)) 2.2px, transparent 2.2px),
+        radial-gradient(circle, color-mix(in srgb, #2ecc71 38%, var(--surface)) 1.3px, transparent 1.3px),
+        repeating-radial-gradient(circle at 0 0, transparent 0, color-mix(in srgb, #2ecc71 32%, var(--surface)) 20px);
+      background-size: 46px 46px, 26px 26px, 34px 34px;
+      background-position: 0 0, 13px 20px, 0 0;
     }
     .chat-row {
       display: flex;
@@ -255,13 +260,17 @@
     }
     .chat-header-actions button:hover { background: var(--surface-2); color: var(--ink); }
     .chat-info-panel {
-      position: absolute;
-      top: 0; right: 0; bottom: 0;
+      /* Desktopda oddiy flex-element sifatida - chat maydonini "torayti-
+         radi", ustiga chiqib xabar matnini yashirmaydi (avval absolute
+         edi va oxirgi xabarni ko'mib qo'yardi). Mobilda pastdagi media-
+         query orqali yana to'liq ekran overlay'ga qaytariladi. */
+      position: relative;
+      flex-shrink: 0;
       width: 300px;
       background: var(--surface);
       border-left: 1px solid var(--line);
       box-shadow: var(--shadow-md, -4px 0 14px rgba(0,0,0,.12));
-      z-index: 30;
+      z-index: 5;
       display: flex;
       flex-direction: column;
       padding: 16px;
@@ -286,7 +295,14 @@
     .chat-wallpaper-swatch.active { border-color: var(--chat-accent); }
     .chat-wallpaper-swatch[data-w="dots"] { background-image: radial-gradient(circle, color-mix(in srgb, #2ecc71 45%, var(--surface)) 1.5px, transparent 1.5px); background-size: 8px 8px; }
     .chat-wallpaper-swatch[data-w="grid"] { background-image: linear-gradient(color-mix(in srgb, #2ecc71 28%, var(--surface)) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, #2ecc71 28%, var(--surface)) 1px, transparent 1px); background-size: 10px 10px; }
-    .chat-wallpaper-swatch[data-w="waves"] { background-image: repeating-radial-gradient(circle at 0 0, transparent 0, color-mix(in srgb, #2ecc71 16%, var(--surface)) 9px); background-size: 16px 16px; }
+    .chat-wallpaper-swatch[data-w="waves"] {
+      background-image:
+        radial-gradient(circle, color-mix(in srgb, #2ecc71 55%, var(--surface)) 1.1px, transparent 1.1px),
+        radial-gradient(circle, color-mix(in srgb, #2ecc71 38%, var(--surface)) .7px, transparent .7px),
+        repeating-radial-gradient(circle at 0 0, transparent 0, color-mix(in srgb, #2ecc71 32%, var(--surface)) 9px);
+      background-size: 20px 20px, 11px 11px, 16px 16px;
+      background-position: 0 0, 6px 9px, 0 0;
+    }
     .chat-theme-swatch {
       display: flex; align-items: center; gap: 6px;
       border: 1px solid var(--line); border-radius: 20px; padding: 6px 12px;
@@ -295,6 +311,27 @@
     .chat-theme-swatch.active { border-color: var(--chat-accent); box-shadow: 0 0 0 1px var(--chat-accent); }
     .chat-theme-swatch .dot { width: 14px; height: 14px; border-radius: 50%; }
     .chat-hide-btn { width: 100%; text-align: left; }
+
+    /* ---------- Guruh a'zolari ro'yxati (Ma'lumot panelida) ---------- */
+    .chat-member-list { max-height: 180px; overflow-y: auto; margin-bottom: 8px; }
+    .chat-member-row {
+      display: flex; align-items: center; gap: 8px; padding: 5px 2px;
+      font-size: .84rem; color: var(--ink);
+    }
+    .chat-member-row .chat-avatar { width: 28px; height: 28px; min-width: 28px; font-size: .7rem; }
+    .chat-member-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .chat-member-admin-badge {
+      font-size: .68rem; color: var(--chat-accent); border: 1px solid var(--chat-accent);
+      border-radius: 8px; padding: 0 6px; margin-right: 2px;
+    }
+    .chat-member-actions button {
+      border: none; background: transparent; color: var(--muted); padding: 2px 4px; cursor: pointer;
+    }
+    .chat-member-actions button:hover { color: var(--chat-accent); }
+    .chat-member-add-toggle {
+      font-size: .8rem; color: var(--chat-accent); background: none; border: none;
+      cursor: pointer; padding: 2px 0; margin-bottom: 4px;
+    }
 
     /* ---------- Yorliqlar (Xodimlar / Guruhlar) ---------- */
     .chat-tabs { display: flex; border-bottom: 1px solid var(--line); }
@@ -336,7 +373,7 @@
       .chat-back-btn { display: inline-flex; }
       .chat-bubble { max-width: 82%; }
       .chat-emoji-panel { width: 220px; grid-template-columns: repeat(6, 1fr); }
-      .chat-info-panel { width: 100%; }
+      .chat-info-panel { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; z-index: 30; }
     }
   </style>
 
@@ -381,7 +418,7 @@
             <i class="bi bi-paperclip"></i>
           </button>
           <input type="file" id="chatFileInput" class="d-none"
-                 accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar">
+                 accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.xls,.xlsx">
           <div id="chatAttachPreview" class="chat-attach-preview d-none">
             <i class="bi bi-paperclip"></i>
             <span id="chatAttachName"></span>
@@ -406,6 +443,15 @@
         <div id="chatInfoName" class="chat-info-name"></div>
         <div id="chatInfoStatus" class="chat-info-status"></div>
 
+        <div id="chatMemberSection" class="d-none">
+          <div class="chat-info-section-title"><i class="bi bi-people me-1"></i>A'zolar</div>
+          <div id="chatMemberList" class="chat-member-list"></div>
+          <div id="chatMemberAddWrap" class="d-none mt-2">
+            <input type="text" id="chatMemberAddSearch" class="form-control form-control-sm" placeholder="A'zo qo'shish...">
+            <div id="chatMemberAddResults" class="list-group mt-1" style="max-height:140px; overflow-y:auto;"></div>
+          </div>
+        </div>
+
         <div class="chat-info-section-title"><i class="bi bi-palette me-1"></i>Fon tanlang</div>
         <div class="chat-wallpaper-options">
           <div class="chat-wallpaper-swatch" data-w="plain" title="Oddiy"></div>
@@ -423,7 +469,7 @@
         </div>
 
         <button type="button" id="chatHideBtn" class="btn btn-outline-danger btn-sm chat-hide-btn">
-          <i class="bi bi-box-arrow-right me-1"></i>Chatni o'zimdan o'chirish
+          <i class="bi bi-box-arrow-right me-1"></i>Chatni o'chirish
         </button>
       </div>
 
@@ -460,6 +506,10 @@ document.addEventListener("DOMContentLoaded", function () {
     del: function (id) { return "/chat/api/message/" + id + "/delete/"; },
     hide: function (id) { return "/chat/api/" + id + "/hide/"; },
     createGroup: "{% url 'chat_create_group' %}",
+    groupMembers: function (id) { return "/chat/api/" + id + "/members/"; },
+    groupAddMembers: function (id) { return "/chat/api/" + id + "/members/add/"; },
+    groupRemoveMember: function (id, mid) { return "/chat/api/" + id + "/members/" + mid + "/remove/"; },
+    groupSetAdmin: function (id, mid) { return "/chat/api/" + id + "/members/" + mid + "/admin/"; },
   };
 
   let activeConversationId = null;
@@ -623,9 +673,10 @@ document.addEventListener("DOMContentLoaded", function () {
     $("#chatWrap").addClass("mobile-chat-open");
     loadMessages(c.id);
     updateActiveHeaderStatus();
+    if (!$("#chatInfoPanel").hasClass("d-none")) openInfoPanel();
   }
 
-  // ---------------- Ma'lumot paneli (fon + tema + o'chirish) ----------------
+  // ---------------- Ma'lumot paneli (fon + tema + a'zolar + o'chirish) ----------------
   function openInfoPanel() {
     if (!activeConvData) return;
     $("#chatInfoAvatar")
@@ -633,8 +684,111 @@ document.addEventListener("DOMContentLoaded", function () {
       .text(initials(activeConvData.title));
     $("#chatInfoName").text(activeConvData.title);
     updateInfoStatus();
+    $("#chatMemberAddWrap").addClass("d-none");
+    $("#chatMemberAddSearch").val("");
+    $("#chatMemberAddResults").empty();
+    if (activeConvData.kind === "group") {
+      $("#chatMemberSection").removeClass("d-none");
+      loadGroupMembers();
+    } else {
+      $("#chatMemberSection").addClass("d-none");
+    }
     $("#chatInfoPanel").removeClass("d-none");
   }
+
+  let currentGroupMemberIds = new Set();
+
+  function loadGroupMembers() {
+    $.getJSON(URLS.groupMembers(activeConversationId), function (resp) {
+      const amAdmin = resp.am_admin;
+      currentGroupMemberIds = new Set(resp.results.map(function (m) { return m.id; }));
+      const $list = $("#chatMemberList").empty();
+      resp.results.forEach(function (m) {
+        const $row = $(
+          '<div class="chat-member-row">' +
+            avatarHtml(m.name, m.id) +
+            (m.is_admin ? '<span class="chat-member-admin-badge">admin</span>' : '') +
+            '<span class="chat-member-name">' + esc(m.name) + (m.is_me ? " (siz)" : "") + '</span>' +
+            '<span class="chat-member-actions"></span>' +
+          '</div>'
+        );
+        const $actions = $row.find(".chat-member-actions");
+        if (amAdmin && !m.is_me) {
+          const $adminBtn = $('<button type="button" title="' + (m.is_admin ? "Admindan tushirish" : "Admin qilish") + '"><i class="bi bi-star' + (m.is_admin ? "-fill" : "") + '"></i></button>');
+          $adminBtn.on("click", function () { toggleGroupAdmin(m.id, !m.is_admin); });
+          $actions.append($adminBtn);
+        }
+        if (amAdmin || m.is_me) {
+          const $rmBtn = $('<button type="button" title="' + (m.is_me ? "Guruhdan chiqish" : "Guruhdan chiqarish") + '"><i class="bi bi-' + (m.is_me ? "box-arrow-right" : "x-lg") + '"></i></button>');
+          $rmBtn.on("click", function () { removeGroupMember(m.id, m.is_me); });
+          $actions.append($rmBtn);
+        }
+        $list.append($row);
+      });
+
+      $("#chatMemberAddWrap").toggleClass("d-none", !amAdmin);
+      if (amAdmin && !$("#chatMemberAddToggle").length) {
+        const $toggle = $('<button type="button" id="chatMemberAddToggle" class="chat-member-add-toggle"><i class="bi bi-plus-lg"></i> A\'zo qo\'shish</button>');
+        $toggle.on("click", function () { $("#chatMemberAddWrap").removeClass("d-none"); $("#chatMemberAddSearch").trigger("focus"); });
+        $("#chatMemberSection").find(".chat-info-section-title").after($toggle);
+      }
+    });
+  }
+
+  function toggleGroupAdmin(memberId, makeAdmin) {
+    $.post(URLS.groupSetAdmin(activeConversationId, memberId), { is_admin: makeAdmin ? "1" : "0", csrfmiddlewaretoken: csrfToken }, function () {
+      loadGroupMembers();
+    }).fail(function (xhr) {
+      alert((xhr.responseJSON && xhr.responseJSON.error) || "Xatolik yuz berdi");
+    });
+  }
+
+  function removeGroupMember(memberId, isMe) {
+    const msg = isMe ? "Guruhdan chiqmoqchimisiz?" : "Bu a'zoni guruhdan chiqarmoqchimisiz?";
+    if (!confirm(msg)) return;
+    $.post(URLS.groupRemoveMember(activeConversationId, memberId), { csrfmiddlewaretoken: csrfToken }, function () {
+      if (isMe) {
+        $("#chatInfoPanel").addClass("d-none");
+        activeConversationId = null;
+        $("#chatSendForm").addClass("d-none");
+        $("#chatHeader").html('<div class="chat-header-title">Suhbat tanlang</div>');
+        $("#chatMessages").html('<div class="chat-empty">Chapdan suhbat tanlang yoki yangisini boshlang</div>');
+        $("#chatWrap").removeClass("mobile-chat-open");
+        loadConversations();
+      } else {
+        loadGroupMembers();
+        loadConversations();
+      }
+    }).fail(function (xhr) {
+      alert((xhr.responseJSON && xhr.responseJSON.error) || "Xatolik yuz berdi");
+    });
+  }
+
+  let memberAddTimer = null;
+  $("#chatMemberAddSearch").on("input", function () {
+    clearTimeout(memberAddTimer);
+    const q = $(this).val().trim();
+    if (!q) { $("#chatMemberAddResults").empty(); return; }
+    memberAddTimer = setTimeout(function () {
+      $.getJSON(URLS.contacts, { q: q }, function (resp) {
+        const $res = $("#chatMemberAddResults").empty();
+        // Guruhda allaqachon bor a'zolar qidiruv natijasida chiqmaydi.
+        const filtered = (resp.results || []).filter(function (emp) { return !currentGroupMemberIds.has(emp.id); });
+        filtered.forEach(function (emp) {
+          const $row = $('<div class="chat-contact-result">' + esc(emp.name) + '</div>');
+          $row.on("click", function () {
+            $.post(URLS.groupAddMembers(activeConversationId), { "members[]": emp.id, csrfmiddlewaretoken: csrfToken }, function () {
+              $("#chatMemberAddSearch").val("");
+              $("#chatMemberAddResults").empty();
+              loadGroupMembers();
+              loadConversations();
+            });
+          });
+          $res.append($row);
+        });
+      });
+    }, 250);
+  });
   function updateInfoStatus() {
     const c = conversationsCache.find(function (x) { return x.id === activeConversationId; }) || activeConvData;
     const $s = $("#chatInfoStatus");
@@ -647,14 +801,19 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     $("#chatHideBtn").html(
       '<i class="bi bi-box-arrow-right me-1"></i>' +
-      (c && c.kind === "group" ? "Guruhni o'zimdan yashirish" : "Chatni o'zimdan o'chirish")
+      (c && c.kind === "group" ? "Guruhdan chiqish" : "Chatni o'chirish")
     );
   }
   $("#chatInfoClose").on("click", function () { $("#chatInfoPanel").addClass("d-none"); });
 
   $("#chatHideBtn").on("click", function () {
     if (!activeConversationId) return;
-    if (!confirm("Suhbatni faqat o'zingizdan o'chirmoqchimisiz? Boshqalarga ta'sir qilmaydi.")) return;
+    const c = conversationsCache.find(function (x) { return x.id === activeConversationId; }) || activeConvData;
+    if (c && c.kind === "group") {
+      removeGroupMember(CURRENT_EMPLOYEE_ID, true);
+      return;
+    }
+    if (!confirm("Suhbatni o'chirmoqchimisiz? Boshqalarga ta'sir qilmaydi.")) return;
     $.post(URLS.hide(activeConversationId), { csrfmiddlewaretoken: csrfToken }, function () {
       $("#chatInfoPanel").addClass("d-none");
       activeConversationId = null;
@@ -1062,6 +1221,12 @@ document.addEventListener("DOMContentLoaded", function () {
         } else if (data.type === "read") {
           if (data.conversation_id === activeConversationId) {
             markTicksRead(data.message_ids);
+          }
+        } else if (data.type === "group_update") {
+          loadConversations();
+          if (data.conversation_id === activeConversationId) {
+            updateActiveHeaderStatus();
+            if (!$("#chatInfoPanel").hasClass("d-none")) loadGroupMembers();
           }
         }
       };

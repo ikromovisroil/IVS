@@ -34,6 +34,9 @@ class Conversation(models.Model):
     # Faqat kind="group" uchun:
     name = models.CharField(max_length=100, null=True, blank=True, verbose_name="Guruh nomi")
     participants = models.ManyToManyField(Employee, blank=True, related_name="group_conversations")
+    # Guruh adminlari - a'zo qo'shish/o'chirish va admin tayinlash huquqiga
+    # ega (Telegram'dagi kabi). Yaratuvchi avtomatik admin bo'ladi.
+    admins = models.ManyToManyField(Employee, blank=True, related_name="chat_admin_groups")
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
@@ -70,6 +73,9 @@ class Conversation(models.Model):
         if self.kind == self.KIND_GROUP:
             return self.participants.filter(id=employee.id).exists()
         return employee.id in (self.participant_1_id, self.participant_2_id)
+
+    def is_group_admin(self, employee):
+        return self.kind == self.KIND_GROUP and self.admins.filter(id=employee.id).exists()
 
     # "O'zimdan o'chirish" (WhatsApp uslubida) - suhbat ma'lumoti o'chmaydi,
     # faqat shu xodim uchun ro'yxatdan yashiriladi. Qarshi tomon yangi xabar

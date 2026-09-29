@@ -52,6 +52,9 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             "message_ids": event["message_ids"],
         })
 
+    async def chat_group_update(self, event):
+        await self.send_json({"type": "group_update", "conversation_id": event["conversation_id"]})
+
     @staticmethod
     async def _get_employee(user):
         from asgiref.sync import sync_to_async

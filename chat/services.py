@@ -59,7 +59,37 @@ def create_group_conversation(creator: Employee, name: str, member_ids) -> Conve
 
     conv = Conversation.objects.create(kind=Conversation.KIND_GROUP, participant_1=creator, name=name)
     conv.participants.set(valid_ids)
+    conv.admins.add(creator)
     return conv
+
+
+def add_group_members(conv: Conversation, member_ids, allowed_org_id=None) -> list:
+    """Guruhga yangi a'zo(lar) qo'shadi. `allowed_org_id` berilsa, faqat shu
+    tashkilot xodimlari qo'shiladi (ko'rish doirasi qoidasiga mos). Haqiqatda
+    qo'shilgan (avvaldan a'zo bo'lmagan, mavjud) Employee ID'lari qaytariladi."""
+    ids = set(int(m) for m in member_ids if str(m).isdigit())
+    qs = Employee.objects.filter(id__in=ids)
+    if allowed_org_id is not None:
+        qs = qs.filter(organization_id=allowed_org_id)
+    existing = set(conv.participants.values_list("id", flat=True))
+    new_ids = set(qs.values_list("id", flat=True)) - existing
+    if new_ids:
+        conv.participants.add(*new_ids)
+    return list(new_ids)
+
+
+def remove_group_member(conv: Conversation, member_id: int) -> None:
+    """A'zoni guruhdan chiqaradi - shu bilan birga admin bo'lsa, admindan
+    ham chiqariladi."""
+    conv.participants.remove(member_id)
+    conv.admins.remove(member_id)
+
+
+def set_group_admin(conv: Conversation, member_id: int, is_admin: bool) -> None:
+    if is_admin:
+        conv.admins.add(member_id)
+    else:
+        conv.admins.remove(member_id)
 
 
 def visible_conversations(employee: Employee):
