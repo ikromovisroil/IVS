@@ -1,0 +1,658 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<title>Chat</title>
+{% endblock title %}
+
+{% block content %}
+<main id="main" class="main">
+
+  <div class="pagetitle">
+    <h1>Chat</h1>
+  </div>
+
+  <style>
+    /* Ranglar sayt bo'ylab ishlatiladigan CSS o'zgaruvchilaridan (static/css/theme.css)
+       olinadi - shu sabab tungi rejim (html[data-theme="dark"]) avtomatik ishlaydi,
+       qo'shimcha JS kerak emas. */
+    .chat-wrap {
+      display: flex;
+      height: calc(100vh - 180px);
+      min-height: 420px;
+      background: var(--surface);
+      border-radius: var(--radius-sm, 8px);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.08));
+    }
+    .chat-sidebar {
+      width: 320px;
+      min-width: 260px;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-sidebar-search {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    .chat-conv-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .chat-conv-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid var(--row-line, var(--line));
+      color: var(--ink);
+    }
+    .chat-conv-item:hover, .chat-conv-item.active {
+      background: var(--surface-2);
+    }
+    .chat-conv-title { font-weight: 600; font-size: .92rem; }
+    .chat-conv-title .dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--muted); margin-right: 5px; vertical-align: middle;
+    }
+    .chat-conv-title .dot.online { background: #2ecc71; }
+    .chat-conv-preview {
+      font-size: .8rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 210px;
+    }
+    .chat-unread-badge {
+      background: var(--brand);
+      color: #fff;
+      border-radius: 10px;
+      font-size: .7rem;
+      padding: 1px 7px;
+      min-width: 18px;
+      text-align: center;
+    }
+    .chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+    .chat-header {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .chat-header-title { font-weight: 600; color: var(--ink); }
+    .chat-header-status { font-size: .78rem; color: var(--muted); }
+    .chat-header-status.online { color: #2ecc71; }
+    .chat-back-btn {
+      display: none;
+      border: none; background: transparent; color: var(--ink);
+      font-size: 1.3rem; line-height: 1; padding: 0 6px 0 0; cursor: pointer;
+    }
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      /* Brend (ko'k) rangi bilan aralashtirish kunduzgi rejimda deyarli
+         sezilmadi (oq fonga qarshi juda oz farq beradi). Yashil tusga
+         o'tkazildi - kunduzi ham, tunda ham aniq ko'rinadigan Telegram
+         uslubidagi "wallpaper". */
+      background: color-mix(in srgb, #2ecc71 14%, var(--surface));
+      display: flex;
+      flex-direction: column;
+    }
+    .chat-row {
+      display: flex;
+      margin-bottom: 8px;
+      align-items: flex-end;
+      gap: 4px;
+    }
+    .chat-row-mine { justify-content: flex-end; }
+    .chat-row-theirs { justify-content: flex-start; }
+    .chat-bubble {
+      position: relative;
+      max-width: 60%;
+      padding: 8px 12px;
+      border-radius: 12px;
+      font-size: .9rem;
+      line-height: 1.35;
+      word-wrap: break-word;
+    }
+    .chat-bubble-mine {
+      background: var(--brand);
+      color: #fff;
+      border-bottom-right-radius: 3px;
+    }
+    .chat-bubble-theirs {
+      /* "surface-2" yorug' rejimda fonga (--bg) juda yaqin rangda bo'lib,
+         pufakcha ko'rinmay qolardi - shu sabab aniq farqlanadigan --surface
+         (oq/to'q ko'k) ishlatiladi, chegara chizig'i bilan mustahkamlanadi. */
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--line);
+      border-bottom-left-radius: 3px;
+    }
+    .chat-bubble-deleted { font-style: italic; opacity: .7; }
+    .chat-bubble-img { max-width: 220px; border-radius: 8px; display: block; margin-bottom: 4px; cursor: pointer; }
+    .chat-bubble-file {
+      display: flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.15); padding: 6px 8px; border-radius: 8px;
+      margin-bottom: 4px; text-decoration: none; color: inherit;
+    }
+    .chat-bubble-theirs .chat-bubble-file { background: rgba(0,0,0,.06); }
+    .chat-bubble-meta {
+      display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+      font-size: .68rem;
+      opacity: .75;
+      margin-top: 3px;
+    }
+    .chat-bubble-edited { font-style: italic; }
+    .chat-msg-actions {
+      display: none;
+      gap: 4px;
+      align-self: center;
+    }
+    .chat-row:hover .chat-msg-actions.can-edit { display: flex; }
+    .chat-msg-actions button {
+      border: none; background: transparent; color: var(--muted); padding: 2px 4px; cursor: pointer;
+    }
+    .chat-msg-actions button:hover { color: var(--brand); }
+    .chat-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px;
+      border-top: 1px solid var(--line);
+    }
+    .chat-attach-preview {
+      display: flex; align-items: center; gap: 6px;
+      padding: 4px 10px; background: var(--surface-2); border-radius: 14px; font-size: .8rem;
+      color: var(--ink);
+    }
+    .chat-emoji-wrap { position: relative; }
+    .chat-emoji-panel {
+      position: absolute;
+      bottom: 42px;
+      left: 0;
+      width: 260px;
+      max-height: 220px;
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      box-shadow: var(--shadow-md, 0 4px 14px rgba(0,0,0,.12));
+      padding: 8px;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 2px;
+      z-index: 20;
+    }
+    .chat-emoji-panel span {
+      cursor: pointer;
+      font-size: 1.2rem;
+      text-align: center;
+      border-radius: 6px;
+      padding: 3px 0;
+    }
+    .chat-emoji-panel span:hover { background: var(--surface-2); }
+    .chat-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      color: var(--muted);
+    }
+    .chat-contact-result {
+      padding: 8px 12px;
+      cursor: pointer;
+      color: var(--ink);
+    }
+    .chat-contact-result:hover { background: var(--surface-2); }
+
+    /* ---------- Mobil (responsiv) ---------- */
+    @media (max-width: 767.98px) {
+      .chat-wrap { height: calc(100vh - 140px); border-radius: 0; }
+      .chat-sidebar { width: 100%; min-width: 0; }
+      .chat-main { display: none; }
+      .chat-wrap.mobile-chat-open .chat-sidebar { display: none; }
+      .chat-wrap.mobile-chat-open .chat-main { display: flex; }
+      .chat-back-btn { display: inline-flex; }
+      .chat-bubble { max-width: 82%; }
+      .chat-emoji-panel { width: 220px; grid-template-columns: repeat(6, 1fr); }
+    }
+  </style>
+
+  <section class="section">
+    <div class="chat-wrap" id="chatWrap">
+
+      <div class="chat-sidebar">
+        <div class="chat-sidebar-search">
+          <input type="text" id="chatContactSearch" class="form-control form-control-sm"
+                 placeholder="Xodim qidirish (yangi suhbat)...">
+          <div id="chatContactResults" class="list-group mt-1" style="max-height:180px; overflow-y:auto;"></div>
+        </div>
+        <div id="chatConvList" class="chat-conv-list"></div>
+      </div>
+
+      <div class="chat-main">
+        <div id="chatHeader" class="chat-header">
+          <div class="chat-header-title">Suhbat tanlang</div>
+        </div>
+        <div id="chatMessages" class="chat-messages">
+          <div class="chat-empty">Chapdan suhbat tanlang yoki yangisini boshlang</div>
+        </div>
+        <form id="chatSendForm" class="chat-input-row d-none">
+          {% csrf_token %}
+          <button type="button" id="chatAttachBtn" class="btn btn-outline-secondary" title="Fayl biriktirish">
+            <i class="bi bi-paperclip"></i>
+          </button>
+          <input type="file" id="chatFileInput" class="d-none"
+                 accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.doc,.docx,.xls,.xlsx,.zip,.rar">
+          <div id="chatAttachPreview" class="chat-attach-preview d-none">
+            <i class="bi bi-paperclip"></i>
+            <span id="chatAttachName"></span>
+            <button type="button" id="chatAttachRemove" class="btn btn-sm p-0 border-0"><i class="bi bi-x-lg"></i></button>
+          </div>
+          <div class="chat-emoji-wrap">
+            <button type="button" id="chatEmojiBtn" class="btn btn-outline-secondary" title="Smaylik">
+              <i class="bi bi-emoji-smile"></i>
+            </button>
+            <div id="chatEmojiPanel" class="chat-emoji-panel d-none"></div>
+          </div>
+          <input type="text" id="chatInput" class="form-control" placeholder="Xabar yozing..." autocomplete="off">
+          <button type="submit" class="btn btn-primary">
+            <i class="bi bi-send"></i>
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script>
+const CURRENT_EMPLOYEE_ID = {{ employee.id }};
+document.addEventListener("DOMContentLoaded", function () {
+  const csrfToken = document.querySelector('#chatSendForm [name=csrfmiddlewaretoken]').value;
+  const URLS = {
+    conversations: "{% url 'chat_conversations' %}",
+    contacts: "{% url 'chat_contacts' %}",
+    open: "{% url 'chat_open' %}",
+    messages: function (id) { return "/chat/api/" + id + "/messages/"; },
+    send: function (id) { return "/chat/api/" + id + "/send/"; },
+    edit: function (id) { return "/chat/api/message/" + id + "/edit/"; },
+    del: function (id) { return "/chat/api/message/" + id + "/delete/"; },
+  };
+
+  let activeConversationId = null;
+  let activeOtherId = null;
+  let pendingFile = null;
+  let ws = null;
+  let wsPingTimer = null;
+  let convPollTimer = null;
+  let conversationsCache = [];
+
+  function esc(s) {
+    return $("<div>").text(s || "").html();
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function fmtLastSeen(iso) {
+    if (!iso) return "hech qachon kirmagan";
+    const d = new Date(iso);
+    const diffMin = Math.round((Date.now() - d.getTime()) / 60000);
+    if (diffMin < 1) return "hozirgina";
+    if (diffMin < 60) return diffMin + " daqiqa oldin";
+    if (diffMin < 24 * 60) return Math.floor(diffMin / 60) + " soat oldin";
+    return d.toLocaleDateString() + " " + fmtTime(iso);
+  }
+
+  // ---------------- Suhbatlar ro'yxati ----------------
+  function loadConversations(cb) {
+    $.getJSON(URLS.conversations, function (resp) {
+      conversationsCache = resp.results || [];
+      renderConversations();
+      updateActiveHeaderStatus();
+      if (cb) cb();
+    });
+  }
+
+  function renderConversations() {
+    const $list = $("#chatConvList").empty();
+    conversationsCache.forEach(function (c) {
+      const dotClass = c.kind === "direct" ? ("dot" + (c.online ? " online" : "")) : "";
+      const $item = $(
+        '<div class="chat-conv-item" data-id="' + c.id + '">' +
+          '<div>' +
+            '<div class="chat-conv-title">' +
+              (dotClass ? '<span class="' + dotClass + '"></span>' : '') +
+              esc(c.title) +
+            '</div>' +
+            '<div class="chat-conv-preview">' + esc(c.last_message) + '</div>' +
+          '</div>' +
+          (c.unread_count > 0 ? '<span class="chat-unread-badge">' + c.unread_count + '</span>' : '') +
+        '</div>'
+      );
+      if (c.id === activeConversationId) $item.addClass("active");
+      $item.on("click", function () { openConversation(c); });
+      $list.append($item);
+    });
+  }
+
+  function updateActiveHeaderStatus() {
+    if (!activeConversationId) return;
+    const c = conversationsCache.find(function (x) { return x.id === activeConversationId; });
+    if (!c || c.kind !== "direct") return;
+    const $status = $("#chatHeaderStatus");
+    if (!$status.length) return;
+    if (c.online) {
+      $status.text("Onlayn").addClass("online");
+    } else {
+      $status.text("Oxirgi faollik: " + fmtLastSeen(c.last_seen)).removeClass("online");
+    }
+  }
+
+  // ---------------- Kontakt qidiruv (yangi suhbat) ----------------
+  let searchTimer = null;
+  $("#chatContactSearch").on("input", function () {
+    const q = $(this).val().trim();
+    clearTimeout(searchTimer);
+    if (!q) { $("#chatContactResults").empty(); return; }
+    searchTimer = setTimeout(function () {
+      $.getJSON(URLS.contacts, { q: q }, function (resp) {
+        const $res = $("#chatContactResults").empty();
+        (resp.results || []).forEach(function (emp) {
+          const $row = $('<div class="chat-contact-result">' + esc(emp.name) + '</div>');
+          $row.on("click", function () {
+            $.post(URLS.open, { target: emp.id, csrfmiddlewaretoken: csrfToken }, function (r) {
+              $("#chatContactSearch").val("");
+              $("#chatContactResults").empty();
+              loadConversations(function () {
+                openConversation({ id: r.conversation_id, title: emp.name, kind: "direct", other_id: emp.id });
+              });
+            }).fail(function (xhr) {
+              alert((xhr.responseJSON && xhr.responseJSON.error) || "Suhbat ochilmadi (xatolik)");
+            });
+          });
+          $res.append($row);
+        });
+      });
+    }, 250);
+  });
+
+  // ---------------- Suhbatni ochish ----------------
+  function openConversation(c) {
+    activeConversationId = c.id;
+    activeOtherId = c.other_id || null;
+    $("#chatHeader").html(
+      '<button type="button" id="chatBackBtn" class="chat-back-btn" title="Orqaga"><i class="bi bi-arrow-left"></i></button>' +
+      '<div>' +
+        '<div class="chat-header-title">' + esc(c.title) + '</div>' +
+        (c.kind === "direct" ? '<div id="chatHeaderStatus" class="chat-header-status"></div>' : '') +
+      '</div>'
+    );
+    $("#chatBackBtn").on("click", function () { $("#chatWrap").removeClass("mobile-chat-open"); });
+    $("#chatSendForm").removeClass("d-none");
+    $(".chat-conv-item").removeClass("active").filter('[data-id="' + c.id + '"]').addClass("active");
+    $("#chatWrap").addClass("mobile-chat-open");
+    loadMessages(c.id);
+    updateActiveHeaderStatus();
+  }
+
+  function loadMessages(id) {
+    const $box = $("#chatMessages").empty();
+    $.getJSON(URLS.messages(id), function (resp) {
+      (resp.results || []).forEach(function (m) { appendMessage(m); });
+      $box.scrollTop($box[0].scrollHeight);
+      loadConversations();
+    });
+  }
+
+  function tickHtml(m) {
+    if (m.is_ai) return "";
+    const mine = String(m.sender_id) === String(CURRENT_EMPLOYEE_ID);
+    if (!mine) return "";
+    return m.read_at
+      ? '<i class="bi bi-check2-all" title="O\'qildi"></i>'
+      : '<i class="bi bi-check2" title="Yuborildi"></i>';
+  }
+
+  function bodyHtml(m) {
+    // Eslatma: o'chirilgan xabarlar server tomonidan umuman yuborilmaydi
+    // (chat_messages `is_deleted=False` bilan filtrlaydi), shu sabab bu yerda
+    // "o'chirildi" kabi maxsus holatni ko'rsatish shart emas.
+    let html = "";
+    if (m.attachment_url) {
+      if (m.is_image) {
+        html += '<a href="' + m.attachment_url + '" target="_blank" rel="noopener">' +
+                '<img class="chat-bubble-img" src="' + m.attachment_url + '"></a>';
+      } else {
+        html += '<a class="chat-bubble-file" href="' + m.attachment_url + '" target="_blank" rel="noopener">' +
+                '<i class="bi bi-file-earmark-arrow-down fs-5"></i><span>' + esc(m.attachment_name || "Fayl") + '</span></a>';
+      }
+    }
+    if (m.body) html += '<span class="chat-bubble-body">' + esc(m.body) + '</span>';
+    return html;
+  }
+
+  function appendMessage(m) {
+    // Dublikatdan saqlanish: bir xil xabar ham "yuborildi" javobidan (optimistik
+    // ko'rsatish), ham WebSocket push orqali kelishi mumkin (server xabarni
+    // yuboruvchining o'ziga ham jonli push qiladi - boshqa qurilma/oynasi
+    // sinxron bo'lishi uchun). Xabar allaqachon ekranda bo'lsa - qayta qo'shilmaydi.
+    if ($('#chatMessages .chat-row[data-msg-id="' + m.id + '"]').length) return;
+
+    const mine = !m.is_ai && String(m.sender_id) === String(CURRENT_EMPLOYEE_ID);
+    const $row = $('<div class="chat-row ' + (mine ? "chat-row-mine" : "chat-row-theirs") + '" data-msg-id="' + m.id + '"></div>');
+
+    if (mine && !m.is_deleted) {
+      const $actions = $(
+        '<div class="chat-msg-actions can-edit">' +
+          (m.attachment_url ? "" : '<button type="button" class="js-msg-edit" title="Tahrirlash"><i class="bi bi-pencil"></i></button>') +
+          '<button type="button" class="js-msg-delete" title="O\'chirish"><i class="bi bi-trash"></i></button>' +
+        '</div>'
+      );
+      $actions.find(".js-msg-edit").on("click", function () { startEdit(m.id); });
+      $actions.find(".js-msg-delete").on("click", function () { deleteMessage(m.id); });
+      $row.append($actions);
+    }
+
+    const $bubble = $(
+      '<div class="chat-bubble ' + (mine ? "chat-bubble-mine" : "chat-bubble-theirs") + '">' +
+        bodyHtml(m) +
+        '<span class="chat-bubble-meta">' +
+          (m.is_edited && !m.is_deleted ? '<span class="chat-bubble-edited">tahrirlangan</span>' : "") +
+          (m.is_ai ? "AI - " : "") + fmtTime(m.date_creat) + " " + tickHtml(m) +
+        '</span>' +
+      '</div>'
+    );
+    $row.append($bubble);
+    $("#chatMessages").append($row);
+  }
+
+  function startEdit(msgId) {
+    const $row = $('.chat-row[data-msg-id="' + msgId + '"]');
+    const $bubbleBody = $row.find(".chat-bubble-body");
+    const current = $bubbleBody.length ? $bubbleBody.text() : "";
+    const val = prompt("Xabarni tahrirlash:", current);
+    if (val === null) return;
+    const text = val.trim();
+    if (!text) return;
+    $.post(URLS.edit(msgId), { body: text, csrfmiddlewaretoken: csrfToken }, function (resp) {
+      replaceMessage(resp.message);
+    }).fail(function (xhr) {
+      alert((xhr.responseJSON && xhr.responseJSON.error) || "Xatolik yuz berdi");
+    });
+  }
+
+  function deleteMessage(msgId) {
+    if (!confirm("Xabarni o'chirishni tasdiqlaysizmi?")) return;
+    $.post(URLS.del(msgId), { csrfmiddlewaretoken: csrfToken }, function () {
+      $('.chat-row[data-msg-id="' + msgId + '"]').remove();
+      loadConversations();
+    });
+  }
+
+  function replaceMessage(m) {
+    $('.chat-row[data-msg-id="' + m.id + '"]').remove();
+    // eski o'rniga qo'ymaymiz - oddiylik uchun oxiriga qo'shamiz, chunki
+    // tahrirlash sana tartibini o'zgartirmaydi va foydalanuvchi ko'zi bilan
+    // ko'rgan holatda bo'ladi. To'g'ri joyga qo'yish uchun ro'yxatni to'liq
+    // qayta yuklaymiz - ishonchliroq:
+    loadMessages(activeConversationId);
+  }
+
+  function markTicksRead(messageIds) {
+    (messageIds || []).forEach(function (id) {
+      const $row = $('.chat-row[data-msg-id="' + id + '"]');
+      $row.find(".chat-bubble-meta i").removeClass("bi-check2").addClass("bi-check2-all").attr("title", "O'qildi");
+    });
+  }
+
+  // ---------------- Fayl biriktirish ----------------
+  $("#chatAttachBtn").on("click", function () { $("#chatFileInput").trigger("click"); });
+  $("#chatFileInput").on("change", function () {
+    const f = this.files[0];
+    if (!f) return;
+    pendingFile = f;
+    $("#chatAttachName").text(f.name);
+    $("#chatAttachPreview").removeClass("d-none");
+  });
+  $("#chatAttachRemove").on("click", function () {
+    pendingFile = null;
+    $("#chatFileInput").val("");
+    $("#chatAttachPreview").addClass("d-none");
+  });
+
+  // ---------------- Smayliklar ----------------
+  const EMOJIS = [
+    "😀","😁","😂","🤣","😊","😍","😘","😜","🤔","🙄",
+    "😴","😭","😡","🥳","😎","🤗","😇","🙃","😉","😅",
+    "👍","👎","👏","🙏","💪","🤝","👋","✌️","🤞","👌",
+    "❤️","🧡","💛","💚","💙","💜","🖤","💔","💯","🔥",
+    "🎉","🎂","🎁","⭐","✅","❌","⚠️","❓","❗","⏰",
+  ];
+  const $emojiPanel = $("#chatEmojiPanel");
+  if (!$emojiPanel.children().length) {
+    EMOJIS.forEach(function (e) { $emojiPanel.append($("<span>").text(e)); });
+  }
+  $emojiPanel.on("click", "span", function () {
+    const input = document.getElementById("chatInput");
+    const start = input.selectionStart || input.value.length;
+    const end = input.selectionEnd || input.value.length;
+    const val = input.value;
+    input.value = val.slice(0, start) + $(this).text() + val.slice(end);
+    const pos = start + $(this).text().length;
+    input.focus();
+    input.setSelectionRange(pos, pos);
+  });
+  $("#chatEmojiBtn").on("click", function (e) {
+    e.stopPropagation();
+    $emojiPanel.toggleClass("d-none");
+  });
+  $(document).on("click", function (e) {
+    if (!$emojiPanel.hasClass("d-none") && !$(e.target).closest("#chatEmojiPanel, #chatEmojiBtn").length) {
+      $emojiPanel.addClass("d-none");
+    }
+  });
+
+  // ---------------- Xabar yuborish ----------------
+  $("#chatSendForm").on("submit", function (e) {
+    e.preventDefault();
+    if (!activeConversationId) return;
+    const text = $("#chatInput").val().trim();
+    if (!text && !pendingFile) return;
+
+    const fd = new FormData();
+    fd.append("csrfmiddlewaretoken", csrfToken);
+    if (text) fd.append("body", text);
+    if (pendingFile) fd.append("attachment", pendingFile);
+
+    $("#chatInput").val("");
+    const sentFile = pendingFile;
+    pendingFile = null;
+    $("#chatFileInput").val("");
+    $("#chatAttachPreview").addClass("d-none");
+
+    $.ajax({
+      url: URLS.send(activeConversationId),
+      type: "POST",
+      data: fd,
+      processData: false,
+      contentType: false,
+      success: function (resp) {
+        appendMessage(resp.message);
+        const $box = $("#chatMessages");
+        $box.scrollTop($box[0].scrollHeight);
+        loadConversations();
+      },
+      error: function (xhr) {
+        alert((xhr.responseJSON && xhr.responseJSON.error) || "Xatolik yuz berdi");
+      }
+    });
+  });
+
+  // ---------------- WebSocket (jonli push + onlayn holat) ----------------
+  function connectWs() {
+    if (ws) return;
+    const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
+    try {
+      ws = new WebSocket(proto + "//" + window.location.host + "/ws/chat/");
+      ws.onopen = function () {
+        wsPingTimer = setInterval(function () {
+          if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "ping" }));
+        }, 20000);
+      };
+      ws.onmessage = function (evt) {
+        const data = JSON.parse(evt.data);
+        if (data.type === "message") {
+          const m = data.message;
+          if (m.conversation_id === activeConversationId) {
+            appendMessage(m);
+            const $box = $("#chatMessages");
+            $box.scrollTop($box[0].scrollHeight);
+          }
+          loadConversations();
+        } else if (data.type === "delete") {
+          // O'chirilgan xabar izsiz olib tashlanadi - "o'chirildi" degan
+          // yozuv chiqmaydi.
+          $('.chat-row[data-msg-id="' + data.message.id + '"]').remove();
+          loadConversations();
+        } else if (data.type === "edit") {
+          if (data.message.conversation_id === activeConversationId) {
+            loadMessages(activeConversationId);
+          } else {
+            loadConversations();
+          }
+        } else if (data.type === "read") {
+          if (data.conversation_id === activeConversationId) {
+            markTicksRead(data.message_ids);
+          }
+        }
+      };
+      ws.onclose = function () { ws = null; clearInterval(wsPingTimer); };
+      ws.onerror = function () { ws = null; clearInterval(wsPingTimer); };
+    } catch (e) {
+      ws = null;
+    }
+  }
+
+  connectWs();
+  loadConversations();
+  convPollTimer = setInterval(loadConversations, 20000);
+});
+</script>
+{% endblock content %}

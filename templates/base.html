@@ -630,6 +630,14 @@
           </a>
         </li>
         {% endif %}
+        <!-- Chat -->
+        <li class="nav-item">
+          <a class="nav-link d-flex align-items-center {% if url_name == 'chat_page' %}active{% else %}collapsed{% endif %}"
+             href="{% url 'chat_page' %}">
+            <i class="bi bi-chat-dots"></i><span>Chat</span>
+          </a>
+        </li>
+
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"
              href="{% url 'technics_get' %}">

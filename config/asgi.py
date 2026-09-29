@@ -1,16 +1,30 @@
-"""
-ASGI config for config project.
+"""ASGI config for config project.
 
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
+Bu fayl oddiy HTTP (Django) so'rovlarini va WebSocket (chat) ulanishlarini
+bitta ASGI ilovasida birlashtiradi. Productionda `gunicorn config.wsgi` o'rniga
+ASGI server (masalan `daphne config.asgi:application` yoki
+`uvicorn config.asgi:application`) ishlatilishi kerak - aks holda WebSocket
+(chat) ishlamaydi, oddiy sahifalar esa avvalgidek ishlayveradi.
 """
 
 import os
 
+import django
 from django.core.asgi import get_asgi_application
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
+django.setup()
 
-application = get_asgi_application()
+django_asgi_app = get_asgi_application()
+
+from channels.auth import AuthMiddlewareStack
+from channels.routing import ProtocolTypeRouter, URLRouter
+
+from chat.routing import websocket_urlpatterns
+
+application = ProtocolTypeRouter({
+    "http": django_asgi_app,
+    "websocket": AuthMiddlewareStack(
+        URLRouter(websocket_urlpatterns)
+    ),
+})

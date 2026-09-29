@@ -50,6 +50,9 @@ ALLOWED_HOSTS = env_list(
 # APPLICATIONS
 # =========================================================
 INSTALLED_APPS = [
+    "daphne",
+    "channels",
+
     "jazzmin",
     "csp",
     "django_celery_beat",
@@ -74,6 +77,7 @@ INSTALLED_APPS = [
     "core.apps.CoreConfig",
     "api.apps.ApiConfig",
     "bot.apps.BotConfig",
+    "chat.apps.ChatConfig",
     'import_export',
 ]
 
@@ -106,6 +110,25 @@ MIDDLEWARE = [
 # =========================================================
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
+
+# Chat (Django Channels) uchun channel layer. Productionda Redis (Celery
+# uchun ishlatilayotgan Redis'dan alohida DB raqami bilan) beriladi:
+#   CHANNELS_REDIS_URL=redis://localhost:6379/1
+# Lokal rivojlantirishda (Redis shart emas) - xotiradagi layer ishlatiladi,
+# lekin u faqat BITTA process ichida ishlaydi (runserver uchun yetarli).
+CHANNELS_REDIS_URL = os.getenv("CHANNELS_REDIS_URL", "")
+if CHANNELS_REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {"hosts": [CHANNELS_REDIS_URL]},
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        "default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}
+    }
 
 
 # =========================================================

@@ -34,6 +34,9 @@ urlpatterns = [
     # MAIN SITE
     path("", include("main.urls")),
 
+    # CHAT
+    path("chat/", include("chat.urls")),
+
     # API
     path('api/', include('api.urls')),
 
