@@ -14,10 +14,12 @@ class Conversation(models.Model):
     KIND_DIRECT = "direct"
     KIND_AI = "ai"
     KIND_GROUP = "group"
+    KIND_SAVED = "saved"
     KIND_CHOICES = [
         (KIND_DIRECT, "Shaxsiy suhbat"),
         (KIND_AI, "AI Yordamchi"),
         (KIND_GROUP, "Guruh"),
+        (KIND_SAVED, "Saqlangan xabarlar"),
     ]
 
     kind = models.CharField(max_length=10, choices=KIND_CHOICES, default=KIND_DIRECT, db_index=True)
@@ -59,6 +61,8 @@ class Conversation(models.Model):
             return f"{self.participant_1} - AI Yordamchi"
         if self.kind == self.KIND_GROUP:
             return f"Guruh: {self.name}"
+        if self.kind == self.KIND_SAVED:
+            return f"{self.participant_1} - Saqlangan xabarlar"
         return f"{self.participant_1} - {self.participant_2}"
 
     def other_participant(self, employee):

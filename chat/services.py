@@ -38,6 +38,18 @@ def get_or_create_ai_conversation(employee: Employee) -> Conversation:
 
 
 @transaction.atomic
+def get_or_create_saved_conversation(employee: Employee) -> Conversation:
+    """Telegram'dagi "Saqlangan xabarlar" kabi - xodimning o'zi bilan
+    shaxsiy suhbati, eslatma/fayl saqlash uchun."""
+    conv = Conversation.objects.filter(
+        kind=Conversation.KIND_SAVED, participant_1=employee,
+    ).first()
+    if conv:
+        return conv
+    return Conversation.objects.create(kind=Conversation.KIND_SAVED, participant_1=employee)
+
+
+@transaction.atomic
 def create_group_conversation(creator: Employee, name: str, member_ids) -> Conversation:
     """Yangi guruh suhbati yaratadi. Kamida yaratuvchidan tashqari 2 ta
     a'zo bo'lishi kerak (aks holda oddiy shaxsiy suhbatdan farqi qolmaydi)."""

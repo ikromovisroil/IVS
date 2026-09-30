@@ -19,6 +19,7 @@ from .services import (
     create_group_conversation,
     get_or_create_ai_conversation,
     get_or_create_direct_conversation,
+    get_or_create_saved_conversation,
     hide_conversation,
     mark_read,
     online_info,
@@ -47,6 +48,8 @@ def _serialize_conversation(conv: Conversation, employee: Employee) -> dict:
         title = "AI Yordamchi"
     elif conv.kind == Conversation.KIND_GROUP:
         title = conv.name or "Guruh"
+    elif conv.kind == Conversation.KIND_SAVED:
+        title = "Saqlangan xabarlar"
     else:
         title = other.full_name if other else "-"
     return {
@@ -118,6 +121,10 @@ def chat_open(request):
 
     if target == "ai":
         conv = get_or_create_ai_conversation(employee)
+        return JsonResponse({"conversation_id": conv.id})
+
+    if target == "saved":
+        conv = get_or_create_saved_conversation(employee)
         return JsonResponse({"conversation_id": conv.id})
 
     if not target.isdigit():

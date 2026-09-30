@@ -251,6 +251,8 @@
     }
     .chat-avatar-lg { width: 64px; height: 64px; min-width: 64px; font-size: 1.4rem; margin: 0 auto 10px; }
     .chat-conv-item-row { display: flex; align-items: center; }
+    .chat-saved-avatar { background: var(--chat-accent); font-size: 1rem; }
+    .chat-saved-pinned { border-bottom: 1px solid var(--line); }
 
     /* ---------- Sarlavha ikonalari va Ma'lumot paneli ---------- */
     .chat-header-actions { margin-left: auto; display: flex; gap: 4px; }
@@ -406,6 +408,15 @@
           <button type="button" id="chatNewGroupBtn" class="btn btn-sm btn-outline-primary w-100">
             <i class="bi bi-plus-lg me-1"></i>Yangi guruh
           </button>
+        </div>
+
+        <div id="chatSavedBtn" class="chat-conv-item chat-saved-pinned">
+          <div class="chat-conv-item-row">
+            <div class="chat-avatar chat-saved-avatar"><i class="bi bi-bookmark-fill"></i></div>
+            <div>
+              <div class="chat-conv-title">Saqlangan xabarlar</div>
+            </div>
+          </div>
         </div>
 
         <div id="chatConvList" class="chat-conv-list"></div>
@@ -576,8 +587,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function renderConversations() {
     const $list = $("#chatConvList").empty();
     const visible = conversationsCache.filter(function (c) {
+      if (c.kind === "saved") return false;
       return activeTab === "group" ? c.kind === "group" : c.kind !== "group";
     });
+    const savedConv = conversationsCache.find(function (c) { return c.kind === "saved"; });
+    $("#chatSavedBtn")
+      .toggleClass("active", !!savedConv && savedConv.id === activeConversationId)
+      .off("click")
+      .on("click", function () { openSavedMessages(savedConv); });
     visible.forEach(function (c) {
       const dotClass = c.kind === "direct" ? ("dot" + (c.online ? " online" : "")) : "";
       const $item = $(
@@ -619,6 +636,7 @@ document.addEventListener("DOMContentLoaded", function () {
     $(this).addClass("active");
     $("#chatDirectSearch").toggleClass("d-none", activeTab !== "direct");
     $("#chatGroupSearch").toggleClass("d-none", activeTab !== "group");
+    $("#chatSavedBtn").toggleClass("d-none", activeTab !== "direct");
     renderConversations();
   });
 
@@ -635,6 +653,19 @@ document.addEventListener("DOMContentLoaded", function () {
       else $status.text("Oxirgi faollik: " + fmtLastSeen(c.last_seen)).removeClass("online");
     }
     if (!$("#chatInfoPanel").hasClass("d-none")) updateInfoStatus();
+  }
+
+  // ---------------- Saqlangan xabarlar (Telegram'dagi kabi, o'zi bilan suhbat) ----------------
+  function openSavedMessages(savedConv) {
+    if (savedConv) {
+      openConversation(savedConv);
+      return;
+    }
+    $.post(URLS.open, { target: "saved", csrfmiddlewaretoken: csrfToken }, function (r) {
+      loadConversations(function () {
+        openConversation({ id: r.conversation_id, title: "Saqlangan xabarlar", kind: "saved", other_id: null });
+      });
+    });
   }
 
   // ---------------- Kontakt qidiruv (yangi suhbat) ----------------
@@ -674,12 +705,14 @@ document.addEventListener("DOMContentLoaded", function () {
     activeConvData = c;
     $("#chatHeader").html(
       '<button type="button" id="chatBackBtn" class="chat-back-btn" title="Orqaga"><i class="bi bi-arrow-left"></i></button>' +
-      avatarHtml(c.title, c.other_id || c.id) +
+      (c.kind === "saved"
+        ? '<div class="chat-avatar chat-saved-avatar"><i class="bi bi-bookmark-fill"></i></div>'
+        : avatarHtml(c.title, c.other_id || c.id)) +
       '<div>' +
         '<div class="chat-header-title">' + esc(c.title) + '</div>' +
-        (c.kind !== "ai" ? '<div id="chatHeaderStatus" class="chat-header-status"></div>' : '') +
+        (c.kind !== "ai" && c.kind !== "saved" ? '<div id="chatHeaderStatus" class="chat-header-status"></div>' : '') +
       '</div>' +
-      (c.kind !== "ai"
+      (c.kind !== "ai" && c.kind !== "saved"
         ? '<div class="chat-header-actions"><button type="button" id="chatInfoBtn" title="Ma\'lumot"><i class="bi bi-info-circle"></i></button></div>'
         : "")
     );
@@ -687,6 +720,7 @@ document.addEventListener("DOMContentLoaded", function () {
     $("#chatInfoBtn").on("click", openInfoPanel);
     $("#chatSendForm").removeClass("d-none");
     $(".chat-conv-item").removeClass("active").filter('[data-id="' + c.id + '"]').addClass("active");
+    $("#chatSavedBtn").toggleClass("active", c.kind === "saved");
     $("#chatWrap").addClass("mobile-chat-open");
     loadMessages(c.id);
     updateActiveHeaderStatus();
