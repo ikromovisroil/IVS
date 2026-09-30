@@ -1,0 +1,370 @@
+/* Ranglar sayt bo'ylab ishlatiladigan CSS o'zgaruvchilaridan (static/css/theme.css)
+   olinadi - shu sabab tungi rejim (html[data-theme="dark"]) avtomatik ishlaydi,
+   qo'shimcha JS kerak emas. */
+.chat-wrap {
+  /* Foydalanuvchi "CHAT TEMASI" panelidan tanlagan rang - tanlanmasa
+     saytning o'z brend rangi ishlatiladi. */
+  --chat-accent: var(--brand);
+  position: relative;
+  display: flex;
+  height: calc(100vh - 180px);
+  min-height: 420px;
+  background: var(--surface);
+  border-radius: var(--radius-sm, 8px);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,.08));
+}
+.chat-sidebar {
+  width: 320px;
+  min-width: 260px;
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+}
+.chat-sidebar-search {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.chat-conv-list {
+  flex: 1;
+  overflow-y: auto;
+}
+.chat-conv-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--row-line, var(--line));
+  color: var(--ink);
+}
+.chat-conv-item:hover, .chat-conv-item.active {
+  background: var(--surface-2);
+}
+.chat-conv-title { font-weight: 600; font-size: .92rem; }
+.chat-conv-title .dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted); margin-right: 5px; vertical-align: middle;
+}
+.chat-conv-title .dot.online { background: #2ecc71; }
+.chat-conv-preview {
+  font-size: .8rem;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+.chat-unread-badge {
+  background: var(--chat-accent);
+  color: #fff;
+  border-radius: 10px;
+  font-size: .7rem;
+  padding: 1px 7px;
+  min-width: 18px;
+  text-align: center;
+}
+.chat-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.chat-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.chat-header-title { font-weight: 600; color: var(--ink); }
+.chat-header-status { font-size: .78rem; color: var(--muted); }
+.chat-header-status.online { color: #2ecc71; }
+.chat-back-btn {
+  display: none;
+  border: none; background: transparent; color: var(--ink);
+  font-size: 1.3rem; line-height: 1; padding: 0 6px 0 0; cursor: pointer;
+}
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  /* Brend (ko'k) rangi bilan aralashtirish kunduzgi rejimda deyarli
+     sezilmadi (oq fonga qarshi juda oz farq beradi). Yashil tusga
+     o'tkazildi - kunduzi ham, tunda ham aniq ko'rinadigan Telegram
+     uslubidagi "wallpaper". */
+  background-color: color-mix(in srgb, #2ecc71 14%, var(--surface));
+  display: flex;
+  flex-direction: column;
+}
+/* "FON TANLANG" panelidagi naqshlar - hammasi bir xil yashil tusda,
+   faqat naqsh turi farqlanadi (Telegram'dagi wallpaper tanlovi kabi). */
+.chat-messages[data-wallpaper="dots"] {
+  background-image: radial-gradient(circle, color-mix(in srgb, #2ecc71 45%, var(--surface)) 1.5px, transparent 1.5px);
+  background-size: 18px 18px;
+}
+.chat-messages[data-wallpaper="grid"] {
+  background-image:
+    linear-gradient(color-mix(in srgb, #2ecc71 28%, var(--surface)) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, #2ecc71 28%, var(--surface)) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.chat-messages[data-wallpaper="waves"] {
+  /* Aniqroq to'lqin (yuqori foiz) + ustiga "kopik" pufakchalari qatlami. */
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, #2ecc71 55%, var(--surface)) 2.2px, transparent 2.2px),
+    radial-gradient(circle, color-mix(in srgb, #2ecc71 38%, var(--surface)) 1.3px, transparent 1.3px),
+    repeating-radial-gradient(circle at 0 0, transparent 0, color-mix(in srgb, #2ecc71 32%, var(--surface)) 20px);
+  background-size: 46px 46px, 26px 26px, 34px 34px;
+  background-position: 0 0, 13px 20px, 0 0;
+}
+.chat-row {
+  display: flex;
+  margin-bottom: 8px;
+  align-items: flex-end;
+  gap: 4px;
+}
+.chat-row-mine { justify-content: flex-end; }
+.chat-row-theirs { justify-content: flex-start; }
+.chat-bubble {
+  position: relative;
+  max-width: 60%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: .9rem;
+  line-height: 1.35;
+  word-wrap: break-word;
+}
+.chat-bubble-mine {
+  background: var(--chat-accent);
+  color: #fff;
+  border-bottom-right-radius: 3px;
+}
+.chat-bubble-theirs {
+  /* "surface-2" yorug' rejimda fonga (--bg) juda yaqin rangda bo'lib,
+     pufakcha ko'rinmay qolardi - shu sabab aniq farqlanadigan --surface
+     (oq/to'q ko'k) ishlatiladi, chegara chizig'i bilan mustahkamlanadi. */
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-bottom-left-radius: 3px;
+}
+.chat-bubble-deleted { font-style: italic; opacity: .7; }
+.chat-bubble-img { max-width: 220px; border-radius: 8px; display: block; margin-bottom: 4px; cursor: pointer; }
+.chat-bubble-file {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(255,255,255,.15); padding: 6px 8px; border-radius: 8px;
+  margin-bottom: 4px; text-decoration: none; color: inherit;
+}
+.chat-bubble-theirs .chat-bubble-file { background: rgba(0,0,0,.06); }
+.chat-bubble-meta {
+  display: flex; align-items: center; gap: 4px; justify-content: flex-end;
+  font-size: .68rem;
+  opacity: .75;
+  margin-top: 3px;
+}
+.chat-bubble-edited { font-style: italic; }
+.chat-bubble-sender { font-size: .74rem; font-weight: 700; color: var(--chat-accent); margin-bottom: 2px; }
+.chat-msg-actions {
+  display: none;
+  gap: 4px;
+  align-self: center;
+}
+.chat-row:hover .chat-msg-actions.can-edit { display: flex; }
+.chat-msg-actions button {
+  border: none; background: transparent; color: var(--muted); padding: 2px 4px; cursor: pointer;
+}
+.chat-msg-actions button:hover { color: var(--chat-accent); }
+.chat-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+.chat-attach-preview {
+  display: flex; align-items: center; gap: 6px;
+  padding: 4px 10px; background: var(--surface-2); border-radius: 14px; font-size: .8rem;
+  color: var(--ink);
+}
+.chat-emoji-wrap { position: relative; }
+.chat-emoji-panel {
+  position: absolute;
+  bottom: 42px;
+  left: 0;
+  width: 260px;
+  max-height: 300px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md, 0 4px 14px rgba(0,0,0,.12));
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 2px;
+  z-index: 20;
+}
+.chat-emoji-panel span {
+  cursor: pointer;
+  font-size: 1.2rem;
+  text-align: center;
+  border-radius: 6px;
+  padding: 3px 0;
+}
+.chat-emoji-panel span:hover { background: var(--surface-2); }
+.chat-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--muted);
+}
+.chat-contact-result {
+  padding: 8px 12px;
+  cursor: pointer;
+  color: var(--ink);
+}
+.chat-contact-result:hover { background: var(--surface-2); }
+
+/* ---------- Avatar (harflar bilan, rasm o'rniga) ---------- */
+.chat-avatar {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 34px; height: 34px; min-width: 34px; border-radius: 50%;
+  color: #fff; font-size: .8rem; font-weight: 700;
+  margin-right: 8px;
+}
+.chat-avatar-lg { width: 64px; height: 64px; min-width: 64px; font-size: 1.4rem; margin: 0 auto 10px; }
+.chat-conv-item-row { display: flex; align-items: center; }
+.chat-saved-avatar { background: var(--chat-accent); font-size: 1rem; }
+.chat-saved-pinned { border-bottom: 1px solid var(--line); }
+
+/* ---------- Sarlavha ikonalari va Ma'lumot paneli ---------- */
+.chat-header-actions { margin-left: auto; display: flex; gap: 4px; }
+.chat-header-actions button {
+  border: none; background: transparent; color: var(--muted);
+  font-size: 1.05rem; padding: 4px 6px; cursor: pointer; border-radius: 6px;
+}
+.chat-header-actions button:hover { background: var(--surface-2); color: var(--ink); }
+.chat-info-panel {
+  /* Desktopda oddiy flex-element sifatida - chat maydonini "torayti-
+     radi", ustiga chiqib xabar matnini yashirmaydi (avval absolute
+     edi va oxirgi xabarni ko'mib qo'yardi). Mobilda pastdagi media-
+     query orqali yana to'liq ekran overlay'ga qaytariladi. */
+  position: relative;
+  flex-shrink: 0;
+  width: 300px;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-md, -4px 0 14px rgba(0,0,0,.12));
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow-y: auto;
+}
+.chat-info-close {
+  align-self: flex-end;
+  border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 1.1rem;
+}
+.chat-info-name { text-align: center; font-weight: 700; color: var(--ink); margin-top: 4px; }
+.chat-info-status { text-align: center; font-size: .82rem; color: var(--muted); margin-bottom: 18px; }
+.chat-info-status.online { color: #2ecc71; }
+.chat-info-section-title {
+  font-size: .72rem; font-weight: 700; letter-spacing: .04em; color: var(--muted);
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.chat-wallpaper-options, .chat-theme-options { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.chat-wallpaper-swatch {
+  width: 44px; height: 44px; border-radius: 10px; cursor: pointer;
+  border: 2px solid var(--line); background-color: color-mix(in srgb, #2ecc71 14%, var(--surface));
+}
+.chat-wallpaper-swatch.active { border-color: var(--chat-accent); }
+.chat-wallpaper-swatch[data-w="dots"] { background-image: radial-gradient(circle, color-mix(in srgb, #2ecc71 45%, var(--surface)) 1.5px, transparent 1.5px); background-size: 8px 8px; }
+.chat-wallpaper-swatch[data-w="grid"] { background-image: linear-gradient(color-mix(in srgb, #2ecc71 28%, var(--surface)) 1px, transparent 1px), linear-gradient(90deg, color-mix(in srgb, #2ecc71 28%, var(--surface)) 1px, transparent 1px); background-size: 10px 10px; }
+.chat-wallpaper-swatch[data-w="waves"] {
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, #2ecc71 55%, var(--surface)) 1.1px, transparent 1.1px),
+    radial-gradient(circle, color-mix(in srgb, #2ecc71 38%, var(--surface)) .7px, transparent .7px),
+    repeating-radial-gradient(circle at 0 0, transparent 0, color-mix(in srgb, #2ecc71 32%, var(--surface)) 9px);
+  background-size: 20px 20px, 11px 11px, 16px 16px;
+  background-position: 0 0, 6px 9px, 0 0;
+}
+.chat-theme-swatch {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); border-radius: 20px; padding: 6px 12px;
+  cursor: pointer; font-size: .82rem; color: var(--ink); background: var(--surface);
+}
+.chat-theme-swatch.active { border-color: var(--chat-accent); box-shadow: 0 0 0 1px var(--chat-accent); }
+.chat-theme-swatch .dot { width: 14px; height: 14px; border-radius: 50%; }
+.chat-hide-btn { width: 100%; text-align: left; }
+
+/* ---------- Guruh a'zolari ro'yxati (Ma'lumot panelida) ---------- */
+.chat-member-list { max-height: 180px; overflow-y: auto; margin-bottom: 8px; }
+.chat-member-row {
+  display: flex; align-items: center; gap: 8px; padding: 5px 2px;
+  font-size: .84rem; color: var(--ink);
+}
+.chat-member-row .chat-avatar { width: 28px; height: 28px; min-width: 28px; font-size: .7rem; }
+.chat-member-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chat-member-admin-badge {
+  font-size: .68rem; color: var(--chat-accent); border: 1px solid var(--chat-accent);
+  border-radius: 8px; padding: 0 6px; margin-right: 2px;
+}
+.chat-member-creator-badge { color: #d4a017; border-color: #d4a017; }
+.chat-member-actions button {
+  border: none; background: transparent; color: var(--muted); padding: 2px 4px; cursor: pointer;
+}
+.chat-member-actions button:hover { color: var(--chat-accent); }
+.chat-member-add-toggle {
+  font-size: .8rem; color: var(--chat-accent); background: none; border: none;
+  cursor: pointer; padding: 2px 0; margin-bottom: 4px;
+}
+
+/* ---------- Yorliqlar (Xodimlar / Guruhlar) ---------- */
+.chat-tabs { display: flex; border-bottom: 1px solid var(--line); }
+.chat-tabs .chat-tab {
+  flex: 1; border: none; background: transparent; padding: 10px 4px;
+  font-size: .82rem; font-weight: 600; color: var(--muted); cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+.chat-tabs .chat-tab.active { color: var(--chat-accent); border-bottom-color: var(--chat-accent); }
+.chat-tab-badge {
+  display: inline-block; margin-left: 4px; background: #dc3545; color: #fff;
+  border-radius: 10px; font-size: .68rem; font-weight: 700; padding: 1px 5px;
+  min-width: 16px; text-align: center; vertical-align: middle;
+}
+.chat-conv-item .chat-group-icon {
+  background: var(--muted);
+}
+
+/* ---------- Guruh yaratish modali ---------- */
+.chat-modal-backdrop {
+  position: absolute; inset: 0; background: rgba(0,0,0,.35);
+  display: flex; align-items: center; justify-content: center; z-index: 40;
+}
+.chat-modal {
+  background: var(--surface); border-radius: 12px; padding: 16px;
+  width: 320px; max-width: 90%; max-height: 80%; overflow-y: auto;
+  box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,.2));
+}
+.chat-group-member-list { max-height: 220px; overflow-y: auto; }
+.chat-group-member-row {
+  display: flex; align-items: center; gap: 8px; padding: 6px 4px; cursor: pointer;
+  border-radius: 6px; color: var(--ink); font-size: .86rem;
+}
+.chat-group-member-row:hover { background: var(--surface-2); }
+.chat-group-member-row input { pointer-events: none; }
+
+/* ---------- Mobil (responsiv) ---------- */
+@media (max-width: 767.98px) {
+  .chat-wrap { height: calc(100vh - 140px); border-radius: 0; }
+  .chat-sidebar { width: 100%; min-width: 0; }
+  .chat-main { display: none; }
+  .chat-wrap.mobile-chat-open .chat-sidebar { display: none; }
+  .chat-wrap.mobile-chat-open .chat-main { display: flex; }
+  .chat-back-btn { display: inline-flex; }
+  .chat-bubble { max-width: 82%; }
+  .chat-emoji-panel { width: 220px; grid-template-columns: repeat(6, 1fr); }
+  .chat-info-panel { position: absolute; top: 0; right: 0; bottom: 0; width: 100%; z-index: 30; }
+}
