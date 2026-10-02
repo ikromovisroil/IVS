@@ -161,9 +161,7 @@ dmypy.json
 # ===============================
 Thumbs.db
 Desktop.ini
-private_key.pem
 private_key.pem.bak
-public_key.pem
 
 # ===============================
 # Claude Code vaqtinchalik/scratch fayllar
