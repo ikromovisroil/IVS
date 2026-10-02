@@ -19,6 +19,7 @@ class ConversationAdmin(admin.ModelAdmin):
         "participant_2__last_name", "participant_2__first_name",
     )
     autocomplete_fields = ("participant_1", "participant_2")
+    ordering = ("-date_edit", "-id")
     inlines = [MessageInline]
 
 
@@ -28,6 +29,7 @@ class MessageAdmin(admin.ModelAdmin):
     list_filter = ("is_ai", "is_deleted")
     search_fields = ("body",)
     autocomplete_fields = ("conversation", "sender")
+    ordering = ("-date_creat", "-id")
 
 
 @admin.register(OnlineStatus)
