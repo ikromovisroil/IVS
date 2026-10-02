@@ -110,6 +110,25 @@ class Rank(models.Model):
         verbose_name_plural = "Lavozim"
 
 
+_PATRONYMIC_SUFFIXES = {"o'g'li", "o‘g‘li", "oʻgʻli", "o`g`li", "ogli", "qizi"}
+
+
+def normalize_person_name(value):
+    """F.I.Sh: har bir so'zning 1-harfi katta, qolgani kichik
+    ("IKROMOV isroil" -> "Ikromov Isroil"). "o'g'li"/"qizi" kabi
+    qo'shimchalar kichik harfda qoladi."""
+    if not value:
+        return value
+
+    def _word(w):
+        lw = w.lower()
+        if lw in _PATRONYMIC_SUFFIXES:
+            return lw
+        return "-".join(p[:1].upper() + p[1:] for p in lw.split("-"))
+
+    return " ".join(_word(w) for w in value.split())
+
+
 # Xodim.
 class Employee(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=False, blank=True, related_name='employee', db_index=True)
@@ -132,6 +151,10 @@ class Employee(models.Model):
     date_edit = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+
+        self.last_name = normalize_person_name(self.last_name)
+        self.first_name = normalize_person_name(self.first_name)
+        self.father_name = normalize_person_name(self.father_name)
 
         if self.division and self.division.directorate:
             self.directorate = self.division.directorate

@@ -36,104 +36,128 @@
         <!-- ================= USER ================= -->
         <div class="mb-4 p-3 border rounded bg-light">
             <h5 class="fw-bold mb-2">Jo'natuvchi</h5><hr>
-            <div class="row">
-                <div class="col-6"><strong>F.I.O:</strong> {{ d.user.full_name }}</div>
-                <div class="col-3">
-                    <strong></strong>
-                </div>
-                <div class="col-3"><strong>Sana:</strong> {{ d.date_creat|date:"d.m.Y H:i" }}</div>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>T/R</th>
+                            <th>Tashkilot</th>
+                            <th>F.I.O</th>
+                            <th>Sana</th>
+                            <th>Izoh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>{{ d.user.organization.name }}</td>
+                            <td>{{ d.user.full_name }}</td>
+                            <td>{{ d.date_creat|date:"d.m.Y H:i" }}</td>
+                            <td class="text-muted">{{ d.message_user|default:"—" }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            {% if d.message_user %}
-                <div class="mt-2">
-                    <strong>Izoh:</strong>
-                    <span class="text-muted">{{ d.message_user }}</span>
-                </div>
-            {% endif %}
         </div>
 
-        <!-- ================= SENDER ================= -->
+        <!-- ================= IMZOLOVCHILAR ================= -->
         <div class="mb-4 p-3 border rounded bg-light">
-            <h5 class="fw-bold mb-2">Imzolovchi {{d.sender.organization}} vakili </h5><hr>
-            <div class="row">
-                <div class="col-6"><strong>F.I.O:</strong> {{ d.sender.full_name }}</div>
-                <div class="col-3">
-                    <strong>Holati:</strong>
-                    {% if d.status_sender == 'viewed' %}
-                        <span class="badge bg-warning">Kutulmoqda</span>
-                    {% elif d.status_sender == 'approved' %}
-                        <span class="badge bg-success">Tasdiqlandi</span>
-                    {% elif d.status_sender == 'rejected' %}
-                        <span class="badge bg-danger">Rad etildi</span>
-                    {% endif %}
-                </div>
-                <div class="col-3"><strong>Sana:</strong> {{ d.date_sender|date:"d.m.Y H:i" }}</div>
+            <h5 class="fw-bold mb-2">Imzolovchilar holati</h5><hr>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>T/R</th>
+                            <th>Tashkilot</th>
+                            <th>F.I.O</th>
+                            <th>Holati</th>
+                            <th>Sana</th>
+                            <th>Izoh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>1</td>
+                            <td>{{ d.sender.organization }}</td>
+                            <td>{{ d.sender.full_name }}</td>
+                            <td>
+                                {% if d.status_sender == 'viewed' %}
+                                    <span class="badge bg-warning">Kutulmoqda</span>
+                                {% elif d.status_sender == 'approved' %}
+                                    <span class="badge bg-success">Tasdiqlandi</span>
+                                {% elif d.status_sender == 'rejected' %}
+                                    <span class="badge bg-danger">Rad etildi</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ d.date_sender|date:"d.m.Y H:i" }}</td>
+                            <td class="text-muted">{{ d.message_sender|default:"—" }}</td>
+                        </tr>
+                        {% if d.receiver %}
+                        <tr>
+                            <td>2</td>
+                            <td>{{ d.receiver.organization }}</td>
+                            <td>{{ d.receiver.full_name }}</td>
+                            <td>
+                                {% if d.status_receiver == 'viewed' %}
+                                    <span class="badge bg-warning">Kutulmoqda</span>
+                                {% elif d.status_receiver == 'approved' %}
+                                    <span class="badge bg-success">Tasdiqlandi</span>
+                                {% elif d.status_receiver == 'rejected' %}
+                                    <span class="badge bg-danger">Rad etildi</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ d.date_receiver|date:"d.m.Y H:i" }}</td>
+                            <td class="text-muted">{{ d.message_receiver|default:"—" }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
-            {% if d.message_sender %}
-                <div class="mt-2">
-                    <strong>Izoh:</strong>
-                    <span class="text-muted">{{ d.message_sender }}</span>
-                </div>
-            {% endif %}
         </div>
-
-        <!-- ================= RECEIVER ================= -->
-        {% if d.receiver %}
-        <div class="mb-4 p-3 border rounded bg-light">
-            <h5 class="fw-bold mb-2">Imzolovchi {{d.receiver.organization}} vakili </h5><hr>
-            <div class="row">
-                <div class="col-6"><strong>F.I.O:</strong> {{ d.receiver.full_name }}</div>
-                <div class="col-3">
-                    <strong>Holati:</strong>
-                    {% if d.status_receiver == 'viewed' %}
-                        <span class="badge bg-warning">Kutulmoqda</span>
-                    {% elif d.status_receiver == 'approved' %}
-                        <span class="badge bg-success">Tasdiqlandi</span>
-                    {% elif d.status_receiver == 'rejected' %}
-                        <span class="badge bg-danger">Rad etildi</span>
-                    {% endif %}
-                </div>
-                <div class="col-3"><strong>Sana:</strong> {{ d.date_receiver|date:"d.m.Y H:i" }}</div>
-            </div>
-            {% if d.message_receiver %}
-                <div class="mt-2">
-                    <strong>Izoh:</strong>
-                    <span class="text-muted">{{ d.message_receiver }}</span>
-                </div>
-            {% endif %}
-        </div>
-        {% endif %}
 
         <!-- ================= KELISHUVCHILAR ================= -->
         {% if d.deedconsent_set.count %}
-            {% for dc in d.deedconsent_set.all %}
-            <div class="mb-4 p-3 border rounded bg-light">
-                <h5 class="fw-bold mb-2">Kelishuvchi {{dc.employee.organization.name}} vakili</h5><hr>
-                <div class="row">
-                    <div class="col-6"><strong>F.I.O:</strong> {{ dc.employee.full_name }}</div>
-                    <div class="col-3">
-                        <strong>Holati:</strong>
-                        {% if dc.status == 'viewed' %}
-                            <span class="badge bg-warning">Kutulmoqda</span>
-                        {% elif dc.status == 'approved' %}
-                            <span class="badge bg-success">Kelishildi</span>
-                        {% elif dc.status == 'rejected' %}
-                            <span class="badge bg-danger">Rad etildi</span>
-                        {% endif %}
-                    </div>
-                    <div class="col-3"><strong>Sana:</strong>
-                        {% if dc.status == 'approved' or dc.status == 'rejected' %}
-                        {{ dc.date_edit|date:"d.m.Y H:i" }}
-                        {% endif %}
-                    </div>
-                </div>
-                {% if dc.message %}
-                    <div class="mt-2">
-                        <strong>Izoh:</strong>
-                        <span class="text-muted">{{ dc.message }}</span>
-                    </div>
-                {% endif %}<hr>
+        <div class="mb-4 p-3 border rounded bg-light">
+            <h5 class="fw-bold mb-2">Kelishuvchilar holati</h5><hr>
+            <div class="table-responsive">
+                <table class="table table-bordered table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>T/R</th>
+                            <th>Tashkilot</th>
+                            <th>F.I.O</th>
+                            <th>Holati</th>
+                            <th>Sana</th>
+                            <th>Izoh</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dc in d.deedconsent_set.all %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>{{ dc.employee.organization.name }}</td>
+                            <td>{{ dc.employee.full_name }}</td>
+                            <td>
+                                {% if dc.status == 'viewed' %}
+                                    <span class="badge bg-warning">Kutulmoqda</span>
+                                {% elif dc.status == 'approved' %}
+                                    <span class="badge bg-success">Kelishildi</span>
+                                {% elif dc.status == 'rejected' %}
+                                    <span class="badge bg-danger">Rad etildi</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if dc.status == 'approved' or dc.status == 'rejected' %}
+                                    {{ dc.date_edit|date:"d.m.Y H:i" }}
+                                {% else %}—{% endif %}
+                            </td>
+                            <td class="text-muted">{{ dc.message|default:"—" }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
-            {% endfor %}
+        </div>
         {% endif %}
     </div>
   </div>

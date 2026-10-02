@@ -314,35 +314,11 @@ def _has_changed(emp, assigned, result=None):
     if assigned.get("_dep_unresolved"):
         return True
 
-    if result:
-        new_first  = cyrillic_to_latin((result.get("name")       or "").strip())
-        new_last   = cyrillic_to_latin((result.get("surname")    or "").strip())
-        new_father = cyrillic_to_latin((result.get("partonimic") or "").strip())
-        name_changed = (
-            (emp.first_name or "") != new_first or
-            (emp.last_name or "") != new_last or
-            (emp.father_name or "") != new_father
-        )
-        if name_changed:
-            return True
-
     return False
 
 
 def _describe_changes(emp, assigned, result=None):
     changes = []
-
-    if result:
-        new_first  = cyrillic_to_latin((result.get("name")       or "").strip())
-        new_last   = cyrillic_to_latin((result.get("surname")    or "").strip())
-        new_father = cyrillic_to_latin((result.get("partonimic") or "").strip())
-
-        if (emp.first_name or "") != new_first:
-            changes.append(f"Ism: {emp.first_name or '—'} → {new_first or '—'}")
-        if (emp.last_name or "") != new_last:
-            changes.append(f"Familiya: {emp.last_name or '—'} → {new_last or '—'}")
-        if (emp.father_name or "") != new_father:
-            changes.append(f"Otasining ismi: {emp.father_name or '—'} → {new_father or '—'}")
 
     if emp.organization_id != getattr(assigned["organization"], "id", None):
         old = str(emp.organization) if emp.organization else "—"
