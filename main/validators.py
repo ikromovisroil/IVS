@@ -46,3 +46,35 @@ def validate_attachment_extension(value):
 
     if value.size > 10 * 1024 * 1024:  # 10 MB
         raise ValidationError("Fayl 10 MB dan katta bo‘lishi mumkin emas!")
+
+
+MATERIAL_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png")
+MATERIAL_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+
+
+def validate_material_image(value):
+    """Material rasmi: faqat JPG/PNG, 5 MB gacha va haqiqatan rasm bo'lishi shart.
+
+    HEIC/WEBP/SVG va boshqalar brauzerlarda ko'rinmaydi yoki xavfli, shuning uchun rad etiladi.
+    """
+    from PIL import Image
+
+    ext = os.path.splitext(value.name)[1].lower()
+    if ext not in MATERIAL_IMAGE_EXTENSIONS:
+        raise ValidationError(
+            "Rasm faqat JPG yoki PNG formatida bo'lishi kerak "
+            "(iPhone'da HEIC bo'lsa: Sozlamalar → Kamera → Formatlar → «Eng mos»)."
+        )
+    if value.size > MATERIAL_IMAGE_MAX_BYTES:
+        raise ValidationError("Rasm 5 MB dan katta bo'lishi mumkin emas!")
+    try:
+        value.seek(0)
+        with Image.open(value) as img:
+            img.verify()
+            fmt = (img.format or "").upper()
+    except Exception:
+        raise ValidationError("Fayl buzilgan yoki rasm emas!")
+    finally:
+        value.seek(0)
+    if fmt not in ("JPEG", "PNG"):
+        raise ValidationError("Rasm faqat JPG yoki PNG formatida bo'lishi kerak!")

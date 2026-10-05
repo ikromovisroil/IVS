@@ -49,40 +49,31 @@
 
                   <div class="col-md-3">
                     <label for="department" class="form-label">Department</label>
-                    <select id="department" name="department" class="form-select">
+                    <select id="department" name="department" class="form-select"
+                            data-ajax-url="{% url 'ajax_load_departments' %}"
+                            data-ajax-params='{"organization":"#organization","region":"#region"}'>
                       <option value="">Tanlang...</option>
-                      {% for dep in departments %}
-                        <option value="{{ dep.id }}"
-                          {% if request.GET.department|stringformat:"s" == dep.id|stringformat:"s" %}selected{% endif %}>
-                          {{ dep.name }}
-                        </option>
-                      {% endfor %}
+                      {% if sel_department %}<option value="{{ sel_department.id }}" selected>{{ sel_department.name }}</option>{% endif %}
                     </select>
                   </div>
 
                   <div class="col-md-3">
                     <label for="directorate" class="form-label">Boshqarma</label>
-                    <select id="directorate" name="directorate" class="form-select">
+                    <select id="directorate" name="directorate" class="form-select"
+                            data-ajax-url="{% url 'ajax_load_directorate' %}"
+                            data-ajax-params='{"department":"#department"}'>
                       <option value="">Tanlang...</option>
-                      {% for dir in directorates %}
-                        <option value="{{ dir.id }}"
-                          {% if request.GET.directorate|stringformat:"s" == dir.id|stringformat:"s" %}selected{% endif %}>
-                          {{ dir.name }}
-                        </option>
-                      {% endfor %}
+                      {% if sel_directorate %}<option value="{{ sel_directorate.id }}" selected>{{ sel_directorate.name }}</option>{% endif %}
                     </select>
                   </div>
 
                   <div class="col-md-3">
                     <label for="division" class="form-label">Bo'lim</label>
-                    <select id="division" name="division" class="form-select">
+                    <select id="division" name="division" class="form-select"
+                            data-ajax-url="{% url 'ajax_load_division' %}"
+                            data-ajax-params='{"directorate":"#directorate"}'>
                       <option value="">Tanlang...</option>
-                      {% for div in divisions %}
-                        <option value="{{ div.id }}"
-                          {% if request.GET.division|stringformat:"s" == div.id|stringformat:"s" %}selected{% endif %}>
-                          {{ div.name }}
-                        </option>
-                      {% endfor %}
+                      {% if sel_division %}<option value="{{ sel_division.id }}" selected>{{ sel_division.name }}</option>{% endif %}
                     </select>
                   </div>
 
@@ -1012,7 +1003,9 @@
 })(jQuery);
 </script>
 
-<!-- Filter: org → dep → dir → div (yuqoridagi qidiruv formasi) -->
+<!-- Filter: org → dep → dir → div (yuqoridagi qidiruv formasi).
+     Department/Boshqarma/Bo'lim serverdan 20 tadan yuklanadi (data-ajax-url, static/js/select2_paging.js);
+     bu yerda faqat yuqori daraja o'zgarganda pastdagilarni tozalaymiz. -->
 <script>
 (() => {
   const orgSel = document.getElementById("organization");
@@ -1021,63 +1014,10 @@
   const dirSel = document.getElementById("directorate");
   const divSel = document.getElementById("division");
 
-  const URL_DEPS = "{% url 'ajax_load_departments' %}";
-  const URL_DIRS = "{% url 'ajax_load_directorate' %}";
-  const URL_DIVS = "{% url 'ajax_load_division' %}";
-
-  const selectedDep = "{{ selected_dep|default:'' }}";
-  const selectedDir = "{{ selected_dir|default:'' }}";
-  const selectedDiv = "{{ selected_div|default:'' }}";
-
-  function isSelect2(el) { return window.jQuery && window.jQuery(el).hasClass("select2-hidden-accessible"); }
-  function refreshUI(el) { if (isSelect2(el)) window.jQuery(el).trigger("change"); }
-  function closeSelect2(el) { if (isSelect2(el)) { try { window.jQuery(el).select2("close"); } catch (e) {} } }
-  function setLoading(selectEl, text = "Yuklanmoqda...") {
-    selectEl.innerHTML = `<option value="">${text}</option>`;
-    selectEl.disabled = true; refreshUI(selectEl); closeSelect2(selectEl);
-  }
-  function setEmpty(selectEl, text = "Tanlang...") {
-    selectEl.innerHTML = `<option value="">${text}</option>`;
-    selectEl.disabled = false; refreshUI(selectEl); closeSelect2(selectEl);
-  }
-  function fillOptions(selectEl, items, placeholder = "Tanlang...", selectedValue = "") {
-    let html = `<option value="">${placeholder}</option>`;
-    for (const it of items) {
-      const sel = String(it.id) === String(selectedValue) ? "selected" : "";
-      html += `<option value="${it.id}" ${sel}>${it.name}</option>`;
-    }
-    selectEl.innerHTML = html;
-    selectEl.disabled = false; refreshUI(selectEl); closeSelect2(selectEl);
-  }
-  async function getJSON(url) {
-    const res = await fetch(url, { headers: { "X-Requested-With": "XMLHttpRequest" } });
-    const ct = res.headers.get("content-type") || "";
-    if (!res.ok || !ct.includes("application/json")) return { results: [] };
-    return await res.json();
-  }
-  async function loadDepartments(orgId, regId, preselect = "") {
-    setEmpty(depSel); setEmpty(dirSel); setEmpty(divSel);
-    if (!orgId || !regId) return;
-    setLoading(depSel);
-    let qs = "";
-    if (orgId) qs += `organization=${encodeURIComponent(orgId)}&`;
-    if (regId) qs += `region=${encodeURIComponent(regId)}`;
-    const data = await getJSON(`${URL_DEPS}?${qs}`);
-    fillOptions(depSel, data.results || [], "Tanlang...", preselect);
-  }
-  async function loadDirectorates(depId, preselect = "") {
-    setEmpty(dirSel); setEmpty(divSel);
-    if (!depId) return;
-    setLoading(dirSel);
-    const data = await getJSON(`${URL_DIRS}?department=${encodeURIComponent(depId)}`);
-    fillOptions(dirSel, data.results || [], "Tanlang...", preselect);
-  }
-  async function loadDivisions(dirId, preselect = "") {
-    setEmpty(divSel);
-    if (!dirId) return;
-    setLoading(divSel);
-    const data = await getJSON(`${URL_DIVS}?directorate=${encodeURIComponent(dirId)}`);
-    fillOptions(divSel, data.results || [], "Tanlang...", preselect);
+  function reset(el) {
+    if (!el) return;
+    el.innerHTML = '<option value="">Tanlang...</option>';
+    if (window.jQuery) window.jQuery(el).trigger("change.select2");
   }
   function bindSelectEvents(el, cb) {
     if (!el) return;
@@ -1085,32 +1025,10 @@
     else { el.addEventListener("change", cb); }
   }
   document.addEventListener("DOMContentLoaded", () => {
-    bindSelectEvents(orgSel, async () => {
-      await loadDepartments((orgSel.value || "").trim(), (regSel?.value || "").trim());
-    });
-    bindSelectEvents(regSel, async () => {
-      await loadDepartments((orgSel?.value || "").trim(), (regSel.value || "").trim());
-    });
-    bindSelectEvents(depSel, async () => { await loadDirectorates((depSel.value || "").trim()); });
-    bindSelectEvents(dirSel, async () => { await loadDivisions((dirSel.value || "").trim()); });
-
-    (async () => {
-      const orgId = (orgSel?.value || "").trim();
-      const regId = (regSel?.value || "").trim();
-      const depId = (depSel?.value || "").trim();
-      const dirId = (dirSel?.value || "").trim();
-      if (orgId || regId) await loadDepartments(orgId, regId, depId || selectedDep);
-      const depNow = (depSel?.value || "").trim();
-      if (depNow) await loadDirectorates(depNow, dirId || selectedDir);
-      const dirNow = (dirSel?.value || "").trim();
-      if (dirNow) await loadDivisions(dirNow, selectedDiv);
-      closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
-      document.activeElement && document.activeElement.blur();
-    })();
-  });
-  window.addEventListener("load", () => {
-    closeSelect2(orgSel); closeSelect2(depSel); closeSelect2(dirSel); closeSelect2(divSel);
-    document.activeElement && document.activeElement.blur();
+    bindSelectEvents(orgSel, () => { reset(depSel); reset(dirSel); reset(divSel); });
+    bindSelectEvents(regSel, () => { reset(depSel); reset(dirSel); reset(divSel); });
+    bindSelectEvents(depSel, () => { reset(dirSel); reset(divSel); });
+    bindSelectEvents(dirSel, () => { reset(divSel); });
   });
 })();
 </script>

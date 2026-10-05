@@ -208,6 +208,35 @@ def get_department_employees(request):
     return JsonResponse({"employees": data})
 
 
+SELECT_PAGE_SIZE = 20
+
+
+def _select_response(request, qs):
+    """
+    Select2 uchun javob. `page` parametri kelsa — qidiruv (`q`) + 20 tadan sahifalash
+    ({"results":[{"id","name","text"}], "pagination":{"more":bool}}),
+    kelmasa — eski xatti-harakat (to'liq ro'yxat), shu sabab eski JS buzilmaydi.
+    """
+    page_raw = (request.GET.get("page") or "").strip()
+    if not page_raw:
+        return JsonResponse({"results": list(qs.values("id", "name"))})
+
+    page = int(page_raw) if page_raw.isdigit() and int(page_raw) > 0 else 1
+    term = (request.GET.get("q") or "").strip()
+    if term:
+        qs = qs.filter(name__icontains=term)
+    qs = qs.order_by("name", "id")
+
+    start = (page - 1) * SELECT_PAGE_SIZE
+    rows = list(qs.values("id", "name")[start:start + SELECT_PAGE_SIZE + 1])
+    more = len(rows) > SELECT_PAGE_SIZE
+    rows = rows[:SELECT_PAGE_SIZE]
+    return JsonResponse({
+        "results": [{"id": r["id"], "name": r["name"], "text": r["name"]} for r in rows],
+        "pagination": {"more": more},
+    })
+
+
 @never_cache
 @require_GET
 @login_required
@@ -231,9 +260,9 @@ def ajax_load_departments(request):
     if reg_id and reg_id.isdigit():
         filters["region_id"] = reg_id
 
-    qs = Department.objects.filter(**filters).values("id", "name").order_by("id")
+    qs = Department.objects.filter(**filters).order_by("id")
 
-    return JsonResponse({"results": list(qs)})
+    return _select_response(request, qs)
 
 
 @never_cache
@@ -244,8 +273,8 @@ def ajax_load_directorate(request):
     if not dep_id or dep_id == "None":
         return JsonResponse({"results": []})
 
-    qs = Directorate.objects.filter(department_id=dep_id).values("id", "name")
-    return JsonResponse({"results": list(qs)})
+    qs = Directorate.objects.filter(department_id=dep_id)
+    return _select_response(request, qs)
 
 
 @never_cache
@@ -256,8 +285,8 @@ def ajax_load_division(request):
     if not dir_id or dir_id == "None":
         return JsonResponse({"results": []})
 
-    qs = Division.objects.filter(directorate_id=dir_id).values("id", "name")
-    return JsonResponse({"results": list(qs)})
+    qs = Division.objects.filter(directorate_id=dir_id)
+    return _select_response(request, qs)
 
 
 from django.db.models import Q

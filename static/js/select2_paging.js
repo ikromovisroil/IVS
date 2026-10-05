@@ -8,6 +8,11 @@
  * avtomatik shu rejimda ishlaydi. Variantlar <option> lardan o'qiladi, shuning uchun
  * mavjud cascading JS, data-* atributlar va oldindan tanlangan qiymatlar o'zgarmaydi.
  *
+ * Server rejimi (haqiqiy tezlashish): <select data-ajax-url="..." data-ajax-params='{"param":"#bogliq_select"}'>
+ * Ro'yxat serverdan 20 tadan (`q` — qidiruv, `page` — sahifa) olinadi, <option> lar oldindan yuklanmaydi.
+ * Javob: {"results":[{"id","text"}], "pagination":{"more":bool}}. Oldindan tanlangan qiymat
+ * serverdan <option selected> sifatida berilishi kerak.
+ *
  * Istisno: <select data-no-paging="1"> yoki optgroup / tags / ajax / data berilgan select'lar.
  */
 (function ($) {
@@ -46,6 +51,32 @@
     };
   }
 
+  function serverAjax($el) {
+    var mapping = {};
+    try { mapping = JSON.parse($el.attr('data-ajax-params') || '{}'); } catch (e) {}
+    return {
+      url: $el.attr('data-ajax-url'),
+      delay: 250,
+      cache: false,
+      data: function (params) {
+        var data = { q: params.term || '', page: params.page || 1 };
+        Object.keys(mapping).forEach(function (key) {
+          var v = $(mapping[key]).val();
+          if (v) data[key] = v;
+        });
+        return data;
+      },
+      processResults: function (resp) {
+        return {
+          results: (resp.results || []).map(function (r) {
+            return { id: r.id, text: r.text || r.name };
+          }),
+          pagination: resp.pagination || { more: false }
+        };
+      }
+    };
+  }
+
   function pageable($el, opts) {
     return $el.is('select') &&
       !opts.ajax && !opts.data && !opts.tags && !opts.dataAdapter &&
@@ -58,7 +89,12 @@
       var base = options || {};
       return this.each(function () {
         var $el = $(this);
-        var opts = pageable($el, base) ? $.extend({}, base, { ajax: localAjax($el) }) : base;
+        var opts = base;
+        if ($el.is('select') && !base.ajax && $el.attr('data-ajax-url')) {
+          opts = $.extend({}, base, { ajax: serverAjax($el) });
+        } else if (pageable($el, base)) {
+          opts = $.extend({}, base, { ajax: localAjax($el) });
+        }
         original.call($el, opts);
       });
     }

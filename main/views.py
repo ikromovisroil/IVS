@@ -39,7 +39,7 @@ from .html_pdf import HtmlPdfError, add_text_watermark_pdf_bytes, deed_to_pdf_by
 from .models import Deed, DeedConsent, DeedFiles, Employee, Organization
 from .sanitizers import sanitize_deed_body
 from .tasks import _resolve_position
-from .validators import validate_attachment_extension, validate_file_extension
+from .validators import validate_attachment_extension, validate_file_extension, validate_material_image
 from django.utils.timezone import make_aware
 
 logger = logging.getLogger(__name__)
@@ -1827,7 +1827,11 @@ def material_create(request):
         material.save()
         messages.success(request, "Material qo'shildi")
     else:
-        messages.error(request, "Ma'lumotlarda xatolik bor!")
+        image_errors = form.errors.get("image")
+        if image_errors:
+            messages.error(request, " ".join(image_errors))
+        else:
+            messages.error(request, "Ma'lumotlarda xatolik bor!")
 
     return redirect(back_url)
 
@@ -1903,8 +1907,14 @@ def material_update(request, pk):
         messages.error(request, "Narx noto'g'ri kiritildi. Masalan: 14.45 yoki 14,45")
         return redirect(back_url)
 
-    if request.FILES.get("image"):
-        mat.image = request.FILES["image"]
+    new_image = request.FILES.get("image")
+    if new_image:
+        try:
+            validate_material_image(new_image)
+        except ValidationError as exc:
+            messages.error(request, " ".join(exc.messages))
+            return redirect(back_url)
+        mat.image = new_image
 
     mat.save(update_fields=[
         "unit", "category", "name", "code",
@@ -3967,6 +3977,10 @@ def employee(request):
         "selected_dep": department_id or "",
         "selected_dir": directorate_id or "",
         "selected_div": division_id or "",
+        # Filtr selectlari serverdan 20 tadan yuklanadi — faqat tanlangan qiymatlar oldindan beriladi
+        "sel_department": Department.objects.filter(pk=department_id).only("id", "name").first() if (department_id or "").isdigit() else None,
+        "sel_directorate": Directorate.objects.filter(pk=directorate_id).only("id", "name").first() if (directorate_id or "").isdigit() else None,
+        "sel_division": Division.objects.filter(pk=division_id).only("id", "name").first() if (division_id or "").isdigit() else None,
     }
     return render(request, "main/employee.html", context)
 

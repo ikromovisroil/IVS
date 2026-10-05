@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth.forms import PasswordChangeForm
 from .models import *
+from .validators import validate_material_image
 
 
 class TechnicsForm(forms.ModelForm):
@@ -76,6 +77,7 @@ class MaterialForm(forms.ModelForm):
 
     def __init__(self, *args, employee=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["image"].validators.append(validate_material_image)
         if employee is not None:
             self.fields["category"].queryset = MaterialCategory.objects.filter(
                 organization=employee.organization
