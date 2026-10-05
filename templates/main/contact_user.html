@@ -280,6 +280,7 @@
                                                                                 <th>Holati</th>
                                                                                 <th>Sana</th>
                                                                                 <th>Izoh</th>
+                                                                                {% if d.can_manage_consents %}<th style="width:60px;"></th>{% endif %}
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody>
@@ -299,6 +300,15 @@
                                                                                 </td>
                                                                                 <td>{{ d.date_sender|date:"d.m.Y H:i" }}</td>
                                                                                 <td class="text-muted">{{ d.message_sender|default:"—" }}</td>
+                                                                                {% if d.can_manage_consents %}
+                                                                                <td class="text-center">
+                                                                                    <div class="form-check form-switch d-flex justify-content-center m-0">
+                                                                                        <input type="checkbox" role="switch" class="form-check-input js-signer-consent-switch" title="Yoqilsa, imzolovchi ham kelishuvchi qo'sha oladi"
+                                                                                               data-url="{% url 'deed_signer_consent_toggle' d.pk 'sender' %}"
+                                                                                               {% if d.sender_can_add_consent %}checked{% endif %}>
+                                                                                    </div>
+                                                                                </td>
+                                                                                {% endif %}
                                                                             </tr>
                                                                             {% if d.receiver %}
                                                                             <tr>
@@ -317,13 +327,22 @@
                                                                                 </td>
                                                                                 <td>{{ d.date_receiver|date:"d.m.Y H:i" }}</td>
                                                                                 <td class="text-muted">{{ d.message_receiver|default:"—" }}</td>
+                                                                                {% if d.can_manage_consents %}
+                                                                                <td class="text-center">
+                                                                                    <div class="form-check form-switch d-flex justify-content-center m-0">
+                                                                                        <input type="checkbox" role="switch" class="form-check-input js-signer-consent-switch" title="Yoqilsa, imzolovchi ham kelishuvchi qo'sha oladi"
+                                                                                               data-url="{% url 'deed_signer_consent_toggle' d.pk 'receiver' %}"
+                                                                                               {% if d.receiver_can_add_consent %}checked{% endif %}>
+                                                                                    </div>
+                                                                                </td>
+                                                                                {% endif %}
                                                                             </tr>
                                                                             {% endif %}
                                                                         </tbody>
                                                                     </table>
                                                                 </div>
 
-                                                                {% if d.deedconsent_set.count %}
+                                                                {% if d.deedconsent_set.count or d.can_manage_consents %}
                                                                 <div class="section-title">Kelishuvchilar holati</div>
                                                                 <div class="table-responsive">
                                                                     <table class="table table-bordered table-sm align-middle">
@@ -336,6 +355,7 @@
                                                                                 <th>Holati</th>
                                                                                 <th>Sana</th>
                                                                                 <th>Izoh</th>
+                                                                                {% if d.can_manage_consents %}<th style="width:60px;"></th>{% endif %}
                                                                             </tr>
                                                                         </thead>
                                                                         <tbody>
@@ -360,11 +380,39 @@
                                                                                     {% else %}—{% endif %}
                                                                                 </td>
                                                                                 <td class="text-muted">{{ dc.message|default:"—" }}</td>
+                                                                                {% if d.can_manage_consents %}
+                                                                                <td class="text-center">
+                                                                                    {% if dc.status == 'viewed' %}
+                                                                                    <form method="post" action="{% url 'deedconsent_remove' dc.pk %}"
+                                                                                          onsubmit="return confirm('Kelishuvchini olib tashlaysizmi?')">
+                                                                                        {% csrf_token %}
+                                                                                        <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1" title="Olib tashlash">
+                                                                                            <i class="bi bi-trash"></i>
+                                                                                        </button>
+                                                                                    </form>
+                                                                                    {% endif %}
+                                                                                </td>
+                                                                                {% endif %}
                                                                             </tr>
                                                                             {% endfor %}
                                                                         </tbody>
                                                                     </table>
                                                                 </div>
+
+                                                                {% if d.can_manage_consents %}
+                                                                <form method="post" action="{% url 'deedconsent_add' d.pk %}" class="row g-2 mt-2 align-items-end">
+                                                                    {% csrf_token %}
+                                                                    <div class="col">
+                                                                        <label class="form-label small mb-1">Kelishuvchi qo'shish</label>
+                                                                        <select name="employees" multiple class="form-select"
+                                                                                data-placeholder="Xodimni qidiring..."
+                                                                                data-ajax-url="{% url 'ajax_deed_consent_candidates' d.pk %}"></select>
+                                                                    </div>
+                                                                    <div class="col-auto">
+                                                                        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Qo'shish</button>
+                                                                    </div>
+                                                                </form>
+                                                                {% endif %}
                                                                 {% endif %}
 
                                                             </div>
@@ -660,6 +708,41 @@ document.addEventListener("click", function (e) {
         setTimeout(function () { b.disabled = true; }, 0);
     });
 }, true);
+</script>
+
+
+<script>
+(() => {
+  function csrfToken() {
+    const m = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : "";
+  }
+  document.addEventListener("change", async (e) => {
+    const sw = e.target.closest(".js-signer-consent-switch");
+    if (!sw) return;
+    const wanted = sw.checked;
+    sw.disabled = true;
+    try {
+      const res = await fetch(sw.dataset.url, {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken(),
+          "X-Requested-With": "XMLHttpRequest",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: "enabled=" + (wanted ? "1" : "0"),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.error || "Xatolik yuz berdi");
+      sw.checked = !!data.enabled;
+    } catch (err) {
+      sw.checked = !wanted;
+      alert(err.message || "Xatolik yuz berdi");
+    } finally {
+      sw.disabled = false;
+    }
+  });
+})();
 </script>
 
 {% endblock content %}

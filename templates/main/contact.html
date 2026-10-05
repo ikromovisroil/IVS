@@ -205,7 +205,7 @@
                                                     </table>
                                                 </div>
 
-                                                {% if d.deedconsent_set.count %}
+                                                {% if d.deedconsent_set.count or d.can_add_consents %}
                                                 <div class="section-title">Kelishuvchilar holati</div>
                                                 <div class="table-responsive">
                                                     <table class="table table-bordered table-sm align-middle">
@@ -247,6 +247,21 @@
                                                         </tbody>
                                                     </table>
                                                 </div>
+
+                                                {% if d.can_add_consents %}
+                                                <form method="post" action="{% url 'deedconsent_add' d.pk %}" class="row g-2 mt-2 align-items-end">
+                                                    {% csrf_token %}
+                                                    <div class="col">
+                                                        <label class="form-label small mb-1">Kelishuvchi qo'shish</label>
+                                                        <select name="employees" multiple class="form-select"
+                                                                data-placeholder="Xodimni qidiring..."
+                                                                data-ajax-url="{% url 'ajax_deed_consent_candidates' d.pk %}"></select>
+                                                    </div>
+                                                    <div class="col-auto">
+                                                        <button type="submit" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i>Qo'shish</button>
+                                                    </div>
+                                                </form>
+                                                {% endif %}
                                                 {% endif %}
 
                                             </div>

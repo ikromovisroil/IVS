@@ -119,6 +119,9 @@ def contact(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
+    for d in page_obj:
+        d.can_add_consents = _deed_consents_open(d) and _can_add_consents(d, employee)
+
     params = request.GET.copy()
     params.pop("page", None)
 
@@ -265,6 +268,9 @@ def contact_user(request):
     paginator = Paginator(qs, 20)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
+
+    for d in page_obj:
+        d.can_manage_consents = _deed_consents_open(d)
 
     params = request.GET.copy()
     params.pop("page", None)
@@ -779,6 +785,179 @@ def deedconsent_action(request, pk):
 
     return redirect(back_url)
 
+
+def _deed_consents_open(deed):
+    """Kelishuvchilarni o'zgartirish mumkinmi: hujjat rad etilmagan va imzolash tugamagan bo'lsa."""
+    if deed.status_sender == "rejected" or deed.status_receiver == "rejected":
+        return False
+    signed = deed.status_sender == "approved" and (
+        not deed.receiver_id or deed.status_receiver == "approved"
+    )
+    return not signed
+
+
+def _deed_consent_org_ids(deed, employee):
+    """deed_edit dagi bilan bir xil: imzolovchi, qabul qiluvchi va yuboruvchi tashkilotlari."""
+    ids = {employee.organization_id}
+    if deed.sender_id:
+        ids.add(deed.sender.organization_id)
+    if deed.receiver_id:
+        ids.add(deed.receiver.organization_id)
+    return [i for i in ids if i]
+
+
+def _creator_deed_or_403(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+    deed = get_object_or_404(
+        Deed.objects.select_related("sender", "receiver"), pk=pk
+    )
+    if deed.user_id != employee.id:
+        raise PermissionDenied("Sizga ruxsat yo'q")
+    return employee, deed
+
+
+def _can_add_consents(deed, employee):
+    """Yaratuvchi yoki (yaratuvchi ruxsat bergan, hali javob bermagan) imzolovchi qo'sha oladi."""
+    if deed.user_id == employee.id:
+        return True
+    if deed.sender_id == employee.id:
+        return deed.sender_can_add_consent and deed.status_sender == "viewed"
+    if deed.receiver_id == employee.id:
+        return deed.receiver_can_add_consent and deed.status_receiver == "viewed"
+    return False
+
+
+def _consent_adder_or_403(request, pk):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+    deed = get_object_or_404(
+        Deed.objects.select_related("sender", "receiver"), pk=pk
+    )
+    if not _can_add_consents(deed, employee):
+        raise PermissionDenied("Sizga ruxsat yo'q")
+    return employee, deed
+
+
+@never_cache
+@require_GET
+@login_required
+def ajax_deed_consent_candidates(request, pk):
+    """Kelishuvchi qo'shish uchun xodimlar (Select2, 20 tadan, qidiruv bilan)."""
+    employee, deed = _consent_adder_or_403(request, pk)
+
+    taken = set(DeedConsent.objects.filter(deed_id=deed.id).values_list("employee_id", flat=True))
+    taken.update(i for i in (deed.sender_id, deed.receiver_id) if i)
+
+    qs = (
+        Employee.objects
+        .filter(organization_id__in=_deed_consent_org_ids(deed, employee))
+        .exclude(id__in=taken)
+        .select_related("rank")
+    )
+    for term in (request.GET.get("q") or "").split():
+        qs = qs.filter(
+            Q(last_name__icontains=term) | Q(first_name__icontains=term) |
+            Q(father_name__icontains=term) | Q(pinfl__icontains=term)
+        )
+    qs = qs.order_by("last_name", "first_name", "father_name", "id")
+
+    page_raw = (request.GET.get("page") or "").strip()
+    page = int(page_raw) if page_raw.isdigit() and int(page_raw) > 0 else 1
+    start = (page - 1) * 20
+    rows = list(qs[start:start + 21])
+    return JsonResponse({
+        "results": [
+            {"id": e.id, "text": f"{e.full_name} — {e.rank.name}" if e.rank_id else e.full_name}
+            for e in rows[:20]
+        ],
+        "pagination": {"more": len(rows) > 20},
+    })
+
+
+@never_cache
+@require_POST
+@login_required
+def deedconsent_add(request, pk):
+    """Yaratuvchi (yoki unga ruxsat berilgan imzolovchi) imzolash tugamaguncha kelishuvchi qo'shadi."""
+    employee, deed = _consent_adder_or_403(request, pk)
+    back_url = request.META.get("HTTP_REFERER") or "/"
+
+    ids = [int(x) for x in request.POST.getlist("employees") if str(x).isdigit()]
+    if not ids:
+        messages.error(request, "Kelishuvchi tanlanmadi")
+        return redirect(back_url)
+
+    with transaction.atomic():
+        deed = Deed.objects.select_for_update(of=("self",)).select_related("sender", "receiver").get(pk=deed.pk)
+        if not _deed_consents_open(deed) or not _can_add_consents(deed, employee):
+            messages.error(request, "Bu hujjatda kelishuvchilarni o'zgartirib bo'lmaydi")
+            return redirect(back_url)
+
+        taken = set(DeedConsent.objects.filter(deed_id=deed.id).values_list("employee_id", flat=True))
+        taken.update(i for i in (deed.sender_id, deed.receiver_id) if i)
+        valid_ids = [
+            i for i in Employee.objects.filter(
+                id__in=ids, organization_id__in=_deed_consent_org_ids(deed, employee)
+            ).values_list("id", flat=True)
+            if i not in taken
+        ]
+        if not valid_ids:
+            messages.error(request, "Tanlangan xodim qo'shib bo'lmaydi (allaqachon bor yoki ruxsat etilmagan)")
+            return redirect(back_url)
+
+        DeedConsent.objects.bulk_create([
+            DeedConsent(deed_id=deed.id, employee_id=i, status="viewed") for i in valid_ids
+        ])
+
+    messages.success(request, f"Kelishuvchi qo'shildi: {len(valid_ids)} ta")
+    return redirect(back_url)
+
+
+@never_cache
+@require_POST
+@login_required
+def deedconsent_remove(request, pk):
+    """Hali ko'rib chiqmagan (kutilayotgan) kelishuvchini olib tashlash."""
+    consent = get_object_or_404(DeedConsent.objects.select_related("deed"), pk=pk)
+    employee, deed = _creator_deed_or_403(request, consent.deed_id)
+    back_url = request.META.get("HTTP_REFERER") or "/"
+
+    with transaction.atomic():
+        consent = DeedConsent.objects.select_for_update(of=("self",)).get(pk=pk)
+        if not _deed_consents_open(deed):
+            messages.error(request, "Bu hujjatda kelishuvchilarni o'zgartirib bo'lmaydi")
+            return redirect(back_url)
+        if consent.status != "viewed":
+            messages.error(request, "Kelishuvchi allaqachon javob bergan, uni olib tashlab bo'lmaydi")
+            return redirect(back_url)
+        consent.delete()
+
+    messages.success(request, "Kelishuvchi olib tashlandi")
+    return redirect(back_url)
+
+
+@never_cache
+@require_POST
+@login_required
+def deed_signer_consent_toggle(request, pk, role):
+    """Yaratuvchi: imzolovchi (sender/receiver) kelishuvchi qo'sha olsinmi — yoqish/o'chirish (AJAX)."""
+    employee, deed = _creator_deed_or_403(request, pk)
+
+    if role not in ("sender", "receiver") or (role == "receiver" and not deed.receiver_id):
+        raise Http404("Imzolovchi topilmadi")
+    if not _deed_consents_open(deed):
+        return JsonResponse(
+            {"ok": False, "error": "Bu hujjatda kelishuvchilarni o'zgartirib bo'lmaydi"}, status=409
+        )
+
+    field = f"{role}_can_add_consent"
+    enabled = request.POST.get("enabled") == "1"
+    setattr(deed, field, enabled)
+    deed.save(update_fields=[field])
+    return JsonResponse({"ok": True, "enabled": enabled})
 
 
 def _employee_has_full_scope(request):

@@ -603,6 +603,10 @@ class Deed(models.Model):
     ], default='viewed', db_index=True)
     date_receiver = models.DateTimeField(null=True, blank=True)
 
+    # Yaratuvchi belgilasa, imzolovchi (sender/receiver) ham kelishuvchi qo'sha oladi
+    sender_can_add_consent = models.BooleanField(default=False)
+    receiver_can_add_consent = models.BooleanField(default=False)
+
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True, db_index=True)
     user_edit = models.BooleanField(default=True)
     message_user = models.TextField(null=True, blank=True)
