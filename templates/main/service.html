@@ -623,13 +623,19 @@ $(function () {
     allowClear: true
   });
 
-  // Sanalarni avtomatik to'ldirish
-  const today    = new Date();
-  const monthAgo = new Date();
-  monthAgo.setMonth(monthAgo.getMonth() - 1);
+  // Sanalarni avtomatik to'ldirish: oy boshidan bugungacha (Yakuniy hisobot va boshqa hisobotlardagidek).
+  // toISOString() UTC ga o'tkazib, yarim tunda bir kun orqaga surib yuboradi, shuning uchun mahalliy sana qismlaridan yasaymiz.
+  function toLocalIsoDate(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+  const today      = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
 
-  if (!$('#date1').val()) $('#date1').val(monthAgo.toISOString().split('T')[0]);
-  if (!$('#date2').val()) $('#date2').val(today.toISOString().split('T')[0]);
+  if (!$('#date1').val()) $('#date1').val(toLocalIsoDate(monthStart));
+  if (!$('#date2').val()) $('#date2').val(toLocalIsoDate(today));
 
   // ─── SEARCH MATERIALS ───────────────────────────────────────────────────────
   // Faqat o'z tashkilotim va o'z hududim bo'yicha avtomatik; jadval Svod'dagi kabi:
