@@ -858,6 +858,42 @@ def order_sender_barn(request):
     return render(request, "main/order_sender_barn.html", context)
 
 
+def _restore_given_materials(order, reason):
+    """
+    Omborxonachi allaqachon bergan (given > 0) materiallarni omborga qaytaradi va harakat jurnaliga yozadi.
+    Material arizasi `finished` holatda bekor qilinganda ishlatiladi (avval ombor qoldig'i qaytmay qolardi).
+    Chaqiruvchi transaction.atomic() ichida bo'lishi kerak.
+    """
+    order_materials = list(
+        OrderMaterial.objects.select_for_update(of=("self",)).filter(order=order).select_related("material")
+    )
+    material_ids = [om.material_id for om in order_materials if om.material_id and (om.given or 0) > 0]
+    materials = {m.id: m for m in Material.objects.select_for_update().filter(id__in=material_ids)}
+
+    changed_materials, changed_oms, movements = [], [], []
+    for om in order_materials:
+        given = om.given or 0
+        if given <= 0:
+            continue
+        mat = materials.get(om.material_id)
+        if mat:
+            mat.number = (mat.number or 0) + given
+            changed_materials.append(mat)
+            movements.append(MaterialMovement(
+                material=mat, user=order.sender, employee=mat.employee, status="order",
+                income=given, body=f"Ariza #{order.id} {reason} - qaytarildi",
+            ))
+        om.given = 0
+        changed_oms.append(om)
+
+    if changed_materials:
+        Material.objects.bulk_update(changed_materials, ["number"])
+    if changed_oms:
+        OrderMaterial.objects.bulk_update(changed_oms, ["given"])
+    if movements:
+        MaterialMovement.objects.bulk_create(movements)
+
+
 @never_cache
 @require_POST
 @login_required
@@ -901,6 +937,10 @@ def order_decide_barn(request, pk):
             if action == "accepted" and order.status != "approved":
                 messages.error(request, "Bu ariza hozir qabul qilinmaydi")
                 return redirect(back_url)
+
+            # Omborxonachi materiallarni allaqachon bergan bo'lsa (finished) — bekor qilinganda omborga qaytadi
+            if action == "canceled" and order.status == "finished":
+                _restore_given_materials(order, "bekor qilindi")
 
             order.status = action
             order.save(update_fields=["status"])

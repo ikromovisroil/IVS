@@ -126,6 +126,7 @@
                     <th scope="col">Lavozimi</th>
                     <th scope="col">F.I.O</th>
                     <th scope="col">Pinfil</th>
+                    <th scope="col">Telefon</th>
                     <th scope="col">Holati</th>
                     <th scope="col">Tafsif</th>
                   </tr>
@@ -144,6 +145,9 @@
                     </td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
                         {{ emp.pinfl|default:"" }}
+                    </td>
+                    <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
+                        {{ emp.phone|default:"" }}
                     </td>
                     <td style="cursor:pointer" data-bs-toggle="modal" data-bs-target="#empmadal-{{emp.id}}">
                         {% if emp.user.is_active %}
@@ -184,6 +188,7 @@
                     <td>{{ emp.rank.name|default:"" }}</td>
                     <td>{{ emp.full_name|default:"" }}</td>
                     <td>{{ emp.pinfl|default:"" }}</td>
+                    <td>{{ emp.phone|default:"" }}</td>
                     <td>
                         {% if emp.user.is_active %}
                           <span class="text-success">Faol</span>
@@ -221,7 +226,7 @@
 
                  {% empty %}
                   <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                       <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                     </td>
                   </tr>

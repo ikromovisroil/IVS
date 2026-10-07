@@ -2375,6 +2375,19 @@ def mat_info(request):
     if has_search:
         employee_id = int(employee_id_raw)
 
+        # Tanlangan xodim ro'yxatdagi (o'zi yoki all_material_employee bo'lsa tashkilotdagi moddiy javobgarlar)
+        # xodimlar ichida bo'lishi shart — URL orqali boshqa xodim hisobotini ko'rib bo'lmaydi (Excel eksport kabi)
+        _perm = Permission.objects.get(codename="shop_employee", content_type__app_label="main")
+        if request.user.has_perm("main.all_material_employee"):
+            _allowed = Employee.objects.filter(
+                Q(user__groups__permissions=_perm) | Q(user__user_permissions=_perm),
+                organization=employee.organization,
+            ).values_list("id", flat=True)
+        else:
+            _allowed = [employee.id]
+        if employee_id not in set(_allowed):
+            raise PermissionDenied("Bu xodimning hisobotini ko'rishga ruxsatingiz yo'q")
+
         start_dt = make_aware(datetime.combine(date1, time.min))
         end_dt = make_aware(datetime.combine(date2, time.max))
 
@@ -3128,7 +3141,8 @@ def svod_get(request):
         regions = regions.filter(id=employee.region_id)
 
     context = {
-        "organizations": Organization.objects.only("id", "name", "contract").order_by("id"),
+        # Xizmat ko'rsatuvchi (ATM) tashkilot Svodga kirmaydi — faqat mijoz tashkilotlar
+        "organizations": Organization.objects.exclude(type="worker").only("id", "name", "contract").order_by("id"),
         "emp_bos": Employee.objects.filter(department_id=283).select_related("rank"),
         "employee": Employee.objects.filter(organization_id=4).select_related("rank"),
         "regions": regions,
@@ -3159,7 +3173,7 @@ def svod_post(request):
         messages.error(request, "Kamida bitta tashkilot tanlang")
         return redirect("svod_get")
 
-    orgs = Organization.objects.filter(id__in=org_ids)
+    orgs = Organization.objects.filter(id__in=org_ids).exclude(type="worker")
     if not orgs.exists():
         messages.error(request, "Tashkilotlar topilmadi")
         return redirect("svod_get")
@@ -3319,6 +3333,114 @@ def reest_post(request):
     except DatabaseError:
         messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
         return redirect("reestr_get")
+
+    notify_deed_sender(deed)
+    if raw_ids:
+        notify_deed_watchers(deed, emps)
+
+    messages.success(request, "Imzolashga yuborildi")
+    return redirect("contact_user")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# SERVISE
+# ═══════════════════════════════════════════════════════════════════
+@never_cache
+@require_GET
+@login_required
+@permission_required("main.material_service", raise_exception=True)
+def service_get(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    if getattr(employee.organization, "type", None) != "worker":
+        raise PermissionDenied("Ruxsat yo'q")
+
+    context = {
+        "employee": Employee.objects.filter(organization__type="worker"),
+        # Hisobot faqat o'z tashkiloti va o'z hududi bo'yicha avtomatik shakllanadi
+        "my_org": employee.organization,
+        "my_region": employee.region,
+    }
+    return render(request, "main/service.html", context)
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.material_service", raise_exception=True)
+def service_post(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    if getattr(employee.organization, "type", None) != "worker":
+        raise PermissionDenied("Ruxsat yo'q")
+
+    employe_id = (request.POST.get("sender") or "").strip()
+    message = (request.POST.get("message") or "").strip() or None
+    agreements = request.POST.getlist("agreements[]")
+
+    body = _decode_body(request)
+
+
+    if not employe_id:
+        messages.error(request, "Imzolovchi xodim tanlanmadi yoki ruxsat etilmagan")
+        return redirect("service_get")
+
+    sender = Employee.objects.filter(id=employe_id).first() if employe_id.isdigit() else None
+
+    if not sender:
+        messages.error(request, "Imzolovchi xodim topilmadi")
+        return redirect("service_get")
+
+    if not body:
+        messages.error(request, "Hujjat matni bo'sh bo'lmasin")
+        return redirect("service_get")
+
+    attachments = request.FILES.getlist("attachments")
+    if len(attachments) > MAX_DEED_ATTACHMENTS:
+        messages.error(request, f"Ilova fayllari {MAX_DEED_ATTACHMENTS} tadan ko'p bo'lmasligi kerak")
+        return redirect("service_get")
+    for att in attachments:
+        try:
+            validate_attachment_extension(att)
+        except ValidationError as e:
+            messages.error(request, f"{att.name}: {' '.join(e.messages)}")
+            return redirect("service_get")
+
+    exclude_ids = {sender.id}
+
+    raw_ids = list({int(x) for x in agreements if (x or "").strip().isdigit()})
+    raw_ids = [i for i in raw_ids if i not in exclude_ids]
+
+    try:
+        with transaction.atomic():
+            deed = Deed.objects.create(
+                organization=employee.organization,
+                sender=sender,
+                user=employee,
+                message_user=message,
+                body=body,
+                status='service',
+            )
+
+            emps = Employee.objects.filter(id__in=raw_ids).only("id") if raw_ids else Employee.objects.none()
+            if raw_ids:
+                objs = [DeedConsent(deed=deed, employee=e, status="viewed") for e in emps]
+                DeedConsent.objects.bulk_create(objs, ignore_conflicts=True)
+
+            for att in attachments:
+                DeedFiles.objects.create(deed=deed, file=att)
+
+            _save_deed_pdf(deed)
+
+    except HtmlPdfError as e:
+        messages.error(request, f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring")
+        return redirect("service_get")
+    except DatabaseError:
+        messages.error(request, "Xatolik yuz berdi. Qayta urinib ko'ring")
+        return redirect("service_get")
 
     notify_deed_sender(deed)
     if raw_ids:
@@ -4057,6 +4179,14 @@ def employee(request):
 
     page_number = request.GET.get("page", 1)
 
+    # Ko'rish doirasi serverda ham tekshiriladi (faqat interfeys emas): URL orqali boshqa tashkilot/hududni ko'rib bo'lmaydi
+    if organization_id and not request.user.has_perm("main.all_organization") \
+            and str(organization_id) != str(employee.organization_id):
+        raise PermissionDenied("Bu tashkilot bo'yicha ruxsat yo'q")
+    if region_id and not request.user.has_perm("main.all_region") \
+            and str(region_id) != str(employee.region_id):
+        raise PermissionDenied("Bu hudud bo'yicha ruxsat yo'q")
+
     if organization_id:
         employee_qs = (
             Employee.objects
@@ -4286,6 +4416,38 @@ def employee_permission(request):
     return redirect(back_url)
 
 
+
+def _employee_structure_error(organization, department_id, directorate_id, division_id):
+    """
+    Bo'lim/boshqarma/bo'linma zanjiri mosligini va xodim tashkilotiga tegishliligini tekshiradi.
+    Employee.save() bo'limga qarab tashkilotni o'zi almashtirib yuboradi — tekshiruvsiz boshqa tashkilot bo'limini
+    tanlab, xodimni o'sha tashkilotga o'tkazib yuborish mumkin edi. Xato bo'lsa matn, aks holda None.
+    """
+    def _obj(model, raw):
+        raw = (raw or "").strip()
+        if not raw:
+            return None
+        if not raw.isdigit():
+            return False
+        return model.objects.filter(pk=int(raw)).first() or False
+
+    dep = _obj(Department, department_id)
+    drt = _obj(Directorate, directorate_id)
+    div = _obj(Division, division_id)
+    if dep is False or drt is False or div is False:
+        return "Bo'lim, boshqarma yoki bo'linma topilmadi"
+    if div and drt and div.directorate_id != drt.id:
+        return "Bo'linma tanlangan boshqarmaga tegishli emas"
+    if drt and dep and drt.department_id != dep.id:
+        return "Boshqarma tanlangan bo'limga tegishli emas"
+    if div and not drt:
+        drt = div.directorate
+    if drt and not dep:
+        dep = drt.department
+    if dep and organization and dep.organization_id and dep.organization_id != organization.id:
+        return "Bo'lim xodimning tashkilotiga tegishli emas"
+    return None
+
 # =========================================================================
 # YARATISH
 # =========================================================================
@@ -4328,6 +4490,11 @@ def employee_create(request):
     if not request.user.has_perm("main.all_organization"):
         if organization.id != current_employee.organization_id:
             raise PermissionDenied("Boshqa tashkilotga xodim qo'sha olmaysiz")
+
+    structure_error = _employee_structure_error(organization, department_id, directorate_id, division_id)
+    if structure_error:
+        messages.info(request, structure_error)
+        return redirect(back_url)
 
     with transaction.atomic():
         username = _generate_username(pinfl, first_name, last_name)
@@ -4406,6 +4573,13 @@ def employee_update(request):
     # boshqa xodimda shu PINFL borligini tekshiramiz (o'zidan tashqari)
     if Employee.objects.filter(pinfl=pinfl).exclude(pk=target_employee.pk).exists():
         messages.info(request, "Bu PINFL boshqa xodimga tegishli")
+        return redirect(back_url)
+
+    structure_error = _employee_structure_error(
+        target_employee.organization, department_id, directorate_id, division_id
+    )
+    if structure_error:
+        messages.info(request, structure_error)
         return redirect(back_url)
 
     target_employee.pinfl = pinfl

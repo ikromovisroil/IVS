@@ -102,6 +102,7 @@ MIDDLEWARE = [
 
     "core.middlewares.audit.AuditMiddleware",
     "core.middlewares.security_headers.SecurityHeadersMiddleware",
+    "api.middleware.ApiGuardMiddleware",   # /api/: X-API-Version, texnik ishlar (503), majburiy yangilash (426)
 ]
 
 
@@ -266,14 +267,21 @@ CSRF_COOKIE_SAMESITE = "Lax"
 # REST FRAMEWORK
 # =========================================================
 REST_FRAMEWORK = {
+    # JWT birinchi: tokensiz/eskirgan so'rovga 401 (+ WWW-Authenticate: Bearer) qaytadi — mobil ilova shu bilan
+    # tokenni yangilash vaqtini biladi. (Birinchi sessiya bo'lsa DRF hamma autentifikatsiya xatosini 403 qilardi.)
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        "api.authentication.AuditJWTAuthentication",   # JWT + audit jurnali (api/authentication.py)
         "rest_framework.authentication.TokenAuthentication",
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
     ],
+    # So'rovlar chegarasi (suiiste'mol va brute-force dan himoya); ilova uchun yetarlicha keng
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.UserRateThrottle",
+    ],
+    "DEFAULT_THROTTLE_RATES": {"user": "1200/min"},
     "DEFAULT_FILTER_BACKENDS": [
         "django_filters.rest_framework.DjangoFilterBackend",
         "rest_framework.filters.SearchFilter",
@@ -282,6 +290,30 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'api.pagination.StandardResultsPagination',
     'PAGE_SIZE': 20,
 }
+
+
+# =========================================================
+# FCM (Android push): service account JSON fayl yo'li; bo'sh bo'lsa FCM o'chiq
+# =========================================================
+FIREBASE_CREDENTIALS_FILE = os.getenv("FIREBASE_CREDENTIALS_FILE", "")
+FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")
+
+
+# =========================================================
+# Mobil ilova: majburiy yangilash va texnik ishlar (api/app_views.py)
+# =========================================================
+ANDROID_MIN_VERSION = os.getenv("ANDROID_MIN_VERSION", "")        # shundan eski versiya ishlay olmaydi (426)
+ANDROID_LATEST_VERSION = os.getenv("ANDROID_LATEST_VERSION", "")  # mavjud eng yangi versiya
+ANDROID_UPDATE_URL = os.getenv("ANDROID_UPDATE_URL", "")          # yangilash havolasi (Play Market va h.k.)
+ANDROID_UPDATE_MESSAGE = os.getenv("ANDROID_UPDATE_MESSAGE", "")
+API_MAINTENANCE = os.getenv("API_MAINTENANCE", "0") == "1"        # 1 — barcha /api/ so'rovlar 503
+API_MAINTENANCE_MESSAGE = os.getenv("API_MAINTENANCE_MESSAGE", "")
+
+
+# =========================================================
+# SWAGGER (API hujjatlari): standart holatda faqat tizimga kirganlar uchun; SWAGGER_PUBLIC=1 — hamma uchun
+# =========================================================
+SWAGGER_PUBLIC = os.getenv("SWAGGER_PUBLIC", "0") == "1"
 
 
 # =========================================================
@@ -348,7 +380,12 @@ SSO_AUTH_URL = os.getenv("SSO_AUTH_URL")
 SSO_TOKEN_URL = os.getenv("SSO_TOKEN_URL")
 SSO_EIMZO_SIGN_URL = os.getenv("SSO_EIMZO_SIGN_URL")
 SSO_REDIRECT_URI = os.getenv("SSO_REDIRECT_URI")
+# Android ilovaning SSO redirect_uri lari (vergul bilan). Bo'sh bo'lsa /api/auth/sso/token/ o'chiq.
+MOBILE_SSO_REDIRECT_URIS = [x.strip() for x in os.getenv("MOBILE_SSO_REDIRECT_URIS", "").split(",") if x.strip()]
 EIMZO_RETURN_URL = os.getenv("EIMZO_RETURN_URL")
+# Imzolash sessiyasi amal qilish muddati (soniya) va qaytishda `doc` majburiyligi (provayder qaytarishi tasdiqlangach "1" qiling)
+EIMZO_PENDING_TTL = int(os.getenv("EIMZO_PENDING_TTL", "900"))
+EIMZO_REQUIRE_DOC = os.getenv("EIMZO_REQUIRE_DOC", "0") == "1"
 
 GATEWAY_BASE_URL = os.getenv("GATEWAY_BASE_URL")
 GATEWAY_USERNAME = os.getenv("GATEWAY_USERNAME")

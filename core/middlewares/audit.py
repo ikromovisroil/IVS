@@ -25,6 +25,10 @@ class AuditMiddleware:
             if not request.user.is_authenticated:
                 return response
 
+            # JWT (API) so'rovlarida foydalanuvchi view ichida aniqlanadi — so'rov oxirida qayta olamiz
+            if employee is None:
+                employee = getattr(request.user, "employee", None)
+
             if any(request.path.startswith(p) for p in SKIP_PATHS):
                 return response
 

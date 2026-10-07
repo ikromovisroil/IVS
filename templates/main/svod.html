@@ -518,24 +518,10 @@ function searchMaterialsAll() {
       const orgs = (data && data.organizations) || [];
       const emps = (data && data.employees) || [];
 
-      // Sarf materiallarni ham olib, ikkalasini BIRGA (jami qatorlar eng
-      // pastda chiqadigan tarzda) chizamiz.
-      $.ajax({
-        url: "{% url 'ajax_service_materials' %}",
-        method: 'GET',
-        dataType: 'json',
-        data: $.param({ 'organizations[]': orgIds }) +
-              `&date1=${encodeURIComponent(date1)}&date2=${encodeURIComponent(date2)}&region=${encodeURIComponent(regionVal)}`,
-      })
-        .done(function (serviceData) {
-          renderSvodTable(orgs, Array.isArray(serviceData) ? serviceData : []);
-        })
-        .fail(function () {
-          renderSvodTable(orgs, []);
-        });
+      renderSvodTable(orgs);
 
-      function renderSvodTable(orgs, serviceItems) {
-        if (!orgs.length && !serviceItems.length) {
+      function renderSvodTable(orgs) {
+        if (!orgs.length) {
           editorSetTbodyRows(`
             <tr>
               <td colspan="8" style="border:1px solid #000;text-align:center;color:#888;padding:14px;font-size:10pt;">
@@ -557,29 +543,6 @@ function searchMaterialsAll() {
         let index      = 1;
         let grandTotal = 0;
 
-        function serviceRowsHtml() {
-          let html = '';
-          serviceItems.forEach(function (item) {
-            html += `
-              <tr>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${index++}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__name)}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__unit__name || 'dona')}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.outcome)}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.material__price)}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${formatNumber(item.total_sum)}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.body) || '-'}</td>
-                <td style="border:1px solid #000;font-size:8pt;text-align:center;">${escapeHtml(item.material__code) || '-'}</td>
-              </tr>
-            `;
-          });
-          return html;
-        }
-
-        function serviceItemsSum() {
-          return serviceItems.reduce(function (s, item) { return s + (Number(item.total_sum) || 0); }, 0);
-        }
-
         if (orgs.length) {
           // Har bir tashkilot uchun ketma-ket blok:
           // Tashkilot -> Hudud -> materiallar -> "{Hudud} jami" -> "{Tashkilot} jami"
@@ -593,7 +556,6 @@ function searchMaterialsAll() {
             `;
 
             let orgTotal  = 0;
-            const isLastOrg = orgIdx === orgs.length - 1;
 
             org.regions.forEach(function (region, regionIdx) {
               rows += `
@@ -605,7 +567,6 @@ function searchMaterialsAll() {
               `;
 
               let regionTotal = 0;
-              const isLastRegion = isLastOrg && (regionIdx === org.regions.length - 1);
 
               region.materials.forEach(function (item) {
                 regionTotal += item.total_sum;
@@ -631,16 +592,6 @@ function searchMaterialsAll() {
                 `;
               });
 
-              // Sarf materiallar - oxirgi tashkilotning oxirgi hududiga,
-              // shu hudud/tashkilot/umumiy jami qatorlaridan OLDIN qo'shiladi.
-              if (isLastRegion && serviceItems.length) {
-                const svcSum = serviceItemsSum();
-                regionTotal += svcSum;
-                orgTotal    += svcSum;
-                grandTotal  += svcSum;
-                rows += serviceRowsHtml();
-              }
-
               // Hudud jami — OCH sariq fon
               rows += `
                 <tr>
@@ -660,10 +611,6 @@ function searchMaterialsAll() {
               </tr>
             `;
           });
-        } else if (serviceItems.length) {
-          // Asosiy hisobotda ma'lumot yo'q, faqat sarf materiallar bor
-          grandTotal += serviceItemsSum();
-          rows += serviceRowsHtml();
         }
 
         // Umumiy jami — TO'Q sariq fon, qalinroq border

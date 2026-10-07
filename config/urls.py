@@ -17,14 +17,42 @@ from rest_framework_simplejwt.views import (
 from django.contrib import admin
 from django.urls import path, include, re_path
 
+API_DESCRIPTION = """
+**IMV API (Android uchun)** — to'liq qo'llanma: `docs/ANDROID_API.md`.
+
+### Kirish (SSO)
+Ikki variant: **A** — SSO hujjatidagi standart oqim: `POST /api/auth/sso/token/ {code, code_verifier, redirect_uri}` (ilovaning redirect_uri si SSO'da ro'yxatdan o'tgan bo'lishi kerak); **B** — quyidagi brauzer orqali oqim (qo'shimcha ro'yxatdan o'tkazish kerak emas).
+1. Ilova tasodifiy `code_verifier` (43–128 belgi) yaratadi, `code_challenge = BASE64URL(SHA256(code_verifier))` (paddingsiz, 43 belgi).
+2. Brauzer (Custom Tab) da `GET /api/auth/mobile/start/?code_challenge=...` ochiladi → SSO sahifasi.
+3. Muvaffaqiyatli kirgach brauzer ilovaga qaytadi: `ivsapp://auth?code=...` (kod 2 daqiqa amal qiladi).
+4. `POST /api/auth/mobile/exchange/` `{code, code_verifier}` → `{access, refresh, employee}`.
+5. So'rovlar: `Authorization: Bearer <access>`; access 1 soat. Yangilash: `POST /api/token/refresh/` `{refresh}` — **har safar yangi refresh qaytadi, eskisi bekor bo'ladi, yangisini saqlang**.
+6. Chiqish: `POST /api/auth/logout/` `{refresh}`.
+Tizimda yo'q foydalanuvchiga 403: "Siz tizimda ro'yxatda yo'qsiz".
+
+### Foydalanuvchi turi va imkoniyatlar
+Kirgandan keyin `GET /api/me/`: `organization_type` (`worker` — ATM vakili, `client` — mijoz), `orders.can_*` bayroqlari va `permissions`.
+Ekranlarni shu bayroqlarga qarab ko'rsating; ruxsatsiz amalni server baribir **403** bilan rad etadi.
+
+### Versiyalash
+Asosiy manzil `/api/v1/` (eski `/api/` ham ishlaydi). Ilova ochilganda `GET /api/v1/app/config/?version=...` — majburiy yangilash va texnik ishlar holati; so'rovlarga `X-App-Version` sarlavhasini qo'shing (eski versiyaga 426).
+
+### Umumiy qoidalar
+Ro'yxatlar 20 tadan sahifalanadi: `?page=`, `?page_size=` (100 gacha); javob `count/next/previous/results`.
+Xatolar: `400` — tekshiruv xatosi (`{"maydon": ["..."]}` yoki `{"detail": "..."}`), `401` — token yo'q/eskirgan, `403` — ruxsat yo'q, `404` — topilmadi yoki ko'rinmaydi.
+Fayllar (rasm, PDF) — `multipart/form-data`.
+"""
+
+# Swagger faqat tizimga kirgan foydalanuvchiga (SWAGGER_PUBLIC=1 bo'lsa hamma uchun ochiq)
 schema_view = get_schema_view(
     openapi.Info(
         title="IMV API Documentation",
         default_version="v1",
-        description="IMV API Hujjatlari",
+        description=API_DESCRIPTION,
     ),
     public=True,
-    permission_classes=[permissions.AllowAny],
+    permission_classes=[permissions.AllowAny if getattr(settings, "SWAGGER_PUBLIC", False) else permissions.IsAuthenticated],
+    patterns=[path('api/v1/', include('api.urls'))],
 )
 
 urlpatterns = [
@@ -38,11 +66,9 @@ urlpatterns = [
     path("chat/", include("chat.urls")),
 
     # API
-    path('api/', include('api.urls')),
+    path('api/v1/', include('api.urls')),   # asosiy (versiyalangan) manzil
 
     # JWT TOKEN URL'lari
-    path("api/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
-    path("api/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
     # SWAGGER
     re_path(r"^swagger(?P<format>\.json|\.yaml)$", schema_view.without_ui(cache_timeout=0), name="schema-json"),

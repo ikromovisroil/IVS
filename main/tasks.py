@@ -419,6 +419,18 @@ def send_push_notification_task(self, employee_id, title, body, url="/", tag=Non
         PushSubscription.objects.filter(id__in=dead_ids).delete()
 
 
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_fcm_notification_task(self, employee_id, title, body, url="/", tag=None):
+    """Android (FCM) push — web-push bilan bir xil hodisalar uchun, orqa fonda."""
+    from .fcm import FcmTransientError, send_to_employee
+
+    try:
+        result = send_to_employee(employee_id, title, body, url, tag)
+    except FcmTransientError as exc:
+        raise self.retry(exc=exc)
+    logger.info("FCM: employee_id=%s tag=%s natija=%s", employee_id, tag, result)
+
+
 # =========================================================
 # TELEGRAM XABAR - orqa fonda yuborish
 # =========================================================

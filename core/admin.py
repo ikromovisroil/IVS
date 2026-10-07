@@ -207,3 +207,12 @@ class PushSubscriptionAdmin(admin.ModelAdmin):
     def short_endpoint(self, obj):
         return obj.endpoint[:60] + "..." if len(obj.endpoint) > 60 else obj.endpoint
     short_endpoint.short_description = "Endpoint"
+
+
+@admin.register(MobileDevice)
+class MobileDeviceAdmin(admin.ModelAdmin):
+    list_display = ("id", "employee", "platform", "device_name", "app_version", "is_active", "date_edit")
+    list_filter = ("platform", "is_active")
+    search_fields = ("employee__last_name", "employee__first_name", "device_name")
+    autocomplete_fields = ("employee",)
+    readonly_fields = ("token",)

@@ -11,12 +11,12 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
         user = self.scope.get("user")
         if not user or not user.is_authenticated:
-            await self.close()
+            await self.close(code=4401)   # autentifikatsiya yo'q/eskirgan — mobil ilova tokenni yangilab qayta ulanadi
             return
 
         employee = await self._get_employee(user)
         if not employee:
-            await self.close()
+            await self.close(code=4403)
             return
 
         self.employee_id = employee.id

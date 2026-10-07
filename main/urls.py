@@ -132,6 +132,8 @@ urlpatterns = [
     path("reestr/post/", reest_post, name="reest_post"),
 
     # REESTR
+    path("service/", service_get, name="service_get"),
+    path("service/post/", service_post, name="service_post"),
 
     # =========================
     # ZAYAVKA / ORDER create_order_sender_from   order_sender_user

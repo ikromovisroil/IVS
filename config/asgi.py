@@ -21,10 +21,12 @@ from channels.auth import AuthMiddlewareStack
 from channels.routing import ProtocolTypeRouter, URLRouter
 
 from chat.routing import websocket_urlpatterns
+from chat.ws_auth import JWTQueryAuthMiddleware
 
 application = ProtocolTypeRouter({
     "http": django_asgi_app,
+    # Sessiya (sayt) yoki ?token=<JWT access> (Android) bilan autentifikatsiya
     "websocket": AuthMiddlewareStack(
-        URLRouter(websocket_urlpatterns)
+        JWTQueryAuthMiddleware(URLRouter(websocket_urlpatterns))
     ),
 })

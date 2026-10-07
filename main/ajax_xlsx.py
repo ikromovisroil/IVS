@@ -18,7 +18,12 @@ from django.views.decorators.cache import never_cache
 @never_cache
 @require_GET
 @login_required
+@permission_required("main.view_technics", raise_exception=True)
 def export_technics_xlsx(request):
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
     org_id = (request.GET.get("organization") or "").strip()
     dep_id = (request.GET.get("department") or "").strip()
     dir_id = (request.GET.get("directorate") or "").strip()
@@ -37,6 +42,16 @@ def export_technics_xlsx(request):
         .prefetch_related("structure_set")
         .order_by("-id")
     )
+
+    # Ro'yxat (barn_tex) bilan bir xil ko'rish doirasi: biriktirilgan kategoriyalar + tashkilot/hudud huquqlari
+    liable_ids = Liable.categorys.through.objects.filter(
+        liable__employee=employee
+    ).values_list("category_id", flat=True)
+    qs = qs.filter(category_id__in=liable_ids)
+    if not request.user.has_perm("main.all_organization"):
+        qs = qs.filter(organization_id=employee.organization_id)
+    if not request.user.has_perm("main.all_region"):
+        qs = qs.filter(region_id=employee.region_id)
 
     if org_id.isdigit():
         qs = qs.filter(organization_id=int(org_id))
@@ -110,54 +125,59 @@ def export_technics_xlsx(request):
 @never_cache
 @require_GET
 @login_required
+@permission_required("main.view_material", raise_exception=True)
 def export_material_xlsx(request):
-    status = (request.GET.get("status") or "").strip()
+    employee = getattr(request.user, "employee", None)
+    if not employee or not employee.organization_id:
+        raise PermissionDenied("Employee yo'q")
+
     employee_id = (request.GET.get("employee") or "").strip()
     name = (request.GET.get("name") or "").strip()
 
+    # Ro'yxat (barn_mat) bilan bir xil ko'rish doirasi
+    if request.user.has_perm("main.all_material_employee"):
+        perm = Permission.objects.filter(codename="shop_employee", content_type__app_label="main").first()
+        allowed_ids = set(
+            Employee.objects.filter(
+                Q(user__groups__permissions=perm) | Q(user__user_permissions=perm),
+                organization=employee.organization,
+            ).values_list("id", flat=True)
+        ) if perm else set()
+    else:
+        allowed_ids = set(MaterialUser.objects.filter(receiver=employee).values_list("sender_id", flat=True))
+        if Material.objects.filter(employee=employee, organization_id=employee.organization_id).exists():
+            allowed_ids.add(employee.id)
+    allowed_ids.discard(None)
+
     qs = (
         Material.objects
-        .all()
-        .select_related("employee")   # agar Material.employee FK bo'lsa
+        .filter(organization_id=employee.organization_id, is_active=True, employee_id__in=allowed_ids)
+        .select_related("employee", "unit")
         .order_by("-id")
     )
 
-    if status:
-        qs = qs.filter(status=status)
-
-    # Material biriktirilgan xodim bo'yicha filter
     if employee_id.isdigit():
         qs = qs.filter(employee_id=int(employee_id))
-
     if name:
-        qs = qs.filter(name__icontains=name)
+        qs = qs.filter(Q(name__icontains=name) | Q(code__icontains=name))
 
     wb = Workbook()
     ws = wb.active
     ws.title = "Material"
 
-    headers = ["Xodim", "Material Nomi", "Soni", "Narxi", "Qiymati", "1C code", "Status"]
+    headers = ["Xodim", "Material Nomi", "Soni", "Narxi", "Summa", "Birligi", "1C code"]
     ws.append(headers)
 
     for m in qs:
-        emp = getattr(m, "employee", None)
-        emp_name = ""
-        if emp:
-            # sizda full_name yo'q bo'lishi mumkin, shuning uchun safe:
-            emp_name = " ".join(filter(None, [
-                getattr(emp, "last_name", ""),
-                getattr(emp, "first_name", ""),
-                getattr(emp, "father_name", ""),
-            ])).strip()
-
+        price = m.price or 0
         ws.append([
-            emp_name,
-            getattr(m, "name", "") or "",
-            getattr(m, "number", "") or "",
-            getattr(m, "price", "") or "",
-            (m.unit.name if getattr(m, "unit", None) else ""),
-            getattr(m, "code", "") or "",
-            getattr(m, "status", "") or "",
+            m.employee.full_name if m.employee_id else "",
+            m.name or "",
+            m.number,
+            price,
+            (m.number or 0) * price,
+            m.unit.name if m.unit_id else "",
+            m.code or "",
         ])
 
     for col in range(1, len(headers) + 1):
@@ -167,13 +187,13 @@ def export_material_xlsx(request):
     wb.save(bio)
     bio.seek(0)
 
-    filename = "material.xlsx"
     resp = HttpResponse(
         bio.getvalue(),
         content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
-    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    resp["Content-Disposition"] = 'attachment; filename="material.xlsx"'
     return resp
+
 
 @never_cache
 @require_GET

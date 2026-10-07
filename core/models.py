@@ -107,3 +107,30 @@ class PushSubscription(models.Model):
         db_table = 'push_subscription'
         verbose_name = "Push obunasi"
         verbose_name_plural = "Push obunalari"
+
+
+class MobileDevice(models.Model):
+    """
+    Mobil ilova (Android) qurilmasi — FCM push uchun token.
+    Bitta xodimda bir nechta qurilma bo'lishi mumkin; token yagona (qurilma boshqa xodimga o'tsa, qayta biriktiriladi).
+    """
+    PLATFORM_CHOICES = [("android", "Android"), ("ios", "iOS")]
+
+    employee = models.ForeignKey(
+        Employee, on_delete=models.CASCADE, related_name="mobile_devices", db_index=True,
+    )
+    token = models.CharField(max_length=1024, unique=True)
+    platform = models.CharField(max_length=10, choices=PLATFORM_CHOICES, default="android")
+    device_name = models.CharField(max_length=100, blank=True, default="")
+    app_version = models.CharField(max_length=30, blank=True, default="")
+    is_active = models.BooleanField(default=True)
+    date_creat = models.DateTimeField(auto_now_add=True)
+    date_edit = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.employee} - {self.platform} - {self.token[:20]}..."
+
+    class Meta:
+        db_table = "mobile_device"
+        verbose_name = "Mobil qurilma"
+        verbose_name_plural = "Mobil qurilmalar"

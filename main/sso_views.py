@@ -2,6 +2,7 @@ import base64
 import json
 import logging
 import secrets
+import time
 import requests
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
@@ -88,6 +89,7 @@ def sso_start_approve(request):
     request.session["PENDING_EIMZO"] = {
         "doc": doc_value,
         "redirect_url": redirect_url,
+        "ts": int(time.time()),
     }
     request.session.modified = True
 
@@ -230,6 +232,18 @@ def sso_exchange(request):
             "user", "organization"
         ).filter(pinfl=sso_pinfl).first()
 
+        # Mobil ilova kirishida Gateway ishlatilmaydi: faqat tizimda mavjud foydalanuvchi kira oladi.
+        # Yangi xodim avval sayt orqali (Gateway bilan) yaratiladi.
+        if (not employee or not employee.user) and request.session.get("MOBILE_LOGIN"):
+            return JsonResponse(
+                {
+                    "status": "forbidden",
+                    "message": "Siz tizimda ro'yxatda yo'qsiz",
+                    "redirect": "/sso/login/",
+                },
+                status=403,
+            )
+
         if not employee or not employee.user:
 
             try:
@@ -299,9 +313,15 @@ def sso_exchange(request):
                 status=403
             )
 
+        mobile_login = request.session.get("MOBILE_LOGIN")
         auth_login(request, employee.user)
         request.session.pop("SSO_FLOW", None)
+        # Android ilovadan boshlangan kirish: brauzerni ilovaga qaytaramiz (api/auth_views.py)
+        if mobile_login:
+            request.session["MOBILE_LOGIN"] = mobile_login
         request.session.modified = True
+        if mobile_login:
+            return JsonResponse({"status": "ok", "redirect": "/api/auth/mobile/complete/"}, status=200)
         return JsonResponse({"status": "ok", "redirect": "/profil/"}, status=200)
 
     except PermissionDenied as e:
@@ -346,7 +366,21 @@ def eimzo_return(request):
         returned_doc = (request.GET.get("doc") or "").strip()
         sent_doc     = (pending_eimzo.get("doc") or "").strip()
 
-        if returned_doc and sent_doc and returned_doc != sent_doc:
+        # Provayder aslida qaysi parametrlarni qaytarishini bilish uchun (imzo tekshiruvini qo'shish uchun kerak)
+        logger.info("E-IMZO return: user=%s params=%s", request.user.pk, sorted(request.GET.keys()))
+
+        # Imzolash sessiyasi eskirgan bo'lsa (uzoq vaqt oldin boshlangan) — qabul qilinmaydi
+        started = int(pending_eimzo.get("ts") or 0)
+        if not started or time.time() - started > getattr(settings, "EIMZO_PENDING_TTL", 900):
+            messages.info(request, "Imzolash muddati tugagan. Qaytadan urinib ko'ring")
+            return redirect(pending_eimzo.get("redirect_url") or "/")
+
+        # EIMZO_REQUIRE_DOC=1 bo'lsa provayder `doc` ni qaytarishi shart (to'g'ridan-to'g'ri ochib o'tib bo'lmaydi)
+        if getattr(settings, "EIMZO_REQUIRE_DOC", False) and not returned_doc:
+            messages.info(request, "Imzo tasdig'i kelmadi")
+            return redirect(pending_eimzo.get("redirect_url") or "/")
+
+        if returned_doc and sent_doc and not secrets.compare_digest(returned_doc, sent_doc):
             messages.info(request, "Imzolash hujjati mos emas")
             return redirect(pending_eimzo.get("redirect_url") or "/")
 

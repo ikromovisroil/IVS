@@ -650,6 +650,16 @@ def ajax_svod_materials(request):
     d2 = request.GET.get("date2")
     region_param = (request.GET.get("region") or "").strip()
 
+    # Sarf materiallar sahifasi uchun: XIZMAT KO'RSATUVCHI (ATM) o'z tashkilotiga yopilgan arizalar.
+    # Svodda ular chiqmaydi (u faqat mijoz tashkilotlar), shuning uchun alohida rejim; faqat 'material_service'
+    # huquqi bor ATM xodimi va faqat o'z tashkiloti.
+    service_mode = (request.GET.get("service_mode") or "") == "1"
+    if service_mode:
+        own_org = employee.organization
+        if not request.user.has_perm("main.material_service") or not own_org or own_org.type != "worker":
+            raise PermissionDenied("Ruxsat yo'q")
+        org_ids = [str(own_org.id)]
+
     if not org_ids or not d1 or not d2:
         return JsonResponse({"organizations": [], "employees": []})
 
@@ -668,6 +678,8 @@ def ajax_svod_materials(request):
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
         order__sender__organization_id__in=org_ids,
+        # Svodga xizmat ko'rsatuvchi (ATM) tashkilot kirmaydi; sarf sahifasi (service_mode) esa aynan shuni oladi
+        order__sender__organization__type="worker" if service_mode else "client",
         order__goal__organization__type="worker",
     )
 
@@ -799,7 +811,33 @@ def ajax_svod_materials(request):
 
     employees.sort(key=lambda e: e["full_name"])
 
-    return JsonResponse({"organizations": result, "employees": employees})
+    # Sarf sahifasi (service_mode): hisobotdagi materiallarning moddiy-javobgar shaxslari (Material.employee)
+    material_owners = []
+    if service_mode:
+        owners = (
+            OrderMaterial.objects.filter(**common_filters)
+            .exclude(material__employee__isnull=True)
+            .values(
+                "material__employee_id",
+                "material__employee__last_name",
+                "material__employee__first_name",
+                "material__employee__father_name",
+                "material__employee__rank__name",
+            )
+            .distinct()
+        )
+        for r in owners:
+            material_owners.append({
+                "id": r["material__employee_id"],
+                "full_name": " ".join(filter(None, [
+                    r["material__employee__last_name"],
+                    r["material__employee__first_name"],
+                    r["material__employee__father_name"],
+                ])),
+                "rank": r["material__employee__rank__name"] or "",
+            })
+
+    return JsonResponse({"organizations": result, "employees": employees, "material_owners": material_owners})
 
 
 @never_cache
@@ -1320,6 +1358,7 @@ def ajax_service_materials(request):
                 output_field=CharField(),
             ),
         )
+        .annotate(rank_name=F("user__rank__name"))
         .order_by("-date_creat")
         .values(
             "material__name",
@@ -1329,6 +1368,7 @@ def ajax_service_materials(request):
             "material__price",
             "total_sum",
             "full_name",
+            "rank_name",
             "body",
         )
     )
