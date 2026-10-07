@@ -112,8 +112,11 @@ class Message(models.Model):
 
     is_edited = models.BooleanField(default=False)
     edited_at = models.DateTimeField(null=True, blank=True)
+    # Yumshoq o'chirish: matn bazada saqlanadi (faqat ko'rinmaydi), fayl esa ochiq papkadan yopiq papkaga ko'chiriladi
+    # (yo'li shu yerda); administrator admin paneldan tiklashi mumkin.
     is_deleted = models.BooleanField(default=False)
     deleted_at = models.DateTimeField(null=True, blank=True)
+    deleted_attachment = models.CharField(max_length=500, blank=True, default="", editable=False)
 
     date_creat = models.DateTimeField(auto_now_add=True, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True)
@@ -128,6 +131,26 @@ class Message(models.Model):
         who = "AI" if self.is_ai else (self.sender.full_name if self.sender_id else "-")
         preview = (self.body or "")[:30]
         return f"{who}: {preview}"
+
+
+class ConversationClear(models.Model):
+    """Xodim suhbatni "o'chirgan" (yashirgan) vaqti: shundan oldingi xabarlar unga qayta ko'rinmaydi
+    (qarshi tomon yozib suhbat qaytganda ham). Ma'lumot bazada saqlanadi, qarshi tomonga ta'sir qilmaydi."""
+
+    conversation = models.ForeignKey(Conversation, on_delete=models.CASCADE, related_name="clears")
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="conversation_clears")
+    cleared_at = models.DateTimeField()
+
+    class Meta:
+        db_table = "chat_conversation_clear"
+        constraints = [
+            models.UniqueConstraint(fields=["conversation", "employee"], name="uniq_chat_clear_conv_employee"),
+        ]
+        verbose_name = "Suhbat tozalangan vaqt"
+        verbose_name_plural = "Suhbat tozalangan vaqtlar"
+
+    def __str__(self):
+        return f"{self.employee_id} / {self.conversation_id} / {self.cleared_at}"
 
 
 class OnlineStatus(models.Model):

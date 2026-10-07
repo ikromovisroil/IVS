@@ -1,6 +1,9 @@
 from django.contrib import admin
 
-from .models import Conversation, Message, OnlineStatus
+from django.contrib import messages as dj_messages
+
+from .models import Conversation, ConversationClear, Message, OnlineStatus
+from .services import restore_message
 
 
 class MessageInline(admin.TabularInline):
@@ -30,6 +33,22 @@ class MessageAdmin(admin.ModelAdmin):
     search_fields = ("body",)
     autocomplete_fields = ("conversation", "sender")
     ordering = ("-date_creat", "-id")
+    readonly_fields = ("deleted_attachment",)
+    actions = ["restore_deleted"]
+
+    @admin.action(description="O'chirilgan xabarlarni tiklash (matn va fayl bilan)")
+    def restore_deleted(self, request, queryset):
+        count = 0
+        for msg in queryset.filter(is_deleted=True):
+            restore_message(msg)
+            count += 1
+        self.message_user(request, f"Tiklandi: {count} ta xabar", dj_messages.SUCCESS)
+
+
+@admin.register(ConversationClear)
+class ConversationClearAdmin(admin.ModelAdmin):
+    list_display = ("id", "conversation", "employee", "cleared_at")
+    autocomplete_fields = ("conversation", "employee")
 
 
 @admin.register(OnlineStatus)

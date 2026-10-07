@@ -3,8 +3,8 @@
 Interaktiv hujjat (Swagger): `https://<server>/swagger/` (saytga kirgan holatda ochiladi). Bu fayl — qoidalar va oqimlar;
 aniq maydonlar va javoblar Swagger'da.
 
-Asosiy manzil: **`https://<server>/api/v1/`** (versiyalangan; ilovada shuni ishlating). Eski `https://<server>/api/` ham ishlaydi, lekin
-yangi imkoniyatlar faqat `v1` ga kafolatlanadi. Quyidagi misollarda qisqalik uchun `/api/...` yoziladi — ular `/api/v1/...` bilan bir xil. Barcha so'rov/javoblar JSON (fayllar — `multipart/form-data`). Vaqtlar — ISO 8601.
+Asosiy manzil: **`https://<server>/api/v1/`** (versiyalangan). Hozir faqat shu manzil ishlaydi: eski `https://<server>/api/` (versiyasiz) yo'li serverda yo'q.
+Quyidagi misollarda qisqalik uchun `/api/...` yoziladi — ularni `/api/v1/...` deb o'qing va ilovada shunday ishlating. Barcha so'rov/javoblar JSON (fayllar — `multipart/form-data`). Vaqtlar — ISO 8601.
 
 ---
 
@@ -324,8 +324,8 @@ Xatolar `{"detail": "..."}` ko'rinishida. Xabar yuborish va tahrirlash **HTTP or
 | `GET /api/chat/conversations/{id}/messages/?page=1` | Xabarlar, 30 tadan. `page=1` — eng yangilari; sahifa ichida eskidan yangiga. `has_next_page` — yana eskilari bor. Ochilganda o'qilmaganlar "o'qildi" bo'ladi |
 | `POST /api/chat/conversations/{id}/send/` `{"body": "..."}` yoki `multipart` (`body`, `attachment`) | Xabar yuborish → `{"message": {...}}`. Matn 4000 belgigacha; fayl: jpg/png, pdf, word, excel, 15 MB gacha |
 | `POST /api/chat/messages/{id}/edit/` `{"body"}` | Faqat o'z xabarini tahrirlash |
-| `POST /api/chat/messages/{id}/delete/` | Faqat o'z xabarini o'chirish (matn va fayl o'chiriladi) |
-| `POST /api/chat/conversations/{id}/hide/` | Suhbatni faqat o'zim uchun yashirish (qarshi tomon yozsa qaytadi) |
+| `POST /api/chat/messages/{id}/delete/` | Faqat o'z xabarini o'chirish: xabar ikkala tomonda ko'rinmay qoladi (`is_deleted: true`, `body: ""`, fayl havolasi `null`). Matn serverda saqlanadi, fayl yopiq papkaga ko'chiriladi (eski havola ishlamaydi) |
+| `POST /api/chat/conversations/{id}/hide/` | Suhbatni faqat o'zim uchun yashirish. Qarshi tomon yozsa suhbat qaytadi, lekin yashirishdan **oldingi xabarlar ko'rinmaydi** (faqat yangilari) |
 | `GET /api/chat/conversations/{id}/members/` | Guruh a'zolari: `is_admin`, `is_creator`, `is_me`; `am_admin`, `am_creator` |
 | `POST /api/chat/conversations/{id}/members/add/` `{"members": [id]}` | A'zo qo'shish (guruh admini) |
 | `POST /api/chat/conversations/{id}/members/{member_id}/remove/` | Chiqarish: o'zi chiqishi mumkin; admin faqat oddiy a'zoni; yaratuvchi adminlarni ham; yaratuvchini hech kim |
@@ -397,8 +397,8 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 | `POST` | `/api/v1/auth/logout/` | POST /api/auth/logout/ {refresh, fcm_token?} — refresh tokenni bekor qiladi (va shu qurilmaning push tokenini o'chiradi). |
 | `POST` | `/api/v1/auth/mobile/exchange/` | POST /api/auth/mobile/exchange/ {code, code_verifier} -> {access, refresh, employee} |
 | `POST` | `/api/v1/auth/sso/token/` | SSO hujjatidagi standart oqim: ilova foydalanuvchini SSO sahifasiga (sso.mf.uz/oauth2/login) o'zi yo'naltiradi |
-| `GET` | `/api/v1/categories/` | Categories list |
-| `GET` | `/api/v1/categories/{id}/` | Categories read |
+| `GET` | `/api/v1/categories/` | Ro'yxat |
+| `GET` | `/api/v1/categories/{id}/` | Bitta obyekt |
 | `GET` | `/api/v1/chat/contacts/` | GET /api/chat/contacts/?q= — yangi suhbat uchun xodimlar (all_organization bo'lmasa faqat o'z tashkiloti, 50 tagacha). |
 | `GET` | `/api/v1/chat/conversations/` | GET /api/chat/conversations/ — suhbatlar ro'yxati (oxirgi xabar, o'qilmaganlar soni, onlayn holati). |
 | `POST` | `/api/v1/chat/conversations/{id}/hide/` | POST /api/chat/conversations/{id}/hide/ — suhbatni faqat o'zim uchun yashirish (qarshi tomon yozsa qaytadi). |
@@ -409,126 +409,126 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 | `GET` | `/api/v1/chat/conversations/{id}/messages/` | GET /api/chat/conversations/{id}/messages/?page=1 — xabarlar (30 tadan; page=1 — eng yangilari, |
 | `POST` | `/api/v1/chat/conversations/{id}/send/` | POST /api/chat/conversations/{id}/send/ — {"body": "..."} yoki multipart (body, attachment: jpg/png/pdf/word/excel, 15 MB gacha). |
 | `POST` | `/api/v1/chat/groups/` | POST /api/chat/groups/ {"name": "...", "members": [id, ...]} (o'zingizdan tashqari kamida 2 ta a'zo). |
-| `POST` | `/api/v1/chat/messages/{id}/delete/` | POST /api/chat/messages/{id}/delete/ — faqat o'z xabari (matn va fayl o'chiriladi). |
+| `POST` | `/api/v1/chat/messages/{id}/delete/` | POST /api/chat/messages/{id}/delete/ — faqat o'z xabari. Xabar ikkala tomonda ko'rinmay qoladi (matn serverda |
 | `POST` | `/api/v1/chat/messages/{id}/edit/` | POST /api/chat/messages/{id}/edit/ {"body": "..."} — faqat o'z xabari. |
 | `POST` | `/api/v1/chat/open/` | POST /api/chat/open/ {"target": "ai" / "saved" / <xodim id>} -> {"conversation_id": id} |
 | `POST` | `/api/v1/chat/ping/` | POST /api/chat/ping/ — "onlayn" holatini yangilash (WebSocket ulanmagan paytda; har 30 soniyada). |
 | `GET` | `/api/v1/chat/unread-count/` | GET /api/chat/unread-count/ — barcha suhbatlar bo'yicha o'qilmagan xabarlar soni (qizil raqam). |
-| `GET` | `/api/v1/contracts/` | Faqat KO'RISH: shartnomalar ro'yxati (saytda faqat ruxsatlar oynasida ko'rinadi). 'permission_employee' kerak. |
-| `GET` | `/api/v1/contracts/{id}/` | Faqat KO'RISH: shartnomalar ro'yxati (saytda faqat ruxsatlar oynasida ko'rinadi). 'permission_employee' kerak. |
-| `GET` | `/api/v1/deed-consents/` | Deed-consents list |
-| `GET` | `/api/v1/deed-consents/{id}/` | Deed-consents read |
-| `DELETE` | `/api/v1/deed-consents/{id}/` | Deed-consents delete |
-| `POST` | `/api/v1/deed-consents/{id}/approve/` | Deed-consents approve |
-| `POST` | `/api/v1/deed-consents/{id}/reject/` | Deed-consents reject |
-| `GET` | `/api/v1/deed-files/` | Faqat KO'RISH (saytda ilovalar hujjat yaratilganda qo'shiladi, keyin o'zgarmaydi) — ko'rinadigan hujjatlar bo'yicha. |
-| `GET` | `/api/v1/deed-files/{id}/` | Faqat KO'RISH (saytda ilovalar hujjat yaratilganda qo'shiladi, keyin o'zgarmaydi) — ko'rinadigan hujjatlar bo'yicha. |
-| `GET` | `/api/v1/deed-registry/` | Deed-registry list |
-| `GET` | `/api/v1/deed-registry/{id}/` | Deed-registry read |
-| `GET` | `/api/v1/deed-registry/{id}/attachments/download/` | Deed-registry attachments attachments download |
-| `GET` | `/api/v1/deeds/` | Deeds list |
-| `POST` | `/api/v1/deeds/` | Deeds create |
-| `GET` | `/api/v1/deeds/{id}/` | Deeds read |
-| `PUT` | `/api/v1/deeds/{id}/` | Deeds update |
-| `PATCH` | `/api/v1/deeds/{id}/` | Deeds partial update |
+| `GET` | `/api/v1/contracts/` | Ro'yxat |
+| `GET` | `/api/v1/contracts/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/deed-consents/` | Ro'yxat |
+| `GET` | `/api/v1/deed-consents/{id}/` | Bitta obyekt |
+| `DELETE` | `/api/v1/deed-consents/{id}/` | O'chirish |
+| `POST` | `/api/v1/deed-consents/{id}/approve/` | Approve |
+| `POST` | `/api/v1/deed-consents/{id}/reject/` | Reject |
+| `GET` | `/api/v1/deed-files/` | Ro'yxat |
+| `GET` | `/api/v1/deed-files/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/deed-registry/` | Ro'yxat |
+| `GET` | `/api/v1/deed-registry/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/deed-registry/{id}/attachments/download/` | Attachments attachments download |
+| `GET` | `/api/v1/deeds/` | Ro'yxat |
+| `POST` | `/api/v1/deeds/` | Yaratish |
+| `GET` | `/api/v1/deeds/{id}/` | Bitta obyekt |
+| `PUT` | `/api/v1/deeds/{id}/` | To'liq yangilash |
+| `PATCH` | `/api/v1/deeds/{id}/` | Tahrirlash (PATCH) |
 | `GET` | `/api/v1/deeds/{id}/attachments/download/` | Ilovalarni yuklab olish: bitta bo'lsa o'zi, bir nechta bo'lsa ZIP (saytdagi deed_attachments). |
 | `GET` | `/api/v1/deeds/{id}/consent-candidates/` | Kelishuvchi qo'shish uchun xodimlar (qidiruv: ?search=, 20 tadan sahifalanadi). |
 | `POST` | `/api/v1/deeds/{id}/consents/` | Kelishuvchi(lar) qo'shish: POST /api/deeds/{id}/consents/ {"employees": [id, ...]} |
 | `POST` | `/api/v1/deeds/{id}/generate-pdf/` | PDF qayta yaratish (faqat tahrirlash mumkin bo'lgan paytda, yaratuvchi): POST /api/deeds/{id}/generate-pdf/ |
-| `POST` | `/api/v1/deeds/{id}/reject/` | Deeds reject |
-| `POST` | `/api/v1/deeds/{id}/signer-consent/{role}/` | Deeds signer consent |
+| `POST` | `/api/v1/deeds/{id}/reject/` | Reject |
+| `POST` | `/api/v1/deeds/{id}/signer-consent/{role}/` | Signer consent |
 | `POST` | `/api/v1/deeds/{id}/toggle-user-edit/` | Yaratuvchiga tahrirlashga ruxsatni yoqish/o'chirish ('change_deed' kerak). |
-| `GET` | `/api/v1/departments/` | Departments list |
-| `GET` | `/api/v1/departments/{id}/` | Departments read |
-| `POST` | `/api/v1/devices/` | Android ilova kirgandan keyin (va FCM token yangilanganda — onNewToken) chaqiradi. |
+| `GET` | `/api/v1/departments/` | Ro'yxat |
+| `GET` | `/api/v1/departments/{id}/` | Bitta obyekt |
+| `POST` | `/api/v1/devices/` | Yaratish |
 | `POST` | `/api/v1/devices/unregister/` | POST /api/devices/unregister/ {"token": "..."} — shu qurilmaga bildirishnoma yuborishni to'xtatish (204). |
-| `GET` | `/api/v1/directorates/` | Directorates list |
-| `GET` | `/api/v1/directorates/{id}/` | Directorates read |
-| `GET` | `/api/v1/divisions/` | Divisions list |
-| `GET` | `/api/v1/divisions/{id}/` | Divisions read |
-| `GET` | `/api/v1/employees/` | Employees list |
-| `POST` | `/api/v1/employees/` | Employees create |
-| `GET` | `/api/v1/employees/{id}/` | Employees read |
-| `PUT` | `/api/v1/employees/{id}/` | Employees update |
-| `PATCH` | `/api/v1/employees/{id}/` | Employees partial update |
-| `DELETE` | `/api/v1/employees/{id}/` | Employees delete |
+| `GET` | `/api/v1/directorates/` | Ro'yxat |
+| `GET` | `/api/v1/directorates/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/divisions/` | Ro'yxat |
+| `GET` | `/api/v1/divisions/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/employees/` | Ro'yxat |
+| `POST` | `/api/v1/employees/` | Yaratish |
+| `GET` | `/api/v1/employees/{id}/` | Bitta obyekt |
+| `PUT` | `/api/v1/employees/{id}/` | To'liq yangilash |
+| `PATCH` | `/api/v1/employees/{id}/` | Tahrirlash (PATCH) |
+| `DELETE` | `/api/v1/employees/{id}/` | O'chirish |
 | `GET` | `/api/v1/employees/{id}/permissions/` | Xodim ruxsatlari (saytdagi "ruxsatlar" oynasi): GET — joriy holat va tanlash variantlari; |
 | `PUT` | `/api/v1/employees/{id}/permissions/` | Xodim ruxsatlari (saytdagi "ruxsatlar" oynasi): GET — joriy holat va tanlash variantlari; |
 | `GET` | `/api/v1/export/employees.xlsx` | GET /api/export/employees.xlsx?organization=&region=&department=&directorate=&division=&name= (view_employee; organization majburiy). |
 | `GET` | `/api/v1/export/material-report.xlsx` | GET /api/export/material-report.xlsx?employee=&date1=&date2=&name= — kirim-chiqim hisoboti (view_material). |
 | `GET` | `/api/v1/export/materials.xlsx` | GET /api/export/materials.xlsx — materiallar (view_material; ro'yxatdagi kabi ko'rish doirasi). Filtrlar: employee, category, unit, search. |
 | `GET` | `/api/v1/export/technics.xlsx` | GET /api/export/technics.xlsx — texnikalar (view_technics; ro'yxatdagi kabi tashkilot/hudud doirasi). Filtrlar ro'yxatniki bilan bir xil. |
-| `GET` | `/api/v1/goals/` | Faqat KO'RISH — 'all_organization' bo'lsa hammasi, aks holda faqat |
-| `GET` | `/api/v1/goals/{id}/` | Faqat KO'RISH — 'all_organization' bo'lsa hammasi, aks holda faqat |
-| `GET` | `/api/v1/groups/` | Groups list |
-| `GET` | `/api/v1/groups/{id}/` | Groups read |
-| `GET` | `/api/v1/liables/` | Faqat KO'RISH: xodimlarning texnika kategoriyasi va shartnoma bog'lanishlari. Saytda ular faqat ruxsatlar |
-| `GET` | `/api/v1/liables/{id}/` | Faqat KO'RISH: xodimlarning texnika kategoriyasi va shartnoma bog'lanishlari. Saytda ular faqat ruxsatlar |
-| `GET` | `/api/v1/material-categories/` | Faqat KO'RISH: material kategoriyalari — o'z tashkilotiniki (yoki umumiy); 'all_organization' bo'lsa hammasi. |
-| `GET` | `/api/v1/material-categories/{id}/` | Faqat KO'RISH: material kategoriyalari — o'z tashkilotiniki (yoki umumiy); 'all_organization' bo'lsa hammasi. |
-| `GET` | `/api/v1/material-employees/` | Faqat KO'RISH: xodimga ruxsat etilgan material kategoriyalari (saytda faqat ruxsatlar oynasida ko'rinadi). |
-| `GET` | `/api/v1/material-employees/{id}/` | Faqat KO'RISH: xodimga ruxsat etilgan material kategoriyalari (saytda faqat ruxsatlar oynasida ko'rinadi). |
-| `GET` | `/api/v1/material-movements/` | Faqat KO'RISH: material harakati jurnali ('view_material' kerak). Saytdagi hisobot kabi doira: o'z tashkiloti |
-| `GET` | `/api/v1/material-movements/{id}/` | Faqat KO'RISH: material harakati jurnali ('view_material' kerak). Saytdagi hisobot kabi doira: o'z tashkiloti |
-| `GET` | `/api/v1/material-users/` | Faqat KO'RISH: material delegatsiyasi (kim kimning materialini sarflay oladi). Saytda u faqat admin panelda |
-| `GET` | `/api/v1/material-users/{id}/` | Faqat KO'RISH: material delegatsiyasi (kim kimning materialini sarflay oladi). Saytda u faqat admin panelda |
-| `GET` | `/api/v1/materials/` | Materials list |
-| `POST` | `/api/v1/materials/` | Materials create |
+| `GET` | `/api/v1/goals/` | Ro'yxat |
+| `GET` | `/api/v1/goals/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/groups/` | Ro'yxat |
+| `GET` | `/api/v1/groups/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/liables/` | Ro'yxat |
+| `GET` | `/api/v1/liables/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/material-categories/` | Ro'yxat |
+| `GET` | `/api/v1/material-categories/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/material-employees/` | Ro'yxat |
+| `GET` | `/api/v1/material-employees/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/material-movements/` | Ro'yxat |
+| `GET` | `/api/v1/material-movements/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/material-users/` | Ro'yxat |
+| `GET` | `/api/v1/material-users/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/materials/` | Ro'yxat |
+| `POST` | `/api/v1/materials/` | Yaratish |
 | `POST` | `/api/v1/materials/give/` | Bir nechta materialni bitta xodimga berish: POST /api/materials/give/ |
 | `GET` | `/api/v1/materials/report/` | Material kirim-chiqim hisoboti (saytdagi mat_info): GET /api/materials/report/?employee=<id>&date1=&date2=&name= |
 | `GET` | `/api/v1/materials/report/employees/` | Hisobotda tanlash mumkin bo'lgan xodimlar (saytdagi mat_info dropdown'i). |
 | `POST` | `/api/v1/materials/service/` | Materialni sarflash: POST /api/materials/service/ {material_id, give_number, body} |
-| `GET` | `/api/v1/materials/{id}/` | Materials read |
-| `PUT` | `/api/v1/materials/{id}/` | Materials update |
-| `PATCH` | `/api/v1/materials/{id}/` | Materials partial update |
-| `DELETE` | `/api/v1/materials/{id}/` | Materials delete |
-| `GET` | `/api/v1/me/` | GET /api/me/ — joriy foydalanuvchining xodim profili va Django |
-| `GET` | `/api/v1/order-goals/` | Faqat KO'RISH: xodimlarning ruxsat etilgan ariza turlari. Saytda ular faqat ruxsatlar oynasida |
-| `GET` | `/api/v1/order-goals/{id}/` | Faqat KO'RISH: xodimlarning ruxsat etilgan ariza turlari. Saytda ular faqat ruxsatlar oynasida |
-| `GET` | `/api/v1/order-materials/` | Faqat KO'RISH — arizadagi materiallar ('view_order' bo'lsa tashkilot bo'yicha, bo'lmasa o'ziga aloqador |
-| `GET` | `/api/v1/order-materials/{id}/` | Faqat KO'RISH — arizadagi materiallar ('view_order' bo'lsa tashkilot bo'yicha, bo'lmasa o'ziga aloqador |
-| `GET` | `/api/v1/orders/` | Orders list |
-| `POST` | `/api/v1/orders/` | Orders create |
+| `GET` | `/api/v1/materials/{id}/` | Bitta obyekt |
+| `PUT` | `/api/v1/materials/{id}/` | To'liq yangilash |
+| `PATCH` | `/api/v1/materials/{id}/` | Tahrirlash (PATCH) |
+| `DELETE` | `/api/v1/materials/{id}/` | O'chirish |
+| `GET` | `/api/v1/me/` | Ro'yxat |
+| `GET` | `/api/v1/order-goals/` | Ro'yxat |
+| `GET` | `/api/v1/order-goals/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/order-materials/` | Ro'yxat |
+| `GET` | `/api/v1/order-materials/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/orders/` | Ro'yxat |
+| `POST` | `/api/v1/orders/` | Yaratish |
 | `GET` | `/api/v1/orders/available-materials/` | Bajaruvchi arizaga bera oladigan materiallar (unga MaterialUser orqali biriktirilgan xodimlarniki). |
 | `GET` | `/api/v1/orders/badges/` | Belgilar soni (saytdagi qizil raqamlar): yangi bildirishnomalar va bajarish uchun kutayotganlar. |
 | `POST` | `/api/v1/orders/mark-seen/` | Yangi ariza belgilarini o'chirish (saytdagi order_mark_seen). |
 | `GET` | `/api/v1/orders/selectable-materials/` | Mijoz material arizasiga tanlay oladigan materiallar (saytdagi order_sender_material_barn): |
-| `GET` | `/api/v1/orders/{id}/` | Orders read |
+| `GET` | `/api/v1/orders/{id}/` | Bitta obyekt |
 | `POST` | `/api/v1/orders/{id}/accept/` | ATM arizasini qabul qilish: POST /api/orders/{id}/accept/ ({"receiver": id} — faqat superuser) |
 | `GET` | `/api/v1/orders/{id}/assignees/` | Superuser arizani biriktira oladigan xodimlar: GET /api/orders/{id}/assignees/ |
 | `POST` | `/api/v1/orders/{id}/confirm/` | Tasdiqlovchi ('confirm_order'): POST /api/orders/{id}/confirm/ |
 | `POST` | `/api/v1/orders/{id}/decide/` | ATM arizasi: POST /api/orders/{id}/decide/ {"action": "accepted", "rating": 1-5} yoki {"action": "canceled"} |
 | `POST` | `/api/v1/orders/{id}/finish/` | ATM arizasini yakunlash: POST /api/orders/{id}/finish/ |
 | `POST` | `/api/v1/orders/{id}/reject/` | Material arizasini rad etish (omborxonachi, change_order): POST /api/orders/{id}/reject/ |
-| `GET` | `/api/v1/organizations/` | Organizations list |
-| `GET` | `/api/v1/organizations/{id}/` | Organizations read |
+| `GET` | `/api/v1/organizations/` | Ro'yxat |
+| `GET` | `/api/v1/organizations/{id}/` | Bitta obyekt |
 | `GET` | `/api/v1/permissions/catalog/` | GET /api/permissions/catalog/ — ruxsatlar ro'yxati guruhlari (nomi bilan), bog'liqliklar va SUPER ruxsatlar ('permission_employee' kerak). |
-| `GET` | `/api/v1/ranks/` | Ranks list |
-| `GET` | `/api/v1/ranks/{id}/` | Ranks read |
-| `GET` | `/api/v1/regions/` | Regions list |
-| `GET` | `/api/v1/regions/{id}/` | Regions read |
+| `GET` | `/api/v1/ranks/` | Ro'yxat |
+| `GET` | `/api/v1/ranks/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/regions/` | Ro'yxat |
+| `GET` | `/api/v1/regions/{id}/` | Bitta obyekt |
 | `GET` | `/api/v1/stats/employees/` | GET /api/stats/employees/?region=&date1=&date2= — bajaruvchi xodimlar bo'yicha arizalar statistikasi |
 | `GET` | `/api/v1/stats/technics/` | GET /api/stats/technics/ — o'z tashkilotining faol texnikalari guruh va kategoriya bo'yicha (soni va foizi). |
-| `GET` | `/api/v1/structure-categories/` | Structure-categories list |
-| `GET` | `/api/v1/structure-categories/{id}/` | Structure-categories read |
-| `GET` | `/api/v1/structures/` | Structures list |
-| `POST` | `/api/v1/structures/` | Structures create |
-| `GET` | `/api/v1/structures/{id}/` | Structures read |
-| `PUT` | `/api/v1/structures/{id}/` | Structures update |
-| `PATCH` | `/api/v1/structures/{id}/` | Structures partial update |
-| `DELETE` | `/api/v1/structures/{id}/` | Structures delete |
+| `GET` | `/api/v1/structure-categories/` | Ro'yxat |
+| `GET` | `/api/v1/structure-categories/{id}/` | Bitta obyekt |
+| `GET` | `/api/v1/structures/` | Ro'yxat |
+| `POST` | `/api/v1/structures/` | Yaratish |
+| `GET` | `/api/v1/structures/{id}/` | Bitta obyekt |
+| `PUT` | `/api/v1/structures/{id}/` | To'liq yangilash |
+| `PATCH` | `/api/v1/structures/{id}/` | Tahrirlash (PATCH) |
+| `DELETE` | `/api/v1/structures/{id}/` | O'chirish |
 | `POST` | `/api/v1/structures/{id}/assign/` | Qurilmani texnikaga biriktirish: POST /api/structures/{id}/assign/ {"technics": id} |
 | `POST` | `/api/v1/structures/{id}/unassign/` | Qurilmani texnikadan ajratish: POST /api/structures/{id}/unassign/ ({"technics": id} ixtiyoriy) |
-| `GET` | `/api/v1/technics/` | Technics list |
-| `POST` | `/api/v1/technics/` | Technics create |
-| `GET` | `/api/v1/technics/{id}/` | Technics read |
-| `PUT` | `/api/v1/technics/{id}/` | Technics update |
-| `PATCH` | `/api/v1/technics/{id}/` | Technics partial update |
-| `DELETE` | `/api/v1/technics/{id}/` | Technics delete |
-| `POST` | `/api/v1/technics/{id}/assign/` | Technics assign |
+| `GET` | `/api/v1/technics/` | Ro'yxat |
+| `POST` | `/api/v1/technics/` | Yaratish |
+| `GET` | `/api/v1/technics/{id}/` | Bitta obyekt |
+| `PUT` | `/api/v1/technics/{id}/` | To'liq yangilash |
+| `PATCH` | `/api/v1/technics/{id}/` | Tahrirlash (PATCH) |
+| `DELETE` | `/api/v1/technics/{id}/` | O'chirish |
+| `POST` | `/api/v1/technics/{id}/assign/` | Assign |
 | `GET` | `/api/v1/technics/{id}/qr/` | QR kodni to'g'ridan-to'g'ri fayl sifatida qaytaradi: GET /api/technics/{id}/qr/ |
 | `POST` | `/api/v1/technics/{id}/unassign/` | Bo'shatish: POST /api/technics/{id}/unassign/ - xodim va struktura olib tashlanadi, holat 'free'. |
-| `POST` | `/api/v1/token/` | Takes a set of user credentials and returns an access and refresh JSON web |
+| `POST` | `/api/v1/token/` | Yaratish |
 | `POST` | `/api/v1/token/refresh/` | Takes a refresh type JSON web token and returns an access type JSON web |
-| `GET` | `/api/v1/units/` | Units list |
-| `GET` | `/api/v1/units/{id}/` | Units read |
+| `GET` | `/api/v1/units/` | Ro'yxat |
+| `GET` | `/api/v1/units/{id}/` | Bitta obyekt |

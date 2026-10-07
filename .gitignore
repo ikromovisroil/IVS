@@ -170,3 +170,6 @@ scratch_preview.sqlite3
 scratch_preview.sqlite3-journal
 settings_preview_scratch.py
 .claude/launch.json
+
+# O'chirilgan chat fayllari (yopiq papka)
+media_private/

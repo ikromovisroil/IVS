@@ -27,6 +27,23 @@ def _send(conv: Conversation, payload: dict) -> None:
 
 
 def serialize_message(msg: Message) -> dict:
+    if msg.is_deleted:
+        # O'chirilgan xabarning matni va fayli hech qachon chiqmaydi (bazada saqlansa ham)
+        return {
+            "id": msg.id,
+            "conversation_id": msg.conversation_id,
+            "sender_id": msg.sender_id,
+            "sender_name": ("AI Yordamchi" if msg.is_ai else (msg.sender.full_name if msg.sender_id else "-")),
+            "is_ai": msg.is_ai,
+            "body": "",
+            "attachment_url": None,
+            "attachment_name": None,
+            "is_image": False,
+            "is_edited": msg.is_edited,
+            "is_deleted": True,
+            "read_at": msg.read_at.isoformat() if msg.read_at else None,
+            "date_creat": msg.date_creat.isoformat(),
+        }
     return {
         "id": msg.id,
         "conversation_id": msg.conversation_id,

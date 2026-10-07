@@ -27,6 +27,8 @@ from .services import (
     set_group_admin,
     touch_online,
     unhide_conversation_for,
+    soft_delete_message,
+    visible_messages,
     unread_count,
     visible_conversations,
 )
@@ -42,7 +44,7 @@ def _current_employee(request):
 
 def _serialize_conversation(conv: Conversation, employee: Employee) -> dict:
     other = conv.other_participant(employee)
-    last_msg = conv.messages.order_by("-date_creat").first()
+    last_msg = visible_messages(conv, employee).order_by("-date_creat").first()
     status = online_info(other) if other else {"online": False, "last_seen": None}
     if conv.kind == Conversation.KIND_AI:
         title = "AI Yordamchi"
@@ -181,9 +183,9 @@ def chat_messages(request, conversation_id):
     if read_ids:
         push_read(conv, employee.id, read_ids)
 
-    # O'chirilgan xabarlar butunlay ko'rsatilmaydi (baza yozuvi audit uchun
-    # saqlanadi, lekin "Xabar o'chirildi" kabi izsiz ham chiqmaydi).
-    qs = conv.messages.filter(is_deleted=False).select_related("sender").order_by("-date_creat")
+    # O'chirilgan xabarlar ko'rsatilmaydi (matn bazada saqlanadi, fayl yopiq papkaga ko'chiriladi);
+    # suhbatni "o'chirgan" xodimga shundan oldingi xabarlar ham ko'rinmaydi.
+    qs = visible_messages(conv, employee).select_related("sender").order_by("-date_creat")
     page_number = request.GET.get("page", 1)
     page_obj = Paginator(qs, 30).get_page(page_number)
     results = [serialize_message(m) for m in reversed(page_obj.object_list)]
@@ -433,12 +435,8 @@ def chat_delete(request, message_id):
     if msg.sender_id != employee.id:
         raise PermissionDenied("Faqat o'z xabaringizni o'chirishingiz mumkin")
 
-    msg.is_deleted = True
-    msg.deleted_at = timezone.now()
-    msg.body = ""
-    if msg.attachment:
-        msg.attachment.delete(save=False)
-        msg.attachment = None
-    msg.save(update_fields=["is_deleted", "deleted_at", "body", "attachment"])
+    if msg.is_deleted:
+        return JsonResponse({"ok": True})
+    soft_delete_message(msg)
     push_delete(msg)
     return JsonResponse({"ok": True})

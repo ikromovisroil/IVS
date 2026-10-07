@@ -31,9 +31,11 @@ from chat.services import (
     mark_read,
     remove_group_member,
     set_group_admin,
+    soft_delete_message,
     touch_online,
     unhide_conversation_for,
     visible_conversations,
+    visible_messages,
 )
 from chat.validators import validate_chat_attachment
 from chat.views import _notify_recipients, _serialize_conversation
@@ -158,7 +160,7 @@ class MessagesView(ChatBaseView):
         read_ids = mark_read(conv, emp)
         if read_ids:
             push_read(conv, emp.id, read_ids)
-        qs = conv.messages.filter(is_deleted=False).select_related("sender").order_by("-date_creat")
+        qs = visible_messages(conv, emp).select_related("sender").order_by("-date_creat")
         page_obj = Paginator(qs, 30).get_page(request.query_params.get("page", 1))
         return Response({
             "results": [self.message_json(request, m) for m in reversed(page_obj.object_list)],
@@ -340,21 +342,17 @@ class EditMessageView(ChatBaseView):
 
 
 class DeleteMessageView(ChatBaseView):
-    """POST /api/chat/messages/{id}/delete/ — faqat o'z xabari (matn va fayl o'chiriladi)."""
+    """POST /api/chat/messages/{id}/delete/ — faqat o'z xabari. Xabar ikkala tomonda ko'rinmay qoladi (matn serverda
+    saqlanadi, fayl yopiq papkaga ko'chiriladi; havola ishlamaydi)."""
 
     def post(self, request, pk):
         emp = self.employee(request)
         msg = get_object_or_404(Message, pk=pk)
         if msg.sender_id != emp.id:
             raise PermissionDenied("Faqat o'z xabaringizni o'chirishingiz mumkin")
-        msg.is_deleted = True
-        msg.deleted_at = timezone.now()
-        msg.body = ""
-        if msg.attachment:
-            msg.attachment.delete(save=False)
-            msg.attachment = None
-        msg.save(update_fields=["is_deleted", "deleted_at", "body", "attachment"])
-        push_delete(msg)
+        if not msg.is_deleted:
+            soft_delete_message(msg)
+            push_delete(msg)
         return Response({"ok": True})
 
 

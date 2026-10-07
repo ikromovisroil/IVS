@@ -1,7 +1,15 @@
+import logging
+import shutil
+from pathlib import Path
+
+from django.conf import settings
 from django.db import transaction
+from django.utils import timezone
 
 from main.models import Employee
-from .models import Conversation, Message
+from .models import Conversation, ConversationClear, Message
+
+logger = logging.getLogger(__name__)
 
 
 @transaction.atomic
@@ -123,8 +131,74 @@ def visible_conversations(employee: Employee):
 def hide_conversation(conversation: Conversation, employee: Employee) -> None:
     """Suhbatni faqat shu xodim uchun ro'yxatdan yashiradi (WhatsApp'dagi
     "chatni o'chirish" kabi) - ma'lumot o'chmaydi, qarshi tomonga ta'sir
-    qilmaydi."""
+    qilmaydi. Yashirilgan vaqt saqlanadi: suhbat qaytganda ham shundan oldingi
+    xabarlar bu xodimga ko'rinmaydi."""
     conversation.hidden_for.add(employee)
+    ConversationClear.objects.update_or_create(
+        conversation=conversation, employee=employee, defaults={"cleared_at": timezone.now()},
+    )
+
+
+def cleared_at_for(conversation: Conversation, employee: Employee):
+    return (
+        ConversationClear.objects
+        .filter(conversation=conversation, employee=employee)
+        .values_list("cleared_at", flat=True)
+        .first()
+    )
+
+
+def visible_messages(conversation: Conversation, employee: Employee):
+    """Xodim ko'ra oladigan xabarlar: o'chirilmagan va (agar suhbatni "o'chirgan" bo'lsa) shundan keyingilari."""
+    qs = conversation.messages.filter(is_deleted=False)
+    cleared = cleared_at_for(conversation, employee)
+    if cleared:
+        qs = qs.filter(date_creat__gt=cleared)
+    return qs
+
+
+def soft_delete_message(msg: Message) -> None:
+    """Xabarni "o'chiradi": matn bazada qoladi (ko'rinmaydi), fayl ochiq MEDIA_ROOT'dan yopiq papkaga ko'chiriladi
+    (eski havola ishlamaydi). Administrator tiklashi mumkin (restore_message)."""
+    msg.is_deleted = True
+    msg.deleted_at = timezone.now()
+    update_fields = ["is_deleted", "deleted_at"]
+
+    if msg.attachment:
+        try:
+            src = Path(msg.attachment.path)
+            dest_dir = Path(settings.CHAT_PRIVATE_ROOT) / f"{timezone.now():%Y%m}"
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest = dest_dir / f"{msg.pk}_{src.name}"
+            shutil.move(str(src), str(dest))
+            msg.deleted_attachment = str(dest.relative_to(Path(settings.CHAT_PRIVATE_ROOT)))
+        except (FileNotFoundError, NotImplementedError, ValueError):
+            # Fayl allaqachon yo'q (yoki fayl tizimi emas) — havola baribir olib tashlanadi
+            logger.warning("Chat fayli ko'chirilmadi (msg=%s)", msg.pk)
+            msg.deleted_attachment = ""
+        msg.attachment = None
+        update_fields += ["attachment", "deleted_attachment"]
+
+    msg.save(update_fields=update_fields)
+
+
+def restore_message(msg: Message) -> None:
+    """Administrator: o'chirilgan xabarni (va faylini) qaytaradi."""
+    update_fields = ["is_deleted", "deleted_at"]
+    if msg.deleted_attachment:
+        src = Path(settings.CHAT_PRIVATE_ROOT) / msg.deleted_attachment
+        if src.exists():
+            dest_dir = Path(settings.MEDIA_ROOT) / "chat" / f"{timezone.now():%Y}" / f"{timezone.now():%m}"
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest = dest_dir / src.name
+            shutil.move(str(src), str(dest))
+            msg.attachment.name = str(dest.relative_to(Path(settings.MEDIA_ROOT))).replace("\\", "/")
+            update_fields.append("attachment")
+        msg.deleted_attachment = ""
+        update_fields.append("deleted_attachment")
+    msg.is_deleted = False
+    msg.deleted_at = None
+    msg.save(update_fields=update_fields)
 
 
 def unhide_conversation_for(conversation: Conversation, employee: Employee) -> None:
@@ -134,7 +208,7 @@ def unhide_conversation_for(conversation: Conversation, employee: Employee) -> N
 
 
 def unread_count(conversation: Conversation, employee: Employee) -> int:
-    return conversation.messages.filter(read_at__isnull=True).exclude(sender=employee).count()
+    return visible_messages(conversation, employee).filter(read_at__isnull=True).exclude(sender=employee).count()
 
 
 def mark_read(conversation: Conversation, employee: Employee):

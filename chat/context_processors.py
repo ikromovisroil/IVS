@@ -9,13 +9,25 @@ def chat_notifications(request):
     if not employee:
         return empty
 
-    from .models import Message
+    from django.db.models import F, OuterRef, Q, Subquery
+
+    from .models import ConversationClear, Message
     from .services import visible_conversations
 
-    count = Message.objects.filter(
-        conversation__in=visible_conversations(employee),
-        read_at__isnull=True,
-        is_deleted=False,
-    ).exclude(sender=employee).count()
+    cleared = ConversationClear.objects.filter(
+        conversation=OuterRef("conversation"), employee=employee,
+    ).values("cleared_at")[:1]
+
+    count = (
+        Message.objects.filter(
+            conversation__in=visible_conversations(employee),
+            read_at__isnull=True,
+            is_deleted=False,
+        )
+        .exclude(sender=employee)
+        .annotate(cleared_at=Subquery(cleared))
+        .filter(Q(cleared_at__isnull=True) | Q(date_creat__gt=F("cleared_at")))
+        .count()
+    )
 
     return {"chat_unread_count": count}

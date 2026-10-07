@@ -246,6 +246,8 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# O'chirilgan chat fayllari ochiq MEDIA_ROOT'dan tashqariga (internetdan ochib bo'lmaydigan joyga) ko'chiriladi
+CHAT_PRIVATE_ROOT = BASE_DIR / "media_private" / "chat_deleted"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
