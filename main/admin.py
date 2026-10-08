@@ -15,6 +15,8 @@ from import_export.admin import ExportMixin
 class OrderMaterialInline(admin.TabularInline):
     model = OrderMaterial
     extra = 1
+    can_delete = False   # ariza materiali o'chirilsa ombor qoldig'i qaytmaydi
+    readonly_fields = ("price", "unit_name", "material_name", "material_code")
 
 
 class DeedConsentInline(admin.TabularInline):
@@ -28,18 +30,28 @@ class DeedFilesInline(admin.TabularInline):
     readonly_fields = ("date_creat",)
 
 
+class NoDeleteAdminMixin:
+    """
+    Tarixiy ma'lumot (ariza, hujjat, xodim, tashkilot, hudud, material harakati...) admin panelda O'CHIRILMAYDI:
+    o'chirish hisobotlarni buzadi va ombor qoldig'ini qaytarmaydi. Xodim uchun "Faolsizlantirish" ishlatiladi.
+    """
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 # =========================
 # Simple models
 # =========================
 
 @admin.register(Organization)
-class OrganizationAdmin(admin.ModelAdmin):
+class OrganizationAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ("id", "inn", "name", "contract")
     search_fields = ("inn", "name", "contract")
 
 
 @admin.register(Department)
-class DepartmentAdmin(admin.ModelAdmin):
+class DepartmentAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ("id", "code", "inn", "region", "name", "organization")
     list_filter = ("organization", "region")
     search_fields = ("name", "code", "inn", "organization__name")
@@ -66,7 +78,7 @@ class RankAdmin(admin.ModelAdmin):
 
 
 @admin.register(Region)
-class RegionAdmin(admin.ModelAdmin):
+class RegionAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
 
@@ -98,7 +110,7 @@ class UnitAdmin(admin.ModelAdmin):
 
 
 @admin.register(Goal)
-class GoalAdmin(admin.ModelAdmin):
+class GoalAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
 
@@ -169,7 +181,7 @@ class EmployeeResource(resources.ModelResource):
 
 
 @admin.register(Employee)
-class EmployeeAdmin(ExportMixin, admin.ModelAdmin):
+class EmployeeAdmin(NoDeleteAdminMixin, ExportMixin, admin.ModelAdmin):
     resource_class = EmployeeResource
     list_display = (
         "id", "full_name", "user", "organization", "department",
@@ -271,15 +283,15 @@ class MaterialUserAdmin(admin.ModelAdmin):
 # =========================
 
 @admin.register(Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
-        "id","sender__region", "sender", "receiver", "user",
+        "id", "sender_region", "sender", "receiver", "user",
         "colored_status", "rating", "date_creat"
     )
     list_filter = (
-        "sender__region", "status", "goal", "date_creat"
+        "sender_organization", "sender_region", "status", "goal", "date_creat"
     )
-    list_select_related = ("sender__region", "receiver", "user")
+    list_select_related = ("sender_region", "receiver", "user")
     search_fields = (
         "id",
         "user__last_name", "user__first_name",
@@ -290,7 +302,8 @@ class OrderAdmin(admin.ModelAdmin):
     inlines = [OrderMaterialInline]
     readonly_fields = (
         "date_creat", "date_edit", "date_process", "date_finished",
-        "date_approved", "date_accepted", "date_canceled", "date_rejected"
+        "date_approved", "date_accepted", "date_canceled", "date_rejected",
+        "sender_organization", "sender_region", "sender_department", "receiver_region",
     )
 
     STATUS_COLORS = {
@@ -302,11 +315,6 @@ class OrderAdmin(admin.ModelAdmin):
         "canceled": "#6c757d",   # kulrang — bekor qilindi
         "rejected": "#dc3545",   # qizil — rad etildi
     }
-
-    def sender_region(self, obj):
-        return obj.sender.region if obj.sender_id and obj.sender.region_id else "—"
-    sender_region.short_description = "Yuboruvchi hududi"
-    sender_region.admin_order_field = "sender__region__name"
 
     def colored_status(self, obj):
         color = self.STATUS_COLORS.get(obj.status, "#999")
@@ -321,7 +329,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 
 @admin.register(OrderMaterial)
-class OrderMaterialAdmin(admin.ModelAdmin):
+class OrderMaterialAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ("id", "order", "user", "material", "number", "given")
     search_fields = (
         "order__id", "user__first_name",
@@ -353,7 +361,7 @@ class OrderGoalAdmin(admin.ModelAdmin):
 # =========================
 
 @admin.register(Deed)
-class DeedAdmin(admin.ModelAdmin):
+class DeedAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = (
         "id", "organization", "user__region", "code", "sender", "receiver", "user",
         "colored_status_sender", "colored_status_receiver", "status", "orders_list",
@@ -506,7 +514,7 @@ class MaterialEmployeeAdmin(admin.ModelAdmin):
 
 
 @admin.register(MaterialMovement)
-class MaterialMovementAdmin(admin.ModelAdmin):
+class MaterialMovementAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = [
         'id',
         'status',

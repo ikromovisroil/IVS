@@ -95,7 +95,7 @@ class ContactsView(ChatBaseView):
 
     def get(self, request):
         emp = self.employee(request)
-        qs = Employee.objects.exclude(id=emp.id).select_related("organization")
+        qs = Employee.objects.exclude(id=emp.id).filter(user__is_active=True).select_related("organization")
         if not request.user.has_perm("main.all_organization"):
             qs = qs.filter(organization_id=emp.organization_id)
         q = (request.query_params.get("q") or "").strip()

@@ -231,8 +231,10 @@ def _create_deed_for_order(order, request=None):
         "today": timezone.now(),
     })
     with transaction.atomic():
+        # Tashkilot va hudud — ARIZA yaratilgan paytdagi "surat" (yuboruvchi keyin ko'chgan bo'lsa ham o'zgarmaydi)
         deed = Deed(
-            organization=order.sender.organization,
+            organization_id=order.sender_organization_id or order.sender.organization_id,
+            user_region_id=order.sender_region_id or order.sender.region_id,
             sender=order.sender,
             status_sender="approved",
             date_sender=order.date_accepted,

@@ -313,7 +313,7 @@ def order_receiver(request):
     orders_qs = (
         Order.objects
         .filter(
-            sender__region=employee.region,
+            sender_region=employee.region,
             goal_id__in=order_goal_ids,
             goal__organization__type="worker",
             status="viewed"
@@ -379,7 +379,7 @@ def order_accepted(request, pk):
             and order.goal_id in order_goal_ids
             and order.goal.organization.type == "worker"
             and order.sender_id is not None
-            and order.sender.region_id == assignee.region_id
+            and order.sender_region_id == assignee.region_id
         )
 
     order = get_object_or_404(Order.objects.select_related("goal__organization", "sender"), pk=pk)
@@ -1165,7 +1165,7 @@ def order_receiver_barn(request):
                 goal__organization__type="client",
                 goal__organization=employee.organization,
                 goal_id__in=order_goal_ids,
-                sender__region_id=employee.region_id,
+                sender_region_id=employee.region_id,
                 status="viewed",
             )
             .select_related(*FULL_SENDER_RECEIVER_RELATED)
@@ -1218,7 +1218,7 @@ def order_accepted_barn(request, pk):
             and order.goal.organization_id == employee.organization_id
             and order.goal.organization.type == "client"
             and order.sender_id is not None
-            and order.sender.region_id == employee.region_id
+            and order.sender_region_id == employee.region_id
         )
 
     order = get_object_or_404(
@@ -1446,6 +1446,7 @@ def order_material_barn(request):
                 material.number -= delta
                 material_changed_ids.add(material.id)
                 om.given = given
+                om.fill_snapshot(force=True)   # narx/nom/birlik — berilgan paytdagi "surat"
                 ordermaterial_to_update.append(om)
 
                 if delta > 0:
@@ -1467,7 +1468,7 @@ def order_material_barn(request):
                     return redirect(back_url)
 
             if ordermaterial_to_update:
-                OrderMaterial.objects.bulk_update(ordermaterial_to_update, ["given"])
+                OrderMaterial.objects.bulk_update(ordermaterial_to_update, ["given", *OrderMaterial.SNAPSHOT_FIELDS])
 
             changed_materials = [material_map[mid] for mid in material_changed_ids]
             if changed_materials:
@@ -1559,7 +1560,7 @@ def order_agrement(request):
             .filter(
                 goal__organization__type="client",
                 goal__organization=employee.organization,
-                receiver__region_id=employee.region_id,
+                receiver_region_id=employee.region_id,
                 status="finished",
             )
             .select_related(*FULL_SENDER_RECEIVER_RELATED)
@@ -1627,7 +1628,7 @@ def order_agrement_material(request):
                 messages.error(request, "Bu ariza sizning tashkilotingizga tegishli emas")
                 return redirect(back_url)
 
-            if not order.receiver or order.receiver.region_id != employee.region_id:
+            if not order.receiver_id or order.receiver_region_id != employee.region_id:
                 messages.error(request, "Bu ariza sizning hududingizga tegishli emas")
                 return redirect(back_url)
 
@@ -1736,6 +1737,7 @@ def order_agrement_material(request):
                     material.number = (material.number or 0) - delta
                     material_changed_ids.add(material.id)
                     om.given = given
+                    om.fill_snapshot(force=True)   # narx/nom/birlik — berilgan paytdagi "surat"
                     ordermaterial_to_update.append(om)
 
                     if delta > 0:
@@ -1757,7 +1759,7 @@ def order_agrement_material(request):
                         return redirect(back_url)
 
                 if ordermaterial_to_update:
-                    OrderMaterial.objects.bulk_update(ordermaterial_to_update, ["given"])
+                    OrderMaterial.objects.bulk_update(ordermaterial_to_update, ["given", *OrderMaterial.SNAPSHOT_FIELDS])
 
                 changed_materials = [material_map[mid] for mid in material_changed_ids]
                 if changed_materials:

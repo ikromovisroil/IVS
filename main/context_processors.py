@@ -85,7 +85,7 @@ def order_notifications(request):
 
         # order_receiver: hali receiver tayinlanmagan, worker goal'lariga ruxsatli
         Q(receiver__isnull=True,
-          sender__region=employee.region,
+          sender_region=employee.region,
           goal_id__in=worker_goal_ids,
           goal__organization__type="worker",
           status="viewed") |
@@ -95,7 +95,7 @@ def order_notifications(request):
           goal__organization__type="client",
           goal__organization=employee.organization,
           goal_id__in=barn_goal_ids,
-          sender__region_id=employee.region_id,
+          sender_region_id=employee.region_id,
           status="viewed")
     )
 
@@ -130,7 +130,7 @@ def order_receiver_count(request):
         order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
         count = Order.objects.filter(
-            sender__region=employee.region,
+            sender_region=employee.region,
             goal_id__in=order_goal_ids,
             goal__organization__type="worker",
             status="viewed",
@@ -149,7 +149,7 @@ def order_receiver_count(request):
             goal__organization__type="client",
             goal__organization=employee.organization,
             goal_id__in=order_goal_ids,
-            sender__region_id=employee.region_id,
+            sender_region_id=employee.region_id,
             status="viewed",
         ).count()
 

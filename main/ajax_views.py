@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 from django.utils import timezone
 from django.db.models import Sum, F, DecimalField, ExpressionWrapper, Value,CharField
-from django.db.models.functions import Coalesce, Cast,Concat
+from django.db.models.functions import Coalesce, Cast, Concat, NullIf
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -147,7 +147,7 @@ def order_check_new(request):
     order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
     orders_qs = Order.objects.filter(
-        sender__region=employee.region,
+        sender_region=employee.region,
         goal_id__in=order_goal_ids,
         goal__organization__type="worker",
         status="viewed",
@@ -171,7 +171,7 @@ def order_check_all(request):
 
     latest_order = (
         Order.objects
-        .filter(sender__region=employee.region,goal__organization=employee.organization, status="viewed")
+        .filter(sender_region=employee.region,goal__organization=employee.organization, status="viewed")
         .order_by("-id")
         .values("id")
         .first()
@@ -197,7 +197,7 @@ def get_department_employees(request):
 
     # 🔥 Qaysi bo‘limga tegishli bo‘lsa — o‘sha bo‘lim xodimlari
     qs = Employee.objects.filter(
-        department=receiver.department
+        department=receiver.department, user__is_active=True
     ).exclude(id=receiver.id)  # Qabul qiluvchining o'zi chiqmasin
 
     data = [
@@ -305,7 +305,7 @@ def ajax_dep_signatory(request):
     if not org_id and not dep_id:
         return JsonResponse([], safe=False)
 
-    qs = Employee.objects.select_related("rank")
+    qs = Employee.objects.select_related("rank").filter(user__is_active=True)
 
     if dep_id:
         base_filter = Q(department_id=dep_id)
@@ -342,7 +342,7 @@ def ajax_dep_negotiator(request):
     if not org_id and not dep_id:
         return JsonResponse([], safe=False)
 
-    qs = Employee.objects.select_related("rank")
+    qs = Employee.objects.select_related("rank").filter(user__is_active=True)
 
     if dep_id:
         qs = qs.filter(Q(department_id=dep_id) | Q(department_id=my_dep_id))
@@ -376,7 +376,7 @@ def ajax_employees_org(request):
     if not org_id and not reg_id:
         return JsonResponse({"results": []})
 
-    qs = Employee.objects.all()
+    qs = Employee.objects.filter(user__is_active=True)
     if org_id:
         qs = qs.filter(organization_id=org_id)
     if reg_id:
@@ -399,7 +399,7 @@ def ajax_employees_org_user_region(request):
     if not org_id:
         return JsonResponse({"results": []})
 
-    qs = Employee.objects.filter(organization_id=org_id,region=employee.region)
+    qs = Employee.objects.filter(organization_id=org_id, region=employee.region, user__is_active=True)
 
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})
@@ -414,7 +414,7 @@ def ajax_employees_org_user(request):
     if not org_id:
         return JsonResponse({"results": []})
 
-    qs = Employee.objects.filter(organization_id=org_id,)
+    qs = Employee.objects.filter(organization_id=org_id, user__is_active=True)
 
     data = [{"id": e.id, "text": e.full_name} for e in qs]
     return JsonResponse({"results": data})
@@ -427,7 +427,7 @@ def ajax_employees_worker(request):
     """Xizmat ko'rsatuvchi (worker) tashkilotlar xodimlari."""
     qs = (
         Employee.objects
-        .filter(organization__type="worker")
+        .filter(organization__type="worker", user__is_active=True)
         .select_related("organization")
         .order_by("last_name", "first_name", "father_name", "id")
     )
@@ -457,7 +457,8 @@ def ajax_agreements_employees(request):
 
     qs = Employee.objects.filter(
         Q(organization_id=org_id) |
-        Q(organization_id=my_org_id)
+        Q(organization_id=my_org_id),
+        user__is_active=True,
     ).select_related("rank").order_by(
         "last_name", "first_name", "father_name"
     ).distinct()
@@ -600,6 +601,9 @@ def ajax_akt_materials(request):
                 output_field=CharField(),
             ),
             rank_name=F("order__sender__rank__name"),
+            s_name=Coalesce(NullIf(F("material_name"), Value("")), F("material__name")),
+            s_unit=Coalesce(NullIf(F("unit_name"), Value("")), F("material__unit__name")),
+            s_price=Coalesce(F("price"), F("material__price")),
         )
     )
 
@@ -610,12 +614,12 @@ def ajax_akt_materials(request):
         qs = qs.filter(material__employee_id__in=sender_ids)
 
     if region_filter_id:
-        qs = qs.filter(order__receiver__region_id=region_filter_id)
+        qs = qs.filter(order__receiver_region_id=region_filter_id)
 
     if dep_id:
-        qs = qs.filter(order__sender__department_id=dep_id)
+        qs = qs.filter(order__sender_department_id=dep_id)
     elif org_id:
-        qs = qs.filter(order__sender__organization_id=org_id)
+        qs = qs.filter(order__sender_organization_id=org_id)
     else:
         return JsonResponse([], safe=False)
 
@@ -624,15 +628,23 @@ def ajax_akt_materials(request):
         "order__date_finished",
         "order__technics__name",
         "order__technics__serial",
-        "material__name",
+        "s_name",
         "number",
-        "material__unit__name",
-        "material__price",
+        "s_unit",
+        "s_price",
         "full_name",
         "rank_name",
     ).order_by("-order__date_finished", "-id")
 
-    return JsonResponse(list(qs), safe=False)
+    # JS kutgan kalitlar saqlanadi; qiymatlar — o'sha paytdagi "surat" (narx, nom, birlik)
+    data = []
+    for row in qs:
+        row = dict(row)
+        row["material__name"] = row.pop("s_name")
+        row["material__unit__name"] = row.pop("s_unit")
+        row["material__price"] = row.pop("s_price")
+        data.append(row)
+    return JsonResponse(data, safe=False)
 
 
 from collections import OrderedDict
@@ -677,60 +689,72 @@ def ajax_svod_materials(request):
         order__date_finished__isnull=False,
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
-        order__sender__organization_id__in=org_ids,
+        order__sender_organization_id__in=org_ids,
         # Svodga xizmat ko'rsatuvchi (ATM) tashkilot kirmaydi; sarf sahifasi (service_mode) esa aynan shuni oladi
-        order__sender__organization__type="worker" if service_mode else "client",
+        order__sender_organization__type="worker" if service_mode else "client",
         order__goal__organization__type="worker",
     )
 
     if not use_all_regions:
         if can_view_all_regions and region_param.isdigit():
             # Ruxsati bor foydalanuvchi aniq bitta hudud tanlagan
-            common_filters["order__sender__region_id"] = int(region_param)
+            common_filters["order__sender_region_id"] = int(region_param)
         else:
             # Ruxsati yo'q — majburan o'z hududi
             if not employee.region_id:
                 return JsonResponse({"organizations": [], "employees": []})
-            common_filters["order__sender__region_id"] = employee.region_id
+            common_filters["order__sender_region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
 
+    # Narx, nom, birlik va kod — arizada berilgan PAYTDAGI "surat" (material keyin o'zgarsa ham hisobot o'zgarmaydi).
+    # Narxi farq qilgan bir xil material alohida qator bo'ladi.
+    snap = dict(
+        s_code=Coalesce(NullIf(F("material_code"), Value("")), F("material__code")),
+        s_name=Coalesce(NullIf(F("material_name"), Value("")), F("material__name")),
+        s_unit=Coalesce(NullIf(F("unit_name"), Value("")), F("material__unit__name")),
+        s_price=Coalesce(F("price"), F("material__price")),
+    )
+
     qs = (
         OrderMaterial.objects.filter(**common_filters)
+        .annotate(**snap)
         .values(
-            "order__sender__organization_id",
-            "order__sender__organization__name",
-            "order__sender__region_id",
-            "order__sender__region__name",
+            "order__sender_organization_id",
+            "order__sender_organization__name",
+            "order__sender_region_id",
+            "order__sender_region__name",
             "material_id",
-            "material__code",
-            "material__name",
-            "material__unit__name",
-            "material__price",
+            "s_code",
+            "s_name",
+            "s_unit",
+            "s_price",
         )
         .annotate(total_number=Coalesce(Sum("number"), 0))
         .annotate(
             total_sum=ExpressionWrapper(
-                Coalesce(F("material__price"), zero_dec) *
+                Coalesce(F("s_price"), zero_dec) *
                 Cast(Coalesce(F("total_number"), 0), output_field=dec),
                 output_field=dec,
             )
         )
         .order_by(
-            "order__sender__organization_id",
-            "order__sender__region_id",
-            "material__code",
-            "material__name",
+            "order__sender_organization_id",
+            "order__sender_region_id",
+            "s_code",
+            "s_name",
         )
     )
 
     rel = (
         OrderMaterial.objects.filter(**common_filters)
+        .annotate(s_price=Coalesce(F("price"), F("material__price")))
         .values(
             "material_id",
-            "order__sender__organization_id",
-            "order__sender__region_id",
+            "s_price",
+            "order__sender_organization_id",
+            "order__sender_region_id",
             "order_id",
             "order__date_finished",
         )
@@ -738,7 +762,7 @@ def ajax_svod_materials(request):
     )
     order_map = {}
     for r in rel:
-        key = (r["material_id"], r["order__sender__organization_id"], r["order__sender__region_id"])
+        key = (r["material_id"], r["s_price"], r["order__sender_organization_id"], r["order__sender_region_id"])
         dt = r["order__date_finished"]
         dt_str = dt.strftime("%d.%m.%Y") if dt else ""
         txt = f'Akt №{r["order_id"]} ga {dt_str} yil' if dt_str else f'Akt №{r["order_id"]}'
@@ -746,23 +770,23 @@ def ajax_svod_materials(request):
 
     grouped = OrderedDict()
     for item in qs:
-        org_key = (item["order__sender__organization_id"], item["order__sender__organization__name"])
-        region_key = (item["order__sender__region_id"], item["order__sender__region__name"] or "Noma'lum hudud")
+        org_key = (item["order__sender_organization_id"], item["order__sender_organization__name"])
+        region_key = (item["order__sender_region_id"], item["order__sender_region__name"] or "Noma'lum hudud")
 
         grouped.setdefault(org_key, OrderedDict())
         grouped[org_key].setdefault(region_key, [])
 
-        key = (item["material_id"], item["order__sender__organization_id"], item["order__sender__region_id"])
+        key = (item["material_id"], item["s_price"], item["order__sender_organization_id"], item["order__sender_region_id"])
         order_info_list = order_map.get(key, [])
 
         grouped[org_key][region_key].append({
-            "material__name": item.get("material__name", ""),
-            "material__unit__name": item.get("material__unit__name", ""),
+            "material__name": item.get("s_name") or "",
+            "material__unit__name": item.get("s_unit") or "",
             "total_number": float(item.get("total_number") or 0),
-            "material__price": float(item.get("material__price") or 0),
+            "material__price": float(item.get("s_price") or 0),
             "total_sum": float(item.get("total_sum") or 0),
             "order_info": order_info_list,
-            "material__code": item.get("material__code", ""),
+            "material__code": item.get("s_code") or "",
         })
 
     result = []
@@ -911,17 +935,17 @@ def ajax_reestr_materials(request):
         order__date_finished__isnull=False,
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
-        order__sender__organization_id=org_id,
+        order__sender_organization_id=org_id,
     )
 
     if has_full_region:
         if region_id and region_id.isdigit():
-            common_filters["order__sender__region_id"] = region_id
+            common_filters["order__sender_region_id"] = region_id
         # region_id bo'sh bo'lsa — barcha hududlar (cheklovsiz)
     else:
         if not employee.region_id:
             return JsonResponse([], safe=False)
-        common_filters["order__sender__region_id"] = employee.region_id
+        common_filters["order__sender_region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
@@ -929,8 +953,11 @@ def ajax_reestr_materials(request):
     qs = (
         OrderMaterial.objects.filter(**common_filters)
         .annotate(
+            s_code=Coalesce(NullIf(F("material_code"), Value("")), F("material__code")),
+            s_name=Coalesce(NullIf(F("material_name"), Value("")), F("material__name")),
+            s_price=Coalesce(F("price"), F("material__price")),
             total_sum=ExpressionWrapper(
-                Coalesce(F("material__price"), zero_dec) *
+                Coalesce(F("price"), F("material__price"), zero_dec) *
                 Cast(Coalesce(F("number"), 0), output_field=dec),
                 output_field=dec,
             ),
@@ -962,17 +989,17 @@ def ajax_reestr_materials(request):
             "order__technics__name",
             "order__technics__serial",
 
-            "material__code",
-            "material__name",
-            "material__price",
+            "s_code",
+            "s_name",
+            "s_price",
             "number",
 
             "sender_full_name",
             "order__sender__rank__name",
-            "order__sender__department_id",
-            "order__sender__department__name",
-            "order__sender__region_id",
-            "order__sender__region__name",
+            "order__sender_department_id",
+            "order__sender_department__name",
+            "order__sender_region_id",
+            "order__sender_region__name",
 
             "receiver_full_name",
             "order__receiver__rank__name",
@@ -982,7 +1009,7 @@ def ajax_reestr_materials(request):
         # ✅ Natija BO'LIM bo'yicha tartiblanadi — frontend shu tartibga
         # asoslanib guruhlab chiqaradi (avval bitta bo'lim, keyin
         # navbatdagi bo'lim, va h.k.)
-        .order_by("order__sender__department_id", "material__code", "material__name", "order__id")
+        .order_by("order__sender_department_id", "s_code", "s_name", "order__id")
     )
 
     data = []
@@ -998,16 +1025,16 @@ def ajax_reestr_materials(request):
             "technics_name": item.get("order__technics__name", ""),
             "technics_serial": item.get("order__technics__serial", ""),
 
-            "material_code": item.get("material__code", ""),
-            "material_name": item.get("material__name", ""),
+            "material_code": item.get("s_code") or "",
+            "material_name": item.get("s_name") or "",
             "number": float(item.get("number") or 0),
-            "material__price": float(item.get("material__price") or 0),
+            "material__price": float(item.get("s_price") or 0),
             "total_sum": float(item.get("total_sum") or 0),
 
             "sender": (item.get("sender_full_name") or "").strip(),
             "sender_rank": item.get("order__sender__rank__name", ""),
-            "department": item.get("order__sender__department__name") or "Bo'lim ko'rsatilmagan",
-            "region": item.get("order__sender__region__name") or "Noma'lum hudud",
+            "department": item.get("order__sender_department__name") or "Bo'lim ko'rsatilmagan",
+            "region": item.get("order__sender_region__name") or "Noma'lum hudud",
 
             "receiver": (item.get("receiver_full_name") or "").strip(),
             "receiver_rank": item.get("order__receiver__rank__name", ""),
@@ -1333,11 +1360,11 @@ def ajax_service_materials(request):
 
         if not use_all_regions:
             if can_view_all_regions and region_param.isdigit():
-                common_filters["user__region_id"] = int(region_param)
+                common_filters["user_region_id"] = int(region_param)
             else:
                 if not employee.region_id:
                     return JsonResponse([], safe=False)
-                common_filters["user__region_id"] = employee.region_id
+                common_filters["user_region_id"] = employee.region_id
 
     dec = DecimalField(max_digits=18, decimal_places=2)
     zero_dec = Value(0, output_field=dec)
@@ -1347,10 +1374,14 @@ def ajax_service_materials(request):
         .select_related("material", "material__unit", "user")
         .annotate(
             total_sum=ExpressionWrapper(
-                Coalesce(F("material__price"), zero_dec) *
+                Coalesce(F("price"), F("material__price"), zero_dec) *
                 Cast(Coalesce(F("outcome"), 0), output_field=dec),
                 output_field=dec,
             ),
+            s_name=Coalesce(NullIf(F("material_name"), Value("")), F("material__name")),
+            s_unit=Coalesce(NullIf(F("unit_name"), Value("")), F("material__unit__name")),
+            s_code=Coalesce(NullIf(F("material_code"), Value("")), F("material__code")),
+            s_price=Coalesce(F("price"), F("material__price")),
             full_name=Concat(
                 F("user__last_name"), Value(" "),
                 F("user__first_name"), Value(" "),
@@ -1361,11 +1392,11 @@ def ajax_service_materials(request):
         .annotate(rank_name=F("user__rank__name"))
         .order_by("-date_creat")
         .values(
-            "material__name",
-            "material__unit__name",
-            "material__code",
+            "s_name",
+            "s_unit",
+            "s_code",
             "outcome",
-            "material__price",
+            "s_price",
             "total_sum",
             "full_name",
             "rank_name",
@@ -1373,4 +1404,12 @@ def ajax_service_materials(request):
         )
     )
 
-    return JsonResponse(list(qs), safe=False)
+    data = []
+    for row in qs:
+        row = dict(row)
+        row["material__name"] = row.pop("s_name")
+        row["material__unit__name"] = row.pop("s_unit")
+        row["material__code"] = row.pop("s_code")
+        row["material__price"] = row.pop("s_price")
+        data.append(row)
+    return JsonResponse(data, safe=False)

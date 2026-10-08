@@ -118,7 +118,7 @@ class EmployeeStatsView(_StatsBase):
 
         orders = Order.objects.filter(receiver__isnull=False)
         if region:
-            orders = orders.filter(receiver__region_id=int(region))
+            orders = orders.filter(receiver_region_id=int(region))
         if date1:
             orders = orders.filter(date_creat__date__gte=date1)
         if date2:

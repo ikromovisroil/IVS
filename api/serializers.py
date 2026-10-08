@@ -473,13 +473,14 @@ class GoalSerializer(serializers.ModelSerializer):
 
 # Arizalar
 class OrderMaterialSerializer(serializers.ModelSerializer):
-    material_name = serializers.CharField(source='material.name', read_only=True)
-    unit_name = serializers.CharField(source='material.unit.name', read_only=True)
+    material_name = serializers.CharField(source='display_name', read_only=True)
+    unit_name = serializers.CharField(source='display_unit', read_only=True)
+    price = serializers.DecimalField(source='unit_price', max_digits=12, decimal_places=2, read_only=True)
     given_summa = serializers.DecimalField(max_digits=14, decimal_places=2, read_only=True)
 
     class Meta:
         model = OrderMaterial
-        fields = ['id', 'material', 'material_name', 'unit_name', 'number', 'given', 'given_summa']
+        fields = ['id', 'material', 'material_name', 'unit_name', 'price', 'number', 'given', 'given_summa']
 
 
 class OrderMaterialGivenSerializer(serializers.Serializer):

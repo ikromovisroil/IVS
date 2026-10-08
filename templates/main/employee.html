@@ -163,12 +163,24 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                           {% if perms.main.delete_employee %}
+                            {% if emp.user.is_active %}
                             <li>
                             <a class="dropdown-item" href="javascript:void(0)"
                                data-bs-toggle="modal" data-bs-target="#empdel-{{ emp.id }}">
-                              <i class="bi bi-trash"></i> O'chirish
+                              <i class="bi bi-person-x"></i> Faolsizlantirish
                             </a>
                           </li>
+                            {% else %}
+                            <li>
+                              <form method="post" action="{% url 'employee_activate' %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="employee_id" value="{{ emp.id }}">
+                                <button type="submit" class="dropdown-item">
+                                  <i class="bi bi-person-check"></i> Faollashtirish
+                                </button>
+                              </form>
+                            </li>
+                            {% endif %}
                           {% endif %}
                           {% if perms.main.change_employee %}
                           <li>
@@ -203,12 +215,24 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
                           {% if perms.main.delete_employee %}
+                            {% if emp.user.is_active %}
                             <li>
                             <a class="dropdown-item" href="javascript:void(0)"
                                data-bs-toggle="modal" data-bs-target="#empdel-{{ emp.id }}">
-                              <i class="bi bi-trash"></i> O'chirish
+                              <i class="bi bi-person-x"></i> Faolsizlantirish
                             </a>
                           </li>
+                            {% else %}
+                            <li>
+                              <form method="post" action="{% url 'employee_activate' %}" class="m-0">
+                                {% csrf_token %}
+                                <input type="hidden" name="employee_id" value="{{ emp.id }}">
+                                <button type="submit" class="dropdown-item">
+                                  <i class="bi bi-person-check"></i> Faollashtirish
+                                </button>
+                              </form>
+                            </li>
+                            {% endif %}
                           {% endif %}
                           {% if perms.main.change_employee %}
                           <li>
@@ -891,16 +915,16 @@
           {% csrf_token %}
           <input type="hidden" name="employee_id" value="{{ emp.id }}">
           <div class="modal-header">
-            <h5 class="modal-title">O'chirishni tasdiqlang</h5>
+            <h5 class="modal-title">Faolsizlantirishni tasdiqlang</h5>
             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
           </div>
           <div class="modal-body">
-            <p><strong>{{ emp.full_name }}</strong> xodimini o'chirmoqchimisiz?</p>
-            <p class="text-danger small mb-0">Bu amalni ortga qaytarib bo'lmaydi.</p>
+            <p><strong>{{ emp.full_name }}</strong> xodimini faolsizlantirmoqchimisiz?</p>
+            <p class="text-muted small mb-0">Xodim tizimga kira olmaydi, lekin uning arizalari, hujjatlari va materiallari saqlanadi. Keyin qayta faollashtirish mumkin.</p>
           </div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
-            <button type="submit" class="btn btn-danger">O'chirish</button>
+            <button type="submit" class="btn btn-danger">Faolsizlantirish</button>
           </div>
         </form>
       </div>

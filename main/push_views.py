@@ -150,22 +150,24 @@ def get_eligible_employees_for_new_order(order):
     ).values_list("ordergoal__employee_id", flat=True)
 
     if goal_org_type == "worker":
-        if not order.sender or not order.sender.region_id:
+        region_id = order.sender_region_id or (order.sender.region_id if order.sender else None)
+        if not region_id:
             return Employee.objects.none()
 
         return Employee.objects.filter(
             id__in=eligible_ids,
-            region_id=order.sender.region_id,
+            region_id=region_id,
         ).exclude(organization__type="client")
 
     elif goal_org_type == "client":
-        if not order.sender or not order.sender.region_id:
+        region_id = order.sender_region_id or (order.sender.region_id if order.sender else None)
+        if not region_id:
             return Employee.objects.none()
 
         return Employee.objects.filter(
             id__in=eligible_ids,
             organization=order.goal.organization,
-            region_id=order.sender.region_id,
+            region_id=region_id,
         )
 
     return Employee.objects.none()

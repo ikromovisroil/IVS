@@ -99,7 +99,7 @@ def chat_contacts(request):
     employee = _current_employee(request)
     q = (request.GET.get("q") or "").strip()
 
-    qs = Employee.objects.exclude(id=employee.id).select_related("organization")
+    qs = Employee.objects.exclude(id=employee.id).filter(user__is_active=True).select_related("organization")
     if not request.user.has_perm("main.all_organization"):
         qs = qs.filter(organization_id=employee.organization_id)
     if q:

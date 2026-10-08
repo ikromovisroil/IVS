@@ -57,7 +57,7 @@ def find_employee_by_pinfl(pinfl: str) -> Employee | None:
     return (
         Employee.objects
         .select_related("organization", "user")
-        .filter(pinfl=pinfl, user__isnull=False)
+        .filter(pinfl=pinfl, user__isnull=False, user__is_active=True)
         .first()
     )
 
@@ -74,7 +74,7 @@ def get_employee_by_chat_id(chat_id: int) -> Employee | None:
     return (
         Employee.objects
         .select_related("organization", "region", "user")
-        .filter(telegram_chat=chat_id)
+        .filter(telegram_chat=chat_id, user__is_active=True)
         .first()
     )
 
@@ -332,7 +332,7 @@ def list_orders_to_execute(employee: Employee, context: str = "atm", limit: int 
             status="viewed",
             goal_id__in=goal_ids,
             receiver__isnull=True,
-            sender__region_id=employee.region_id,   # <-- har doim, istisnosiz
+            sender_region_id=employee.region_id,   # <-- har doim, istisnosiz (ariza yaratilgan paytdagi hudud)
         )
         .select_related(
             "goal", "sender", "sender__organization", "sender__department",
@@ -362,7 +362,7 @@ def accept_order(employee: Employee, order_id: int) -> OrderResult:
 
     def _eligible(o: Order) -> bool:
         org_type = _goal_org_type(o)
-        if o.sender_id is None or o.sender.region_id != employee.region_id:
+        if o.sender_id is None or o.sender_region_id != employee.region_id:
             return False
         if o.goal_id not in _allowed_goal_ids(employee):
             return False

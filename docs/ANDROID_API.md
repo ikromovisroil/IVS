@@ -132,7 +132,9 @@ Faqat o'z tashkiloti (`all_organization` bo'lsa hammasi).
 - **Tahrirlash** `PATCH`: `first_name`, `last_name`, `father_name`, `pinfl` (14 xonali, takrorlanmaydi), `department`, `directorate`, `division`, `rank`, `phone`.
   Tashkilot o'zgarmaydi. Joylashuv o'zgarsa xodimdagi texnikalar uchun `technics_action`: `release` (standart — bo'shatiladi),
   `with` (birga ko'chadi), `stay` (eski joyda qoladi).
-- **O'chirish** `DELETE` → `204`; o'zini o'chirib bo'lmaydi (400); hisob faolsizlantiriladi.
+- **O'chirish** `DELETE` → `204`: xodim yozuvi **o'chirilmaydi**, faqat faolsizlantiriladi (kirish, bot va push to'xtaydi; arizalari, hujjatlari va materiallari saqlanadi). O'zini o'chirib bo'lmaydi (400).
+- **Qayta faollashtirish** `POST /api/employees/{id}/activate/` (`delete_employee` huquqi kerak) → `200` + xodim.
+- Hisobotlar (Akt, Svod, Reestr) arizaning yaratilgan paytdagi tashkilot/hudud/bo'limi bo'yicha tuziladi, xodim keyin ko'chsa ham o'zgarmaydi.
 
 ### 5.1 Xodimga ruxsat (rol) berish — `/api/employees/{id}/permissions/`
 
@@ -452,6 +454,7 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 | `PUT` | `/api/v1/employees/{id}/` | To'liq yangilash |
 | `PATCH` | `/api/v1/employees/{id}/` | Tahrirlash (PATCH) |
 | `DELETE` | `/api/v1/employees/{id}/` | O'chirish |
+| `POST` | `/api/v1/employees/{id}/activate/` | POST /api/employees/{id}/activate/ — faolsizlantirilgan xodimni qayta faollashtirish (delete_employee huquqi). |
 | `GET` | `/api/v1/employees/{id}/permissions/` | Xodim ruxsatlari (saytdagi "ruxsatlar" oynasi): GET — joriy holat va tanlash variantlari; |
 | `PUT` | `/api/v1/employees/{id}/permissions/` | Xodim ruxsatlari (saytdagi "ruxsatlar" oynasi): GET — joriy holat va tanlash variantlari; |
 | `GET` | `/api/v1/export/employees.xlsx` | GET /api/export/employees.xlsx?organization=&region=&department=&directorate=&division=&name= (view_employee; organization majburiy). |

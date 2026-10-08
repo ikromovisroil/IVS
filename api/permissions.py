@@ -102,6 +102,7 @@ class EmployeePermission(permissions.BasePermission):
         'update': 'main.change_employee',
         'partial_update': 'main.change_employee',
         'destroy': 'main.delete_employee',
+        'activate': 'main.delete_employee',
         'manage_permissions': 'main.permission_employee',
     }
 

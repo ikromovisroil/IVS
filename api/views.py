@@ -355,12 +355,17 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         current = self._current_employee()
         if instance.id == current.id:
             raise ValidationError({"detail": "O'zingizni o'chira olmaysiz"})
-        with transaction.atomic():
-            user = instance.user
-            instance.delete()
-            if user:
-                user.is_active = False
-                user.save(update_fields=["is_active"])
+        from main.employee_lifecycle import deactivate_employee
+        # Xodim yozuvi o'chirilmaydi (arizalar, hujjatlar saqlanadi): faqat kirish to'xtatiladi
+        deactivate_employee(instance)
+
+    @action(detail=True, methods=['post'], url_path='activate')
+    def activate(self, request, pk=None):
+        """POST /api/employees/{id}/activate/ — faolsizlantirilgan xodimni qayta faollashtirish (delete_employee huquqi)."""
+        from main.employee_lifecycle import activate_employee
+        instance = self.get_object()
+        activate_employee(instance)
+        return Response(EmployeeSerializer(instance, context=self.get_serializer_context()).data)
 
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
@@ -1362,7 +1367,7 @@ class OrderViewSet(
                     ordergoal__employee=employee
                 ).values_list("goal_id", flat=True)
                 return qs.filter(
-                    sender__region=employee.region, goal_id__in=goal_ids, status="viewed",
+                    sender_region=employee.region, goal_id__in=goal_ids, status="viewed",
                 ).order_by("-id")
             if role == "receiver_active":
                 return qs.filter(
@@ -1463,7 +1468,7 @@ class OrderViewSet(
             return (
                 o.status == "viewed" and o.receiver_id is None and o.goal_id in goal_ids
                 and o.goal.organization.type == "worker" and o.sender_id is not None
-                and o.sender.region_id == assignee.region_id
+                and o.sender_region_id == assignee.region_id
             )
 
         msg = "Bu arizani qabul qilish huquqingiz yo'q yoki u allaqachon qabul qilingan"
@@ -1829,7 +1834,7 @@ class OrderViewSet(
                 ).values_list("goal_id", flat=True)
                 return qs.filter(
                     goal__organization=employee.organization, goal_id__in=goal_ids,
-                    sender__region_id=employee.region_id, status="viewed",
+                    sender_region_id=employee.region_id, status="viewed",
                 ).order_by("-id")
             if role == "barn_receiver_active":
                 return qs.filter(receiver=employee, status__in=["process", "finished"]).order_by("-id")
@@ -1845,7 +1850,7 @@ class OrderViewSet(
                     return qs.none()
                 return qs.filter(
                     goal__organization=employee.organization,
-                    receiver__region_id=employee.region_id, status="finished",
+                    receiver_region_id=employee.region_id, status="finished",
                 ).order_by("-id")
             return qs.filter(
                 user=employee, status__in=["approved", "accepted", "canceled", "rejected"]
@@ -1874,7 +1879,7 @@ class OrderViewSet(
                 o.status == "viewed" and o.goal_id in goal_ids
                 and o.goal.organization_id == employee.organization_id
                 and o.goal.organization.type == "client"
-                and o.sender_id is not None and o.sender.region_id == employee.region_id
+                and o.sender_id is not None and o.sender_region_id == employee.region_id
             )
 
         order = get_object_or_404(Order.objects.select_related("goal__organization", "sender"), pk=pk)
@@ -1939,6 +1944,7 @@ class OrderViewSet(
             mat.number = (mat.number or 0) - delta
             changed.add(mat.id)
             om.given = given
+            om.fill_snapshot(force=True)   # narx/nom/birlik — berilgan paytdagi "surat"
             to_update.append(om)
             if delta > 0:
                 movements.append(MaterialMovement(
@@ -1954,7 +1960,7 @@ class OrderViewSet(
             if materials[mid].number < 0:
                 raise ValidationError({"detail": f"{materials[mid].name} uchun qoldiq manfiy bo'lib qoldi"})
         if to_update:
-            OrderMaterial.objects.bulk_update(to_update, ["given"])
+            OrderMaterial.objects.bulk_update(to_update, ["given", *OrderMaterial.SNAPSHOT_FIELDS])
         if changed:
             Material.objects.bulk_update([materials[m] for m in changed], ["number"])
         if movements:
@@ -2046,7 +2052,7 @@ class OrderViewSet(
             )
             if not order.goal or order.goal.organization_id != employee.organization_id:
                 raise PermissionDenied("Bu ariza sizning tashkilotingizga tegishli emas")
-            if not order.receiver or order.receiver.region_id != employee.region_id:
+            if not order.receiver_id or order.receiver_region_id != employee.region_id:
                 raise PermissionDenied("Bu ariza sizning hududingizga tegishli emas")
             if order.status != "finished":
                 raise ValidationError({"detail": "Bu arizani tasdiqlash yoki rad etish mumkin emas"})
@@ -2572,7 +2578,7 @@ class DeedViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Upd
 
         qs = (
             Employee.objects
-            .filter(organization_id__in=_deed_consent_org_ids(deed, employee))
+            .filter(organization_id__in=_deed_consent_org_ids(deed, employee), user__is_active=True)
             .exclude(id__in=self._taken_ids(deed))
             .select_related('rank', 'organization')
         )
@@ -2605,7 +2611,7 @@ class DeedViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Upd
             valid_ids = [
                 i for i in Employee.objects.filter(
                     id__in=serializer.validated_data['employees'],
-                    organization_id__in=_deed_consent_org_ids(deed, employee),
+                    organization_id__in=_deed_consent_org_ids(deed, employee), user__is_active=True,
                 ).values_list('id', flat=True)
                 if i not in taken
             ]
@@ -2650,7 +2656,7 @@ class DeedViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Upd
 class DeedRegistryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """
     Hujjatlar reyestri — saytdagi "files" sahifasi: filtr bilan HAMMA hujjat (kirgan har bir xodim ko'ra oladi).
-    Ro'yxat uchun kamida bitta filtr kerak: name (kod, F.I.O yoki ariza raqami), organization, region (yaratuvchi hududi),
+    Ro'yxat uchun kamida bitta filtr kerak: name (kod, F.I.O yoki ariza raqami), organization, region (hujjat yaratilgan paytdagi hudud),
     status (hujjat turi), date1, date2 (YYYY-MM-DD, yaratilgan sana). Hujjat matni (body) berilmaydi.
     Ilovalar: GET /api/deed-registry/{id}/attachments/download/.
     """
@@ -2698,7 +2704,7 @@ class DeedRegistryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
         if region:
             if not region.isdigit():
                 raise ValidationError({"region": "Noto'g'ri qiymat"})
-            qs = qs.filter(user__region_id=int(region))
+            qs = qs.filter(user_region_id=int(region))
         status_ = (params.get("status") or "").strip()
         if status_:
             qs = qs.filter(status=status_)

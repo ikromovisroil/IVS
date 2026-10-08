@@ -71,6 +71,7 @@ def sync_all_employees(self):
         ).filter(
             pinfl__isnull=False,
             user__isnull=False,
+            user__is_active=True,
         ).exclude(pinfl="")
 
         total       = employees.count()

@@ -407,7 +407,7 @@ class MaterialCategory(models.Model):
 class Material(models.Model):
     category = models.ForeignKey(MaterialCategory, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
-    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
     unit = models.ForeignKey(Unit, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     name = models.CharField(max_length=300)
     number = models.PositiveIntegerField(default=1)
@@ -459,17 +459,17 @@ class Goal(models.Model):
 
 
 class Order(models.Model):
-    goal = models.ForeignKey(Goal, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    goal = models.ForeignKey(Goal, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
 
-    sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_sender', null=True, blank=True, db_index=True)
+    sender = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='order_sender', null=True, blank=True, db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     technics = models.ForeignKey(Technics, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     rating = models.PositiveIntegerField(null=True, blank=True)
 
-    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_receiver', null=True, blank=True, db_index=True)
+    receiver = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='order_receiver', null=True, blank=True, db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
 
-    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='order_user', null=True, blank=True, db_index=True)
+    user = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='order_user', null=True, blank=True, db_index=True)
     message_user = models.TextField(null=True, blank=True)
 
     status = models.CharField(max_length=20, choices=[
@@ -484,6 +484,13 @@ class Order(models.Model):
     receiver_seen = models.BooleanField(default=False)
     sender_seen = models.BooleanField(default=False)
     user_seen = models.BooleanField(default=False)
+
+    # "Surat" (snapshot): ariza yaratilgan paytdagi yuboruvchining joyi va qabul qilingan paytdagi bajaruvchining hududi.
+    # Xodim keyin boshqa tashkilotga/hududga ko'chsa yoki ketsa ham hisobotlar (Akt, Svod, Reestr) o'zgarmaydi.
+    sender_organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', db_index=True, editable=False)
+    sender_region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', db_index=True, editable=False)
+    sender_department = models.ForeignKey(Department, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', db_index=True, editable=False)
+    receiver_region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', db_index=True, editable=False)
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
@@ -511,9 +518,30 @@ class Order(models.Model):
 
         date_field = status_date_map.get(self.status)
         if date_field:
-            setattr(self, date_field, now)
-            if update_fields:
-                update_fields.append(date_field)
+            # Sana faqat holat HAQIQATAN o'zgarganda (yoki hali bo'sh bo'lsa) yoziladi. Aks holda yakunlangan arizani
+            # qayta saqlash (masalan material qo'shish) sanani siljitib, arizani boshqa oy hisobotiga o'tkazib yuborardi.
+            changed = True
+            if self.pk:
+                old_status = Order.objects.filter(pk=self.pk).values_list("status", flat=True).first()
+                changed = old_status != self.status or getattr(self, date_field) is None
+            if changed:
+                setattr(self, date_field, now)
+                if update_fields is not None and date_field not in update_fields:
+                    update_fields.append(date_field)
+
+        # Surat: yuboruvchi joyi yaratilganda, bajaruvchi hududi qabul qilinganda bir marta yoziladi
+        snapshot = []
+        if self.sender_id and not (self.sender_organization_id or self.sender_region_id or self.sender_department_id):
+            sender = self.sender
+            self.sender_organization_id = sender.organization_id
+            self.sender_region_id = sender.region_id
+            self.sender_department_id = sender.department_id
+            snapshot += ["sender_organization", "sender_region", "sender_department"]
+        if self.receiver_id and not self.receiver_region_id:
+            self.receiver_region_id = self.receiver.region_id
+            snapshot.append("receiver_region")
+        if snapshot and update_fields:
+            update_fields.extend(f for f in snapshot if f not in update_fields)
 
         super().save(*args, **kwargs)
 
@@ -533,18 +561,90 @@ class Order(models.Model):
         ]
 
 
-class OrderMaterial(models.Model):
+class SnapshotQuerySet(models.QuerySet):
+    """bulk_create save() ni chaqirmaydi — "surat" (narx, nom, birlik, kod) shu yerda ham to'ldiriladi."""
+
+    def bulk_create(self, objs, *args, **kwargs):
+        objs = list(objs)
+        for obj in objs:
+            obj.fill_snapshot()
+        return super().bulk_create(objs, *args, **kwargs)
+
+
+class MaterialSnapshotMixin:
+    """
+    Material ma'lumotining O'SHA PAYTDAGI surati. Material narxi/nomi/birligi keyin o'zgarsa ham, o'tgan
+    hisobotlar (Svod, Reestr, Akt, Sarf) o'zgarmaydi. `material` o'zgarmaydi, faqat qiymatlar nusxalanadi.
+    """
+    SNAPSHOT_FIELDS = ["price", "unit_name", "material_name", "material_code"]
+
+    def fill_snapshot(self, force=False):
+        material = self.material if self.material_id else None
+        if material is None:
+            return []
+        changed = []
+        if force or self.price is None:
+            self.price = material.price if material.price is not None else 0
+            changed.append("price")
+        if force or not self.unit_name:
+            self.unit_name = (material.unit.name if material.unit_id else "") or ""
+            changed.append("unit_name")
+        if force or not self.material_name:
+            self.material_name = material.name or ""
+            changed.append("material_name")
+        if force or not self.material_code:
+            self.material_code = material.code or ""
+            changed.append("material_code")
+        return changed
+
+    @property
+    def unit_price(self):
+        """O'sha paytdagi narx (surat bo'lmasa — materialning hozirgi narxi)."""
+        if self.price is not None:
+            return self.price
+        return (self.material.price if self.material_id and self.material.price is not None else 0)
+
+    @property
+    def display_name(self):
+        return self.material_name or (self.material.name if self.material_id else "")
+
+    @property
+    def display_unit(self):
+        if self.unit_name:
+            return self.unit_name
+        return self.material.unit.name if self.material_id and self.material.unit_id else ""
+
+    @property
+    def display_code(self):
+        return self.material_code or (self.material.code if self.material_id and self.material.code else "")
+
+
+class OrderMaterial(MaterialSnapshotMixin, models.Model):
+    objects = SnapshotQuerySet.as_manager()
+
     order = models.ForeignKey(Order, on_delete=models.CASCADE, null=True, blank=True, related_name="materials", db_index=True)
     user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='ordermaterial_user', null=True, blank=True, db_index=True)
     material = models.ForeignKey(Material, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
     number = models.PositiveIntegerField(default=1)
     given = models.PositiveIntegerField(null=True, blank=True)
 
+    # Material "surati" (berilgan paytdagi narx, birlik, nom, kod) — keyin o'zgarmaydi
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, editable=False)
+    unit_name = models.CharField(max_length=200, blank=True, default="", editable=False)
+    material_name = models.CharField(max_length=300, blank=True, default="", editable=False)
+    material_code = models.CharField(max_length=15, blank=True, default="", editable=False)
+
+    def save(self, *args, **kwargs):
+        filled = self.fill_snapshot() if not self.pk else []
+        update_fields = kwargs.get("update_fields")
+        if filled and update_fields is not None:
+            kwargs["update_fields"] = list(update_fields) + [f for f in filled if f not in update_fields]
+        super().save(*args, **kwargs)
+
     @property
     def given_summa(self):
         qty = self.given if self.given is not None else self.number
-        price = self.material.price if self.material and self.material.price else 0
-        return qty * price
+        return qty * self.unit_price
 
     def __str__(self):
         return f"{self.order} → {self.material} x {self.number}"
@@ -585,7 +685,7 @@ class MaterialUser(models.Model):
 class Deed(models.Model):
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL,null=True,blank=True,db_index=True)
 
-    sender = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_sender', null=True, blank=True ,db_index=True)
+    sender = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='deed_sender', null=True, blank=True ,db_index=True)
     message_sender = models.TextField(null=True, blank=True)
     status_sender = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
@@ -594,7 +694,7 @@ class Deed(models.Model):
     ], default='viewed', db_index=True)
     date_sender = models.DateTimeField(null=True, blank=True)
 
-    receiver = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_receiver', null=True, blank=True, db_index=True)
+    receiver = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='deed_receiver', null=True, blank=True, db_index=True)
     message_receiver = models.TextField(null=True, blank=True)
     status_receiver = models.CharField(max_length=20, choices=[
         ('viewed', 'Kutulmoqda'),
@@ -607,7 +707,7 @@ class Deed(models.Model):
     sender_can_add_consent = models.BooleanField(default=False)
     receiver_can_add_consent = models.BooleanField(default=False)
 
-    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, related_name='deed_user', null=True, blank=True, db_index=True)
+    user = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name='deed_user', null=True, blank=True, db_index=True)
     user_edit = models.BooleanField(default=True)
     message_user = models.TextField(null=True, blank=True)
     body = models.TextField(null=True, blank=True)
@@ -627,6 +727,10 @@ class Deed(models.Model):
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
 
+    # "Surat": hujjat yaratilgan paytdagi hudud (yaratuvchi, bo'lmasa imzolovchi hududi). Xodim keyin ko'chsa ham
+    # hujjatlar qidiruvidagi hudud filtri o'zgarmaydi. (Tashkilot `organization` maydonida allaqachon saqlanadi.)
+    user_region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', db_index=True, editable=False)
+
     def generate_code(self):
         chars = string.ascii_uppercase + string.digits
         return ''.join(random.choices(chars, k=10))
@@ -643,6 +747,11 @@ class Deed(models.Model):
                 if not Deed.objects.filter(code=new_code).exists():
                     self.code = new_code
                     break
+
+        if not self.pk and not self.user_region_id:
+            creator = self.user or self.sender
+            if creator is not None:
+                self.user_region_id = creator.region_id
 
         super().save(*args, **kwargs)
 
@@ -702,7 +811,9 @@ class Liable(models.Model):
         verbose_name_plural = "xodimlar kategoriyasi"
 
 
-class MaterialMovement(models.Model):
+class MaterialMovement(MaterialSnapshotMixin, models.Model):
+    objects = SnapshotQuerySet.as_manager()
+
     STATUS_CHOICES = [
         ('created', "Qo'shildi"),
         ('edited', 'Taxrirlandi'),
@@ -711,14 +822,39 @@ class MaterialMovement(models.Model):
         ('order', "Ariza orqali berildi"),
         ('service', "Xizmat ko‘rsatildi"),
     ]
-    user = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True, related_name='movement_created')
+    user = models.ForeignKey(Employee, on_delete=models.PROTECT, null=True, blank=True, db_index=True, related_name='movement_created')
     material = models.ForeignKey(Material, on_delete=models.PROTECT, null=True, blank=True, db_index=True)
-    employee = models.ForeignKey(Employee, on_delete=models.SET_NULL, null=True, blank=True, db_index=True, related_name='movement_received')
+    employee = models.ForeignKey(Employee, on_delete=models.PROTECT, null=True, blank=True, db_index=True, related_name='movement_received')
     income = models.PositiveIntegerField(null=True, blank=True)
     outcome = models.PositiveIntegerField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='created', db_index=True)
     body = models.TextField(null=True, blank=True)
     date_creat = models.DateTimeField(auto_now_add=True)
+
+    # "Surat": harakat yozilgan paytdagi material qiymatlari va javobgar (user) ning tashkiloti/hududi.
+    # Javobgar keyin ko'chsa ham sarf hisobotlari o'zgarmaydi.
+    price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, editable=False)
+    unit_name = models.CharField(max_length=200, blank=True, default="", editable=False)
+    material_name = models.CharField(max_length=300, blank=True, default="", editable=False)
+    material_code = models.CharField(max_length=15, blank=True, default="", editable=False)
+    user_organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', editable=False)
+    user_region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', db_index=True, editable=False)
+
+    def fill_snapshot(self, force=False):
+        changed = super().fill_snapshot(force)
+        if self.user_id and (force or not (self.user_organization_id or self.user_region_id)):
+            user = self.user
+            self.user_organization_id = user.organization_id
+            self.user_region_id = user.region_id
+            changed += ["user_organization", "user_region"]
+        return changed
+
+    def save(self, *args, **kwargs):
+        filled = self.fill_snapshot() if not self.pk else []
+        update_fields = kwargs.get("update_fields")
+        if filled and update_fields is not None:
+            kwargs["update_fields"] = list(update_fields) + [f for f in filled if f not in update_fields]
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_status_display()} | {self.material} | {self.employee}"

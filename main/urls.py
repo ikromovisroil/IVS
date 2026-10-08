@@ -197,6 +197,7 @@ urlpatterns = [
     path("employee/create/", employee_create, name="employee_create"),
     path("employee/update/", employee_update, name="employee_update"),
     path("employee/delete/", employee_delete, name="employee_delete"),
+    path("employee/activate/", employee_activate, name="employee_activate"),
     path("employee/permission/", employee_permission, name="employee_permission"),
 
     path('sw.js', service_worker_js, name='service_worker_js'),

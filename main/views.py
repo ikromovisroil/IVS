@@ -37,6 +37,7 @@ from main.sso_views import *
 from .push_views import *
 from .html_pdf import HtmlPdfError, add_text_watermark_pdf_bytes, deed_to_pdf_bytes
 from .models import Deed, DeedConsent, DeedFiles, Employee, Organization
+from .employee_lifecycle import activate_employee, deactivate_employee
 from .sanitizers import sanitize_deed_body
 from .tasks import _resolve_position
 from .validators import validate_attachment_extension, validate_file_extension, validate_material_image
@@ -3054,7 +3055,7 @@ def akt_post(request):
     auto_qs = OrderMaterial.objects.filter(
         order__date_finished__gte=date1,
         order__date_finished__lt=date2,
-        order__sender__organization_id=org.id,
+        order__sender_organization_id=org.id,
     )
 
     # ajax_akt_materials bilan bir xil qoida: barcha hududlarni ko'ra oladigan
@@ -3063,10 +3064,10 @@ def akt_post(request):
         auto_qs = auto_qs.filter(material__employee_id__in=sender_ids_material)
 
     if region_filter_id:
-        auto_qs = auto_qs.filter(order__receiver__region_id=region_filter_id)
+        auto_qs = auto_qs.filter(order__receiver_region_id=region_filter_id)
 
     if dep_id.isdigit():
-        auto_qs = auto_qs.filter(order__sender__department_id=dep_id)
+        auto_qs = auto_qs.filter(order__sender_department_id=dep_id)
 
     order_ids = set(auto_qs.exclude(order__isnull=True).values_list("order_id", flat=True).distinct())
 
@@ -3561,8 +3562,8 @@ def emp_status(request):
     goal_orders = Order.objects.filter(receiver__isnull=False)
 
     if region_id.isdigit():
-        orders = orders.filter(receiver__region_id=int(region_id))
-        goal_orders = goal_orders.filter(receiver__region_id=int(region_id))
+        orders = orders.filter(receiver_region_id=int(region_id))
+        goal_orders = goal_orders.filter(receiver_region_id=int(region_id))
 
     if date1:
         orders = orders.filter(date_creat__date__gte=date1)
@@ -3836,7 +3837,7 @@ def files(request):
 
     region_obj = Region.objects.filter(id=region_id).first() if region_id.isdigit() else None
     if region_id:
-        qs = qs.filter(user__region=region_obj)
+        qs = qs.filter(user_region=region_obj)
 
     if status:
         qs = qs.filter(status=status)
@@ -4692,12 +4693,37 @@ def employee_delete(request):
         messages.info(request, "O'zingizni o'chira olmaysiz")
         return redirect(back_url)
 
-    with transaction.atomic():
-        user = target_employee.user
-        target_employee.delete()
-        if user:
-            user.is_active = False
-            user.save(update_fields=["is_active"])
+    # Xodim yozuvi o'chirilmaydi: arizalar, hujjatlar va materiallardagi bog'lanishlar yo'qolmasligi uchun
+    # faqat tizimga kirish to'xtatiladi (employee_lifecycle.deactivate_employee).
+    deactivate_employee(target_employee)
 
-    messages.success(request, "Xodim o'chirildi")
+    messages.success(request, "Xodim faolsizlantirildi (arizalari va hujjatlari saqlanadi)")
+    return redirect(back_url)
+
+
+@never_cache
+@require_POST
+@login_required
+@permission_required("main.delete_employee", raise_exception=True)
+def employee_activate(request):
+    current_employee = getattr(request.user, "employee", None)
+    if not current_employee:
+        raise PermissionDenied("Employee yo'q")
+
+    back_url = request.META.get("HTTP_REFERER", "/")
+    employee_id = request.POST.get("employee_id")
+    if not employee_id:
+        messages.info(request, "Xodim aniqlanmadi")
+        return redirect("employee")
+
+    target_employee = get_object_or_404(
+        Employee.objects.select_related("user", "organization"), pk=employee_id
+    )
+
+    if not request.user.has_perm("main.all_organization"):
+        if target_employee.organization_id != current_employee.organization_id:
+            raise PermissionDenied("Boshqa tashkilot xodimini faollashtira olmaysiz")
+
+    activate_employee(target_employee)
+    messages.success(request, "Xodim qayta faollashtirildi")
     return redirect(back_url)
