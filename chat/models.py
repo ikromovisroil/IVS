@@ -173,7 +173,7 @@ class Meeting(models.Model):
         db_table = "chat_meeting"
         ordering = ["start_at"]
         verbose_name = "Uchrashuv"
-        verbose_name_plural = "Uchrashuvlar"
+        verbose_name_plural = "Zoom"
 
     def __str__(self):
         return f"{self.title} ({self.start_at:%d.%m.%Y %H:%M})"

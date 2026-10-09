@@ -2,14 +2,14 @@
 {% load static %}
 
 {% block title %}
-  <title>Uchrashuvlar</title>
+  <title>Zoom</title>
 {% endblock title %}
 
 {% block content %}
 <main id="main" class="main">
 
   <div class="pagetitle">
-    <h1>Uchrashuvlar (Zoom)</h1>
+    <h1>Zoom</h1>
   </div>
 
   <section class="section">
@@ -17,17 +17,17 @@
       <div class="card-body">
 
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 pb-2">
-          <h5 class="card-title p-0 m-0">Rejalashtirilgan uchrashuvlar</h5>
+          <h5 class="card-title p-0 m-0">Rejalashtirilgan Zoomlar</h5>
           {% if perms.chat.add_meeting %}
           <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meetingModal">
-            <i class="bi bi-camera-video"></i> Yangi uchrashuv
+            <i class="bi bi-camera-video"></i> Yangi Zoom
           </button>
           {% endif %}
         </div>
 
         {% if not zoom_enabled and perms.chat.add_meeting %}
           <div class="alert alert-warning small mt-2">
-            Zoom hali sozlanmagan. Uchrashuv yaratish uchun administrator Zoom ma'lumotlarini kiritishi kerak.
+            Zoom hali sozlanmagan. Administrator Zoom ma'lumotlarini kiritishi kerak.
           </div>
         {% endif %}
 
@@ -67,7 +67,7 @@
                       {% if m.is_running %}
                         <li>
                           <form method="post" action="{% url 'meeting_finish' m.id %}"
-                                onsubmit="return confirm('Uchrashuv tugatildimi? Zoom\'da tugatiladi va vaqt keyingi uchrashuv uchun bo\'shaydi.');">
+                                onsubmit="return confirm('Zoom tugatildimi? Zoom\'da tugatiladi va vaqt keyingisi uchun bo\'shaydi.');">
                             {% csrf_token %}
                             <button type="submit" class="dropdown-item"><i class="bi bi-stop-circle"></i> Tugatish</button>
                           </form>
@@ -76,7 +76,7 @@
                       {% if not m.is_running and perms.chat.delete_meeting %}
                         <li>
                           <form method="post" action="{% url 'meeting_cancel' m.id %}"
-                                onsubmit="return confirm('Uchrashuvni o\'chirasizmi?');">
+                                onsubmit="return confirm('Zoomni o\'chirasizmi?');">
                             {% csrf_token %}
                             <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash"></i> O'chirish</button>
                           </form>
@@ -89,7 +89,7 @@
               </tr>
             {% empty %}
               <tr><td colspan="8" class="text-center text-muted py-4">
-                <i class="bi bi-camera-video me-2"></i>Rejalashtirilgan uchrashuv yo'q
+                <i class="bi bi-camera-video me-2"></i>Rejalashtirilgan Zoom yo'q
               </td></tr>
             {% endfor %}
             </tbody>
@@ -129,7 +129,7 @@
     <form class="modal-content" method="post" action="{% url 'meeting_create' %}">
       {% csrf_token %}
       <div class="modal-header">
-        <h5 class="modal-title">Yangi uchrashuv</h5>
+        <h5 class="modal-title">Yangi Zoom</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body">

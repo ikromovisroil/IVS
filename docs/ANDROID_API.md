@@ -354,7 +354,7 @@ Suhbatda ishtirok etmasangiz — `403`.
 
 ### 11.3 Uchrashuvlar (Zoom)
 
-Foydalanuvchi vaqt tanlaydi — server Zoom'da uchrashuv yaratib, **qo'shilish havolasini** qaytaradi. **Ruxsatlar** (xodimga rol berish oynasida, 'Uchrashuvlar (Zoom)'): `add_meeting` — yaratish; `view_meeting` — **hammaning** uchrashuvlarini ko'rish
+Foydalanuvchi vaqt tanlaydi — server Zoom'da uchrashuv yaratib, **qo'shilish havolasini** qaytaradi. **Ruxsatlar** (xodimga rol berish oynasida, 'Zoom'): `add_meeting` — yaratish; `view_meeting` — **hammaning** uchrashuvlarini ko'rish
 (faqat ko'rish); `delete_meeting` — o'chirish (bekor qilish). Hech biri bo'lmasa — `403`. O'zi yaratganini har doim ko'radi (`add_meeting` bo'lsa).
 **Amallar** (boshlash/tugatish/o'chirish, `start_url`, `invitation` bilan ulashish) faqat uchrashuvni **yaratgan xodimda** — boshqalarniki uchun `can_manage: false`, `start_url` kelmaydi.
 Havolani/taklif matnini ishtirokchilarga yaratgan xodim o'zi yuboradi (boshlanishiga 10 daqiqa qolganda unga push-eslatma keladi).
