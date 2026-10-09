@@ -661,6 +661,16 @@
             <span>Chat</span>
           </a>
         </li>
+        <!-- Uchrashuvlar (Zoom) -->
+        {% if perms.chat.add_meeting or perms.chat.view_meeting %}
+        <li class="nav-item">
+          <a class="nav-link {% if url_name == 'meetings_page' %}active{% else %}collapsed{% endif %}"
+             href="{% url 'meetings_page' %}">
+            <i class="bi bi-camera-video"></i>
+            <span>Uchrashuvlar</span>
+          </a>
+        </li>
+        {% endif %}
 
         <li class="nav-item">
           <a class="nav-link {% if url_name != 'technics_get' %}collapsed{% endif %}"

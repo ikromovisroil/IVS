@@ -300,6 +300,19 @@ REST_FRAMEWORK = {
 FIREBASE_CREDENTIALS_FILE = os.getenv("FIREBASE_CREDENTIALS_FILE", "")
 FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")
 
+# =========================================================
+# Zoom (uchrashuvlar): Server-to-Server OAuth; sozlanmasa uchrashuv yaratish o'chiq (chat/zoom.py)
+# =========================================================
+ZOOM_ACCOUNT_ID = os.getenv("ZOOM_ACCOUNT_ID", "")
+ZOOM_CLIENT_ID = os.getenv("ZOOM_CLIENT_ID", "")
+ZOOM_CLIENT_SECRET = os.getenv("ZOOM_CLIENT_SECRET", "")
+ZOOM_HOST = os.getenv("ZOOM_HOST", "me")
+ZOOM_TIMEZONE = os.getenv("ZOOM_TIMEZONE", "Asia/Tashkent")
+# 1 bo'lsa kutish xonasi yoqiladi (tashkilotchi har bir kiruvchini qabul qiladi). Standart 0: havola bilan hamma darhol kiradi
+ZOOM_WAITING_ROOM = os.getenv("ZOOM_WAITING_ROOM", "0") == "1"
+# Ketma-ket uchrashuvlar orasidagi minimal tanaffus (daqiqa). Standart 0: biri 12:00 da tugasa, keyingisi aynan 12:00 dan boshlanishi mumkin
+MEETING_BUFFER_MINUTES = int(os.getenv("MEETING_BUFFER_MINUTES", "0"))
+
 
 # =========================================================
 # Mobil ilova: majburiy yangilash va texnik ishlar (api/app_views.py)

@@ -1,0 +1,202 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  <title>Uchrashuvlar</title>
+{% endblock title %}
+
+{% block content %}
+<main id="main" class="main">
+
+  <div class="pagetitle">
+    <h1>Uchrashuvlar (Zoom)</h1>
+  </div>
+
+  <section class="section">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 pb-2">
+          <h5 class="card-title p-0 m-0">Rejalashtirilgan uchrashuvlar</h5>
+          {% if perms.chat.add_meeting %}
+          <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#meetingModal">
+            <i class="bi bi-camera-video"></i> Yangi uchrashuv
+          </button>
+          {% endif %}
+        </div>
+
+        {% if not zoom_enabled and perms.chat.add_meeting %}
+          <div class="alert alert-warning small mt-2">
+            Zoom hali sozlanmagan. Uchrashuv yaratish uchun administrator Zoom ma'lumotlarini kiritishi kerak.
+          </div>
+        {% endif %}
+
+        <div class="table-responsive mt-2">
+          <table class="table table-bordered table-hover align-middle table-sm">
+            <thead class="table-secondary">
+              <tr>
+                <th style="width:50px">T/r</th>
+                <th>Tashkilotchi</th>
+                <th>Mavzu</th>
+                <th>Izoh</th>
+                <th>Boshlanish vaqti</th>
+                <th>Tugash vaqti</th>
+                <th>Davomiyligi</th>
+                <th style="width:80px" class="text-center">Tafsif</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for m in upcoming %}
+              <tr>
+                <th scope="row">{{ forloop.counter }}</th>
+                <td>{{ m.organizer.full_name }}</td>
+                <td>{{ m.title }}</td>
+                <td class="small text-muted">{{ m.agenda|default:"—" }}</td>
+                <td>{{ m.start_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ m.end_at|date:"d.m.Y H:i" }}</td>
+                <td>{{ m.duration_minutes }} daqiqa</td>
+                <td class="text-center">
+                  {% if m.is_mine %}
+                  <div class="filter">
+                    <a class="icon" href="javascript:void(0)" data-bs-toggle="dropdown">
+                      <i class="bi bi-stack" style="font-size: 18px;"></i>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow">
+                      <li><a class="dropdown-item" href="{{ m.start_url }}" target="_blank" rel="noopener"><i class="bi bi-play-circle"></i> Boshlash</a></li>
+                      <li><a class="dropdown-item copy-link" href="javascript:void(0)" data-link="{{ m.invitation|default:m.join_url }}"><i class="bi bi-clipboard"></i> Nusxalash</a></li>
+                      {% if m.is_running %}
+                        <li>
+                          <form method="post" action="{% url 'meeting_finish' m.id %}"
+                                onsubmit="return confirm('Uchrashuv tugatildimi? Zoom\'da tugatiladi va vaqt keyingi uchrashuv uchun bo\'shaydi.');">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item"><i class="bi bi-stop-circle"></i> Tugatish</button>
+                          </form>
+                        </li>
+                      {% endif %}
+                      {% if not m.is_running and perms.chat.delete_meeting %}
+                        <li>
+                          <form method="post" action="{% url 'meeting_cancel' m.id %}"
+                                onsubmit="return confirm('Uchrashuvni o\'chirasizmi?');">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash"></i> O'chirish</button>
+                          </form>
+                        </li>
+                      {% endif %}
+                    </ul>
+                  </div>
+                  {% else %}<span class="text-muted">&mdash;</span>{% endif %}
+                </td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="8" class="text-center text-muted py-4">
+                <i class="bi bi-camera-video me-2"></i>Rejalashtirilgan uchrashuv yo'q
+              </td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if past %}
+          <h6 class="mt-4">O'tgan va bekor qilinganlar</h6>
+          <div class="table-responsive">
+            <table class="table table-sm table-bordered align-middle text-muted">
+              <thead class="table-light">
+                <tr><th>Mavzu</th><th>Vaqt</th><th>Tashkilotchi</th><th>Holati</th></tr>
+              </thead>
+              <tbody>
+              {% for m in past %}
+                <tr>
+                  <td>{{ m.title }}</td>
+                  <td>{{ m.start_at|date:"d.m.Y H:i" }}</td>
+                  <td>{{ m.organizer.full_name }}</td>
+                  <td>{% if m.status == 'cancelled' %}<span class="text-danger">Bekor qilingan</span>{% elif m.status == 'finished' %}Tugatilgan{% else %}O'tgan{% endif %}</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- YANGI UCHRASHUV (modal) -->
+{% if perms.chat.add_meeting %}
+<div class="modal fade" id="meetingModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <form class="modal-content" method="post" action="{% url 'meeting_create' %}">
+      {% csrf_token %}
+      <div class="modal-header">
+        <h5 class="modal-title">Yangi uchrashuv</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row g-3">
+          <div class="col-12">
+            <label for="m_title" class="form-label">Mavzu:</label>
+            <input type="text" id="m_title" name="title" class="form-control" maxlength="200" required>
+          </div>
+
+          <div class="col-md-7">
+            <label for="m_start" class="form-label">Boshlanish vaqti:</label>
+            <input type="datetime-local" id="m_start" name="start_at" class="form-control" required>
+            <div class="form-text">kun, oy, yil, soat, daqiqa</div>
+          </div>
+
+          <div class="col-md-5">
+            <label for="m_duration" class="form-label">Davomiyligi (daqiqada):</label>
+            <input type="number" id="m_duration" name="duration" class="form-control"
+                   value="30" min="15" max="480" step="1" required>
+            <div class="form-text">15 dan 480 gacha</div>
+          </div>
+
+          <div class="col-12">
+            <label for="m_agenda" class="form-label">Izoh (ixtiyoriy):</label>
+            <textarea id="m_agenda" name="agenda" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Bekor qilish</button>
+        <button type="submit" class="btn btn-primary" {% if not zoom_enabled %}disabled{% endif %}>
+          <i class="bi bi-camera-video"></i> Yaratish va yuborish
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+$(function () {
+  var $modal = $('#meetingModal');
+
+  $modal.on('shown.bs.modal', function () {
+    // O'tgan vaqtni tanlab bo'lmasin
+    var now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('m_start').min = now.toISOString().slice(0, 16);
+    $('#m_title').trigger('focus');
+  });
+
+  $modal.on('hidden.bs.modal', function () {
+    $modal.find('form')[0].reset();
+  });
+
+  // Taklif matnini nusxalash (uni ishtirokchilarga o'zingiz yuborasiz)
+  $(document).on('click', '.copy-link', function () {
+    var btn = this, link = btn.getAttribute('data-link'), old = btn.innerHTML;
+    function done() { btn.innerHTML = '<i class="bi bi-check2"></i> Nusxalandi'; setTimeout(function () { btn.innerHTML = old; }, 1800); }
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(link).then(done);
+    } else {
+      var ta = document.createElement('textarea'); ta.value = link; document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch (e) { window.prompt('Matnni nusxalang:', link); }
+      document.body.removeChild(ta);
+    }
+  });
+});
+</script>
+{% endblock content %}

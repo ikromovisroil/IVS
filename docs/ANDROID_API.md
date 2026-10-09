@@ -352,6 +352,26 @@ Suhbatda ishtirok etmasangiz — `403`.
 - **Server tomonida:** WebSocket uchun ASGI server (daphne/uvicorn) kerak; faqat `gunicorn config.wsgi` bo'lsa WebSocket ishlamaydi (REST ishlayveradi).
 - Ilova yopiq paytda yangi xabar haqida bildirishnoma — FCM orqali (12-bo'lim).
 
+### 11.3 Uchrashuvlar (Zoom)
+
+Foydalanuvchi vaqt tanlaydi — server Zoom'da uchrashuv yaratib, **qo'shilish havolasini** qaytaradi. **Ruxsatlar** (xodimga rol berish oynasida, 'Uchrashuvlar (Zoom)'): `add_meeting` — yaratish; `view_meeting` — **hammaning** uchrashuvlarini ko'rish
+(faqat ko'rish); `delete_meeting` — o'chirish (bekor qilish). Hech biri bo'lmasa — `403`. O'zi yaratganini har doim ko'radi (`add_meeting` bo'lsa).
+**Amallar** (boshlash/tugatish/o'chirish, `start_url`, `invitation` bilan ulashish) faqat uchrashuvni **yaratgan xodimda** — boshqalarniki uchun `can_manage: false`, `start_url` kelmaydi.
+Havolani/taklif matnini ishtirokchilarga yaratgan xodim o'zi yuboradi (boshlanishiga 10 daqiqa qolganda unga push-eslatma keladi).
+Zoom sozlanmagan bo'lsa `POST` `400 {"detail": "Zoom hali sozlanmagan..."}` qaytaradi.
+
+- `GET /api/meetings/?scope=upcoming|past|all` — men yaratgan, `view_meeting` bo'lsa — hamma uchrashuvlar (standart `upcoming`).
+- `POST /api/meetings/` `{"title", "start_at": "2026-10-15T15:00:00+05:00", "duration_minutes": 30, "agenda"?}` → `201` + uchrashuv (`add_meeting` kerak, aks holda `403`).
+  Bir vaqtda ikkita uchrashuv bo'lmaydi (hamma uchrashuv bitta Zoom hostda o'tadi): vaqt oralig'i boshqa uchrashuv bilan kesishsa `400` va band vaqt xabari qaytadi
+  (biri tugagan vaqtda ikkinchisi boshlanishi mumkin: 10:00–11:00 dan keyin 11:00–12:00). Bekor qilingan uchrashuv vaqtni bo'shatadi.
+  Vaqt kelajakda; davomiylik 15–480 daqiqa. `join_url` / `invitation` ni tashkilotchi o‘zi ulashadi.
+- `GET /api/meetings/{id}/` — bitta uchrashuv (yaratgan xodim yoki `view_meeting` egasi; boshqalarga `404`).
+- `POST /api/meetings/{id}/cancel/` — bekor qilish (faqat yaratgan xodim va `delete_meeting` ruxsati bilan; Zoom'dan o'chiriladi).
+- `POST /api/meetings/{id}/finish/` — boshlangan uchrashuvni rejadan oldin tugatish (faqat tashkilotchi; Zoom'da tugatiladi, vaqt keyingi uchrashuv uchun bo'shaydi; hali boshlanmagan uchrashuvni tugatib bo'lmaydi — uni bekor qiling). Javobda `status: "finished"`, `ended_at`.
+
+Javob: `{id, title, agenda, start_at, duration_minutes, status ("scheduled"|"cancelled"), organizer{id,name},
+join_url, password, invitation, is_organizer, can_manage, start_url?}`. **`invitation`**: Zoom'ning tayyor taklif matni (nusxalab ulashish uchun; Zoom bermagan bo'lsa bo'sh). **`start_url`** (uchrashuvni boshlash) faqat tashkilotchiga keladi; ishtirokchilar `join_url` bilan qo'shiladi (havolani tashkilotchi yuboradi).
+
 ## 12. Push-xabarlar (FCM)
 
 Server yangi ariza, ariza holati o'zgarishi, hujjat imzo/kelishuv kutayotgani va yangi chat xabari haqida xodimning
@@ -486,6 +506,11 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 | `PATCH` | `/api/v1/materials/{id}/` | Tahrirlash (PATCH) |
 | `DELETE` | `/api/v1/materials/{id}/` | O'chirish |
 | `GET` | `/api/v1/me/` | Ro'yxat |
+| `GET` | `/api/v1/meetings/` | Ro'yxat |
+| `POST` | `/api/v1/meetings/` | Yaratish |
+| `GET` | `/api/v1/meetings/{id}/` | Bitta obyekt |
+| `POST` | `/api/v1/meetings/{id}/cancel/` | Cancel create |
+| `POST` | `/api/v1/meetings/{id}/finish/` | POST /api/v1/meetings/{id}/finish/ — boshlangan uchrashuvni rejadan oldin tugatish (faqat tashkilotchi); vaqt bo'shaydi. |
 | `GET` | `/api/v1/order-goals/` | Ro'yxat |
 | `GET` | `/api/v1/order-goals/{id}/` | Bitta obyekt |
 | `GET` | `/api/v1/order-materials/` | Ro'yxat |

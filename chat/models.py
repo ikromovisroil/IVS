@@ -133,6 +133,52 @@ class Message(models.Model):
         return f"{who}: {preview}"
 
 
+class Meeting(models.Model):
+    """Zoom uchrashuvi: tashkilotchi, vaqt va Zoom havolalari."""
+
+    STATUS_SCHEDULED = "scheduled"
+    STATUS_CANCELLED = "cancelled"
+    STATUS_FINISHED = "finished"
+    STATUS_CHOICES = [
+        (STATUS_SCHEDULED, "Rejalashtirilgan"),
+        (STATUS_CANCELLED, "Bekor qilingan"),
+        (STATUS_FINISHED, "Tugatilgan"),
+    ]
+
+    organizer = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="meetings_organized", db_index=True)
+    title = models.CharField(max_length=200)
+    agenda = models.TextField(blank=True, default="")
+    start_at = models.DateTimeField(db_index=True)
+    duration_minutes = models.PositiveSmallIntegerField(default=30)
+
+    zoom_id = models.CharField(max_length=30, blank=True, default="")
+    join_url = models.URLField(max_length=500, blank=True, default="")
+    start_url = models.TextField(blank=True, default="")      # faqat tashkilotchiga ko'rsatiladi
+    password = models.CharField(max_length=30, blank=True, default="")
+    invitation = models.TextField(blank=True, default="")     # Zoom'ning tayyor taklif matni (nusxalash uchun)
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_SCHEDULED, db_index=True)
+    reminder_sent = models.BooleanField(default=False)
+    # Rejadan oldin tugatilgan bo'lsa — haqiqiy tugash vaqti (shundan keyin vaqt bo'shaydi)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    date_creat = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def end_at(self):
+        """Band vaqtning tugashi: rejadagi yoki (erta tugatilgan bo'lsa) haqiqiy tugash."""
+        from datetime import timedelta
+        return self.ended_at or (self.start_at + timedelta(minutes=self.duration_minutes))
+
+    class Meta:
+        db_table = "chat_meeting"
+        ordering = ["start_at"]
+        verbose_name = "Uchrashuv"
+        verbose_name_plural = "Uchrashuvlar"
+
+    def __str__(self):
+        return f"{self.title} ({self.start_at:%d.%m.%Y %H:%M})"
+
+
 class ConversationClear(models.Model):
     """Xodim suhbatni "o'chirgan" (yashirgan) vaqti: shundan oldingi xabarlar unga qayta ko'rinmaydi
     (qarshi tomon yozib suhbat qaytganda ham). Ma'lumot bazada saqlanadi, qarshi tomonga ta'sir qilmaydi."""

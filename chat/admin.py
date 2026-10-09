@@ -2,7 +2,9 @@ from django.contrib import admin
 
 from django.contrib import messages as dj_messages
 
-from .models import Conversation, ConversationClear, Message, OnlineStatus
+from main.admin import NoDeleteAdminMixin
+
+from .models import Conversation, ConversationClear, Meeting, Message, OnlineStatus
 from .services import restore_message
 
 
@@ -56,3 +58,26 @@ class OnlineStatusAdmin(admin.ModelAdmin):
     list_display = ("id", "employee", "last_seen")
     search_fields = ("employee__last_name", "employee__first_name")
     autocomplete_fields = ("employee",)
+
+
+@admin.register(Meeting)
+class MeetingAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+    """
+    Zoom uchrashuvlari: faqat ko'rish. Yaratish/bekor qilish/tugatish sayt orqali (Zoom bilan bog'liq),
+    admin panelda o'zgartirsak Zoom'dagi uchrashuv bilan nomuvofiqlik bo'lib qoladi.
+    """
+    list_display = ("id", "title", "organizer", "start_at", "end_at", "duration_minutes", "status")
+    list_filter = ("status",)
+    search_fields = ("title", "organizer__last_name", "organizer__first_name", "zoom_id")
+    ordering = ("-start_at",)
+    date_hierarchy = "start_at"
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    @admin.display(description="Tugash vaqti")
+    def end_at(self, obj):
+        return obj.end_at

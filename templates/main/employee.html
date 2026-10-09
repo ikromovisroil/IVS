@@ -583,6 +583,34 @@
                 </div>
               </div>
 
+              <!-- ================= UCHRASHUVLAR (ZOOM) ================= -->
+              <div class="section-title">Uchrashuvlar (Zoom)</div>
+              <div class="info-card">
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Hamma uchrashuvlarni ko'rish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-perm-meeting" type="checkbox" name="view_meeting"
+                           {% if emp.has_view_meeting %}checked{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Uchrashuv yaratish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-meeting-sub" type="checkbox" name="add_meeting"
+                           {% if emp.has_add_meeting %}checked{% endif %}
+                           {% if not emp.has_view_meeting %}disabled{% endif %}>
+                  </div>
+                </div>
+                <div class="row info-row gx-3">
+                  <div class="col-12 col-md-9"><label class="form-check-label">Uchrashuvni o'chirish</label></div>
+                  <div class="col-12 col-md-3 info-value">
+                    <input class="form-check-input js-meeting-sub" type="checkbox" name="delete_meeting"
+                           {% if emp.has_delete_meeting %}checked{% endif %}
+                           {% if not emp.has_view_meeting %}disabled{% endif %}>
+                  </div>
+                </div>
+              </div>
+
               <!-- ================= XODIMLAR ================= -->
               <div class="section-title">Xodimlar</div>
               <div class="info-card">
@@ -973,6 +1001,9 @@
     const $employeeCheckbox = $modal.find('.js-perm-employee');
     const $employeeSubCheckboxes = $modal.find('.js-employee-sub');
 
+    const $meetingCheckbox = $modal.find('.js-perm-meeting');
+    const $meetingSubCheckboxes = $modal.find('.js-meeting-sub');
+
     if (!$orderCheckbox.length || !$technicsCheckbox.length) return;
 
     const $reportCheckbox = $modal.find('.js-perm-report');
@@ -1003,6 +1034,13 @@
       toggleSubCheckboxes($materialCheckbox[0], $materialSubCheckboxes);
       $materialCheckbox.off('change.permToggle').on('change.permToggle', function () {
         toggleSubCheckboxes(this, $materialSubCheckboxes);
+      });
+    }
+
+    if ($meetingCheckbox.length) {
+      toggleSubCheckboxes($meetingCheckbox[0], $meetingSubCheckboxes);
+      $meetingCheckbox.off('change.permToggle').on('change.permToggle', function () {
+        toggleSubCheckboxes(this, $meetingSubCheckboxes);
       });
     }
 

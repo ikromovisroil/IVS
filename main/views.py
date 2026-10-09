@@ -4056,6 +4056,10 @@ PERM_CODENAMES = {
     "status_employee": "main.status_employee",
     "permission_employee": "main.permission_employee",   # YANGI
     "report_employee": "main.report_employee",
+    # Uchrashuvlar (Zoom): ko'rish (hammaning), qo'shish, o'chirish. Amallar faqat yaratgan xodimda
+    "view_meeting": "chat.view_meeting",
+    "add_meeting": "chat.add_meeting",
+    "delete_meeting": "chat.delete_meeting",
     # Xodimlar
     "add_employee": "main.add_employee",
     "view_employee": "main.view_employee",
@@ -4067,6 +4071,7 @@ DEPENDENT_PERMS = {
     "view_technics": ["add_technics", "change_technics", "delete_technics"],
     "view_material": ["add_material", "change_material", "delete_material", "material_service", "all_material_employee"],
     "view_employee": ["add_employee", "change_employee", "delete_employee"],   # YANGI
+    "view_meeting": ["add_meeting", "delete_meeting"],
 }
 
 SUPER_PERMS = {"all_organization", "all_region", "permission_employee", "all_material_employee"}

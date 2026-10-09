@@ -1,9 +1,13 @@
 from django.urls import path
 
-from . import views
+from . import meeting_views, views
 
 urlpatterns = [
     path("", views.chat_page, name="chat_page"),
+    path("meetings/", meeting_views.meetings_page, name="meetings_page"),
+    path("meetings/create/", meeting_views.meeting_create, name="meeting_create"),
+    path("meetings/<int:pk>/cancel/", meeting_views.meeting_cancel, name="meeting_cancel"),
+    path("meetings/<int:pk>/finish/", meeting_views.meeting_finish, name="meeting_finish"),
     path("api/conversations/", views.chat_conversations, name="chat_conversations"),
     path("api/contacts/", views.chat_contacts, name="chat_contacts"),
     path("api/open/", views.chat_open, name="chat_open"),

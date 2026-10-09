@@ -17,4 +17,9 @@ app.conf.beat_schedule = {
         "task": "core.tasks.cleanup_old_audit_logs",
         "schedule": crontab(day_of_month=1, hour=1, minute=0),
     },
+    # Zoom uchrashuvlar: boshlanishiga 10 daqiqa qolganda eslatma (har daqiqada tekshiradi)
+    "meeting-reminders": {
+        "task": "chat.tasks.send_meeting_reminders",
+        "schedule": crontab(minute="*"),
+    },
 }
