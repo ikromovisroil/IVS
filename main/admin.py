@@ -254,10 +254,10 @@ class MaterialCategoryAdmin(admin.ModelAdmin):
 @admin.register(Material)
 class MaterialAdmin(admin.ModelAdmin):
     list_display = (
-        "id", "employee", "name", "unit",
+        "id", "employee", "category", "name", "unit",
         "number", "code", "price", "year", "is_active", "date_creat", "date_edit"
     )
-    list_filter = ("organization", "employee", "unit", "is_active", "date_creat")
+    list_filter = ("organization", "employee", "category", "unit", "is_active", "date_creat")
     search_fields = (
         "name", "code",
         "employee__last_name", "employee__first_name"
