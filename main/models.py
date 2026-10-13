@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import User
 from .validators import *
 from django.utils import timezone
@@ -283,7 +284,8 @@ class Technics(models.Model):
         return reverse("technics_detail", args=[self.pk])
 
     def get_qr_data(self):
-        return f"https://report.imv.uz{self.get_absolute_url()}"
+        # Domen .env dagi SITE_BASE_URL dan olinadi (kodda qattiq yozilmaydi): domen almashsa QR ham to'g'ri bo'ladi
+        return f"{settings.SITE_BASE_URL.rstrip('/')}{self.get_absolute_url()}"
 
     def generate_qr_code(self, save=True):
         qr_data = self.get_qr_data()
@@ -301,6 +303,8 @@ class Technics(models.Model):
         buffer = BytesIO()
         img.save(buffer, format="PNG")
 
+        if self.qr_code:
+            self.qr_code.delete(save=False)   # eski rasm o'chadi (aks holda Django nomga tasodifiy qo'shimcha qo'shib, chiqindi qoldiradi)
         file_name = f"technics_{self.pk}.png"
         self.qr_code.save(file_name, File(buffer), save=False)
         buffer.close()
