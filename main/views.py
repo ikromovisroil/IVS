@@ -4572,12 +4572,13 @@ def employee_update(request):
         messages.info(request, "Ism va familiya majburiy")
         return redirect(back_url)
 
-    if not pinfl or not pinfl.isdigit() or len(pinfl) != 14:
+    # PINFL ixtiyoriy (xodim PINFL siz ham yaratilishi mumkin); kiritilsa 14 xonali bo'lishi kerak
+    if pinfl and (not pinfl.isdigit() or len(pinfl) != 14):
         messages.info(request, "PINFL 14 xonali raqamdan iborat bo'lishi kerak")
         return redirect(back_url)
 
     # boshqa xodimda shu PINFL borligini tekshiramiz (o'zidan tashqari)
-    if Employee.objects.filter(pinfl=pinfl).exclude(pk=target_employee.pk).exists():
+    if pinfl and Employee.objects.filter(pinfl=pinfl).exclude(pk=target_employee.pk).exists():
         messages.info(request, "Bu PINFL boshqa xodimga tegishli")
         return redirect(back_url)
 
@@ -4588,7 +4589,7 @@ def employee_update(request):
         messages.info(request, structure_error)
         return redirect(back_url)
 
-    target_employee.pinfl = pinfl
+    target_employee.pinfl = pinfl or None
     target_employee.first_name = first_name
     target_employee.last_name = last_name
     target_employee.father_name = father_name or None
