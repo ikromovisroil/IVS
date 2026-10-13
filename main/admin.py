@@ -2,7 +2,7 @@ import os
 
 from django import forms
 from django.contrib import admin
-from django.contrib.admin.widgets import FilteredSelectMultiple
+from django.contrib.admin.widgets import AutocompleteSelect, FilteredSelectMultiple
 from .models import *
 from django.utils.html import format_html
 from import_export import resources, fields
@@ -282,8 +282,33 @@ class MaterialUserAdmin(admin.ModelAdmin):
 # Order
 # =========================
 
+# Arizaning "surati" maydonlari (yuboruvchi/qabul qiluvchi joyi). Odatda ariza yaratilganda o'zi yoziladi; yuboruvchida
+# hudud/bo'lim biriktirilmagan bo'lsa bo'sh qoladi va ariza hech kimga ko'rinmaydi. Admin shuni shu yerdan tuzatadi.
+ORDER_SNAPSHOT_FIELDS = ("sender_organization", "sender_region", "sender_department", "receiver_region")
+
+
+class OrderAdminForm(forms.ModelForm):
+    # Modelda editable=False bo'lgani uchun forma maydonlari alohida e'lon qilinadi, saqlash OrderAdmin.save_model da
+    sender_organization = forms.ModelChoiceField(Organization.objects.all(), required=False, label="Sender organization")
+    sender_region = forms.ModelChoiceField(Region.objects.all(), required=False, label="Sender region")
+    sender_department = forms.ModelChoiceField(Department.objects.all(), required=False, label="Sender department")
+    receiver_region = forms.ModelChoiceField(Region.objects.all(), required=False, label="Receiver region")
+
+    class Meta:
+        model = Order
+        fields = "__all__"
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            for name in ORDER_SNAPSHOT_FIELDS:
+                self.fields[name].initial = getattr(self.instance, f"{name}_id")
+
+
 @admin.register(Order)
 class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+    form = OrderAdminForm
+    exclude = ORDER_SNAPSHOT_FIELDS   # modeldagi (editable=False) maydonlar; formada e'lon qilingan versiyalari ishlaydi
     list_display = (
         "id", "sender_region", "sender", "receiver", "user",
         "colored_status", "rating", "date_creat"
@@ -303,8 +328,22 @@ class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     readonly_fields = (
         "date_creat", "date_edit", "date_process", "date_finished",
         "date_approved", "date_accepted", "date_canceled", "date_rejected",
-        "sender_organization", "sender_region", "sender_department", "receiver_region",
     )
+
+    def get_form(self, request, obj=None, **kwargs):
+        form = super().get_form(request, obj, **kwargs)
+        # Qidiruvli ochiladigan ro'yxat (bo'limlar ko'p bo'lishi mumkin); tegishli adminlarda search_fields bor
+        for name in ORDER_SNAPSHOT_FIELDS:
+            field = form.base_fields[name]
+            field.widget = AutocompleteSelect(Order._meta.get_field(name), self.admin_site)
+            field.widget.choices = field.choices
+        return form
+
+    def save_model(self, request, obj, form, change):
+        for name in ORDER_SNAPSHOT_FIELDS:
+            value = form.cleaned_data.get(name)
+            setattr(obj, f"{name}_id", value.pk if value else None)
+        super().save_model(request, obj, form, change)
 
     STATUS_COLORS = {
         "viewed": "#ffc107",     # sariq — yangi
