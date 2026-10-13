@@ -181,7 +181,7 @@ class EmployeeResource(resources.ModelResource):
 
 
 @admin.register(Employee)
-class EmployeeAdmin(NoDeleteAdminMixin, ExportMixin, admin.ModelAdmin):
+class EmployeeAdmin(ExportMixin, admin.ModelAdmin):
     resource_class = EmployeeResource
     list_display = (
         "id", "full_name", "user", "organization", "department",
@@ -361,7 +361,7 @@ class OrderGoalAdmin(admin.ModelAdmin):
 # =========================
 
 @admin.register(Deed)
-class DeedAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id", "organization", "user__region", "code", "sender", "receiver", "user",
         "colored_status_sender", "colored_status_receiver", "status", "orders_list",
