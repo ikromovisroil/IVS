@@ -1564,7 +1564,7 @@ def extra_tex(request):
     qs = (
         Structure.objects
         .filter(is_active=True)
-        .select_related("organization", "category", "region")
+        .select_related("organization", "category", "region", "technics__employee")
         .order_by("-id")
     )
 

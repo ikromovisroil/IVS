@@ -472,6 +472,13 @@
               </div><hr>
               <div class="card-body">
                 <div class="row mb-2">
+                  <div class="col-md-5 text-muted">Xodim</div>
+                  <div class="col-md-7">
+                    {{ tex.technics.employee.full_name|default:"-" }}
+                  </div>
+                </div>
+
+                <div class="row mb-2">
                   <div class="col-md-5 text-muted">Texnika</div>
                   <div class="col-md-7">
                     {{ tex.technics.name|default:"-" }} / {{tex.technics.serial|default:"-"}} / {{tex.technics.inventory|default:"-"}}<br>
