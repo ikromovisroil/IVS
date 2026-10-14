@@ -17,9 +17,18 @@ def deactivate_employee(employee):
             user.is_active = False
             user.save(update_fields=["is_active"])
 
-        # Telegram bot va push bildirishnomalar to'xtatiladi
+        # Telegram bot va push bildirishnomalar to'xtatiladi; tashkilot/bo'lim/boshqarma/bo'linma/lavozim/hudud tozalanadi
+        # (xodim yozuvi bazada qoladi; tarixiy hisobotlar arizalar/hujjatlardagi "surat" maydonlaridan o'qiladi)
         employee.telegram_chat = None
-        employee.save(update_fields=["telegram_chat"])
+        employee.organization = None
+        employee.department = None
+        employee.directorate = None
+        employee.division = None
+        employee.rank = None
+        employee.region = None
+        employee.save(update_fields=[
+            "telegram_chat", "organization", "department", "directorate", "division", "rank", "region",
+        ])
         PushSubscription.objects.filter(employee=employee).delete()
         MobileDevice.objects.filter(employee=employee).delete()
 

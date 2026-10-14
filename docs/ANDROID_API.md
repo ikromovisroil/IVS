@@ -320,9 +320,9 @@ Xatolar `{"detail": "..."}` ko'rinishida. Xabar yuborish va tahrirlash **HTTP or
 | Metod va yo'l | Vazifasi |
 |---|---|
 | `GET /api/chat/conversations/` | Suhbatlar: `id`, `kind` (`direct`, `group`, `ai`, `saved`), `title`, `last_message`, `last_message_at`, `unread_count`, `online`, `last_seen`, guruhda `member_count`, `is_admin` |
-| `GET /api/chat/contacts/?q=` | Yangi suhbat uchun xodimlar (o'z tashkiloti, `all_organization` bo'lsa hammasi; 50 tagacha) |
+| `GET /api/chat/contacts/?q=` | Yangi suhbat uchun xodimlar (istalgan tashkilotning faol xodimlari; 50 tagacha) |
 | `POST /api/chat/open/` `{"target": <xodim id> \| "ai" \| "saved"}` | Suhbat ochish/topish → `{"conversation_id"}` |
-| `POST /api/chat/groups/` `{"name", "members": [id,...]}` | Guruh yaratish (o'zingizdan tashqari kamida 2 a'zo; faqat o'z tashkilotingiz xodimlari) |
+| `POST /api/chat/groups/` `{"name", "members": [id,...]}` | Guruh yaratish (o'zingizdan tashqari kamida 2 a'zo; istalgan tashkilotning faol xodimlari) |
 | `GET /api/chat/conversations/{id}/messages/?page=1` | Xabarlar, 30 tadan. `page=1` — eng yangilari; sahifa ichida eskidan yangiga. `has_next_page` — yana eskilari bor. Ochilganda o'qilmaganlar "o'qildi" bo'ladi |
 | `POST /api/chat/conversations/{id}/send/` `{"body": "..."}` yoki `multipart` (`body`, `attachment`) | Xabar yuborish → `{"message": {...}}`. Matn 4000 belgigacha; fayl: jpg/png, pdf, word, excel, 15 MB gacha |
 | `POST /api/chat/messages/{id}/edit/` `{"body"}` | Faqat o'z xabarini tahrirlash |
@@ -421,7 +421,7 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 | `POST` | `/api/v1/auth/sso/token/` | SSO hujjatidagi standart oqim: ilova foydalanuvchini SSO sahifasiga (sso.mf.uz/oauth2/login) o'zi yo'naltiradi |
 | `GET` | `/api/v1/categories/` | Ro'yxat |
 | `GET` | `/api/v1/categories/{id}/` | Bitta obyekt |
-| `GET` | `/api/v1/chat/contacts/` | GET /api/chat/contacts/?q= — yangi suhbat uchun xodimlar (all_organization bo'lmasa faqat o'z tashkiloti, 50 tagacha). |
+| `GET` | `/api/v1/chat/contacts/` | GET /api/chat/contacts/?q= — yangi suhbat uchun xodimlar (istalgan tashkilotning faol xodimlari, 50 tagacha). |
 | `GET` | `/api/v1/chat/conversations/` | GET /api/chat/conversations/ — suhbatlar ro'yxati (oxirgi xabar, o'qilmaganlar soni, onlayn holati). |
 | `POST` | `/api/v1/chat/conversations/{id}/hide/` | POST /api/chat/conversations/{id}/hide/ — suhbatni faqat o'zim uchun yashirish (qarshi tomon yozsa qaytadi). |
 | `GET` | `/api/v1/chat/conversations/{id}/members/` | GET /api/chat/conversations/{id}/members/ — guruh a'zolari (admin/yaratuvchi belgilari bilan). |

@@ -4197,7 +4197,7 @@ def employee(request):
         employee_qs = (
             Employee.objects
             .select_related("organization", "department", "directorate", "division", "region", "rank", "user")
-            .filter(organization_id=organization_id)
+            .filter(organization_id=organization_id, user__is_active=True)   # o'chirilgan (faolsiz) xodimlar chiqmaydi
         )
 
         if region_id:
@@ -4699,11 +4699,11 @@ def employee_delete(request):
         messages.info(request, "O'zingizni o'chira olmaysiz")
         return redirect(back_url)
 
-    # Xodim yozuvi o'chirilmaydi: arizalar, hujjatlar va materiallardagi bog'lanishlar yo'qolmasligi uchun
-    # faqat tizimga kirish to'xtatiladi (employee_lifecycle.deactivate_employee).
+    # Xodim yozuvi bazadan o'chirilmaydi: arizalar, hujjatlar va materiallardagi bog'lanishlar yo'qolmasligi uchun
+    # tizimga kirish to'xtatiladi, tashkilot/bo'lim/lavozim/hudud tozalanadi (employee_lifecycle.deactivate_employee).
     deactivate_employee(target_employee)
 
-    messages.success(request, "Xodim faolsizlantirildi (arizalari va hujjatlari saqlanadi)")
+    messages.success(request, "Xodim o'chirildi (tizimga kira olmaydi; arizalari va hujjatlari saqlanadi)")
     return redirect(back_url)
 
 

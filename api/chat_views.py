@@ -91,13 +91,11 @@ class ConversationsView(ChatBaseView):
 
 
 class ContactsView(ChatBaseView):
-    """GET /api/chat/contacts/?q= — yangi suhbat uchun xodimlar (all_organization bo'lmasa faqat o'z tashkiloti, 50 tagacha)."""
+    """GET /api/chat/contacts/?q= — yangi suhbat uchun xodimlar (istalgan tashkilotning faol xodimlari, 50 tagacha)."""
 
     def get(self, request):
         emp = self.employee(request)
         qs = Employee.objects.exclude(id=emp.id).filter(user__is_active=True).select_related("organization")
-        if not request.user.has_perm("main.all_organization"):
-            qs = qs.filter(organization_id=emp.organization_id)
         q = (request.query_params.get("q") or "").strip()
         for term in q.split():
             qs = qs.filter(Q(last_name__icontains=term) | Q(first_name__icontains=term))
@@ -117,9 +115,7 @@ class OpenConversationView(ChatBaseView):
             return Response({"conversation_id": get_or_create_saved_conversation(emp).id})
         if not target.isdigit():
             raise ValidationError({"detail": "Xodim tanlanmadi"})
-        other = get_object_or_404(Employee, pk=int(target))
-        if not request.user.has_perm("main.all_organization") and other.organization_id != emp.organization_id:
-            raise PermissionDenied("Bu xodim bilan suhbat ocha olmaysiz")
+        other = get_object_or_404(Employee, pk=int(target), user__is_active=True)   # istalgan tashkilot, faqat faol xodim
         try:
             conv = get_or_create_direct_conversation(emp, other)
         except ValueError as e:
@@ -134,13 +130,6 @@ class CreateGroupView(ChatBaseView):
         emp = self.employee(request)
         name = str(request.data.get("name") or "").strip()
         member_ids = self.ids(request.data, "members")
-        if not request.user.has_perm("main.all_organization"):
-            allowed = set(
-                Employee.objects.filter(id__in=member_ids, organization_id=emp.organization_id)
-                .values_list("id", flat=True)
-            )
-            if len(allowed) != len(set(member_ids)):
-                raise PermissionDenied("Faqat o'z tashkilotingiz xodimlarini qo'sha olasiz")
         try:
             conv = create_group_conversation(emp, name, member_ids)
         except ValueError as e:
@@ -259,8 +248,7 @@ class GroupAddMembersView(ChatBaseView):
         emp = self.employee(request)
         conv = get_object_or_404(Conversation, pk=pk)
         _require_admin(conv, emp)
-        allowed_org = None if request.user.has_perm("main.all_organization") else emp.organization_id
-        added = add_group_members(conv, self.ids(request.data, "members"), allowed_org_id=allowed_org)
+        added = add_group_members(conv, self.ids(request.data, "members"))
         if added:
             conv.save(update_fields=["date_edit"])
             push_group_update(conv)

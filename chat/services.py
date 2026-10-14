@@ -73,7 +73,7 @@ def create_group_conversation(creator: Employee, name: str, member_ids) -> Conve
         raise ValueError("Guruhda (o'zingizdan tashqari) kamida 2 ta a'zo bo'lishi kerak")
 
     valid_ids = set(
-        Employee.objects.filter(id__in=member_ids).values_list("id", flat=True)
+        Employee.objects.filter(id__in=member_ids, user__is_active=True).values_list("id", flat=True)
     )
     valid_ids.add(creator.id)
 
@@ -88,7 +88,7 @@ def add_group_members(conv: Conversation, member_ids, allowed_org_id=None) -> li
     tashkilot xodimlari qo'shiladi (ko'rish doirasi qoidasiga mos). Haqiqatda
     qo'shilgan (avvaldan a'zo bo'lmagan, mavjud) Employee ID'lari qaytariladi."""
     ids = set(int(m) for m in member_ids if str(m).isdigit())
-    qs = Employee.objects.filter(id__in=ids)
+    qs = Employee.objects.filter(id__in=ids, user__is_active=True)
     if allowed_org_id is not None:
         qs = qs.filter(organization_id=allowed_org_id)
     existing = set(conv.participants.values_list("id", flat=True))

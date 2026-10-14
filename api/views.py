@@ -248,6 +248,8 @@ class EmployeeViewSet(viewsets.ModelViewSet):
             'organization', 'department', 'region', 'rank', 'user',
         ).all()
         user = self.request.user
+        if self.action == 'list':
+            qs = qs.filter(user__is_active=True)   # o'chirilgan (faolsiz) xodimlar ro'yxatda chiqmaydi
 
         if user.is_superuser or user.has_perm('main.all_organization'):
             return qs

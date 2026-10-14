@@ -92,16 +92,11 @@ def chat_conversations(request):
 @require_GET
 @login_required
 def chat_contacts(request):
-    """Yangi suhbat boshlash uchun xodimlar ro'yxati - `all_organization`
-    huquqi bo'lmasa faqat o'z tashkiloti (boshqa tashkilot xodimlarining
-    ismi/mavjudligi bilinib qolmasligi uchun - hozirgi ko'rish doirasi
-    qoidalariga mos)."""
+    """Yangi suhbat boshlash uchun xodimlar ro'yxati: istalgan tashkilotning faol xodimlari (ism bo'yicha qidiruv)."""
     employee = _current_employee(request)
     q = (request.GET.get("q") or "").strip()
 
     qs = Employee.objects.exclude(id=employee.id).filter(user__is_active=True).select_related("organization")
-    if not request.user.has_perm("main.all_organization"):
-        qs = qs.filter(organization_id=employee.organization_id)
     if q:
         terms = q.split()
         query = Q()
@@ -132,9 +127,7 @@ def chat_open(request):
     if not target.isdigit():
         return JsonResponse({"error": "Xodim tanlanmadi"}, status=400)
 
-    other = get_object_or_404(Employee, pk=int(target))
-    if not request.user.has_perm("main.all_organization") and other.organization_id != employee.organization_id:
-        raise PermissionDenied("Bu xodim bilan suhbat ocha olmaysiz")
+    other = get_object_or_404(Employee, pk=int(target), user__is_active=True)   # istalgan tashkilot, faqat faol xodim
 
     try:
         conv = get_or_create_direct_conversation(employee, other)
@@ -153,14 +146,6 @@ def chat_create_group(request):
     member_ids_raw = request.POST.getlist("members[]") or request.POST.getlist("members")
 
     member_ids = [m for m in member_ids_raw if str(m).isdigit()]
-    if not request.user.has_perm("main.all_organization"):
-        allowed_ids = set(
-            Employee.objects.filter(
-                id__in=member_ids, organization_id=employee.organization_id,
-            ).values_list("id", flat=True)
-        )
-        if len(allowed_ids) != len(set(int(m) for m in member_ids)):
-            raise PermissionDenied("Faqat o'z tashkilotingiz xodimlarini qo'sha olasiz")
 
     try:
         conv = create_group_conversation(employee, name, member_ids)
@@ -333,8 +318,7 @@ def chat_group_add_members(request, conversation_id):
     _require_group_admin(conv, employee)
 
     member_ids = request.POST.getlist("members[]") or request.POST.getlist("members")
-    allowed_org_id = None if request.user.has_perm("main.all_organization") else employee.organization_id
-    added = add_group_members(conv, member_ids, allowed_org_id=allowed_org_id)
+    added = add_group_members(conv, member_ids)
     if added:
         conv.save(update_fields=["date_edit"])
         push_group_update(conv)
