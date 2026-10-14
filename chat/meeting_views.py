@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
@@ -13,6 +14,9 @@ from django.contrib.auth.decorators import login_required
 from . import zoom
 from .meetings import MeetingError, can_open, cancel_meeting, create_meeting, finish_meeting, meetings_for
 from .models import Meeting
+
+
+PAGE_SIZE = 20
 
 
 def _employee(request):
@@ -39,14 +43,26 @@ def meetings_page(request):
         raise PermissionDenied("Uchrashuvlarni ko'rish huquqi yo'q")
     now = timezone.now()
     items = list(meetings_for(employee))
-    for m in items:
+    upcoming_ids = {
+        m.id for m in items
+        if m.status == Meeting.STATUS_SCHEDULED and m.start_at + timedelta(minutes=m.duration_minutes) >= now
+    }
+    upcoming_all = [m for m in items if m.id in upcoming_ids]
+    past_all = [m for m in reversed(items) if m.id not in upcoming_ids]
+
+    # Ikkita yorliq: "Rejalashtirilgan" (?tab=upcoming, standart) va "O'tgan va bekor qilinganlar" (?tab=past);
+    # har biri 20 tadan sahifalanadi (?page=)
+    tab = "past" if request.GET.get("tab") == "past" else "upcoming"
+    page_obj = Paginator(past_all if tab == "past" else upcoming_all, PAGE_SIZE).get_page(request.GET.get("page"))
+    for m in page_obj:
         m.is_mine = m.organizer_id == employee.id
         m.is_running = m.start_at <= now
-    upcoming = [m for m in items if m.status == Meeting.STATUS_SCHEDULED and m.start_at + timedelta(minutes=m.duration_minutes) >= now]
-    past = [m for m in reversed(items) if m not in upcoming][:30]
+
     return render(request, "chat/meetings.html", {
-        "upcoming": upcoming,
-        "past": past,
+        "tab": tab,
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if page_obj.paginator.count else 0,
+        "pager_other": "&tab=past" if tab == "past" else "",
         "zoom_enabled": zoom.zoom_enabled(),
     })
 
