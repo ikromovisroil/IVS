@@ -4,6 +4,9 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .app_views import AppConfigView
 from .meeting_views import MeetingCancelView, MeetingDetailView, MeetingFinishView, MeetingListCreateView
+from .notification_views import (
+    NotificationListView, NotificationReadAllView, NotificationReadView, NotificationUnreadCountView,
+)
 from .auth_views import LoginThrottle
 from .stats_views import EmployeeStatsView, TechnicsStatsView
 from .exports import (
@@ -51,6 +54,10 @@ urlpatterns = router.urls + [
     path('stats/employees/', EmployeeStatsView.as_view(), name='api_stats_employees'),
     path('permissions/catalog/', PermissionCatalogView.as_view(), name='api_permission_catalog'),
     path('app/config/', AppConfigView.as_view(), name='api_app_config'),
+    path('notifications/', NotificationListView.as_view(), name='api_notifications'),
+    path('notifications/unread-count/', NotificationUnreadCountView.as_view(), name='api_notifications_unread'),
+    path('notifications/read-all/', NotificationReadAllView.as_view(), name='api_notifications_read_all'),
+    path('notifications/<int:pk>/read/', NotificationReadView.as_view(), name='api_notification_read'),
     path('meetings/', MeetingListCreateView.as_view(), name='api_meetings'),
     path('meetings/<int:pk>/', MeetingDetailView.as_view(), name='api_meeting_detail'),
     path('meetings/<int:pk>/cancel/', MeetingCancelView.as_view(), name='api_meeting_cancel'),

@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+  <title>Bildirishnomalar</title>
+{% endblock title %}
+
+{% block content %}
+<main id="main" class="main">
+
+  <div class="pagetitle">
+    <h1>Bildirishnomalar</h1>
+  </div>
+
+  <section class="section">
+    <div class="card">
+      <div class="card-body">
+
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pt-3 pb-2">
+          <ul class="nav nav-pills gap-2 d-flex align-items-center mb-0 flex-wrap">
+            {% for key, label in tabs %}
+            <li class="nav-item">
+              <a href="{% url 'notifications_page' %}{% if key %}?tab={{ key }}{% endif %}"
+                 class="nav-link {% if tab == key %}active{% else %}border border-primary{% endif %}">{{ label }}{% if key == 'unread' and unread_total %} ({{ unread_total }}){% endif %}</a>
+            </li>
+            {% endfor %}
+          </ul>
+
+          {% if unread_total %}
+          <form method="post" action="{% url 'notifications_read_all' %}" class="m-0">
+            {% csrf_token %}
+            <input type="hidden" name="tab" value="{% if tab != 'unread' %}{{ tab }}{% endif %}">
+            <button type="submit" class="btn btn-outline-primary">
+              <i class="bi bi-check2-all"></i> Hammasini o'qilgan qilish
+            </button>
+          </form>
+          {% endif %}
+        </div>
+
+        <div class="table-responsive mt-2">
+          <table class="table table-bordered table-hover align-middle table-sm">
+            <thead class="table-secondary">
+              <tr>
+                <th style="width:50px">T/r</th>
+                <th style="width:110px">Turi</th>
+                <th>Bildirishnoma</th>
+                <th style="width:160px">Vaqt</th>
+              </tr>
+            </thead>
+            <tbody>
+            {% for n in page_obj %}
+              <tr class="{% if not n.is_read %}table-light fw-semibold{% endif %}">
+                <th scope="row">{{ page_obj.start_index|add:forloop.counter0 }}</th>
+                <td><span class="badge bg-secondary">{{ n.get_kind_display }}</span></td>
+                <td>
+                  <a href="{% url 'notification_open' n.id %}" class="text-decoration-none">
+                    {% if not n.is_read %}<i class="bi bi-circle-fill text-primary me-1" style="font-size:8px"></i>{% endif %}
+                    {{ n.title }}{% if n.count > 1 %} <span class="text-muted">({{ n.count }})</span>{% endif %}
+                  </a>
+                  {% if n.body %}<div class="small text-muted fw-normal">{{ n.body }}</div>{% endif %}
+                </td>
+                <td class="small text-muted fw-normal">{{ n.date_creat|date:"d.m.Y H:i" }}</td>
+              </tr>
+            {% empty %}
+              <tr><td colspan="4" class="text-center text-muted py-4">
+                <i class="bi bi-inbox me-2"></i>Bildirishnoma yo'q
+              </td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% include "chat/_pager.html" with page_obj=page_obj param="page" other=pager_other %}
+
+      </div>
+    </div>
+  </section>
+</main>
+{% endblock content %}

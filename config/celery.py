@@ -17,6 +17,11 @@ app.conf.beat_schedule = {
         "task": "core.tasks.cleanup_old_audit_logs",
         "schedule": crontab(day_of_month=1, hour=1, minute=0),
     },
+    # Har oyning 1-kuni, tunda soat 02:00 da - 3 oydan eski bildirishnomalarni tozalaydi
+    "cleanup-notifications-monthly": {
+        "task": "core.tasks.cleanup_old_notifications",
+        "schedule": crontab(day_of_month=1, hour=2, minute=0),
+    },
     # Zoom uchrashuvlar: boshlanishiga 10 daqiqa qolganda eslatma (har daqiqada tekshiradi)
     "meeting-reminders": {
         "task": "chat.tasks.send_meeting_reminders",

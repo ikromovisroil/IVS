@@ -37,7 +37,7 @@ from main.sso_views import *
 from .push_views import *
 from .html_pdf import HtmlPdfError, add_text_watermark_pdf_bytes, deed_to_pdf_bytes
 from .models import Deed, DeedConsent, DeedFiles, Employee, Organization
-from .employee_lifecycle import activate_employee, deactivate_employee
+from .employee_lifecycle import deactivate_employee
 from .sanitizers import sanitize_deed_body
 from .tasks import _resolve_position
 from .validators import validate_attachment_extension, validate_file_extension, validate_material_image
@@ -4704,32 +4704,4 @@ def employee_delete(request):
     deactivate_employee(target_employee)
 
     messages.success(request, "Xodim o'chirildi (tizimga kira olmaydi; arizalari va hujjatlari saqlanadi)")
-    return redirect(back_url)
-
-
-@never_cache
-@require_POST
-@login_required
-@permission_required("main.delete_employee", raise_exception=True)
-def employee_activate(request):
-    current_employee = getattr(request.user, "employee", None)
-    if not current_employee:
-        raise PermissionDenied("Employee yo'q")
-
-    back_url = request.META.get("HTTP_REFERER", "/")
-    employee_id = request.POST.get("employee_id")
-    if not employee_id:
-        messages.info(request, "Xodim aniqlanmadi")
-        return redirect("employee")
-
-    target_employee = get_object_or_404(
-        Employee.objects.select_related("user", "organization"), pk=employee_id
-    )
-
-    if not request.user.has_perm("main.all_organization"):
-        if target_employee.organization_id != current_employee.organization_id:
-            raise PermissionDenied("Boshqa tashkilot xodimini faollashtira olmaysiz")
-
-    activate_employee(target_employee)
-    messages.success(request, "Xodim qayta faollashtirildi")
     return redirect(back_url)

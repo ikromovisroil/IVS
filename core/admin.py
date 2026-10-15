@@ -216,3 +216,15 @@ class MobileDeviceAdmin(admin.ModelAdmin):
     search_fields = ("employee__last_name", "employee__first_name", "device_name")
     autocomplete_fields = ("employee",)
     readonly_fields = ("token",)
+
+
+@admin.register(Notification)
+class NotificationAdmin(admin.ModelAdmin):
+    list_display = ("id", "employee", "kind", "title", "is_read", "count", "date_creat")
+    list_filter = ("kind", "is_read", "date_creat")
+    search_fields = ("title", "body", "tag", "employee__last_name", "employee__first_name")
+    autocomplete_fields = ("employee",)
+    ordering = ("-date_creat",)
+
+    def has_add_permission(self, request):
+        return False

@@ -8,7 +8,6 @@ Zoom uchrashuvlari (Android). Sayt bilan bir xil servis (chat/meetings.py).
 """
 from datetime import timedelta
 
-from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_yasg import openapi

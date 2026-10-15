@@ -219,10 +219,14 @@ def mark_read(conversation: Conversation, employee: Employee):
     push qilishi uchun."""
     from django.utils import timezone
 
+    from core.notifications import mark_read_by_tag
+
     qs = conversation.messages.filter(read_at__isnull=True).exclude(sender=employee)
     ids = list(qs.values_list("id", flat=True))
     if ids:
         qs.update(read_at=timezone.now())
+    # Suhbat ochildi: bildirishnomalar markazidagi shu suhbat qatori ham o'qilgan bo'ladi
+    mark_read_by_tag(employee, f"chat-{conversation.id}", f"chat-ai-{conversation.id}")
     return ids
 
 

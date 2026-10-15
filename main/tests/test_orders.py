@@ -121,6 +121,31 @@ class OrderDecideAndBotRatingTests(TestCase):
         order.refresh_from_db()
         self.assertEqual((order.status, order.rating), ("accepted", 5))
 
+    def test_accept_only_works_for_finished_orders(self):
+        self.client.force_login(self.sender_user)
+        for status in ("viewed", "process", "accepted", "canceled", "rejected", "approved"):
+            order = self._order(self.atm_goal, status)
+            with mock.patch("main.order_views.notify_order_status_change"):
+                self.client.post(reverse("order_decide", args=[order.id]), {"action": "accepted", "rating": "5"})
+            order.refresh_from_db()
+            self.assertEqual(order.status, status, status)
+            self.assertIsNone(order.rating, status)
+
+    def test_cancel_only_works_before_completion(self):
+        self.client.force_login(self.sender_user)
+        for status in ("viewed", "process", "finished"):
+            order = self._order(self.atm_goal, status)
+            with mock.patch("main.order_views.notify_order_status_change"):
+                self.client.post(reverse("order_decide", args=[order.id]), {"action": "canceled"})
+            order.refresh_from_db()
+            self.assertEqual(order.status, "canceled", status)
+        for status in ("accepted", "canceled", "rejected", "approved"):
+            order = self._order(self.atm_goal, status)
+            with mock.patch("main.order_views.notify_order_status_change"):
+                self.client.post(reverse("order_decide", args=[order.id]), {"action": "canceled"})
+            order.refresh_from_db()
+            self.assertEqual(order.status, status, status)
+
     def test_bad_rating_rejected(self):
         order = self._order(self.atm_goal, "finished")
         self.client.force_login(self.sender_user)

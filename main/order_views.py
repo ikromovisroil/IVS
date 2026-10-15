@@ -120,6 +120,15 @@ def order_decide(request, pk):
             if order.sender_id != employee.id and order.user_id != employee.id:
                 raise PermissionDenied("Sizda bu arizani o'zgartirish huquqi yo'q")
 
+            # Holat tekshiruvi (Android API bilan bir xil): faqat bajarilgan ariza qabul qilinadi,
+            # yakunlanmagan (yangi/jarayonda/tayyorlandi) ariza bekor qilinadi.
+            if action == "accepted" and order.status != "finished":
+                messages.error(request, "Faqat bajarilgan (tayyorlangan) arizani qabul qilish mumkin")
+                return redirect(back_url)
+            if action == "canceled" and order.status not in ("viewed", "process", "finished"):
+                messages.error(request, "Bu ariza bo'yicha amal allaqachon bajarilgan, bekor qilib bo'lmaydi")
+                return redirect(back_url)
+
             update_fields = ["status"]
             order.status = action
             if rating is not None:

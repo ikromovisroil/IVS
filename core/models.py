@@ -1,5 +1,6 @@
 # core/models.py
 from django.db import models
+from django.utils import timezone
 from main.models import Employee
 
 
@@ -134,3 +135,46 @@ class MobileDevice(models.Model):
         db_table = "mobile_device"
         verbose_name = "Mobil qurilma"
         verbose_name_plural = "Mobil qurilmalar"
+
+
+class Notification(models.Model):
+    """
+    Bildirishnomalar markazi: xodimga yuborilgan hamma voqealar (ariza, hujjat, Zoom, chat...) tarixi.
+    Yozuv markaziy `core.notifications.record()` orqali yaratiladi (push yuboriladigan har bir joy shuni chaqiradi).
+    """
+    KIND_ORDER = "order"
+    KIND_DEED = "deed"
+    KIND_MEETING = "meeting"
+    KIND_CHAT = "chat"
+    KIND_SYSTEM = "system"
+    KINDS = (
+        (KIND_ORDER, "Ariza"),
+        (KIND_DEED, "Hujjat"),
+        (KIND_MEETING, "Zoom"),
+        (KIND_CHAT, "Chat"),
+        (KIND_SYSTEM, "Tizim"),
+    )
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name="notifications")
+    kind = models.CharField(max_length=20, choices=KINDS, default=KIND_SYSTEM)
+    title = models.CharField(max_length=200)
+    body = models.CharField(max_length=500, blank=True, default="")
+    url = models.CharField(max_length=300, blank=True, default="/")
+    tag = models.CharField(max_length=120, blank=True, default="")   # voqea identifikatori ((employee, tag) indeksi bor)
+    count = models.PositiveIntegerField(default=1)    # bir xil o'qilmagan voqea necha marta takrorlandi (chat xabarlari)
+    is_read = models.BooleanField(default=False)
+    date_creat = models.DateTimeField(default=timezone.now, db_index=True)
+    date_read = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.get_kind_display()}: {self.title}"
+
+    class Meta:
+        db_table = "notification"
+        verbose_name = "Bildirishnoma"
+        verbose_name_plural = "Bildirishnomalar"
+        ordering = ["-date_creat", "-id"]
+        indexes = [
+            models.Index(fields=["employee", "is_read", "-date_creat"], name="notif_emp_read_idx"),
+            models.Index(fields=["employee", "tag"], name="notif_emp_tag_idx"),
+        ]

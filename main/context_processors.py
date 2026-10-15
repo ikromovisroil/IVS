@@ -3,52 +3,8 @@ from django.db.models import Q
 from django.conf import settings
 
 
-def deed_notifications(request):
-    if not request.user.is_authenticated:
-        return {
-            "deed_notifications": Order.objects.none(),
-            "deed_notification_count": 0,
-        }
-
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        return {
-            "deed_notifications": Order.objects.none(),
-            "deed_notification_count": 0,
-        }
-
-    # RECEIVER uchun: yangi kelgan dalolatnoma (status viewed)
-    receiver_notes = Deed.objects.filter(
-        receiver=employee,
-        status_receiver="viewed"
-    )
-
-    # SENDER uchun: tasdiqlangan yoki rad etilgan, hali ko‘rilmagan
-    sender_notes = Deed.objects.filter(
-        sender=employee,
-        status_sender="viewed"
-    )
-
-    # KUZATUVCHI: kelishuv talab qilinayotgan yoki o‘zgargan
-    watcher_notes = Deed.objects.filter(
-        deedconsent__employee=employee,
-        deedconsent__status='viewed'
-    )
-
-    all_notes = (
-            receiver_notes |
-            sender_notes |
-            watcher_notes
-    ).distinct().order_by("-date_edit")
-
-    return {
-        "deed_notifications": all_notes[:10],
-        "deed_notification_count": all_notes.count(),
-    }
-
-
 def order_notifications(request):
-    empty = {"order_notifications": Order.objects.none(), "order_notification_count": 0}
+    empty = {"order_notification_count": 0}
 
     if not request.user.is_authenticated:
         return empty
@@ -101,10 +57,7 @@ def order_notifications(request):
 
     all_notes = Order.objects.filter(conditions).distinct().order_by("-date_edit")
 
-    return {
-        "order_notifications": all_notes[:10],
-        "order_notification_count": all_notes.count(),
-    }
+    return {"order_notification_count": all_notes.count()}
 
 
 def order_receiver_count(request):

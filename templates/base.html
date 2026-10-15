@@ -65,248 +65,41 @@
             <i class="bi bi-telegram"></i>
           </a>
         </li>
-        <!-- ======================= ZAYAVKA XABARLARI ======================= -->
+        <!-- ======================= BILDIRISHNOMALAR MARKAZI ======================= -->
         <li class="nav-item dropdown">
-
-          <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown" id="order-bell">
-            <i class="bi bi-chat-left-text"></i>
-            {% if order_notification_count > 0 %}
-              <span class="badge bg-primary badge-number">{{ order_notification_count }}</span>
-            {% endif %}
+          <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown" id="notif-bell" title="Bildirishnomalar">
+            <i class="bi bi-bell"></i>
+            <span class="badge bg-danger badge-number" id="notif-badge"{% if not notif_unread %} style="display:none"{% endif %}>{{ notif_unread }}</span>
           </a>
 
           <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" style="width: 360px;">
-
-            <!-- HEADER -->
             <li class="dropdown-header d-flex justify-content-between align-items-center px-3">
-              <span class="fw-bold">Zayavka xabarlari</span>
-              <span class="badge bg-primary">{{ order_notification_count }}</span>
+              <span class="fw-bold">Bildirishnomalar</span>
+              <a href="{% url 'notifications_page' %}" class="small">Hammasi</a>
             </li>
-
             <li><hr class="dropdown-divider"></li>
 
-            {% for o in order_notifications %}
-
+            {% for n in notif_recent %}
             <li class="notification-item">
-
-              {# ================= LINK LOGIC ================= #}
-              {% with link="#" %}
-                {% if o.sender.user_id == request.user.id %}
-                    {% if o.goal.organization.type == "worker" %}
-                        {% if o.status == "finished" %}
-                            {% url 'order_sender' as link %}
-                        {% elif o.status == "approved" or o.status == "rejected" %}
-                            {% url 'order_sender_arxiv' as link %}
-                        {% endif %}
-                    {% elif o.goal.organization.type == "client" %}
-                        {% if o.status == "finished" or o.status == "approved" %}
-                            {% url 'order_sender_barn' as link %}
-                        {% elif o.status == "rejected" %}
-                            {% url 'order_sender_arxiv_barn' as link %}
-                        {% endif %}
-                    {% endif %}
-
-                {% elif o.receiver.user_id == request.user.id %}
-                    {% if o.goal.organization.type == "worker" %}
-                        {% if o.status == "viewed" or o.status == "process" %}
-                            {% url 'order_receiver' as link %}
-                        {% else %}
-                            {% url 'order_receiver_arxiv' as link %}
-                        {% endif %}
-                    {% elif o.goal.organization.type == "client" %}
-                        {% if o.status == "viewed" or o.status == "process" %}
-                            {% url 'order_receiver_barn' as link %}
-                        {% else %}
-                            {% url 'order_receiver_arxiv_barn' as link %}
-                        {% endif %}
-                    {% endif %}
-
-                {% elif not o.receiver_id %}
-                    {# hali receiver tayinlanmagan, lekin employee shu goal'ga ruxsatli #}
-                    {% if o.goal.organization.type == "worker" and o.status == "viewed" %}
-                        {% url 'order_receiver' as link %}
-                    {% elif o.goal.organization.type == "client" and o.status == "viewed" %}
-                        {% url 'order_receiver_barn' as link %}
-                    {% endif %}
-
-                {% elif o.user.user_id == request.user.id %}
-                    {% url 'order_agrement_arxiv' as link %}
-                {% endif %}
-
-              <a href="{{ link }}" class="d-flex align-items-start text-decoration-none">
-
-                <!-- ================= ICON ================= -->
-                {% if o.status == 'viewed' %}
-                  <i class="bi bi-exclamation-circle text-warning"></i>
-
-                {% elif o.status == 'process' %}
-                  <i class="bi bi-exclamation-circle text-warning"></i>
-
-                {% elif o.status == 'finished' %}
-                  <i class="bi bi-check-circle text-info"></i>
-
-                {% elif o.status == 'approved' %}
-                  <i class="bi bi-check-circle text-success"></i>
-
-                {% elif o.status == 'accepted' %}
-                  <i class="bi bi-exclamation-circle text-warning"></i>
-
-                {% elif o.status == 'canceled' %}
-                  <i class="bi bi-x-circle text-danger"></i>
-
-                {% elif o.status == 'rejected' %}
-                  <i class="bi bi-x-circle text-danger"></i>
-
-                {% else %}
-                  <i class="bi bi-info-circle text-secondary"></i>
-                {% endif %}
-
-                <div class="ms-2">
-
-                  <!-- ================= NAME ================= -->
-                  {% if o.sender.user_id == request.user.id %}
-                  <h4 class="mb-1">{{ o.receiver.full_name }}</h4>
-                  {% elif o.receiver.user_id == request.user.id %}
-                  <h4 class="mb-1">{{ o.sender.full_name }}</h4>
-                  {% elif not o.receiver_id %}
-                  <h4 class="mb-1">{{ o.sender.full_name }}</h4>
-                  {% elif o.user.user_id == request.user.id %}
-                  <h4 class="mb-1">{{ o.sender.full_name }}</h4>
-                  {% endif %}
-
-
-                  <!-- ================= TEXT ================= -->
-
-                  {% if o.status == 'viewed' %}
-                    <p class="text-warning mb-1">#{{o.id}} Yangi ariza yuborildi</p>
-                    <p class="small text-muted mb-0">{{ o.date_creat|timesince }} oldin</p>
-
-                  {% elif o.status == 'process' %}
-                    <p class="text-warning mb-1">#{{o.id}} Ariza ish jarayonida</p>
-                    <p class="small text-muted mb-0">{{ o.date_process|timesince }} oldin</p>
-
-                  {% elif o.status == 'finished' %}
-                    <p class="text-primary mb-1">#{{o.id}} Ariza Tayyorlandi</p>
-                    <p class="small text-muted mb-0">{{ o.date_finished|timesince }} oldin</p>
-
-                  {% elif o.status == 'approved' %}
-                    <p class="text-primary mb-1">#{{o.id}} Ariza Tasdiqlandi</p>
-                    {% if o.message_receiver %}
-                    <p class="text-primary mb-1">{{o.message_receiver}}</p>
-                    {% endif %}
-                    <p class="small text-muted mb-0">{{ o.date_approved|timesince }} oldin</p>
-
-                  {% elif o.status == 'accepted' %}
-                    <p class="text-primary mb-1">#{{o.id}} Ariza qabul qilindi</p>
-                    <p class="small text-muted mb-0">{{ o.date_accepted|timesince }} oldin</p>
-
-                  {% elif o.status == 'canceled' %}
-                    <p class="text-danger mb-1">#{{o.id}} Ariza bekor qilindi</p>
-                    <p class="small text-muted mb-0">{{ o.date_canceled|timesince }} oldin</p>
-
-                  {% elif o.status == 'rejected' %}
-                    <p class="text-danger mb-1">#{{o.id}} Ariza rad etildi</p>
-                    <p class="small text-muted mb-0">{{ o.date_rejected|timesince }} oldin</p>
-
-                  {% else %}
-                    <p class="mb-1">#{{o.id}} Ariza holati yangilandi</p>
-                    <p class="small text-muted mb-0">{{ o.date_edit|timesince }} oldin</p>
-                  {% endif %}
-
+              <a href="{% url 'notification_open' n.id %}" class="d-block px-3 py-2 text-decoration-none">
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                  <strong class="text-dark">{{ n.title }}{% if n.count > 1 %} ({{ n.count }}){% endif %}</strong>
+                  <span class="badge bg-primary">yangi</span>
                 </div>
-
+                {% if n.body %}<div class="small text-muted">{{ n.body|truncatechars:70 }}</div>{% endif %}
+                <div class="small text-muted">{{ n.date_creat|date:"d.m.Y H:i" }}</div>
               </a>
-              {% endwith %}
             </li>
-
             <li><hr class="dropdown-divider"></li>
-
             {% empty %}
-
-            <li class="text-center p-3 text-muted">
-              Hech qanday xabar yo'q
-            </li>
-
+            <li class="text-center p-3 text-muted">Yangi bildirishnoma yo'q</li>
             {% endfor %}
 
+            <li class="text-center py-2">
+              <a href="{% url 'notifications_page' %}">Hammasini ko'rish</a>
+            </li>
           </ul>
-
         </li>
-
-        <!-- ======================= D A L O L A T N O M A ======================= -->
-        <li class="nav-item dropdown">
-
-            <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown" id="deed-bell">
-                <i class="bi bi-bell"></i>
-                {% if deed_notification_count > 0 %}
-                    <span class="badge bg-primary badge-number">{{ deed_notification_count }}</span>
-                {% endif %}
-            </a>
-
-            <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications p-0" style="width: 360px;">
-
-                <!-- HEADER -->
-                <li class="px-3 py-2 border-bottom bg-light d-flex justify-content-between">
-                    <span class="fw-bold">Dalolatnoma xabarlari</span>
-                    <span class="badge bg-primary">{{ deed_notification_count }}</span>
-                </li>
-
-                {% for d in deed_notifications %}
-
-                {# ================= RECEIVER SENDER ================= #}
-                {% if request.user == d.receiver.user or request.user == d.sender.user %}
-
-                    <a href="{% url 'contact' %}"
-                       class="text-decoration-none notification-card d-block px-3 py-3">
-
-                        <div class="fw-bold text-dark">
-                            {{ d.user.full_name }} dan
-                        </div>
-
-                        <div class="small text-warning mt-1">
-                            Yangi dalolatnoma keldi
-                        </div>
-
-                        <div class="small text-muted mt-1">
-                            {{ d.date_creat|timesince }} oldin
-                        </div>
-
-                    </a>
-
-                {# ================= KUZATUVCHI ================= #}
-                {% else %}
-
-                    <a href="{% url 'contact_agrement' %}"
-                       class="text-decoration-none notification-card d-block px-3 py-3">
-
-                        <div class="fw-bold text-dark">
-                              {{ d.user.full_name }} dan
-                        </div>
-
-                        <div class="small text-info mt-1">
-                            <i class="bi bi-eye"></i> Kelishuv uchun dalolatnoma
-                        </div>
-
-                        <div class="small text-muted mt-1">
-                            {{ d.date_creat|timesince }} oldin
-                        </div>
-
-                    </a>
-
-                {% endif %}
-
-                <li><hr class="dropdown-divider my-0"></li>
-
-                {% empty %}
-                    <li class="px-3 py-3 text-center text-muted">
-                        Dalolatnoma xabarlari yo‘q
-                    </li>
-                {% endfor %}
-
-            </ul>
-
-        </li>
-
 
         <li class="nav-item dropdown pe-3">
 
@@ -895,13 +688,32 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
-    const orderBell = document.getElementById("order-bell");
-    if (orderBell) {
-        orderBell.addEventListener("shown.bs.dropdown", function () {
-            fetch("{% url 'order_mark_seen' %}");
+    // Bildirishnomalar qo'ng'irog'i ochilganda "Arizalar" yonidagi qizil nuqta ham o'chadi (ilgari eski qo'ng'iroq qilardi)
+    const notifBell = document.getElementById("notif-bell");
+    if (notifBell) {
+        notifBell.addEventListener("shown.bs.dropdown", function () {
+            fetch("{% url 'order_mark_seen' %}", {credentials: "same-origin"});
         });
     }
 });
+</script>
+
+<script>
+(function () {
+    var badge = document.getElementById("notif-badge");
+    if (!badge) return;
+    function refresh() {
+        fetch("{% url 'notifications_count' %}", {credentials: "same-origin"})
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+                if (!d) return;
+                badge.textContent = d.unread;
+                badge.style.display = d.unread > 0 ? "" : "none";
+            })
+            .catch(function () {});
+    }
+    setInterval(refresh, 60000);
+})();
 </script>
 </body>
 

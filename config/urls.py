@@ -65,6 +65,9 @@ urlpatterns = [
     # CHAT
     path("chat/", include("chat.urls")),
 
+    # BILDIRISHNOMALAR MARKAZI
+    path("", include("core.urls")),
+
     # API
     path('api/v1/', include('api.urls')),   # asosiy (versiyalangan) manzil
 

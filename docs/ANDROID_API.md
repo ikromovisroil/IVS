@@ -372,6 +372,23 @@ Zoom sozlanmagan bo'lsa `POST` `400 {"detail": "Zoom hali sozlanmagan..."}` qayt
 Javob: `{id, title, agenda, start_at, duration_minutes, status ("scheduled"|"cancelled"), organizer{id,name},
 join_url, password, invitation, is_organizer, can_manage, start_url?}`. **`invitation`**: Zoom'ning tayyor taklif matni (nusxalab ulashish uchun; Zoom bermagan bo'lsa bo'sh). **`start_url`** (uchrashuvni boshlash) faqat tashkilotchiga keladi; ishtirokchilar `join_url` bilan qo'shiladi (havolani tashkilotchi yuboradi).
 
+### 11.4 Bildirishnomalar markazi
+
+Xodimga yuborilgan hamma voqealar (ariza, hujjat, Zoom, chat) **tarixi** bitta joyda. Saytdagi tepadagi qo'ng'iroq va
+"Bildirishnomalar" sahifasi bilan bir xil ma'lumot. Push yuboriladigan har bir voqea avtomatik shu tarixga yoziladi
+(push kelmasa ham tarixda qoladi). Bir suhbatdagi bir nechta o'qilmagan chat xabari **bitta qatorga** guruhlanadi
+(`count` — nechta xabar). Suhbat ochilganda uning bildirishnomasi o'zi o'qilgan bo'ladi. 3 oydan eskilari tozalanadi.
+
+- `GET /api/notifications/?kind=order|deed|meeting|chat|system&unread=1&page=` — ro'yxat (sahifalangan, 20 tadan;
+  `page_size` ≤ 100). Javobda `unread` — jami o'qilmagan soni.
+- `GET /api/notifications/unread-count/` — `{"unread": N}` (qo'ng'iroq belgisi uchun).
+- `POST /api/notifications/{id}/read/` — bittasini o'qilgan qilish (faqat o'zinikini; boshqasiga `404`).
+- `POST /api/notifications/read-all/` `{"kind"?: "order"}` — hammasini (yoki faqat shu turni) o'qilgan qilish
+  → `{"updated": N, "unread": 0}`.
+
+Bildirishnoma: `{id, kind ("order"|"deed"|"meeting"|"chat"|"system"), title, body, url, count, is_read, date_creat}`.
+`url` — saytdagi sahifa yo'li (masalan `/order/sender/`); mobil ilova uni o'z ekraniga moslashi mumkin.
+
 ## 12. Push-xabarlar (FCM)
 
 Server yangi ariza, ariza holati o'zgarishi, hujjat imzo/kelishuv kutayotgani va yangi chat xabari haqida xodimning
@@ -511,6 +528,10 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 | `GET` | `/api/v1/meetings/{id}/` | Bitta obyekt |
 | `POST` | `/api/v1/meetings/{id}/cancel/` | Cancel create |
 | `POST` | `/api/v1/meetings/{id}/finish/` | POST /api/v1/meetings/{id}/finish/ — boshlangan uchrashuvni rejadan oldin tugatish (faqat tashkilotchi); vaqt bo'shaydi. |
+| `GET` | `/api/v1/notifications/` | Ro'yxat |
+| `POST` | `/api/v1/notifications/read-all/` | Read-all create |
+| `GET` | `/api/v1/notifications/unread-count/` | Unread-count list |
+| `POST` | `/api/v1/notifications/{id}/read/` | Read create |
 | `GET` | `/api/v1/order-goals/` | Ro'yxat |
 | `GET` | `/api/v1/order-goals/{id}/` | Bitta obyekt |
 | `GET` | `/api/v1/order-materials/` | Ro'yxat |

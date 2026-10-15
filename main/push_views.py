@@ -117,8 +117,12 @@ def send_push_notification(employee, title, body, url="/", tag=None):
     fonda bajariladi (`main.tasks.send_push_notification_task`) - shu
     view/request osilib qolmasligi uchun (masalan "Ariza Yaratish").
     """
+    from core.notifications import record
     from .fcm import fcm_enabled
     from .tasks import send_fcm_notification_task, send_push_notification_task
+
+    # Bildirishnomalar markazi tarixiga yozish (push ishlamasa ham tarixda qoladi; xato bo'lsa jim o'tadi)
+    record(employee, title, body, url, tag)
 
     send_push_notification_task.delay(employee.id, title, body, url, tag)
     # Android (FCM): sozlanmagan bo'lsa navbatga qo'yilmaydi
