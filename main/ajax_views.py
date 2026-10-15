@@ -95,6 +95,9 @@ def order_mark_seen(request):
     if not employee:
         return JsonResponse({"status": "no_employee"}, status=400)
 
+    from .context_processors import invalidate_counts
+    invalidate_counts(employee.id)   # nuqta darhol yangilansin (hisoblagich keshi)
+
     Order.objects.filter(
         receiver=employee,
         goal__organization__type="worker",

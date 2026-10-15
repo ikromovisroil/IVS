@@ -1693,6 +1693,8 @@ class OrderViewSet(
     def mark_seen(self, request):
         """Yangi ariza belgilarini o'chirish (saytdagi order_mark_seen)."""
         employee = self._employee()
+        from main.context_processors import invalidate_counts
+        invalidate_counts(employee.id)   # hisoblagich keshi tozalanadi
         Order.objects.filter(
             receiver=employee, goal__organization__type="worker",
             status__in=["approved", "canceled"], receiver_seen=False,

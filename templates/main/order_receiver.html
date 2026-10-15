@@ -192,7 +192,13 @@
 
     document.addEventListener("DOMContentLoaded", function () {
         checkNewOrders();
-        setInterval(checkNewOrders, 10000);
+        // Faqat ko'rinib turgan oynada, 20 soniyada bir marta tekshiradi (yangi ariza uchun push ham keladi)
+        setInterval(function () {
+            if (!document.hidden) { checkNewOrders(); }
+        }, 20000);
+        document.addEventListener("visibilitychange", function () {
+            if (!document.hidden) { checkNewOrders(); }
+        });
     });
 })();
 </script>

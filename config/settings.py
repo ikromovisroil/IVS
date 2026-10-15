@@ -113,6 +113,25 @@ ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
+# Django keshi. Productionda Redis (Celery va channels'dan alohida DB raqami bilan):
+#   CACHE_REDIS_URL=redis://localhost:6379/2
+# Bo'sh bo'lsa - xotiradagi kesh (har jarayonda alohida; lokal rivojlantirish uchun yetarli).
+# Redis keshi barcha ishchi jarayonlar uchun umumiy: tokenlar, sinxronizatsiya qulfi va hisoblagichlar.
+CACHE_REDIS_URL = os.getenv("CACHE_REDIS_URL", "")
+if CACHE_REDIS_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": CACHE_REDIS_URL,
+            "KEY_PREFIX": "ivs",
+        }
+    }
+
+# Har sahifada chiqadigan hisoblagichlar (ariza, hujjat) natijasi necha soniya keshlanadi (0 = o'chirilgan).
+# Testlarda doim o'chiq (har test aniq ma'lumot bilan ishlashi uchun).
+import sys as _sys
+CONTEXT_CACHE_SECONDS = 0 if "test" in _sys.argv else int(os.getenv("CONTEXT_CACHE_SECONDS", "15"))
+
 # Chat (Django Channels) uchun channel layer. Productionda Redis (Celery
 # uchun ishlatilayotgan Redis'dan alohida DB raqami bilan) beriladi:
 #   CHANNELS_REDIS_URL=redis://localhost:6379/1

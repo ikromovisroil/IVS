@@ -1,8 +1,43 @@
+import functools
+
 from .models import *
+from django.core.cache import cache
 from django.db.models import Q
 from django.conf import settings
 
+CACHED_COUNTS = ("order_notifications", "order_receiver_count", "contact_badge_counts")
 
+
+def cached_counts(name):
+    """
+    Har sahifada ishlaydigan og'ir hisoblagichlarni xodim bo'yicha qisqa muddat keshlaydi
+    (`settings.CONTEXT_CACHE_SECONDS`, 0 bo'lsa o'chiq). Xodim o'zi o'zgartirgan joylarda
+    `invalidate_counts()` bilan darhol yangilanadi.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(request):
+            ttl = getattr(settings, "CONTEXT_CACHE_SECONDS", 0)
+            user = getattr(request, "user", None)
+            employee = getattr(user, "employee", None) if user is not None and user.is_authenticated else None
+            if not ttl or employee is None:
+                return func(request)
+            key = f"ctx:{name}:{employee.pk}"
+            data = cache.get(key)
+            if data is None:
+                data = func(request)
+                cache.set(key, data, ttl)
+            return data
+        return wrapper
+    return decorator
+
+
+def invalidate_counts(employee_id):
+    """Xodimning keshlangan hisoblagichlarini tozalaydi (u o'zi amal bajargach darhol yangi son ko'rinishi uchun)."""
+    cache.delete_many([f"ctx:{name}:{employee_id}" for name in CACHED_COUNTS])
+
+
+@cached_counts("order_notifications")
 def order_notifications(request):
     empty = {"order_notification_count": 0}
 
@@ -60,6 +95,7 @@ def order_notifications(request):
     return {"order_notification_count": all_notes.count()}
 
 
+@cached_counts("order_receiver_count")
 def order_receiver_count(request):
     """
     Sidebar'dagi 'Arizalarni Bajarish' bo'limi uchun,
@@ -111,6 +147,7 @@ def order_receiver_count(request):
     return empty
 
 
+@cached_counts("contact_badge_counts")
 def contact_badge_counts(request):
     """Sidebardagi "Xabarlar" bo'limi uchun - "Imzolash uchun" va
     "Kelishish uchun" view'laridagi bilan AYNAN bir xil querysetdan
