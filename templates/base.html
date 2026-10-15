@@ -72,7 +72,7 @@
             <span class="badge bg-danger badge-number" id="notif-badge"{% if not notif_unread %} style="display:none"{% endif %}>{{ notif_unread }}</span>
           </a>
 
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" style="width: 360px;">
+          <ul id="notif-menu" class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications" style="width: 360px;">
             <li class="dropdown-header d-flex justify-content-between align-items-center px-3">
               <span class="fw-bold">Bildirishnomalar</span>
               <a href="{% url 'notifications_page' %}" class="small">Hammasi</a>
@@ -80,7 +80,7 @@
             <li><hr class="dropdown-divider"></li>
 
             {% for n in notif_recent %}
-            <li class="notification-item">
+            <li class="notification-item notif-dyn">
               <a href="{% url 'notification_open' n.id %}" class="d-block px-3 py-2 text-decoration-none">
                 <div class="d-flex justify-content-between align-items-start gap-2">
                   <strong class="text-dark">{{ n.title }}{% if n.count > 1 %} ({{ n.count }}){% endif %}</strong>
@@ -90,12 +90,12 @@
                 <div class="small text-muted">{{ n.date_creat|date:"d.m.Y H:i" }}</div>
               </a>
             </li>
-            <li><hr class="dropdown-divider"></li>
+            <li class="notif-dyn"><hr class="dropdown-divider"></li>
             {% empty %}
-            <li class="text-center p-3 text-muted">Yangi bildirishnoma yo'q</li>
+            <li class="text-center p-3 text-muted notif-dyn">Yangi bildirishnoma yo'q</li>
             {% endfor %}
 
-            <li class="text-center py-2">
+            <li id="notif-footer" class="text-center py-2">
               <a href="{% url 'notifications_page' %}">Hammasini ko'rish</a>
             </li>
           </ul>
@@ -701,18 +701,58 @@ document.addEventListener("DOMContentLoaded", function () {
 <script>
 (function () {
     var badge = document.getElementById("notif-badge");
-    if (!badge) return;
-    function refresh() {
-        fetch("{% url 'notifications_count' %}", {credentials: "same-origin"})
+    var footer = document.getElementById("notif-footer");
+    var bell = document.getElementById("notif-bell");
+    if (!badge || !footer) return;
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) node.className = className;
+        if (text) node.textContent = text;     // textContent: matn HTML sifatida talqin qilinmaydi (XSS yo'q)
+        return node;
+    }
+
+    function render(items) {
+        var menu = document.getElementById("notif-menu");
+        menu.querySelectorAll(".notif-dyn").forEach(function (node) { node.remove(); });
+        if (!items.length) {
+            footer.parentNode.insertBefore(el("li", "text-center p-3 text-muted notif-dyn", "Yangi bildirishnoma yo'q"), footer);
+            return;
+        }
+        items.forEach(function (n) {
+            var li = el("li", "notification-item notif-dyn");
+            var a = el("a", "d-block px-3 py-2 text-decoration-none");
+            a.href = n.open_url;
+            var top = el("div", "d-flex justify-content-between align-items-start gap-2");
+            top.appendChild(el("strong", "text-dark", n.title + (n.count > 1 ? " (" + n.count + ")" : "")));
+            top.appendChild(el("span", "badge bg-primary", "yangi"));
+            a.appendChild(top);
+            if (n.body) a.appendChild(el("div", "small text-muted", n.body));
+            a.appendChild(el("div", "small text-muted", n.date));
+            li.appendChild(a);
+            footer.parentNode.insertBefore(li, footer);
+            var sep = el("li", "notif-dyn");
+            sep.appendChild(el("hr", "dropdown-divider"));
+            footer.parentNode.insertBefore(sep, footer);
+        });
+    }
+
+    function load() {
+        fetch("{% url 'notifications_recent' %}", {credentials: "same-origin"})
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (d) {
                 if (!d) return;
                 badge.textContent = d.unread;
                 badge.style.display = d.unread > 0 ? "" : "none";
+                render(d.items);
             })
             .catch(function () {});
     }
-    setInterval(refresh, 60000);
+
+    // Qo'ng'iroqcha ochilganda ro'yxat yangilanadi; fonda har 30 soniyada (faqat ko'rinib turgan oynada)
+    if (bell) bell.addEventListener("show.bs.dropdown", load);
+    setInterval(function () { if (!document.hidden) load(); }, 30000);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) load(); });
 })();
 </script>
 </body>

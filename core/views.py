@@ -3,6 +3,9 @@ from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import JsonResponse
+from django.urls import reverse
+from django.utils import timezone
+from django.utils.text import Truncator
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_GET, require_POST
@@ -73,6 +76,30 @@ def notifications_read_all(request):
     mark_all_read(employee, kind=tab if tab in KINDS else None)
     target = request.META.get("HTTP_REFERER") or "/notifications/"
     return redirect(target)
+
+
+RECENT_LIMIT = 6
+
+
+@never_cache
+@require_GET
+@login_required
+def notifications_recent(request):
+    """Qo'ng'iroqcha menyusi uchun: o'qilmagan soni va oxirgi yangi bildirishnomalar (sahifani yangilamasdan)."""
+    employee = _employee(request)
+    unread = Notification.objects.filter(employee=employee, is_read=False)
+    items = [
+        {
+            "id": n.id,
+            "title": n.title,
+            "body": Truncator(n.body).chars(70),
+            "count": n.count,
+            "date": timezone.localtime(n.date_creat).strftime("%d.%m.%Y %H:%M"),
+            "open_url": reverse("notification_open", args=[n.id]),
+        }
+        for n in unread.order_by("-date_creat", "-id")[:RECENT_LIMIT]
+    ]
+    return JsonResponse({"unread": unread.count(), "items": items})
 
 
 @never_cache

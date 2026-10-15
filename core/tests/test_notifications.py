@@ -228,6 +228,33 @@ class NotificationPageTests(TestCase):
         self.assertEqual(context["notif_unread"], 1)
         self.assertNotEqual(unread.id, read.id)
 
+    def test_recent_endpoint_returns_only_own_unread_newest_first(self):
+        for i in range(8):
+            record(self.emp, f"Yangi-{i}", f"matn {i}", "/order/sender/", tag=f"order-new-{i}")
+        record(self.emp, "Oqilgan", tag="deed-sender-1")
+        mark_read_by_tag(self.emp, "deed-sender-1")
+        record(self.other, "Boshqaniki", tag="order-new-99")
+        data = self.client.get(reverse("notifications_recent")).json()
+        self.assertEqual(data["unread"], 8)                       # o'qilgani va boshqaniki hisobga olinmaydi
+        self.assertEqual(len(data["items"]), 6)                   # menyuda 6 tagacha
+        self.assertEqual(data["items"][0]["title"], "Yangi-7")    # eng yangisi birinchi
+        titles = {item["title"] for item in data["items"]}
+        self.assertNotIn("Oqilgan", titles)
+        self.assertNotIn("Boshqaniki", titles)
+        first = data["items"][0]
+        self.assertEqual(first["open_url"], reverse("notification_open", args=[first["id"]]))
+
+    def test_recent_endpoint_requires_login(self):
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("notifications_recent")).status_code, 302)
+
+    def test_bell_menu_is_marked_for_live_refresh(self):
+        record(self.emp, "A", tag="order-new-1")
+        html = self.client.get(reverse("notifications_page")).content.decode()
+        self.assertIn('id="notif-menu"', html)
+        self.assertIn('id="notif-footer"', html)
+        self.assertIn(reverse("notifications_recent"), html)
+
     def test_anonymous_redirected_to_login(self):
         self.client.logout()
         self.assertEqual(self.client.get(reverse("notifications_page")).status_code, 302)
