@@ -111,6 +111,23 @@ class Rank(models.Model):
         verbose_name_plural = "Lavozim"
 
 
+class RankCode(models.Model):
+    """
+    Tashqi tizim lavozim kodlari (position_id). Bir xil nomli lavozim ko'p kod bilan kelishi mumkin (har shtat birligi
+    alohida ID), ularning hammasi bitta `Rank` ga bog'lanadi. Sinxronizatsiya kod bo'yicha shu yerdan qidiradi.
+    """
+    code = models.CharField(max_length=20, unique=True)
+    rank = models.ForeignKey(Rank, on_delete=models.CASCADE, related_name="codes")
+
+    def __str__(self):
+        return f"{self.code} -> {self.rank_id}"
+
+    class Meta:
+        db_table = 'rank_code'
+        verbose_name = "Lavozim kodi"
+        verbose_name_plural = "Lavozim kodlari"
+
+
 _PATRONYMIC_SUFFIXES = {"o'g'li", "o‘g‘li", "oʻgʻli", "o`g`li", "ogli", "qizi"}
 
 

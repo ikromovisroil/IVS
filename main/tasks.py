@@ -212,7 +212,8 @@ def _resolve_position(sso_pinfl, positions):
 
         rank = None
         if position_id:
-            rank = Rank.objects.filter(code=position_id).first()
+            from .ranks import rank_for_code   # RankCode (birlashtirilgan kodlar) va eski Rank.code
+            rank = rank_for_code(position_id)
 
         data = {
             "organization": None,

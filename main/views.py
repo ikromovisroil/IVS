@@ -3991,11 +3991,10 @@ def employe_create(request):
                 raise Exception("Username yaratib bo'lmadi (20 urinishdan keyin)")
 
             if not assigned_data["rank"] and assigned_data.get("_position_id"):
-                assigned_data["rank"], _ = Rank.objects.get_or_create(
-                    code=assigned_data["_position_id"],
-                    defaults={
-                        "name": assigned_data["_position"] or f"Lavozim-{assigned_data['_position_id']}"
-                    },
+                from .ranks import get_or_create_rank
+                assigned_data["rank"], _ = get_or_create_rank(
+                    assigned_data["_position_id"],
+                    assigned_data["_position"] or f"Lavozim-{assigned_data['_position_id']}",
                 )
 
             employee = user.employee

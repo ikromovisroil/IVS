@@ -71,10 +71,16 @@ class DivisionAdmin(admin.ModelAdmin):
     search_fields = ("name", "code", "directorate__name")
 
 
+class RankCodeInline(admin.TabularInline):
+    model = RankCode
+    extra = 0
+
+
 @admin.register(Rank)
 class RankAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "name")
-    search_fields = ("name", "code",)
+    search_fields = ("name", "code", "codes__code")
+    inlines = [RankCodeInline]
 
 
 @admin.register(Region)
