@@ -31,7 +31,7 @@ from .push_views import (
 from .sanitizers import sanitize_deed_body
 
 FULL_SENDER_RECEIVER_RELATED = (
-    "goal", "technics", "user", "receiver", "sender",
+    "goal", "goal__organization", "technics", "user", "receiver", "sender",
     "sender__rank", "sender__organization", "sender__department",
     "sender__directorate", "sender__division",
     "receiver__rank", "receiver__organization", "receiver__department",
@@ -1178,6 +1178,7 @@ def order_receiver_barn(request):
                 status="viewed",
             )
             .select_related(*FULL_SENDER_RECEIVER_RELATED)
+            .prefetch_related(MATERIALS_PREFETCH)
             .order_by("-id")
         )
     else:

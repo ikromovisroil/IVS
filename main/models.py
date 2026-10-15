@@ -551,6 +551,12 @@ class Order(models.Model):
 
     @property
     def materials_all(self):
+        """
+        Arizaga biriktirilgan materiallar. Ro'yxat sahifalarida `prefetch_related("materials")` qilingan bo'lsa,
+        oldindan yuklangan natija ishlatiladi (har ariza uchun alohida so'rov yuborilmaydi: N+1 ga qarshi).
+        """
+        if "materials" in getattr(self, "_prefetched_objects_cache", {}):
+            return self.materials.all()
         return self.materials.select_related('material').all()
 
     def __str__(self):

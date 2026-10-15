@@ -132,7 +132,7 @@ Faqat o'z tashkiloti (`all_organization` bo'lsa hammasi).
 - **Tahrirlash** `PATCH`: `first_name`, `last_name`, `father_name`, `pinfl` (14 xonali, takrorlanmaydi), `department`, `directorate`, `division`, `rank`, `phone`.
   Tashkilot o'zgarmaydi. Joylashuv o'zgarsa xodimdagi texnikalar uchun `technics_action`: `release` (standart — bo'shatiladi),
   `with` (birga ko'chadi), `stay` (eski joyda qoladi).
-- **O'chirish** `DELETE` → `204`: xodim yozuvi **o'chirilmaydi**, faqat faolsizlantiriladi (kirish, bot va push to'xtaydi; arizalari, hujjatlari va materiallari saqlanadi). O'zini o'chirib bo'lmaydi (400).
+- **O'chirish** `DELETE` → `204`: xodim yozuvi **o'chirilmaydi**, faqat faolsizlantiriladi: kirish, bot va push to'xtaydi, **tashkilot, bo'lim, boshqarma, bo'linma, lavozim va hudud tozalanadi** (bo'sh bo'ladi); arizalari, hujjatlari va materiallari saqlanadi. O'chirilgan xodim `GET /api/employees/` ro'yxatida **chiqmaydi**. O'zini o'chirib bo'lmaydi (400).
 - **Qayta faollashtirish** `POST /api/employees/{id}/activate/` (`delete_employee` huquqi kerak) → `200` + xodim.
 - Hisobotlar (Akt, Svod, Reestr) arizaning yaratilgan paytdagi tashkilot/hudud/bo'limi bo'yicha tuziladi, xodim keyin ko'chsa ham o'zgarmaydi.
 

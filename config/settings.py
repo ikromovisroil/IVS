@@ -533,6 +533,11 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Asia/Tashkent"
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 
+# Lokal rivojlantirishda Redis yoqmasdan ishlash: .env da CELERY_EAGER=1 bo'lsa, vazifalar (push va h.k.)
+# so'rov ichida darhol bajariladi (Redis'ga ulanmaydi, so'rov osilib qolmaydi). Productionda yoqilmaydi.
+CELERY_TASK_ALWAYS_EAGER = env_bool("CELERY_EAGER", False)
+CELERY_TASK_EAGER_PROPAGATES = False   # vazifadagi xato asosiy so'rovni buzmasin
+
 # =========================================================
 # CSP (django-csp 4.0+)
 # =========================================================

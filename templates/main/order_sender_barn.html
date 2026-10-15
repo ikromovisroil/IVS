@@ -223,7 +223,7 @@
                                               </tr>
                                             </thead>
                                             <tbody>
-                                              {% for m in o.materials_all.all %}
+                                              {% for m in o.materials_all %}
                                                 <tr>
                                                   <td class="ps-3">{{ forloop.counter }}</td>
                                                   <td>{{ m.material.name }}</td>
