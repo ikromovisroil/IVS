@@ -73,7 +73,9 @@ def notification_open(request, pk):
 def notifications_read_all(request):
     employee = _employee(request)
     tab = (request.POST.get("tab") or "").strip()
-    mark_all_read(employee, kind=tab if tab in KINDS else None)
+    updated = mark_all_read(employee, kind=tab if tab in KINDS else None)
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"updated": updated, "unread": unread_count(employee)})   # qo'ng'iroqcha (sahifa yangilanmaydi)
     target = request.META.get("HTTP_REFERER") or "/notifications/"
     return redirect(target)
 

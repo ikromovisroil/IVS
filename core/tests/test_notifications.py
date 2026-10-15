@@ -255,6 +255,24 @@ class NotificationPageTests(TestCase):
         self.assertIn('id="notif-footer"', html)
         self.assertIn(reverse("notifications_recent"), html)
 
+    def test_read_all_ajax_returns_json_and_marks_everything_read(self):
+        record(self.emp, "A", tag="order-new-1")
+        record(self.emp, "B", tag="deed-sender-1")
+        theirs = record(self.other, "C", tag="order-new-2")
+        response = self.client.post(reverse("notifications_read_all"), HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertEqual(response.json(), {"updated": 2, "unread": 0})
+        theirs.refresh_from_db()
+        self.assertFalse(theirs.is_read)
+        self.assertEqual(self.client.get(reverse("notifications_recent")).json(), {"unread": 0, "items": []})
+
+    def test_bell_has_read_all_button_only_when_unread_exist(self):
+        html = self.client.get(reverse("notifications_page")).content.decode()
+        self.assertIn('id="notif-read-all"', html)                      # tugma bor (JS yashirin/ko'rsatadi)
+        self.assertIn('id="notif-footer" class="text-center py-2" style="display:none"', html)   # o'qilmagan yo'q: yashirin
+        record(self.emp, "A", tag="order-new-1")
+        html = self.client.get(reverse("notifications_page")).content.decode()
+        self.assertIn('id="notif-footer" class="text-center py-2">', html)
+
     def test_anonymous_redirected_to_login(self):
         self.client.logout()
         self.assertEqual(self.client.get(reverse("notifications_page")).status_code, 302)
