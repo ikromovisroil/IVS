@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from django.urls import reverse
 from django.utils import timezone
 from reportlab.pdfgen import canvas
-from reportlab.lib.colors import red
+from reportlab.lib.colors import black, red
 from reportlab.lib.utils import ImageReader
 from PyPDF2 import PdfReader, PdfWriter
 from qrcode.constants import ERROR_CORRECT_M
@@ -56,7 +56,7 @@ def file_lock(lock_path: str, timeout: int = 10, stale_after: int = 60):
 # ==========================================================
 # 2) Overlay PDF yaratish
 # ==========================================================
-def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: str) -> bytes:
+def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: str, code: str = "") -> bytes:
     qr = qrcode.QRCode(
         version=None,
         error_correction=ERROR_CORRECT_M,
@@ -94,6 +94,13 @@ def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: st
         qr_size = 50
         x_center = (page_w - qr_size) / 2
         c.drawImage(qr_reader, x_center, 15, width=qr_size, height=qr_size, mask="auto")
+
+        # Hujjat kodi QR ning o'ng tomonida, shu qatorning o'rtasida: [ QR ]  <kod>
+        code = (code or "").strip()
+        if code:
+            c.setFillColor(black)
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(x_center + qr_size + 8, 15 + qr_size / 2 - 4, code)
 
         c.showPage()
         c.save()
@@ -185,7 +192,7 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
                 w = float(page.mediabox.width)
                 h = float(page.mediabox.height)
 
-                overlay_bytes = build_overlay_pdf_bytes(w, h, text, qr_link)
+                overlay_bytes = build_overlay_pdf_bytes(w, h, text, qr_link, code=deed.code or "")
                 overlay_reader = PdfReader(BytesIO(overlay_bytes))
                 overlay_page = overlay_reader.pages[0]
 
