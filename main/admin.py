@@ -309,9 +309,18 @@ class OrderAdminForm(forms.ModelForm):
 class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     form = OrderAdminForm
     exclude = ORDER_SNAPSHOT_FIELDS   # modeldagi (editable=False) maydonlar; formada e'lon qilingan versiyalari ishlaydi
+
+    def get_queryset(self, request):
+        # Ro'yxatda biriktirilgan materiallar ID lari ko'rsatiladi: har bir qator uchun alohida so'rov ketmasligi uchun
+        return super().get_queryset(request).prefetch_related("materials")
+
+    @admin.display(description="Materiallar (ID)")
+    def material_ids(self, obj):
+        ids = [str(om.material_id) for om in obj.materials.all() if om.material_id]
+        return ", ".join(ids) if ids else "-"
     list_display = (
         "id", "sender_region", "sender", "receiver", "user",
-        "colored_status", "rating", "date_creat"
+        "colored_status", "material_ids", "rating", "date_creat"
     )
     list_filter = (
         "sender_organization", "sender_region", "status", "goal", "date_creat"
