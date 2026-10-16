@@ -246,7 +246,7 @@
     <div class="row g-3 mb-3">
       <div class="col-12 col-lg-5">
         <div class="tx-card p-3 h-100">
-          <h5 class="tx-title mb-2">Guruhlar ulushi</h5>
+          <h5 class="tx-title mb-2">Kategoriyalar ulushi</h5>
           <div id="txDonut"></div>
         </div>
       </div>
@@ -309,12 +309,20 @@
 
   const suffix = (v) => v + " ta";
 
-  // ---- Donut: guruhlar ulushi ----
+  // ---- Donut: kategoriyalar ulushi (eng ko'p 8 tasi, qolgani "Boshqalar") ----
+  const DONUT_LIMIT = 8;
+  const DONUT_COLORS = ["#4c5cff", "#0ea5e9", "#10b981", "#f59e0b", "#ec4899", "#8a4dff", "#ef4444", "#14b8a6"];
+  const catTotals = [];
+  groups.forEach((g) => g.categories.forEach((c) => catTotals.push({ name: c.name, count: c.count })));
+  catTotals.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+  const donutTop = catTotals.slice(0, DONUT_LIMIT);
+  const donutRest = catTotals.slice(DONUT_LIMIT).reduce((sum, c) => sum + c.count, 0);
+  if (donutRest) donutTop.push({ name: "Boshqalar", count: donutRest });
   make("#txDonut", {
     chart: { type: "donut", height: 340 },
-    labels: groups.map((g) => g.name),
-    series: groups.map((g) => g.total),
-    colors: groups.map(colorOf),
+    labels: donutTop.map((c) => c.name),
+    series: donutTop.map((c) => c.count),
+    colors: donutTop.map((c, i) => (c.name === "Boshqalar" && donutRest && i === donutTop.length - 1) ? "#94a3b8" : DONUT_COLORS[i % DONUT_COLORS.length]),
     stroke: { width: 2, colors: ["transparent"] },
     legend: { position: "bottom" },
     dataLabels: { enabled: false },
