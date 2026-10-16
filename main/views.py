@@ -3346,6 +3346,11 @@ def reest_post(request):
 # ═══════════════════════════════════════════════════════════════════
 # SERVISE
 # ═══════════════════════════════════════════════════════════════════
+def quarter_roman(month):
+    """Oy raqami (1-12) -> chorak: yanvar-mart I, aprel-iyun II, iyul-sentyabr III, oktyabr-dekabr IV."""
+    return ["I", "II", "III", "IV"][(int(month) - 1) // 3]
+
+
 @never_cache
 @require_GET
 @login_required
@@ -3363,6 +3368,9 @@ def service_get(request):
         # Hisobot faqat o'z tashkiloti va o'z hududi bo'yicha avtomatik shakllanadi
         "my_org": employee.organization,
         "my_region": employee.region,
+        # Hisobot davrining boshlang'ich qiymati: bugungi yil va chorak (sana tanlanganda JS yangilaydi)
+        "report_year": timezone.localdate().year,
+        "report_quarter": quarter_roman(timezone.localdate().month),
     }
     return render(request, "main/service.html", context)
 

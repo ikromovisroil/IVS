@@ -123,11 +123,11 @@
                         <td style="border:1px solid #fff;text-align:center;"></td>
                         <td style="border:1px solid #fff;text-align:center;">
                           <b>"Tasdiqlayman"<br>
-                             Oʻzbekiston Respublikasi<br>
+                             “O‘zbekiston Respublikasi<br>
                              Iqtisodiyot va moliya vazirligi huzuridagi<br>
-                             “Axborot texnalogiyalar markazi” DUK<br>
+                             Axborot texnologiyalar markazi” DUK<br>
                              Direktori<br>
-                             Xujamqulov F.B.<br>
+                             F. Xujamqulov<br>
                           </b>
                           <b id="doc_date">12.02.2026 y</b>
                         </td>
@@ -136,24 +136,20 @@
                   </table>
                 </div>
                 <div style="text-align:center;">
-                  O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi va Iqtisodiyot va Moliya vazirligi huzuridagi ATM infratuzilmasini
-                  qo‘llab-quvvatlashda ishning bajarilish jarayonidagi uskuna va materiallarni hisobdan chiqarish bo‘yicha
+                  “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi” DUK
+                infratuzilmasiniqo‘llab-quvvatlashda ishning bajarilish jarayonidagi uskuna va materiallarni hisobdan chiqarish bo‘yicha
                 </div>
                 <div style="text-align:center;">
                   <b>DALOLATNOMA</b>
                 </div>
                 <div style="text-align:center;">
-                  <b id="report_period">2026 yil dekabr oyi uchun</b>
+                  <b><span id="year">{{ report_year }}</span> yil <span id="chorak">{{ report_quarter }}</span> - chorak  uchun</b>
                 </div><br>
 
                 <div style="text-align:justify; text-indent:1.25cm;">
-                      Biz quyida imzo chekuvchilar ATM ning moddiy boyliklarini hisobdan chiqarish
-                  bo‘yicha doimiy komissiya  a‘zolari, komissiya raisi –
-                  direktorning birinchi o’rinbosari Tursunov A.A,  komissiya a‘zolari -
-                  <span id="blok_1">_</span>
-                  ushbu dalolatnomani HTvaTXK bo’limi yetakchi mutaxassisi A.Ismailov
-                  ro‘yxatiga quyidagi miqdor va tarkibda kiritilgan inventarizatsiya
-                  buyumlarini hisobdan chiqarish uchun tuzdik.
+                Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi”
+                DUKning moddiy boyliklarini hisobdan chiqarish bo‘yicha doimiy komissiya raisi: N. Nazarov,  komissiya  a’zolari: N. Ergasheva, G.Hatamova, A.Narzullayev, I.Xabirov, O. Abduqodirov,U.Muxtorov, A.Abdukarimov va A. Sa’dullayev ushbu dalolatnomani
+                <span id="blok_javobgar"></span> ro‘yxatiga quyidagi miqdor va tarkibda kiritilgan inventarizatsiya buyumlarini hisobdan chiqarish uchun tuzdik.
                 </div><br>
 
 
@@ -190,6 +186,12 @@
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">7</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">8</td>
                       </tr>
+                      <tr>
+                        <td colspan="8" style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(191,237,210);">“O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi” DUK</td>
+                      </tr>
+                      <tr>
+                        <td colspan="8" style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(191,213,237);">{{ request.user.employee.region.name|default:"" }}</td>
+                      </tr>
                     </thead>
                     <tbody id="materials_tbody">
                     </tbody>
@@ -197,7 +199,7 @@
                 </div><br>
 
                 <div style="text-align:left;">
-                  MIB buxgalteriya hisobida aks etishi va yuqoridagi tovar-moddiy zaxiralarni Ismailov Amanbay Turganbayevich hisobvarag‘idan chiqorilishi uchun.
+                  Moliya-iqtisod bo‘limi buxgalteriya hisobida aks etishi va yuqoridagi tovar-moddiy zaxiralarni <span id="blok_javobgar_ism"></span> hisobidan chiqarilishi uchun.
                 </div><br>
 
                 <div><b>Komissiya raisi:</b></div>
@@ -210,17 +212,160 @@
                     <tbody>
                       <tr>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Direktorning birinchi o’rinbosari:</b>
+                          <b>Direktorning o‘rinbosari</b>
                         </td>
                         <td style="border:1px solid #fff;text-align:left;">
-                          <b>Tursunov A.A</b>
+                          <b>N. Nazarov</b>
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div><br>
 
-                <div id="blok_2">
+                <div><b>Komissiya a‘zolari:</b></div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Bo‘lim boshlig‘i Bosh buxgalter</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>N. Ergasheva</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Bosh buxgalter o‘rinbosari</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>G. Hatamova</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Boshqarma boshlig‘i</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>A. Narzullayev</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Bo‘lim boshlig‘i</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>I. Xabirov</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Boshqarma boshlig‘i </b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>O. Abduqodirov</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Boshqarma boshlig‘i</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>U. Muxtorov</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Ish boshqaruvchi</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>A. Abdukarimov</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div>
+                  <table style="border-collapse:collapse;width:100%;">
+                    <colgroup>
+                      <col style="width:50%;">
+                      <col style="width:50%;">
+                    </colgroup>
+                    <tbody>
+                      <tr>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>Ombor mudiri</b>
+                        </td>
+                        <td style="border:1px solid #fff;text-align:left;">
+                          <b>A. Sa’dullayev</b>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
 
                 <div id="blok_3">
@@ -244,45 +389,6 @@ function todayDmy() {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yy = d.getFullYear();
   return `${dd}.${mm}.${yy}`;
-}
-
-// Tanlangan sana oralig'i (date1 - date2) asosida oy/yil matnini hosil qiladi.
-// Bir oy ichida bo'lsa: "2026 yil avgust oyi uchun"
-// Bir necha oy bo'lsa: "2026 yil iyul-avgust oylari uchun"
-// Turli yillar bo'lsa: "2025 yil dekabr - 2026 yil yanvar oylari uchun"
-function formatMonthYearRange(date1Str, date2Str) {
-  const months = [
-    'yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun',
-    'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'
-  ];
-
-  if (!date1Str || !date2Str) {
-    const d = new Date();
-    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
-  }
-
-  const d1 = new Date(date1Str);
-  const d2 = new Date(date2Str);
-
-  if (isNaN(d1.getTime()) || isNaN(d2.getTime())) {
-    const d = new Date();
-    return `${d.getFullYear()} yil ${months[d.getMonth()]} oyi uchun`;
-  }
-
-  const y1 = d1.getFullYear();
-  const m1 = d1.getMonth();
-  const y2 = d2.getFullYear();
-  const m2 = d2.getMonth();
-
-  if (y1 === y2 && m1 === m2) {
-    return `${y1} yil ${months[m1]} oyi uchun`;
-  }
-
-  if (y1 === y2) {
-    return `${y1} yil ${months[m1]}-${months[m2]} oylari uchun`;
-  }
-
-  return `${y1} yil ${months[m1]} - ${y2} yil ${months[m2]} oylari uchun`;
 }
 
 function esc(s) {
@@ -349,33 +455,6 @@ function editorSetHTML(selector, html) {
   return false;
 }
 
-// "Ikromov Isroil Ilhomovich" -> "Ikromov.I.I" ("o'g'li"/"qizi" kabi
-// qo'shimchalar hisobga olinmaydi, faqat ism va otasining ismining
-// bosh harfi olinadi).
-function formatShortName(fullname) {
-  const parts = (fullname || '').trim().split(/\s+/).filter(Boolean);
-  if (!parts.length) return '';
-  const surname = parts[0];
-
-  const APOSTROPHES = ["'", "’", "‘", "ʻ", "ʼ", "`"];
-  function stripApostrophes(s) {
-    let r = s;
-    APOSTROPHES.forEach(function (a) { r = r.split(a).join(''); });
-    return r;
-  }
-  const SUFFIXES = ['ogli', 'qizi', 'ogil'];
-
-  const nameParts = parts.slice(1).filter(function (p) {
-    return SUFFIXES.indexOf(stripApostrophes(p).toLowerCase()) === -1;
-  });
-
-  const initials = nameParts
-    .map(function (p) { return p.charAt(0).toUpperCase(); })
-    .join('.');
-
-  return initials ? `${surname}.${initials}` : surname;
-}
-
 // "Narzullayev Anvar Shuhrat o'g'li" -> "A.Narzullayev" (ism bosh harfi, nuqta, familiya)
 function formatInitialSurname(fullname) {
   const parts = (fullname || '').trim().split(/\s+/).filter(Boolean);
@@ -383,6 +462,40 @@ function formatInitialSurname(fullname) {
   const surname = parts[0];
   const first = parts[1] ? parts[1].charAt(0).toUpperCase() : '';
   return first ? `${first}.${surname}` : surname;
+}
+
+// "Narzullayev Anvar Shuhrat o'g'li" -> "A. Narzullayev" (matn ichida: ism bosh harfi, nuqta, probel, familiya)
+function formatInitialSpaceSurname(fullname) {
+  const parts = (fullname || '').trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return '';
+  const surname = parts[0];
+  const first = parts[1] ? parts[1].charAt(0).toUpperCase() : '';
+  return first ? `${first}. ${surname}` : surname;
+}
+
+// Lavozim matn ichida kichik harf bilan boshlanadi: "Boshlig'i" -> "boshlig'i"
+function lowerFirst(text) {
+  const t = (text || '').trim();
+  return t ? t.charAt(0).toLowerCase() + t.slice(1) : '';
+}
+
+// ["A", "B", "C"] -> "A, B va C"; ["A", "B"] -> "A va B"; ["A"] -> "A"
+function joinWithVa(items) {
+  if (items.length <= 1) return items.join('');
+  return items.slice(0, -1).join(', ') + ' va ' + items[items.length - 1];
+}
+
+// Hujjat matniga: "<Boshqarma/bo'lim> <lavozim> <A. Familiya>" - bir nechta bo'lsa "A va B" yoki "A, B va C"
+function responsiblePeopleText(list) {
+  return joinWithVa(list.map(function (p) {
+    return [(p.unit || '').trim(), lowerFirst(p.rank), formatInitialSpaceSurname(p.full_name)]
+      .filter(Boolean).join(' ');
+  }).filter(Boolean));
+}
+
+// Faqat ismlar: "A. Narzullayev" yoki "A. Narzullayev va O. Abduqodirov" (3 va undan ko'p: "A, B va C")
+function responsibleNamesText(list) {
+  return joinWithVa(list.map(function (p) { return formatInitialSpaceSurname(p.full_name); }).filter(Boolean));
 }
 
 // Hisobotdagi materiallarning moddiy-javobgar shaxslari (dublikatsiz) -> hujjat pastida
@@ -396,12 +509,17 @@ function renderResponsibleBlock(people) {
     list.push(p);
   });
 
+  // Hujjat matnidagi gap ichida: "... dalolatnomani <javobgar shaxslar> ro'yxatiga ..."
+  editorSetText('#blok_javobgar', responsiblePeopleText(list) || '_');
+  // "... zaxiralarni <A. Narzullayev va O. Abduqodirov> hisobidan chiqarilishi uchun" (faqat ismlar)
+  editorSetText('#blok_javobgar_ism', responsibleNamesText(list) || '_');
+
   if (!list.length) {
     editorSetHTML('#blok_3', '');
     return;
   }
 
-  let html = `<div><b>Tovar-moddiy boyliklar uchun moddiy-javobgar shaxs:</b></div>`;
+  let html = `<div><b>Tovar-moddiy boyliklar uchun moddiy-javobgar shahs:</b></div>`;
   list.forEach(function (p) {
     html += `
       <div>
@@ -427,68 +545,7 @@ function renderResponsibleBlock(people) {
   editorSetHTML('#blok_3', html);
 }
 
-// "Ikromov Isroil Ilhomovich" -> "IKROMOV I.I" (familiya BOSH HARFLARDA,
-// keyin probel, so'ng bosh harflar nuqta bilan, oxirida nuqtasiz).
-function formatShortNameUpper(fullname) {
-  const short = formatShortName(fullname);
-  if (!short) return '';
-  const dotIdx = short.indexOf('.');
-  if (dotIdx === -1) return short.toUpperCase();
-  const surname = short.slice(0, dotIdx).toUpperCase();
-  const initials = short.slice(dotIdx + 1);
-  return `${surname} ${initials}`;
-}
-
 // ─── KOMISSIYA A'ZOLARI (Kelishuvchilar tanlovidan) ───────────────────────────
-
-function updateCommissionBlocks() {
-  const members = [];
-  $('#agreements option:selected').each(function () {
-    const $opt = $(this);
-    const fullname = $opt.attr('data-fullname') || $opt.text() || '';
-    const rank = ($opt.attr('data-rank') || '').trim();
-    const shortName = formatShortName(fullname);
-    const shortNameUpper = formatShortNameUpper(fullname);
-    if (shortName) members.push({ rank: rank, shortName: shortName, shortNameUpper: shortNameUpper });
-  });
-
-  // blok_1 - matn ichida, vergul bilan ajratilgan (masalan:
-  // "lavozim Ikromov.I.I, lavozim Ikromov.I.I")
-  const inlineText = members
-    .map(function (m) { return [m.rank, m.shortName].filter(Boolean).join(' '); })
-    .join(', ');
-  editorSetText('#blok_1', inlineText || '_');
-
-  // blok_2 - har bir a'zo uchun alohida to'liq-kengliqdagi 2 ustunli jadval
-  if (!members.length) {
-    editorSetHTML('#blok_2', '');
-  } else {
-    let blocks = `<div><b>Komissiya a'zolari:</b></div>`;
-    members.forEach(function (m) {
-      blocks += `
-        <div>
-          <table style="border-collapse:collapse;width:100%;">
-            <colgroup>
-              <col style="width:50%;">
-              <col style="width:50%;">
-            </colgroup>
-            <tbody>
-              <tr>
-                <td style="border:1px solid #fff;text-align:left;">
-                  <b>${esc(m.rank)}</b>
-                </td>
-                <td style="border:1px solid #fff;text-align:left;">
-                  <b>${esc(m.shortNameUpper)}</b><br>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      `;
-    });
-    editorSetHTML('#blok_2', blocks);
-  }
-}
 
 function waitForTinyMCE(callback, tries = 0) {
   const ed = editorGet();
@@ -501,10 +558,20 @@ function updateDocDate() {
   editorSetText('#doc_date', todayDmy() + ' y');
 }
 
+// Hisobot davri: "2026 yil III - chorak uchun". Yil va chorak tanlangan oraliqning OXIRGI sanasidan olinadi.
+function quarterOfDate(isoDate) {
+  const m = /^(\d{4})-(\d{2})-\d{2}/.exec(isoDate || '');
+  if (!m) return null;
+  const month = Number(m[2]);
+  if (month < 1 || month > 12) return null;
+  return { year: m[1], quarter: ['I', 'II', 'III', 'IV'][Math.ceil(month / 3) - 1] };
+}
+
 function updateReportPeriod() {
-  const date1 = $('#date1').val();
-  const date2 = $('#date2').val();
-  editorSetText('#report_period', formatMonthYearRange(date1, date2));
+  const q = quarterOfDate($('#date2').val() || $('#date1').val());
+  if (!q) return;
+  editorSetText('#year', q.year);
+  editorSetText('#chorak', q.quarter);
 }
 
 // ─── PDF yuklab olish ──────────────────────────────────────────────────────────
@@ -638,13 +705,15 @@ $(function () {
   if (!$('#date2').val()) $('#date2').val(toLocalIsoDate(today));
 
   // ─── SEARCH MATERIALS ───────────────────────────────────────────────────────
-  // Faqat o'z tashkilotim va o'z hududim bo'yicha avtomatik; jadval Svod'dagi kabi:
-  // Tashkilot -> Hudud -> qatorlar -> "{Hudud} jami" -> "{Tashkilot} jami" -> "Jami".
+  // Faqat o'z tashkilotim va o'z hududim bo'yicha avtomatik. Jadval: sarlavhada tashkilot va hudud nomi (statik),
+  // pastda qatorlar -> "{Hudud} jami" -> "{Tashkilot} jami" -> "Jami".
 
   const MY_ORG_ID      = "{{ my_org.id|default:'' }}";
   const MY_ORG_NAME    = "{{ my_org.name|escapejs }}";
   const MY_REGION_ID   = "{{ my_region.id|default:'' }}";
   const MY_REGION_NAME = "{{ my_region.name|default:''|escapejs }}";
+  // Jami qatorlari: "<DUK nomi> jami", "<Hudud> jami", "Jami" (jadval sarlavhasidagi nom bilan bir xil)
+  const DUK_NAME = "“O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi” DUK";
 
   function tdBase(extra) {
     return 'border:1px solid #000;' + (extra || '');
@@ -704,7 +773,7 @@ $(function () {
       // Moddiy-javobgar shaxslar: arizadagi va sarfdagi materiallar egalari
       const owners = (ordersData.material_owners || []).slice();
       serviceItems.forEach(function (it) {
-        owners.push({ id: null, full_name: it['full_name'], rank: it['rank_name'] });
+        owners.push({ id: null, full_name: it['full_name'], rank: it['rank_name'], unit: it['owner_unit'] });
       });
 
       if (!orderItems.length && !serviceItems.length) {
@@ -721,14 +790,9 @@ $(function () {
 
       const cell = 'border:1px solid #000;font-size:8pt;text-align:center;';
       const regionName = esc(MY_REGION_NAME || "Noma'lum hudud");
-      let rows = `
-        <tr>
-          <td colspan="8" style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(191,237,210);">${esc(MY_ORG_NAME)}</td>
-        </tr>
-        <tr>
-          <td colspan="8" style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(191,213,237);">${regionName}</td>
-        </tr>
-      `;
+      // Tashkilot va hudud nomi jadval sarlavhasida allaqachon bor (DUK va hudud qatorlari), shuning uchun bu yerda
+      // takroran chiqarilmaydi: faqat materiallar va pastdagi "jami" qatorlari.
+      let rows = '';
 
       let index = 1;
       let total = 0;
@@ -770,12 +834,12 @@ $(function () {
 
       rows += `
         <tr>
-          <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(253,246,220);">${regionName} jami:</td>
+          <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(253,246,220);">${DUK_NAME} jami:</td>
           <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(253,246,220);">${formatNumber(total)}</td>
           <td colspan="2" style="border:1px solid #000;background-color:rgb(253,246,220);"></td>
         </tr>
         <tr>
-          <td colspan="5" style="border:1px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${esc(MY_ORG_NAME)} jami:</td>
+          <td colspan="5" style="border:1px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${regionName} jami:</td>
           <td style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(total)}</td>
           <td colspan="2" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
         </tr>
@@ -804,10 +868,6 @@ $(function () {
 
   $('#date1, #date2').on('change', function () {
     updateReportPeriod();
-  });
-
-  $('#agreements').on('change', function () {
-    updateCommissionBlocks();
   });
 
   $('#btnSearch').on('click', function () {
@@ -854,7 +914,6 @@ $(function () {
   waitForTinyMCE(function () {
     updateDocDate();
     updateReportPeriod();
-    updateCommissionBlocks();
   });
 
 });

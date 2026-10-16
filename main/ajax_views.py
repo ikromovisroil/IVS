@@ -850,11 +850,21 @@ def ajax_svod_materials(request):
                 "material__employee__first_name",
                 "material__employee__father_name",
                 "material__employee__rank__name",
+                "material__employee__division__name",
+                "material__employee__directorate__name",
+                "material__employee__department__name",
             )
             .distinct()
         )
         for r in owners:
             material_owners.append({
+                # Hujjat matni uchun: shaxsning eng aniq tuzilmasi (bo'linma > boshqarma > bo'lim)
+                "unit": (
+                    r["material__employee__division__name"]
+                    or r["material__employee__directorate__name"]
+                    or r["material__employee__department__name"]
+                    or ""
+                ),
                 "id": r["material__employee_id"],
                 "full_name": " ".join(filter(None, [
                     r["material__employee__last_name"],
@@ -1392,7 +1402,17 @@ def ajax_service_materials(request):
                 output_field=CharField(),
             ),
         )
-        .annotate(rank_name=F("user__rank__name"))
+        .annotate(
+            rank_name=F("user__rank__name"),
+            # Hujjat matni uchun: eng aniq tuzilma (bo'linma > boshqarma > bo'lim)
+            owner_unit=Coalesce(
+                NullIf(F("user__division__name"), Value("")),
+                NullIf(F("user__directorate__name"), Value("")),
+                NullIf(F("user__department__name"), Value("")),
+                Value(""),
+                output_field=CharField(),
+            ),
+        )
         .order_by("-date_creat")
         .values(
             "s_name",
@@ -1403,6 +1423,7 @@ def ajax_service_materials(request):
             "total_sum",
             "full_name",
             "rank_name",
+            "owner_unit",
             "body",
         )
     )
