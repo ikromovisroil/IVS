@@ -3736,8 +3736,9 @@ def org_status(request):
                 "order_sender", filter=dated & Q(order_sender__goal__organization__type=goal_type), distinct=True,
             ),
         )
-        # Xodimlar ketma-ketligi tuzilma ID lari bo'yicha: department -> boshqarma -> bo'lim -> xodim (bo'shlari oxirida)
+        # Ariza soni bo'yicha (ko'pdan kamga); teng bo'lsa tuzilma ID lari: department -> boshqarma -> bo'lim -> xodim
         .order_by(
+            "-order_count",
             F("department_id").asc(nulls_last=True),
             F("directorate_id").asc(nulls_last=True),
             F("division_id").asc(nulls_last=True),

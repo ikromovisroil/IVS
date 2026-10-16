@@ -125,19 +125,28 @@ class OrgStatusTests(TestCase):
         self.assertNotIn(self.fired.full_name, names)
         self.assertNotIn(self.stranger.full_name, names)
 
-    def test_staff_ordered_by_department_directorate_division_id(self):
-        # Ariza soni tartibga ta'sir qilmasligi uchun eng ko'p ariza berganni oxirgi tuzilmaga qo'yamiz
+    def test_staff_ordered_by_order_count_descending(self):
         for _ in range(3):
-            self._order(self.in_dep_b, self.atm_goal, at(2026, 10, 7))
+            self._order(self.in_dep_b, self.atm_goal, at(2026, 10, 7))        # eng ko'p: 3 ta
+        self._order(self.in_div, self.atm_goal, at(2026, 10, 7))              # 1 ta
+        ordered = [e for e in self._get(organization=self.client_org.id).context["page_obj"]]
+        self.assertEqual([e.order_count for e in ordered], sorted((e.order_count for e in ordered), reverse=True))
+        names = [e.full_name for e in ordered]
+        self.assertEqual(names[0], self.in_dep_b.full_name)
+        self.assertEqual(names[1], self.in_div.full_name)
+        self.assertEqual(names[-1], self.idle.full_name)                      # ariza bermagan oxirida
+
+    def test_equal_counts_ordered_by_structure_ids_then_employee_id(self):
+        # Hech kim ariza bermagan: hammasi 0 -> department -> boshqarma -> bo'lim -> xodim ID (bo'shlari oxirida)
         ordered = [e for e in self._get(organization=self.client_org.id).context["page_obj"]]
         keys = [(e.department_id is None, e.department_id or 0, e.directorate_id is None, e.directorate_id or 0,
                  e.division_id is None, e.division_id or 0, e.id) for e in ordered]
-        self.assertEqual(keys, sorted(keys))                                    # bo'shlari oxirida, qolgani ID o'sish tartibida
+        self.assertEqual(keys, sorted(keys))
         names = [e.full_name for e in ordered]
         self.assertLess(names.index(self.in_div.full_name), names.index(self.in_dep_b.full_name))   # Dep A (id kichik) oldin
-        self.assertEqual(names[-1], self.idle.full_name)                        # tuzilmasiz xodim oxirida
+        self.assertEqual(names[-1], self.idle.full_name)                      # tuzilmasiz xodim oxirida
 
-    def test_same_structure_ordered_by_employee_id(self):
+    def test_same_structure_and_count_ordered_by_employee_id(self):
         _, first = make_employee(self.client_org, self.region, first="Birinchi", last="Bir")
         _, second = make_employee(self.client_org, self.region, first="Ikkinchi", last="Ikki")
         for emp in (first, second):
