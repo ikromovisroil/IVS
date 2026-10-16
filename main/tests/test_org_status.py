@@ -5,7 +5,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from main.models import Department, Directorate, Division, Goal, Order
+from main.models import Department, Directorate, Division, Goal, Order, Region
 from main.testing import make_employee, make_goal, make_org, make_region
 
 STATS_PERMS = ["main.status_employee"]
@@ -52,6 +52,8 @@ class OrgStatusTests(TestCase):
     def _get(self, **params):
         params.setdefault("date1", "2026-10-01")
         params.setdefault("date2", "2026-10-31")
+        if "organization" in params:
+            params.setdefault("region", self.region.id)          # tashkilot ham, hudud ham majburiy
         return self.client.get(reverse("org_status"), params)
 
     def _rows(self, response):
@@ -67,6 +69,23 @@ class OrgStatusTests(TestCase):
         response = self.client.get(reverse("org_status"))
         self.assertEqual(response.status_code, 200)
         self.assertFalse(response.context["searched"])
+
+    def test_table_with_empty_message_shown_before_search(self):
+        html = self.client.get(reverse("org_status")).content.decode()
+        self.assertIn("Ma'lumot topilmadi", html)                    # boshqa jadvallardagidek
+        self.assertIn('id="org-status-table"', html)
+        self.assertIn("F.I.O", html)
+        self.assertIn("Ariza bergan xodimlar", html)                # xulosa kartochkalari qidiruvdan oldin ham bor
+        self.assertRegex(html, r"Xodimlar</div><b>0</b>")            # ... hammasi 0 bilan
+        self.assertRegex(html, r"Ariza bergan xodimlar</div><b>0</b>")
+        self.assertRegex(html, r"ATMga yuborilgan arizalar</div><b>0</b>")
+
+    def test_empty_message_when_nobody_found(self):
+        empty_org = make_org("client")
+        response = self._get(organization=empty_org.id)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, "Ma'lumot topilmadi")
+        self.assertContains(response, "Ariza bergan xodimlar")
 
     def test_menu_has_organizations_item(self):
         html = self.client.get(reverse("org_status")).content.decode()
@@ -146,6 +165,35 @@ class OrgStatusTests(TestCase):
         self.client.force_login(without_perm)
         self.assertEqual(self.client.get(reverse("org_status")).status_code, 403)
 
+    # ---- tashkilot va hudud majburiy ----
+    def test_organization_and_region_are_required_fields_in_form(self):
+        html = self.client.get(reverse("org_status")).content.decode()
+        self.assertRegex(html, r'<select id="organization" name="organization" class="form-select" required>')
+        self.assertRegex(html, r'<select id="region" name="region" class="form-select" required>')
+
+    def test_search_without_region_gives_no_results(self):
+        response = self.client.get(reverse("org_status"), {
+            "organization": self.client_org.id, "date1": "2026-10-01", "date2": "2026-10-31",
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context["searched"])
+        self.assertContains(response, "Tashkilot va hududni tanlang")
+
+    def test_search_without_organization_gives_no_results(self):
+        response = self.client.get(reverse("org_status"), {"region": self.region.id, "date1": "2026-10-01", "date2": "2026-10-31"})
+        self.assertFalse(response.context["searched"])
+        self.assertContains(response, "Tashkilot va hududni tanlang")
+
+    def test_first_open_shows_no_warning(self):
+        self.assertNotContains(self.client.get(reverse("org_status")), "Tashkilot va hududni tanlang")
+
+    def test_unknown_region(self):
+        # o'z hududidan boshqasi - ruxsatsiz (403); barcha hududni ko'ra oladigan xodim uchun mavjud bo'lmagan hudud - 404
+        self.assertEqual(self._get(organization=self.client_org.id, region=999999).status_code, 403)
+        user, _ = make_employee(self.worker, self.region, perms=STATS_PERMS + ["main.all_organization", "main.all_region"])
+        self.client.force_login(user)
+        self.assertEqual(self._get(organization=self.client_org.id, region=999999).status_code, 404)
+
     # ---- tuzilma filtrlari ----
     def test_filter_by_department_directorate_division(self):
         base = {"organization": self.client_org.id}
@@ -174,22 +222,35 @@ class OrgStatusTests(TestCase):
     def test_without_all_organization_only_own_organization(self):
         user, _ = make_employee(self.client_org, self.region, perms=STATS_PERMS)
         self.client.force_login(user)
-        own = self.client.get(reverse("org_status"), {"organization": self.client_org.id, "date1": "2026-10-01", "date2": "2026-10-31"})
+        own = self.client.get(reverse("org_status"), {"organization": self.client_org.id, "region": self.region.id, "date1": "2026-10-01", "date2": "2026-10-31"})
         self.assertEqual(own.status_code, 200)
         self.assertTrue(own.context["searched"])
-        foreign = self.client.get(reverse("org_status"), {"organization": self.other_org.id})
+        foreign = self.client.get(reverse("org_status"), {"organization": self.other_org.id, "region": self.region.id})
         self.assertEqual(foreign.status_code, 404)
         listed = {o.id for o in own.context["organizations"]}
         self.assertEqual(listed, {self.client_org.id})
 
-    def test_pagination_50_per_page(self):
+    def test_pagination_20_per_page_with_pager(self):
         for i in range(60):
             make_employee(self.client_org, self.region, first=f"Xodim{i:02d}", last="Ommaviy")
         first = self._get(organization=self.client_org.id)
-        self.assertEqual(len(first.context["page_obj"]), 50)
+        self.assertEqual(len(first.context["page_obj"]), 20)
+        self.assertContains(first, 'aria-label="Sahifalash"')          # sahifalash tugmalari (‹ 1 2 3 4 ›)
         second = self._get(organization=self.client_org.id, page=2)
-        self.assertEqual(len(second.context["page_obj"]), 13)       # 63 xodim: 3 ta + 60 ta
-        self.assertEqual(second.context["row_start"], 51)
+        self.assertEqual(len(second.context["page_obj"]), 20)
+        self.assertEqual(second.context["row_start"], 21)
+        last = self._get(organization=self.client_org.id, page=4)
+        self.assertEqual(len(last.context["page_obj"]), 3)              # 63 xodim: 20 + 20 + 20 + 3
+
+    def test_pager_keeps_filters_in_links(self):
+        for i in range(25):
+            make_employee(self.client_org, self.region, first=f"Havola{i:02d}", last="Sinov")
+        html = self._get(organization=self.client_org.id).content.decode()
+        self.assertIn(f"organization={self.client_org.id}", html.split('aria-label="Sahifalash"')[1])
+        self.assertIn("date1=2026-10-01", html.split('aria-label="Sahifalash"')[1])
+
+    def test_no_pager_for_single_page(self):
+        self.assertNotContains(self._get(organization=self.client_org.id), 'aria-label="Sahifalash"')
 
     def test_query_count_does_not_grow_with_staff(self):
         def queries():
@@ -320,10 +381,96 @@ class OrgStatusEmployeeModalTests(TestCase):
     def test_table_rows_are_clickable_and_modal_is_rendered(self):
         _, row_person = make_employee(self.client_org, self.region, first="Qator", last="Xodimi")
         html = self.client.get(reverse("org_status"), {
-            "organization": self.client_org.id, "date1": "2026-10-01", "date2": "2026-10-31",
+            "organization": self.client_org.id, "region": self.region.id, "date1": "2026-10-01", "date2": "2026-10-31",
         }).content.decode()
         self.assertIn('class="org-row"', html)
         self.assertIn(f'data-emp-id="{row_person.id}"', html)
         self.assertIn('id="empOrdersModal"', html)
         self.assertIn(reverse("org_status_employee", args=[0]), html)         # JS dagi "/0/" o'rniga qo'yiladigan shablon
+
+
+class OrgStatusRegionTests(TestCase):
+    """Hudud filtri: `all_region` ruxsati bo'lsa hamma hudud, bo'lmasa faqat o'z hududi."""
+
+    def setUp(self):
+        self.worker = make_org("worker")
+        self.org = make_org("client")
+        self.region_a = make_region("Hudud A")
+        self.region_b = make_region("Hudud B")
+        self.goal = make_goal(self.worker)
+        _, self.in_a = make_employee(self.org, self.region_a, first="Birinchi", last="HududA")
+        _, self.in_b = make_employee(self.org, self.region_b, first="Ikkinchi", last="HududB")
+        Order.objects.create(sender=self.in_a, goal=self.goal, status="viewed")
+        Order.objects.create(sender=self.in_b, goal=self.goal, status="viewed")
+        Order.objects.create(sender=self.in_b, goal=self.goal, status="viewed")
+
+    def _viewer(self, *, all_regions, region):
+        perms = STATS_PERMS + ["main.all_organization"] + (["main.all_region"] if all_regions else [])
+        user, _ = make_employee(self.worker, region, perms=perms)
+        self.client.force_login(user)
+
+    def _get(self, **params):
+        params.setdefault("organization", self.org.id)
+        params.setdefault("region", self.region_a.id)
+        params.setdefault("date1", "2000-01-01")
+        params.setdefault("date2", "2100-01-01")
+        return self.client.get(reverse("org_status"), params)
+
+    def _names(self, response):
+        return {e.full_name for e in response.context["page_obj"]}
+
+    def test_all_region_permission_can_pick_any_region(self):
+        self._viewer(all_regions=True, region=self.region_a)
+        response = self._get(region=self.region_a.id)
+        self.assertEqual(self._names(response), {self.in_a.full_name})
+        self.assertEqual({r.id for r in response.context["regions"]}, {self.region_a.id, self.region_b.id})
+        self.assertEqual(self._names(self._get(region=self.region_b.id)), {self.in_b.full_name})
+
+    def test_region_filter_narrows_staff_and_totals(self):
+        self._viewer(all_regions=True, region=self.region_a)
+        response = self._get(region=self.region_b.id)
+        self.assertEqual(self._names(response), {self.in_b.full_name})
+        self.assertEqual(response.context["totals"]["orders"], 2)
+        self.assertContains(response, "Hudud B")
+
+    def test_without_all_region_only_own_region(self):
+        self._viewer(all_regions=False, region=self.region_a)
+        response = self._get(region=self.region_a.id)
+        self.assertEqual(self._names(response), {self.in_a.full_name})
+        self.assertEqual({r.id for r in response.context["regions"]}, {self.region_a.id})
+
+    def test_other_region_is_forbidden_without_all_region(self):
+        self._viewer(all_regions=False, region=self.region_a)
+        self.assertEqual(self._get(region=self.region_b.id).status_code, 403)
+        self.assertEqual(self._get(region=self.region_a.id).status_code, 200)
+
+    def test_viewer_without_region_and_without_all_region_cannot_search(self):
+        self._viewer(all_regions=False, region=None)
+        self.assertEqual(self._get(region=self.region_a.id).status_code, 403)       # hech qaysi hudud ruxsat etilmagan
+        self.assertEqual(list(self._get(region="").context["regions"]), [])
+
+    def test_region_select_is_rendered(self):
+        self._viewer(all_regions=True, region=self.region_a)
+        html = self.client.get(reverse("org_status")).content.decode()
+        self.assertIn('id="region"', html)
+        self.assertIn("Hudud A", html)
+        self.assertIn("Hudud B", html)
+
+    def test_modal_respects_region_scope(self):
+        self._viewer(all_regions=False, region=self.region_a)
+        url = lambda emp: reverse("org_status_employee", args=[emp.pk])
+        self.assertEqual(self.client.get(url(self.in_a)).status_code, 200)
+        self.assertEqual(self.client.get(url(self.in_b)).status_code, 404)
+        self._viewer(all_regions=True, region=self.region_a)
+        self.assertEqual(self.client.get(url(self.in_b)).status_code, 200)
+
+    def test_departments_ajax_uses_selected_region(self):
+        dep_a = Department.objects.create(name="Dep A", organization=self.org, region=self.region_a)
+        dep_b = Department.objects.create(name="Dep B", organization=self.org, region=self.region_b)
+        self._viewer(all_regions=True, region=self.region_a)
+        url = reverse("ajax_load_departments")
+        ids = lambda response: {int(item["id"]) for item in response.json()["results"]}
+        self.assertEqual(ids(self.client.get(url, {"organization": self.org.id, "all_regions": "1"})), {dep_a.id, dep_b.id})
+        self.assertEqual(ids(self.client.get(url, {"organization": self.org.id, "all_regions": "1", "region": self.region_b.id})), {dep_b.id})
+        self.assertEqual(ids(self.client.get(url, {"organization": self.org.id, "region": self.region_a.id})), {dep_a.id})
 

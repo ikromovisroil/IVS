@@ -31,10 +31,20 @@
               </div>
 
               <div class="col-md-3">
+                <label for="region" class="form-label">Hudud</label>
+                <select id="region" name="region" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for r in regions %}
+                    <option value="{{ r.id }}" {% if selected_region == r.id|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-3">
                 <label for="department" class="form-label">Department</label>
                 <select id="department" name="department" class="form-select"
                         data-ajax-url="{% url 'ajax_load_departments' %}"
-                        data-ajax-params='{"organization":"#organization","all_regions":"#all_regions"}'>
+                        data-ajax-params='{"organization":"#organization","region":"#region","all_regions":"#all_regions"}'>
                   <option value="">Tanlang...</option>
                   {% if sel_department %}<option value="{{ sel_department.id }}" selected>{{ sel_department.name }}</option>{% endif %}
                 </select>
@@ -80,18 +90,21 @@
     </div>
   </section>
 
-  {% if searched %}
   <section class="section">
     <div class="row">
       <div class="col-lg-12">
         <div class="card">
           <div class="card-body">
+            {% if searched %}
             <h5 class="card-title">
-              {{ organization.name }}
+              {{ organization.name }}{% if selected_region %}<span class="text-muted"> / {% for r in regions %}{% if selected_region == r.id|stringformat:"s" %}{{ r.name }}{% endif %}{% endfor %}</span>{% endif %}
               {% if sel_department %}<span class="text-muted"> / {{ sel_department.name }}</span>{% endif %}
               {% if sel_directorate %}<span class="text-muted"> / {{ sel_directorate.name }}</span>{% endif %}
               {% if sel_division %}<span class="text-muted"> / {{ sel_division.name }}</span>{% endif %}
             </h5>
+            {% else %}
+            <h5 class="card-title">Xodimlar</h5>
+            {% endif %}
 
             <div class="row g-2 mb-3">
               <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><div class="text-muted small">Xodimlar</div><b>{{ totals.employees }}</b></div></div>
@@ -127,7 +140,7 @@
                   {% empty %}
                   <tr>
                     <td colspan="7" class="text-center text-muted py-4">
-                      <i class="bi bi-search me-2"></i>Xodim topilmadi
+                      <i class="bi bi-search me-2"></i>Ma'lumot topilmadi
                     </td>
                   </tr>
                   {% endfor %}
@@ -141,7 +154,6 @@
       </div>
     </div>
   </section>
-  {% endif %}
 </main>
 
 <!-- Xodim bo'yicha ariza kategoriyalari (qator bosilganda) -->
@@ -250,6 +262,7 @@
 <script>
 (() => {
   const orgSel = document.getElementById("organization");
+  const regSel = document.getElementById("region");
   const depSel = document.getElementById("department");
   const dirSel = document.getElementById("directorate");
   const divSel = document.getElementById("division");
@@ -266,6 +279,7 @@
   }
   document.addEventListener("DOMContentLoaded", () => {
     bindSelectEvents(orgSel, () => { reset(depSel); reset(dirSel); reset(divSel); });
+    bindSelectEvents(regSel, () => { reset(depSel); reset(dirSel); reset(divSel); });
     bindSelectEvents(depSel, () => { reset(dirSel); reset(divSel); });
     bindSelectEvents(dirSel, () => { reset(divSel); });
   });

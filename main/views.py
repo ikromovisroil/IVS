@@ -3626,7 +3626,7 @@ def emp_status(request):
 # ═══════════════════════════════════════════════════════════════════
 # STATISTIKA: TASHKILOTLAR (tanlangan tuzilmadagi xodimlar va ularning arizalari)
 # ═══════════════════════════════════════════════════════════════════
-ORG_STATUS_PAGE_SIZE = 50
+ORG_STATUS_PAGE_SIZE = 20
 
 
 def _status_goal_type(employee):
@@ -3641,9 +3641,9 @@ def _status_goal_type(employee):
 @permission_required("main.status_employee", raise_exception=True)
 def org_status(request):
     """
-    Tashkilot (+ departament, boshqarma, bo'lim) va sana oralig'i bo'yicha: shu tuzilmadagi faol xodimlar va
-    har birining shu davrda yuborgan arizalari soni (ATMga va omborxonaga alohida).
-    `all_organization` ruxsati bo'lmasa faqat o'z tashkiloti tanlanadi.
+    Tashkilot, hudud (+ departament, boshqarma, bo'lim) va sana oralig'i bo'yicha: shu tuzilmadagi faol xodimlar va
+    har birining shu davrda yuborgan arizalari soni.
+    Doira: `all_organization` bo'lmasa faqat o'z tashkiloti, `all_region` bo'lmasa faqat o'z hududi.
     Arizalar turi ko'ruvchiga qarab: ATM (worker) xodimiga - ATMga yuborilgan arizalar, boshqalarga - omborxonaga
     yuborilganlari.
     """
@@ -3654,11 +3654,16 @@ def org_status(request):
     goal_type, kind_label = _status_goal_type(employee)
 
     can_all = request.user.has_perm("main.all_organization")
+    can_all_regions = request.user.has_perm("main.all_region")
     organizations = Organization.objects.only("id", "name").order_by("name")
+    regions = Region.objects.only("id", "name").order_by("name")
     if not can_all:
         organizations = organizations.filter(pk=employee.organization_id)
+    if not can_all_regions:
+        regions = regions.filter(pk=employee.region_id)
 
     org_id = (request.GET.get("organization") or "").strip()
+    region_id = (request.GET.get("region") or "").strip()
     dep_id = (request.GET.get("department") or "").strip()
     dir_id = (request.GET.get("directorate") or "").strip()
     div_id = (request.GET.get("division") or "").strip()
@@ -3674,9 +3679,15 @@ def org_status(request):
     date1 = parse_date(date1_raw) if date1_raw else None
     date2 = parse_date(date2_raw) if date2_raw else None
 
+    # Ko'rish doirasi serverda tekshiriladi: o'z hududidan boshqasini so'rab bo'lmaydi
+    if region_id and not can_all_regions and region_id != str(employee.region_id):
+        raise PermissionDenied("Bu hudud bo'yicha ruxsat yo'q")
+
     context = {
         "organizations": organizations,
+        "regions": regions,
         "selected_org": org_id,
+        "selected_region": region_id,
         "sel_department": Department.objects.filter(pk=dep_id).first() if dep_id.isdigit() else None,
         "sel_directorate": Directorate.objects.filter(pk=dir_id).first() if dir_id.isdigit() else None,
         "sel_division": Division.objects.filter(pk=div_id).first() if div_id.isdigit() else None,
@@ -3684,21 +3695,26 @@ def org_status(request):
         "date2": date2_raw,
         "searched": False,
         "page_obj": None,
-        "totals": None,
+        "totals": {"employees": 0, "orders": 0, "active_senders": 0},     # qidiruvdan oldin hammasi 0
         "pager_other": "",
         "kind_label": kind_label,
     }
 
-    if not org_id.isdigit():
+    if not org_id.isdigit() or not region_id.isdigit():
+        # Tashkilot va hudud majburiy: forma yuborilgan, lekin biri tanlanmagan bo'lsa xabar chiqadi
+        if any(key in request.GET for key in ("organization", "region", "department", "directorate", "division")):
+            messages.info(request, "Tashkilot va hududni tanlang")
         return render(request, "main/org_status.html", context)
 
     organization = get_object_or_404(organizations, pk=int(org_id))     # ruxsat etilmagan tashkilot -> 404
+    get_object_or_404(regions, pk=int(region_id))                       # mavjud bo'lmagan hudud -> 404
     structure_error = _employee_structure_error(organization, dep_id, dir_id, div_id)
     if structure_error:
         messages.info(request, structure_error)
         return render(request, "main/org_status.html", context)
 
     staff = Employee.objects.filter(organization=organization, user__is_active=True)
+    staff = staff.filter(region_id=int(region_id))
     if dep_id.isdigit():
         staff = staff.filter(department_id=int(dep_id))
     if dir_id.isdigit():
@@ -3768,6 +3784,8 @@ def org_status_employee(request, pk):
     )
     if not request.user.has_perm("main.all_organization"):
         targets = targets.filter(organization_id=viewer.organization_id)
+    if not request.user.has_perm("main.all_region"):
+        targets = targets.filter(region_id=viewer.region_id) if viewer.region_id else targets.none()
     target = get_object_or_404(targets, pk=pk)
 
     goal_type, kind_label = _status_goal_type(viewer)

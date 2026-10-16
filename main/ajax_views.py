@@ -255,13 +255,13 @@ def ajax_load_departments(request):
     if not org_id or not org_id.isdigit():
         return JsonResponse({"results": []})
 
-    # region kelmasa — joriy foydalanuvchining regionini ishlatamiz (all_regions=1 bo'lsa cheklanmaydi)
+    # region kelmasa — joriy foydalanuvchining regionini ishlatamiz (all_regions=1 bo'lsa hududga bog'lanmaydi)
     if not all_regions and (not reg_id or not reg_id.isdigit()):
         reg_id = str(employee.region_id) if employee.region_id else ""
 
     filters = {"organization_id": org_id}
 
-    if not all_regions and reg_id and reg_id.isdigit():
+    if reg_id and reg_id.isdigit():            # hudud tanlangan bo'lsa, doim shu hudud bo'yicha
         filters["region_id"] = reg_id
 
     qs = Department.objects.filter(**filters).order_by("id")
