@@ -36,17 +36,17 @@ class ServiceMaterialsUnitTests(TestCase):
         self.assertTrue(rows, "sarf qatori topilmadi")
         return rows[0]
 
-    def test_most_specific_unit_is_returned(self):
+    def test_department_name_is_returned_even_for_division_staff(self):
         _, in_division = make_employee(self.org, self.region, first="Ulugbek", last="Ismoilov")
         in_division.division = self.division
         in_division.rank = self.rank
         in_division.save()                              # Employee.save: boshqarma va bo'lim ham o'rnatiladi
         self._spend(in_division)
         row = self._unit_of(in_division)
-        self.assertEqual(row["owner_unit"], self.division.name)       # bo'linma > boshqarma > bo'lim
+        self.assertEqual(row["owner_unit"], self.dept.name)          # doim departament (dep) nomi
         self.assertEqual(row["rank_name"], "Boshlig'i")
 
-    def test_falls_back_to_directorate_then_department(self):
+    def test_department_is_returned_for_directorate_and_department_staff(self):
         _, in_directorate = make_employee(self.org, self.region, first="Anvar", last="Narzullayev")
         in_directorate.directorate = self.directorate
         in_directorate.save()
@@ -55,7 +55,7 @@ class ServiceMaterialsUnitTests(TestCase):
         in_department.save()
         self._spend(in_directorate)
         self._spend(in_department)
-        self.assertEqual(self._unit_of(in_directorate)["owner_unit"], self.directorate.name)
+        self.assertEqual(self._unit_of(in_directorate)["owner_unit"], self.dept.name)
         self.assertEqual(self._unit_of(in_department)["owner_unit"], self.dept.name)
 
     def test_employee_without_unit_gets_empty_string(self):

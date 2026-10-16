@@ -146,10 +146,10 @@
                   <b><span id="year">{{ report_year }}</span> yil <span id="chorak">{{ report_quarter }}</span> - chorak  uchun</b>
                 </div><br>
 
-                <div style="text-align:justify; text-indent:1.25cm;">
+                <div style="text-align:justify; text-indent:1.25cm;"><b>
                 Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi”
                 DUKning moddiy boyliklarini hisobdan chiqarish bo‘yicha doimiy komissiya raisi: N. Nazarov,  komissiya  a’zolari: N. Ergasheva, G.Hatamova, A.Narzullayev, I.Xabirov, O. Abduqodirov,U.Muxtorov, A.Abdukarimov va A. Sa’dullayev ushbu dalolatnomani
-                <span id="blok_javobgar"></span> ro‘yxatiga quyidagi miqdor va tarkibda kiritilgan inventarizatsiya buyumlarini hisobdan chiqarish uchun tuzdik.
+                <span id="blok_javobgar"></span> ro‘yxatiga quyidagi miqdor va tarkibda kiritilgan inventarizatsiya buyumlarini hisobdan chiqarish uchun tuzdik.</b>
                 </div><br>
 
 
@@ -366,7 +366,7 @@
                       </tr>
                     </tbody>
                   </table>
-                </div>
+                </div><br>
 
                 <div id="blok_3">
                 </div>
@@ -488,8 +488,9 @@ function joinWithVa(items) {
 // Hujjat matniga: "<Boshqarma/bo'lim> <lavozim> <A. Familiya>" - bir nechta bo'lsa "A va B" yoki "A, B va C"
 function responsiblePeopleText(list) {
   return joinWithVa(list.map(function (p) {
-    return [(p.unit || '').trim(), lowerFirst(p.rank), formatInitialSpaceSurname(p.full_name)]
-      .filter(Boolean).join(' ');
+    const unit = (p.unit || '').trim();
+    const person = [lowerFirst(p.rank), formatInitialSpaceSurname(p.full_name)].filter(Boolean).join(' ');
+    return unit && person ? unit + ', ' + person : (unit || person);     // "Departament, lavozim I. Ikromov"
   }).filter(Boolean));
 }
 
