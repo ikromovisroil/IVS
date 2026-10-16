@@ -148,7 +148,10 @@
 
                 <div style="text-align:justify; text-indent:1.25cm;"><b>
                 Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi”
-                DUKning moddiy boyliklarini hisobdan chiqarish bo‘yicha doimiy komissiya raisi: N. Nazarov,  komissiya  a’zolari: N. Ergasheva, G.Hatamova, A.Narzullayev, I.Xabirov, O. Abduqodirov,U.Muxtorov, A.Abdukarimov va A. Sa’dullayev ushbu dalolatnomani
+                DUKning moddiy boyliklarini hisobdan chiqarish bo‘yicha doimiy komissiya raisi: N. Nazarov,  komissiya  a’zolari:
+                Bo‘lim boshlig‘i Bosh buxgalter N.Ergasheva, bosh buxgalter o‘rinbasari G.Hatamova, boshqarma boshlig‘i A.Narzullayev,
+                bo‘lim boshlig‘i I.Xabirov, boshqarma boshlig‘i O.Abduqodirov, boshqarma boshlig‘i U.Muxtorov,
+                ish boshqaruvchi A.Abdukarimov, ombor mudiri A.Sa‘dullayev ushbu dalolatnomani
                 <span id="blok_javobgar"></span> ro‘yxatiga quyidagi miqdor va tarkibda kiritilgan inventarizatsiya buyumlarini hisobdan chiqarish uchun tuzdik.</b>
                 </div><br>
 
@@ -196,6 +199,9 @@
                     <tbody id="materials_tbody">
                     </tbody>
                   </table>
+                </div><br>
+                <div style="text-align:left;">
+                <b id="blok_summa_soz"> </b>
                 </div><br>
 
                 <div style="text-align:left;">
@@ -399,6 +405,56 @@ function esc(s) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+// ─── SUMMA SO'Z BILAN ──────────────────────────────────────────────────────────
+// 16980445.02 -> "JAMI SO‘Z BILAN: O‘n olti million to‘qqiz yuz sakson ming to‘rt yuz qirq besh so‘m nol ikki tiyin"
+const UZ_ONES = ['', 'bir', 'ikki', 'uch', 'to‘rt', 'besh', 'olti', 'yetti', 'sakkiz', 'to‘qqiz'];
+const UZ_TENS = ['', 'o‘n', 'yigirma', 'o‘ttiz', 'qirq', 'ellik', 'oltmish', 'yetmish', 'sakson', 'to‘qson'];
+const UZ_SCALES = ['', 'ming', 'million', 'milliard', 'trillion'];
+
+function uzWordsBelowThousand(n) {
+  const parts = [];
+  const hundreds = Math.floor(n / 100);
+  const tens = Math.floor((n % 100) / 10);
+  const ones = n % 10;
+  if (hundreds) parts.push(UZ_ONES[hundreds] + ' yuz');
+  if (tens) parts.push(UZ_TENS[tens]);
+  if (ones) parts.push(UZ_ONES[ones]);
+  return parts.join(' ');
+}
+
+function uzNumberWords(n) {          // n: butun son >= 0
+  if (n === 0) return 'nol';
+  const parts = [];
+  let scale = 0;
+  while (n > 0 && scale < UZ_SCALES.length) {
+    const group = n % 1000;
+    if (group) parts.unshift(uzWordsBelowThousand(group) + (UZ_SCALES[scale] ? ' ' + UZ_SCALES[scale] : ''));
+    n = Math.floor(n / 1000);
+    scale++;
+  }
+  return parts.join(' ');
+}
+
+function amountInWords(total) {
+  const cents = Math.max(0, Math.round((Number(total) || 0) * 100));
+  const som = Math.floor(cents / 100);
+  const tiyin = cents % 100;
+  // tiyin ikki xonali o'qiladi: 02 -> "nol ikki", 00 -> "nol nol", 45 -> "qirq besh"
+  const tiyinWords = tiyin < 10 ? 'nol ' + (tiyin === 0 ? 'nol' : UZ_ONES[tiyin]) : uzNumberWords(tiyin);
+  const text = uzNumberWords(som) + ' so‘m ' + tiyinWords + ' tiyin';
+  return 'JAMI SO‘Z BILAN: ' + text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// Pul summasi: doim ikki xonali tiyin bilan, minglar probel bilan: 15000 -> "15 000,00", 1234.5 -> "1 234,50"
+function formatMoney(num) {
+  const n = Number(num);
+  const cents = Math.round((isFinite(n) ? n : 0) * 100);
+  const sign = cents < 0 ? '-' : '';
+  const abs = Math.abs(cents);
+  const intPart = String(Math.floor(abs / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return sign + intPart + ',' + String(abs % 100).padStart(2, '0');
 }
 
 function formatNumber(num) {
@@ -779,6 +835,7 @@ $(function () {
 
       if (!orderItems.length && !serviceItems.length) {
         renderResponsibleBlock([]);
+        editorSetText('#blok_summa_soz', '');
         editorSetTbodyRows(`
           <tr>
             <td colspan="8" style="border:1px solid #000;text-align:center;color:#888;padding:14px;font-size:10pt;">
@@ -808,8 +865,8 @@ $(function () {
             <td style="${cell}">${esc(item['material__name'])}</td>
             <td style="${cell}">${esc(item['material__unit__name'] || 'dona')}</td>
             <td style="${cell}">${formatNumber(item['total_number'])}</td>
-            <td style="${cell}">${formatNumber(item['material__price'])}</td>
-            <td style="${cell}">${formatNumber(item['total_sum'])}</td>
+            <td style="${cell}">${formatMoney(item['material__price'])}</td>
+            <td style="${cell}">${formatMoney(item['total_sum'])}</td>
             <td style="${cell}">${info || '-'}</td>
             <td style="${cell}">${esc(item['material__code']) || '-'}</td>
           </tr>
@@ -825,8 +882,8 @@ $(function () {
             <td style="${cell}">${esc(item['material__name'])}</td>
             <td style="${cell}">${esc(item['material__unit__name'] || 'dona')}</td>
             <td style="${cell}">${formatNumber(item['outcome'])}</td>
-            <td style="${cell}">${formatNumber(item['material__price'])}</td>
-            <td style="${cell}">${formatNumber(item['total_sum'])}</td>
+            <td style="${cell}">${formatMoney(item['material__price'])}</td>
+            <td style="${cell}">${formatMoney(item['total_sum'])}</td>
             <td style="${cell}">${esc(item['body']) || '-'}</td>
             <td style="${cell}">${esc(item['material__code']) || '-'}</td>
           </tr>
@@ -836,22 +893,23 @@ $(function () {
       rows += `
         <tr>
           <td colspan="5" style="border:1px solid #000;font-size:8pt;text-align:right;font-weight:bold;background-color:rgb(253,246,220);">${DUK_NAME} jami:</td>
-          <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(253,246,220);">${formatNumber(total)}</td>
+          <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;background-color:rgb(253,246,220);">${formatMoney(total)}</td>
           <td colspan="2" style="border:1px solid #000;background-color:rgb(253,246,220);"></td>
         </tr>
         <tr>
           <td colspan="5" style="border:1px solid #000;font-size:9pt;text-align:right;font-weight:bold;background-color:rgb(251,238,184);">${regionName} jami:</td>
-          <td style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatNumber(total)}</td>
+          <td style="border:1px solid #000;font-size:9pt;text-align:center;font-weight:bold;background-color:rgb(251,238,184);">${formatMoney(total)}</td>
           <td colspan="2" style="border:1px solid #000;background-color:rgb(251,238,184);"></td>
         </tr>
         <tr>
           <td colspan="5" style="border:2px solid #000;font-size:10pt;text-align:right;font-weight:bold;background-color:rgb(245,199,86);">Jami:</td>
-          <td style="border:2px solid #000;font-size:10pt;text-align:center;font-weight:bold;background-color:rgb(245,199,86);">${formatNumber(total)}</td>
+          <td style="border:2px solid #000;font-size:10pt;text-align:center;font-weight:bold;background-color:rgb(245,199,86);">${formatMoney(total)}</td>
           <td colspan="2" style="border:2px solid #000;background-color:rgb(245,199,86);"></td>
         </tr>
       `;
 
       editorSetTbodyRows(rows);
+      editorSetText('#blok_summa_soz', amountInWords(total));     // "JAMI SO‘Z BILAN: ... so‘m ... tiyin"
       renderResponsibleBlock(owners);
     }).fail(function (xhr) {
       console.error("Material search error:", xhr && xhr.status, xhr && xhr.responseText);
