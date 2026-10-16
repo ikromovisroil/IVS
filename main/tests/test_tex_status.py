@@ -175,3 +175,13 @@ class TexStatusTests(TestCase):
         response = self.client.get(reverse("tex_status"), {"organization": self.org.id})
         self.assertContains(response, "Ma'lumot topilmadi")
         self.assertEqual(response.context["kpi"]["total"], 0)
+
+    def test_group_icon_follows_group_name(self):
+        from main.views import tex_group_icon
+
+        self.assertEqual(tex_group_icon("Tarmoq qurilmalari", 1), "bi-hdd-network")
+        self.assertEqual(tex_group_icon("Transport", 2), "bi-car-front")
+        self.assertEqual(tex_group_icon("Printerlar", 0), "bi-printer")
+        self.assertEqual(tex_group_icon("Texnikalar", 5), "bi-pc-display")
+        self.assertEqual(tex_group_icon("Boshqa narsa", 1), "bi-printer")        # nom mos kelmasa - tartib bo'yicha
+        self.assertEqual(tex_group_icon(None, 0), "bi-pc-display")

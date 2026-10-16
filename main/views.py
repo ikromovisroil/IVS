@@ -3849,6 +3849,25 @@ def org_status_employee(request, pk):
 
 
 TEX_GROUP_ICONS = ("bi-pc-display", "bi-printer", "bi-hdd-network", "bi-phone", "bi-camera-video", "bi-cpu", "bi-display", "bi-box-seam")
+# Guruh nomidagi kalit so'zga qarab ikonka (birinchi mos kelgani); topilmasa tartib bo'yicha
+TEX_GROUP_ICON_KEYWORDS = (
+    (("tarmoq", "network", "router", "switch"), "bi-hdd-network"),
+    (("transport", "mashina", "avto", "avtomobil", "car"), "bi-car-front"),
+    (("printer", "chop"), "bi-printer"),
+    (("telefon", "phone", "mobil"), "bi-phone"),
+    (("kamera", "video", "kuzatuv"), "bi-camera-video"),
+    (("kompyuter", "texnika", "noutbuk", "computer"), "bi-pc-display"),
+    (("monitor", "ekran", "display"), "bi-display"),
+    (("server", "protsessor"), "bi-cpu"),
+)
+
+
+def tex_group_icon(name, position):
+    lowered = (name or "").lower()
+    for keywords, icon in TEX_GROUP_ICON_KEYWORDS:
+        if any(word in lowered for word in keywords):
+            return icon
+    return TEX_GROUP_ICONS[position % len(TEX_GROUP_ICONS)]
 
 
 @never_cache
@@ -3988,7 +4007,7 @@ def tex_status(request):
             "technics_count": group["technics_count"],
             "foiz": group["foiz"],
             "color": position % 8,
-            "icon": TEX_GROUP_ICONS[position % len(TEX_GROUP_ICONS)],
+            "icon": tex_group_icon(group["name"], position),
             "category_list": category_list,
             "top_categories": category_list[:5],
             "more_categories": category_list[5:],
