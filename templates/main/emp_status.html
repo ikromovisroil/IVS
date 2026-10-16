@@ -21,6 +21,7 @@
                     <label class="form-label">Region</label>
                     <select name="region" class="form-select" required>
                       <option value="">Tanlang...</option>
+                      {% if can_all_regions %}<option value="all" {% if selected_region == "all" %}selected{% endif %}>Barcha hududlar</option>{% endif %}
                       {% for r in region %}
                         <option value="{{ r.id }}"
                           {% if selected_region == r.id|stringformat:"s" %}selected{% endif %}>

@@ -86,6 +86,23 @@ class EmpStatusRegionScopeTests(TestCase):
         self.assertEqual(list(response.context["region"]), [])
         self.assertEqual(self._get(region=self.region_a.id).status_code, 403)
 
+    def test_all_regions_option_only_for_all_region_permission(self):
+        self._login(all_regions=True, region=self.region_a)
+        self.assertContains(self._get(), 'value="all"')
+        self._login(all_regions=False, region=self.region_a)
+        self.assertNotContains(self._get(), 'value="all"')
+
+    def test_all_regions_choice_sums_every_region(self):
+        self._login(all_regions=True, region=self.region_a)
+        response = self._get(region="all")
+        self.assertEqual(self._totals(response), {self.in_a.id: 1, self.in_b.id: 2})
+        self.assertEqual({g.id: g.total for g in response.context["goal"]}, {self.goal.id: 3})
+        self.assertContains(response, 'value="all" selected')
+
+    def test_all_regions_choice_forbidden_without_permission(self):
+        self._login(all_regions=False, region=self.region_a)
+        self.assertEqual(self._get(region="all").status_code, 403)
+
     def test_all_region_user_can_pick_any_region(self):
         self._login(all_regions=True, region=self.region_a)
         response = self._get(region=self.region_b.id)

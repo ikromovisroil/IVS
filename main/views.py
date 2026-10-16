@@ -3572,10 +3572,13 @@ def emp_status(request):
 
     orders = Order.objects.filter(receiver__isnull=False)
     goal_orders = Order.objects.filter(receiver__isnull=False)
+    all_regions_selected = can_all_regions and region_id == "all"     # "Barcha hududlar" (faqat all_region ruxsati bilan)
 
     if region_id.isdigit():
         orders = orders.filter(receiver_region_id=int(region_id))
         goal_orders = goal_orders.filter(receiver_region_id=int(region_id))
+    elif all_regions_selected:
+        pass
     else:                                           # hudud tanlash majburiy: tanlanmaguncha ma'lumot ko'rsatilmaydi
         orders = orders.none()
         goal_orders = goal_orders.none()
@@ -3617,12 +3620,13 @@ def emp_status(request):
             total=Count("order", filter=Q(order__in=goal_orders))
         )
         .order_by("-total")
-    ) if region_id.isdigit() else Goal.objects.none()
+    ) if (region_id.isdigit() or all_regions_selected) else Goal.objects.none()
 
     context = {
         "goal": goal,
         "employee": employee_stats,   # FIX: template'ga shu yangi nom bilan uzatiladi
         "region": Region.objects.all().order_by("id") if can_all_regions else Region.objects.filter(pk=employee.region_id).order_by("id"),
+        "can_all_regions": can_all_regions,
         "selected_region": region_id,
         "date1": date1_raw,
         "date2": date2_raw,
