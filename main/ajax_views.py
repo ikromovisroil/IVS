@@ -250,17 +250,18 @@ def ajax_load_departments(request):
 
     org_id = (request.GET.get("organization") or "").strip()
     reg_id = (request.GET.get("region") or "").strip()
+    all_regions = (request.GET.get("all_regions") or "").strip() == "1"   # statistika: hududga bog'lanmasdan
 
     if not org_id or not org_id.isdigit():
         return JsonResponse({"results": []})
 
-    # region kelmasa — joriy foydalanuvchining regionini ishlatamiz
-    if not reg_id or not reg_id.isdigit():
+    # region kelmasa — joriy foydalanuvchining regionini ishlatamiz (all_regions=1 bo'lsa cheklanmaydi)
+    if not all_regions and (not reg_id or not reg_id.isdigit()):
         reg_id = str(employee.region_id) if employee.region_id else ""
 
     filters = {"organization_id": org_id}
 
-    if reg_id and reg_id.isdigit():
+    if not all_regions and reg_id and reg_id.isdigit():
         filters["region_id"] = reg_id
 
     qs = Department.objects.filter(**filters).order_by("id")

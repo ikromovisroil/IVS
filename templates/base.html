@@ -400,7 +400,7 @@
         <!-- Statistika -->
         {% if perms.main.status_employee %}
         <li class="nav-item">
-          <a class="nav-link {% if url_name != 'tex_status' and url_name != 'emp_status' %}collapsed{% endif %}"
+          <a class="nav-link {% if url_name != 'tex_status' and url_name != 'emp_status' and url_name != 'org_status' %}collapsed{% endif %}"
              data-bs-target="#status-navs"
              data-bs-toggle="collapse"
              href="#">
@@ -410,7 +410,7 @@
           </a>
 
           <ul id="status-navs"
-              class="nav-content collapse {% if url_name == 'tex_status' or url_name == 'emp_status' %}show{% endif %}"
+              class="nav-content collapse {% if url_name == 'tex_status' or url_name == 'emp_status' or url_name == 'org_status' %}show{% endif %}"
               data-bs-parent="#sidebar-nav">
             <li>
               <a class="{% if url_name == 'tex_status' %}active{% endif %}" href="{% url 'tex_status' %}">
@@ -420,6 +420,11 @@
             <li>
               <a class="{% if url_name == 'emp_status' %}active{% endif %}" href="{% url 'emp_status' %}">
                 <i class="bi bi-circle"></i><span>Xodimlar</span>
+              </a>
+            </li>
+            <li>
+              <a class="{% if url_name == 'org_status' %}active{% endif %}" href="{% url 'org_status' %}">
+                <i class="bi bi-circle"></i><span>Tashkilotlar</span>
               </a>
             </li>
           </ul>

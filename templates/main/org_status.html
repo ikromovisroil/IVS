@@ -1,0 +1,275 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+<title>Tashkilotlar statistikasi</title>
+{% endblock title %}
+
+{% block content %}
+
+<main id="main" class="main">
+  <div class="pagetitle">
+    <h1>Statistika</h1>
+  </div>
+
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <form class="row g-2 mt-1" method="get">
+              <input type="hidden" id="all_regions" value="1">
+
+              <div class="col-md-3">
+                <label for="organization" class="form-label">Tashkilot</label>
+                <select id="organization" name="organization" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for org in organizations %}
+                    <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label for="department" class="form-label">Department</label>
+                <select id="department" name="department" class="form-select"
+                        data-ajax-url="{% url 'ajax_load_departments' %}"
+                        data-ajax-params='{"organization":"#organization","all_regions":"#all_regions"}'>
+                  <option value="">Tanlang...</option>
+                  {% if sel_department %}<option value="{{ sel_department.id }}" selected>{{ sel_department.name }}</option>{% endif %}
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label for="directorate" class="form-label">Boshqarma</label>
+                <select id="directorate" name="directorate" class="form-select"
+                        data-ajax-url="{% url 'ajax_load_directorate' %}"
+                        data-ajax-params='{"department":"#department"}'>
+                  <option value="">Tanlang...</option>
+                  {% if sel_directorate %}<option value="{{ sel_directorate.id }}" selected>{{ sel_directorate.name }}</option>{% endif %}
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label for="division" class="form-label">Bo'lim</label>
+                <select id="division" name="division" class="form-select"
+                        data-ajax-url="{% url 'ajax_load_division' %}"
+                        data-ajax-params='{"directorate":"#directorate"}'>
+                  <option value="">Tanlang...</option>
+                  {% if sel_division %}<option value="{{ sel_division.id }}" selected>{{ sel_division.name }}</option>{% endif %}
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Boshlang'ich sanasi</label>
+                <input type="date" name="date1" class="form-control" value="{{ date1|default:'' }}">
+              </div>
+
+              <div class="col-md-3">
+                <label class="form-label">Tugash sanasi</label>
+                <input type="date" name="date2" class="form-control" value="{{ date2|default:'' }}">
+              </div>
+
+              <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  {% if searched %}
+  <section class="section">
+    <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title">
+              {{ organization.name }}
+              {% if sel_department %}<span class="text-muted"> / {{ sel_department.name }}</span>{% endif %}
+              {% if sel_directorate %}<span class="text-muted"> / {{ sel_directorate.name }}</span>{% endif %}
+              {% if sel_division %}<span class="text-muted"> / {{ sel_division.name }}</span>{% endif %}
+            </h5>
+
+            <div class="row g-2 mb-3">
+              <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><div class="text-muted small">Xodimlar</div><b>{{ totals.employees }}</b></div></div>
+              <div class="col-6 col-md-4"><div class="border rounded p-2 text-center"><div class="text-muted small">Ariza bergan xodimlar</div><b>{{ totals.active_senders }}</b></div></div>
+              <div class="col-12 col-md-4"><div class="border rounded p-2 text-center"><div class="text-muted small">{{ kind_label }} yuborilgan arizalar</div><b>{{ totals.orders }}</b></div></div>
+            </div>
+
+            <div class="table-responsive">
+              <table id="org-status-table" class="table table-bordered table-hover table-sm align-middle"
+                     data-detail-url="{% url 'org_status_employee' 0 %}">
+                <thead class="table-secondary">
+                  <tr>
+                    <th style="width:50px">T/r</th>
+                    <th>F.I.O</th>
+                    <th>Lavozim</th>
+                    <th>Department</th>
+                    <th>Boshqarma</th>
+                    <th>Bo'lim</th>
+                    <th class="text-center">Soni</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for emp in page_obj %}
+                  <tr class="org-row" data-emp-id="{{ emp.id }}" style="cursor:pointer" title="Kategoriyalar bo'yicha ko'rish">
+                    <td>{{ row_start|add:forloop.counter0 }}</td>
+                    <td>{{ emp.full_name }}</td>
+                    <td>{{ emp.rank.name|default:"—" }}</td>
+                    <td>{{ emp.department.name|default:"—" }}</td>
+                    <td>{{ emp.directorate.name|default:"—" }}</td>
+                    <td>{{ emp.division.name|default:"—" }}</td>
+                    <td class="text-center"><b>{{ emp.order_count }}</b></td>
+                  </tr>
+                  {% empty %}
+                  <tr>
+                    <td colspan="7" class="text-center text-muted py-4">
+                      <i class="bi bi-search me-2"></i>Xodim topilmadi
+                    </td>
+                  </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            {% include "chat/_pager.html" with page_obj=page_obj param="page" other=pager_other %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+</main>
+
+<!-- Xodim bo'yicha ariza kategoriyalari (qator bosilganda) -->
+<div class="modal fade" id="empOrdersModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="empOrdersTitle">Xodim</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Yopish"></button>
+      </div>
+      <div class="modal-body">
+        <div id="empOrdersState" class="text-center text-muted py-3" style="display:none"></div>
+        <div class="table-responsive">
+          <table class="table table-bordered table-sm align-middle mb-0" id="empOrdersTable" style="display:none">
+            <thead class="table-secondary">
+              <tr><th style="width:50px">T/r</th><th>Ariza kategoriyasi</th><th class="text-center" style="width:90px">Soni</th></tr>
+            </thead>
+            <tbody id="empOrdersBody"></tbody>
+            <tfoot>
+              <tr class="table-light"><th colspan="2" class="text-end">Jami:</th><th class="text-center" id="empOrdersTotal">0</th></tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Yopish</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const table = document.getElementById("org-status-table");
+  if (!table) return;
+  const modalEl = document.getElementById("empOrdersModal");
+  const els = {
+    title: document.getElementById("empOrdersTitle"),
+    state: document.getElementById("empOrdersState"),
+    table: document.getElementById("empOrdersTable"),
+    body: document.getElementById("empOrdersBody"),
+    total: document.getElementById("empOrdersTotal"),
+  };
+  let modal = null;
+
+  function cell(tag, text, className) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    node.textContent = text;           // textContent: matn HTML sifatida talqin qilinmaydi
+    return node;
+  }
+
+  function showState(text) {
+    els.state.textContent = text;
+    els.state.style.display = text ? "" : "none";
+    els.table.style.display = "none";
+  }
+
+  function render(data) {
+    const e = data.employee;
+    els.title.textContent = e.full_name;
+    els.body.innerHTML = "";
+    if (!data.items.length) {
+      showState("Kategoriyalar topilmadi");
+      return;
+    }
+    showState("");
+    data.items.forEach(function (item, index) {
+      const tr = document.createElement("tr");
+      tr.appendChild(cell("td", String(index + 1)));
+      tr.appendChild(cell("td", item.goal));
+      tr.appendChild(cell("td", String(item.count), item.count ? "text-center fw-semibold" : "text-center text-muted"));
+      els.body.appendChild(tr);
+    });
+    els.total.textContent = String(data.total);
+    els.table.style.display = "";
+  }
+
+  table.addEventListener("click", function (event) {
+    const row = event.target.closest("tr.org-row");
+    if (!row) return;
+    const form = document.querySelector("form[method='get']");
+    const params = new URLSearchParams();
+    ["date1", "date2"].forEach(function (name) {
+      const input = form.querySelector("[name='" + name + "']");
+      if (input && input.value) params.set(name, input.value);
+    });
+    const url = table.dataset.detailUrl.replace("/0/", "/" + row.dataset.empId + "/") + "?" + params.toString();
+
+    els.title.textContent = "Yuklanmoqda...";
+    els.body.innerHTML = "";
+    showState("Yuklanmoqda...");
+    modal = modal || new bootstrap.Modal(modalEl);
+    modal.show();
+
+    fetch(url, { credentials: "same-origin" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(render)
+      .catch(function () { els.title.textContent = "Xatolik"; showState("Ma'lumotni yuklab bo'lmadi"); });
+  });
+})();
+</script>
+
+<!-- Tashkilot -> Department -> Boshqarma -> Bo'lim: yuqori daraja o'zgarganda pastdagilar tozalanadi
+     (ro'yxatlar serverdan yuklanadi: data-ajax-url, static/js/select2_paging.js) -->
+<script>
+(() => {
+  const orgSel = document.getElementById("organization");
+  const depSel = document.getElementById("department");
+  const dirSel = document.getElementById("directorate");
+  const divSel = document.getElementById("division");
+
+  function reset(el) {
+    if (!el) return;
+    el.innerHTML = '<option value="">Tanlang...</option>';
+    if (window.jQuery) window.jQuery(el).trigger("change.select2");
+  }
+  function bindSelectEvents(el, cb) {
+    if (!el) return;
+    if (window.jQuery) { window.jQuery(el).on("select2:select select2:clear", cb); }
+    else { el.addEventListener("change", cb); }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    bindSelectEvents(orgSel, () => { reset(depSel); reset(dirSel); reset(divSel); });
+    bindSelectEvents(depSel, () => { reset(dirSel); reset(divSel); });
+    bindSelectEvents(dirSel, () => { reset(divSel); });
+  });
+})();
+</script>
+
+{% endblock content %}

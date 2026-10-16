@@ -3623,6 +3623,194 @@ def emp_status(request):
     return render(request, "main/emp_status.html", context)
 
 
+# ═══════════════════════════════════════════════════════════════════
+# STATISTIKA: TASHKILOTLAR (tanlangan tuzilmadagi xodimlar va ularning arizalari)
+# ═══════════════════════════════════════════════════════════════════
+ORG_STATUS_PAGE_SIZE = 50
+
+
+def _status_goal_type(employee):
+    """Statistika uchun ariza turi: ATM (worker) xodimiga - ATMga yuborilganlar, boshqalarga - omborxonaga."""
+    is_atm = getattr(employee.organization, "type", None) == "worker"
+    return ("worker", "ATMga") if is_atm else ("client", "Omborxonaga")
+
+
+@never_cache
+@require_GET
+@login_required
+@permission_required("main.status_employee", raise_exception=True)
+def org_status(request):
+    """
+    Tashkilot (+ departament, boshqarma, bo'lim) va sana oralig'i bo'yicha: shu tuzilmadagi faol xodimlar va
+    har birining shu davrda yuborgan arizalari soni (ATMga va omborxonaga alohida).
+    `all_organization` ruxsati bo'lmasa faqat o'z tashkiloti tanlanadi.
+    Arizalar turi ko'ruvchiga qarab: ATM (worker) xodimiga - ATMga yuborilgan arizalar, boshqalarga - omborxonaga
+    yuborilganlari.
+    """
+    employee = getattr(request.user, "employee", None)
+    if not employee:
+        raise PermissionDenied("Employee yo'q")
+
+    goal_type, kind_label = _status_goal_type(employee)
+
+    can_all = request.user.has_perm("main.all_organization")
+    organizations = Organization.objects.only("id", "name").order_by("name")
+    if not can_all:
+        organizations = organizations.filter(pk=employee.organization_id)
+
+    org_id = (request.GET.get("organization") or "").strip()
+    dep_id = (request.GET.get("department") or "").strip()
+    dir_id = (request.GET.get("directorate") or "").strip()
+    div_id = (request.GET.get("division") or "").strip()
+    date1_raw = (request.GET.get("date1") or "").strip()
+    date2_raw = (request.GET.get("date2") or "").strip()
+
+    if not date1_raw and not date2_raw:                 # standart: joriy oy
+        today = timezone.localdate()
+        first = today.replace(day=1)
+        next_first = first.replace(year=first.year + 1, month=1) if first.month == 12 else first.replace(month=first.month + 1)
+        date1_raw = first.isoformat()
+        date2_raw = (next_first - timezone.timedelta(days=1)).isoformat()
+    date1 = parse_date(date1_raw) if date1_raw else None
+    date2 = parse_date(date2_raw) if date2_raw else None
+
+    context = {
+        "organizations": organizations,
+        "selected_org": org_id,
+        "sel_department": Department.objects.filter(pk=dep_id).first() if dep_id.isdigit() else None,
+        "sel_directorate": Directorate.objects.filter(pk=dir_id).first() if dir_id.isdigit() else None,
+        "sel_division": Division.objects.filter(pk=div_id).first() if div_id.isdigit() else None,
+        "date1": date1_raw,
+        "date2": date2_raw,
+        "searched": False,
+        "page_obj": None,
+        "totals": None,
+        "pager_other": "",
+        "kind_label": kind_label,
+    }
+
+    if not org_id.isdigit():
+        return render(request, "main/org_status.html", context)
+
+    organization = get_object_or_404(organizations, pk=int(org_id))     # ruxsat etilmagan tashkilot -> 404
+    structure_error = _employee_structure_error(organization, dep_id, dir_id, div_id)
+    if structure_error:
+        messages.info(request, structure_error)
+        return render(request, "main/org_status.html", context)
+
+    staff = Employee.objects.filter(organization=organization, user__is_active=True)
+    if dep_id.isdigit():
+        staff = staff.filter(department_id=int(dep_id))
+    if dir_id.isdigit():
+        staff = staff.filter(directorate_id=int(dir_id))
+    if div_id.isdigit():
+        staff = staff.filter(division_id=int(div_id))
+
+    dated = Q()
+    if date1:
+        dated &= Q(order_sender__date_creat__date__gte=date1)
+    if date2:
+        dated &= Q(order_sender__date_creat__date__lte=date2)
+
+    rows = (
+        staff
+        .select_related("rank", "department", "directorate", "division")
+        .annotate(
+            order_count=Count(
+                "order_sender", filter=dated & Q(order_sender__goal__organization__type=goal_type), distinct=True,
+            ),
+        )
+        .order_by("-order_count", "last_name", "first_name", "id")
+    )
+
+    orders = Order.objects.filter(sender__in=staff.values("id"), goal__organization__type=goal_type)
+    if date1:
+        orders = orders.filter(date_creat__date__gte=date1)
+    if date2:
+        orders = orders.filter(date_creat__date__lte=date2)
+    totals = {
+        "employees": staff.count(),
+        "orders": orders.count(),
+        "active_senders": orders.values("sender_id").distinct().count(),
+    }
+
+    params = request.GET.copy()
+    params.pop("page", None)
+    page_obj = Paginator(rows, ORG_STATUS_PAGE_SIZE).get_page(request.GET.get("page"))
+    context.update({
+        "organization": organization,
+        "searched": True,
+        "page_obj": page_obj,
+        "row_start": page_obj.start_index() if page_obj.paginator.count else 0,
+        "totals": totals,
+        "pager_other": ("&" + params.urlencode()) if params else "",
+    })
+    return render(request, "main/org_status.html", context)
+
+
+@never_cache
+@require_GET
+@login_required
+@permission_required("main.status_employee", raise_exception=True)
+def org_status_employee(request, pk):
+    """
+    Modal uchun: xodimning (sana oralig'ida) ariza kategoriyalari bo'yicha yuborgan arizalari soni.
+    Jadvalda turning BARCHA kategoriyalari chiqadi (ariza berilmaganlari 0 bilan): ATM xodimi uchun ATM
+    kategoriyalari, ATM bo'lmagan xodim uchun xodim tashkilotining omborxona kategoriyalari.
+    Tashkilot doirasi `org_status` bilan bir xil: `all_organization` bo'lmasa faqat o'z tashkilotining xodimi.
+    """
+    viewer = getattr(request.user, "employee", None)
+    if not viewer:
+        raise PermissionDenied("Employee yo'q")
+
+    targets = Employee.objects.select_related("rank", "department", "directorate", "division", "organization").filter(
+        user__is_active=True,
+    )
+    if not request.user.has_perm("main.all_organization"):
+        targets = targets.filter(organization_id=viewer.organization_id)
+    target = get_object_or_404(targets, pk=pk)
+
+    goal_type, kind_label = _status_goal_type(viewer)
+    date1_raw = (request.GET.get("date1") or "").strip()
+    date2_raw = (request.GET.get("date2") or "").strip()
+    date1 = parse_date(date1_raw) if date1_raw else None
+    date2 = parse_date(date2_raw) if date2_raw else None
+
+    orders = Order.objects.filter(sender=target, goal__organization__type=goal_type)
+    if date1:
+        orders = orders.filter(date_creat__date__gte=date1)
+    if date2:
+        orders = orders.filter(date_creat__date__lte=date2)
+
+    counts = {row["goal_id"]: row["n"] for row in orders.values("goal_id").annotate(n=Count("id"))}
+    goals = Goal.objects.filter(organization__type=goal_type)
+    if goal_type == "client":
+        goals = goals.filter(organization_id=target.organization_id)
+    names = {goal.id: goal.name for goal in goals}
+    for goal in Goal.objects.filter(pk__in=set(counts) - set(names)):       # ro'yxatda yo'q, lekin ariza berilgan kategoriya
+        names[goal.id] = goal.name
+    items = sorted(
+        ({"goal_id": gid, "goal": name or "—", "count": counts.get(gid, 0)} for gid, name in names.items()),
+        key=lambda item: (-item["count"], item["goal"].lower()),
+    )
+    return JsonResponse({
+        "employee": {
+            "id": target.id,
+            "full_name": target.full_name,
+            "rank": target.rank.name if target.rank_id else "",
+            "organization": target.organization.name if target.organization_id else "",
+            "department": target.department.name if target.department_id else "",
+            "directorate": target.directorate.name if target.directorate_id else "",
+            "division": target.division.name if target.division_id else "",
+        },
+        "kind": kind_label,
+        "date1": date1.isoformat() if date1 else "",
+        "date2": date2.isoformat() if date2 else "",
+        "items": items,
+        "total": sum(item["count"] for item in items),
+    })
+
+
 @never_cache
 @require_GET
 @login_required
