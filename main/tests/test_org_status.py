@@ -109,16 +109,24 @@ class OrgStatusTests(TestCase):
         rows = self._rows(response)
         # Ko'ruvchi ATM (worker) xodimi: faqat ATMga yuborilgan arizalar, omborxonaniki ko'rinmaydi
         self.assertEqual(rows[self.in_div.full_name].order_count, 2)
-        self.assertEqual(rows[self.in_dep_b.full_name].order_count, 0)
+        self.assertNotIn(self.in_dep_b.full_name, rows)                 # omborxonaga yozgan, ATMga yozmagan: ro'yxatda yo'q
         self.assertEqual(response.context["totals"]["orders"], 2)
         self.assertEqual(response.context["kind_label"], "ATMga")
         self.assertNotContains(response, "Omborxonaga yuborilgan")
 
-    def test_employees_without_orders_are_listed_with_zero(self):
+    def test_only_employees_who_sent_orders_are_listed(self):
+        self._order(self.in_div, self.atm_goal, at(2026, 10, 5))
+        self._order(self.in_dep_b, self.atm_goal, at(2026, 9, 5))         # davrdan tashqarida
         response = self._get(organization=self.client_org.id)
-        rows = self._rows(response)
-        self.assertEqual(rows[self.idle.full_name].order_count, 0)
-        self.assertEqual(response.context["totals"]["employees"], 3)      # in_div, in_dep_b, idle (nofaol va begona tashkilot kirmaydi)
+        self.assertEqual(set(self._rows(response)), {self.in_div.full_name})   # ariza bermaganlar (idle ham) ko'rinmaydi
+        self.assertEqual(response.context["totals"]["employees"], 3)          # kartochka: tuzilmadagi barcha faol xodimlar (in_div, in_dep_b, idle)
+        self.assertEqual(response.context["totals"]["active_senders"], 1)     # ... shundan ariza berganlari
+
+    def test_nobody_sent_orders_shows_empty_message(self):
+        response = self._get(organization=self.client_org.id)
+        self.assertEqual(len(response.context["page_obj"]), 0)
+        self.assertEqual(response.context["totals"]["active_senders"], 0)
+        self.assertContains(response, "Ma'lumot topilmadi")
 
     def test_inactive_and_other_organization_staff_excluded(self):
         names = set(self._rows(self._get(organization=self.client_org.id)))
@@ -132,12 +140,12 @@ class OrgStatusTests(TestCase):
         ordered = [e for e in self._get(organization=self.client_org.id).context["page_obj"]]
         self.assertEqual([e.order_count for e in ordered], sorted((e.order_count for e in ordered), reverse=True))
         names = [e.full_name for e in ordered]
-        self.assertEqual(names[0], self.in_dep_b.full_name)
-        self.assertEqual(names[1], self.in_div.full_name)
-        self.assertEqual(names[-1], self.idle.full_name)                      # ariza bermagan oxirida
+        self.assertEqual(names, [self.in_dep_b.full_name, self.in_div.full_name])
 
     def test_equal_counts_ordered_by_structure_ids_then_employee_id(self):
-        # Hech kim ariza bermagan: hammasi 0 -> department -> boshqarma -> bo'lim -> xodim ID (bo'shlari oxirida)
+        # Ariza soni teng: department -> boshqarma -> bo'lim -> xodim ID (bo'shlari oxirida)
+        for emp in (self.in_div, self.in_dep_b, self.idle):
+            self._order(emp, self.atm_goal, at(2026, 10, 7))
         ordered = [e for e in self._get(organization=self.client_org.id).context["page_obj"]]
         keys = [(e.department_id is None, e.department_id or 0, e.directorate_id is None, e.directorate_id or 0,
                  e.division_id is None, e.division_id or 0, e.id) for e in ordered]
@@ -152,6 +160,7 @@ class OrgStatusTests(TestCase):
         for emp in (first, second):
             emp.department = self.dept_a
             emp.save()
+            self._order(emp, self.atm_goal, at(2026, 10, 5))
         ordered = [e.id for e in self._get(organization=self.client_org.id, department=self.dept_a.id).context["page_obj"]]
         self.assertEqual(ordered, sorted(ordered))
 
@@ -219,6 +228,8 @@ class OrgStatusTests(TestCase):
     # ---- tuzilma filtrlari ----
     def test_filter_by_department_directorate_division(self):
         base = {"organization": self.client_org.id}
+        for emp in (self.in_div, self.in_dep_b):
+            self._order(emp, self.atm_goal, at(2026, 10, 5))
         by_dep_b = set(self._rows(self._get(department=self.dept_b.id, **base)))
         self.assertEqual(by_dep_b, {self.in_dep_b.full_name})
         by_dep_a = set(self._rows(self._get(department=self.dept_a.id, **base)))
@@ -254,7 +265,11 @@ class OrgStatusTests(TestCase):
 
     def test_pagination_20_per_page_with_pager(self):
         for i in range(60):
-            make_employee(self.client_org, self.region, first=f"Xodim{i:02d}", last="Ommaviy")
+            _, emp = make_employee(self.client_org, self.region, first=f"Xodim{i:02d}", last="Ommaviy")
+            self._order(emp, self.atm_goal, at(2026, 10, 5))
+        self._order(self.in_div, self.atm_goal, at(2026, 10, 5))
+        self._order(self.in_dep_b, self.atm_goal, at(2026, 10, 5))
+        self._order(self.idle, self.atm_goal, at(2026, 10, 5))
         first = self._get(organization=self.client_org.id)
         self.assertEqual(len(first.context["page_obj"]), 20)
         self.assertContains(first, 'aria-label="Sahifalash"')          # sahifalash tugmalari (‹ 1 2 3 4 ›)
@@ -266,7 +281,8 @@ class OrgStatusTests(TestCase):
 
     def test_pager_keeps_filters_in_links(self):
         for i in range(25):
-            make_employee(self.client_org, self.region, first=f"Havola{i:02d}", last="Sinov")
+            _, emp = make_employee(self.client_org, self.region, first=f"Havola{i:02d}", last="Sinov")
+            self._order(emp, self.atm_goal, at(2026, 10, 5))
         html = self._get(organization=self.client_org.id).content.decode()
         self.assertIn(f"organization={self.client_org.id}", html.split('aria-label="Sahifalash"')[1])
         self.assertIn("date1=2026-10-01", html.split('aria-label="Sahifalash"')[1])
@@ -402,6 +418,7 @@ class OrgStatusEmployeeModalTests(TestCase):
 
     def test_table_rows_are_clickable_and_modal_is_rendered(self):
         _, row_person = make_employee(self.client_org, self.region, first="Qator", last="Xodimi")
+        self._order(self.atm_net, at(2026, 10, 5), sender=row_person)
         html = self.client.get(reverse("org_status"), {
             "organization": self.client_org.id, "region": self.region.id, "date1": "2026-10-01", "date2": "2026-10-31",
         }).content.decode()

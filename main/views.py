@@ -3550,6 +3550,10 @@ def emp_status(request):
     date1_raw = (request.GET.get("date1") or "").strip()
     date2_raw = (request.GET.get("date2") or "").strip()
 
+    # Hudud doirasi: "Barcha hududlarni ko'rish" ruxsati bo'lmasa faqat o'z hududi (serverda tekshiriladi)
+    can_all_regions = request.user.has_perm("main.all_region")
+    if region_id and not can_all_regions and region_id != str(employee.region_id):
+        raise PermissionDenied("Bu hudud bo'yicha ruxsat yo'q")
     date1 = parse_date(date1_raw) if date1_raw else None
     date2 = parse_date(date2_raw) if date2_raw else None
 
@@ -3572,6 +3576,9 @@ def emp_status(request):
     if region_id.isdigit():
         orders = orders.filter(receiver_region_id=int(region_id))
         goal_orders = goal_orders.filter(receiver_region_id=int(region_id))
+    else:                                           # hudud tanlash majburiy: tanlanmaguncha ma'lumot ko'rsatilmaydi
+        orders = orders.none()
+        goal_orders = goal_orders.none()
 
     if date1:
         orders = orders.filter(date_creat__date__gte=date1)
@@ -3610,12 +3617,12 @@ def emp_status(request):
             total=Count("order", filter=Q(order__in=goal_orders))
         )
         .order_by("-total")
-    )
+    ) if region_id.isdigit() else Goal.objects.none()
 
     context = {
         "goal": goal,
         "employee": employee_stats,   # FIX: template'ga shu yangi nom bilan uzatiladi
-        "region": Region.objects.all().order_by("id"),
+        "region": Region.objects.all().order_by("id") if can_all_regions else Region.objects.filter(pk=employee.region_id).order_by("id"),
         "selected_region": region_id,
         "date1": date1_raw,
         "date2": date2_raw,
@@ -3736,6 +3743,7 @@ def org_status(request):
                 "order_sender", filter=dated & Q(order_sender__goal__organization__type=goal_type), distinct=True,
             ),
         )
+        .filter(order_count__gt=0)          # faqat tanlangan davrda ariza bergan xodimlar
         # Ariza soni bo'yicha (ko'pdan kamga); teng bo'lsa tuzilma ID lari: department -> boshqarma -> bo'lim -> xodim
         .order_by(
             "-order_count",

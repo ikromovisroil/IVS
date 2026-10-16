@@ -19,7 +19,7 @@
                 <form class="row g-2 mt-1" method="get">
                   <div class="col-md-3">
                     <label class="form-label">Region</label>
-                    <select name="region" class="form-select">
+                    <select name="region" class="form-select" required>
                       <option value="">Tanlang...</option>
                       {% for r in region %}
                         <option value="{{ r.id }}"
