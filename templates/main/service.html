@@ -125,19 +125,21 @@
                           <b>"Tasdiqlayman"<br>
                              “O‘zbekiston Respublikasi<br>
                              Iqtisodiyot va moliya vazirligi huzuridagi<br>
-                             Axborot texnologiyalar markazi” DUK<br>
+                             Axborot texnologiyalari markazi” DUK<br>
                              Direktori<br>
                              F. Xujamqulov<br>
                           </b>
-                          <b id="doc_date">12.02.2026 y</b>
+                          <b id="doc_date">12.02.2026 y.</b>
                         </td>
                       </tr>
                     </tbody>
                   </table>
-                </div>
-                <div style="text-align:center;">
+                </div><br><br>
+
+                <div style="text-align:center; font-size:12pt;"><b>
                   “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi” DUK
-                infratuzilmasiniqo‘llab-quvvatlashda ishning bajarilish jarayonidagi uskuna va materiallarni hisobdan chiqarish bo‘yicha
+                infratuzilmasini qo‘llab-quvvatlashda<br>
+                ishning bajarilish jarayonidagi uskuna va materiallarni hisobdan chiqarish bo‘yicha</b>
                 </div>
                 <div style="text-align:center;">
                   <b>DALOLATNOMA</b>
@@ -146,13 +148,13 @@
                   <b><span id="year">{{ report_year }}</span> yil <span id="chorak">{{ report_quarter }}</span> - chorak  uchun</b>
                 </div><br>
 
-                <div style="text-align:justify; text-indent:1.25cm;"><b>
+                <div style="text-align:justify; text-indent:1.25cm;">
                 Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalar markazi”
                 DUKning moddiy boyliklarini hisobdan chiqarish bo‘yicha doimiy komissiya raisi: Direktorning o‘rinbosari N. Nazarov,  komissiya  a’zolari:
                 Bo‘lim boshlig‘i Bosh buxgalter N.Ergasheva, bosh buxgalter o‘rinbasari G.Hatamova, boshqarma boshlig‘i A.Narzullayev,
                 bo‘lim boshlig‘i I.Xabirov, boshqarma boshlig‘i O.Abduqodirov, boshqarma boshlig‘i U.Muxtorov,
                 ish boshqaruvchi A.Abdukarimov, ombor mudiri A.Sa‘dullayev ushbu dalolatnomani
-                <span id="blok_javobgar"></span> ro‘yxatiga quyidagi miqdor va tarkibda kiritilgan inventarizatsiya buyumlarini hisobdan chiqarish uchun tuzdik.</b>
+                <span id="blok_javobgar"></span> nomidagi jadvaldagi ro‘yxatda keltirilgan miqdor va tarkibda kiritilgan inventarizatsiya buyumlarini hisobdan chiqarish uchun tuzdik.
                 </div><br>
 
 
@@ -171,9 +173,9 @@
                     <thead>
                       <tr>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">№</td>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Materialning nomi</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Materiallarning nomi</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">O'lchov birligi</td>
-                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Miqdori</td>
+                        <td style="border:1px solid #000;font-size:8pt;text-align:center;">Miqdor</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Birlik narxi</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Umumiy qiymati</td>
                         <td style="border:1px solid #000;font-size:8pt;text-align:center;">Eslatma*</td>
@@ -408,7 +410,7 @@ function esc(s) {
 }
 
 // ─── SUMMA SO'Z BILAN ──────────────────────────────────────────────────────────
-// 16980445.02 -> "JAMI SO‘Z BILAN: O‘n olti million to‘qqiz yuz sakson ming to‘rt yuz qirq besh so‘m nol ikki tiyin"
+// 16980445.02 -> "JAMI SO‘Z BILAN: O‘n olti million to‘qqiz yuz sakson ming to‘rt yuz qirq besh so‘m 02 tiyin"
 const UZ_ONES = ['', 'bir', 'ikki', 'uch', 'to‘rt', 'besh', 'olti', 'yetti', 'sakkiz', 'to‘qqiz'];
 const UZ_TENS = ['', 'o‘n', 'yigirma', 'o‘ttiz', 'qirq', 'ellik', 'oltmish', 'yetmish', 'sakson', 'to‘qson'];
 const UZ_SCALES = ['', 'ming', 'million', 'milliard', 'trillion'];
@@ -441,9 +443,8 @@ function amountInWords(total) {
   const cents = Math.max(0, Math.round((Number(total) || 0) * 100));
   const som = Math.floor(cents / 100);
   const tiyin = cents % 100;
-  // tiyin ikki xonali o'qiladi: 02 -> "nol ikki", 00 -> "nol nol", 45 -> "qirq besh"
-  const tiyinWords = tiyin < 10 ? 'nol ' + (tiyin === 0 ? 'nol' : UZ_ONES[tiyin]) : uzNumberWords(tiyin);
-  const text = uzNumberWords(som) + ' so‘m ' + tiyinWords + ' tiyin';
+  // tiyin raqam bilan, doim ikki xonali: 0 -> "00", 2 -> "02", 45 -> "45"
+  const text = uzNumberWords(som) + ' so‘m ' + String(tiyin).padStart(2, '0') + ' tiyin';
   return 'JAMI SO‘Z BILAN: ' + text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -612,7 +613,7 @@ function waitForTinyMCE(callback, tries = 0) {
 }
 
 function updateDocDate() {
-  editorSetText('#doc_date', todayDmy() + ' y');
+  editorSetText('#doc_date', todayDmy() + ' y.');
 }
 
 // Hisobot davri: "2026 yil III - chorak uchun". Yil va chorak tanlangan oraliqning OXIRGI sanasidan olinadi.
