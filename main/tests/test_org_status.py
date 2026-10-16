@@ -125,13 +125,26 @@ class OrgStatusTests(TestCase):
         self.assertNotIn(self.fired.full_name, names)
         self.assertNotIn(self.stranger.full_name, names)
 
-    def test_sorted_by_most_orders_first(self):
+    def test_staff_ordered_by_department_directorate_division_id(self):
+        # Ariza soni tartibga ta'sir qilmasligi uchun eng ko'p ariza berganni oxirgi tuzilmaga qo'yamiz
         for _ in range(3):
             self._order(self.in_dep_b, self.atm_goal, at(2026, 10, 7))
-        self._order(self.in_div, self.atm_goal, at(2026, 10, 7))
-        ordered = [e.full_name for e in self._get(organization=self.client_org.id).context["page_obj"]]
-        self.assertEqual(ordered[0], self.in_dep_b.full_name)
-        self.assertEqual(ordered[1], self.in_div.full_name)
+        ordered = [e for e in self._get(organization=self.client_org.id).context["page_obj"]]
+        keys = [(e.department_id is None, e.department_id or 0, e.directorate_id is None, e.directorate_id or 0,
+                 e.division_id is None, e.division_id or 0, e.id) for e in ordered]
+        self.assertEqual(keys, sorted(keys))                                    # bo'shlari oxirida, qolgani ID o'sish tartibida
+        names = [e.full_name for e in ordered]
+        self.assertLess(names.index(self.in_div.full_name), names.index(self.in_dep_b.full_name))   # Dep A (id kichik) oldin
+        self.assertEqual(names[-1], self.idle.full_name)                        # tuzilmasiz xodim oxirida
+
+    def test_same_structure_ordered_by_employee_id(self):
+        _, first = make_employee(self.client_org, self.region, first="Birinchi", last="Bir")
+        _, second = make_employee(self.client_org, self.region, first="Ikkinchi", last="Ikki")
+        for emp in (first, second):
+            emp.department = self.dept_a
+            emp.save()
+        ordered = [e.id for e in self._get(organization=self.client_org.id, department=self.dept_a.id).context["page_obj"]]
+        self.assertEqual(ordered, sorted(ordered))
 
     def test_non_atm_viewer_sees_warehouse_orders_only(self):
         self._order(self.in_div, self.atm_goal, at(2026, 10, 5))

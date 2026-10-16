@@ -3736,7 +3736,13 @@ def org_status(request):
                 "order_sender", filter=dated & Q(order_sender__goal__organization__type=goal_type), distinct=True,
             ),
         )
-        .order_by("-order_count", "last_name", "first_name", "id")
+        # Xodimlar ketma-ketligi tuzilma ID lari bo'yicha: department -> boshqarma -> bo'lim -> xodim (bo'shlari oxirida)
+        .order_by(
+            F("department_id").asc(nulls_last=True),
+            F("directorate_id").asc(nulls_last=True),
+            F("division_id").asc(nulls_last=True),
+            "id",
+        )
     )
 
     orders = Order.objects.filter(sender__in=staff.values("id"), goal__organization__type=goal_type)
