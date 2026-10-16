@@ -3848,14 +3848,71 @@ def org_status_employee(request, pk):
     })
 
 
+TEX_GROUP_ICONS = ("bi-pc-display", "bi-printer", "bi-hdd-network", "bi-phone", "bi-camera-video", "bi-cpu", "bi-display", "bi-box-seam")
+
+
 @never_cache
 @require_GET
 @login_required
 @permission_required("main.status_employee", raise_exception=True)
 def tex_status(request):
+    """
+    Texnikalar statistikasi. Filtrlar: tashkilot va hudud (majburiy), department, boshqarma, bo'lim.
+    Sahifa birinchi ochilganda (filtrsiz) kirgan xodimning tashkiloti, hududi va departmenti tanlangan bo'ladi.
+    Doira: `all_organization` bo'lmasa faqat o'z tashkiloti, `all_region` bo'lmasa faqat o'z hududi
+    ("Barcha hududlar" faqat `all_region` bilan).
+    """
     employee = getattr(request.user, "employee", None)
     if not employee:
         raise PermissionDenied("Employee yo‘q")
+
+    can_all = request.user.has_perm("main.all_organization")
+    can_all_regions = request.user.has_perm("main.all_region")
+    organizations = Organization.objects.only("id", "name").order_by("id")
+    regions = Region.objects.only("id", "name").order_by("id")
+    if not can_all:
+        organizations = organizations.filter(pk=employee.organization_id)
+    if not can_all_regions:
+        regions = regions.filter(pk=employee.region_id)
+
+    submitted = "organization" in request.GET or "region" in request.GET
+    if submitted:
+        org_id = (request.GET.get("organization") or "").strip()
+        region_id = (request.GET.get("region") or "").strip()
+        dep_id = (request.GET.get("department") or "").strip()
+    else:                                   # birinchi ochilish: xodimning o'z tashkiloti, hududi va departmenti
+        org_id = str(employee.organization_id or "")
+        region_id = str(employee.region_id) if employee.region_id else ("all" if can_all_regions else "")
+        dep_id = str(employee.department_id or "")
+    dir_id = (request.GET.get("directorate") or "").strip()
+    div_id = (request.GET.get("division") or "").strip()
+
+    # Ko'rish doirasi serverda tekshiriladi
+    if region_id and not can_all_regions and region_id != str(employee.region_id):
+        raise PermissionDenied("Bu hudud bo'yicha ruxsat yo'q")
+    organization = get_object_or_404(organizations, pk=int(org_id)) if org_id.isdigit() else None   # ruxsatsiz tashkilot -> 404
+    if region_id.isdigit():
+        get_object_or_404(regions, pk=int(region_id))
+    all_regions_selected = can_all_regions and region_id == "all"
+
+    ready = organization is not None and (region_id.isdigit() or all_regions_selected)
+    if not ready:                           # tashkilot va hudud majburiy: tanlanmaguncha ma'lumot ko'rsatilmaydi
+        if submitted:
+            messages.info(request, "Tashkilot va hududni tanlang")
+        dep_id = dir_id = div_id = ""
+    else:
+        structure_error = _employee_structure_error(organization, dep_id, dir_id, div_id)
+        if structure_error:
+            messages.info(request, structure_error)
+            dep_id = dir_id = div_id = ""
+
+    # Tanlanmagan bo'lsa hech narsa mos kelmaydigan shart (ID 0 mavjud emas)
+    tech_filter = {"is_active": True, "organization_id": organization.id if ready else 0}
+    if region_id.isdigit():
+        tech_filter["region_id"] = int(region_id)
+    for key, raw in (("department_id", dep_id), ("directorate_id", dir_id), ("division_id", div_id)):
+        if raw.isdigit():
+            tech_filter[key] = int(raw)
 
     # ------------------- GROUPLAR -------------------
     groups = list(
@@ -3864,10 +3921,7 @@ def tex_status(request):
         .annotate(
             technics_count=Count(
                 "technics__id",
-                filter=Q(
-                    technics__is_active=True,
-                    technics__organization_id=employee.organization_id
-                ),
+                filter=Q(**{f"technics__{key}": value for key, value in tech_filter.items()}),
                 distinct=True
             )
         )
@@ -3893,10 +3947,9 @@ def tex_status(request):
     grouped = list(
         Technics.objects
         .filter(
-            is_active=True,
-            organization_id=employee.organization_id,
             group_id__in=group_ids,
             category_id__isnull=False,
+            **tech_filter,
         )
         .values("group_id", "category_id")
         .annotate(cnt=Count("id"))
@@ -3907,10 +3960,10 @@ def tex_status(request):
         for item in grouped
     }
 
-    # ------------------- CARD DATA -------------------
+    # ------------------- DASHBOARD MA'LUMOTLARI -------------------
+    # Rang guruhning ID tartibidagi o'rniga bog'liq (keyin saralansa ham o'zgarmaydi)
     groups_qs = []
-
-    for group in groups:
+    for position, group in enumerate(groups):
         group_total = group["technics_count"]
         category_list = []
 
@@ -3928,47 +3981,60 @@ def tex_status(request):
                 "foiz": foiz,
             })
 
+        category_list.sort(key=lambda c: (-c["soni"], c["id"]))          # ko'pdan kamga
         groups_qs.append({
             "id": group["id"],
             "name": group["name"],
             "technics_count": group["technics_count"],
             "foiz": group["foiz"],
+            "color": position % 8,
+            "icon": TEX_GROUP_ICONS[position % len(TEX_GROUP_ICONS)],
             "category_list": category_list,
+            "top_categories": category_list[:5],
+            "more_categories": category_list[5:],
         })
 
-    # ------------------- AREA CHART: FAQAT GROUP BO'YICHA -------------------
-    area_categories = [g["name"] for g in groups]
+    groups_qs.sort(key=lambda g: (-g["technics_count"], g["id"]))      # eng ko'pi birinchi, bo'shlari oxirida
 
-    area_series = [{
-        "name": "Texnikalar",
-        "data": [g["technics_count"] for g in groups],
-    }]
+    total = sum(g["technics_count"] for g in groups_qs)
+    top_group = groups_qs[0] if groups_qs and groups_qs[0]["technics_count"] else None
+    kpi = {
+        "total": total,
+        "groups": sum(1 for g in groups_qs if g["technics_count"]),
+        "categories": sum(1 for g in groups_qs for c in g["category_list"] if c["soni"]),
+        "top_name": top_group["name"] if top_group else "—",
+        "top_count": top_group["technics_count"] if top_group else 0,
+        "top_share": top_group["foiz"] if top_group else 0,
+    }
 
-    # ------------------- PIE CHART -------------------
-    pie_labels = [g["name"] for g in groups]
-    pie_values = [g["technics_count"] for g in groups]
-
-    # ------------------- BAR CHART -------------------
-    groups_sorted = sorted(
-        groups,
-        key=lambda x: x["technics_count"],
-        reverse=True
-    )
-
-    bar_labels = [g["name"] for g in groups_sorted[:8]]
-    bar_values = [g["technics_count"] for g in groups_sorted[:8]]
+    # Diagrammalar uchun JSON (faqat texnikasi bor guruh va kategoriyalar)
+    dashboard = {
+        "total": total,
+        "groups": [
+            {
+                "id": g["id"],
+                "name": g["name"],
+                "color": g["color"],
+                "total": g["technics_count"],
+                "share": g["foiz"],
+                "categories": [{"name": c["name"], "count": c["soni"]} for c in g["category_list"] if c["soni"]],
+            }
+            for g in groups_qs if g["technics_count"]
+        ],
+    }
 
     context = {
+        "organizations": organizations,
+        "regions": regions,
+        "can_all_regions": can_all_regions,
+        "selected_org": org_id,
+        "selected_region": region_id,
+        "sel_department": Department.objects.filter(pk=dep_id).first() if dep_id.isdigit() else None,
+        "sel_directorate": Directorate.objects.filter(pk=dir_id).first() if dir_id.isdigit() else None,
+        "sel_division": Division.objects.filter(pk=div_id).first() if div_id.isdigit() else None,
         "groups_qs": groups_qs,
-
-        "area_categories": area_categories,
-        "area_series": area_series,
-
-        "pie_labels": pie_labels,
-        "pie_values": pie_values,
-
-        "bar_labels": bar_labels,
-        "bar_values": bar_values,
+        "kpi": kpi,
+        "dashboard": dashboard,
     }
 
     return render(request, "main/tex_status.html", context)

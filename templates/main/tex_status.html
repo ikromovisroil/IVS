@@ -13,207 +13,415 @@
     <h1>Dashboard</h1>
   </div>
 
-  <section class="section dashboard">
+  <section class="section">
     <div class="row">
+      <div class="col-lg-12">
+        <div class="card">
+          <div class="card-body">
+            <form class="row g-2 mt-1" method="get">
+              <input type="hidden" id="all_regions" value="1">
+              <input type="hidden" id="order_by_id" value="id">
 
-      {% for group in groups_qs %}
-      <div class="col-12 col-md-6 col-xl-4 col-xxl-3 mb-4">
-        <div class="card shadow-sm h-100 border-0 rounded-4 overflow-hidden">
-          <div class="card-body p-0">
-
-            <div class="d-flex justify-content-between align-items-center px-3 border-bottom">
-              <h5 class="card-title mb-0 fw-bold" style="font-size: 15px;">
-                {{ group.name }}
-              </h5>
-
-              <span class="badge rounded-pill text-primary bg-primary-subtle px-3 py-1" style="font-size: 15px;">
-                {{ group.technics_count }} ta
-              </span>
-            </div>
-
-            {% for cat in group.category_list %}
-            <div class="d-flex align-items-center gap-2 px-3 py-1 border-bottom">
-
-              <div class="flex-grow-1 text-secondary small" style="font-size: 13px;">
-                {{ cat.name }}
+              <div class="col-md-3">
+                <label for="organization" class="form-label">Tashkilot</label>
+                <select id="organization" name="organization" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% for org in organizations %}
+                    <option value="{{ org.id }}" {% if selected_org == org.id|stringformat:"s" %}selected{% endif %}>{{ org.name }}</option>
+                  {% endfor %}
+                </select>
               </div>
 
-              <div class="d-flex align-items-center gap-2" style="width: 150px;">
-                <div class="progress flex-grow-1" style="height: 8px;">
-                  <div
-                    class="progress-bar bg-primary"
-                    role="progressbar"
-                    style="width: {{ cat.foiz|unlocalize }}%;"
-                    aria-valuenow="{{ cat.foiz|unlocalize }}"
-                    aria-valuemin="0"
-                    aria-valuemax="100">
-                  </div>
-                </div>
-
-                <div class="text-end text-muted small fw-semibold" style="width: 40px;">
-                  {{ cat.soni }}
-                </div>
+              <div class="col-md-3">
+                <label for="region" class="form-label">Hudud</label>
+                <select id="region" name="region" class="form-select" required>
+                  <option value="">Tanlang...</option>
+                  {% if can_all_regions %}<option value="all" {% if selected_region == "all" %}selected{% endif %}>Barcha hududlar</option>{% endif %}
+                  {% for r in regions %}
+                    <option value="{{ r.id }}" {% if selected_region == r.id|stringformat:"s" %}selected{% endif %}>{{ r.name }}</option>
+                  {% endfor %}
+                </select>
               </div>
 
-            </div>
-            {% empty %}
-            <div class="px-3 py-2 text-muted small">
-              Bu guruhda kategoriya yo‘q
-            </div>
-            {% endfor %}
+              <div class="col-md-3">
+                <label for="department" class="form-label">Department</label>
+                <select id="department" name="department" class="form-select"
+                        data-ajax-url="{% url 'ajax_load_departments' %}"
+                        data-ajax-params='{"organization":"#organization","region":"#region","all_regions":"#all_regions","order":"#order_by_id"}'>
+                  <option value="">Tanlang...</option>
+                  {% if sel_department %}<option value="{{ sel_department.id }}" selected>{{ sel_department.name }}</option>{% endif %}
+                </select>
+              </div>
 
+              <div class="col-md-3">
+                <label for="directorate" class="form-label">Boshqarma</label>
+                <select id="directorate" name="directorate" class="form-select"
+                        data-ajax-url="{% url 'ajax_load_directorate' %}"
+                        data-ajax-params='{"department":"#department","order":"#order_by_id"}'>
+                  <option value="">Tanlang...</option>
+                  {% if sel_directorate %}<option value="{{ sel_directorate.id }}" selected>{{ sel_directorate.name }}</option>{% endif %}
+                </select>
+              </div>
+
+              <div class="col-md-3">
+                <label for="division" class="form-label">Bo'lim</label>
+                <select id="division" name="division" class="form-select"
+                        data-ajax-url="{% url 'ajax_load_division' %}"
+                        data-ajax-params='{"directorate":"#directorate","order":"#order_by_id"}'>
+                  <option value="">Tanlang...</option>
+                  {% if sel_division %}<option value="{{ sel_division.id }}" selected>{{ sel_division.name }}</option>{% endif %}
+                </select>
+              </div>
+
+              <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">Qidirish</button>
+              </div>
+            </form>
           </div>
         </div>
       </div>
-      {% endfor %}
-
-      <div class="col-12 mb-4">
-        <div class="card shadow-sm border-0 rounded-4">
-          <div class="card-body">
-            <h5 class="card-title fw-bold">
-              Guruhlar kesimida texnika
-            </h5>
-            <div id="areaChart" style="min-height: 350px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-lg-6 mb-4">
-        <div class="card shadow-sm border-0 rounded-4">
-          <div class="card-body">
-            <h5 class="card-title fw-bold">
-              Guruhlar bo‘yicha texnika
-            </h5>
-            <div id="barChart" style="min-height: 350px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-lg-6 mb-4">
-        <div class="card shadow-sm border-0 rounded-4">
-          <div class="card-body">
-            <h5 class="card-title fw-bold">
-              Guruhlar ulushi
-            </h5>
-            <div id="pieChart" style="min-height: 350px;"></div>
-          </div>
-        </div>
-      </div>
-
     </div>
   </section>
 
+  <style>
+    /* Texnikalar dashboardi: ranglar guruh bo'yicha, mavzu o'zgaruvchilari (theme.css) tungi rejimni o'zi beradi */
+    .tx-c0 { --c: #4c5cff; } .tx-c1 { --c: #8a4dff; } .tx-c2 { --c: #0ea5e9; } .tx-c3 { --c: #10b981; }
+    .tx-c4 { --c: #f59e0b; } .tx-c5 { --c: #ef4444; } .tx-c6 { --c: #ec4899; } .tx-c7 { --c: #14b8a6; }
+
+    .tx-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius, 16px); box-shadow: var(--shadow-sm); }
+    .tx-title { font-weight: 700; font-size: 15px; color: var(--ink); margin: 0; }
+
+    .tx-kpi { display: flex; align-items: center; gap: 14px; padding: 16px 18px; height: 100%; }
+    .tx-kpi-ic { width: 46px; height: 46px; border-radius: 14px; flex: 0 0 46px; display: grid; place-items: center;
+                 font-size: 22px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+    .tx-kpi-label { color: var(--muted); font-size: 12.5px; }
+    .tx-kpi-value { color: var(--ink); font-size: 24px; font-weight: 700; line-height: 1.15; }
+    .tx-kpi-value.tx-sm { font-size: 16px; }
+    .tx-kpi-sub { color: var(--muted); font-size: 12px; }
+
+    .tx-group { position: relative; padding: 16px 16px 12px; height: 100%; cursor: pointer; overflow: hidden;
+                transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease; }
+    .tx-group::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 4px; background: var(--c); }
+    .tx-group:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .tx-group.is-active { border-color: var(--c); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 35%, transparent); }
+    .tx-group.is-empty { opacity: .6; }
+    .tx-group-head { display: flex; align-items: center; gap: 12px; }
+    .tx-group-ic { width: 42px; height: 42px; border-radius: 12px; flex: 0 0 42px; display: grid; place-items: center;
+                   font-size: 20px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); }
+    .tx-group-name { color: var(--ink); font-weight: 700; font-size: 14.5px; line-height: 1.25; min-width: 0; overflow-wrap: anywhere; }
+    .tx-group-count { margin-left: auto; text-align: right; flex: 0 0 auto; }
+    .tx-group-count b { display: block; color: var(--ink); font-size: 22px; line-height: 1.1; }
+    .tx-group-count span { color: var(--muted); font-size: 11.5px; }
+
+    .tx-share { margin: 12px 0 10px; }
+    .tx-share-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-bottom: 4px; }
+    .tx-bar { height: 6px; border-radius: 999px; background: var(--row-line); overflow: hidden; }
+    .tx-bar > i { display: block; height: 100%; border-radius: 999px; background: var(--c); }
+
+    .tx-cat { display: grid; grid-template-columns: minmax(0, 1fr) 74px 34px; align-items: center; gap: 10px; padding: 5px 0;
+              border-top: 1px dashed var(--row-line); font-size: 13px; }
+    .tx-cat-name { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tx-cat-num { color: var(--ink); font-weight: 600; text-align: right; }
+    .tx-cat-empty { color: var(--muted); font-size: 12.5px; padding: 6px 0 2px; }
+    .tx-more { display: none; }
+    .tx-more.is-open { display: block; }
+    .tx-more-btn { background: none; border: 0; padding: 6px 0 0; color: var(--c); font-size: 12.5px; font-weight: 600; cursor: pointer; }
+
+    .tx-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tx-chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); border-radius: 999px;
+               padding: 5px 12px 5px 10px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+    .tx-chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--c); display: inline-block; }
+    .tx-chip.is-active { background: var(--c); border-color: var(--c); color: #fff; }
+    .tx-chip.is-active i { background: #fff; }
+    .tx-detail-meta { color: var(--muted); font-size: 13px; }
+    .tx-empty { padding: 48px 16px; text-align: center; color: var(--muted); }
+    @media (max-width: 575.98px) { .tx-kpi-value { font-size: 20px; } }
+  </style>
+
+  {% if kpi.total %}
+  <section class="section dashboard">
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-xl-3">
+        <div class="tx-card tx-kpi tx-c0">
+          <div class="tx-kpi-ic"><i class="bi bi-pc-display"></i></div>
+          <div><div class="tx-kpi-label">Jami texnika</div><div class="tx-kpi-value">{{ kpi.total }}</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="tx-card tx-kpi tx-c3">
+          <div class="tx-kpi-ic"><i class="bi bi-grid"></i></div>
+          <div><div class="tx-kpi-label">Guruhlar</div><div class="tx-kpi-value">{{ kpi.groups }}</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="tx-card tx-kpi tx-c2">
+          <div class="tx-kpi-ic"><i class="bi bi-tags"></i></div>
+          <div><div class="tx-kpi-label">Kategoriyalar</div><div class="tx-kpi-value">{{ kpi.categories }}</div></div>
+        </div>
+      </div>
+      <div class="col-6 col-xl-3">
+        <div class="tx-card tx-kpi tx-c4">
+          <div class="tx-kpi-ic"><i class="bi bi-trophy"></i></div>
+          <div style="min-width:0">
+            <div class="tx-kpi-label">Eng ko'p guruh</div>
+            <div class="tx-kpi-value tx-sm">{{ kpi.top_name }}</div>
+            <div class="tx-kpi-sub">{{ kpi.top_count }} ta &middot; {{ kpi.top_share|unlocalize }}%</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      {% for group in groups_qs %}
+      <div class="col-12 col-md-6 col-xl-4 col-xxl-3">
+        <div class="tx-card tx-group tx-c{{ group.color }}{% if not group.technics_count %} is-empty{% endif %}"
+             data-group="{{ group.id }}" role="button" tabindex="0" title="Tafsilotni ko'rish">
+          <div class="tx-group-head">
+            <div class="tx-group-ic"><i class="bi {{ group.icon }}"></i></div>
+            <div class="tx-group-name">{{ group.name }}</div>
+            <div class="tx-group-count"><b>{{ group.technics_count }}</b><span>ta</span></div>
+          </div>
+
+          <div class="tx-share">
+            <div class="tx-share-label"><span>Umumiy ulushi</span><span>{{ group.foiz|unlocalize }}%</span></div>
+            <div class="tx-bar"><i style="width: {{ group.foiz|unlocalize }}%"></i></div>
+          </div>
+
+          {% for cat in group.top_categories %}
+          <div class="tx-cat">
+            <div class="tx-cat-name" title="{{ cat.name }}">{{ cat.name }}</div>
+            <div class="tx-bar"><i style="width: {{ cat.foiz|unlocalize }}%"></i></div>
+            <div class="tx-cat-num">{{ cat.soni }}</div>
+          </div>
+          {% empty %}
+          <div class="tx-cat-empty">Bu guruhda kategoriya yo'q</div>
+          {% endfor %}
+
+          {% if group.more_categories %}
+          <div class="tx-more">
+            {% for cat in group.more_categories %}
+            <div class="tx-cat">
+              <div class="tx-cat-name" title="{{ cat.name }}">{{ cat.name }}</div>
+              <div class="tx-bar"><i style="width: {{ cat.foiz|unlocalize }}%"></i></div>
+              <div class="tx-cat-num">{{ cat.soni }}</div>
+            </div>
+            {% endfor %}
+          </div>
+          <button type="button" class="tx-more-btn" data-more-count="{{ group.more_categories|length }}">yana {{ group.more_categories|length }} ta</button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div class="tx-card p-3 mb-3" id="txDetail">
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <h5 class="tx-title">Guruh bo'yicha kategoriyalar</h5>
+        <div class="tx-detail-meta" id="txDetailMeta"></div>
+      </div>
+      <div class="tx-chips mb-2" id="txChips"></div>
+      <div id="txDetailChart"></div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-12 col-lg-5">
+        <div class="tx-card p-3 h-100">
+          <h5 class="tx-title mb-2">Guruhlar ulushi</h5>
+          <div id="txDonut"></div>
+        </div>
+      </div>
+      <div class="col-12 col-lg-7">
+        <div class="tx-card p-3 h-100">
+          <h5 class="tx-title mb-2">Guruhlar bo'yicha texnika</h5>
+          <div id="txBar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tx-card p-3 mb-4">
+      <h5 class="tx-title mb-2">Guruh va kategoriyalar xaritasi</h5>
+      <div id="txTreemap"></div>
+    </div>
+  </section>
+  {% else %}
+  <section class="section dashboard">
+    <div class="tx-card tx-empty"><i class="bi bi-search me-2"></i>Ma'lumot topilmadi</div>
+  </section>
+  {% endif %}
+
 </main>
 
-{{ area_categories|json_script:"area-categories" }}
-{{ area_series|json_script:"area-series" }}
-{{ pie_labels|json_script:"pie-labels" }}
-{{ pie_values|json_script:"pie-values" }}
-{{ bar_labels|json_script:"bar-labels" }}
-{{ bar_values|json_script:"bar-values" }}
+{{ dashboard|json_script:"tx-dashboard" }}
 
 <script src="{% static 'vendor/apexcharts/apexcharts.min.js' %}"></script>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
+(() => {
+  const dataEl = document.getElementById("tx-dashboard");
+  if (!dataEl || !document.getElementById("txDonut")) return;
+  const data = JSON.parse(dataEl.textContent);
+  const groups = data.groups;
+  const PALETTE = ["#4c5cff", "#8a4dff", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#ec4899", "#14b8a6"];
+  const colorOf = (g) => PALETTE[g.color % PALETTE.length];
 
-  const areaCategories = JSON.parse(document.getElementById("area-categories").textContent);
-  const areaSeries = JSON.parse(document.getElementById("area-series").textContent);
+  const css = (name, fallback) => (getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback);
+  const isDark = () => document.documentElement.getAttribute("data-theme") === "dark";
+  const themeOptions = () => ({
+    chart: { foreColor: css("--ink-2", "#414a6b") },
+    theme: { mode: isDark() ? "dark" : "light" },
+    grid: { borderColor: css("--line", "#e2e6f6") },
+    tooltip: { theme: isDark() ? "dark" : "light" },
+  });
+  const merge = (a, b) => {
+    const out = Object.assign({}, a);
+    Object.keys(b).forEach((k) => {
+      out[k] = (b[k] && typeof b[k] === "object" && !Array.isArray(b[k]) && a[k] && typeof a[k] === "object")
+        ? merge(a[k], b[k]) : b[k];
+    });
+    return out;
+  };
+  const charts = [];
+  function make(selector, options) {
+    const base = { chart: { background: "transparent", fontFamily: "inherit", toolbar: { show: false } } };
+    const chart = new ApexCharts(document.querySelector(selector), merge(merge(base, themeOptions()), options));
+    chart.render();
+    charts.push(chart);
+    return chart;
+  }
+  // Mavzu (yorug'/tungi) almashganda diagrammalar ranglari yangilanadi
+  new MutationObserver(() => charts.forEach((c) => c.updateOptions(themeOptions(), false, false)))
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
-  new ApexCharts(document.querySelector("#areaChart"), {
-    chart: {
-      type: "area",
-      height: 350,
-      toolbar: { show: false }
-    },
+  const suffix = (v) => v + " ta";
+
+  // ---- Donut: guruhlar ulushi ----
+  make("#txDonut", {
+    chart: { type: "donut", height: 340 },
+    labels: groups.map((g) => g.name),
+    series: groups.map((g) => g.total),
+    colors: groups.map(colorOf),
+    stroke: { width: 2, colors: ["transparent"] },
+    legend: { position: "bottom" },
     dataLabels: { enabled: false },
-    stroke: {
-      curve: "smooth",
-      width: 2
-    },
-    xaxis: {
-      categories: areaCategories
-    },
-    yaxis: {
-      min: 0,
-      forceNiceScale: true
-    },
-    series: areaSeries,
-    legend: {
-      position: "top"
-    },
-    tooltip: {
-      y: {
-        formatter: function (val) {
-          return val + " ta";
-        }
-      }
+    plotOptions: { pie: { donut: { size: "68%", labels: { show: true, total: { show: true, label: "Jami", formatter: () => data.total } } } } },
+    tooltip: { y: { formatter: suffix } },
+  });
+
+  // ---- Bar: guruhlar bo'yicha (eng ko'p 8 tasi) ----
+  const top = groups.slice(0, 8);
+  make("#txBar", {
+    chart: { type: "bar", height: Math.max(300, top.length * 44 + 40) },
+    plotOptions: { bar: { horizontal: true, distributed: true, barHeight: "62%", borderRadius: 6 } },
+    colors: top.map(colorOf),
+    dataLabels: { enabled: true, formatter: suffix, style: { fontSize: "12px" } },
+    xaxis: { categories: top.map((g) => g.name) },
+    series: [{ name: "Texnika", data: top.map((g) => g.total) }],
+    legend: { show: false },
+    tooltip: { y: { formatter: suffix } },
+  });
+
+  // ---- Treemap: guruh -> kategoriya ----
+  make("#txTreemap", {
+    chart: { type: "treemap", height: 380 },
+    series: groups.map((g) => ({ name: g.name, data: g.categories.map((c) => ({ x: c.name, y: c.count })) })),
+    colors: groups.map(colorOf),
+    plotOptions: { treemap: { distributed: false, enableShades: true, shadeIntensity: 0.45 } },
+    dataLabels: { enabled: true, style: { fontSize: "13px" } },
+    legend: { show: true, position: "bottom" },
+    tooltip: { y: { formatter: suffix } },
+  });
+
+  // ---- Tanlangan guruh tafsiloti ----
+  const chipsEl = document.getElementById("txChips");
+  const metaEl = document.getElementById("txDetailMeta");
+  let detail = null;
+  let activeId = null;
+
+  groups.forEach((g) => {
+    const chip = document.createElement("button");
+    chip.type = "button";
+    chip.className = "tx-chip tx-c" + g.color;
+    chip.dataset.group = g.id;
+    const dot = document.createElement("i");
+    chip.appendChild(dot);
+    chip.appendChild(document.createTextNode(g.name + " (" + g.total + ")"));   // textContent: nom HTML sifatida talqin qilinmaydi
+    chip.addEventListener("click", () => select(g.id));
+    chipsEl.appendChild(chip);
+  });
+
+  function select(id, scroll) {
+    const group = groups.find((g) => g.id === id);
+    if (!group) return;
+    activeId = id;
+    chipsEl.querySelectorAll(".tx-chip").forEach((el) => el.classList.toggle("is-active", Number(el.dataset.group) === id));
+    document.querySelectorAll(".tx-group").forEach((el) => el.classList.toggle("is-active", Number(el.dataset.group) === id));
+    metaEl.textContent = "Jami: " + group.total + " ta · umumiy ulushi " + String(group.share).replace(".", ",") + "%";
+
+    const cats = group.categories;
+    const options = {
+      chart: { type: "bar", height: Math.max(220, cats.length * 40 + 60) },
+      plotOptions: { bar: { horizontal: true, barHeight: "60%", borderRadius: 6 } },
+      colors: [colorOf(group)],
+      dataLabels: { enabled: true, formatter: suffix },
+      xaxis: { categories: cats.map((c) => c.name) },
+      series: [{ name: "Texnika", data: cats.map((c) => c.count) }],
+      legend: { show: false },
+      tooltip: { y: { formatter: suffix } },
+    };
+    if (!detail) {
+      detail = make("#txDetailChart", options);
+    } else {
+      detail.updateOptions(options, true, true);
     }
-  }).render();
+    if (scroll) document.getElementById("txDetail").scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 
-  const barLabels = JSON.parse(document.getElementById("bar-labels").textContent);
-  const barValues = JSON.parse(document.getElementById("bar-values").textContent);
-
-  new ApexCharts(document.querySelector("#barChart"), {
-    chart: {
-      type: "bar",
-      height: 350,
-      toolbar: { show: false }
-    },
-    plotOptions: {
-      bar: {
-        horizontal: true,
-        distributed: true,
-        barHeight: "70%"
-      }
-    },
-    dataLabels: {
-      enabled: true,
-      formatter: function (val, opt) {
-        return opt.w.globals.labels[opt.dataPointIndex] + ": " + val + " ta";
-      }
-    },
-    xaxis: {
-      categories: barLabels
-    },
-    series: [{
-      name: "Texnika",
-      data: barValues
-    }],
-    legend: {
-      show: false
-    },
-    tooltip: {
-      y: {
-        formatter: function (val) {
-          return val + " ta";
-        }
-      }
+  // ---- Kartochkalar: bosilganda tafsilot, "yana N ta" ----
+  document.querySelectorAll(".tx-group").forEach((card) => {
+    const id = Number(card.dataset.group);
+    const open = () => { if (groups.some((g) => g.id === id)) select(id, true); };
+    card.addEventListener("click", open);
+    card.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(); } });
+    const btn = card.querySelector(".tx-more-btn");
+    if (btn) {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const more = card.querySelector(".tx-more");
+        const opened = more.classList.toggle("is-open");
+        btn.textContent = opened ? "Kamroq" : "yana " + btn.dataset.moreCount + " ta";
+      });
     }
-  }).render();
+  });
 
-  const pieLabels = JSON.parse(document.getElementById("pie-labels").textContent);
-  const pieValues = JSON.parse(document.getElementById("pie-values").textContent);
+  if (groups.length) select(groups[0].id);
+})();
+</script>
 
-  new ApexCharts(document.querySelector("#pieChart"), {
-    chart: {
-      type: "pie",
-      height: 350
-    },
-    labels: pieLabels,
-    series: pieValues,
-    legend: {
-      position: "bottom"
-    },
-    tooltip: {
-      y: {
-        formatter: function (val) {
-          return val + " ta";
-        }
-      }
-    }
-  }).render();
+<!-- Tashkilot/Hudud -> Department -> Boshqarma -> Bo'lim: yuqori daraja o'zgarganda pastdagilar tozalanadi -->
+<script>
+(() => {
+  const orgSel = document.getElementById("organization");
+  const regSel = document.getElementById("region");
+  const depSel = document.getElementById("department");
+  const dirSel = document.getElementById("directorate");
+  const divSel = document.getElementById("division");
 
-});
+  function reset(el) {
+    if (!el) return;
+    el.innerHTML = '<option value="">Tanlang...</option>';
+    if (window.jQuery) window.jQuery(el).trigger("change.select2");
+  }
+  function bindSelectEvents(el, cb) {
+    if (!el) return;
+    if (window.jQuery) { window.jQuery(el).on("select2:select select2:clear", cb); }
+    else { el.addEventListener("change", cb); }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    bindSelectEvents(orgSel, () => { reset(depSel); reset(dirSel); reset(divSel); });
+    bindSelectEvents(regSel, () => { reset(depSel); reset(dirSel); reset(divSel); });
+    bindSelectEvents(depSel, () => { reset(dirSel); reset(divSel); });
+    bindSelectEvents(dirSel, () => { reset(divSel); });
+  });
+})();
 </script>
 {% endblock content %}
