@@ -220,15 +220,16 @@ def _select_response(request, qs):
     ({"results":[{"id","name","text"}], "pagination":{"more":bool}}),
     kelmasa — eski xatti-harakat (to'liq ro'yxat), shu sabab eski JS buzilmaydi.
     """
+    by_id = (request.GET.get("order") or "").strip() == "id"      # ?order=id: ID bo'yicha (texnika/xodimlar jadvalidagidek)
     page_raw = (request.GET.get("page") or "").strip()
     if not page_raw:
-        return JsonResponse({"results": list(qs.values("id", "name"))})
+        return JsonResponse({"results": list((qs.order_by("id") if by_id else qs).values("id", "name"))})
 
     page = int(page_raw) if page_raw.isdigit() and int(page_raw) > 0 else 1
     term = (request.GET.get("q") or "").strip()
     if term:
         qs = qs.filter(name__icontains=term)
-    qs = qs.order_by("name", "id")
+    qs = qs.order_by("id") if by_id else qs.order_by("name", "id")
 
     start = (page - 1) * SELECT_PAGE_SIZE
     rows = list(qs.values("id", "name")[start:start + SELECT_PAGE_SIZE + 1])

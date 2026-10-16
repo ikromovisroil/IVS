@@ -474,3 +474,62 @@ class OrgStatusRegionTests(TestCase):
         self.assertEqual(ids(self.client.get(url, {"organization": self.org.id, "all_regions": "1", "region": self.region_b.id})), {dep_b.id})
         self.assertEqual(ids(self.client.get(url, {"organization": self.org.id, "region": self.region_a.id})), {dep_a.id})
 
+
+class OrgStatusOrderByIdTests(TestCase):
+    """Ro'yxatlar ID bo'yicha (texnika va xodimlar jadvalidagidek), nom bo'yicha emas."""
+
+    def setUp(self):
+        self.worker = make_org("worker")
+        # Nomlar alifbo tartibiga TESKARI: ID tartibi nom tartibidan farq qilishi uchun
+        self.org_z = make_org("client", name="Zeta tashkilot")
+        self.org_a = make_org("client", name="Alfa tashkilot")
+        self.region_z = make_region("Zzz hudud")
+        self.region_a = make_region("Aaa hudud")
+        self.user, _ = make_employee(
+            self.worker, self.region_z, perms=STATS_PERMS + ["main.all_organization", "main.all_region"],
+        )
+        self.client.force_login(self.user)
+
+    def test_organizations_and_regions_ordered_by_id(self):
+        response = self.client.get(reverse("org_status"))
+        org_ids = [o.id for o in response.context["organizations"]]
+        region_ids = [r.id for r in response.context["regions"]]
+        self.assertEqual(org_ids, sorted(org_ids))
+        self.assertEqual(region_ids, sorted(region_ids))
+        self.assertLess(org_ids.index(self.org_z.id), org_ids.index(self.org_a.id))           # Zeta oldin yaratilgan
+        self.assertLess(region_ids.index(self.region_z.id), region_ids.index(self.region_a.id))
+
+    def _structure(self):
+        dep_z = Department.objects.create(name="Zzz dep", organization=self.org_z, region=self.region_z)
+        dep_a = Department.objects.create(name="Aaa dep", organization=self.org_z, region=self.region_z)
+        dir_z = Directorate.objects.create(name="Zzz boshqarma", department=dep_z)
+        dir_a = Directorate.objects.create(name="Aaa boshqarma", department=dep_z)
+        div_z = Division.objects.create(name="Zzz bo'lim", directorate=dir_z)
+        div_a = Division.objects.create(name="Aaa bo'lim", directorate=dir_z)
+        return dep_z, dep_a, dir_z, dir_a, div_z, div_a
+
+    def _ids(self, url_name, params):
+        return [int(item["id"]) for item in self.client.get(reverse(url_name), params).json()["results"]]
+
+    def test_ajax_lists_ordered_by_id_when_requested(self):
+        dep_z, dep_a, dir_z, dir_a, div_z, div_a = self._structure()
+        org_params = {"organization": self.org_z.id, "region": self.region_z.id, "order": "id"}
+        self.assertEqual(self._ids("ajax_load_departments", org_params), [dep_z.id, dep_a.id])
+        self.assertEqual(self._ids("ajax_load_directorate", {"department": dep_z.id, "order": "id"}), [dir_z.id, dir_a.id])
+        self.assertEqual(self._ids("ajax_load_division", {"directorate": dir_z.id, "order": "id"}), [div_z.id, div_a.id])
+
+    def test_ajax_paged_mode_also_ordered_by_id(self):
+        dep_z, dep_a, *_ = self._structure()
+        params = {"organization": self.org_z.id, "region": self.region_z.id, "order": "id", "page": 1}
+        self.assertEqual(self._ids("ajax_load_departments", params), [dep_z.id, dep_a.id])
+
+    def test_default_ajax_order_for_other_pages_unchanged(self):
+        dep_z, dep_a, dir_z, dir_a, *_ = self._structure()
+        params = {"organization": self.org_z.id, "region": self.region_z.id, "page": 1}
+        self.assertEqual(self._ids("ajax_load_departments", params), [dep_a.id, dep_z.id])     # nom bo'yicha (avvalgidek)
+
+    def test_page_asks_for_id_order(self):
+        html = self.client.get(reverse("org_status")).content.decode()
+        self.assertIn('id="order_by_id" value="id"', html)
+        self.assertEqual(html.count('"order":"#order_by_id"'), 3)     # department, boshqarma, bo'lim
+

@@ -3655,8 +3655,8 @@ def org_status(request):
 
     can_all = request.user.has_perm("main.all_organization")
     can_all_regions = request.user.has_perm("main.all_region")
-    organizations = Organization.objects.only("id", "name").order_by("name")
-    regions = Region.objects.only("id", "name").order_by("name")
+    organizations = Organization.objects.only("id", "name").order_by("id")
+    regions = Region.objects.only("id", "name").order_by("id")
     if not can_all:
         organizations = organizations.filter(pk=employee.organization_id)
     if not can_all_regions:

@@ -19,6 +19,7 @@
           <div class="card-body">
             <form class="row g-2 mt-1" method="get">
               <input type="hidden" id="all_regions" value="1">
+              <input type="hidden" id="order_by_id" value="id">
 
               <div class="col-md-3">
                 <label for="organization" class="form-label">Tashkilot</label>
@@ -44,7 +45,7 @@
                 <label for="department" class="form-label">Department</label>
                 <select id="department" name="department" class="form-select"
                         data-ajax-url="{% url 'ajax_load_departments' %}"
-                        data-ajax-params='{"organization":"#organization","region":"#region","all_regions":"#all_regions"}'>
+                        data-ajax-params='{"organization":"#organization","region":"#region","all_regions":"#all_regions","order":"#order_by_id"}'>
                   <option value="">Tanlang...</option>
                   {% if sel_department %}<option value="{{ sel_department.id }}" selected>{{ sel_department.name }}</option>{% endif %}
                 </select>
@@ -54,7 +55,7 @@
                 <label for="directorate" class="form-label">Boshqarma</label>
                 <select id="directorate" name="directorate" class="form-select"
                         data-ajax-url="{% url 'ajax_load_directorate' %}"
-                        data-ajax-params='{"department":"#department"}'>
+                        data-ajax-params='{"department":"#department","order":"#order_by_id"}'>
                   <option value="">Tanlang...</option>
                   {% if sel_directorate %}<option value="{{ sel_directorate.id }}" selected>{{ sel_directorate.name }}</option>{% endif %}
                 </select>
@@ -64,7 +65,7 @@
                 <label for="division" class="form-label">Bo'lim</label>
                 <select id="division" name="division" class="form-select"
                         data-ajax-url="{% url 'ajax_load_division' %}"
-                        data-ajax-params='{"directorate":"#directorate"}'>
+                        data-ajax-params='{"directorate":"#directorate","order":"#order_by_id"}'>
                   <option value="">Tanlang...</option>
                   {% if sel_division %}<option value="{{ sel_division.id }}" selected>{{ sel_division.name }}</option>{% endif %}
                 </select>
