@@ -1,5 +1,6 @@
 import base64
 import json
+from urllib.parse import urlencode
 import logging
 import secrets
 import time
@@ -10,8 +11,9 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.core.exceptions import PermissionDenied
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.cache import never_cache
@@ -31,6 +33,12 @@ logger = logging.getLogger(__name__)
 # 1) Login page
 # -----------------------
 def login_page(request):
+    if settings.SPA_ENABLED:
+        # yangi interfeysning kirish sahifasi; @login_required qo'shgan ?next= saqlanadi (kirgach o'sha sahifaga qaytadi)
+        nxt = request.GET.get("next", "")
+        if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+            return redirect(f"{settings.SPA_URL}?{urlencode({'next': nxt})}")
+        return redirect(settings.SPA_URL)
     return render(request, "users/login.html")
 
 
@@ -102,6 +110,10 @@ def sso_start_approve(request):
 # -----------------------
 @never_cache
 def sso_start(request):
+    if not (settings.SSO_AUTH_URL and settings.SSO_CLIENT_ID):
+        # .env da SSO_AUTH_URL / SSO_CLIENT_ID yo'q — "None" manziliga yuborib 404 bermaslik uchun
+        return HttpResponse("SSO sozlanmagan: .env faylida SSO_AUTH_URL va SSO_CLIENT_ID ko'rsatilmagan.",
+                            status=503, content_type="text/plain; charset=utf-8")
     return render(request, "users/sso.html", {
         "client_id": settings.SSO_CLIENT_ID,
         "sso_auth_url": settings.SSO_AUTH_URL,
@@ -322,7 +334,7 @@ def sso_exchange(request):
         request.session.modified = True
         if mobile_login:
             return JsonResponse({"status": "ok", "redirect": "/api/auth/mobile/complete/"}, status=200)
-        return JsonResponse({"status": "ok", "redirect": "/profil/"}, status=200)
+        return JsonResponse({"status": "ok", "redirect": settings.SPA_URL if settings.SPA_ENABLED else "/profil/"}, status=200)
 
     except PermissionDenied as e:
         return JsonResponse({"status": "error", "message": str(e), "redirect": "/sso/login/"}, status=403)

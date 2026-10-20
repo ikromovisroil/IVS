@@ -1,0 +1,101 @@
+.ivs-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--overlay-gray);
+}
+
+.ivs-modal {
+  max-width: 100%;
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-white-0);
+  border-radius: 20px;
+  box-shadow: var(--shadow-custom-lg);
+  color: var(--text-strong-950);
+}
+
+.ivs-modal-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--stroke-soft-200);
+}
+
+.ivs-modal-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid var(--stroke-soft-200);
+  color: var(--icon-sub-600);
+}
+
+.ivs-modal-titles {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ivs-modal-titles h2,
+.ivs-modal-titles p {
+  margin: 0;
+}
+
+.ivs-modal-titles p {
+  color: var(--text-sub-600);
+}
+
+.ivs-modal-body {
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.ivs-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--stroke-soft-200);
+}
+
+/* Formalar: maketdagi 2 ustunli setka, telefonda 1 ustun */
+.ivs-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 20px;
+}
+
+.ivs-form-grid .is-wide {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  .ivs-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ivs-form-note {
+  padding: 12px 14px;
+  background: var(--bg-weak-50);
+  border-radius: 10px;
+}
+
+.ivs-form-error {
+  margin: 0 0 16px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--state-error-lighter);
+  color: var(--state-error-dark);
+}

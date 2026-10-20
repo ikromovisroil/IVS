@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
@@ -91,4 +91,18 @@ urlpatterns = router.urls + [
     path('chat/unread-count/', chat.UnreadCountView.as_view(), name='api_chat_unread'),
     path('chat/ping/', chat.PingView.as_view(), name='api_chat_ping'),
 
+]
+
+# Yangi React interfeysi uchun bo'limlar bo'yicha qo'shimcha endpointlar (api/spa/)
+urlpatterns += [
+    path('spa/orders/', include('api.spa.orders')),
+    path('spa/orders-barn/', include('api.spa.orders_barn')),
+    path('spa/messages/', include('api.spa.messages')),
+    path('spa/warehouse/', include('api.spa.warehouse')),
+    path('spa/people/', include('api.spa.people')),
+    path('spa/reports/', include('api.spa.reports')),
+    path('spa/stats/', include('api.spa.stats')),
+    path('spa/comms/', include('api.spa.comms')),
+    path('spa/auth/', include('api.spa.auth')),
+    path('spa/dashboard/', include('api.spa.dashboard')),
 ]

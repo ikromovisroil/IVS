@@ -1,0 +1,86 @@
+/* "Ombor": qo'shimcha qurilmalar va materiallar (umumiy klasslar — ../technics/technics.css) */
+.ivs-count {
+  margin: -4px 0 12px;
+  color: var(--text-sub-600);
+}
+
+.ivs-count b {
+  color: var(--text-strong-950);
+  font-weight: 500;
+}
+
+.ivs-filter.is-wide {
+  flex: 1 1 240px;
+  max-width: 300px;
+}
+
+.ivs-report-filters {
+  align-items: flex-end;
+}
+
+.ivs-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ivs-thumb {
+  display: inline-flex;
+  border-radius: 999px;
+}
+
+.ivs-thumb:focus-visible {
+  outline: 2px solid var(--primary-base);
+  outline-offset: 2px;
+}
+
+.ivs-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+/* Kirim / chiqim / qoldiq: soni va summasi */
+.ivs-pair {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 18px;
+}
+
+.ivs-pair small {
+  font-size: 12px;
+  color: var(--text-sub-600);
+}
+
+.ivs-notes {
+  margin: 0;
+  padding: 12px 12px 12px 28px;
+  border-radius: 10px;
+  background: var(--state-warning-lighter);
+  color: var(--state-warning-dark);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+@media (max-width: 640px) {
+  .ivs-filter.is-wide {
+    max-width: none;
+  }
+}
+
+.ivs-noimg {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 1px dashed var(--stroke-sub-300);
+  background: var(--bg-weak-50);
+  color: var(--icon-soft-400);
+  font-size: 18px;
+}

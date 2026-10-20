@@ -1,0 +1,235 @@
+/* Omborxona arizalari (pages/orders-barn) — faqat AlignUI tokenlari */
+
+.ob-toolbar {
+  row-gap: 12px;
+}
+
+.ob-subtabs {
+  width: auto;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.ob-subtabs .aui-seg-item {
+  flex: 0 0 auto;
+  padding: 0 12px;
+}
+
+.ob-search {
+  min-width: 220px;
+  flex: 1 1 240px;
+  max-width: 360px;
+}
+
+.ob-muted {
+  color: var(--text-sub-600);
+}
+
+.ob-id {
+  font-family: var(--font-mono, 'DM Mono', monospace);
+  font-size: 13px;
+  color: var(--text-strong-950);
+}
+
+.ob-row-link {
+  display: inline-flex;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: var(--radius-6);
+}
+
+.ob-row-link:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus-primary);
+}
+
+/* Ariza tafsilotlari */
+.ob-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ATM ariza modalidagi bo'lim sarlavhalari (.ivs-orders-section-head h3) bilan bir xil */
+.ob-section-title {
+  margin: 0 0 8px;
+  color: var(--text-strong-950);
+}
+
+.ob-kv {
+  margin: 0;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12);
+  overflow: hidden;
+}
+
+.ob-kv-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 38%) 1fr;
+  gap: 4px 16px;
+  padding: 10px 16px;
+}
+
+.ob-kv-row + .ob-kv-row {
+  border-top: 1px solid var(--stroke-soft-200);
+}
+
+.ob-kv dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--text-sub-600);
+}
+
+.ob-kv dd {
+  margin: 0;
+  color: var(--text-strong-950);
+  overflow-wrap: anywhere;
+}
+
+.ob-kv a {
+  color: var(--primary-base);
+  text-decoration: none;
+}
+
+.ob-given {
+  width: 100%;
+}
+
+.ob-timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ob-tl {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-10);
+  background: var(--bg-white-0);
+}
+
+.ob-tl-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 6px;
+  border-radius: var(--radius-full);
+  color: var(--ob-tl, var(--text-sub-600));
+  background: var(--ob-tl-bg, var(--bg-weak-50));
+}
+
+.ob-tl.is-pending { --ob-tl: var(--state-away-base); --ob-tl-bg: var(--state-away-lighter); }
+.ob-tl.is-process { --ob-tl: var(--state-warning-base); --ob-tl-bg: var(--state-warning-lighter); }
+.ob-tl.is-done { --ob-tl: var(--state-information-base); --ob-tl-bg: var(--state-information-lighter); }
+.ob-tl.is-ok { --ob-tl: var(--state-success-base); --ob-tl-bg: var(--state-success-lighter); }
+.ob-tl.is-muted { --ob-tl: var(--state-faded-base); --ob-tl-bg: var(--state-faded-lighter); }
+.ob-tl.is-bad { --ob-tl: var(--state-error-base); --ob-tl-bg: var(--state-error-lighter); }
+
+.ob-rating {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12);
+}
+
+.ob-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.ob-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--primary-base);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ob-file:hover {
+  text-decoration: underline;
+}
+
+/* Material tanlash va savat */
+.ob-thumb {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-8);
+  overflow: hidden;
+  background: var(--bg-weak-50);
+  cursor: zoom-in;
+}
+
+.ob-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ob-thumb-empty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-8);
+  background: var(--bg-weak-50);
+  color: var(--text-soft-400);
+}
+
+.ob-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 70vh;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: var(--radius-12);
+}
+
+.ob-number {
+  width: 112px;
+}
+
+.ob-cart-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+@media (max-width: 640px) {
+  .ob-kv-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ob-search {
+    max-width: none;
+  }
+
+  .ob-toolbar > .aui-toolbar-grow {
+    display: none;
+  }
+}

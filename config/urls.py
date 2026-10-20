@@ -4,6 +4,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
 from main.views import error_403, error_404, error_500
+from config.spa import spa_index
 
 handler403 = error_403
 handler404 = error_404
@@ -60,6 +61,9 @@ urlpatterns = [
     path('ivc_service_admin_panel/', admin.site.urls),
 
     # MAIN SITE
+    # YANGI INTERFEYS (React, frontend/) — /app/ ostidagi barcha yo'llar
+    re_path(r"^app(?:/(?P<path>.*))?$", spa_index, name="spa"),
+
     path("", include("main.urls")),
 
     # CHAT

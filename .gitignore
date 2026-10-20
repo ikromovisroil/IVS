@@ -173,3 +173,6 @@ settings_preview_scratch.py
 
 # O'chirilgan chat fayllari (yopiq papka)
 media_private/
+
+# Yangi interfeys build natijasi (cd frontend && npm run build)
+static/spa/

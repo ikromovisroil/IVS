@@ -1,0 +1,173 @@
+/* Filtrlar paneli: oq karta, yuqorida qidiruv/amallar, pastda teng kenglikdagi filtrlar */
+.ivs-fb {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 16px;
+  background: var(--bg-white-0);
+  box-shadow: var(--shadow-regular-xs);
+}
+
+.ivs-fb-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.ivs-fb-search {
+  flex: 1 1 320px;
+  max-width: 480px;
+  min-width: 0;
+}
+
+.ivs-fb-search .aui-search {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.ivs-fb-summary {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-strong-950);
+  white-space: nowrap;
+}
+
+.ivs-fb-grow {
+  flex: 1 1 0;
+}
+
+.ivs-fb-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.ivs-fb-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-sub-600);
+  cursor: pointer;
+}
+
+.ivs-fb-reset:hover {
+  background: var(--bg-weak-50);
+  color: var(--text-strong-950);
+}
+
+.ivs-fb-reset:focus-visible {
+  outline: 2px solid var(--primary-base);
+  outline-offset: 1px;
+}
+
+.ivs-fb-count {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--primary-base);
+  color: var(--static-white);
+  font-size: 11px;
+  line-height: 1;
+}
+
+/* Filtrlar: bir xil kenglikdagi ustunlar, yorliqli/yorliqsiz maydonlar pastdan tekislanadi */
+.ivs-fb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.ivs-fb-cell {
+  min-width: 0;
+}
+
+.ivs-fb-cell > *,
+.ivs-fb-cell .aui-select,
+.ivs-fb-cell .ivs-dp {
+  width: 100%;
+}
+
+/* Sarlavha qatori bo'lmasa, filtrlar setkasi kartaning yagona qatori */
+@media (max-width: 640px) {
+  .ivs-fb-search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+
+  .ivs-fb-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+.ivs-fb-grid > * {
+  min-width: 0;
+  max-width: none;
+}
+
+.ivs-fb-grid > * .aui-select,
+.ivs-fb-grid > .aui-select,
+.ivs-fb-grid > .ivs-dp,
+.ivs-fb-grid > * .ivs-dp {
+  width: 100%;
+}
+
+/* Bitta qatorli rejim: qidiruv kengroq, har bir filtr ~200px, natija va amallar o'ngda */
+.ivs-fb-row > .ivs-fb-search {
+  flex: 1.5 1 220px;
+  max-width: 360px;
+}
+
+.ivs-fb-row > :not(.ivs-fb-search):not(.ivs-fb-grow):not(.ivs-fb-summary):not(.ivs-fb-reset):not(.ivs-fb-actions) {
+  flex: 1 1 160px;
+  min-width: 150px;
+  max-width: 220px;
+}
+
+.ivs-fb-row > :not(.ivs-fb-search):not(.ivs-fb-grow):not(.ivs-fb-summary):not(.ivs-fb-reset):not(.ivs-fb-actions) .aui-select,
+.ivs-fb-row > .aui-select,
+.ivs-fb-row > .ivs-dp {
+  width: 100%;
+}
+
+/* Yorliqli maydonlar (Kirim-chiqim) bilan qatorda boshqa elementlar pastdan tekislanadi */
+.ivs-fb-row:has(.aui-field-label) {
+  align-items: flex-end;
+}
+
+.ivs-fb-summary {
+  font-weight: 400;
+  color: var(--text-sub-600);
+}
+
+.ivs-fb-summary b {
+  font-weight: 500;
+  color: var(--text-strong-950);
+}
+
+@media (max-width: 640px) {
+  .ivs-fb-row > :not(.ivs-fb-search):not(.ivs-fb-grow):not(.ivs-fb-summary):not(.ivs-fb-reset):not(.ivs-fb-actions) {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 0;
+  }
+}

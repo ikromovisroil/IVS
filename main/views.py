@@ -13,6 +13,7 @@ from decimal import Decimal, InvalidOperation
 from itertools import groupby
 import openpyxl
 from PyPDF2 import PdfReader
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.contrib.auth.models import Permission
@@ -63,6 +64,8 @@ def error_500(request):
 @never_cache
 @require_GET
 def home(request):
+    if settings.SPA_ENABLED:
+        return redirect(settings.SPA_URL)  # yangi interfeys kirishni o'zi ko'rsatadi
     if request.user.is_authenticated:
         return redirect("profil")
     return redirect("login")

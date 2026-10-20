@@ -1,0 +1,276 @@
+/* Xodimlar, Profil, Hujjatlar, Bildirishnomalar (pages/people) */
+
+.ivs-people-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ivs-people-total {
+  color: var(--text-sub-600);
+  white-space: nowrap;
+}
+
+.ivs-people-mono {
+  font-family: var(--font-mono, 'DM Mono', monospace);
+  font-size: 12px;
+  color: var(--text-sub-600);
+}
+
+.ivs-people-note {
+  margin: 0;
+  color: var(--text-sub-600);
+}
+
+.ivs-people-wrap {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.ivs-people-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.ivs-people-actions.is-left {
+  justify-content: flex-start;
+}
+
+.ivs-people-ok {
+  display: inline-flex;
+  color: var(--state-success-base);
+}
+
+.ivs-people-no {
+  display: inline-flex;
+  color: var(--state-error-base);
+}
+
+/* Forma */
+.ivs-people-mode {
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.ivs-people-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12);
+}
+
+.ivs-people-fieldset legend {
+  padding: 0 6px;
+  color: var(--text-strong-950);
+}
+
+/* Ruxsatlar oynasi */
+.ivs-people-perm-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.ivs-people-perm-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12);
+  background: var(--bg-white-0);
+}
+
+.ivs-people-perm-group h3,
+.ivs-people-checklist h3,
+.ivs-people-sections h3 {
+  margin: 0;
+  color: var(--text-strong-950);
+}
+
+.ivs-people-lists {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.ivs-people-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12);
+  min-width: 0;
+}
+
+.ivs-people-checklist.is-disabled {
+  background: var(--bg-weak-50);
+}
+
+.ivs-people-checklist-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ivs-people-checklist-head > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--text-sub-600);
+}
+
+.ivs-people-checklist-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+/* Profil */
+.ivs-people-profile {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.ivs-people-profile-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.ivs-people-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0 4px;
+  text-align: center;
+}
+
+.ivs-people-card-body h2 {
+  margin: 8px 0 0;
+  color: var(--text-strong-950);
+}
+
+.ivs-people-path {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--text-strong-950);
+}
+
+.ivs-people-path li + li::before {
+  content: '›';
+  margin: 0 8px;
+  color: var(--text-soft-400);
+}
+
+.ivs-people-dl {
+  margin: 0;
+}
+
+.ivs-people-row {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--stroke-soft-200);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ivs-people-row:last-child {
+  border-bottom: 0;
+}
+
+.ivs-people-row dt {
+  color: var(--text-sub-600);
+}
+
+.ivs-people-row dd {
+  margin: 0;
+  color: var(--text-strong-950);
+  overflow-wrap: anywhere;
+}
+
+/* Hujjat holati oynasi */
+.ivs-people-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ivs-people-sections section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* Bildirishnomalar */
+.ivs-people-notif {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+  white-space: normal;
+}
+
+.ivs-people-notif .aui-cell-primary {
+  font-weight: 400;
+}
+
+.ivs-people-notif.is-unread .aui-cell-primary {
+  font-weight: 600;
+}
+
+.ivs-people-notif:hover .aui-cell-primary,
+.ivs-people-notif:focus-visible .aui-cell-primary {
+  color: var(--primary-base);
+}
+
+.ivs-people-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 8px;
+  border-radius: var(--radius-full);
+  background: var(--primary-base);
+  vertical-align: middle;
+}
+
+@media (max-width: 767px) {
+  .ivs-people-profile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ivs-people-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+
+  .ivs-people-filters {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}

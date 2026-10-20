@@ -1,0 +1,331 @@
+html,
+body {
+  margin: 0;
+  background: var(--bg-white-0);
+  color: var(--text-strong-950);
+  font-family: Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ivs-boot {
+  min-height: 100dvh;
+  background: var(--bg-weak-50);
+}
+
+.ivs-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 48px 20px;
+  text-align: center;
+  color: var(--text-sub-600);
+}
+
+.ivs-empty p {
+  margin: 0;
+}
+
+.ivs-loading {
+  opacity: 0.6;
+  transition: opacity 120ms;
+}
+
+.ivs-pager {
+  margin-top: 16px;
+}
+
+.ivs-tabs {
+  margin-bottom: 20px;
+  overflow-x: auto;
+}
+
+.ivs-confirm-text {
+  margin-bottom: 16px;
+  color: var(--text-sub-600);
+}
+
+.ivs-toasts {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: calc(100vw - 40px);
+}
+
+.ivs-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: var(--bg-strong-950);
+  color: var(--text-white-0);
+  box-shadow: var(--shadow-regular-md);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ivs-toast.is-success { --ivs-toast-icon: var(--state-success-base); }
+.ivs-toast.is-error { --ivs-toast-icon: var(--state-error-base); }
+.ivs-toast.is-info { --ivs-toast-icon: var(--state-information-base); }
+.ivs-toast .ri, .ivs-toast i, .ivs-toast svg { color: var(--ivs-toast-icon); flex-shrink: 0; }
+
+/* AlignUI SegmentedControl — standart holatda kontent kengligida (to'liq kenglik faqat .is-fill bilan, masalan chat paneli) */
+.aui-seg {
+  display: inline-flex;
+  max-width: 100%;
+  box-sizing: border-box;
+  vertical-align: middle;
+}
+
+.aui-seg .aui-seg-item {
+  flex: 0 0 auto;
+  padding: 0 12px;
+  /* bundle'dagi soft-400 kulrang fonda o'chirilgan tugmadek ko'rinadi */
+  color: var(--text-sub-600);
+}
+
+.aui-seg .aui-seg-item:hover {
+  color: var(--text-strong-950);
+}
+
+.aui-seg.is-fill {
+  display: flex;
+  width: 100%;
+}
+
+.aui-seg.is-fill .aui-seg-item {
+  flex: 1 1 0;
+}
+
+/* Sarlavha ostidagi chiziq; sahifada chiziqli tablar bo'lsa ularning chizig'i yetarli */
+.ivs-page-rule {
+  height: 1px;
+  margin: 0 var(--aui-page-x);
+  background: var(--stroke-soft-200);
+}
+
+.aui-shell:has(.ivs-linetabs) .ivs-page-rule {
+  background: transparent;
+}
+
+/* Tablardan keyin keladigan statistika qatori — yuqori chiziqsiz (tablar chizig'i yetarli) */
+.ivs-linetabs ~ .aui-stats {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+/* Select: qidiruv, input va tugmalar bilan bir xil 36px balandlik; uzun matn bir qatorda, oxiri "…" */
+.aui-select-trigger {
+  height: 36px;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding-top: 0;
+  padding-bottom: 0;
+  line-height: 20px;
+}
+
+.aui-select-value,
+.aui-select-placeholder {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.aui-select-chevron {
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* Asboblar qatoridagi qidiruv ham 36px */
+.aui-toolbar .aui-search.is-lg,
+.aui-toolbar .aui-search {
+  height: 36px;
+  box-sizing: border-box;
+}
+
+/* Sarlavha chizig'idan keyin kontentgacha bo'sh joy (AlignUI shabloni 4px qoldiradi) */
+.aui-shell-content {
+  padding-top: 24px;
+}
+
+/* Eski oddiy bo'sh holatlar (.ivs-empty) — EmptyState bilan bir xil ko'rinish: halqadagi belgi + matn */
+.ivs-empty {
+  gap: 16px;
+  padding: 40px 20px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ivs-empty::before {
+  content: '\f3a9'; /* ri-inbox-2-line */
+  font-family: 'remixicon';
+  font-size: 24px;
+  line-height: 1;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--bg-white-0);
+  border: 1px solid var(--stroke-soft-200);
+  box-shadow: 0 0 0 14px var(--bg-weak-50), var(--shadow-regular-md);
+  margin: 14px 0 6px;
+  color: var(--icon-sub-600);
+}
+
+.ivs-empty[role='alert']::before {
+  content: '\eca1'; /* ri-error-warning-line */
+  color: var(--state-error-base);
+  box-shadow: 0 0 0 14px var(--state-error-lighter), var(--shadow-regular-md);
+}
+
+/* Bo'sh holat ichida o'z belgisi bo'lsa, umumiysi kerak emas */
+.ivs-empty:has(> i:first-child, > svg:first-child, > .ri:first-child)::before {
+  display: none;
+}
+
+.aui-widget .ivs-empty {
+  padding: 24px 12px;
+}
+
+/* Ro'yxat yuklanayotganda — qator skeletlari */
+.ivs-skeleton-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.ivs-skeleton-rows > span {
+  height: 52px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--bg-weak-50) 0%, var(--bg-soft-200) 50%, var(--bg-weak-50) 100%);
+  background-size: 200% 100%;
+  animation: ivs-shimmer 1.2s linear infinite;
+}
+
+.ivs-skeleton-rows > span:first-child {
+  height: 36px;
+}
+
+@keyframes ivs-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ivs-skeleton-rows > span {
+    animation: none;
+  }
+}
+
+.ivs-cell-nowrap {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Kulrang fonli sahifa (dashboard): kontent maydoni bg-weak-50, kartalar oq bo'lib ajralib turadi */
+.aui-shell.ivs-bg-gray .aui-shell-main {
+  background: color-mix(in srgb, var(--bg-weak-50) 75%, var(--bg-soft-200)); /* ≈ #F4F4F4 — yengil, oq kartalar ajralib turadi */
+}
+
+.aui-shell.ivs-bg-gray .ivs-page-rule {
+  background: var(--stroke-soft-200);
+}
+
+.aui-shell.ivs-bg-gray .aui-seg {
+  background: var(--bg-soft-200);
+}
+
+/* ---------- Kulrang fonli sahifalar: kontent bloklari oq kartalarda ---------- */
+
+/* Mustaqil jadval (vidjet ichidagisi emas) — oq karta */
+.aui-shell.ivs-bg-gray .aui-table-wrap:not(.aui-widget .aui-table-wrap) {
+  padding: 12px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 16px;
+  background: var(--bg-white-0);
+  box-shadow: var(--shadow-regular-xs);
+}
+
+/* Statistika qatori — oq karta */
+.aui-shell.ivs-bg-gray .aui-stats,
+.aui-shell.ivs-bg-gray .ivs-linetabs ~ .aui-stats {
+  padding: 16px 20px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 16px;
+  background: var(--bg-white-0);
+  box-shadow: var(--shadow-regular-xs);
+}
+
+.aui-shell.ivs-bg-gray .aui-stats > :first-child {
+  padding-left: 0;
+}
+
+/* Sahifalash — jadval kartasi ostida, o'ngda */
+.aui-shell.ivs-bg-gray .ivs-pager {
+  padding: 0 4px;
+}
+
+/* Sarlavha belgisi va 2-darajali tablar kulrang fonda ajralib tursin */
+.aui-shell.ivs-bg-gray .aui-phead-icon {
+  background: var(--bg-white-0);
+}
+
+/* Sidebar pastidagi profil — tugma: o'ng chevron o'rniga yuqori/past chevron (panel ochiladi) */
+.aui-dside-user[role='button'] {
+  margin: 0 -8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  border-radius: 12px;
+  cursor: pointer;
+  outline: none;
+  transition: background 120ms;
+}
+
+.aui-dside-user[role='button']:hover,
+.aui-dside-user[aria-expanded='true'] {
+  background: var(--bg-weak-50);
+}
+
+.aui-dside-user[role='button']:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary-base);
+}
+
+.aui-dside-user .aui-dside-chev {
+  display: none;
+}
+
+.aui-dside-user[role='button']::after {
+  content: '\f327'; /* ri-expand-up-down-line */
+  font-family: 'remixicon';
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 8px;
+  background: var(--bg-white-0);
+  box-shadow: var(--shadow-regular-xs);
+  color: var(--icon-sub-600);
+}
+
+/* Yig'ilgan (rail) holatda faqat avatar */
+.aui-dside.is-collapsed .aui-dside-user[role='button']::after {
+  display: none;
+}

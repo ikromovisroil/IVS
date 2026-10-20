@@ -1,0 +1,102 @@
+/* 1-daraja: chiziqli tablar (AlignUI Tab Menu Horizontal) */
+.ivs-linetabs {
+  margin: -16px 0 24px;
+  border-bottom: 1px solid var(--stroke-soft-200);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ivs-linetabs::-webkit-scrollbar {
+  display: none;
+}
+
+.ivs-linetabs ul {
+  display: flex;
+  gap: 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ivs-linetabs a {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  white-space: nowrap;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  letter-spacing: -0.006em;
+  color: var(--text-sub-600);
+  text-decoration: none;
+  transition: color 140ms;
+}
+
+.ivs-linetabs a > i,
+.ivs-linetabs a > svg {
+  color: var(--icon-soft-400);
+  transition: color 140ms;
+}
+
+.ivs-linetabs a:hover {
+  color: var(--text-strong-950);
+  text-decoration: none;
+}
+
+.ivs-linetabs a.is-active {
+  color: var(--text-strong-950);
+}
+
+.ivs-linetabs a.is-active > i,
+.ivs-linetabs a.is-active > svg {
+  color: var(--primary-base);
+}
+
+.ivs-linetabs a.is-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--primary-base);
+}
+
+.ivs-linetabs a:focus-visible {
+  outline: 2px solid var(--primary-base);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+
+.ivs-linetabs-count {
+  min-width: 20px;
+  height: 20px;
+  box-sizing: border-box;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-weak-50);
+  border: 1px solid var(--stroke-soft-200);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--text-sub-600);
+}
+
+.ivs-linetabs a.is-active .ivs-linetabs-count {
+  background: var(--primary-alpha-10);
+  border-color: transparent;
+  color: var(--primary-base);
+}
+
+/* 2-daraja: ixcham segment, kontent kengligida */
+.ivs-subtabs {
+  margin-bottom: 20px;
+  max-width: 100%;
+  overflow-x: auto;
+}

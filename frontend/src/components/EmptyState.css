@@ -1,0 +1,109 @@
+/* Bo'sh holat — konsentrik halqalar ichida belgi, sarlavha, tavsif, keyingi qadam */
+.ivs-es {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 48px 20px;
+  text-align: center;
+}
+
+.ivs-es.is-compact {
+  gap: 12px;
+  padding: 28px 12px;
+}
+
+.ivs-es-art {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ivs-es.is-compact .ivs-es-art {
+  width: 80px;
+  height: 80px;
+}
+
+.ivs-es-ring {
+  position: absolute;
+  border-radius: var(--radius-full);
+}
+
+.ivs-es-ring.is-outer {
+  inset: 0;
+  background: radial-gradient(closest-side, var(--bg-weak-50) 0%, var(--bg-weak-50) 70%, var(--white-alpha-0) 100%);
+}
+
+.ivs-es-ring.is-inner {
+  inset: 18%;
+  border: 1px dashed var(--stroke-sub-300);
+}
+
+.ivs-es-icon {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--bg-white-0);
+  border: 1px solid var(--stroke-soft-200);
+  box-shadow: var(--shadow-regular-md);
+  color: var(--icon-sub-600);
+}
+
+.ivs-es.is-compact .ivs-es-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.ivs-es.is-error .ivs-es-icon {
+  color: var(--state-error-base);
+}
+
+.ivs-es.is-error .ivs-es-ring.is-outer {
+  background: radial-gradient(closest-side, var(--state-error-lighter) 0%, var(--state-error-lighter) 60%, var(--white-alpha-0) 100%);
+}
+
+.ivs-es-text {
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ivs-es-title {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 500;
+  letter-spacing: -0.011em;
+  color: var(--text-strong-950);
+}
+
+.ivs-es.is-compact .ivs-es-title {
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ivs-es-desc {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-sub-600);
+}
+
+.ivs-es.is-compact .ivs-es-desc {
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.ivs-es-action {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}

@@ -1,0 +1,328 @@
+/* Statistika bo'limi (st-*) */
+.st-toolbar .st-filter {
+  flex: 1 1 170px;
+  min-width: 0;
+  max-width: 220px;
+}
+
+.st-toolbar .st-date {
+  flex: 0 1 170px;
+}
+
+.st-muted {
+  color: var(--text-sub-600);
+}
+
+.st-ellipsis {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.st-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 10px 14px;
+  border-radius: var(--radius-10);
+  background: var(--state-information-lighter);
+  color: var(--state-information-dark);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+/* KPI qatori (.aui-stats) */
+.st-stat-label {
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--text-sub-600);
+}
+
+.st-stat-value {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 4px;
+  min-width: 0;
+}
+
+.st-stat-main {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  color: var(--text-strong-950);
+}
+
+.st-stat-value small {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-sub-600);
+}
+
+.st-stats-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.st-grid {
+  margin-top: 24px;
+}
+
+/* Guruh kartochkalari */
+.st-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.st-group {
+  --st-color: var(--primary-base);
+  border-radius: var(--radius-16);
+  cursor: pointer;
+  outline: none;
+}
+
+.st-group > .aui-widget {
+  height: 100%;
+  border-top: 3px solid var(--st-color);
+  transition: box-shadow 150ms, border-color 150ms;
+}
+
+.st-group:hover > .aui-widget,
+.st-group:focus-visible > .aui-widget {
+  box-shadow: var(--shadow-regular-md);
+}
+
+.st-group:focus-visible > .aui-widget {
+  box-shadow: var(--shadow-focus-primary);
+}
+
+.st-group.is-active > .aui-widget {
+  border-color: var(--st-color);
+  box-shadow: var(--shadow-regular-md);
+}
+
+.st-group.is-empty {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.st-group-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-8);
+  background: color-mix(in srgb, var(--st-color) 12%, transparent);
+  color: var(--st-color);
+}
+
+.st-group-count {
+  font-size: 12px;
+  color: var(--text-sub-600);
+  white-space: nowrap;
+}
+
+.st-group-count b {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-strong-950);
+}
+
+.st-share-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  color: var(--text-sub-600);
+}
+
+.st-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.st-cat {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 90px 32px;
+  align-items: center;
+  gap: 10px;
+}
+
+.st-cat-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-strong-950);
+}
+
+.st-cat-num {
+  text-align: right;
+}
+
+.st-group .aui-progress-value {
+  display: none;
+}
+
+.st-group .aui-btn {
+  align-self: flex-start;
+}
+
+/* Reyting: eng ko'p kategoriyalar */
+.st-chips {
+  overflow-x: auto;
+}
+
+.st-rank {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 12px 32px;
+}
+
+.st-rank-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.st-rank-no {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--bg-weak-50);
+  color: var(--text-sub-600);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.st-rank-no.is-top {
+  background: var(--state-warning-lighter);
+  color: var(--state-warning-dark);
+}
+
+.st-rank-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.st-rank-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.st-rank-num {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.st-rank .aui-progress-value {
+  display: none;
+}
+
+/* Diagrammalar */
+.st-gauge {
+  display: flex;
+  justify-content: center;
+}
+
+.st-hbars .aui-hbars-row,
+.st-hbars .aui-hbars-axis {
+  grid-template-columns: minmax(90px, 30%) 1fr;
+  gap: 12px;
+}
+
+.st-hbars .aui-hbars-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.st-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.st-rating .ri,
+.st-rating i,
+.st-rating svg {
+  color: var(--state-warning-base);
+}
+
+.st-goal-list {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--stroke-soft-200);
+}
+
+.st-goal-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--stroke-soft-200);
+}
+
+/* Xodim modali */
+.st-modal-note {
+  margin: 0 0 12px;
+}
+
+.st-modal-total {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  padding: 12px 16px 0;
+}
+
+@media (max-width: 767px) {
+  .st-toolbar .st-filter,
+  .st-toolbar .st-date {
+    flex: 1 1 calc(50% - 6px);
+    max-width: none;
+  }
+
+  .st-stats-3,
+  .st-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .st-stats > * {
+    padding: 0 12px;
+  }
+
+  .st-stats > :nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .st-rank {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.st-filter .aui-select-value,
+.st-filter .aui-select-placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

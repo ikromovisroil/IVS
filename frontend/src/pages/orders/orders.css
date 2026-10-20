@@ -1,0 +1,248 @@
+/* "Arizalar" (ATM arizalari) bo'limi */
+
+.ivs-orders-muted {
+  color: var(--text-sub-600);
+}
+
+.ivs-orders-clip {
+  max-width: 360px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ivs-orders-pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.ivs-orders-lines {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Tafsilotlar oynasi ── */
+.ivs-orders-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ivs-orders-card {
+  margin: 0;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12, 12px);
+  background: var(--bg-white-0);
+}
+
+.ivs-orders-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 38%) 1fr;
+  gap: 4px 16px;
+  padding: 10px 16px;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.ivs-orders-row + .ivs-orders-row {
+  border-top: 1px solid var(--stroke-soft-200);
+}
+
+.ivs-orders-row dt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-sub-600);
+}
+
+.ivs-orders-row dd {
+  margin: 0;
+  color: var(--text-strong-950);
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .ivs-orders-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ivs-orders-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ivs-orders-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 32px;
+}
+
+.ivs-orders-section-head h3 {
+  margin: 0;
+  color: var(--text-strong-950);
+}
+
+/* Jarayon tarixi */
+.ivs-orders-timeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ivs-orders-timeline li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12, 12px);
+  background: var(--bg-weak-50);
+}
+
+.ivs-orders-tl-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--bg-white-0);
+  border: 1px solid var(--stroke-soft-200);
+}
+
+.ivs-orders-tl-icon.is-away { color: var(--state-away-base); }
+.ivs-orders-tl-icon.is-warning { color: var(--state-warning-base); }
+.ivs-orders-tl-icon.is-info { color: var(--state-information-base); }
+.ivs-orders-tl-icon.is-success { color: var(--state-success-base); }
+.ivs-orders-tl-icon.is-faded { color: var(--state-faded-base); }
+.ivs-orders-tl-icon.is-error { color: var(--state-error-base); }
+
+/* Baho */
+.ivs-orders-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--state-faded-base);
+}
+
+.ivs-orders-stars .is-on {
+  color: var(--state-warning-base);
+}
+
+/* Tanlash: ghost tugmaning hover/focus rangi yulduz rangini bosib ketmasin; hover — oldindan ko'rish */
+.ivs-orders-stars.is-input .aui-btn {
+  color: var(--state-faded-base);
+}
+
+.ivs-orders-stars.is-input .aui-btn.is-on,
+.ivs-orders-stars.is-input:hover .aui-btn:has(~ .aui-btn:hover),
+.ivs-orders-stars.is-input .aui-btn:hover {
+  color: var(--state-warning-base);
+}
+
+.ivs-orders-stars.is-input:hover .aui-btn:hover ~ .aui-btn {
+  color: var(--state-faded-base);
+}
+
+.ivs-orders-rating {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.ivs-orders-rate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12, 12px);
+  background: var(--bg-weak-50);
+}
+
+/* Pastki qator: superuser uchun "Ijrochi xodim" tanlovi to'liq qatorda */
+.ivs-orders-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.ivs-orders-foot-wide {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+/* Material qatorlari */
+.ivs-orders-matrows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ivs-orders-matrow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px auto;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Akt sahifasi ── */
+.ivs-orders-deed {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(0, 2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .ivs-orders-deed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ivs-orders-deed-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ivs-orders-paper-wrap {
+  overflow-x: auto;
+  background: var(--bg-weak-50);
+  border-radius: var(--radius-12, 12px);
+  padding: 16px;
+}
+
+/* Hujjatning o'zi — oq qog'oz (PDF dagidek, mavzudan qat'i nazar qora matn) */
+.ivs-orders-paper {
+  min-width: 640px;
+  min-height: 200px;
+  padding: 24px;
+  background: var(--static-white, var(--bg-white-0));
+  color: var(--static-black, var(--text-strong-950));
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-8, 8px);
+  font-family: 'Times New Roman', serif;
+  outline: none;
+}
+
+.ivs-orders-paper.is-editing {
+  border-color: var(--primary-base);
+  box-shadow: 0 0 0 3px var(--primary-alpha-16, transparent);
+}
+
+.ivs-orders-paper table td {
+  padding: 2px 4px;
+}

@@ -1,0 +1,105 @@
+// Ruscha lug'at: reports bo'limi. Kalit — o'zbekcha matn (kodda t('...') ichidagi bilan aynan bir xil).
+// Hujjat (dalolatnoma, akt, reestr...) matni tarjima qilinmaydi — faqat atrofidagi interfeys.
+const ru: Record<string, string> = {
+  // Tablar va sarlavhalar (tabs.ts)
+  Hisobotlar: 'Отчёты',
+  Dalolatnoma: 'Далолатнома (акт)',
+  'Yakuniy hisobot': 'Итоговый отчёт',
+  Reestr: 'Реестр',
+  Akt: 'Акт',
+  'Sarf materiallar': 'Расходные материалы',
+  "Shartnoma bo'yicha bajarilgan ishlar dalolatnomasi va 1-ilova.": 'Акт выполненных по договору работ и приложение 1.',
+  "Tashkilotlar va hududlar bo'yicha sarf materiallar yakuniy hisoboti.": 'Итоговый отчёт по расходным материалам в разрезе организаций и регионов.',
+  "Tashkilot bo'limlari bo'yicha o'rnatilgan materiallar reestri.": 'Реестр установленных материалов по подразделениям организации.',
+  "Sarf materiallarini o'rnatish ishlari haqida dalolatnoma.": 'Акт о работах по установке расходных материалов.',
+  'Uskuna va materiallarni hisobdan chiqarish dalolatnomasi.': 'Акт списания оборудования и материалов.',
+
+  // Holatlar
+  'Yuklanmoqda…': 'Загрузка…',
+  'Yuklanmoqda...': 'Загрузка...',
+  "Bu hisobot uchun ruxsatingiz yo'q.": 'У вас нет доступа к этому отчёту.',
+  "Hisobotlar uchun ruxsatingiz yo'q.": 'У вас нет доступа к отчётам.',
+
+  // Filtrlash kartasi
+  Filtrlash: 'Фильтр',
+  Qidirish: 'Поиск',
+  'PDF yuklab olish': 'Скачать PDF',
+  'Tayyorlanmoqda...': 'Подготовка...',
+  'Hujjat matni bo\'sh — avval "Qidirish" tugmasini bosing.': 'Текст документа пуст — сначала нажмите «Поиск».',
+  'PDF yuklab olishda xatolik yuz berdi': 'Ошибка при скачивании PDF',
+  "Server PDF o'rniga boshqa formatda javob qaytardi": 'Сервер вернул ответ не в формате PDF',
+  Tashkilot: 'Организация',
+  Tashkilotlar: 'Организации',
+  Hududlar: 'Регионы',
+  Hudud: 'Регион',
+  'Barcha hududlar': 'Все регионы',
+  Departament: 'Департамент',
+  Chorak: 'Квартал',
+  "Boshlang'ich sanasi": 'Дата начала',
+  'Tugash sanasi': 'Дата окончания',
+  'Tanlang...': 'Выберите...',
+  'Avval tashkilot va hududni tanlang': 'Сначала выберите организацию и регион',
+  "Hisobot o'z tashkilotingiz ({org}) va hududingiz ({region}) bo'yicha shakllanadi.":
+    'Отчёт формируется по вашей организации ({org}) и вашему региону ({region}).',
+
+  // Imzolashga yuborish kartasi
+  'Imzolashga yuborish': 'Отправить на подпись',
+  'Imzolashga yuborishni tasdiqlang?': 'Подтвердить отправку на подпись?',
+  Yuborish: 'Отправить',
+  'Imzolashga yuborildi': 'Отправлено на подпись',
+  Izoh: 'Комментарий',
+  'Izoh yozing...': 'Напишите комментарий...',
+  "Xizmat ko'rsatuvchining vakili": 'Представитель исполнителя',
+  'Tashkilot vakili': 'Представитель организации',
+  'Imzolovchi xodim': 'Подписант',
+  Kelishuvchilar: 'Согласующие',
+  "Qo'shish...": 'Добавить...',
+  'Hammasi tanlangan': 'Выбраны все',
+  "Ro'yxat bo'sh": 'Список пуст',
+  Ilovalar: 'Приложения',
+  'Ixtiyoriy.': 'Необязательно.',
+  Yopish: 'Закрыть',
+  'Bekor qilish': 'Отмена',
+
+  // Hujjat tahrirlagichi (DocEditor)
+  'Hujjat matni': 'Текст документа',
+  "Qo'lda tahrirlash": 'Ручное редактирование',
+  'Matnni formatlash': 'Форматирование текста',
+  'Chop etish': 'Печать',
+  Qaytarish: 'Повторить',
+  Qalin: 'Полужирный',
+  Kursiv: 'Курсив',
+  'Tagiga chizilgan': 'Подчёркнутый',
+  'Ustidan chizilgan': 'Зачёркнутый',
+  Chapga: 'По левому краю',
+  Markazga: 'По центру',
+  "O'ngga": 'По правому краю',
+  'Ikki tomonga': 'По ширине',
+  "Raqamli ro'yxat": 'Нумерованный список',
+  "Ro'yxat": 'Список',
+  'Formatni tozalash': 'Очистить форматирование',
+
+  // Tekshiruv xabarlari (toast)
+  'Xatolik yuz berdi': 'Произошла ошибка',
+  "Iltimos, tashkilot, hudud va sanalarni to'liq tanlang!": 'Пожалуйста, выберите организацию, регион и даты!',
+  "Iltimos, tashkilot va sanalarni to'liq tanlang!": 'Пожалуйста, выберите организацию и даты!',
+  "Iltimos, kamida bitta tashkilot va sanalarni to'liq tanlang!": 'Пожалуйста, выберите хотя бы одну организацию и даты!',
+  "Iltimos, sanalarni to'liq tanlang!": 'Пожалуйста, выберите даты!',
+  "Tashkilot yoki hudud aniqlanmadi. Administrator bilan bog'laning.": 'Не удалось определить организацию или регион. Обратитесь к администратору.',
+
+  // Server javoblari (main/views.py *_post → api/spa/reports.py), toast orqali
+  'Hujjat yuborilmadi': 'Документ не отправлен',
+  'Hudud aniqlanmadi': 'Регион не определён',
+  "Hujjat matni bo'sh bo'lmasin": 'Текст документа не должен быть пустым',
+  'Imzolovchi xodim tanlanmadi yoki bu tashkilotga tegishli emas': 'Подписант не выбран или не относится к этой организации',
+  'Imzolovchi xodim tanlanmadi yoki ruxsat etilmagan': 'Подписант не выбран или не допускается',
+  'Imzolovchi xodim topilmadi': 'Подписант не найден',
+  'Kamida bitta tashkilot tanlang': 'Выберите хотя бы одну организацию',
+  "Sana formati noto'g'ri": 'Неверный формат даты',
+  "Sana oralig'i tanlanmagan": 'Не выбран период',
+  'Tashkilot topilmadi': 'Организация не найдена',
+  'Tashkilotlar topilmadi': 'Организации не найдены',
+  "Xatolik yuz berdi. Qayta urinib ko'ring": 'Произошла ошибка. Повторите попытку',
+}
+
+export default ru

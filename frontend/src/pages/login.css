@@ -1,0 +1,356 @@
+/* Kirish sahifasi — AlignUI auth sahifalari uslubida: chapda forma, ≥1024px da o'ngda brend paneli */
+
+.ivs-auth {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  background: var(--bg-white-0);
+  color: var(--text-strong-950);
+}
+
+@media (min-width: 1024px) {
+  .ivs-auth {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+
+/* ---------- Forma tomoni ---------- */
+
+.ivs-auth-main {
+  min-height: 100dvh;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+}
+
+@media (min-width: 640px) {
+  .ivs-auth-main {
+    padding: 32px 44px;
+  }
+}
+
+.ivs-auth-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.ivs-auth-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ivs-auth-brand-logo {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--primary-base);
+  color: var(--static-white);
+}
+
+.ivs-auth-help {
+  color: var(--text-sub-600);
+  text-decoration: none;
+  text-align: right;
+}
+
+.ivs-auth-help span {
+  color: var(--text-strong-950);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.ivs-auth-help:hover span,
+.ivs-auth-help:focus-visible span {
+  color: var(--primary-base);
+}
+
+@media (max-width: 480px) {
+  .ivs-auth-help {
+    font-size: 0;
+  }
+
+  .ivs-auth-help span {
+    font-size: 14px;
+  }
+}
+
+.ivs-auth-form {
+  width: 100%;
+  max-width: 392px;
+  margin: auto;
+  padding: 48px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Konsentrik halqali belgi (AlignUI auth sarlavhasi) */
+.ivs-auth-mark {
+  width: 96px;
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: linear-gradient(180deg, var(--primary-alpha-16) 0%, var(--primary-alpha-10) 40%, var(--white-alpha-0) 100%);
+}
+
+.ivs-auth-mark-inner {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-white-0);
+  color: var(--primary-base);
+  box-shadow: var(--shadow-regular-md);
+  outline: 1px solid var(--stroke-soft-200);
+}
+
+.ivs-auth-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.ivs-auth-titles h1,
+.ivs-auth-titles p {
+  margin: 0;
+}
+
+.ivs-auth-titles p {
+  color: var(--text-sub-600);
+}
+
+.ivs-auth-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--stroke-soft-200);
+}
+
+.ivs-auth-actions {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ivs-auth-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-10, 10px);
+  background: var(--state-warning-lighter);
+  color: var(--state-warning-dark);
+}
+
+.ivs-auth-alert > :first-child {
+  flex-shrink: 0;
+  color: var(--state-warning-base);
+}
+
+.ivs-auth-alert p {
+  margin: 0;
+}
+
+.ivs-auth-alert code {
+  font-family: var(--font-mono, 'DM Mono', monospace);
+  font-size: 12px;
+}
+
+.ivs-auth-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-soft-400);
+  text-transform: uppercase;
+}
+
+.ivs-auth-or::before,
+.ivs-auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--stroke-soft-200);
+}
+
+.ivs-auth-note {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--text-sub-600);
+}
+
+.ivs-auth-note > :first-child {
+  flex-shrink: 0;
+  color: var(--icon-soft-400, var(--text-soft-400));
+}
+
+.ivs-auth-foot {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 16px;
+  color: var(--text-sub-600);
+}
+
+/* ---------- Brend paneli ---------- */
+
+.ivs-auth-side {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .ivs-auth-side {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    margin: 12px;
+    border-radius: 24px;
+    overflow: hidden;
+    background: var(--primary-base);
+    color: var(--static-white);
+  }
+}
+
+.ivs-auth-rings span {
+  position: absolute;
+  top: -18%;
+  right: -22%;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--white-alpha-16);
+}
+
+.ivs-auth-rings span:nth-child(1) {
+  width: 520px;
+  height: 520px;
+  background: var(--white-alpha-10);
+}
+
+.ivs-auth-rings span:nth-child(2) {
+  width: 760px;
+  height: 760px;
+  top: calc(-18% - 120px);
+  right: calc(-22% - 120px);
+}
+
+.ivs-auth-rings span:nth-child(3) {
+  width: 1000px;
+  height: 1000px;
+  top: calc(-18% - 240px);
+  right: calc(-22% - 240px);
+  border-color: var(--white-alpha-10);
+}
+
+.ivs-auth-side-body {
+  position: relative;
+  max-width: 520px;
+  padding: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.ivs-auth-side-body h2,
+.ivs-auth-side-body > p {
+  margin: 0;
+}
+
+.ivs-auth-side-body > p {
+  opacity: 0.8;
+}
+
+.ivs-auth-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 8px;
+  border-radius: var(--radius-full);
+  background: var(--white-alpha-16);
+  border: 1px solid var(--white-alpha-24);
+}
+
+.ivs-auth-features {
+  width: 100%;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ivs-auth-features li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--white-alpha-10);
+  border: 1px solid var(--white-alpha-16);
+}
+
+.ivs-auth-features li > span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ivs-auth-features .type-para-xs {
+  opacity: 0.8;
+}
+
+.ivs-auth-feature-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: var(--bg-white-0);
+  color: var(--primary-base);
+}
+
+.ivs-auth-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ivs-auth-alert.is-error {
+  background: var(--state-error-lighter);
+  color: var(--state-error-dark);
+}
+
+.ivs-auth-alert.is-error > :first-child {
+  color: var(--state-error-base);
+}
+
+.ivs-auth-skeleton {
+  height: 48px;
+  border-radius: 10px;
+  background: var(--bg-weak-50);
+}
+
+.ivs-auth-tools {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}

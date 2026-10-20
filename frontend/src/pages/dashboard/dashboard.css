@@ -1,0 +1,722 @@
+/* Admin bosh sahifasi — AlignUI dashboard (Widget, .aui-dgrid) asosida */
+
+.ivs-dash {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.ivs-dash-muted {
+  color: var(--text-sub-600);
+}
+
+.ivs-dash-warn {
+  color: var(--state-warning-dark);
+}
+
+.ivs-dash-nowrap {
+  white-space: nowrap;
+}
+
+.ivs-dash-mono {
+  font-family: var(--font-mono, 'DM Mono', monospace);
+  font-size: 12px;
+  color: var(--text-sub-600);
+}
+
+.ivs-dash-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px 24px;
+  margin-bottom: 20px;
+}
+
+.ivs-dash-head h2,
+.ivs-dash-head p {
+  margin: 0;
+}
+
+.ivs-dash-head p {
+  margin-top: 4px;
+}
+
+/* ---------- KPI kartalari ---------- */
+
+.ivs-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 1279px) {
+  .ivs-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .ivs-kpis {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.ivs-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 148px;
+  box-sizing: border-box;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 16px;
+  background: var(--bg-white-0);
+  box-shadow: var(--shadow-regular-xs);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 120ms, box-shadow 120ms;
+}
+
+.ivs-kpi:hover {
+  border-color: var(--stroke-sub-300);
+  box-shadow: var(--shadow-regular-md);
+}
+
+.ivs-kpi:focus-visible {
+  outline: 2px solid var(--primary-base);
+  outline-offset: 2px;
+}
+
+.ivs-kpi.is-skeleton {
+  background: var(--bg-weak-50);
+  box-shadow: none;
+}
+
+.ivs-kpi-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ivs-kpi-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid var(--stroke-soft-200);
+  color: var(--icon-sub-600);
+}
+
+.ivs-kpi-label {
+  flex: 1;
+  min-width: 0;
+  color: var(--text-sub-600);
+}
+
+.ivs-kpi-go {
+  color: var(--icon-soft-400);
+  transition: color 120ms;
+}
+
+.ivs-kpi:hover .ivs-kpi-go {
+  color: var(--primary-base);
+}
+
+.ivs-kpi-body {
+  margin-top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ivs-kpi-value {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text-strong-950);
+}
+
+.ivs-kpi-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 6px;
+  margin-top: 4px;
+  color: var(--text-sub-600);
+}
+
+.ivs-kpi-spark {
+  width: 96px;
+  flex-shrink: 0;
+}
+
+/* ---------- Vidjetlar ---------- */
+
+@media (min-width: 1024px) {
+  .ivs-dash-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.ivs-dash-skeleton {
+  min-height: 320px;
+  background: var(--bg-weak-50);
+}
+
+.ivs-dash .aui-widget .ivs-empty {
+  padding: 32px 12px;
+}
+
+.ivs-dash-trend-sum {
+  display: flex;
+  align-items: flex-end;
+  gap: 32px;
+}
+
+.ivs-dash-trend-sum > div,
+.ivs-dash-deed-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ivs-dash-trend-sum strong,
+.ivs-dash-deed-stats strong {
+  margin: 0;
+  font-weight: 500;
+}
+
+.ivs-dash-trend-unit {
+  margin-left: auto;
+}
+
+.ivs-dash-gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.ivs-dash-list {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ivs-dash-list > li {
+  display: grid;
+  grid-template-columns: auto 1fr auto 40px;
+  align-items: center;
+  gap: 8px;
+}
+
+.ivs-dash-list > li > :last-child {
+  text-align: right;
+}
+
+.ivs-dash-list.is-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.ivs-dash-list.is-grid > li {
+  display: block;
+}
+
+.ivs-dash-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 10px;
+  color: var(--text-strong-950);
+  text-decoration: none;
+  transition: background 120ms;
+}
+
+.ivs-dash-tile:hover {
+  background: var(--bg-weak-50);
+}
+
+.ivs-dash-tile-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ivs-dash-big {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.ivs-dash-big strong {
+  margin: 0;
+  font-weight: 500;
+}
+
+.ivs-dash-people,
+.ivs-dash-deeds {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.ivs-dash-people > li,
+.ivs-dash-deeds > li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--stroke-soft-200);
+}
+
+.ivs-dash-people > li:last-child,
+.ivs-dash-deeds > li:last-child {
+  border-bottom: 0;
+}
+
+.ivs-dash-rank {
+  width: 20px;
+  flex-shrink: 0;
+  text-align: center;
+  color: var(--text-soft-400);
+}
+
+.ivs-dash-person {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ivs-dash-person > .type-label-sm {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.ivs-dash-bar {
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: var(--bg-soft-200);
+  overflow: hidden;
+}
+
+.ivs-dash-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--primary-base);
+}
+
+.ivs-dash-person-end {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.ivs-dash-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-sub-600);
+}
+
+.ivs-dash-rating > :first-child {
+  color: var(--state-away-base);
+}
+
+.ivs-dash-deed-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-weak-50);
+}
+
+.ivs-dash-deed-icon {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--stroke-soft-200);
+  color: var(--icon-sub-600);
+}
+
+.ivs-dash-goals {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ivs-dash-goal-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ivs-dash-goal-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-strong-950);
+}
+
+.ivs-dash-status {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+/* Kartalar havola bo'lsa ham matnga chiziq tushmasin */
+.ivs-dash a.ivs-kpi,
+.ivs-dash a.ivs-kpi:hover,
+.ivs-dash a.ivs-kpi *,
+.ivs-dash a.ivs-dash-tile,
+.ivs-dash a.ivs-dash-tile:hover,
+.ivs-dash a.ivs-dash-tile * {
+  text-decoration: none;
+}
+
+.ivs-dash a.ivs-kpi:hover,
+.ivs-dash a.ivs-dash-tile:hover {
+  color: var(--text-strong-950);
+}
+
+/* ---------- Interaktiv grafiklar (charts.tsx) ---------- */
+
+.ivs-chart,
+.ivs-spark,
+.ivs-stackbar,
+.ivs-hovertip {
+  position: relative;
+}
+
+.ivs-chart {
+  width: 100%;
+  border-radius: 8px;
+  outline: none;
+  touch-action: pan-y;
+}
+
+.ivs-chart:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary-alpha-24);
+}
+
+.ivs-chart svg,
+.ivs-spark svg {
+  display: block;
+  overflow: visible;
+}
+
+.ivs-chart-grid {
+  stroke: var(--stroke-soft-200);
+  stroke-dasharray: 3 4;
+}
+
+.ivs-chart-axis {
+  font-size: 11px;
+  fill: var(--text-soft-400);
+  font-family: var(--font-sans, Inter, sans-serif);
+}
+
+.ivs-chart-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.ivs-chart-line.is-thin {
+  stroke-width: 1.75;
+}
+
+.ivs-chart-cursor {
+  stroke: var(--stroke-sub-300);
+  stroke-dasharray: 4 3;
+}
+
+.ivs-chart-point {
+  fill: var(--bg-white-0);
+  stroke-width: 2.5;
+}
+
+.ivs-spark {
+  width: 100%;
+}
+
+/* Tooltip */
+.ivs-tip {
+  position: absolute;
+  z-index: 20;
+  transform: translate(-50%, calc(-100% - 10px));
+  min-width: 150px;
+  max-width: 260px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-strong-950);
+  color: var(--text-white-0);
+  box-shadow: var(--shadow-tooltip, var(--shadow-regular-md));
+  font-size: 12px;
+  line-height: 16px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.ivs-tip-title {
+  margin-bottom: 4px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ivs-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ivs-tip-row + .ivs-tip-row {
+  margin-top: 2px;
+}
+
+.ivs-tip-dot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1.5px var(--white-alpha-24);
+}
+
+.ivs-tip-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  opacity: 0.72;
+}
+
+.ivs-tip-value {
+  margin-left: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Donut */
+.ivs-donut {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ivs-donut svg {
+  display: block;
+}
+
+.ivs-donut-track {
+  fill: none;
+  stroke: var(--bg-weak-50);
+}
+
+.ivs-donut-seg {
+  fill: none;
+  cursor: pointer;
+  transition: opacity 140ms, stroke-width 140ms;
+}
+
+.ivs-donut-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  text-align: center;
+}
+
+.ivs-donut-caption {
+  max-width: 120px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-sub-600);
+}
+
+.ivs-donut-value {
+  font-size: 28px;
+  line-height: 36px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text-strong-950);
+}
+
+.ivs-donut-pct {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--text-sub-600);
+}
+
+.ivs-dash-list > li {
+  padding: 4px 6px;
+  margin: 0 -6px;
+  border-radius: 8px;
+  cursor: default;
+  outline: none;
+  transition: background 120ms, opacity 120ms;
+}
+
+.ivs-dash-list > li.is-on,
+.ivs-dash-list > li:focus-visible {
+  background: var(--bg-weak-50);
+}
+
+.ivs-dash-list > li.is-dim {
+  opacity: 0.45;
+}
+
+.ivs-dash-list.is-grid > li {
+  padding: 0;
+  margin: 0;
+}
+
+/* Bo'laklangan chiziq */
+.ivs-stackbar-track {
+  display: flex;
+  gap: 4px;
+  height: 10px;
+}
+
+.ivs-stackbar-track > span {
+  min-width: 4px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: opacity 140ms, transform 140ms;
+}
+
+.ivs-stackbar-track > span:hover {
+  transform: scaleY(1.4);
+}
+
+.ivs-stackbar-track > span.is-dim {
+  opacity: 0.3;
+}
+
+.ivs-dash-tile {
+  transition: background 120ms, opacity 120ms;
+}
+
+.ivs-dash-tile.is-dim {
+  opacity: 0.5;
+}
+
+.ivs-dash-tile-pct {
+  margin-left: auto;
+}
+
+/* Kartaning pastki qismi: turlar bo'yicha */
+.ivs-dash-sub {
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--stroke-soft-200);
+}
+
+.ivs-dash-sub-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ivs-dash-goals.is-compact {
+  gap: 10px;
+}
+
+.ivs-dash-goals.is-compact .ivs-dash-goal-head {
+  margin-bottom: 4px;
+}
+
+.ivs-dash-goal-head,
+.ivs-dash-bar {
+  outline: none;
+  border-radius: 4px;
+}
+
+.ivs-dash-goal-head:focus-visible,
+.ivs-dash-bar:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary-alpha-24);
+}
+
+.ivs-hovertip {
+  cursor: default;
+}
+
+.ivs-dash-bar {
+  display: block;
+  cursor: default;
+}
+
+.ivs-dash-bar:hover > span {
+  background: var(--primary-dark);
+}
+
+/* Turlar bo'yicha: bir qatorda nom — chiziq — son */
+.ivs-dash-goals.is-compact {
+  gap: 6px;
+}
+
+.ivs-dash-group-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr) 32px;
+  align-items: center;
+  gap: 12px;
+  padding: 3px 0;
+  outline: none;
+  border-radius: 4px;
+}
+
+.ivs-dash-group-row:focus-visible {
+  box-shadow: 0 0 0 2px var(--primary-alpha-24);
+}
+
+.ivs-dash-group-count {
+  text-align: right;
+}
+
+.ivs-dash-deed-stats.is-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Kartaning pastiga yopishadigan xulosa */
+.ivs-dash-foot {
+  margin-top: auto;
+}

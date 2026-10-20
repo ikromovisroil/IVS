@@ -1,0 +1,110 @@
+/* "Hisobotlar" bo'limi: chapda filtr/imzo kartalari, o'ngda hujjat qog'ozi */
+.rep-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.rep-side,
+.rep-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+@media (max-width: 1100px) {
+  .rep-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.rep-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rep-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.rep-note {
+  color: var(--text-sub-600);
+}
+
+.rep-multi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rep-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rep-doc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--stroke-soft-200);
+}
+
+/* Qog'oz: A4 (kitob / albom) — telefon kengligida yonga suriladi */
+.rep-doc-scroll {
+  overflow-x: auto;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--bg-weak-50);
+}
+
+.rep-paper {
+  box-sizing: border-box;
+  min-width: 560px;
+  max-width: 794px;
+  min-height: 400px;
+  margin: 0 auto;
+  padding: 40px 32px 56px 44px;
+  background: var(--static-white);
+  color: var(--static-black);
+  color-scheme: light;
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 13px;
+  line-height: 1.35;
+  box-shadow: var(--shadow-regular-xs);
+  border: 1px solid var(--stroke-soft-200);
+  outline: none;
+}
+
+.rep-paper.is-landscape {
+  min-width: 640px;
+  max-width: 1123px;
+}
+
+.rep-paper.is-editing {
+  box-shadow: 0 0 0 2px var(--primary-base);
+}
+
+.rep-paper table {
+  border-collapse: collapse;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.rep-paper td {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Hujjatdagi sahifa bo'linishi (1-ilova) ekranda chiziq bilan ko'rinadi */
+.rep-paper [style*='page-break-after'] {
+  margin: 24px -32px 24px -44px;
+  border-top: 1px dashed var(--stroke-sub-300);
+}

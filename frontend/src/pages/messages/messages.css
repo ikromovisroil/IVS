@@ -1,0 +1,227 @@
+/* "Xabarlar" bo'limi */
+.msg-files {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Holat chipi bosiladigan (eski sahifadagi badge → "Dalolatnoma holati" oynasi) */
+.msg-chip-btn {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.msg-chip-btn:focus-visible {
+  outline: 2px solid var(--primary-base);
+  outline-offset: 2px;
+}
+
+.msg-status {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-width: 0;
+}
+
+.msg-status section {
+  min-width: 0;
+}
+
+.msg-section-title {
+  margin: 0 0 12px;
+}
+
+.msg-sender {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(0, 1fr));
+  gap: 12px 20px;
+  align-items: center;
+  padding: 14px 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 12px;
+}
+
+.msg-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.msg-kv span {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--text-sub-600);
+}
+
+.msg-kv b {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: var(--text-strong-950);
+  overflow-wrap: anywhere;
+}
+
+.msg-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px 24px;
+}
+
+.msg-note,
+.msg-muted {
+  color: var(--text-sub-600);
+}
+
+.msg-muted {
+  margin: 0;
+}
+
+.msg-info {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--bg-weak-50);
+  color: var(--text-sub-600);
+}
+
+.msg-add {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.msg-add-field {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.msg-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.msg-tags,
+.msg-file-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.msg-file {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.msg-file-hint {
+  color: var(--text-sub-600);
+}
+
+.msg-file-hint.is-error {
+  color: var(--state-error-base);
+}
+
+.msg-back {
+  margin: -8px 0 12px;
+}
+
+.msg-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.msg-edit {
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.msg-edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.msg-edit-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.msg-editor {
+  min-height: 360px;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 10px;
+  background: var(--bg-weak-50);
+  color: var(--text-strong-950);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.msg-editor.is-editing {
+  background: var(--bg-white-0);
+  border-color: var(--primary-base);
+  box-shadow: var(--shadow-regular-xs);
+}
+
+.msg-editor:focus {
+  outline: none;
+}
+
+.msg-editor table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.msg-editor td,
+.msg-editor th {
+  border: 1px solid var(--stroke-sub-300);
+  padding: 4px 6px;
+}
+
+@media (max-width: 900px) {
+  .msg-edit {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .msg-sender {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .msg-sender > :first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .msg-add {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* Ro'yxat: ustunlar kengligi qat'iy, uzun nomlar "…" bilan qisqaradi (to'liq nom — holat oynasida) */
+.msg-list .aui-table {
+  table-layout: fixed;
+}
+
+.msg-kv > :not(span):not(b) {
+  align-self: flex-start;
+}
+
+.msg-tags > * {
+  max-width: 100%;
+  min-width: 0;
+}

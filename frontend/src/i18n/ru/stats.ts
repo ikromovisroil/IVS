@@ -1,0 +1,96 @@
+// Ruscha lug'at: stats bo'limi. Kalit — o'zbekcha matn (kodda t('...') ichidagi bilan aynan bir xil).
+const ru: Record<string, string> = {
+  // Sahifa, tablar (shared.ts, ui.tsx)
+  Statistika: 'Статистика',
+  "Statistika bo'limlari": 'Разделы статистики',
+  Texnikalar: 'Техника',
+  Xodimlar: 'Сотрудники',
+  Tashkilotlar: 'Организации',
+  "Tashkilotdagi texnikalar guruh va kategoriyalar bo'yicha.": 'Техника организации по группам и категориям.',
+  'Bajaruvchi xodimlar samaradorligi va ariza murojaatlari.': 'Эффективность сотрудников-исполнителей и обращения по заявкам.',
+  'Tanlangan tuzilmadagi xodimlar va ularning arizalari.': 'Сотрудники выбранной структуры и их заявки.',
+
+  // Filtrlar
+  Tashkilot: 'Организация',
+  Hudud: 'Регион',
+  Department: 'Департамент',
+  Boshqarma: 'Управление',
+  "Bo'lim": 'Отдел',
+  'Barcha hududlar': 'Все регионы',
+  "Boshlang'ich sana": 'Дата начала',
+  'Tugash sanasi': 'Дата окончания',
+
+  // Umumiy
+  Yopish: 'Закрыть',
+  'Yuklanmoqda…': 'Загрузка…',
+  "Ma'lumot topilmadi": 'Данные не найдены',
+  "Ma'lumotni yuklab bo'lmadi": 'Не удалось загрузить данные',
+  Xatolik: 'Ошибка',
+  Jami: 'Всего',
+  'Jami:': 'Всего:',
+  'T/r': '№',
+  'F.I.O': 'Ф.И.О.',
+  Soni: 'Кол-во',
+  Lavozim: 'Должность',
+  ta: 'шт.',
+  dona: 'шт.',
+  '{n} ta': '{n} шт.',
+  Kamroq: 'Свернуть',
+  'yana {n} ta': 'ещё {n}',
+  'Yana {n} ta': 'Ещё {n}',
+  Hammasi: 'Все',
+
+  // Server xabarlari (api/spa/stats.py, main/views.py)
+  'Tashkilot va hududni tanlang': 'Выберите организацию и регион',
+  "Bo'lim, boshqarma yoki bo'linma topilmadi": 'Отдел, управление или подразделение не найдены',
+  "Bo'linma tanlangan boshqarmaga tegishli emas": 'Подразделение не относится к выбранному управлению',
+  "Boshqarma tanlangan bo'limga tegishli emas": 'Управление не относится к выбранному отделу',
+  "Bo'lim xodimning tashkilotiga tegishli emas": 'Отдел не относится к организации сотрудника',
+
+  // Texnikalar
+  "Tafsilotni ko'rish": 'Подробнее',
+  'Umumiy ulushi': 'Общая доля',
+  "Bu guruhda kategoriya yo'q": 'В этой группе нет категорий',
+  Boshqalar: 'Прочие',
+  'Jami texnika': 'Всего техники',
+  Guruhlar: 'Группы',
+  Kategoriyalar: 'Категории',
+  "Eng ko'p guruh": 'Крупнейшая группа',
+  '{n} ta · {share}%': '{n} шт. · {share}%',
+  "Eng ko'p kategoriyalar": 'Топ категорий',
+  '{n} ta kategoriya · {m} ta texnika': 'Категорий: {n} · Техники: {m}',
+  "Guruh bo'yicha": 'По группе',
+  'Kategoriyalar ulushi': 'Доля категорий',
+  "Guruhlar bo'yicha texnika": 'Техника по группам',
+  '{name}: {n} ta': '{name}: {n} шт.',
+
+  // Xodimlar
+  'Ish jarayonida': 'В работе',
+  Yakunladi: 'Завершено',
+  'Qabul qilindi#stat': 'Принято',
+  'Rad etilgan': 'Отклонено',
+  Reyting: 'Рейтинг',
+  'Barcha davr': 'Весь период',
+  'Hududni tanlang': 'Выберите регион',
+  'Jami arizalar': 'Всего заявок',
+  "O'rtacha reyting": 'Средний рейтинг',
+  'Xodimlar samaradorligi': 'Эффективность сотрудников',
+  "Holatlar bo'yicha (eng faol 8 xodim)": 'По статусам (8 самых активных сотрудников)',
+  "Xodimlar arizalari holatlar bo'yicha": 'Заявки сотрудников по статусам',
+  'Ariza murojaatlari tahlili': 'Анализ обращений по заявкам',
+
+  // Tashkilotlar
+  'Ariza bergan xodimlar': 'Сотрудники, подавшие заявки',
+  'ATMga yuborilgan arizalar': 'Заявки, отправленные в ЦИТ',
+  'Omborxonaga yuborilgan arizalar': 'Заявки, отправленные на склад',
+  'Yuborilgan arizalar': 'Отправленные заявки',
+  '{n} ta xodim': 'Сотрудников: {n}',
+  "Kategoriyalar bo'yicha ko'rish": 'Просмотр по категориям',
+  "Kategoriyalar bo'yicha ko'rish uchun soni ustiga bosing.": 'Нажмите на количество, чтобы увидеть разбивку по категориям.',
+  'Ariza kategoriyasi': 'Категория заявки',
+  'Ariza kategoriyalari': 'Категории заявок',
+  'Kategoriyalar topilmadi': 'Категории не найдены',
+  'Xodimlar statistikasini ko‘rish uchun hududni tanlang.': 'Выберите регион, чтобы увидеть статистику сотрудников.',
+}
+
+export default ru
