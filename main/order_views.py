@@ -693,16 +693,7 @@ def order_receiver_deed(request, pk):
     if not employee.organization or employee.organization.type == "client":
         raise PermissionDenied("Sizga ruxsat yo'q")
 
-    order = get_object_or_404(
-        Order.objects.select_related(
-            "sender", "sender__organization",
-            "sender__department", "receiver", "receiver__rank",
-            "technics",
-        ).prefetch_related(
-            Prefetch("materials", queryset=OrderMaterial.objects.select_related("material", "material__unit"))
-        ),
-        pk=pk,
-    )
+    order = get_object_or_404(order_deed_queryset(), pk=pk)
 
     if order.receiver_id != employee.id:
         raise PermissionDenied("Sizga ruxsat yo'q")
@@ -710,18 +701,72 @@ def order_receiver_deed(request, pk):
     if not order.sender_id:
         raise PermissionDenied("Ariza jo'natuvchisi yo'q")
 
+    return render(request, "main/order_receiver_deed.html", order_deed_context(order))
+
+
+# Akt (dalolatnoma) — eski sahifa va yangi interfeys (api/spa/orders.py) uchun umumiy qism
+ORDER_DEED_BODY_TEMPLATE = "main/partials/order_deed_body.html"
+
+
+def order_deed_queryset():
+    """Akt matni uchun kerakli bog'lanishlar bilan arizalar."""
+    return Order.objects.select_related(
+        "sender", "sender__organization",
+        "sender__department", "receiver", "receiver__rank",
+        "technics",
+    ).prefetch_related(
+        Prefetch("materials", queryset=OrderMaterial.objects.select_related("material", "material__unit"))
+    )
+
+
+def order_deed_context(order):
+    """Akt sahifasi va matni konteksti: imzolovchilar — ariza muallifi tashkiloti xodimlari."""
     employees = (
         Employee.objects
         .filter(organization=order.sender.organization)
         .select_related("organization", "rank")
     )
+    return {"order": order, "employees": employees, "today": timezone.now()}
 
-    context = {
-        "order": order,
-        "employees": employees,
-        "today": timezone.now(),
-    }
-    return render(request, "main/order_receiver_deed.html", context)
+
+def create_order_act(order, employee, sender, body, message):
+    """
+    Bajarilgan ariza bo'yicha akt yaratadi: muallif va ijrochi kelishuvi (imzolovchi bo'lmasa), "TASDIQLANMAGAN"
+    belgili PDF. Bildirishnomani chaqiruvchi yuboradi. PDF yasalmasa HtmlPdfError (tranzaksiya bekor qilinadi).
+    """
+    with transaction.atomic():
+        deed = Deed.objects.create(
+            organization=order.sender.organization,
+            sender_id=sender.id,
+            user_id=employee.id,
+            message_user=message,
+            body=body,
+            status='act',
+        )
+        deed.orders.set([order.id])
+
+        if order.sender_id != sender.id:
+            sender_consent = DeedConsent.objects.create(
+                deed=deed, employee=order.sender, status="approved",
+            )
+            if order.date_approved:
+                DeedConsent.objects.filter(pk=sender_consent.pk).update(
+                    date_creat=order.date_approved
+                )
+        if order.receiver_id != sender.id:
+            receiver_consent = DeedConsent.objects.create(
+                deed=deed, employee=order.receiver, status="approved",
+            )
+            if order.date_finished:
+                DeedConsent.objects.filter(pk=receiver_consent.pk).update(
+                    date_creat=order.date_finished
+                )
+
+        pdf_bytes = deed_to_pdf_bytes(deed)
+        pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
+        pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
+        deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+    return deed
 
 
 @never_cache
@@ -785,39 +830,7 @@ def order_receiver_deed_post(request):
         return redirect(back_url)
 
     try:
-        with transaction.atomic():
-            deed = Deed.objects.create(
-                organization=order.sender.organization,
-                sender_id=sender.id,
-                user_id=employee.id,
-                message_user=message,
-                body=body,
-                status='act',
-            )
-            deed.orders.set([order.id])
-
-            if order.sender_id != sender.id:
-                sender_consent = DeedConsent.objects.create(
-                    deed=deed, employee=order.sender, status="approved",
-                )
-                if order.date_approved:
-                    DeedConsent.objects.filter(pk=sender_consent.pk).update(
-                        date_creat=order.date_approved
-                    )
-            if order.receiver_id != sender.id:
-                receiver_consent = DeedConsent.objects.create(
-                    deed=deed, employee=order.receiver, status="approved",
-                )
-                if order.date_finished:
-                    DeedConsent.objects.filter(pk=receiver_consent.pk).update(
-                        date_creat=order.date_finished
-                    )
-
-            pdf_bytes = deed_to_pdf_bytes(deed)
-            pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
-            pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
-            deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
-
+        deed = create_order_act(order, employee, sender, body, message)
     except HtmlPdfError as e:
         messages.error(request, f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring")
         return redirect(back_url)
@@ -1117,6 +1130,34 @@ def create_order_sender_from(request):
 
     goal = get_object_or_404(Goal, pk=int(goal_id), organization__type="client")
 
+    numbers = {}
+    for key, value in request.POST.items():
+        if key.startswith("number_") and key[7:].isdigit() and value.isdigit():
+            numbers[int(key[7:])] = int(value)
+
+    try:
+        order = create_order_from_cart(employee, goal, body, numbers)
+    except CartEmptyError:
+        messages.error(request, "Savat bo'sh — ariza yaratib bo'lmaydi")
+        return redirect(back_url)
+
+    notify_eligible_employees_new_order(order)
+
+    messages.success(request, "Ariza yuborildi")
+    return redirect("order_sender_barn")
+
+
+class CartEmptyError(Exception):
+    """Savatda material yo'q."""
+
+
+def create_order_from_cart(employee, goal, body, numbers=None, check=None):
+    """
+    Xodim savatidagi (order yo'q) materiallardan omborxona arizasi yaratadi — eski sahifa va api/spa/orders_barn.py
+    uchun umumiy. numbers: {qator_id: soni} (kamida 1). check(items) — qulf ostida qo'shimcha tekshiruv (istisno
+    tashlasa tranzaksiya bekor). Savat bo'sh bo'lsa CartEmptyError. Bildirishnomani chaqiruvchi yuboradi.
+    """
+    numbers = numbers or {}
     with transaction.atomic():
         cart_items = list(
             OrderMaterial.objects
@@ -1124,27 +1165,21 @@ def create_order_sender_from(request):
             .filter(user=employee, order__isnull=True, material__isnull=False)
             .select_related("material")
         )
-
         if not cart_items:
-            messages.error(request, "Savat bo'sh — ariza yaratib bo'lmaydi")
-            return redirect(back_url)
+            raise CartEmptyError
+        if check:
+            check(cart_items)
 
         order = Order.objects.create(
             goal=goal, sender=employee, message_sender=body, status="viewed",
         )
-
         for item in cart_items:
-            number = request.POST.get(f"number_{item.id}")
-            if number and number.isdigit():
-                item.number = max(int(number), 1)
+            if item.id in numbers:
+                item.number = max(int(numbers[item.id]), 1)
             item.order = order
 
         OrderMaterial.objects.bulk_update(cart_items, ["number", "order"])
-
-    notify_eligible_employees_new_order(order)
-
-    messages.success(request, "Ariza yuborildi")
-    return redirect("order_sender_barn")
+    return order
 
 
 # ═══════════════════════════════════════════════════════════════════

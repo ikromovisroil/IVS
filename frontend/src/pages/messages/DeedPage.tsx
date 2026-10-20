@@ -1,8 +1,10 @@
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Button, StatusChip, Widget } from '../../ds'
 import Page from '../../layout/Page'
+import PublicPage from '../../layout/PublicPage'
+import { MeContext } from '../../auth/me'
 import DataState from '../../components/DataState'
 import { api } from '../../api/client'
 import { useT } from '../../i18n'
@@ -117,9 +119,11 @@ export function DeedCodeStatusPage() {
   })
   const d = deed.data
   const t = useT()
+  // Kirmagan foydalanuvchi (QR havolasi) — yon menyusiz ommaviy qobiq
+  const Shell = useContext(MeContext) ? Page : PublicPage
 
   return (
-    <Page
+    <Shell
       icon="ri-qr-code-line"
       title={t('Dalolatnoma kodi: {code}', { code })}
       subtitle="Dalolatnoma holati."
@@ -141,6 +145,6 @@ export function DeedCodeStatusPage() {
           </div>
         )}
       </DataState>
-    </Page>
+    </Shell>
   )
 }

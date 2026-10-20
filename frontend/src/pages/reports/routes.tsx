@@ -1,10 +1,13 @@
+import { lazy } from 'react'
 import type { AppRoute } from '../../routes'
-import AktReport from './AktReport'
-import DocumentReport from './DocumentReport'
-import ReestrReport from './ReestrReport'
-import ReportsIndex from './ReportsIndex'
-import ServiceReport from './ServiceReport'
-import SvodReport from './SvodReport'
+
+// Sahifalar kerak bo'lganda yuklanadi (App.tsx dagi Suspense) — boshlang'ich JS kichrayadi
+const AktReport = lazy(() => import('./AktReport'))
+const DocumentReport = lazy(() => import('./DocumentReport'))
+const ReestrReport = lazy(() => import('./ReestrReport'))
+const ReportsIndex = lazy(() => import('./ReportsIndex'))
+const ServiceReport = lazy(() => import('./ServiceReport'))
+const SvodReport = lazy(() => import('./SvodReport'))
 import './reports.css'
 
 // Eski: /document/, /svod/, /reestr/, /akt/, /service/ (main/urls.py)

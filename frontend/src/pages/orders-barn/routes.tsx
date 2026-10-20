@@ -1,15 +1,16 @@
+import { lazy } from 'react'
 import type { AppRoute } from '../../routes'
-import BasketPage from './BasketPage'
-import {
-  ConfirmArchivePage,
-  ConfirmPage,
-  ExecuteActivePage,
-  ExecuteArchivePage,
-  ExecuteNewPage,
-  SenderArchivePage,
-  SenderOrdersPage,
-} from './ListPages'
-import MaterialsPage from './MaterialsPage'
+
+// Sahifalar kerak bo'lganda yuklanadi (App.tsx dagi Suspense) — boshlang'ich JS kichrayadi
+const BasketPage = lazy(() => import('./BasketPage'))
+const ConfirmArchivePage = lazy(() => import('./ListPages').then((m) => ({ default: m.ConfirmArchivePage })))
+const ConfirmPage = lazy(() => import('./ListPages').then((m) => ({ default: m.ConfirmPage })))
+const ExecuteActivePage = lazy(() => import('./ListPages').then((m) => ({ default: m.ExecuteActivePage })))
+const ExecuteArchivePage = lazy(() => import('./ListPages').then((m) => ({ default: m.ExecuteArchivePage })))
+const ExecuteNewPage = lazy(() => import('./ListPages').then((m) => ({ default: m.ExecuteNewPage })))
+const SenderArchivePage = lazy(() => import('./ListPages').then((m) => ({ default: m.SenderArchivePage })))
+const SenderOrdersPage = lazy(() => import('./ListPages').then((m) => ({ default: m.SenderOrdersPage })))
+const MaterialsPage = lazy(() => import('./MaterialsPage'))
 
 // Omborxona (material) arizalari — mijoz tashkiloti ichida. Eski sahifalar: main/order_views.py (order_*_barn, order_agrement*).
 export const routes: AppRoute[] = [

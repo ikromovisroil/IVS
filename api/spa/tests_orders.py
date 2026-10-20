@@ -124,13 +124,31 @@ class OrdersSpaTests(TestCase):
         self.assertIn(self.sender.id, [e["id"] for e in r.data["employees"]])
         self.assertNotIn(self.worker.id, [e["id"] for e in r.data["employees"]])
 
+    def test_deed_body_matches_legacy_page(self):
+        """Akt matni eski sahifadagi (textarea#body) bilan aynan bir xil — bitta shablondan olinadi."""
+        import html as html_lib
+        import re
+
+        from django.test import Client
+        from django.urls import reverse
+
+        from main.sanitizers import sanitize_deed_body
+
+        self._material_line(1)
+        web = Client()
+        web.force_login(self.worker_user)
+        page = web.get(reverse("order_receiver_deed", args=[self.order.id])).content.decode()
+        legacy = re.search(r'<textarea[^>]*id="body"[^>]*>(.*?)</textarea>', page, re.S).group(1)
+        spa = client(self.worker_user).get(f"{BASE}/{self.order.id}/deed/").data["body"]
+        self.assertEqual(spa, sanitize_deed_body(html_lib.unescape(legacy).strip()))
+
     def test_deed_only_for_receiver(self):
         self.assertEqual(client(self.other_worker_user).get(f"{BASE}/{self.order.id}/deed/").status_code, 403)
         self.assertEqual(client(self.sender_user).get(f"{BASE}/{self.order.id}/deed/").status_code, 403)
 
     @mock.patch("api.spa.orders.notify_deed_sender")
-    @mock.patch("api.spa.orders.add_text_watermark_pdf_bytes", side_effect=lambda b, t: b)
-    @mock.patch("api.spa.orders.deed_to_pdf_bytes", return_value=b"%PDF-1.4 test")
+    @mock.patch("main.order_views.add_text_watermark_pdf_bytes", side_effect=lambda b, t: b)
+    @mock.patch("main.order_views.deed_to_pdf_bytes", return_value=b"%PDF-1.4 test")
     def test_deed_post_creates_deed_with_consents(self, pdf, wm, notify):
         signer = self.stranger
         body = '<div><b>DALOLATNOMA</b><script>alert(1)</script></div>'

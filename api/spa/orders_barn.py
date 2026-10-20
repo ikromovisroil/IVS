@@ -14,7 +14,6 @@ Ro'yxatlar va holat o'zgarishlari mavjud /api/v1/orders/ da (?role=barn_*, /acce
 """
 import json
 
-from django.db import transaction
 from django.shortcuts import get_object_or_404
 from django.urls import path
 from rest_framework import permissions
@@ -25,6 +24,7 @@ from rest_framework.views import APIView
 from api.serializers import OrderSerializer
 from api.views import OrderViewSet
 from main.ajax_views import ordermaterial_delete
+from main.order_views import CartEmptyError, create_order_from_cart
 from main.models import Employee, Goal, Material, MaterialEmployee, Order, OrderMaterial
 from main.push_views import notify_eligible_employees_new_order
 
@@ -201,24 +201,16 @@ class CartSubmitView(APIView):
             parsed[str(key)] = n
 
         allowed = set(_selectable_materials(employee).values_list("id", flat=True))
-        with transaction.atomic():
-            items = list(
-                OrderMaterial.objects.select_for_update(of=("self",))
-                .filter(user=employee, order__isnull=True, material__isnull=False)
-                .select_related("material")
-            )
-            if not items:
-                raise ValidationError({"detail": "Savat bo'sh — ariza yaratib bo'lmaydi"})
+
+        def check(items):
             bad = [it.material.name for it in items if it.material_id not in allowed]
             if bad:
                 raise ValidationError({"detail": f"Savatdagi material endi mavjud emas: {', '.join(bad)}"})
 
-            order = Order.objects.create(goal=goal, sender=employee, message_sender=body, status="viewed")
-            for it in items:
-                if str(it.id) in parsed:
-                    it.number = parsed[str(it.id)]
-                it.order = order
-            OrderMaterial.objects.bulk_update(items, ["number", "order"])
+        try:
+            order = create_order_from_cart(employee, goal, body, {int(k): n for k, n in parsed.items() if k.isdigit()}, check)
+        except CartEmptyError:
+            raise ValidationError({"detail": "Savat bo'sh — ariza yaratib bo'lmaydi"})
 
         try:
             notify_eligible_employees_new_order(order)

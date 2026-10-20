@@ -19,22 +19,18 @@ import base64
 import binascii
 import html as html_lib
 import logging
-import re
-import secrets
 
-from django.core.files.base import ContentFile
-from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.template.loader import render_to_string
 from django.urls import path
-from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from main import ajax_views
-from main.html_pdf import HtmlPdfError, add_text_watermark_pdf_bytes, deed_to_pdf_bytes
-from main.models import Deed, DeedConsent, Employee, Goal, Order, Organization
-from main.order_views import order_receiver_deed
+from main.html_pdf import HtmlPdfError
+from main.models import Employee, Goal, Order, Organization
+from main.order_views import ORDER_DEED_BODY_TEMPLATE, create_order_act, order_deed_context, order_deed_queryset
 from main.push_views import notify_deed_sender
 from main.sanitizers import sanitize_deed_body
 from api.serializers import OrderSerializer
@@ -166,7 +162,6 @@ class OrderMaterialDeleteView(APIView):
         return ajax_views.ordermaterial_delete(_legacy(request), pk)
 
 
-_DEED_BODY_RE = re.compile(r'<textarea[^>]*\bid="body"[^>]*>(.*?)</textarea>', re.S)
 
 
 def _deed_order(request, pk):
@@ -187,21 +182,14 @@ class OrderDeedView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, pk):
-        """Akt sahifasi: imzolovchi xodimlar (muallif tashkiloti) va hujjat matni — eski sahifa shablonidan
-        (templates/main/order_receiver_deed.html) olinadi, shu sabab matn bitta joyda saqlanadi."""
+        """Akt sahifasi: imzolovchi xodimlar (muallif tashkiloti) va hujjat matni — eski sahifa bilan bitta shablondan
+        (templates/main/partials/order_deed_body.html, order_views.order_deed_context)."""
         _deed_order(request, pk)
-        response = order_receiver_deed(_legacy(request), pk)
-        html = response.content.decode("utf-8")
-        match = _DEED_BODY_RE.search(html)
-        if not match:
-            raise ValidationError({"detail": "Hujjat shabloni topilmadi"})
-        body = sanitize_deed_body(html_lib.unescape(match.group(1)).strip())
-
-        order = Order.objects.select_related("sender", "sender__organization").get(pk=pk)
-        employees = (
-            Employee.objects.filter(organization=order.sender.organization)
-            .select_related("rank").order_by("last_name", "first_name", "father_name", "id")
-        )
+        order = order_deed_queryset().get(pk=pk)
+        context = order_deed_context(order)
+        # Eski sahifada matn textarea ichida turadi — brauzer ko'rsatadigan qiymat bilan bir xil bo'lishi uchun unescape
+        body = sanitize_deed_body(html_lib.unescape(render_to_string(ORDER_DEED_BODY_TEMPLATE, context)).strip())
+        employees = context["employees"].order_by("last_name", "first_name", "father_name", "id")
         return Response({
             "order": {
                 "id": order.id,
@@ -241,30 +229,7 @@ class OrderDeedView(APIView):
             raise ValidationError({"body": "Hujjat matni bo'sh bo'lmasin"})
 
         try:
-            with transaction.atomic():
-                deed = Deed.objects.create(
-                    organization=order.sender.organization,
-                    sender_id=sender.id,
-                    user_id=employee.id,
-                    message_user=message,
-                    body=body,
-                    status="act",
-                )
-                deed.orders.set([order.id])
-
-                if order.sender_id != sender.id:
-                    consent = DeedConsent.objects.create(deed=deed, employee=order.sender, status="approved")
-                    if order.date_approved:
-                        DeedConsent.objects.filter(pk=consent.pk).update(date_creat=order.date_approved)
-                if order.receiver_id != sender.id:
-                    consent = DeedConsent.objects.create(deed=deed, employee=order.receiver, status="approved")
-                    if order.date_finished:
-                        DeedConsent.objects.filter(pk=consent.pk).update(date_creat=order.date_finished)
-
-                pdf_bytes = deed_to_pdf_bytes(deed)
-                pdf_bytes = add_text_watermark_pdf_bytes(pdf_bytes, "TASDIQLANMAGAN")
-                pdf_name = f"akt_{timezone.now().strftime('%Y%m%d')}_{secrets.token_urlsafe(6)}.pdf"
-                deed.file.save(pdf_name, ContentFile(pdf_bytes), save=True)
+            deed = create_order_act(order, employee, sender, body, message)
         except HtmlPdfError as e:
             raise ValidationError({"detail": f"Hujjat yaratilmadi: {e}. Qayta urinib ko'ring"})
 

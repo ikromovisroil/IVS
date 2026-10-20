@@ -1,0 +1,70 @@
+.ivs-public {
+  min-height: 100vh;
+  background: color-mix(in srgb, var(--bg-weak-50) 75%, var(--bg-soft-200));
+  color: var(--text-strong-950);
+}
+
+.ivs-public-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  background: var(--bg-white-0);
+  border-bottom: 1px solid var(--stroke-soft-200);
+}
+
+.ivs-public-brand > span:last-child {
+  display: flex;
+  flex-direction: column;
+}
+
+.ivs-public-logo {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--primary-base);
+  color: var(--static-white);
+}
+
+.ivs-public-muted {
+  margin: 0;
+  color: var(--text-sub-600);
+}
+
+.ivs-public-main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+}
+
+.ivs-public-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.ivs-public-titles {
+  flex: 1;
+  min-width: 0;
+}
+
+.ivs-public-titles h1 {
+  margin: 0;
+}
+
+.ivs-public-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-full);
+  background: var(--bg-white-0);
+  border: 1px solid var(--stroke-soft-200);
+  color: var(--icon-sub-600);
+}

@@ -1,8 +1,11 @@
+import { lazy } from 'react'
 import type { AppRoute } from '../../routes'
-import BasketPage from './BasketPage'
-import ExtraDevicesPage from './ExtraDevicesPage'
-import MaterialsPage from './MaterialsPage'
-import MovementsPage from './MovementsPage'
+
+// Sahifalar kerak bo'lganda yuklanadi (App.tsx dagi Suspense) — boshlang'ich JS kichrayadi
+const BasketPage = lazy(() => import('./BasketPage'))
+const ExtraDevicesPage = lazy(() => import('./ExtraDevicesPage'))
+const MaterialsPage = lazy(() => import('./MaterialsPage'))
+const MovementsPage = lazy(() => import('./MovementsPage'))
 
 // "Ombor": qo'shimcha qurilmalar (extra_tex) va materiallar (barn_mat, mat_arxiv, mat_info).
 // Texnika sahifalari — pages/technics/routes.tsx.

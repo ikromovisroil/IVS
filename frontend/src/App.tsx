@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth'
@@ -34,6 +35,8 @@ export default function App() {
         <ToastProvider>
           <BrowserRouter basename={BASENAME}>
             <RequireAuth>
+              {/* Bo'lim sahifalari lazy yuklanadi; navigatsiyada router startTransition ishlatadi — eski sahifa ko'rinib turadi */}
+              <Suspense fallback={<div className="ivs-boot" aria-busy="true" />}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 {ROUTES.map((r) => (
@@ -41,6 +44,7 @@ export default function App() {
                 ))}
                 <Route path="*" element={<LegacyPage />} />
               </Routes>
+              </Suspense>
             </RequireAuth>
           </BrowserRouter>
         </ToastProvider>

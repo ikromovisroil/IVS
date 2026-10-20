@@ -14,6 +14,15 @@ export default defineConfig(({ command }) => ({
   build: {
     outDir: '../static/spa',
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        // Kam o'zgaradigan kutubxonalar alohida fayllarda — ilova yangilanganda brauzer keshidan olinadi
+        manualChunks(id) {
+          if (id.includes('/src/ds/')) return 'alignui'
+          if (/node_modules\/(react|react-dom|scheduler|react-router|@tanstack)\//.test(id)) return 'vendor'
+        },
+      },
+    },
   },
   server: {
     port: 5173,

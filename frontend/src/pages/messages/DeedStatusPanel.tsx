@@ -24,7 +24,9 @@ interface SignerRow {
 }
 
 function Person({ p, name }: { p: DeedPerson | null; name?: string | null }) {
-  const full = p?.full_name ?? name ?? '—'
+  const full = p?.full_name ?? name
+  // Shaxs ko'rsatilmagan (masalan, tizim yaratgan talabnoma) — bo'sh avatar emas, oddiy chiziqcha
+  if (!full) return <span className="type-para-sm">—</span>
   return <CellUser name={full} sub={p?.rank_name || undefined} initials={initials(full)} color={avatarColor(p?.id ?? full)} />
 }
 
