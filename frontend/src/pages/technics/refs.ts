@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiAll } from '../../api/client'
 import type { Category, Named } from '../../api/types'
+import { sortById } from '../../lib/format'
 
 const DAY = 24 * 60 * 60 * 1000
 const opts = (xs: Named[] | undefined) => (xs ?? []).map((x) => ({ value: x.id, label: x.name }))
@@ -13,7 +14,7 @@ export function useTechnicsRefs() {
 
   return {
     groupOptions: opts(groups.data),
-    organizationOptions: opts(organizations.data),
+    organizationOptions: opts(sortById(organizations.data)),
     categoryOptions: (groupId: number | null) =>
       opts((categories.data ?? []).filter((c) => groupId == null || c.group === groupId)),
   }

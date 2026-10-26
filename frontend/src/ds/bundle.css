@@ -70,7 +70,7 @@ textarea.aui-input { resize: vertical; min-height: 72px; }
 .aui-select-placeholder { flex: 1; color: var(--text-soft-400); }
 .aui-select-chevron { color: var(--icon-soft-400); font-size: 16px; }
 .aui-select-icon { width: 22px; height: 22px; border-radius: var(--radius-6); display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 13px; }
-.aui-select-panel { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 100; background: var(--bg-white-0); border: 1px solid var(--stroke-soft-200); border-radius: var(--radius-10); box-shadow: 0 16px 32px -8px rgba(14,18,27,.14), 0 0 0 1px rgba(14,18,27,.04); overflow: hidden; animation: aui-drop 160ms ease; }
+.aui-select-panel { position: absolute; top: calc(100% + 6px); left: 0; right: auto; min-width: 100%; width: max-content; max-width: min(440px, calc(100vw - 32px)); z-index: 100; background: var(--bg-white-0); border: 1px solid var(--stroke-soft-200); border-radius: var(--radius-10); box-shadow: 0 16px 32px -8px rgba(14,18,27,.14), 0 0 0 1px rgba(14,18,27,.04); overflow: hidden; animation: aui-drop 160ms ease; }
 @keyframes aui-drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 .aui-select-search { display: flex; align-items: center; gap: 7px; padding: 8px 10px; border-bottom: 1px solid var(--gray-100); color: var(--icon-soft-400); font-size: 14px; }
 .aui-select-search input { flex: 1; border: none; outline: none; font: inherit; font-size: 13px; color: var(--text-strong-950); background: transparent; }

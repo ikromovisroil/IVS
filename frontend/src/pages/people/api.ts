@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { apiAll } from '../../api/client'
 import type { Named } from '../../api/types'
+import { sortById } from '../../lib/format'
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -129,8 +130,8 @@ export function usePeopleRefs() {
   const regions = useQuery({ queryKey: ['people', 'regions'], queryFn: () => apiAll<Named>('/regions/'), staleTime: DAY })
   const ranks = useQuery({ queryKey: ['people', 'ranks'], queryFn: () => apiAll<Named>('/ranks/'), staleTime: DAY })
   return {
-    organizationOptions: opts(organizations.data),
-    regionOptions: opts(regions.data),
+    organizationOptions: opts(sortById(organizations.data)),
+    regionOptions: opts(sortById(regions.data)),
     rankOptions: opts(ranks.data),
   }
 }
@@ -156,9 +157,9 @@ export function useStructure(organization: number | string | null, region: numbe
     staleTime: DAY,
   })
   return {
-    departmentOptions: organization ? opts(deps.data) : [],
-    directorateOptions: department ? opts(dirs.data) : [],
-    divisionOptions: directorate ? opts(divs.data) : [],
+    departmentOptions: organization ? opts(sortById(deps.data)) : [],
+    directorateOptions: department ? opts(sortById(dirs.data)) : [],
+    divisionOptions: directorate ? opts(sortById(divs.data)) : [],
   }
 }
 

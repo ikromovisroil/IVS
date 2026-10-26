@@ -2,6 +2,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api, apiAll } from '../../api/client'
 import type { Named, Technics, TechnicsStatus } from '../../api/types'
+import { sortById } from '../../lib/format'
 
 export const SPA = '/spa/warehouse'
 
@@ -72,7 +73,8 @@ export interface BridgeResult {
 
 const DAY = 24 * 60 * 60 * 1000
 const HOUR = 60 * 60 * 1000
-export const toOptions = (xs: Named[] | undefined) => (xs ?? []).map((x) => ({ value: x.id, label: x.name }))
+/** Tuzilma ro'yxatlari (hudud, departament, boshqarma, bo'lim): id bo'yicha */
+export const toOptions = (xs: Named[] | undefined) => sortById(xs).map((x) => ({ value: x.id, label: x.name }))
 
 /** Hududlar (ko'rish doirasi bo'yicha) */
 export function useRegions() {

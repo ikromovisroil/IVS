@@ -5,7 +5,7 @@ import type { SelectOption } from '../../ds'
 import PageTabs from '../../components/PageTabs'
 import { apiAll } from '../../api/client'
 import type { Named } from '../../api/types'
-import { formatNumber } from '../../lib/format'
+import { formatNumber, sortById } from '../../lib/format'
 import { TABS } from './shared'
 import { useT } from '../../i18n'
 import type { Structure } from './shared'
@@ -14,7 +14,7 @@ export function StatsTabs() {
   return <PageTabs tabs={TABS} label="Statistika bo'limlari" />
 }
 
-const toOptions = (rows: Named[] | undefined): SelectOption[] => (rows ?? []).map((r) => ({ value: String(r.id), label: r.name }))
+const toOptions = (rows: Named[] | undefined): SelectOption[] => sortById(rows).map((r) => ({ value: String(r.id), label: r.name }))
 
 /**
  * Tashkilot → Hudud → Department → Boshqarma → Bo'lim. Ro'yxatlar mavjud API dan (ko'rish doirasi serverda):

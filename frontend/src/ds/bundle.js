@@ -97,6 +97,16 @@
     var qS = useState(''), q = qS[0], setQ = qS[1];
     var actS = useState(0), act = actS[0], setAct = actS[1];
     var ref = useRef(null);
+    var panelRef = useRef(null);
+
+    // Panel triggerdan kengroq bo'lishi mumkin: o'ng chetdan chiqib ketsa, o'ng tomonga tekislanadi
+    useEffect(function () {
+      var el = panelRef.current;
+      if (!open || !el) return;
+      el.style.left = ''; el.style.right = '';
+      var r = el.getBoundingClientRect();
+      if (r.right > window.innerWidth - 8) { el.style.left = 'auto'; el.style.right = '0'; }
+    }, [open, q]);
 
     useEffect(function () {
       function onDown(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
@@ -133,7 +143,7 @@
                    : h('span', { className: 'aui-select-placeholder' }, props.placeholder || 'Select…'),
           h('i', { className: 'aui-select-chevron ri-arrow-' + (open ? 'up' : 'down') + '-s-line', 'aria-hidden': 'true' })
         ),
-        open ? h('div', { className: 'aui-select-panel' },
+        open ? h('div', { ref: panelRef, className: 'aui-select-panel' },
           searchable ? h('div', { className: 'aui-select-search' },
             h('i', { className: 'ri-search-line', 'aria-hidden': 'true' }),
             h('input', { autoFocus: true, value: q, placeholder: props.searchPlaceholder || 'Search…', 'aria-label': 'Search options',

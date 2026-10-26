@@ -42,12 +42,26 @@ Zaxira nusxa (Postgres):
 docker compose exec db pg_dump -U ivs ivs > backup_$(date +%F).sql
 ```
 
-## Yangilash
+## Yangilash (serverda, xavfsiz)
 
 ```bash
-git pull
-docker compose up -d --build       # image qayta quriladi (frontend ham), web migratsiyani bajaradi
+bash docker/update.sh      # zaxira (pg_dump) -> git pull -> build -> up -d -> tekshirish
+bash docker/rollback.sh    # muammo bo'lsa: oldingi kod va tasvirga qaytish
 ```
+
+`update.sh` avval bazadan `~/ivs-backups/ivs_<sana>.dump` zaxirasini oladi, oldingi tasvirni `ivs:prev` deb saqlaydi,
+yangi kodni quradi va `docker compose up -d` bilan almashtiradi (sayt qurish paytida ishlashda davom etadi, `web`
+qayta yaratilganda bir necha soniya uziladi). `rollback.sh` bazani o'zgartirmaydi; migratsiya sxemani o'zgartirgan bo'lsa,
+u oxirida zaxiradan tiklash buyruqlarini chiqaradi. Ishlab chiqarishda ish vaqtidan tashqarida yangilang.
+
+Qo'lda: `git pull && docker compose up -d --build`.
+
+## Production (tashqi SSL server orqasida)
+
+- Tashqi server HTTPS ni tugatib, so'rovni ichki serverning **`HTTP_PORT`** iga yuboradi (bizda `8000`; eski gunicorn ham shu portda edi).
+  `.env`: `HTTP_PORT=8000`, `HTTP_BIND=0.0.0.0`, `HTTPS_ONLY` qo'yilmaydi. `ALLOWED_HOSTS` ichida `localhost` bo'lsin.
+- Server nginx'i (80/8080) bu sxemada kerak emas. Eski systemd xizmatlarini (`gunicorn-ivs`, `ivs-bot`, `celery-*`) `systemctl disable` qiling,
+  aks holda server qayta yuklanganda 8000-portni egallab Docker'ni to'sib qo'yadi, bot esa ikki marta ishlaydi.
 
 ## Maxfiy kalitlar
 

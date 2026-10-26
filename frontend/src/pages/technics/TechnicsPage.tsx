@@ -20,7 +20,7 @@ import ActionMenu from './ActionMenu'
 import type { MenuAction } from './ActionMenu'
 import type { TechnicsRow, TechnicsStats } from './api'
 import { SPA, toOptions, useOrgTree, useRegions } from './api'
-import { AssignDialog, AttachDeviceDialog, DetachDeviceDialog, EmployeePinflDialog } from './TechnicsDialogs'
+import { AssignDialog, AttachDeviceDialog, DetachDeviceDialog } from './TechnicsDialogs'
 import { errorText } from './util'
 import TechnicsDetail, { StatusTag } from './TechnicsDetail'
 import TechnicsForm from './TechnicsForm'
@@ -89,7 +89,6 @@ export default function TechnicsPage() {
   const [formItem, setFormItem] = useState<TechnicsRow | null | undefined>(undefined) // undefined — forma yopiq
   const [active, setActive] = useState<{ row: TechnicsRow; dialog: Dialog } | null>(null)
   const [menu, setMenu] = useState<{ row: TechnicsRow; anchor: HTMLElement } | null>(null)
-  const [pinfl, setPinfl] = useState(false)
 
   // Biriktirish/tahrirlashdan keyin oyna yangi ma'lumot bilan qolishi uchun qator ro'yxatdan qayta olinadi
   const list = useQuery({
@@ -229,16 +228,9 @@ export default function TechnicsPage() {
       subtitle="Tashkilotlardagi barcha uskunalar ro'yxati va holati."
       actions={
         canAdd && (
-          <>
-            {can(me, 'main.add_employee') && (
-              <Button variant="stroke" size="lg" icon="ri-user-add-line" onClick={() => setPinfl(true)}>
-                {t("Xodim qo'shish")}
-              </Button>
-            )}
-            <Button size="lg" icon="ri-add-line" onClick={() => setFormItem(null)}>
-              {t("Uskuna qo'shish")}
-            </Button>
-          </>
+          <Button size="lg" icon="ri-add-line" onClick={() => setFormItem(null)}>
+            {t("Uskuna qo'shish")}
+          </Button>
         )
       }
     >
@@ -363,7 +355,6 @@ export default function TechnicsPage() {
           }}
         />
       )}
-      {pinfl && <EmployeePinflDialog onClose={() => setPinfl(false)} />}
     </Page>
   )
 }

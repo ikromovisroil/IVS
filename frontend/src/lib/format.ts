@@ -27,3 +27,8 @@ export function avatarColor(key: string | number | null | undefined): AvatarColo
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
   return AVATAR_COLORS[Math.abs(h) % AVATAR_COLORS.length]
 }
+
+/** Tuzilma ro'yxatlari (tashkilot, hudud, departament, boshqarma, bo'lim) — id bo'yicha, ya'ni yaratilgan tartibda. */
+export function sortById<T extends { id: number }>(xs: T[] | undefined): T[] {
+  return [...(xs ?? [])].sort((a, b) => a.id - b.id)
+}
