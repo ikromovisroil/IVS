@@ -12,7 +12,8 @@ docker compose ps                  # hamma servis "healthy"/"running" bo'lishi k
 docker compose logs -f web
 ```
 
-- Sayt: `http://<server>/` (nginx, 80-port; `HTTP_PORT` bilan o'zgartiriladi) → yangi interfeys `/app/`.
+- Sayt: `http://127.0.0.1:8080/` (konteyner nginx'i; `HTTP_PORT`/`HTTP_BIND` bilan o'zgartiriladi) → yangi interfeys `/app/`.
+  Tashqariga HTTPS tugatuvchi proksi (Caddy/nginx) shu portga yo'naltiradi.
 - Migratsiyani `web` servisi o'zi bajaradi (`RUN_MIGRATIONS=1`).
 - Admin foydalanuvchi: `docker compose exec web python manage.py createsuperuser`.
 

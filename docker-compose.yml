@@ -106,7 +106,9 @@ services:
     image: nginx:1.27-alpine
     restart: unless-stopped
     ports:
-      - "${HTTP_PORT:-80}:80"
+      # Standart: faqat shu serverning o'zidan (127.0.0.1:8080). Tashqariga HTTPS tugatuvchi proksi (Caddy/nginx) chiqaradi.
+      # Eslatma: Docker e'lon qilgan portlar ufw'ni chetlab o'tadi, shuning uchun tashqariga ochish uchun HTTP_BIND=0.0.0.0.
+      - "${HTTP_BIND:-127.0.0.1}:${HTTP_PORT:-8080}:80"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
       - media:/srv/media:ro
