@@ -15,7 +15,7 @@ class AjaxLoadDepartmentsTests(TestCase):
         self.dep_z = Department.objects.create(name="Zzz dep", organization=self.org, region=self.region1)
         self.dep_a = Department.objects.create(name="Aaa dep", organization=self.org, region=self.region1)
         self.dep_other = Department.objects.create(name="Boshqa hudud dep", organization=self.org, region=self.region2)
-        user, _ = make_employee(make_org("worker"), self.region1)
+        user, _ = make_employee(make_org("worker"), self.region1, perms=["main.shop_employee"])      # hisobot ruxsati kerak
         self.api = APIClient()
         self.api.force_authenticate(user)
         self.url = "/api/v1/spa/reports/data/departments/"

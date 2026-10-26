@@ -43,14 +43,16 @@ def allowed_reports(user):
         return {k: False for k in KINDS}
     worker = _is_worker(emp)
     svod = user.has_perm("main.shop_employee") or user.has_perm("main.report_employee")
+    # Hisobotlar bo'limi faqat xizmat ko'rsatuvchi (worker, ATM/IVS) tashkilot xodimlariga: eski menyu ("Hisobotlar" butunlay
+    # worker sharti ichida) bilan bir xil. Mijoz tashkilot xodimiga shu ruxsatlar berilgan bo'lsa ham ko'rinmaydi.
     return {
         # document_get: worker tashkilot + Employee.can_make_document (kamida bitta shartnoma)
         "document": worker and emp.can_make_document,
-        # svod_get / reestr_get: shop_employee yoki report_employee
-        "svod": svod,
-        "reestr": svod,
-        # akt_get: main.change_order
-        "akt": user.has_perm("main.change_order"),
+        # svod_get / reestr_get: worker tashkilot + shop_employee yoki report_employee
+        "svod": worker and svod,
+        "reestr": worker and svod,
+        # akt_get: worker tashkilot + main.change_order
+        "akt": worker and user.has_perm("main.change_order"),
         # service_get: main.material_service + worker tashkilot
         "service": worker and user.has_perm("main.material_service"),
     }
@@ -169,6 +171,16 @@ AJAX = {
 }
 
 
+# Ma'lumot endpointi qaysi hisobot ruxsatini talab qiladi (ro'yxat endpointlari — kamida bitta hisobot ochiq bo'lsa)
+DATA_KIND = {
+    "document-preview": "document",
+    "svod-materials": "svod",
+    "reestr-materials": "reestr",
+    "akt-materials": "akt",
+    "service-materials": "service",
+}
+
+
 class ReportDataView(APIView):
     """GET /spa/reports/data/<name>/?... — main/ajax_views.py dagi funksiyaning javobi (JSON) aynan qaytadi."""
 
@@ -176,6 +188,11 @@ class ReportDataView(APIView):
         fn = AJAX.get(name)
         if fn is None:
             raise NotFound()
+        kind = DATA_KIND.get(name)
+        if kind:
+            _check(request.user, kind)
+        elif not any(allowed_reports(request.user).values()):
+            raise PermissionDenied("Ruxsat yo'q")
         return fn(request._request)
 
 

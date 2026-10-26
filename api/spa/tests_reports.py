@@ -70,6 +70,25 @@ class ReportsApiTests(TestCase):
         self.login(self.client_user)
         self.assertFalse(any(self.client.get(URL).json()["reports"].values()))
 
+    def test_client_org_never_sees_reports_even_with_permissions(self):
+        """Hisobotlar faqat worker (ATM/IVS) tashkilot xodimlariga: mijozga ruxsatlar berilgan bo'lsa ham yopiq."""
+        perms = ("main.shop_employee", "main.report_employee", "main.change_order", "main.material_service")
+        privileged = make_emp(self.client_org, self.region, last="Ruxsatli", perms=perms)
+        self.login(privileged)
+        self.assertFalse(any(self.client.get(URL).json()["reports"].values()))
+        for kind in ("svod", "reestr", "akt", "service", "document"):
+            self.assertEqual(self.client.get(f"{URL}{kind}/form/").status_code, 403, kind)
+        for name in ("svod-materials", "reestr-materials", "akt-materials", "service-materials", "document-preview",
+                     "departments", "signatories", "agreements"):
+            self.assertEqual(self.client.get(f"{URL}data/{name}/").status_code, 403, name)
+
+    def test_worker_without_specific_permission_is_limited_per_report(self):
+        only_akt = make_emp(self.atm, self.region, last="FaqatAkt", perms=("main.change_order",))
+        self.login(only_akt)
+        self.assertEqual(self.client.get(URL).json()["reports"],
+                         {"document": False, "svod": False, "reestr": False, "akt": True, "service": False})
+        self.assertEqual(self.client.get(f"{URL}data/svod-materials/").status_code, 403)
+
     def test_form_forbidden_without_permission(self):
         self.login(self.client_user)
         for kind in ("document", "svod", "reestr", "akt", "service"):
