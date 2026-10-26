@@ -43,13 +43,7 @@ export const NAV: NavSection[] = [
       // Har bir xodim o'z texnikasini ko'radi (eski technics_get), ruxsat sharti yo'q
       { path: '/technics/mine', label: 'Texnikalarim', icon: 'ri-macbook-line', legacy: '/technics_get/' },
       { path: '/technics', label: 'Texnika va uskunalar', icon: 'ri-computer-line', visible: (me) => can(me, 'main.view_technics') },
-      {
-        path: '/technics/extra',
-        label: "Qo'shimcha qurilmalar",
-        icon: 'ri-usb-line',
-        legacy: '/extra_tex/',
-        visible: (me) => can(me, 'main.view_technics'),
-      },
+      // "Qo'shimcha qurilmalar" menyuda yo'q: "Texnika va uskunalar" sahifasidagi tab orqali ochiladi (/technics/extra)
       { path: '/materials', label: 'Materiallar', icon: 'ri-archive-line', legacy: '/barn_mat/', visible: (me) => can(me, 'main.view_material') },
     ],
   },

@@ -1,0 +1,5 @@
+# Docker/shell fayllari doim LF bilan (CRLF bo'lsa konteynerda "bad interpreter" xatosi beradi)
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+docker/nginx.conf text eol=lf

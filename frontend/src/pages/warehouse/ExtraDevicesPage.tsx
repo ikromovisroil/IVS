@@ -18,6 +18,7 @@ import { useT } from '../../i18n'
 import { formatNumber } from '../../lib/format'
 import { useUrlFilters } from '../../lib/useUrlFilters'
 import ActionMenu from '../technics/ActionMenu'
+import TechnicsTabs from '../technics/TechnicsTabs'
 import type { MenuAction } from '../technics/ActionMenu'
 import { SPA, toOptions, useRegions } from '../technics/api'
 import { useTechnicsRefs } from '../technics/refs'
@@ -173,6 +174,7 @@ export default function ExtraDevicesPage() {
         )
       }
     >
+      <TechnicsTabs />
       {!allowed ? (
         <EmptyState icon="ri-lock-line" title="Ruxsat yo'q" description="Bu sahifa uchun ruxsatingiz yo'q (texnikani tahrirlash huquqi kerak)." />
       ) : (

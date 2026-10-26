@@ -1,0 +1,121 @@
+# IVS — Docker Compose.  Ishga tushirish:  cp .env.docker.example .env  (to'ldiring)  →  docker compose up -d --build
+# Servislar: db (Postgres), redis, web (daphne), worker + beat (Celery), bot (Telegram), nginx (80-port).
+name: ivs
+
+x-app: &app
+  build: .
+  image: ivs:latest
+  restart: unless-stopped
+  env_file: .env
+  environment: &app-env
+    USE_POSTGRES: "1"
+    DB_HOST: db
+    DB_PORT: "5432"
+    DB_NAME: ${POSTGRES_DB:-ivs}
+    DB_USER: ${POSTGRES_USER:-ivs}
+    DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env faylda bo'lishi kerak}
+    CELERY_BROKER_URL: redis://redis:6379/0
+    CELERY_RESULT_BACKEND: redis://redis:6379/0
+    CHANNELS_REDIS_URL: redis://redis:6379/1
+    CACHE_REDIS_URL: redis://redis:6379/2
+    LOG_DIR: /app/logs
+    VAPID_PRIVATE_KEY_FILE: /run/secrets/vapid_private.pem
+  volumes:
+    - media:/app/media
+    - logs:/app/logs
+    - ${VAPID_PRIVATE_KEY_PATH:-./private_key.pem}:/run/secrets/vapid_private.pem:ro
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-ivs}
+      POSTGRES_USER: ${POSTGRES_USER:-ivs}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env faylda bo'lishi kerak}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Django (ASGI: sayt, API, WebSocket chat) — migratsiyani shu servis bajaradi
+  web:
+    <<: *app
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "1"
+    expose:
+      - "8000"
+    healthcheck:
+      # SECURE_SSL_REDIRECT yoqilgan bo'lsa ham javob olish uchun X-Forwarded-Proto yuboriladi
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request as u; u.urlopen(u.Request('http://127.0.0.1:8000/api/v1/spa/auth/config/', headers={'X-Forwarded-Proto': 'https', 'Host': 'localhost'}), timeout=5)"
+      interval: 15s
+      timeout: 8s
+      retries: 5
+      start_period: 40s
+
+  # Celery: push (brauzer/Android), PDF va boshqa orqa fon vazifalari
+  worker:
+    <<: *app
+    command: ["celery", "-A", "config", "worker", "-l", "info", "--concurrency", "2"]
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # Celery beat: rejalashtirilgan vazifalar (jadval bazada: django_celery_beat)
+  beat:
+    <<: *app
+    command: ["celery", "-A", "config", "beat", "-l", "info"]
+    depends_on:
+      web:
+        condition: service_healthy
+
+  # Telegram bot (polling). Faqat BITTA nusxada ishlashi kerak. TELEGRAM_BOT_TOKEN bo'lmasa o'chirib qo'ying.
+  bot:
+    <<: *app
+    command: ["python", "manage.py", "runbot"]
+    depends_on:
+      web:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - media:/srv/media:ro
+    depends_on:
+      web:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  redisdata:
+  media:
+  logs:

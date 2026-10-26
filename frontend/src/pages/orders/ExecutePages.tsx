@@ -16,6 +16,7 @@ import type { FinishState } from './hooks'
 import OrderDetailModal from './OrderDetailModal'
 import OrdersShell from './OrdersShell'
 import OrderTable from './OrderTable'
+import { openPdf } from '../../lib/pdf'
 import { orderColumns } from './columns'
 import type { Order, OrderDetail, OrderMaterial } from './types'
 import './orders.css'
@@ -292,7 +293,7 @@ export function ExecuteArchivePage() {
         render: (r) =>
           r.deeds.length ? (
             r.deeds[0].file ? (
-              <Button variant="ghost" size="sm" icon="ri-file-pdf-2-line" onClick={() => window.open(r.deeds[0].file!, '_blank', 'noopener')}>
+              <Button variant="ghost" size="sm" icon="ri-file-pdf-2-line" onClick={() => openPdf(r.deeds[0].file!, t('Yuborilgan'))}>
                 {t('Yuborilgan')}
               </Button>
             ) : (

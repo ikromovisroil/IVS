@@ -26,11 +26,31 @@ def _employee(request):
     return employee
 
 
+# Obuna manzili (endpoint) faqat ma'lum brauzer push xizmatlariniki bo'la oladi. Aks holda foydalanuvchi serverga
+# ixtiyoriy manzilga so'rov yuborishni (SSRF) buyura olardi: yuborish vazifasi endpoint'ga POST qiladi.
+PUSH_HOSTS = (
+    "fcm.googleapis.com",                 # Chrome, Edge, Opera, Samsung (FCM)
+    "android.googleapis.com",
+    ".push.services.mozilla.com",         # Firefox
+    ".notify.windows.com",                # Edge/Windows (WNS)
+    ".push.apple.com",                    # Safari
+)
+
+
+def _allowed_push_host(host):
+    hosts = tuple(getattr(settings, "PUSH_ENDPOINT_HOSTS", PUSH_HOSTS))
+    return any(host == h.lstrip(".") or (h.startswith(".") and host.endswith(h)) for h in hosts)
+
+
 def _endpoint(raw):
     endpoint = (raw or "").strip()
     parsed = urlparse(endpoint)
-    # Brauzer push xizmatlari faqat HTTPS endpoint beradi (maydon uzunligi — modelda 1000)
-    if parsed.scheme != "https" or not parsed.netloc or len(endpoint) > 1000:
+    # Faqat HTTPS (maydon uzunligi — modelda 1000), standart port, login/parolsiz va ruxsat etilgan push xizmati
+    if (
+        parsed.scheme != "https" or not parsed.hostname or len(endpoint) > 1000
+        or parsed.username or parsed.password or parsed.port not in (None, 443)
+        or not _allowed_push_host(parsed.hostname.lower())
+    ):
         raise ValidationError({"endpoint": "Noto'g'ri obuna manzili"})
     return endpoint
 

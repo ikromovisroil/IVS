@@ -1,0 +1,33 @@
+# Git va muhit
+.git
+.gitignore
+.idea
+.vscode
+.env
+.env.*
+!.env.docker.example
+
+# Python
+venv
+.venv
+__pycache__
+*.py[cod]
+
+# Ma'lumot va loglar (volume'larda turadi)
+db.sqlite3
+media
+logs
+*.log
+staticfiles
+
+# Maxfiy kalitlar — image ichiga kirmaydi (Docker'da volume/secret orqali beriladi)
+private_key.pem
+public_key.pem
+
+# Frontend: kutubxonalar va build image ichida (Dockerfile 1-bosqichi) qayta yaratiladi
+frontend/node_modules
+frontend/.vite
+static/spa
+
+# Hujjatlar
+docs

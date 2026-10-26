@@ -428,8 +428,8 @@ GATEWAY_PASSWORD = os.getenv("GATEWAY_PASSWORD")
 # =========================================================
 # LOGGING
 # =========================================================
-LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+LOG_DIR = Path(os.getenv("LOG_DIR", str(BASE_DIR / "logs")))
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     "version": 1,
@@ -494,10 +494,12 @@ if DEBUG:
 
     SECURE_REDIRECT_EXEMPT = []
 else:
-    SECURE_SSL_REDIRECT = True
+    # Productionda HTTPS majburiy. HTTPS_ONLY=0 — faqat HTTP orqali sinash uchun (masalan, lokal Docker), productionda QO'YMANG.
+    HTTPS_ONLY = env_bool("HTTPS_ONLY", True)
+    SECURE_SSL_REDIRECT = HTTPS_ONLY
 
-    SESSION_COOKIE_SECURE = True
-    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = HTTPS_ONLY
+    CSRF_COOKIE_SECURE = HTTPS_ONLY
 
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
@@ -505,9 +507,9 @@ else:
     CSRF_COOKIE_SAMESITE = "Lax"
     CSRF_COOKIE_HTTPONLY = False
 
-    SECURE_HSTS_SECONDS = 31536000
-    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_SECONDS = 31536000 if HTTPS_ONLY else 0
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = HTTPS_ONLY
+    SECURE_HSTS_PRELOAD = HTTPS_ONLY
 
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     USE_X_FORWARDED_HOST = True
@@ -656,9 +658,13 @@ JAZZMIN_UI_TWEAKS = {
 
 
 # Brauzer push (Web Push, VAPID): kalitlar generate_vapid_keys.py bilan yaratiladi
-VAPID_PRIVATE_KEY_PEM = str(BASE_DIR / "private_key.pem")
+# Maxfiy kalit fayli yo'li (Docker'da secret/volume orqali: VAPID_PRIVATE_KEY_FILE=/run/secrets/vapid_private.pem)
+VAPID_PRIVATE_KEY_PEM = os.getenv("VAPID_PRIVATE_KEY_FILE") or str(BASE_DIR / "private_key.pem")
 
-VAPID_PUBLIC_KEY = "BDG3vD4zmf8dNsRQRIoqebQKCn_QeJTwiUCO1pJWVoV_SKgOhFVEOX7bPagYoQwBSijel8Nf8q1DrqS7uydo5No"
+VAPID_PUBLIC_KEY = os.getenv(
+    "VAPID_PUBLIC_KEY",
+    "BDG3vD4zmf8dNsRQRIoqebQKCn_QeJTwiUCO1pJWVoV_SKgOhFVEOX7bPagYoQwBSijel8Nf8q1DrqS7uydo5No",
+)
 
 VAPID_CLAIMS = {
     "sub": "mailto:admin@yatm.uz"

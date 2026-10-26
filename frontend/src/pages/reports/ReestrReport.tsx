@@ -8,7 +8,7 @@ import type { ReportForm, ReportsMeta } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { esc, formatMonthYearRange, formatNumber, monthRange } from './format'
+import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { REESTR_TEMPLATE, messageRow } from './templates'
@@ -116,6 +116,7 @@ function ReestrPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; 
       toast("Iltimos, tashkilot va sanalarni to'liq tanlang!", 'error')
       return
     }
+    doc.setText('#blok_summa_soz', '')
     doc.setHTML('#materials_tbody', messageRow(15, 'Yuklanmoqda...', 'loading'))
     try {
       const data = await reportData<ReestrItem[]>('reestr-materials', { organization: org, region, date1, date2 })
@@ -125,6 +126,7 @@ function ReestrPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; 
         return
       }
       doc.setHTML('#materials_tbody', reestrRows(data))
+      doc.setText('#blok_summa_soz', amountInWords(data.reduce((sum, it) => sum + (parseFloat(String(it.total_sum ?? 0)) || 0), 0)))
       // Xizmat ko'rsatgan xodimlar (receiver) — har biri bir marta, joriy foydalanuvchidan tashqari
       const seen = new Set<string>()
       const me = (meta.employee?.full_name || '').trim()

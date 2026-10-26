@@ -82,7 +82,7 @@ export default function Page({ title, subtitle, icon, avatar, background = 'gray
 
   const badges = useNavBadges()
   const nav = visibleNav(me)
-  // Faol band — manzilga eng uzun mos keladigan yo'l (/technics/extra/5 → "Qo'shimcha qurilmalar", /technics/5 → "Texnika")
+  // Faol band — manzilga eng uzun mos keladigan yo'l (/technics/extra va /technics/5 → "Texnika va uskunalar")
   const activePath = nav
     .flatMap((s) => s.items.map((i) => i.path))
     .filter((p) => pathname === p || pathname.startsWith(p + '/'))

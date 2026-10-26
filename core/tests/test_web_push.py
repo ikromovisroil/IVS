@@ -73,6 +73,27 @@ class PushApiTests(TestCase):
         self._subscribe(api=other)
         self.assertEqual(PushSubscription.objects.get().employee_id, self.other.id)
 
+    def test_endpoint_must_be_a_known_push_service(self):
+        bad = (
+            "https://evil.example/x",                                   # ixtiyoriy tashqi manzil (SSRF)
+            "https://169.254.169.254/latest/meta-data",                 # ichki/metadata manzillari
+            "https://127.0.0.1/x",
+            "https://fcm.googleapis.com.evil.example/x",                # domen aldash
+            "https://evilfcm.googleapis.com.attacker.net/x",
+            "https://user:pass@fcm.googleapis.com/fcm/send/x",
+            "https://fcm.googleapis.com:8443/fcm/send/x",
+        )
+        for endpoint in bad:
+            self.assertEqual(self._subscribe(endpoint=endpoint).status_code, 400, endpoint)
+        self.assertFalse(PushSubscription.objects.exists())
+        for endpoint in (
+            "https://fcm.googleapis.com/fcm/send/abc",
+            "https://updates.push.services.mozilla.com/wpush/v2/abc",
+            "https://wns2-par02p.notify.windows.com/w/?token=abc",
+            "https://web.push.apple.com/abc",
+        ):
+            self.assertIn(self._subscribe(endpoint=endpoint).status_code, (200, 201), endpoint)
+
     def test_validation(self):
         self.assertEqual(self._subscribe(endpoint="http://insecure.example/x").status_code, 400)
         self.assertEqual(self._subscribe(endpoint="").status_code, 400)

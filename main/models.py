@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from .validators import *
 from django.utils import timezone
 import random
+import secrets
 import string
 import qrcode
 from io import BytesIO
@@ -760,7 +761,7 @@ class Deed(models.Model):
 
     def generate_code(self):
         chars = string.ascii_uppercase + string.digits
-        return ''.join(random.choices(chars, k=10))
+        return ''.join(secrets.choice(chars) for _ in range(10))     # QR kod orqali ochiladigan manzil: taxmin qilib bo'lmasligi kerak
 
     def save(self, *args, **kwargs):
         if self.pk:

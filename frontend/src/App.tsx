@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import RequireAuth from './auth/RequireAuth'
 import { useMe } from './auth/me'
 import SettingsProvider from './components/SettingsProvider'
+import PdfViewerHost from './components/PdfViewer'
 import ToastProvider from './components/ToastProvider'
 import LegacyPage from './pages/LegacyPage'
 import { visibleNav } from './layout/nav'
@@ -34,6 +35,7 @@ export default function App() {
       <SettingsProvider>
         <ToastProvider>
           <BrowserRouter basename={BASENAME}>
+            <PdfViewerHost />
             <RequireAuth>
               {/* Bo'lim sahifalari lazy yuklanadi; navigatsiyada router startTransition ishlatadi — eski sahifa ko'rinib turadi */}
               <Suspense fallback={<div className="ivs-boot" aria-busy="true" />}>

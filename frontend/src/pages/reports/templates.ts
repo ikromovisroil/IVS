@@ -93,7 +93,8 @@ export const SVOD_TEMPLATE = `<div style="font-size:10pt;">
       </thead>
       <tbody id="materials_tbody"></tbody>
     </table>
-  </div>
+  </div><br>
+  <div style="text-align:left;"><b id="blok_summa_soz"> </b></div><br>
   <div style="text-align:left;"><b><span id="date_contract">_</span>ga muvofiq</b></div>
   ${COMMON_SIGNERS}
   <div id="responsible_employees_block">
@@ -123,7 +124,8 @@ export const REESTR_TEMPLATE = `<div style="font-size:10pt;">
       </thead>
       <tbody id="materials_tbody"></tbody>
     </table>
-  </div>
+  </div><br>
+  <div style="text-align:left;"><b id="blok_summa_soz"> </b></div><br>
   <div style="text-align:left;"><b><span id="date_contract">_</span></b></div>
   ${COMMON_SIGNERS}
   <div><table style="border-collapse:collapse;width:100%;">${SIGN_COLS}<tbody id="service_employees_tbody"></tbody></table></div>
@@ -167,7 +169,8 @@ export function aktTemplate(userName: string, userRank: string): string {
       <colgroup>${[3, 13, 10, 22, 4, 6, 12, 12, 8, 5, 5].map((w) => `<col style="width:${w}%;">`).join('')}</colgroup>
       <tbody id="materials_tbody">${AKT_HEADER_ROWS}</tbody>
     </table>
-  </div>
+  </div><br>
+  <div style="text-align:left;"><b id="blok_summa_soz"> </b></div><br>
   <div style="text-align:left;"><b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b></div>
   <div style="text-align:left;">Izoh: o‘rnatilgan ehtiyot qismlar yoki asbob-uskunalarning birlik narxi buxgalteriya hisobi uchun ko‘rsatiladi.</div>
   ${signRow(

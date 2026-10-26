@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { API, api } from '../../api/client'
+import { openPdf } from '../../lib/pdf'
 import type { Deed } from './types'
 
 export const SPA = '/spa/messages'
@@ -28,8 +29,8 @@ export function useRefresh() {
 /** Ilovalarni yuklab olish (bitta bo'lsa o'zi, bir nechta bo'lsa ZIP) — /api/v1/deeds/{id}/attachments/download/ */
 export const attachmentsUrl = (id: number) => `${API}/deeds/${id}/attachments/download/`
 
-/** Fayl manzili: API to'liq URL qaytaradi, brauzer shu domenda ochadi */
-export const openFile = (url: string) => window.open(url, '_blank', 'noopener')
+/** Hujjat PDF'i: sahifaning o'zidagi ko'rgichda ochiladi (brauzer PDF'ni yuklab olmasligi uchun) */
+export const openFile = (url: string, title?: string) => openPdf(url, title)
 
 /** E-IMZO'dan qaytgach shu sahifa ochiladi; ?eimzo=1 — natija xabarini (Django messages) ko'rsatish uchun */
 export const EIMZO_FLAG = 'eimzo'

@@ -17,6 +17,7 @@ import { formatNumber } from '../../lib/format'
 import { useT } from '../../i18n'
 import { formatDateTime, opts } from './api'
 import type { DeedRow } from './api'
+import { openPdf } from '../../lib/pdf'
 import DeedStatusModal from './DeedStatusModal'
 import './people.css'
 
@@ -144,7 +145,7 @@ export default function FilesPage() {
               icon="ri-file-pdf-2-line"
               aria-label={t("Hujjatni ko'rish")}
               title={t("Ko'rish")}
-              onClick={() => window.open(r.file_url!, '_blank', 'noopener')}
+              onClick={() => openPdf(r.file_url!)}
             />
           ) : null}
           {r.attachments_count > 0 && (

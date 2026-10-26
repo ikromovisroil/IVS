@@ -13,7 +13,6 @@ import { useUrlFilters } from '../../lib/useUrlFilters'
 import type { MyTechnics, TechnicsRow } from './api'
 import { SPA } from './api'
 import { StatusTag } from './TechnicsDetail'
-import TechnicsTabs from './TechnicsTabs'
 import './technics.css'
 
 const PAGE_SIZE = 20
@@ -143,7 +142,6 @@ export default function MyTechnicsPage() {
       title="Texnikalarim"
       subtitle={data.data?.is_boss ? "Bo'limingizdagi texnikalar va ularning egalari." : me.employee?.full_name || 'Sizga biriktirilgan texnikalar.'}
     >
-      <TechnicsTabs />
       <DataState isPending={data.isPending} isFetching={data.isFetching} error={data.error} empty={rows.length === 0} emptyText="Sizga texnika biriktirilmagan" emptyDescription="Ombor sizga texnika biriktirganda u shu yerda ko‘rinadi." emptyIcon="ri-macbook-line">
         <DataTable rows={rows} columns={columns} getRowId={(r) => r.id} rowHeight={64} minWidth={860} caption={t('Texnikalarim')} />
         {pageCount > 1 && (

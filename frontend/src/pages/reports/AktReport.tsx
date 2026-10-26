@@ -8,7 +8,7 @@ import type { ReportForm, ReportsMeta } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { empLabel, esc, formatNumberAkt, monthRange, todayDmy } from './format'
+import { amountInWords, empLabel, esc, formatNumberAkt, monthRange, todayDmy } from './format'
 import { FilterCard, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { AKT_HEADER_ROWS, aktTemplate, messageRow } from './templates'
@@ -26,6 +26,11 @@ interface AktItem {
   material__price: string | number | null
   full_name: string | null
   rank_name: string | null
+}
+
+/** Akt jadvalida summa ustuni yo'q: jami = har bir materialning miqdori x birlik narxi */
+function aktTotal(data: AktItem[]): number {
+  return data.reduce((sum, it) => sum + (parseFloat(String(it.number ?? 0)) || 0) * (parseFloat(String(it.material__price ?? 0)) || 0), 0)
 }
 
 function aktRows(data: AktItem[]): string {
@@ -108,10 +113,12 @@ function AktPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; doc
     }
     doc.setText('#doc_date', `${todayDmy()} y`)
     const setRows = (rows: string) => doc.setHTML('#materials_tbody', AKT_HEADER_ROWS + rows)
+    doc.setText('#blok_summa_soz', '')
     setRows(`<tr><td colspan="11" style="text-align:center;padding:20px;"><i>Yuklanmoqda...</i></td></tr>`)
     try {
       const data = await reportData<AktItem[]>('akt-materials', { organization: org, department: dep, region: regionId, date1, date2 })
       setRows(data?.length ? aktRows(data) : `<tr><td colspan="11" style="text-align:center;color:#888;padding:20px;">Tanlangan sana oralig'ida ma'lumot topilmadi</td></tr>`)
+      doc.setText('#blok_summa_soz', data?.length ? amountInWords(aktTotal(data)) : '')
     } catch (e) {
       setRows(messageRow(11, `Xatolik yuz berdi: ${(e as Error).message}`, 'error'))
     }

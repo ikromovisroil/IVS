@@ -9,7 +9,7 @@ import type { Emp, ReportForm } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { esc, formatMonthYearRange, formatNumber, monthRange, todayDmy } from './format'
+import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange, todayDmy } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { SVOD_TEMPLATE, messageRow } from './templates'
@@ -41,6 +41,11 @@ function totalRow(label: string, sum: number, size: string, bg: string) {
 }
 
 /** Tashkilot → Hudud → materiallar → "{Hudud} jami" → "{Tashkilot} jami" → "Jami" */
+/** Svod bo'yicha umumiy jami (jadvaldagi "Jami:" qatori bilan bir xil) */
+function svodGrandTotal(orgs: SvodResponse['organizations']): number {
+  return orgs.reduce((sum, org) => sum + org.regions.reduce((s, r) => s + r.materials.reduce((t, m) => t + (Number(m.total_sum) || 0), 0), 0), 0)
+}
+
 function svodRows(orgs: SvodResponse['organizations']): string {
   let rows = ''
   let index = 1
@@ -119,6 +124,7 @@ function SvodPage({ form, doc }: { form: ReportForm; doc: DocApi }) {
       toast("Iltimos, kamida bitta tashkilot va sanalarni to'liq tanlang!", 'error')
       return
     }
+    doc.setText('#blok_summa_soz', '')
     doc.setHTML('#materials_tbody', messageRow(8, 'Yuklanmoqda...', 'loading'))
     doc.setHTML('#responsible_employees_tbody', messageRow(2, 'Yuklanmoqda...', 'loading', '#fff'))
     try {
@@ -126,6 +132,7 @@ function SvodPage({ form, doc }: { form: ReportForm; doc: DocApi }) {
       const list = data.organizations || []
       const emps = data.employees || []
       doc.setHTML('#materials_tbody', list.length ? svodRows(list) : messageRow(8, "Tanlangan sana oralig'ida ma'lumot topilmadi", 'empty'))
+      doc.setText('#blok_summa_soz', list.length ? amountInWords(svodGrandTotal(list)) : '')
       doc.setHTML(
         '#responsible_employees_tbody',
         list.length && emps.length
