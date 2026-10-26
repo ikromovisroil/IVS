@@ -82,6 +82,14 @@ class ReportsApiTests(TestCase):
                      "departments", "signatories", "agreements"):
             self.assertEqual(self.client.get(f"{URL}data/{name}/").status_code, 403, name)
 
+    def test_superuser_sees_reports_even_if_not_in_worker_org(self):
+        admin = make_emp(self.client_org, self.region, last="Admin")
+        admin.user.is_superuser = True
+        admin.user.save()
+        self.login(admin)
+        reports = self.client.get(URL).json()["reports"]
+        self.assertTrue(all(reports[k] for k in ("svod", "reestr", "akt", "service")))
+
     def test_worker_without_specific_permission_is_limited_per_report(self):
         only_akt = make_emp(self.atm, self.region, last="FaqatAkt", perms=("main.change_order",))
         self.login(only_akt)

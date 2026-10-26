@@ -41,7 +41,7 @@ def allowed_reports(user):
     emp = _employee(user)
     if not emp:
         return {k: False for k in KINDS}
-    worker = _is_worker(emp)
+    worker = _is_worker(emp) or user.is_superuser      # superuser (admin) tashkilotidan qat'i nazar, menyudagidek
     svod = user.has_perm("main.shop_employee") or user.has_perm("main.report_employee")
     # Hisobotlar bo'limi faqat xizmat ko'rsatuvchi (worker, ATM/IVS) tashkilot xodimlariga: eski menyu ("Hisobotlar" butunlay
     # worker sharti ichida) bilan bir xil. Mijoz tashkilot xodimiga shu ruxsatlar berilgan bo'lsa ham ko'rinmaydi.
