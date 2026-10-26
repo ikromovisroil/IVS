@@ -101,7 +101,7 @@ function AktPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; doc
   useEffect(() => {
     doc.setText('#org_id_1, #org_id_2', orgName || 'Tashkilot')
     doc.setText('#dep_id', depName || 'Departament')
-    doc.setText('#date_contract', contract || '_')
+    doc.setText('#date_contract', contract ? `${contract}ga muvofiq` : '')
     doc.setText('#sender_name1', senderFull || '_')
     doc.setText('#sender_name2', senderName || senderFull || '_')
   }, [doc, orgName, depName, contract, senderFull, senderName])

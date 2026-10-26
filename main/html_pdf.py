@@ -9,6 +9,7 @@ from django.template.loader import render_to_string
 from django.utils import timezone
 
 from .models import Deed, DeedConsent
+from .sanitizers import normalize_uz_apostrophes
 from .utils import sign_pdf_inplace
 
 logger = logging.getLogger(__name__)
@@ -173,7 +174,7 @@ def _html_to_pdf_bytes_wkhtmltopdf(body_html: str, orientation: str) -> bytes:
 
 def html_to_pdf_bytes(body_html: str, orientation: str = "Portrait") -> bytes:
 
-    body_html = (body_html or "").strip()
+    body_html = normalize_uz_apostrophes((body_html or "").strip())
     if not body_html:
         raise HtmlPdfError("Body bo'sh — PDF qilib bo'lmaydi")
 

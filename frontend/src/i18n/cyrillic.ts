@@ -17,6 +17,7 @@ const PROTECTED = [
 const EXCEPTIONS: [RegExp, string][] = [
   [/kompyuter/gi, 'компьютер'],
   [/tsiya/gi, 'ция'],
+  [/reestr/gi, 'реэстр'],
   [/F\.I\.O/g, 'Ф.И.Ш'],
 ]
 
@@ -24,7 +25,6 @@ const SINGLE: Record<string, string> = {
   a: 'а', b: 'б', d: 'д', f: 'ф', g: 'г', h: 'ҳ', i: 'и', j: 'ж', k: 'к', l: 'л', m: 'м', n: 'н', o: 'о', p: 'п',
   q: 'қ', r: 'р', s: 'с', t: 'т', u: 'у', v: 'в', x: 'х', y: 'й', z: 'з', c: 'с', w: 'в',
 }
-const VOWELS = 'aeiou'
 
 const isUpper = (ch: string) => ch !== ch.toLowerCase()
 const cased = (src: string, out: string) => (isUpper(src[0]) ? out.charAt(0).toUpperCase() + out.slice(1) : out)
@@ -59,7 +59,8 @@ function word(w: string): string {
       i += 2
     } else if (c === 'e') {
       const prev = low[i - 1]
-      out += up(i === 0 || VOWELS.includes(prev) || prev === "'" ? 'э' : 'е')
+      // э: so'z boshida, tutuqdan keyin va a/o dan keyin (аэропорт, поэт); реестр, проект kabilarda — е
+      out += up(i === 0 || prev === 'a' || prev === 'o' || prev === "'" ? 'э' : 'е')
       i += 1
     } else if (c === "'") {
       out += 'ъ'

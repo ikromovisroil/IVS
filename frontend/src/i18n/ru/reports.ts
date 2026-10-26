@@ -64,8 +64,6 @@ const ru: Record<string, string> = {
   // Hujjat tahrirlagichi (DocEditor)
   'Hujjat matni': 'Текст документа',
   "Qo'lda tahrirlash": 'Ручное редактирование',
-  'Matnni formatlash': 'Форматирование текста',
-  'Chop etish': 'Печать',
   Qaytarish: 'Повторить',
   Qalin: 'Полужирный',
   Kursiv: 'Курсив',

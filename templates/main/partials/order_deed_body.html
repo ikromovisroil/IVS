@@ -64,7 +64,7 @@
                         <strong>quyidagi sarf materiallari, ehtiyot qismlar va uskunalar o‘rnatildi:</strong>
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
-                          <strong>{{ order.sender.organization.contract|default:"_" }}ga muvofiq</strong>
+                          {% if order.sender.organization.contract %}<strong>{{ order.sender.organization.contract }}ga muvofiq</strong>{% endif %}
                       </td>
                     </tr>
                   </tbody>

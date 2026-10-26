@@ -8,7 +8,7 @@ import type { ReportForm, ReportsMeta } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { esc, shortenFullName, todayDmy } from './format'
+import { esc, isoDate, lowerFirst, quarterOfDate, shortenFullName, todayDmy } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { DOCUMENT_TEMPLATE } from './templates'
@@ -27,8 +27,6 @@ const GROUP_TITLES: Record<string, string> = {
   '1': "1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish: (1-ilova varoqda)",
   '2': "2. Server, umumiy va ma’lumot almashiladigan tarmoqlarga texnik va tizimli xizmat ko‘rsatish:",
 }
-
-const QUARTERS = ['I', 'II', 'III', 'IV'].map((q) => ({ value: q, label: q }))
 
 function contractRows(c: Contract): string {
   const isPC = c.contract_id === 1
@@ -75,7 +73,6 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
   const [org, setOrg] = useState<number | null>(null)
   const [region, setRegion] = useState<number | null>(regions.length === 1 ? regions[0].id : null)
   const [dep, setDep] = useState<number | null>(null)
-  const [rim, setRim] = useState<string | null>(null)
   const [sender, setSender] = useState<number | null>(null)
   const [receiver, setReceiver] = useState<number | null>(null)
   const [agreements, setAgreements] = useState<number[]>([])
@@ -95,28 +92,32 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
   const agreementObjs = (negotiators.data ?? []).filter((e) => agreements.includes(e.id))
   const agreementsKey = agreementObjs.map((e) => e.id).join(',')
 
-  // syncEditorTexts: sana, tashkilot/departament, chorak, shartnoma
+  // syncEditorTexts: sana, tashkilot/departament, shartnoma; yil va chorak — joriy sanadan (Sarf materialdagidek avtomatik)
   useEffect(() => {
     doc.setText('#doc_date, #doc_date2', `${todayDmy()} y.`)
     doc.setText('#org_name', orgName)
     doc.setText('#dep_id2', depName ? `${depName} bo'yicha` : '')
     doc.setText('#dep_name', depName)
-    doc.setText('#chorak', rim ?? '')
-    doc.setText('#date_contract', contract || "Shartnoma ma'lumoti kiritilmagan")
-  }, [doc, orgName, depName, rim, contract])
+    const q = quarterOfDate(isoDate(new Date()))
+    doc.setText('#year', q?.year ?? '')
+    doc.setText('#chorak', q?.quarter ?? '')
+    doc.setText('#date_contract', contract ? `${contract}ga asosan` : '')
+  }, [doc, orgName, depName, contract])
 
   const senderName = senderObj?.full_name ?? ''
   const senderRank = senderObj?.rank ?? ''
   useEffect(() => {
     doc.setText('#sender_name', senderName)
-    doc.setText('#sender_rank', senderRank.trim() || 'direktor')
+    doc.setText('#sender_rank', lowerFirst(senderRank))
   }, [doc, senderName, senderRank])
 
   const receiverName = receiverObj?.full_name ?? ''
   const receiverRank = receiverObj?.rank ?? ''
   useEffect(() => {
+    // Tashkilot → tanlangan xodimning lavozimi → ismi (xodim tanlanmaguncha hech narsa chiqmaydi)
     doc.setText('#receiver_name', receiverName)
-    doc.setText('#receiver_rank', receiverRank.trim() || "boshlig'i")
+    doc.setText('#receiver_comma', receiverName ? ',' : '')
+    doc.setText('#receiver_rank', lowerFirst(receiverRank))
   }, [doc, receiverName, receiverRank])
 
   // buildAgreementTables: imv_block — tashkilot vakili + shu tashkilot kelishuvchilari;
@@ -134,7 +135,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
     const block = (heading: string, rows: string) =>
       rows ? `<div>${heading}</div><div><table style="border-collapse:collapse;width:100%;"><colgroup><col style="width:50%;"><col style="width:50%;"></colgroup><tbody>${rows}</tbody></table></div>` : ''
     doc.setHTML('#imv_block', block(`<b>O‘zbekiston Respublikasi ${esc(orgName)} ${esc(depName)} vakili:</b>`, imv))
-    doc.setHTML('#ivs_block', block('<b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi ATM vakillari:</b>', ivs))
+    doc.setHTML('#ivs_block', block('<b>O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi ATM vakillari:</b>', ivs))
     // agreementObjs agreementsKey orqali kuzatiladi
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [doc, org, orgName, depName, senderName, senderRank, receiverName, receiverRank, agreementsKey, myRegion])
@@ -199,13 +200,12 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
                 setAgreements([])
               }}
             />
-            <Select label={t("Chorak")} placeholder={t("Tanlang...")} options={QUARTERS} searchable={false} value={rim} onChange={(v) => setRim(v == null ? null : String(v))} />
           </FilterCard>
 
           <SignCard
             kind="document"
             doc={doc}
-            fields={() => ({ organization: org, region, department: dep, rim_id: rim, sender, receiver, 'agreements[]': agreements, attachments: files })}
+            fields={() => ({ organization: org, region, department: dep, sender, receiver, 'agreements[]': agreements, attachments: files })}
           >
             <Select label={t("Xizmat ko'rsatuvchining vakili")} placeholder={t("Tanlang...")} options={empOptions(form.senders)} value={sender} onChange={(v) => setSender(toId(v))} />
             <Select

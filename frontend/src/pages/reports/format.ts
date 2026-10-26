@@ -28,18 +28,18 @@ export function monthRange(): { date1: string; date2: string } {
 
 const MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr']
 
-/** "2026 yil avgust oyi uchun" / "2026 yil iyul-avgust oylari uchun" / "2025 yil dekabr - 2026 yil yanvar oylari uchun" */
+/** "2026-yil avgust oyi uchun" / "2026-yil iyul-avgust oylari uchun" / "2025-yil dekabr - 2026-yil yanvar oylari uchun" */
 export function formatMonthYearRange(date1: string, date2: string): string {
   const now = new Date()
-  const fallback = `${now.getFullYear()} yil ${MONTHS[now.getMonth()]} oyi uchun`
+  const fallback = `${now.getFullYear()}-yil ${MONTHS[now.getMonth()]} oyi uchun`
   if (!date1 || !date2) return fallback
   const d1 = new Date(date1)
   const d2 = new Date(date2)
   if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return fallback
   const [y1, m1, y2, m2] = [d1.getFullYear(), d1.getMonth(), d2.getFullYear(), d2.getMonth()]
-  if (y1 === y2 && m1 === m2) return `${y1} yil ${MONTHS[m1]} oyi uchun`
-  if (y1 === y2) return `${y1} yil ${MONTHS[m1]}-${MONTHS[m2]} oylari uchun`
-  return `${y1} yil ${MONTHS[m1]} - ${y2} yil ${MONTHS[m2]} oylari uchun`
+  if (y1 === y2 && m1 === m2) return `${y1}-yil ${MONTHS[m1]} oyi uchun`
+  if (y1 === y2) return `${y1}-yil ${MONTHS[m1]}-${MONTHS[m2]} oylari uchun`
+  return `${y1}-yil ${MONTHS[m1]} - ${y2}-yil ${MONTHS[m2]} oylari uchun`
 }
 
 /** Svod/Reestr/Sarf: 1234567.5 → "1 234 567,50", 15000 → "15 000" */
@@ -67,6 +67,16 @@ export function formatNumberAkt(value: unknown): string {
   const sign = rawInt.startsWith('-') ? '-' : ''
   const int = rawInt.replace('-', '').replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
   return hasFraction ? `${sign}${int},${frac}` : `${sign}${int}`
+}
+
+/** Hujjat matnida o'zbekcha apostroflar yagona: o‘ va g‘ (U+2018), tutuq belgisi ’ (U+2019). */
+export function normalizeApostrophes(text: string): string {
+  return text.replace(/(?<=[oOgG])['ʻʼ’‘`´](?=[A-Za-z])/g, '‘').replace(/(?<=[aeiuAEIU])['ʻʼ‘`´](?=[A-Za-z])/g, '’')
+}
+
+/** Xuddi shu qoida HTML uchun: faqat matn qismida (teg va atributlarga tegmaydi). */
+export function normalizeApostrophesHtml(html: string): string {
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (_, tag: string | undefined, txt: string | undefined) => (tag ? tag : normalizeApostrophes(txt ?? '')))
 }
 
 /** Pul: doim 2 xonali tiyin — 15000 → "15 000,00" */

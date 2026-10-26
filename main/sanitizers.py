@@ -1,5 +1,24 @@
+import re
+
 import bleach
 from bleach.css_sanitizer import CSSSanitizer
+
+# Hujjat matnida o'zbekcha apostroflar yagona: o‘ va g‘ (U+2018), tutuq belgisi ’ (U+2019).
+_APOS = "'ʻʼ‘’`´"
+_TAG_OR_TEXT = re.compile(r"(<[^>]*>)|([^<]+)")
+_OG = re.compile(rf"(?<=[oOgG])[{_APOS}](?=[A-Za-z])")
+_TUTUQ = re.compile(rf"(?<=[aeiuAEIU])[{_APOS}](?=[A-Za-z])")
+
+
+def normalize_uz_apostrophes(html):
+    """Faqat matn qismida (teg va atributlarga tegmasdan): o'/g' -> o‘/g‘, a'/e'/i'/u' -> a’."""
+    def fix(m):
+        if m.group(1):
+            return m.group(1)
+        text = _OG.sub("‘", m.group(2))
+        return _TUTUQ.sub("’", text)
+    return _TAG_OR_TEXT.sub(fix, html or "")
+
 
 
 ALLOWED_DEED_TAGS = [
@@ -43,4 +62,4 @@ def sanitize_deed_body(raw_html):
         strip=True,
         protocols=["http", "https", "mailto"],
     )
-    return cleaner.clean(raw_html)
+    return normalize_uz_apostrophes(cleaner.clean(raw_html))

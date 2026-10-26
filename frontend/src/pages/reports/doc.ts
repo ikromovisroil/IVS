@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
 import { htmlOf } from '../../components/richText'
+import { normalizeApostrophes, normalizeApostrophesHtml } from './format'
 
 /**
  * Hujjat matni (eski sahifalardagi TinyMCE o'rnida). Shablon bir marta yoziladi, keyin sahifa uni id bo'yicha
@@ -21,8 +22,8 @@ export function useDoc(): DocApi {
     const all = (selector: string) => Array.from(ref.current?.querySelectorAll<HTMLElement>(selector) ?? [])
     return {
       ref,
-      setText: (selector, text) => all(selector).forEach((el) => (el.textContent = text)),
-      setHTML: (selector, html) => all(selector).forEach((el) => (el.innerHTML = html)),
+      setText: (selector, text) => all(selector).forEach((el) => (el.textContent = normalizeApostrophes(text))),
+      setHTML: (selector, html) => all(selector).forEach((el) => (el.innerHTML = normalizeApostrophesHtml(html))),
       html: () => htmlOf(ref.current),
     }
   }, [])

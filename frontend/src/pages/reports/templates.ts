@@ -19,9 +19,9 @@ const th = (text: string, extra = '', bold = true) =>
   `<td style="border:1px solid #000;font-size:8pt;text-align:center;${bold ? 'font-weight:bold;' : ''}"${extra}>${text}</td>`
 
 const TASDIQLAYMAN_SVOD = `<b>"Tasdiqlayman"<br>
-  O‘zbekiston Respublikasi<br>
-  Iqtisodiyot va moliya vazirligi huzuridagi<br>
-  “Axborot texnologiyalari markazi” DUK<br>
+  “O‘zbekiston Respublikasi<br>
+  Iqtisodiyot va Moliya vazirligi huzuridagi<br>
+  Axborot texnologiyalari markazi” DUK<br>
   Direktori<br>
   Xujamqulov F.B.<br>
 </b>
@@ -41,17 +41,17 @@ export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
     <span id="org_name"></span>
     <span id="dep_name"></span>
     <span id="receiver_rank"></span>
-    <b id="receiver_name"></b>,
-    va O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
-    huzuridagi Axborot texnologiyalari markazi
-    <span id="sender_rank"></span>i
+    <b id="receiver_name"></b><span id="receiver_comma"></span>
+    va “O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi
+    huzuridagi Axborot texnologiyalari markazi” DUK
+    <span id="sender_rank"></span>
     <b id="sender_name"></b>:
     O‘zbekiston Respublikasi <span id="org_name"></span> hamda
-    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
+    O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi
     huzuridagi Axborot texnologiyalari markazlari tomonidan
-    <b><span id="date_contract"></span>ga asosan</b>
+    <b><span id="date_contract"></span></b>
     <span id="dep_id2"></span>
-    2026 yil <span id="chorak"></span> chorak uchun quyidagi
+    <span id="year"></span>-yil <span id="chorak"></span> chorak uchun quyidagi
     ishlar va xizmatlar bajarildi.
     Ishlar texnologik xaritaga muvofiq amalga oshirildi.
   </div>
@@ -60,7 +60,7 @@ export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
   <div></div><div></div><div></div>
   ${signRow(
     `<b>O‘zbekiston Respublikasi <span id="org_name"></span> <span id="dep_name"></span> <span id="receiver_rank"></span></b><br><br><b id="receiver_name"></b>`,
-    `<b>O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi <span id="sender_rank"></span>i </b><br><br><b id="sender_name"></b>`,
+    `<b>“O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK <span id="sender_rank"></span></b><br><br><b id="sender_name"></b>`,
     'center',
   )}
   <div style="page-break-after:always;"></div>
@@ -96,7 +96,7 @@ export const SVOD_TEMPLATE = `<div style="font-size:10pt;">
     </table>
   </div><br>
   <div style="text-align:left;"><b id="blok_summa_soz"> </b></div><br>
-  <div style="text-align:left;"><b><span id="date_contract">_</span>ga muvofiq</b></div>
+  <div style="text-align:left;"><b><span id="date_contract"></span></b></div>
   ${COMMON_SIGNERS}
   <div id="responsible_employees_block">
     <table style="border-collapse:collapse;width:100%;">${SIGN_COLS}<tbody id="responsible_employees_tbody"></tbody></table>
@@ -127,7 +127,7 @@ export const REESTR_TEMPLATE = `<div style="font-size:10pt;">
     </table>
   </div><br>
   <div style="text-align:left;"><b id="blok_summa_soz"> </b></div><br>
-  <div style="text-align:left;"><b><span id="date_contract">_</span></b></div>
+  <div style="text-align:left;"><b><span id="date_contract"></span></b></div>
   ${COMMON_SIGNERS}
   <div><table style="border-collapse:collapse;width:100%;">${SIGN_COLS}<tbody id="service_employees_tbody"></tbody></table></div>
 </div>`
@@ -152,7 +152,7 @@ export function aktTemplate(userName: string, userRank: string): string {
   <div style="text-align:center;"><b><u>${esc(userName)} (${esc(userRank)})</u></b></div>
   <div style="text-align:center;font-size:8pt;">(F.I.Sh., ATM mutaxassisining lavozimi)</div>
   ${signRow(
-    `<span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va moliya vazirligi</span> tashkiloti vakili:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
+    `<span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va Moliya vazirligi</span> tashkiloti vakili:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
     `<span id="dep_id">Muvofiqlashtirish va axborot-tahlil departamenti</span><br><span>ushbu dalolatnoma quyidagi ishlar bajarilganligi uchun tuzilgan:</span>`,
     'center',
   )}
@@ -162,7 +162,7 @@ export function aktTemplate(userName: string, userRank: string): string {
   </div>
   <div style="margin-top:10px;">${signRow(
     '<strong>Iqtisodiyot va Moliya vazirligi huzuridagi ATM tomonidan</strong><br><strong>quyidagi sarf materiallari, ehtiyot qismlar va uskunalar o‘rnatildi:</strong>',
-    '<strong><span id="date_contract">_</span>ga muvofiq</strong>',
+    '<strong><span id="date_contract"></span></strong>',
     'center',
   )}</div>
   <div>
@@ -183,7 +183,7 @@ export function aktTemplate(userName: string, userRank: string): string {
 }
 
 // ─── Sarf materiallar (service.html) ───
-export const DUK_NAME = '“O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK'
+export const DUK_NAME = '“O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK'
 
 const COMMISSION: [string, string][] = [
   ['Bo‘lim boshlig‘i Bosh buxgalter', 'N. Ergasheva'],
@@ -200,16 +200,16 @@ export function serviceTemplate(year: string | number, quarter: string, regionNa
   return `<div style="font-size:10pt;">
   ${signRow(
     '',
-    `<b>"Tasdiqlayman"<br>“O‘zbekiston Respublikasi<br>Iqtisodiyot va moliya vazirligi huzuridagi<br>Axborot texnologiyalari markazi” DUK<br>Direktori<br>F. Xujamqulov<br></b><b id="doc_date">__.__.____ y.</b>`,
+    `<b>"Tasdiqlayman"<br>“O‘zbekiston Respublikasi<br>Iqtisodiyot va Moliya vazirligi huzuridagi<br>Axborot texnologiyalari markazi” DUK<br>Direktori<br>F. Xujamqulov<br></b><b id="doc_date">__.__.____ y.</b>`,
     'center',
   )}<br><br>
   <div style="text-align:center; font-size:12pt;"><b>
-    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi infratuzilmasini qo‘llab-quvvatlashda<br>
+    O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi infratuzilmasini qo‘llab-quvvatlashda<br>
     ishning bajarilish jarayonidagi uskuna va materiallarni hisobdan chiqarish bo‘yicha</b></div>
   <div style="text-align:center;"><b>DALOLATNOMA</b></div>
-  <div style="text-align:center;"><b><span id="year">${esc(year)}</span> yil <span id="chorak">${esc(quarter)}</span> - chorak uchun</b></div><br>
+  <div style="text-align:center;"><b><span id="year">${esc(year)}</span>-yil <span id="chorak">${esc(quarter)}</span> - chorak uchun</b></div><br>
   <div style="text-align:justify; text-indent:1.25cm;">
-    Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi”
+    Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalari markazi”
     DUKning moddiy boyliklarini hisobdan chiqarish bo‘yicha doimiy komissiya raisi: Direktorning o‘rinbosari N. Nazarov, komissiya a’zolari:
     Bo‘lim boshlig‘i Bosh buxgalter N. Ergasheva, bosh buxgalter o‘rinbosari G. Hatamova, boshqarma boshlig‘i A. Narzullayev,
     bo‘lim boshlig‘i I. Xabirov, boshqarma boshlig‘i O. Abduqodirov, boshqarma boshlig‘i U. Muxtorov,

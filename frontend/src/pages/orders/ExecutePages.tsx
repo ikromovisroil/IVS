@@ -2,7 +2,7 @@ import { useCallback, useState } from 'react'
 import EmptyState from '../../components/EmptyState'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Button, Select } from '../../ds'
+import { Button, Select, StatusChip } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToast } from '../../components/toast'
@@ -326,11 +326,11 @@ export function ExecuteArchivePage() {
         render: (r) =>
           r.deeds.length ? (
             r.deeds[0].file ? (
-              <Button variant="ghost" size="sm" icon="ri-file-pdf-2-line" onClick={() => openPdf(r.deeds[0].file!, t('Yuborilgan'))}>
+              <Button variant="stroke" size="sm" icon="ri-file-pdf-2-line" onClick={() => openPdf(r.deeds[0].file!, t('Yuborilgan'))}>
                 {t('Yuborilgan')}
               </Button>
             ) : (
-              <span className="type-para-sm ivs-orders-muted">{t('Yuborilgan')}</span>
+              <StatusChip status="completed">{t('Yuborilgan')}</StatusChip>
             )
           ) : r.materials.length ? (
             <Button variant="success" size="sm" icon="ri-send-plane-fill" onClick={() => navigate(`/orders/execute/archive/${r.id}/deed`)}>

@@ -110,13 +110,13 @@ function SvodPage({ form, doc }: { form: ReportForm; doc: DocApi }) {
       .filter((o) => orgs.includes(o.id))
       .map((o) => (o.contract || '').trim())
       .filter(Boolean)
-      .join(', ') || '_'
+      .join(', ')
 
   // updateEditorWithSelections
   useEffect(() => {
     doc.setText('#doc_date', `${todayDmy()} y.`)
     doc.setText('#report_period', formatMonthYearRange(date1, date2))
-    doc.setText('#date_contract', contractText)
+    doc.setText('#date_contract', contractText ? `${contractText}ga muvofiq` : '')
   }, [doc, date1, date2, contractText, region])
 
   const search = async () => {

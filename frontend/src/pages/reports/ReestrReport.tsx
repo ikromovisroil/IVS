@@ -107,7 +107,7 @@ function ReestrPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; 
   useEffect(() => {
     doc.setText('#org_id', orgObj?.name || 'Tashkilot')
     doc.setText('#reg_id', regionName)
-    doc.setText('#date_contract', orgObj?.contract?.trim() ? orgObj.contract : '_')
+    doc.setText('#date_contract', orgObj?.contract?.trim() ?? '')
     doc.setText('#report_period', formatMonthYearRange(date1, date2))
   }, [doc, orgObj, regionName, date1, date2])
 
