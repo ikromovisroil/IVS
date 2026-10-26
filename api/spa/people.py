@@ -239,7 +239,8 @@ class FilesFiltersView(APIView):
 class FilesView(APIView):
     """
     "Hujjatlar" qidiruvi — main/views.py: files() bilan bir xil: xodim profili bo'lgan har kim; hech bir filtr
-    berilmasa bo'sh ro'yxat. Filtrlar: name (F.I.O / kod / ariza raqami), organization, region, status, date1, date2.
+    berilmasa bo'sh ro'yxat. Filtrlar: name (F.I.O / kod / ariza raqami), organization, region, status (hujjat turi),
+    overall (holati: approved | rejected | pending), date1, date2.
     """
 
     permission_classes = [permissions.IsAuthenticated]
@@ -253,9 +254,12 @@ class FilesView(APIView):
         status = (p.get("status") or "").strip()
         region_id = (p.get("region") or "").strip()
         org_id = (p.get("organization") or "").strip()
+        overall = (p.get("overall") or "").strip()
+        if overall not in ("approved", "rejected", "pending"):
+            overall = ""
 
         qs = Deed.objects.none()
-        if name or date1 or date2 or status or region_id or org_id:
+        if name or date1 or date2 or status or region_id or org_id or overall:
             qs = (
                 Deed.objects.distinct()
                 .select_related(
@@ -290,6 +294,19 @@ class FilesView(APIView):
                 qs = qs.filter(user_region_id=int(region_id) if region_id.isdigit() else None)
             if status:
                 qs = qs.filter(status=status)
+            if overall:
+                # _overall() bilan bir xil qoida
+                rejected = Q(status_sender="rejected") | Q(receiver__isnull=False, status_receiver="rejected")
+                approved = (
+                    Q(receiver__isnull=True, status_sender="approved")
+                    | Q(receiver__isnull=False, status_sender="approved", status_receiver="approved")
+                )
+                if overall == "rejected":
+                    qs = qs.filter(rejected)
+                elif overall == "approved":
+                    qs = qs.exclude(rejected).filter(approved)
+                else:
+                    qs = qs.exclude(rejected).exclude(approved)
             for value, lookup in ((date1, "date_creat__date__gte"), (date2, "date_creat__date__lte")):
                 if value:
                     try:

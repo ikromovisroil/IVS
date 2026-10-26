@@ -176,7 +176,7 @@ export function AttachDeviceDialog({ t: item, me, onClose }: { t: TechnicsRow; m
       onClose={onClose}
       icon="ri-pushpin-line"
       title="Qurilmani biriktirish"
-      width={560}
+      width={760}
       footer={
         <>
           <Button variant="stroke" size="lg" onClick={onClose}>
@@ -218,7 +218,7 @@ export function DetachDeviceDialog({ t: item, onClose }: { t: TechnicsRow; onClo
       onClose={onClose}
       icon="ri-close-circle-line"
       title="Qurilmani bekor qilish"
-      width={560}
+      width={760}
       footer={
         <>
           <Button variant="stroke" size="lg" onClick={onClose}>

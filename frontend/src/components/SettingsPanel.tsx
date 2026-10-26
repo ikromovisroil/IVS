@@ -85,7 +85,7 @@ export default function SettingsPanel({ open, onClose }: Props) {
                 {t('Til')}
               </h3>
             </div>
-            <div className="ivs-sp-options is-two" role="radiogroup" aria-labelledby={`${titleId}-lang`}>
+            <div className="ivs-sp-options" role="radiogroup" aria-labelledby={`${titleId}-lang`}>
               {LANGS.map((l) => (
                 <button
                   key={l.value}

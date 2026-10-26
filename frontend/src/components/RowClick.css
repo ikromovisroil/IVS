@@ -1,0 +1,3 @@
+/* Bosiladigan jadval qatorlari (RowClick) */
+.ivs-row-link tbody tr { cursor: pointer; }
+.ivs-row-link tbody tr:hover td { background: var(--bg-weak-50); }

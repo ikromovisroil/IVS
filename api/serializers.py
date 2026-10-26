@@ -394,6 +394,24 @@ class MaterialCreateUpdateSerializer(serializers.ModelSerializer):
     def validate_year(self, value):
         return (value or "").strip() or None
 
+    def validate(self, attrs):
+        """1C kodi: bitta xodimda bitta kod faqat bir marta bo'lishi mumkin (faol materiallar orasida)."""
+        code = attrs.get('code')
+        if code:
+            if self.instance is not None:
+                owner_id = self.instance.employee_id
+            else:
+                owner_id = getattr(getattr(getattr(self.context.get('request'), 'user', None), 'employee', None), 'id', None)
+            duplicate = Material.objects.filter(employee_id=owner_id, code=code, is_active=True)
+            if self.instance is not None:
+                duplicate = duplicate.exclude(pk=self.instance.pk)
+            found = duplicate.first() if owner_id else None
+            if found:
+                raise serializers.ValidationError(
+                    {"code": f"Bu 1C kodi ({code}) xodimda allaqachon mavjud: «{found.name}». Bitta kod bitta materialga tegishli."}
+                )
+        return attrs
+
     def validate_price(self, value):
         if value is not None and value < 0:
             raise serializers.ValidationError("Narx manfiy bo'lishi mumkin emas")
@@ -577,6 +595,7 @@ class OrderFinishSerializer(serializers.Serializer):
     """Arizani yakunlash: texnika (ixtiyoriy) va (ATM arizasi uchun) berilgan materiallar ro'yxati."""
     technics_id = serializers.IntegerField(required=False, allow_null=True, default=None)
     materials = OrderMaterialAddSerializer(many=True, required=False)
+    message = serializers.CharField(required=False, allow_blank=True, max_length=2000)   # bajaruvchi izohi
     # Material arizasi (omborxona) uchun: arizadagi har bir material bo'yicha beriladigan son
     items = OrderGivenItemSerializer(many=True, required=False)
     date = serializers.CharField(
@@ -588,6 +607,12 @@ class OrderFinishSerializer(serializers.Serializer):
 class OrderAcceptSerializer(serializers.Serializer):
     """ATM arizasini qabul qilish: ijrochini faqat superuser tanlay oladi."""
     receiver = serializers.PrimaryKeyRelatedField(queryset=Employee.objects.all(), required=False)
+    message = serializers.CharField(required=False, allow_blank=True, max_length=2000)
+
+
+class OrderDismissSerializer(serializers.Serializer):
+    """ATM arizasini bajaruvchi rad etishi: sabab (izoh) ixtiyoriy."""
+    message = serializers.CharField(required=False, allow_blank=True, max_length=2000)
 
 
 class OrderDecideSerializer(serializers.Serializer):

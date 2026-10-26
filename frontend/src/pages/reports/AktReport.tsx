@@ -45,7 +45,7 @@ function aktRows(data: AktItem[]): string {
       return (
         '<tr>' +
         [
-          String(i + 1),
+          `${i + 1}.`,
           esc(it.order__technics__name || '-'),
           esc(it.order__technics__serial || '-'),
           esc(it.material__name || '-'),
@@ -90,7 +90,7 @@ function AktPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; doc
   const regionOptions = [...(form.has_full_region ? [{ value: 'all', label: t('Barcha hududlar') }] : []), ...regions.map((r) => ({ value: String(r.id), label: r.name }))]
 
   useEffect(() => {
-    doc.setText('#doc_date', `${todayDmy()} y`)
+    doc.setText('#doc_date', `${todayDmy()} y.`)
   }, [doc])
 
   // updateEditorWithSelections
@@ -111,7 +111,7 @@ function AktPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; doc
       toast("Iltimos, tashkilot, hudud va sanalarni to'liq tanlang!", 'error')
       return
     }
-    doc.setText('#doc_date', `${todayDmy()} y`)
+    doc.setText('#doc_date', `${todayDmy()} y.`)
     const setRows = (rows: string) => doc.setHTML('#materials_tbody', AKT_HEADER_ROWS + rows)
     doc.setText('#blok_summa_soz', '')
     setRows(`<tr><td colspan="11" style="text-align:center;padding:20px;"><i>Yuklanmoqda...</i></td></tr>`)

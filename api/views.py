@@ -1,3 +1,4 @@
+import html
 import logging
 from datetime import datetime
 from decimal import Decimal
@@ -1122,20 +1123,29 @@ class MaterialViewSet(viewsets.ModelViewSet):
                     if not dst.unit_id and src.unit_id:
                         dst.unit = src.unit
                     dst.is_active = True
+                    fields = ["number", "price", "unit", "is_active"]
+                    if not dst.category_id and src.category_id:
+                        dst.category_id = src.category_id
+                        fields.append("category")
+                    if not dst.image and src.image:
+                        dst.image = src.image
+                        fields.append("image")
 
-                    dst.save(update_fields=["number", "price", "unit", "is_active"])
+                    dst.save(update_fields=fields)
                     dst_material = dst
                 else:
                     dst_qty_before = 0
                     dst_material = Material.objects.create(
                         organization=emp.organization,
                         employee=emp,
+                        category_id=src.category_id,
                         name=src.name,
                         code=src.code,
                         number=give_number_int,
                         unit=src.unit,
                         price=src.price,
                         year=src.year,
+                        image=src.image,
                     )
 
                 src.number = src_qty - give_number_int
@@ -1288,6 +1298,8 @@ class OrderViewSet(
             return OrderConfirmSerializer
         if self.action == 'accept':
             return OrderAcceptSerializer
+        if self.action == 'reject':
+            return OrderDismissSerializer
         return OrderSerializer
 
     def _base_queryset(self):
@@ -1491,7 +1503,12 @@ class OrderViewSet(
                 raise ValidationError({"detail": msg})
             order.status = "process"
             order.receiver = assignee
-            order.save(update_fields=["status", "receiver"])
+            fields = ["status", "receiver"]
+            note = (serializer.validated_data.get('message') or '').strip()
+            if note:
+                order.message_receiver = note
+                fields.append("message_receiver")
+            order.save(update_fields=fields)
 
         self._best_effort(notify_order_status_change, order)
         time_str = timezone.localtime(timezone.now()).strftime('%Y.%m.%d %H:%M:%S')
@@ -1626,7 +1643,12 @@ class OrderViewSet(
                 ])
 
             order.status = "finished"
-            order.save(update_fields=["status", "technics_id"])
+            fields = ["status", "technics_id"]
+            note = (serializer.validated_data.get('message') or '').strip()
+            if note:
+                order.message_receiver = f"{order.message_receiver}\n{note}" if order.message_receiver else note
+                fields.append("message_receiver")
+            order.save(update_fields=fields)
 
         self._best_effort(notify_order_status_change, order)
         if order.sender_id and order.sender.telegram_chat:
@@ -1918,10 +1940,55 @@ class OrderViewSet(
     @swagger_auto_schema(request_body=no_body, responses={200: OrderSerializer()})
     @action(detail=True, methods=['post'], url_path='reject')
     def reject(self, request, pk=None):
-        """Material arizasini rad etish (omborxonachi, change_order): POST /api/orders/{id}/reject/"""
-        if self._goal_type(pk) != 'client':
-            raise ValidationError({"detail": "Faqat material arizasi uchun"})
+        """
+        Material arizasini rad etish (omborxonachi, change_order): POST /api/orders/{id}/reject/
+        ATM arizasi: bajaruvchi yangi arizani e'tiborsiz qoldiradi (rad etadi); {"message": sabab?}
+        """
+        if self._goal_type(pk) == 'worker':
+            return self._worker_dismiss(request, pk, "rejected")
         return self._barn_review(request, pk, "rejected")
+
+    def _worker_dismiss(self, request, pk, new_status):
+        """Yangi (hech kimga biriktirilmagan) ATM arizasini bajaruvchi rad etadi: ko'rib chiqqan bajaruvchida arxivlanadi.
+        (Bekor qilish — faqat yuboruvchi: decide.)"""
+        employee = self._employee()
+        if not request.user.has_perm("main.change_order"):
+            raise PermissionDenied("Sizga ruxsat yo'q")
+        self._receiver_guard(employee)
+        serializer = OrderDismissSerializer(data=request.data or {})
+        serializer.is_valid(raise_exception=True)
+        note = (serializer.validated_data.get('message') or '').strip() or None
+
+        goal_ids = set(
+            OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
+        )
+        msg = "Bu arizani rad etish huquqingiz yo'q yoki u allaqachon qabul qilingan"
+        with transaction.atomic():
+            order = get_object_or_404(
+                Order.objects.select_for_update(of=("self",)).select_related("goal__organization", "sender"), pk=pk
+            )
+            if not (
+                order.status == "viewed" and order.receiver_id is None and order.goal_id in goal_ids
+                and order.goal.organization.type == "worker" and order.sender_id is not None
+                and order.sender_region_id == employee.region_id
+            ):
+                raise ValidationError({"detail": msg})
+            order.status = new_status
+            order.receiver = employee
+            order.message_receiver = note
+            order.sender_seen = False
+            order.save(update_fields=["status", "receiver", "message_receiver", "sender_seen"])
+
+        self._best_effort(notify_order_status_change, order)
+        if order.sender_id and order.sender.telegram_chat:
+            text = (f"<b>🔔 Yangi bildirishnoma</b>\n\n❌ ATMga yuborgan #{order.id} - arizangiz rad etildi.\n"
+                    f"👤 <b>Ko'rib chiqdi:</b> {employee.full_name}\n")
+            if note:
+                text += f"💬 <b>Sabab:</b> {html.escape(note)}\n"
+            self._best_effort(send_telegram_message, order.sender.telegram_chat, text)
+
+        order = self._base_queryset().get(pk=order.pk)
+        return Response(OrderSerializer(order, context=self.get_serializer_context()).data)
 
     @staticmethod
     def _give_changes(items, order_materials, order, giver, sender, allow_zero, tag):
@@ -2364,6 +2431,39 @@ class DeedViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Upd
             return qs.filter(
                 Q(sender_id=me.id, status_sender__in=done) | Q(receiver_id=me.id, status_receiver__in=done)
             )
+        # --- sayt (SPA) "Xabarlar": imzolanmagan / imzolangan / rad etilgan o'zaro kesishmaydi ---
+        if role in ("created_open", "created_signed", "created_rejected"):
+            rejected_consent = DeedConsent.objects.filter(deed_id=OuterRef("pk"), status="rejected")
+            pending = DeedConsent.objects.filter(deed_id=OuterRef("pk"), status="viewed")
+            qs = qs.filter(user=me).annotate(
+                has_rejected=Exists(rejected_consent), has_pending_consent=Exists(pending),
+            )
+            rejected = Q(status_sender="rejected") | Q(receiver__isnull=False, status_receiver="rejected") | Q(has_rejected=True)
+            if role == "created_rejected":
+                return qs.filter(rejected)
+            qs = qs.exclude(rejected)
+            if role == "created_open":
+                return qs.filter(
+                    Q(receiver__isnull=True, status_sender="viewed") |
+                    Q(receiver__isnull=False) & (Q(status_sender="viewed") | Q(status_receiver="viewed")) |
+                    Q(has_pending_consent=True)
+                )
+            return qs.filter(
+                Q(receiver__isnull=True, status_sender="approved") |
+                Q(receiver__isnull=False, status_sender="approved", status_receiver="approved")
+            ).filter(has_pending_consent=False)
+        if role == "signed_ok":
+            return qs.filter(
+                Q(sender_id=me.id, status_sender="approved") | Q(receiver_id=me.id, status_receiver="approved")
+            )
+        if role == "signed_rejected":
+            return qs.filter(
+                Q(sender_id=me.id, status_sender="rejected") | Q(receiver_id=me.id, status_receiver="rejected")
+            )
+        if role == "agreed_ok":
+            return qs.filter(deedconsent__employee_id=me.id, deedconsent__status="approved")
+        if role == "agreed_rejected":
+            return qs.filter(deedconsent__employee_id=me.id, deedconsent__status="rejected")
         if role == "to_agree":
             return qs.filter(deedconsent__employee_id=me.id, deedconsent__status="viewed")
         if role == "agreed":

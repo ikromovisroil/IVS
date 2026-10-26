@@ -75,6 +75,47 @@ class OrdersSpaTests(TestCase):
         new = Order.objects.create(sender=self.sender, goal=self.goal, status="viewed")
         self.assertEqual(client(self.worker_user).get(f"{BASE}/{new.id}/").status_code, 200)
 
+    # ---------- yangi arizani qabul qilish / rad etish (izoh bilan) ----------
+
+    API = "/api/v1/orders"
+
+    def post(self, user, order, action, data=None):
+        return client(user).post(f"{self.API}/{order.id}/{action}/", data or {}, format="json")
+
+    def test_accept_saves_comment(self):
+        new = Order.objects.create(sender=self.sender, goal=self.goal, status="viewed")
+        r = self.post(self.worker_user, new, "accept", {"message": "Ertaga boraman"})
+        self.assertEqual(r.status_code, 200, r.data)
+        new.refresh_from_db()
+        self.assertEqual((new.status, new.receiver_id, new.message_receiver), ("process", self.worker.id, "Ertaga boraman"))
+
+    def test_reject_new_order_with_reason(self):
+        new = Order.objects.create(sender=self.sender, goal=self.goal, status="viewed")
+        r = self.post(self.worker_user, new, "reject", {"message": "Sabab"})
+        self.assertEqual(r.status_code, 200, r.data)
+        new.refresh_from_db()
+        self.assertEqual((new.status, new.receiver_id, new.message_receiver), ("rejected", self.worker.id, "Sabab"))
+        # qayta amal bajarib bo'lmaydi; bekor qilish ijrochi uchun yo'q
+        self.assertEqual(self.post(self.worker_user, new, "reject").status_code, 400)
+        self.assertEqual(self.post(self.worker_user, new, "cancel").status_code, 404)
+
+    def test_reject_new_order_only_by_eligible_worker(self):
+        new = Order.objects.create(sender=self.sender, goal=self.goal, status="viewed")
+        # kategoriyaga biriktirilmagan ATM xodimi / oddiy xodim
+        self.assertEqual(self.post(self.other_worker_user, new, "reject").status_code, 400)
+        self.assertEqual(self.post(self.stranger_user, new, "reject").status_code, 403)
+        new.refresh_from_db()
+        self.assertEqual(new.status, "viewed")
+
+    def test_reject_blocked_after_accept(self):
+        self.assertEqual(self.post(self.worker_user, self.order, "reject").status_code, 400)
+
+    def test_finish_comment_is_saved(self):
+        r = self.post(self.worker_user, self.order, "finish", {"message": "Almashtirildi"})
+        self.assertEqual(r.status_code, 200, r.data)
+        self.order.refresh_from_db()
+        self.assertEqual((self.order.status, self.order.message_receiver), ("finished", "Almashtirildi"))
+
     # ---------- texnikalar ----------
 
     def test_technics_of_sender_only_for_receiver(self):

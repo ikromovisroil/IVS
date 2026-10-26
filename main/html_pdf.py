@@ -39,6 +39,14 @@ _COMMON_CSS = """
         overflow-wrap: break-word;
         word-break: break-word;
     }
+    /* Hujjat bo'ylab bir xil shrift (jadval va ichki elementlar ham) */
+    body, table, td, th, div, span, p, b, strong, u, i {
+        font-family: "Times New Roman", "Liberation Serif", "Tinos", serif;
+    }
+    /* Jadval chiziqlari hamma joyda bir xil ingichka (1px dvigatelga qarab turlicha yaxlitlanadi) */
+    table td, table th {
+        border-width: 0.5pt !important;
+    }
 """
 
 

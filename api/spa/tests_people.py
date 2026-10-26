@@ -79,6 +79,27 @@ class PeopleSpaTests(TestCase):
         r = self.client.get("/api/v1/spa/people/files/", {"date1": "bad-date"})
         self.assertEqual(r.status_code, 200)
 
+    def test_files_filter_by_overall_state(self):
+        _, signer = make_employee(org=self.other, first="Bekzod", last="Tursunov")
+        ok = self._deed(status="act", sender=signer, status_sender="approved")
+        bad = self._deed(status="act", sender=signer, status_sender="rejected")
+        wait = self._deed(status="act", sender=signer)
+        half = self._deed(status="act", sender=signer, receiver=signer, status_sender="approved", status_receiver="viewed")
+        both = self._deed(status="act", sender=signer, receiver=signer, status_sender="approved", status_receiver="approved")
+
+        def ids(overall):
+            r = self.client.get("/api/v1/spa/people/files/", {"overall": overall})
+            self.assertEqual(r.status_code, 200)
+            for row in r.data["results"]:
+                self.assertEqual(row["overall"], overall)
+            return {x["id"] for x in r.data["results"]}
+
+        self.assertEqual(ids("approved"), {ok.id, both.id})
+        self.assertEqual(ids("rejected"), {bad.id})
+        self.assertEqual(ids("pending"), {wait.id, half.id})
+        # noto'g'ri qiymat — filtr berilmagandek (bo'sh ro'yxat)
+        self.assertEqual(self.client.get("/api/v1/spa/people/files/", {"overall": "x"}).data["count"], 0)
+
     def test_files_filters_refs(self):
         r = self.client.get("/api/v1/spa/people/files/filters/")
         self.assertEqual(r.status_code, 200)

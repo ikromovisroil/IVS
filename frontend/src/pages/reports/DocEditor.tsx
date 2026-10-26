@@ -19,6 +19,7 @@ function printHtml(html: string, landscape: boolean) {
       body { font-family: 'Times New Roman', serif; }
       table { border-collapse: collapse; width: 100%; table-layout: fixed; }
       tr { page-break-inside: avoid; } td { word-wrap: break-word; }
+      table td, table th { border-width: 0.5pt !important; }
     </style></head><body>${html}</body></html>`,
   )
   w.document.close()

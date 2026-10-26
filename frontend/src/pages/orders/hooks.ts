@@ -52,10 +52,11 @@ export interface FinishState {
 export function useFinish(id: number) {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (s: FinishState) =>
+    mutationFn: (s: FinishState & { message?: string }) =>
       api(`/orders/${id}/finish/`, {
         method: 'POST',
         body: JSON.stringify({
+          message: s.message || undefined,
           technics_id: s.technics,
           materials: s.rows.filter((r) => r.material != null).map((r) => ({ material_id: r.material, number: Number(r.number) || 1 })),
         }),

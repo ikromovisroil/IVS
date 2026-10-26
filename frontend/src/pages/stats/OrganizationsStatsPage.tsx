@@ -6,6 +6,7 @@ import { Button, CellUser, DataTable, Icon, Pagination, Widget } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import Page from '../../layout/Page'
 import Modal from '../../components/Modal'
+import RowClick from '../../components/RowClick'
 import { api, withQuery } from '../../api/client'
 import { avatarColor, formatNumber, initials } from '../../lib/format'
 import { useT } from '../../i18n'
@@ -147,11 +148,7 @@ export default function OrganizationsStatsPage() {
       label: t('Soni'),
       align: 'right',
       width: 96,
-      render: (r) => (
-        <Button variant="lighter" size="sm" iconRight="ri-arrow-right-s-line" title={t("Kategoriyalar bo'yicha ko'rish")} onClick={() => setOpenId(r.id)}>
-          {formatNumber(r.order_count)}
-        </Button>
-      ),
+      render: (r) => <b>{formatNumber(r.order_count)}</b>,
     },
   ]
 
@@ -196,15 +193,17 @@ export default function OrganizationsStatsPage() {
               <EmptyState icon="ri-search-line" title={data?.searched ? "Ma'lumot topilmadi" : 'Tashkilot va hududni tanlang'} />
             ) : (
               <>
-                <DataTable
-                  rows={rows}
-                  columns={columns}
-                  getRowId={(r) => r.id}
-                  rowHeight={56}
-                  minWidth={900}
-                  caption={t('Ariza bergan xodimlar')}
-                />
-                <p className="type-para-xs st-muted">{t("Kategoriyalar bo'yicha ko'rish uchun soni ustiga bosing.")}</p>
+                <RowClick rows={rows} onOpen={(r) => setOpenId(r.id)}>
+                  <DataTable
+                    rows={rows}
+                    columns={columns}
+                    getRowId={(r) => r.id}
+                    rowHeight={56}
+                    minWidth={900}
+                    caption={t('Ariza bergan xodimlar')}
+                  />
+                </RowClick>
+                <p className="type-para-xs st-muted">{t("Kategoriyalar bo'yicha ko'rish uchun qatorga bosing.")}</p>
               </>
             )}
             {pageCount > 1 && (

@@ -63,6 +63,9 @@ export function SignDialog({ deed, onClose }: Props) {
         width={560}
         footer={
           <>
+            <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
+              {t('Yopish')}
+            </Button>
             <Button variant="error-lighter" size="lg" icon="ri-close-circle-line" disabled={approve.isPending} onClick={() => setConfirmReject(true)}>
               {t('Rad etish')}
             </Button>
@@ -127,6 +130,9 @@ export function AgreeDialog({ deed, onClose }: Props) {
         width={560}
         footer={
           <>
+            <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
+              {t('Yopish')}
+            </Button>
             <Button variant="error-lighter" size="lg" icon="ri-close-circle-line" disabled={rejectBlocked} title={rejectBlocked ? t('Rad etish uchun izoh yozing') : undefined} onClick={() => setConfirm('reject')}>
               {t('Rad etish')}
             </Button>

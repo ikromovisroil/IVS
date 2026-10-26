@@ -7,3 +7,4 @@ class CoreConfig(AppConfig):
     def ready(self):
         import core.signals.audit_signals
         import core.signals.auth_audit
+        import core.signals.notification_signals

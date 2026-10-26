@@ -12,7 +12,7 @@ export default function SettingsProvider({ children }: { children: ReactNode }) 
   const [theme, setThemeState] = useState<Theme>(storedTheme)
 
   useEffect(() => {
-    document.documentElement.lang = lang === 'ru' ? 'ru' : 'uz'
+    document.documentElement.lang = lang === 'ru' ? 'ru' : lang === 'uzc' ? 'uz-Cyrl' : 'uz'
     setActiveLang(lang)
   }, [lang])
 

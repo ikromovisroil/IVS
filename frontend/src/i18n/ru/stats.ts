@@ -86,7 +86,7 @@ const ru: Record<string, string> = {
   'Yuborilgan arizalar': 'Отправленные заявки',
   '{n} ta xodim': 'Сотрудников: {n}',
   "Kategoriyalar bo'yicha ko'rish": 'Просмотр по категориям',
-  "Kategoriyalar bo'yicha ko'rish uchun soni ustiga bosing.": 'Нажмите на количество, чтобы увидеть разбивку по категориям.',
+  "Kategoriyalar bo'yicha ko'rish uchun qatorga bosing.": 'Нажмите на строку, чтобы увидеть разбивку по категориям.',
   'Ariza kategoriyasi': 'Категория заявки',
   'Ariza kategoriyalari': 'Категории заявок',
   'Kategoriyalar topilmadi': 'Категории не найдены',

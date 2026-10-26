@@ -1,7 +1,10 @@
 import type { PageTab } from '../../components/PageTabs'
 
 /** Ro'yxat turi — api/spa/messages.py: BOXES (eski contact_user, contact, contact_agrement va arxivlari) */
-export type Box = 'send' | 'send_archive' | 'sign' | 'sign_archive' | 'agree' | 'agree_archive'
+export type Box =
+  | 'send' | 'send_archive' | 'send_rejected'
+  | 'sign' | 'sign_archive' | 'sign_rejected'
+  | 'agree' | 'agree_archive' | 'agree_rejected'
 export type Group = 'send' | 'sign' | 'agree'
 
 export interface BoxConfig {
@@ -28,8 +31,16 @@ export const BOXES: Record<Box, BoxConfig> = {
     archive: true,
     path: '/messages/send/archive',
     title: 'Imzolashga yuborish',
-    subtitle: 'Siz yaratgan va imzolash yakunlangan hujjatlar.',
+    subtitle: 'Siz yaratgan va imzolangan hujjatlar.',
     empty: "Imzolangan hujjat yo'q.",
+  },
+  send_rejected: {
+    group: 'send',
+    archive: true,
+    path: '/messages/send/rejected',
+    title: 'Imzolashga yuborish',
+    subtitle: 'Siz yaratgan va rad etilgan hujjatlar.',
+    empty: "Rad etilgan hujjat yo'q.",
   },
   sign: {
     group: 'sign',
@@ -44,8 +55,16 @@ export const BOXES: Record<Box, BoxConfig> = {
     archive: true,
     path: '/messages/sign/archive',
     title: 'Imzolash uchun',
-    subtitle: 'Siz imzolagan yoki rad etgan hujjatlar.',
+    subtitle: 'Siz imzolagan hujjatlar.',
     empty: "Imzolangan hujjat yo'q.",
+  },
+  sign_rejected: {
+    group: 'sign',
+    archive: true,
+    path: '/messages/sign/rejected',
+    title: 'Imzolash uchun',
+    subtitle: 'Siz rad etgan hujjatlar.',
+    empty: "Rad etilgan hujjat yo'q.",
   },
   agree: {
     group: 'agree',
@@ -60,8 +79,16 @@ export const BOXES: Record<Box, BoxConfig> = {
     archive: true,
     path: '/messages/agree/archive',
     title: 'Kelishish uchun',
-    subtitle: 'Siz kelishgan yoki rad etgan hujjatlar.',
+    subtitle: 'Siz kelishgan hujjatlar.',
     empty: "Kelishilgan hujjat yo'q.",
+  },
+  agree_rejected: {
+    group: 'agree',
+    archive: true,
+    path: '/messages/agree/rejected',
+    title: 'Kelishish uchun',
+    subtitle: 'Siz rad etgan hujjatlar.',
+    empty: "Rad etilgan hujjat yo'q.",
   },
 }
 
@@ -74,11 +101,12 @@ export function groupTabs(counts?: { sign: number; agree: number }): PageTab[] {
   ]
 }
 
-/** Ichki tablar: Imzolanmagan / Imzolangan (Kelishilmagan / Kelishilgan) */
+/** Ichki tablar: Imzolanmagan / Imzolangan / Rad etilgan (Kelishilmagan / Kelishilgan / Rad etilgan) */
 export function archiveTabs(group: Group): PageTab[] {
   const agree = group === 'agree'
   return [
     { path: `/messages/${group}`, label: agree ? 'Kelishilmagan' : 'Imzolanmagan', icon: 'ri-time-line' },
     { path: `/messages/${group}/archive`, label: agree ? 'Kelishilgan' : 'Imzolangan', icon: 'ri-archive-line' },
+    { path: `/messages/${group}/rejected`, label: 'Rad etilgan', icon: 'ri-close-circle-line' },
   ]
 }

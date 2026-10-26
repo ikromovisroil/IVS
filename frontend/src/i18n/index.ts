@@ -4,12 +4,15 @@
 //   t('Qurilmalar: {n} ta', { n: 23 })    → "Устройств: 23"
 // Ruscha tarjima topilmasa o'zbekcha matn ko'rsatiladi (interfeys hech qachon bo'sh qolmaydi).
 // Lug'atlar: src/i18n/ru/*.ts — har bo'lim o'z faylida.
+// Ўзбекча (кирилл, 'uzc'): lug'at yo'q — lotin matn avtomatik o'giriladi (cyrillic.ts).
 import { createContext, useCallback, useContext } from 'react'
+import { toCyrillic } from './cyrillic'
 import { RU } from './ru'
 
-export type Lang = 'uz' | 'ru'
+export type Lang = 'uz' | 'uzc' | 'ru'
 export const LANGS: { value: Lang; label: string; short: string }[] = [
   { value: 'uz', label: "O'zbekcha", short: 'UZ' },
+  { value: 'uzc', label: 'Ўзбекча (кирилл)', short: 'ЎЗ' },
   { value: 'ru', label: 'Русский', short: 'RU' },
 ]
 
@@ -35,7 +38,8 @@ export function translate(lang: Lang, text: string, vars?: Vars): string {
     }
   }
   if (vars) out = out.replace(/\{(\w+)\}/g, (m, k: string) => (vars[k] == null ? m : String(vars[k])))
-  return out
+  // Kirillga o'zgaruvchilar o'rniga qo'yilgandan keyin o'giriladi (ismlar ham kirillga o'tadi)
+  return lang === 'uzc' ? toCyrillic(out) : out
 }
 
 export interface I18n {
@@ -60,7 +64,7 @@ const KEY = 'ivs.lang'
 export function storedLang(): Lang {
   try {
     const v = localStorage.getItem(KEY)
-    if (v === 'uz' || v === 'ru') return v
+    if (v === 'uz' || v === 'uzc' || v === 'ru') return v
   } catch {
     /* brauzer xotirasi yopiq — standart til */
   }
@@ -81,5 +85,12 @@ export function storeLang(lang: Lang) {
  */
 export function useTMaybe() {
   const { lang } = useContext(I18nContext)
-  return useCallback((text: string) => (lang === 'ru' && RU[text] !== undefined ? RU[text] : (CTX.exec(text)?.[1] ?? text)), [lang])
+  return useCallback(
+    (text: string) => {
+      if (lang === 'ru' && RU[text] !== undefined) return RU[text]
+      const base = CTX.exec(text)?.[1] ?? text
+      return lang === 'uzc' ? toCyrillic(base) : base
+    },
+    [lang],
+  )
 }

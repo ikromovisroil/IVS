@@ -63,7 +63,7 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
   const toast = useToast()
   const navigate = useNavigate()
   const [assignee, setAssignee] = useState<number | null>(null)
-  const [confirm, setConfirm] = useState(false)
+  const [confirm, setConfirm] = useState<'accept' | 'reject' | null>(null)
 
   const candidates = useQuery({
     queryKey: ['orders', 'assignees', order.id],
@@ -72,7 +72,8 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
   })
 
   const accept = useMutation({
-    mutationFn: () => api(`/orders/${order.id}/accept/`, { method: 'POST', body: JSON.stringify(assignee ? { receiver: assignee } : {}) }),
+    mutationFn: (message: string) =>
+      api(`/orders/${order.id}/accept/`, { method: 'POST', body: JSON.stringify({ ...(assignee ? { receiver: assignee } : {}), message: message || undefined }) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] })
       if (assignee) {
@@ -85,7 +86,22 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
       }
     },
     onError: (e) => {
-      setConfirm(false)
+      setConfirm(null)
+      toast(e.message, 'error')
+    },
+  })
+
+  // Rad etish: ariza "Rad etildi"ga o'tadi, sabab muallifga ko'rinadi
+  const dismiss = useMutation({
+    mutationFn: (message: string) =>
+      api(`/orders/${order.id}/reject/`, { method: 'POST', body: JSON.stringify({ message: message || undefined }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['orders'] })
+      toast('Ariza rad etildi')
+      onClose()
+    },
+    onError: (e) => {
+      setConfirm(null)
       toast(e.message, 'error')
     },
   })
@@ -103,10 +119,13 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
           />
         </div>
       )}
-      <Button variant="stroke" size="lg" icon="ri-error-warning-line" onClick={onClose}>
-        {t("E'tiborsiz qoldirish")}
+      <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
+        {t('Yopish')}
       </Button>
-      <Button size="lg" icon="ri-checkbox-circle-line" onClick={() => setConfirm(true)}>
+      <Button variant="error" size="lg" icon="ri-close-circle-line" onClick={() => setConfirm('reject')}>
+        {t('Rad etish')}
+      </Button>
+      <Button size="lg" icon="ri-checkbox-circle-line" onClick={() => setConfirm('accept')}>
         {t(assignee ? 'Biriktirish' : 'Qabul qilish')}
       </Button>
     </div>
@@ -115,7 +134,7 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
   return (
     <>
       <OrderDetailModal id={order.id} onClose={onClose} footer={footer} />
-      {confirm && (
+      {confirm === 'accept' && (
         <ConfirmDialog
           title="Qabul qilishni tasdiqlang?"
           message={
@@ -125,10 +144,23 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
                 : t(`#{id} ariza sizga biriktiriladi va "Bajarish" bo'limiga o'tadi.`, { id: order.id })}
             </>
           }
+          reason={{ label: 'Izoh' }}
           confirmLabel="Qabul qilish"
           loading={accept.isPending}
-          onConfirm={() => accept.mutate()}
-          onClose={() => setConfirm(false)}
+          onConfirm={(message) => accept.mutate(message)}
+          onClose={() => setConfirm(null)}
+        />
+      )}
+      {confirm === 'reject' && (
+        <ConfirmDialog
+          title="Rad etishni tasdiqlang?"
+          message={t('#{id} ariza rad etiladi va muallifga sabab bilan xabar beriladi.', { id: order.id })}
+          reason={{ label: 'Sabab' }}
+          confirmLabel="Rad etish"
+          danger
+          loading={dismiss.isPending}
+          onConfirm={(message) => dismiss.mutate(message)}
+          onClose={() => setConfirm(null)}
         />
       )}
     </>
@@ -195,8 +227,8 @@ function FinishModal({ order, onClose }: { order: Order; onClose: () => void }) 
 
   const footer = (o: OrderDetail) => (
     <>
-      <Button variant="stroke" size="lg" icon="ri-error-warning-line" onClick={onClose}>
-        {t("E'tiborsiz qoldirish")}
+      <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
+        {t('Yopish')}
       </Button>
       {(o.status === 'process' || o.status === 'finished') && (
         <Button size="lg" icon="ri-checkbox-circle-line" onClick={submit}>
@@ -219,10 +251,11 @@ function FinishModal({ order, onClose }: { order: Order; onClose: () => void }) 
               ? "Tanlangan materiallar ombordan ayriladi va arizaga biriktiriladi."
               : 'Ariza "Tayyorlandi" holatiga o\'tadi va muallifga baholash uchun yuboriladi.'
           }
+          reason={{ label: 'Izoh' }}
           confirmLabel="Yakunlash"
           loading={finish.isPending}
-          onConfirm={() =>
-            finish.mutate(state, {
+          onConfirm={(message) =>
+            finish.mutate({ ...state, message }, {
               onSuccess: () => {
                 toast('Ariza muvaffaqiyatli yakunlandi')
                 setConfirm(false)

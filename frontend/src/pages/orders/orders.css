@@ -246,3 +246,8 @@
 .ivs-orders-paper table td {
   padding: 2px 4px;
 }
+
+/* Arizalar jadvali: qator ustiga bosilganda modal ochiladi (⋮ tugmasi yashirin, kod orqali bosiladi) */
+.ivs-row-click tbody tr { cursor: pointer; }
+.ivs-row-click tbody tr:hover td { background: var(--bg-weak-50); }
+.ivs-row-click .aui-td-act { display: none; }

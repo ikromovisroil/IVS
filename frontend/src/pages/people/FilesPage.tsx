@@ -19,10 +19,11 @@ import { formatDateTime, opts } from './api'
 import type { DeedRow } from './api'
 import { openPdf } from '../../lib/pdf'
 import DeedStatusModal from './DeedStatusModal'
+import RowClick from '../../components/RowClick'
 import './people.css'
 
 const PAGE_SIZE = 20
-const FILTERS = ['organization', 'region', 'date1', 'date2', 'status', 'name'] as const
+const FILTERS = ['organization', 'region', 'date1', 'date2', 'status', 'overall', 'name'] as const
 
 const OVERALL: Record<DeedRow['overall'], { chip: StatusChipProps['status']; label: string }> = {
   approved: { chip: 'completed', label: 'Tasdiqlandi#hujjat' },
@@ -118,7 +119,7 @@ export default function FilesPage() {
             {r.sender?.full_name || '—'}
           </div>
           {r.receiver && (
-            <div className="aui-cell-secondary" title={r.receiver.full_name}>
+            <div className="aui-cell-primary" title={r.receiver.full_name}>
               {r.receiver.full_name}
             </div>
           )}
@@ -134,23 +135,17 @@ export default function FilesPage() {
     {
       key: 'files',
       label: t('Fayllar'),
-      width: '9%',
+      width: '10%',
       render: (r) => (
-        <div className="ivs-people-actions is-left">
+        <div className="ivs-people-actions is-left is-wrap">
           {r.file_url ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              iconOnly
-              icon="ri-file-pdf-2-line"
-              aria-label={t("Hujjatni ko'rish")}
-              title={t("Ko'rish")}
-              onClick={() => openPdf(r.file_url!)}
-            />
+            <Button variant="stroke" size="sm" icon="ri-file-pdf-2-line" onClick={() => openPdf(r.file_url!)}>
+              {t("Ko'rish")}
+            </Button>
           ) : null}
           {r.attachments_count > 0 && (
             <Button
-              variant="ghost"
+              variant="stroke"
               size="sm"
               icon="ri-attachment-2"
               title={t('Ilovalarni yuklab olish ({n} ta fayl)', { n: r.attachments_count })}
@@ -175,7 +170,6 @@ export default function FilesPage() {
               <Icon name={r.user_edit ? 'ri-check-line' : 'ri-close-line'} size={18} />
             </span>
           )}
-          <Button variant="ghost" size="sm" iconOnly icon="ri-eye-line" aria-label={t('Hujjat holati')} title={t('Holati')} onClick={() => setOpened(r.id)} />
         </div>
       ),
     },
@@ -212,6 +206,14 @@ export default function FilesPage() {
           value={filters.status || null}
           onChange={(v) => setFilter('status', v)}
         />
+        <Select
+          label={t('Holati')}
+          placeholder={t('Tanlang...')}
+          searchable={false}
+          options={(Object.keys(OVERALL) as DeedRow['overall'][]).map((k) => ({ value: k, label: t(OVERALL[k].label) }))}
+          value={filters.overall || null}
+          onChange={(v) => setFilter('overall', v)}
+        />
         <DatePicker label="Boshlang'ich sana" value={filters.date1} max={filters.date2 || undefined} onChange={(v) => setFilter('date1', v)} />
         <DatePicker label="Tugash sanasi" value={filters.date2} min={filters.date1 || undefined} onChange={(v) => setFilter('date2', v)} />
       </FilterBar>
@@ -224,7 +226,9 @@ export default function FilesPage() {
         />
       ) : (
         <DataState isPending={list.isPending} isFetching={list.isFetching} error={list.error} empty={rows.length === 0} emptyText="Ma'lumot topilmadi.">
-          <DataTable rows={rows} columns={ordered} getRowId={(r) => r.id} rowHeight={64} minWidth={1240} caption={t("Hujjatlar ro'yxati")} />
+          <RowClick rows={rows} onOpen={(r) => setOpened(r.id)}>
+            <DataTable rows={rows} columns={ordered} getRowId={(r) => r.id} rowHeight={64} minWidth={1240} caption={t("Hujjatlar ro'yxati")} />
+          </RowClick>
           {pageCount > 1 && (
             <div className="ivs-pager">
               <Pagination pageCount={pageCount} page={page} onChange={setPage} />

@@ -244,9 +244,10 @@ export default function TechnicsPage() {
     >
       <TechnicsTabs />
 
-      <div className="aui-stats">
-        <Stat label="Jami uskunalar" value={stats.data?.total} note={stats.data ? t("{n} tasi bo'sh", { n: formatNumber(stats.data.free) }) : t('dona')} />
+      <div className="aui-stats aui-stats-5">
+        <Stat label="Jami uskunalar" value={stats.data?.total} note={t('dona')} />
         <Stat label="Aktiv" value={stats.data?.active} note={t('{n}% jami ichida', { n: share })} />
+        <Stat label="Bo'sh" value={stats.data?.free} note={t('foydalanishga tayyor')} />
         <Stat label="Ta'mirda" value={stats.data?.repair} note={t("e'tibor talab qiladi")} />
         <Stat label="Yaroqsiz" value={stats.data?.defect} note={t('hisobdan chiqarish uchun')} />
       </div>

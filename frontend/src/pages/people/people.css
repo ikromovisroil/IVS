@@ -39,6 +39,10 @@
   justify-content: flex-start;
 }
 
+.ivs-people-actions.is-wrap {
+  flex-wrap: wrap;
+}
+
 .ivs-people-ok {
   display: inline-flex;
   color: var(--state-success-base);

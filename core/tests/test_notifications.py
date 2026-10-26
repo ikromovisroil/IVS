@@ -186,3 +186,54 @@ class CleanupTests(TestCase):
         self.assertEqual(result["deleted"], 1)
         self.assertTrue(Notification.objects.filter(pk=new.pk).exists())
         self.assertFalse(Notification.objects.filter(pk=old.pk).exists())
+
+
+class NewOrderNotificationTests(TestCase):
+    """Ariza "Yangi" holatdan chiqqach, "yangi ariza" bildirishnomasi hamma ijrochida o'qilgan bo'ladi."""
+
+    def setUp(self):
+        atm = make_org("worker")
+        region = make_region()
+        goal = make_goal(atm, "Kompyuter")
+        _, self.sender = make_employee(make_org("client"), region)
+        _, self.a = make_employee(atm, region)
+        _, self.b = make_employee(atm, region)
+        self.order = Order.objects.create(sender=self.sender, goal=goal, status="viewed")
+        self.other = Order.objects.create(sender=self.sender, goal=goal, status="viewed")
+        for emp in (self.a, self.b):
+            for o in (self.order, self.other):
+                record(emp, "Yangi ariza yuborildi", tag=f"order-new-{o.id}")
+
+    def unread(self, emp):
+        return Notification.objects.filter(employee=emp, is_read=False).count()
+
+    def test_taken_order_clears_notification_for_everyone(self):
+        self.assertEqual((self.unread(self.a), self.unread(self.b)), (2, 2))
+        self.order.status = "process"
+        self.order.receiver = self.a
+        self.order.save(update_fields=["status", "receiver"])
+        # ikkala ijrochida ham faqat boshqa (hali yangi) ariza qoldi
+        self.assertEqual((self.unread(self.a), self.unread(self.b)), (1, 1))
+        self.assertTrue(Notification.objects.filter(employee=self.b, tag=f"order-new-{self.other.id}", is_read=False).exists())
+
+    def test_rejected_or_canceled_order_also_clears(self):
+        for status in ("rejected", "canceled"):
+            Order.objects.filter(pk=self.other.pk).update(status="viewed")
+            record(self.b, "Yangi ariza yuborildi", tag=f"order-new-{self.other.id}")
+            self.other.refresh_from_db()
+            self.other.status = status
+            self.other.save(update_fields=["status"])
+            self.assertFalse(Notification.objects.filter(tag=f"order-new-{self.other.id}", is_read=False).exists(), status)
+
+    def test_new_or_unchanged_order_keeps_notification(self):
+        self.order.save()   # holat "viewed" — hech narsa o'zgarmaydi
+        self.assertEqual((self.unread(self.a), self.unread(self.b)), (2, 2))
+
+    def test_command_closes_stale_notifications(self):
+        from django.core.management import call_command
+        Order.objects.filter(pk=self.order.pk).update(status="process")   # signalsiz (eski ma'lumot)
+        self.assertEqual(self.unread(self.a), 2)
+        call_command("close_stale_order_notifications", "--dry-run", stdout=mock.MagicMock())
+        self.assertEqual(self.unread(self.a), 2)
+        call_command("close_stale_order_notifications", stdout=mock.MagicMock())
+        self.assertEqual((self.unread(self.a), self.unread(self.b)), (1, 1))

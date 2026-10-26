@@ -45,8 +45,8 @@ export default function EmployeePermissions({ employee, onClose }: { employee: E
       width={880}
       footer={
         <>
-          <Button variant="stroke" size="lg" icon="ri-error-warning-line" onClick={onClose}>
-            {t("E'tiborsiz qoldirish#ruxsat")}
+          <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
+            {t('Yopish')}
           </Button>
           <Button size="lg" icon="ri-checkbox-circle-line" type="submit" form="perm-form" disabled={!state.data || !catalog.data}>
             {t('Yakunlash')}

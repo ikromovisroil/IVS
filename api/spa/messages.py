@@ -38,12 +38,15 @@ from main.views import validate_pdf_file
 
 # Ro'yxat turi → DeedViewSet._apply_role dagi rol (contact_user, contact_user_arxiv, contact, ...)
 BOXES = {
-    "send": "created_active",
-    "send_archive": "created_archive",
+    "send": "created_open",
+    "send_archive": "created_signed",
+    "send_rejected": "created_rejected",
     "sign": "to_sign",
-    "sign_archive": "signed",
+    "sign_archive": "signed_ok",
+    "sign_rejected": "signed_rejected",
     "agree": "to_agree",
-    "agree_archive": "agreed",
+    "agree_archive": "agreed_ok",
+    "agree_rejected": "agreed_rejected",
 }
 
 

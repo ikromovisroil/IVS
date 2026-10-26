@@ -18,6 +18,7 @@ import type { Box } from './boxes'
 import { AgreeDialog, SignDialog } from './ActionDialogs'
 import CreateDeedModal from './CreateDeedModal'
 import DeedStatusModal from './DeedStatusModal'
+import RowClick from '../../components/RowClick'
 import { SIGN_STATUS, deedStatus, formatDateTime } from './status'
 import type { Deed } from './types'
 import './messages.css'
@@ -129,7 +130,7 @@ export default function DeedListPage({ box }: { box: Box }) {
       render: (r) => (
         <div className="msg-files">
           {r.file ? (
-            <Button variant="ghost" size="sm" icon="ri-file-pdf-2-line" onClick={() => openFile(r.file!)}>
+            <Button variant="stroke" size="sm" icon="ri-file-pdf-2-line" onClick={() => openFile(r.file!)}>
               {t("Ko'rish")}
             </Button>
           ) : (
@@ -137,7 +138,7 @@ export default function DeedListPage({ box }: { box: Box }) {
           )}
           {r.attachments.length > 0 && (
             <Button
-              variant="ghost"
+              variant="stroke"
               size="sm"
               icon="ri-attachment-2"
               title={t('Ilovalarni yuklab olish ({n} ta fayl)', { n: r.attachments.length })}
@@ -155,11 +156,7 @@ export default function DeedListPage({ box }: { box: Box }) {
       width: 128,
       render: (r) => {
         const s = SIGN_STATUS[deedStatus(r)]
-        return (
-          <button type="button" className="msg-chip-btn" title={t('Dalolatnoma holati')} onClick={() => setStatusOf(r.id)}>
-            <StatusChip status={s.chip}>{t(s.label)}</StatusChip>
-          </button>
-        )
+        return <StatusChip status={s.chip}>{t(s.label)}</StatusChip>
       },
     },
   ]
@@ -216,7 +213,9 @@ export default function DeedListPage({ box }: { box: Box }) {
 
       <DataState isPending={list.isPending} isFetching={list.isFetching} error={list.error} empty={rows.length === 0} emptyText={cfg.empty}>
         <div className="msg-list">
-          <DataTable rows={rows} columns={columns} getRowId={(r) => r.id} rowHeight={64} minWidth={1000} caption={t(cfg.title)} />
+          <RowClick rows={rows} onOpen={(r) => setStatusOf(r.id)}>
+            <DataTable rows={rows} columns={columns} getRowId={(r) => r.id} rowHeight={64} minWidth={1000} caption={t(cfg.title)} />
+          </RowClick>
         </div>
         {pageCount > 1 && (
           <div className="ivs-pager">

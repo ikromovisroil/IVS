@@ -118,8 +118,8 @@ function DetailBody({ order, mode, onClose }: { order: BarnOrderDetail; mode: De
 
   const footer: ReactNode = (() => {
     const dismiss = (
-      <Button variant="stroke" size="lg" icon="ri-error-warning-line" onClick={onClose}>
-        {t("E'tiborsiz qoldirish")}
+      <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
+        {t('Yopish')}
       </Button>
     )
     if (mode === 'sender')

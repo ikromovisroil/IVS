@@ -87,7 +87,7 @@ function ServicePage({ form, doc }: { form: ReportForm; doc: DocApi }) {
     doc.setHTML(
       '#blok_3',
       list.length
-        ? '<div><b>Tovar-moddiy boyliklar uchun moddiy-javobgar shahs:</b></div>' +
+        ? '<div><b>Tovar-moddiy boyliklar uchun moddiy-javobgar shaxs:</b></div>' +
             list
               .map(
                 (p) =>
@@ -138,11 +138,11 @@ function ServicePage({ form, doc }: { form: ReportForm; doc: DocApi }) {
       orderItems.forEach((m) => {
         total += Number(m.total_sum) || 0
         const info = (m.order_info || []).map(esc).join(',<br>')
-        rows += '<tr>' + [String(index++), esc(m.material__name), esc(m.material__unit__name || 'dona'), formatNumber(m.total_number), formatMoney(m.material__price), formatMoney(m.total_sum), info || '-', esc(m.material__code) || '-'].map(td).join('') + '</tr>'
+        rows += '<tr>' + [`${index++}.`, esc(m.material__name), esc(m.material__unit__name || 'dona'), formatNumber(m.total_number), formatMoney(m.material__price), formatMoney(m.total_sum), info || '-', esc(m.material__code) || '-'].map(td).join('') + '</tr>'
       })
       serviceItems.forEach((m) => {
         total += Number(m.total_sum) || 0
-        rows += '<tr>' + [String(index++), esc(m.material__name), esc(m.material__unit__name || 'dona'), formatNumber(m.outcome), formatMoney(m.material__price), formatMoney(m.total_sum), esc(m.body) || '-', esc(m.material__code) || '-'].map(td).join('') + '</tr>'
+        rows += '<tr>' + [`${index++}.`, esc(m.material__name), esc(m.material__unit__name || 'dona'), formatNumber(m.outcome), formatMoney(m.material__price), formatMoney(m.total_sum), esc(m.body) || '-', esc(m.material__code) || '-'].map(td).join('') + '</tr>'
       })
       const total_ = (label: string, size: string, bg: string) =>
         `<tr><td colspan="5" style="border:1px solid #000;font-size:${size};text-align:right;font-weight:bold;background-color:${bg};">${label} jami:</td>

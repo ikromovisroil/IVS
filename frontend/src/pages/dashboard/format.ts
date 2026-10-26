@@ -1,12 +1,12 @@
 import type { Lang } from '../../i18n'
 import { MONTHS, MONTHS_SHORT, WEEKDAYS } from '../../i18n/format'
 
-/** "Dushanba, 20-oktabr 2026" / "Понедельник, 20 октября 2026" */
+/** "Dushanba, 20-oktabr 2026" / "Душанба, 20-октабр 2026" / "Понедельник, 20 октября 2026" */
 export function longDate(d: Date, lang: Lang): string {
   const day = WEEKDAYS[lang][d.getDay()]
   return lang === 'ru'
     ? `${day}, ${d.getDate()} ${MONTHS.ru[d.getMonth()]} ${d.getFullYear()}`
-    : `${day}, ${d.getDate()}-${MONTHS.uz[d.getMonth()]} ${d.getFullYear()}`
+    : `${day}, ${d.getDate()}-${MONTHS[lang][d.getMonth()]} ${d.getFullYear()}`
 }
 
 /** "20 okt" */

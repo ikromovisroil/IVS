@@ -78,8 +78,8 @@ function DecideModal({ order, onClose }: { order: Order; onClose: () => void }) 
 
   const footer = (o: OrderDetail) => (
     <>
-      <Button variant="stroke" size="lg" icon="ri-error-warning-line" onClick={onClose}>
-        {t("E'tiborsiz qoldirish")}
+      <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
+        {t('Yopish')}
       </Button>
       {(o.status === 'viewed' || o.status === 'process') && (
         <Button variant="error" size="lg" icon="ri-close-circle-line" onClick={() => setConfirmCancel(true)}>

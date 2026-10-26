@@ -6,7 +6,7 @@ from decimal import Decimal
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient
 
-from main.models import (Category, Group, Liable, Material, MaterialMovement, Structure, StructureCategory, Technics,
+from main.models import (Category, Group, Liable, Material, MaterialCategory, MaterialMovement, Structure, StructureCategory, Technics,
                          Unit)
 from main.testing import grant, make_department, make_employee, make_org, make_region
 
@@ -173,6 +173,59 @@ class WarehouseSpaTests(TestCase):
         # bo'sh savatni biriktirish — xato
         r = c.post(f"{BASE}/materials/basket/assign/", {"employee": recv.id}, format="json")
         self.assertEqual(r.status_code, 400)
+
+    def test_basket_assign_copies_category_to_receiver(self):
+        shop_user, shop, recv, mat = self._materials()
+        cat = MaterialCategory.objects.create(organization=self.org, name="Kabellar")
+        mat.category = cat
+        mat.save()
+        c = self.api(shop_user)
+        c.post(f"{BASE}/materials/basket/", {"material_id": mat.id, "number": 3}, format="json")
+        self.assertEqual(c.post(f"{BASE}/materials/basket/assign/", {"employee": recv.id}, format="json").status_code, 200)
+        # oluvchida material yo'q edi — yangi yaratiladi, kategoriya bilan
+        self.assertEqual(Material.objects.get(employee=recv, code="100").category_id, cat.id)
+
+        # oluvchida kategoriyasiz material bor bo'lsa — kategoriya to'ldiriladi, bor bo'lsa o'zgarmaydi
+        other = MaterialCategory.objects.create(organization=self.org, name="Boshqa")
+        existing = Material.objects.get(employee=recv, code="100")
+        existing.category = None
+        existing.save()
+        c.post(f"{BASE}/materials/basket/", {"material_id": mat.id, "number": 1}, format="json")
+        c.post(f"{BASE}/materials/basket/assign/", {"employee": recv.id}, format="json")
+        existing.refresh_from_db()
+        self.assertEqual((existing.number, existing.category_id), (4, cat.id))
+        existing.category = other
+        existing.save()
+        c.post(f"{BASE}/materials/basket/", {"material_id": mat.id, "number": 1}, format="json")
+        c.post(f"{BASE}/materials/basket/assign/", {"employee": recv.id}, format="json")
+        existing.refresh_from_db()
+        self.assertEqual((existing.number, existing.category_id), (5, other.id))
+
+    def test_material_code_is_unique_per_employee(self):
+        shop_user, shop, recv, mat = self._materials()
+        unit = mat.unit
+        grant(shop_user, "main.add_material", "main.change_material")
+        grant(recv.user, "main.add_material")
+        c = self.api(shop_user)
+        url = "/api/v1/materials/"
+        # shu xodimda "100" kodi bor (mat) — yana yaratib bo'lmaydi
+        r = c.post(url, {"name": "Boshqa kabel", "code": "100", "number": 1, "unit": unit.id}, format="json")
+        self.assertEqual(r.status_code, 400, r.data)
+        self.assertIn("code", r.data)
+        # boshqa kod yoki kodsiz — mumkin (kodsiz materiallar bir nechta bo'la oladi)
+        for body in ({"name": "A", "code": "101"}, {"name": "B"}, {"name": "C"}):
+            r = c.post(url, {**body, "number": 1, "unit": unit.id}, format="json")
+            self.assertEqual(r.status_code, 201, r.data)
+        # boshqa xodimda xuddi shu kod bo'la oladi
+        r = self.api(recv.user).post(url, {"name": "Kabel", "code": "100", "number": 1, "unit": unit.id}, format="json")
+        self.assertEqual(r.status_code, 201, r.data)
+        # tahrirlash: o'zining kodini saqlash mumkin, boshqa materialning kodiga o'zgartirib bo'lmaydi
+        other = Material.objects.get(employee=shop, code="101")
+        self.assertEqual(c.patch(f"{url}{other.id}/", {"code": "101", "name": "A2"}, format="json").status_code, 200)
+        self.assertEqual(c.patch(f"{url}{other.id}/", {"code": "100"}, format="json").status_code, 400)
+        # o'chirilgan (faol emas) materialning kodi bloklamaydi
+        Material.objects.filter(pk=mat.pk).update(is_active=False)
+        self.assertEqual(c.patch(f"{url}{other.id}/", {"code": "100"}, format="json").status_code, 200)
 
     def test_basket_delete_and_permissions(self):
         shop_user, shop, recv, mat = self._materials()

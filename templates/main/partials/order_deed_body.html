@@ -9,7 +9,7 @@
                    ishga tushishi shart emas, sahifa yuklanganda darhol
                    to'g'ri ko'rinadi -->
               <div style="text-align:right;">
-                <u>{{ today|date:"d.m.Y" }} y</u>
+                <u>{{ today|date:"d.m.Y" }} y.</u>
               </div>
 
               <div style="text-align:center;">
@@ -39,7 +39,7 @@
                       </td>
                       <td style="border:1px solid #fff;text-align:center;">
                         <span>{{ order.sender.department.name }}</span><br>
-                        <span>ushbu dalolatnoma quyidagi ishlarni bajarilganligi uchun tuzilgan:</span>
+                        <span>ushbu dalolatnoma quyidagi ishlar bajarilganligi uchun tuzilgan:</span>
                       </td>
                     </tr>
                   </tbody>
@@ -87,26 +87,26 @@
 
                   <tbody>
                     <tr>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">№</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Ish bajarilgan qurilma nomi</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Qurilma seriya raqami</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Sarf materiallari, ehtiyot qismlar, uskunalar nomi</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">Soni</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;" rowspan="2">O‘lchov birligi</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;" colspan="3">
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;" rowspan="2">№</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;" rowspan="2">Ish bajarilgan qurilma nomi</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;" rowspan="2">Qurilma seriya raqami</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;" rowspan="2">Sarf materiallari, ehtiyot qismlar, uskunalar nomi</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;" rowspan="2">Soni</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;" rowspan="2">O‘lchov birligi</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;" colspan="3">
                         Kimga o‘rnatildi yoki o‘rnatilganligini tasdiqlovchi mas’ul shaxs (xarajatlar)
                       </td>
                     </tr>
 
                     <tr>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">F.I.Sh.</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">Lavozimi</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">Eslatma*</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;">F.I.Sh.</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;">Lavozimi</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;font-weight:bold;">Eslatma*</td>
                     </tr>
 
                     {% for i in order.materials_all %}
                     <tr>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ forloop.counter }}</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ forloop.counter }}.</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.technics.name }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.technics.serial }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.material.name }}</td>

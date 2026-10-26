@@ -94,6 +94,7 @@ const ru: Record<string, string> = {
   "Uskuna qo'shish": 'Добавить оборудование',
   'Jami uskunalar': 'Всего оборудования',
   "{n} tasi bo'sh": 'свободно: {n}',
+  'foydalanishga tayyor': 'готово к использованию',
   dona: 'шт.',
   '{n}% jami ichida': '{n}% от общего числа',
   "e'tibor talab qiladi": 'требует внимания',

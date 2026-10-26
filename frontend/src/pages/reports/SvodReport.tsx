@@ -62,7 +62,7 @@ function svodRows(orgs: SvodResponse['organizations']): string {
         grand += m.total_sum
         rows +=
           '<tr>' +
-          td(String(index++)) +
+          td(`${index++}.`) +
           td(esc(m.material__name)) +
           td(esc(m.material__unit__name || 'dona')) +
           td(formatNumber(m.total_number)) +
@@ -114,7 +114,7 @@ function SvodPage({ form, doc }: { form: ReportForm; doc: DocApi }) {
 
   // updateEditorWithSelections
   useEffect(() => {
-    doc.setText('#doc_date', `${todayDmy()} y`)
+    doc.setText('#doc_date', `${todayDmy()} y.`)
     doc.setText('#report_period', formatMonthYearRange(date1, date2))
     doc.setText('#date_contract', contractText)
   }, [doc, date1, date2, contractText, region])

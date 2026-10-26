@@ -24,8 +24,8 @@ interface Contract {
 }
 
 const GROUP_TITLES: Record<string, string> = {
-  '1': "1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko'rsatish: (1-ilova varoqda)",
-  '2': "2. Server, umumiy va ma'lumot almashiladigan tarmoqlarlarga texnik va tizimli xizmat ko'rsatish:",
+  '1': "1. Kompyuter va boshqa elektron qurilmalarga texnik va tizimli xizmat ko‘rsatish: (1-ilova varoqda)",
+  '2': "2. Server, umumiy va ma’lumot almashiladigan tarmoqlarga texnik va tizimli xizmat ko‘rsatish:",
 }
 
 const QUARTERS = ['I', 'II', 'III', 'IV'].map((q) => ({ value: q, label: q }))
@@ -33,10 +33,10 @@ const QUARTERS = ['I', 'II', 'III', 'IV'].map((q) => ({ value: q, label: q }))
 function contractRows(c: Contract): string {
   const isPC = c.contract_id === 1
   const cell = (s: string, center = false) => `<td style="border:1px solid #000;${center ? 'text-align:center;' : ''}">${s}</td>`
-  const head = (s: string) => `<td style="border:1px solid #000;font-size:10pt;text-align:center;">${s}</td>`
+  const head = (s: string) => `<td style="border:1px solid #000;font-size:10pt;text-align:center;font-weight:bold;">${s}</td>`
   let html = '<tr>' + head('№') + head('Rusumi') + (isPC ? head('Kompyuter SR') + head('Monitor SR') : head('Seriya raqami')) + '</tr>'
   c.items.forEach((x, i) => {
-    html += '<tr>' + cell(String(i + 1), true) + cell(esc(x.name)) + cell(esc(x.serial))
+    html += '<tr>' + cell(`${i + 1}.`, true) + cell(esc(x.name)) + cell(esc(x.serial))
     if (isPC) html += cell((x.extra_serials || []).map((s) => `<div>${s.split('\n').map(esc).join('<br>')}</div>`).join(''))
     html += '</tr>'
   })
@@ -97,7 +97,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
 
   // syncEditorTexts: sana, tashkilot/departament, chorak, shartnoma
   useEffect(() => {
-    doc.setText('#doc_date, #doc_date2', `${todayDmy()} y`)
+    doc.setText('#doc_date, #doc_date2', `${todayDmy()} y.`)
     doc.setText('#org_name', orgName)
     doc.setText('#dep_id2', depName ? `${depName} bo'yicha` : '')
     doc.setText('#dep_name', depName)

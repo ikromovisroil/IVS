@@ -85,6 +85,9 @@ export default function PdfViewerModal({ url, title, onClose }: Props) {
       width={960}
       footer={
         <>
+          <Button variant="stroke" size="md" icon="ri-close-line" onClick={onClose}>
+            {t('Yopish')}
+          </Button>
           <a className="ivs-pdf-link" href={href} target="_blank" rel="noopener noreferrer">
             <Button variant="stroke" size="md" icon="ri-external-link-line" tabIndex={-1}>
               {t('Yangi tabda ochish')}

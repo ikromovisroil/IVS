@@ -72,6 +72,23 @@ class MessagesSpaTests(TestCase):
         self.assertEqual(self.codes(self.agree_user, "agree_archive"), [])
         self.assertEqual(self.codes(self.other_user, "sign"), [])
 
+    def test_rejected_boxes_split_from_signed_and_open(self):
+        rej = Deed(user=self.creator, sender=self.signer, organization=self.client_org, status="svod",
+                   status_sender="rejected")
+        rej.file.save("r.pdf", ContentFile(pdf_bytes()), save=False)
+        rej.save()
+        DeedConsent.objects.create(deed=rej, employee=self.agreer, status="rejected")
+        self.assertEqual(self.codes(self.creator_user, "send_rejected"), [rej.id])
+        self.assertEqual(self.codes(self.creator_user, "send_archive"), [self.done.id])
+        self.assertEqual(self.codes(self.creator_user, "send"), [self.deed.id])
+        self.assertEqual(self.codes(self.signer_user, "sign_rejected"), [rej.id])
+        self.assertEqual(self.codes(self.signer_user, "sign_archive"), [self.done.id])
+        self.assertEqual(self.codes(self.signer_user, "sign"), [self.deed.id])
+        self.assertEqual(self.codes(self.agree_user, "agree_rejected"), [rej.id])
+        self.assertEqual(self.codes(self.agree_user, "agree_archive"), [])
+        self.assertEqual(self.codes(self.agree_user, "agree"), [self.deed.id])
+        self.assertEqual(self.codes(self.other_user, "sign_rejected"), [])
+
     def test_unknown_box_is_400(self):
         self.assertEqual(self.api(self.creator_user).get(f"{BASE}/deeds/", {"box": "x"}).status_code, 400)
 

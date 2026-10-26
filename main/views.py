@@ -247,18 +247,28 @@ def mat_arxiv_post(request):
             if not dst.unit_id and mat.unit_id:
                 dst.unit = mat.unit
             dst.is_active = True
-            dst.save(update_fields=["number", "price", "unit", "is_active"])
+            fields = ["number", "price", "unit", "is_active"]
+            # Kategoriya/rasm bo'sh bo'lsa — beruvchining materialidan to'ldiriladi
+            if not dst.category_id and mat.category_id:
+                dst.category_id = mat.category_id
+                fields.append("category")
+            if not dst.image and mat.image:
+                dst.image = mat.image
+                fields.append("image")
+            dst.save(update_fields=fields)
             dst_material = dst
         else:
             dst_material = Material.objects.create(
                 organization=get_employee.organization,
                 employee=get_employee,
+                category_id=mat.category_id,
                 name=mat.name,
                 code=mat.code,
                 number=outcome,
                 unit=mat.unit,
                 price=mat.price,
                 year=mat.year,
+                image=mat.image,
             )
 
         movement.user = giver

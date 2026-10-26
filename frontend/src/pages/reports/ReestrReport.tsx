@@ -61,7 +61,7 @@ function reestrRows(data: ReestrItem[]): string {
       rows +=
         '<tr>' +
         [
-          String(i + 1),
+          `${i + 1}.`,
           esc(it.technics_name || ''),
           esc(it.technics_serial || ''),
           esc(it.material_name || ''),

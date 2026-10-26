@@ -186,6 +186,10 @@ const ru: Record<string, string> = {
   'Jarayondagi ariza yo‘q': 'Заявок в работе нет',
   'Qabul qilingan arizalar bajarilguncha shu yerda turadi.': 'Принятые заявки находятся здесь до выполнения.',
   'Siz bajargan arizalar shu yerda saqlanadi.': 'Здесь хранятся выполненные вами заявки.',
+  'Rad etishni tasdiqlang?': 'Подтвердить отклонение заявки?',
+  '#{id} ariza rad etiladi va muallifga sabab bilan xabar beriladi.': 'Заявка #{id} будет отклонена, автор получит уведомление с причиной.',
+  Sabab: 'Причина',
+  'Ariza rad etildi': 'Заявка отклонена',
 }
 
 export default ru
