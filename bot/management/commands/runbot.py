@@ -3,6 +3,7 @@ import logging
 import os
 
 from asgiref.sync import sync_to_async
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import close_old_connections
 from django.db.utils import InterfaceError, OperationalError
@@ -681,7 +682,7 @@ class Command(BaseCommand):
             format="%(asctime)s %(levelname)s %(name)s: %(message)s",
             handlers=[
                 logging.StreamHandler(),
-                logging.FileHandler("bot_debug.log", encoding="utf-8"),
+                logging.FileHandler(settings.LOG_DIR / "bot_debug.log", encoding="utf-8"),
             ],
             force=True,
         )
