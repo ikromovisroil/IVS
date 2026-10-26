@@ -244,7 +244,10 @@
                       <!-- material qatorlari JS orqali shu tbody'ga qo‘shiladi -->
                     </tbody>
                   </table>
-                </div>
+                </div><br>
+                <div style="text-align:left;">
+                <b id="blok_summa_soz"> </b>
+                </div><br>
 
                 <div style="text-align:left;">
                   <b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b>
@@ -296,6 +299,45 @@ function todayDmy() {
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yy = d.getFullYear();
   return `${dd}.${mm}.${yy}`;
+}
+
+// ─── SUMMA SO'Z BILAN ──────────────────────────────────────────────────────────
+// 22342635.04 -> "JAMI SO‘Z BILAN: Yigirma ikki million uch yuz qirq ikki ming olti yuz o‘ttiz besh so‘m 04 tiyin"
+const UZ_ONES = ['', 'bir', 'ikki', 'uch', 'to‘rt', 'besh', 'olti', 'yetti', 'sakkiz', 'to‘qqiz'];
+const UZ_TENS = ['', 'o‘n', 'yigirma', 'o‘ttiz', 'qirq', 'ellik', 'oltmish', 'yetmish', 'sakson', 'to‘qson'];
+const UZ_SCALES = ['', 'ming', 'million', 'milliard', 'trillion'];
+
+function uzWordsBelowThousand(n) {
+  const parts = [];
+  const hundreds = Math.floor(n / 100);
+  const tens = Math.floor((n % 100) / 10);
+  const ones = n % 10;
+  if (hundreds) parts.push(UZ_ONES[hundreds] + ' yuz');
+  if (tens) parts.push(UZ_TENS[tens]);
+  if (ones) parts.push(UZ_ONES[ones]);
+  return parts.join(' ');
+}
+
+function uzNumberWords(n) {          // n: butun son >= 0
+  if (n === 0) return 'nol';
+  const parts = [];
+  let scale = 0;
+  while (n > 0 && scale < UZ_SCALES.length) {
+    const group = n % 1000;
+    if (group) parts.unshift(uzWordsBelowThousand(group) + (UZ_SCALES[scale] ? ' ' + UZ_SCALES[scale] : ''));
+    n = Math.floor(n / 1000);
+    scale++;
+  }
+  return parts.join(' ');
+}
+
+function amountInWords(total) {
+  const cents = Math.max(0, Math.round((Number(total) || 0) * 100));
+  const som = Math.floor(cents / 100);
+  const tiyin = cents % 100;
+  // tiyin raqam bilan, doim ikki xonali: 0 -> "00", 2 -> "02", 45 -> "45"
+  const text = uzNumberWords(som) + ' so‘m ' + String(tiyin).padStart(2, '0') + ' tiyin';
+  return 'JAMI SO‘Z BILAN: ' + text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 function formatNumber(value) {
@@ -687,6 +729,7 @@ $(function () {
 
     updateEditorWithSelections();
     updateDocDate();
+    editorSetText('#blok_summa_soz', '');
 
     editorSetTbodyRows(`
       <tr>
@@ -715,7 +758,10 @@ $(function () {
         }
 
         let rows = '';
+        let grandTotal = 0;
         data.forEach(function (item, index) {
+          // Jami summa: har bir material miqdori x birlik narxi
+          grandTotal += (parseFloat(item['number']) || 0) * (parseFloat(item['material__price']) || 0);
           let finishedDate = '-';
           if (item['order__date_finished']) {
             const dt = new Date(item['order__date_finished']);
@@ -740,6 +786,7 @@ $(function () {
         });
 
         editorSetTbodyRows(rows);
+        editorSetText('#blok_summa_soz', amountInWords(grandTotal));     // "JAMI SO‘Z BILAN: ... so‘m ... tiyin"
       },
 
       error: function (xhr) {
