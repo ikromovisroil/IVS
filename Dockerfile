@@ -39,8 +39,8 @@ RUN SECRET_KEY=build-only DEBUG=0 python manage.py collectstatic --noinput
 
 # Oddiy foydalanuvchi; media va logs — volume'lar uchun. entrypoint.sh: CRLF bo'lsa LF ga o'giriladi.
 RUN useradd --system --create-home --uid 1000 app \
-    && mkdir -p /app/media /app/logs /app/staticfiles \
-    && chown -R app:app /app/media /app/logs /app/staticfiles \
+    && mkdir -p /app/media /app/media_private /app/logs /app/staticfiles \
+    && chown -R app:app /app/media /app/media_private /app/logs /app/staticfiles \
     && sed -i 's/\r$//' /app/docker/entrypoint.sh \
     && chmod +x /app/docker/entrypoint.sh
 USER app

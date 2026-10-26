@@ -16,6 +16,7 @@ __pycache__
 # Ma'lumot va loglar (volume'larda turadi)
 db.sqlite3
 media
+media_private
 logs
 *.log
 staticfiles

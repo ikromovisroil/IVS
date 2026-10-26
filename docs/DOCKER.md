@@ -33,6 +33,7 @@ Faqat HTTP orqali sinash uchun (masalan, `http://localhost`): `.env` ga `HTTPS_O
 | `pgdata` | Postgres ma'lumotlari |
 | `redisdata` | Redis (Celery navbati, chat, kesh) |
 | `media` | Yuklangan fayllar (hujjat PDF, rasm). `web` yozadi, `nginx` `/media/` ni beradi |
+| `media_private` | Chatda o'chirilgan fayllar (saytdan yashirilgan, internetdan ochilmaydi) |
 | `logs` | Django xato logi (`/app/logs/error.log`) |
 
 Zaxira nusxa (Postgres):

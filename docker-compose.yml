@@ -22,6 +22,7 @@ x-app: &app
     VAPID_PRIVATE_KEY_FILE: /run/secrets/vapid_private.pem
   volumes:
     - media:/app/media
+    - media_private:/app/media_private     # chatda o'chirilgan fayllar (CHAT_PRIVATE_ROOT)
     - logs:/app/logs
     - ${VAPID_PRIVATE_KEY_PATH:-./private_key.pem}:/run/secrets/vapid_private.pem:ro
   depends_on:
@@ -120,4 +121,5 @@ volumes:
   pgdata:
   redisdata:
   media:
+  media_private:
   logs:
