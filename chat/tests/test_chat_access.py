@@ -18,30 +18,31 @@ class ChatAccessTests(TestCase):
         self.user_a2, self.a2 = make_employee(self.org_a, first="Anvar", last="Aliyev")
         self.user_b, self.b = make_employee(self.org_b, first="Bobur", last="Boboyev")
         self.user_off, self.off = make_employee(self.org_b, first="Nofaol", last="Boboyev", active=False)
-        self.client.force_login(self.user_a)
+        self.api = APIClient()
+        self.api.force_authenticate(self.user_a)
 
     def _names(self, response):
         return {item["name"] for item in response.json()["results"]}
 
     def test_contacts_include_other_organizations(self):
-        names = self._names(self.client.get(reverse("chat_contacts"), {"q": "Boboyev"}))
+        names = self._names(self.api.get("/api/v1/chat/contacts/", {"q": "Boboyev"}))
         self.assertTrue(any("Bobur" in n for n in names))
 
     def test_contacts_exclude_inactive_and_self(self):
-        names = self._names(self.client.get(reverse("chat_contacts")))
+        names = self._names(self.api.get("/api/v1/chat/contacts/"))
         self.assertFalse(any("Nofaol" in n for n in names))
         self.assertFalse(any("Alisher" in n for n in names))
         self.assertTrue(any("Anvar" in n for n in names))
 
     def test_open_direct_chat_with_other_organization(self):
-        response = self.client.post(reverse("chat_open"), {"target": self.b.id})
+        response = self.api.post("/api/v1/chat/open/", {"target": self.b.id}, format="json")
         self.assertEqual(response.status_code, 200)
         conversation = Conversation.objects.get(pk=response.json()["conversation_id"])
         self.assertTrue(conversation.has_participant(self.a))
         self.assertTrue(conversation.has_participant(self.b))
 
     def test_cannot_open_chat_with_inactive_employee(self):
-        response = self.client.post(reverse("chat_open"), {"target": self.off.id})
+        response = self.api.post("/api/v1/chat/open/", {"target": self.off.id}, format="json")
         self.assertEqual(response.status_code, 404)
 
     def test_group_mixes_organizations_but_skips_inactive(self):
@@ -67,5 +68,5 @@ class ChatAccessTests(TestCase):
     def test_ai_and_saved_conversations_still_open(self):
         for target in ("ai", "saved"):
             with mock.patch("chat.realtime._send"):
-                response = self.client.post(reverse("chat_open"), {"target": target})
+                response = self.api.post("/api/v1/chat/open/", {"target": target}, format="json")
             self.assertEqual(response.status_code, 200, target)

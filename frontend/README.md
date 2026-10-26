@@ -28,9 +28,9 @@ cd .. && python manage.py collectstatic --noinput
 ```
 
 - Django yangi interfeysni `/app/` ostida beradi (`config/spa.py`), fayllar `/static/spa/` dan (WhiteNoise).
-- `.env` da `SPA_ENABLED=1` — `/`, `/sso/login/` va SSO'dan keyingi yo'naltirish `/app/` ga boradi.
-  O'chiq bo'lsa eski sahifalar asosiy bo'lib qoladi, `/app/` baribir ochiladi.
-- Eski sahifalar o'z manzillarida ishlashda davom etadi (QR kodlar, PDF'lardagi havolalar ham).
+- `/`, `/sso/login/` va SSO'dan keyingi yo'naltirish doim `/app/` ga boradi (eski Django sahifalari olib tashlangan).
+- Server tomonda faqat SSO oqimi (`/sso/...`), QR kod bilan ochiladigan ommaviy sahifalar (texnika va hujjat holati),
+  admin panel, `/api/v1/`, `/media/` va `/ws/` qoladi.
 
 ## Tuzilma
 
@@ -38,3 +38,11 @@ cd .. && python manage.py collectstatic --noinput
 - `src/api/` — `/api/v1/` klienti va turlar; bo'limlarga xos qo'shimcha endpointlar — `api/spa/<bo'lim>.py`
 - `src/layout/` — `Page` (AppShell + PageHeader), menyu (`nav.ts`, ruxsatlar `base.html` dagidek), nishonlar (`badges.ts`)
 - `src/pages/<bo'lim>/` — sahifalar va `routes.tsx`; `App.tsx` ularni yig'adi
+
+## Brauzer push (Web Push)
+
+- Service worker: `frontend/public/sw.js` — Django uni `/app/sw.js` manzilidan beradi (`config/spa.py`, scope `/app/`).
+  Dev serverda Vite `/app/sw.js` ni Django'ga proksilaydi.
+- Obuna: Sozlamalar paneli → "Bildirishnomalar" → "Brauzer bildirishnomalari" (`src/lib/push.ts`). API: `/api/v1/push/`
+  (`api/push_views.py`). Yuborish: `main.push_views.send_push_notification` → Celery (`send_push_notification_task`).
+- Faqat HTTPS (yoki `localhost`) da ishlaydi. VAPID kalitlari: `config/settings.py` (`generate_vapid_keys.py`).

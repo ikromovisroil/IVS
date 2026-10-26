@@ -34,9 +34,8 @@ const KIND: Record<NotificationRow['kind'], { label: string; tone: BadgeProps['t
   system: { label: 'Tizim', tone: 'neutral', icon: 'ri-settings-3-line' },
 }
 
-// Ishlab chiqishda Django alohida portda; productionda bir domenda (LegacyPage bilan bir xil).
-const LEGACY_ORIGIN = import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
-// Bildirishnoma manzili (eski sayt yo'li) → yangi interfeysdagi sahifa, menyudagi `legacy` bo'yicha
+// Bildirishnoma manzili (serverda saqlangan eski sayt yo'li) → yangi interfeysdagi sahifa, menyudagi `legacy` bo'yicha;
+// mos kelmasa bosh sahifaga o'tadi
 const EXTRA_ROUTES: Record<string, string> = { '/order/receiver/': '/orders/execute', '/': '/' }
 
 /** core.notifications.safe_url: faqat sayt ichidagi yo'l */
@@ -84,8 +83,7 @@ export default function NotificationsPage() {
       qc.invalidateQueries({ queryKey: ['badges'] })
       const url = safeUrl(n.url)
       const target = spaPath(url)
-      if (target) navigate(target)
-      else window.location.assign(LEGACY_ORIGIN + url)
+      navigate(target ?? '/')
     },
   })
 
@@ -110,7 +108,7 @@ export default function NotificationsPage() {
       label: t('Bildirishnoma'),
       render: (r) => (
         <a
-          href={spaPath(safeUrl(r.url)) ?? LEGACY_ORIGIN + safeUrl(r.url)}
+          href={spaPath(safeUrl(r.url)) ?? '/'}
           className={'ivs-people-notif' + (r.is_read ? '' : ' is-unread')}
           onClick={(e) => {
             if (e.metaKey || e.ctrlKey || e.shiftKey) return

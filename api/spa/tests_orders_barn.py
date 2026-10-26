@@ -95,27 +95,6 @@ class BarnSpaTests(TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertFalse(Order.objects.exists())
 
-    @mock.patch("main.order_views.notify_eligible_employees_new_order")
-    def test_legacy_submit_uses_shared_cart_logic(self, notify):
-        """Eski sahifa (create_order_sender_from) ham create_order_from_cart orqali: soni yangilanadi, bo'sh savat — xabar."""
-        from django.test import Client
-        from django.urls import reverse
-
-        web = Client()
-        web.force_login(self.user)
-        url = reverse("create_order_sender_from")
-        r = web.post(url, {"goal": self.goal.id}, HTTP_REFERER="/back/")
-        self.assertRedirects(r, "/back/", fetch_redirect_response=False)   # savat bo'sh
-        self.assertFalse(Order.objects.exists())
-
-        self._toggle(self.mat)
-        item = OrderMaterial.objects.get(order__isnull=True)
-        r = web.post(url, {"goal": self.goal.id, "body": "Eski", f"number_{item.id}": "4"})
-        self.assertRedirects(r, reverse("order_sender_barn"), fetch_redirect_response=False)
-        order = Order.objects.get()
-        self.assertEqual((order.message_sender, order.status), ("Eski", "viewed"))
-        self.assertEqual(list(order.materials.values_list("number", flat=True)), [4])
-        notify.assert_called_once()
 
     # ---------- tafsilotlar ----------
 

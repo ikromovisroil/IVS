@@ -8,7 +8,7 @@ Sarlavha yuborilmasa (brauzer, Swagger) cheklov qo'llanmaydi. `app/config/` har 
 from django.conf import settings
 from django.http import JsonResponse
 
-from .app_views import API_VERSION, app_status, maintenance_info
+from .app_views import app_status, maintenance_info
 
 
 def _is_api(path):

@@ -6,6 +6,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToast } from '../../components/toast'
 import { ApiError, api } from '../../api/client'
 import { useT } from '../../i18n'
+import { htmlOf, useRichEdit } from '../../components/richText'
 import { ExecuteShell } from './ExecutePages'
 import './orders.css'
 
@@ -44,6 +45,7 @@ export default function DeedPage() {
     refetchOnMount: 'always',
     staleTime: Infinity,
   })
+  const { toolbar } = useRichEdit(doc, manual, !!q.data)      // TinyMCE doim ko'rinadi; "Qo'lda tahrirlash" yoqilganda tahrirlanadi
 
   // Hujjat bir marta joylanadi; keyin qo'lda tahrirlar saqlanib qoladi (React qayta chizmaydi)
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function DeedPage() {
     mutationFn: () =>
       api<{ id: number; file: string | null }>(`/spa/orders/${id}/deed/`, {
         method: 'POST',
-        body: JSON.stringify({ sender: signer, message: message.trim() || null, body_encoded: toBase64(doc.current?.innerHTML ?? '') }),
+        body: JSON.stringify({ sender: signer, message: message.trim() || null, body_encoded: toBase64(htmlOf(doc.current)) }),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] })
@@ -138,12 +140,11 @@ export default function DeedPage() {
             extra={<Switch label={t("Qo'lda tahrirlash")} checked={manual} onChange={setManual} />}
           >
             {!q.data && <div className="ivs-empty" aria-busy="true">{t('Yuklanmoqda…')}</div>}
+            <div ref={toolbar} className="ivs-rich-toolbar" />
             <div className="ivs-orders-paper-wrap">
               <div
                 ref={doc}
-                className={`ivs-orders-paper${manual ? ' is-editing' : ''}`}
-                contentEditable={manual}
-                suppressContentEditableWarning
+                className="ivs-orders-paper"
                 role="textbox"
                 aria-multiline="true"
                 aria-readonly={!manual}

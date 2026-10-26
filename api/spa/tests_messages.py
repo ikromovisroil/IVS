@@ -131,13 +131,12 @@ class MessagesSpaTests(TestCase):
         self.assertEqual(self.api(self.signer_user).post(f"{BASE}/deeds/{self.done.id}/approve/", {}, format="json").status_code, 400)
 
     def test_flash_reads_django_messages(self):
-        c = self.api(self.signer_user)
-        # eski sahifa xabar qoldiradi (masalan, deedconsent_action) → SPA o'qiydi
-        r = c.post(f"/deedconsent_action/{self.consent.id}/action/", {"action": "approve"})
-        self.assertEqual(r.status_code, 403)  # signer kelishuvchi emas
-        c = self.api(self.agree_user)
-        c.post(f"/deedconsent_action/{self.consent.id}/action/", {"action": "approve"}, HTTP_REFERER="/")
-        self.assertEqual(c.get(f"{BASE}/flash/").data, [{"text": "Hujjat muvaffaqiyatli kelishildi", "tone": "success"}])
+        # SSO oqimi (sso_start_approve) xabar qoldiradi → SPA o'qiydi (sessiya orqali)
+        self.client.force_login(self.signer_user)
+        self.client.get("/sso/start/approve/")                          # kutilayotgan tasdiqlash yo'q: xabar qoldiradi
+        flash = self.client.get(f"{BASE}/flash/").json()
+        self.assertEqual([m["text"] for m in flash], ["Tasdiqlash topilmadi"])
+        self.assertEqual(self.client.get(f"{BASE}/flash/").json(), [])  # bir marta o'qiladi
         self.assertEqual(dj_messages.SUCCESS, 25)
 
     # ---------- yaratish oynasi va tahrirlash ro'yxatlari ----------

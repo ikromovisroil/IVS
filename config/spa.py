@@ -25,6 +25,20 @@ def _index() -> str:
 
 
 @never_cache
+def spa_service_worker(request):
+    """
+    Brauzer push service worker'i (frontend/public/sw.js). /app/ ostida beriladi, shuning uchun scope=/app/ bo'ladi;
+    build qilingan bo'lsa static/spa/sw.js, aks holda (ishlab chiqarish) frontend/public/sw.js.
+    """
+    for path in (settings.BASE_DIR / "static" / "spa" / "sw.js", settings.BASE_DIR / "frontend" / "public" / "sw.js"):
+        if path.exists():
+            response = HttpResponse(path.read_text(encoding="utf-8"), content_type="application/javascript")
+            response["Service-Worker-Allowed"] = "/app/"
+            return response
+    raise Http404("sw.js topilmadi")
+
+
+@never_cache
 @ensure_csrf_cookie  # SPA POST/PATCH so'rovlari csrftoken cookie'sini o'qiydi
 def spa_index(request, path=""):
     if not INDEX.exists():

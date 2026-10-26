@@ -2,7 +2,7 @@
 from datetime import date
 
 from django.test import TestCase
-from django.urls import reverse
+from rest_framework.test import APIClient
 
 from main.models import Department, Directorate, Division, Material, MaterialMovement, Rank
 from main.testing import make_employee, make_org, make_region
@@ -26,8 +26,9 @@ class ServiceMaterialsUnitTests(TestCase):
         return movement
 
     def _unit_of(self, employee):
-        self.client.force_login(self.user)
-        response = self.client.get(reverse("ajax_service_materials"), {
+        api = APIClient()
+        api.force_authenticate(self.user)
+        response = api.get("/api/v1/spa/reports/data/service-materials/", {
             "date1": date.today().isoformat(), "date2": date.today().isoformat(),
             "organizations[]": [self.org.id],
         })
@@ -64,24 +65,3 @@ class ServiceMaterialsUnitTests(TestCase):
         self.assertEqual(self._unit_of(nobody)["owner_unit"], "")
 
 
-class ServicePeriodTests(TestCase):
-    """Hisobot davri (yil va chorak) boshlang'ich qiymati bugungi sanadan olinadi."""
-
-    def test_quarter_roman_by_month(self):
-        from main.views import quarter_roman
-
-        expected = {1: "I", 2: "I", 3: "I", 4: "II", 5: "II", 6: "II", 7: "III", 8: "III", 9: "III", 10: "IV", 11: "IV", 12: "IV"}
-        for month, quarter in expected.items():
-            self.assertEqual(quarter_roman(month), quarter, month)
-
-    def test_page_uses_today_year_and_quarter(self):
-        from unittest import mock
-
-        org = make_org("worker")
-        user, _ = make_employee(org, make_region(), perms=["main.material_service"])
-        self.client.force_login(user)
-        for day, year, quarter in ((date(2026, 10, 16), "2026", "IV"), (date(2027, 2, 3), "2027", "I"), (date(2026, 8, 1), "2026", "III")):
-            with mock.patch("django.utils.timezone.localdate", return_value=day):
-                html = self.client.get(reverse("service_get")).content.decode()
-            self.assertIn(f'<span id="year">{year}</span>', html, day)
-            self.assertIn(f'<span id="chorak">{quarter}</span>', html, day)

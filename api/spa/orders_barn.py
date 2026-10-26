@@ -25,7 +25,7 @@ from api.serializers import OrderSerializer
 from api.views import OrderViewSet
 from main.ajax_views import ordermaterial_delete
 from main.order_views import CartEmptyError, create_order_from_cart
-from main.models import Employee, Goal, Material, MaterialEmployee, Order, OrderMaterial
+from main.models import Employee, Goal, Material, MaterialEmployee, OrderMaterial
 from main.push_views import notify_eligible_employees_new_order
 
 

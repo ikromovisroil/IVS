@@ -1,102 +1,9 @@
-import json
 import logging
-import os
 
-from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from django.core.exceptions import PermissionDenied
-from django.http import HttpResponse, JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
 
 from .models import Employee, OrderGoal
-from core.models import PushSubscription
 
 logger = logging.getLogger(__name__)
-
-
-# ─────────────────────────────────────────────────────────────────────────
-# SERVICE WORKER — sayt ildizidan (/sw.js) xizmat qilish
-# ─────────────────────────────────────────────────────────────────────────
-
-def service_worker_js(request):
-
-    sw_path = os.path.join(settings.BASE_DIR, "static", "js", "sw.js")
-    with open(sw_path, "r", encoding="utf-8") as f:
-        content = f.read()
-    return HttpResponse(content, content_type="application/javascript")
-
-
-# ─────────────────────────────────────────────────────────────────────────
-# OBUNANI SAQLASH / O'CHIRISH
-# ─────────────────────────────────────────────────────────────────────────
-
-@login_required
-@require_POST
-def save_push_subscription(request):
-    """
-    Brauzerdan kelgan push subscription ma'lumotlarini (endpoint, keys)
-    joriy foydalanuvchining xodim profiliga bog'lab saqlaydi.
-    Agar shu endpoint uchun yozuv allaqachon mavjud bo'lsa, uni yangilaydi
-    (update_or_create) — shuning uchun bir xil qurilma qayta obuna bo'lsa
-    ham dublikat yaratilmaydi.
-    """
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo'q")
-
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        return JsonResponse({"error": "Noto'g'ri so'rov formati"}, status=400)
-
-    endpoint = (data.get("endpoint") or "").strip()
-    keys = data.get("keys") or {}
-    p256dh = (keys.get("p256dh") or "").strip()
-    auth = (keys.get("auth") or "").strip()
-
-    if not endpoint or not p256dh or not auth:
-        return JsonResponse({"error": "Obuna ma'lumotlari to'liq emas"}, status=400)
-
-    user_agent = request.META.get("HTTP_USER_AGENT", "")[:500]
-
-    PushSubscription.objects.update_or_create(
-        endpoint=endpoint,
-        defaults={
-            "employee": employee,
-            "p256dh": p256dh,
-            "auth": auth,
-            "user_agent": user_agent,
-        },
-    )
-
-    return JsonResponse({"status": "ok"})
-
-
-@login_required
-@require_POST
-def remove_push_subscription(request):
-    """
-    Berilgan endpoint bo'yicha push subscription'ni o'chiradi.
-    Foydalanuvchi brauzerda bildirishnomalarni o'chirib qo'yganda
-    yoki obunadan chiqqanda chaqiriladi.
-    """
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo'q")
-
-    try:
-        data = json.loads(request.body.decode("utf-8"))
-    except (json.JSONDecodeError, UnicodeDecodeError):
-        return JsonResponse({"error": "Noto'g'ri so'rov formati"}, status=400)
-
-    endpoint = (data.get("endpoint") or "").strip()
-    if not endpoint:
-        return JsonResponse({"error": "Endpoint ko'rsatilmagan"}, status=400)
-
-    PushSubscription.objects.filter(employee=employee, endpoint=endpoint).delete()
-
-    return JsonResponse({"status": "ok"})
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -105,17 +12,11 @@ def remove_push_subscription(request):
 
 def send_push_notification(employee, title, body, url="/", tag=None):
     """
-    Berilgan xodimning barcha faol push obunalariga bildirishnoma yuboradi.
+    Xodimga bildirishnoma: bildirishnomalar markazi tarixiga yozadi, brauzer push (Web Push) va Android (FCM) ga yuboradi.
 
-    tag — brauzerda notification'larni guruhlashda ishlatiladi. Agar bir xil
-    tag bilan bir nechta notification yuborilsa, brauzer eski notification'ni
-    JIM (ekranga popup chiqarmasdan) yangisiga almashtiradi. Shuning uchun
-    har bir HAQIQIY hodisa (ariza, hujjat) uchun UNIKAL tag berish shart,
-    aks holda foydalanuvchi keyingi notification'larni ko'rmay qoladi.
-
-    Haqiqiy yuborish (webpush - tarmoqqa so'rov) Celery worker'da, orqa
-    fonda bajariladi (`main.tasks.send_push_notification_task`) - shu
-    view/request osilib qolmasligi uchun (masalan "Ariza Yaratish").
+    tag — brauzerda bir xil hodisani guruhlash uchun: bir xil tag bilan kelgan yangi bildirishnoma eskisini JIM
+    almashtiradi, shuning uchun har bir HAQIQIY hodisa (ariza, hujjat) uchun UNIKAL tag berish shart.
+    Haqiqiy yuborish Celery worker'da, orqa fonda bajariladi (`main.tasks.send_push_notification_task`, `send_fcm_notification_task`).
     """
     from core.notifications import record
     from .fcm import fcm_enabled

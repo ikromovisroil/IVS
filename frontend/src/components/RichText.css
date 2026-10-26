@@ -1,0 +1,27 @@
+/* TinyMCE uskunalar paneli joyi (components/richText.ts: fixed_toolbar_container_target) */
+.ivs-rich-toolbar {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 12px;
+}
+
+.ivs-rich-toolbar:empty {
+  display: none;
+}
+
+.ivs-rich-toolbar .tox.tox-tinymce-inline {
+  width: 100%;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 12px;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.ivs-rich-toolbar .tox-editor-header {
+  box-shadow: none;
+}
+
+/* TinyMCE oynalari (dialog, menyu) sahifa modallaridan yuqorida */
+.tox.tox-tinymce-aux {
+  z-index: 3000;
+}

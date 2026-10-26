@@ -69,17 +69,3 @@ class TechnicsQrTests(TempMediaMixin, TestCase):
         self.assertEqual(self.client.get(reverse("technics_detail", args=[tech.pk])).status_code, 404)
 
 
-class ExtraDeviceDetailTests(TempMediaMixin, TestCase):
-    def test_modal_shows_technics_owner(self):
-        org = make_org("client")
-        su, _ = make_employee(org, make_region(), superuser=True)
-        _, owner = make_employee(org, make_region(), first="Sardor", last="Egamberdiyev")
-        technics = Technics.objects.create(name="Monoblok", organization=org, employee=owner)
-        free_technics = Technics.objects.create(name="Bo'sh texnika", organization=org)
-        Structure.objects.create(technics=technics, organization=org, name="Monitor A", is_active=True)
-        Structure.objects.create(technics=free_technics, organization=org, name="Monitor B", is_active=True)
-        self.client.force_login(su)
-        response = self.client.get(reverse("extra_tex"), {"name": "Monitor"})
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Egamberdiyev Sardor")
-        self.assertContains(response, ">Xodim<")

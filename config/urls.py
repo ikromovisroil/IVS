@@ -4,7 +4,7 @@ from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework import permissions
 from main.views import error_403, error_404, error_500
-from config.spa import spa_index
+from config.spa import spa_index, spa_service_worker
 
 handler403 = error_403
 handler404 = error_404
@@ -62,15 +62,10 @@ urlpatterns = [
 
     # MAIN SITE
     # YANGI INTERFEYS (React, frontend/) — /app/ ostidagi barcha yo'llar
+    path("app/sw.js", spa_service_worker, name="spa_sw"),
     re_path(r"^app(?:/(?P<path>.*))?$", spa_index, name="spa"),
 
     path("", include("main.urls")),
-
-    # CHAT
-    path("chat/", include("chat.urls")),
-
-    # BILDIRISHNOMALAR MARKAZI
-    path("", include("core.urls")),
 
     # API
     path('api/v1/', include('api.urls')),   # asosiy (versiyalangan) manzil

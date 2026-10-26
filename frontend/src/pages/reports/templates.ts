@@ -1,3 +1,5 @@
+
+
 // Hujjatlarning boshlang'ich HTML matni — eski TinyMCE shablonlaridan (templates/main/*.html, <textarea id="body">)
 // o'zgarishsiz ko'chirilgan. Bu PDF va imzolanadigan hujjat MAZMUNI (interfeys emas): ichki inline uslublar
 // (qora/oq chegaralar, jadval fonlari) PDF da aynan shunday chiqishi uchun saqlanadi.

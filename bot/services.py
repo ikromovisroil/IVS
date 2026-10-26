@@ -100,10 +100,6 @@ class MenuFlags:
     pass
 
 
-def get_menu_flags(employee: Employee) -> MenuFlags:
-    return MenuFlags()
-
-
 # ---------------------------------------------------------------------------
 # TASHKILOT TURI BO'YICHA YORDAMCHI FUNKSIYALAR
 # ---------------------------------------------------------------------------

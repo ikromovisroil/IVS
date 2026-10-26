@@ -6,8 +6,6 @@ import time
 from celery import shared_task
 from django.conf import settings
 from django.core.cache import cache
-from django.db import transaction
-from .models import *
 
 logger = logging.getLogger(__name__)
 
@@ -50,10 +48,6 @@ def cyrillic_to_latin(text: str) -> str:
         else:
             result.append(char)
     return ''.join(result)
-
-
-def has_cyrillic(text: str) -> bool:
-    return bool(re.search('[а-яА-ЯёЁғқҳўҷҒҚҲЎҶ]', text or ''))
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
@@ -190,10 +184,6 @@ def _check_single_employee(emp):
 
     # FAQAT TEKSHIRADI VA XABAR BERADI - BAZAGA HECH NARSA YOZILMAYDI
     return "changed", changes
-
-
-def _get_default_region():
-    return Region.objects.filter(id=DEFAULT_REGION_ID).first()
 
 
 def _resolve_position(sso_pinfl, positions):
@@ -375,10 +365,12 @@ def send_push_notification_task(self, employee_id, title, body, url="/", tag=Non
         return
 
     dead_ids = []
+    from core.spa_urls import spa_url
+
     payload = {
         "title": title,
         "body": body,
-        "url": url,
+        "url": spa_url(url),           # bosilganda yangi interfeysdagi sahifa ochiladi
         "icon": "/static/img/apple-touch-icon.png",
     }
     if tag:
@@ -421,9 +413,12 @@ def send_push_notification_task(self, employee_id, title, body, url="/", tag=Non
         PushSubscription.objects.filter(id__in=dead_ids).delete()
 
 
+# =========================================================
+# PUSH BILDIRISHNOMA (Android, FCM) - orqa fonda yuborish
+# =========================================================
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)
 def send_fcm_notification_task(self, employee_id, title, body, url="/", tag=None):
-    """Android (FCM) push — web-push bilan bir xil hodisalar uchun, orqa fonda."""
+    """Android (FCM) push, orqa fonda."""
     from .fcm import FcmTransientError, send_to_employee
 
     try:

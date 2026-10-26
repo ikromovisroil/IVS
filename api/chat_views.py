@@ -5,7 +5,6 @@ JSON (yoki multipart) kirish va `{"detail": ...}` xato formati.
 
 Real vaqt hodisalari — WebSocket: wss://<server>/ws/chat/?token=<access> (qo'llanmaga qarang).
 """
-from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.paginator import Paginator
 from django.db.models import Q

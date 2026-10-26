@@ -8,6 +8,7 @@ import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToast } from '../../components/toast'
 import { ApiError, api } from '../../api/client'
 import { useT } from '../../i18n'
+import { htmlOf, useRichEdit } from '../../components/richText'
 import { SPA, useDeed, useRefresh } from './api'
 import MultiPicker from './MultiPicker'
 import type { Deed, EditOptions, EmployeeOption } from './types'
@@ -61,6 +62,7 @@ function EditForm({ deed, options }: { deed: Deed; options: EditOptions }) {
   const tr = (s?: string) => (s ? t(s) : undefined)
   const editor = useRef<HTMLDivElement>(null)
   const [manual, setManual] = useState(false)
+  const { toolbar } = useRichEdit(editor, manual)      // TinyMCE doim ko'rinadi; "Qo'lda tahrirlash" yoqilganda tahrirlanadi
   const [confirming, setConfirming] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [form, setForm] = useState({
@@ -77,7 +79,7 @@ function EditForm({ deed, options }: { deed: Deed; options: EditOptions }) {
     mutationFn: () => {
       const body: Record<string, unknown> = {
         sender: form.sender,
-        body: editor.current?.innerHTML.trim() ?? '',
+        body: htmlOf(editor.current),
         agreements: form.agreements.filter((a) => a !== form.sender && a !== form.receiver),
       }
       if (deed.receiver) body.receiver = form.receiver
@@ -163,11 +165,10 @@ function EditForm({ deed, options }: { deed: Deed; options: EditOptions }) {
             {t(errors.body)}
           </p>
         )}
+        <div ref={toolbar} className="ivs-rich-toolbar" />
         <div
           ref={editor}
-          className={`msg-editor${manual ? ' is-editing' : ''}`}
-          contentEditable={manual}
-          suppressContentEditableWarning
+          className="msg-editor"
           role="textbox"
           aria-multiline="true"
           aria-label={t('Hujjat matni')}

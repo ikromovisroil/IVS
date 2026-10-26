@@ -20,7 +20,6 @@ from django.views.decorators.cache import never_cache
 from django.db import transaction, IntegrityError
 from django.utils import timezone
 from django.core.files.base import ContentFile
-import string
 from .sso_utils import *
 from .utils import *
 from .html_pdf import *
@@ -33,13 +32,11 @@ logger = logging.getLogger(__name__)
 # 1) Login page
 # -----------------------
 def login_page(request):
-    if settings.SPA_ENABLED:
-        # yangi interfeysning kirish sahifasi; @login_required qo'shgan ?next= saqlanadi (kirgach o'sha sahifaga qaytadi)
-        nxt = request.GET.get("next", "")
-        if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
-            return redirect(f"{settings.SPA_URL}?{urlencode({'next': nxt})}")
-        return redirect(settings.SPA_URL)
-    return render(request, "users/login.html")
+    # Kirish sahifasi yangi interfeysda (React); @login_required qo'shgan ?next= saqlanadi (kirgach o'sha sahifaga qaytadi)
+    nxt = request.GET.get("next", "")
+    if nxt and url_has_allowed_host_and_scheme(nxt, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(f"{settings.SPA_URL}?{urlencode({'next': nxt})}")
+    return redirect(settings.SPA_URL)
 
 
 # -----------------------
@@ -334,7 +331,7 @@ def sso_exchange(request):
         request.session.modified = True
         if mobile_login:
             return JsonResponse({"status": "ok", "redirect": "/api/auth/mobile/complete/"}, status=200)
-        return JsonResponse({"status": "ok", "redirect": settings.SPA_URL if settings.SPA_ENABLED else "/profil/"}, status=200)
+        return JsonResponse({"status": "ok", "redirect": settings.SPA_URL}, status=200)
 
     except PermissionDenied as e:
         return JsonResponse({"status": "error", "message": str(e), "redirect": "/sso/login/"}, status=403)

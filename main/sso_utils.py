@@ -1,22 +1,11 @@
 import base64
-import hashlib
 import json
-import secrets
 from urllib.parse import urlencode
 from django.conf import settings
 
 
 def b64url(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).decode().rstrip("=")
-
-
-def make_code_verifier() -> str:
-    return secrets.token_urlsafe(64)[:128]
-
-
-def make_code_challenge(code_verifier: str) -> str:
-    digest = hashlib.sha256(code_verifier.encode("utf-8")).digest()
-    return b64url(digest)
 
 
 def decode_jwt(token: str) -> dict:

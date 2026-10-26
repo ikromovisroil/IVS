@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { Avatar, Button, Icon } from '../ds'
+import { Avatar, Button, Icon, Switch } from '../ds'
 import { LOGOUT_URL, useMe } from '../auth/me'
 import { LANGS, useLang, useT } from '../i18n'
 import { avatarColor, initials } from '../lib/format'
+import { usePush } from '../lib/push'
 import { useTheme } from '../theme'
 import type { Theme } from '../theme'
 import './SettingsPanel.css'
@@ -26,6 +27,7 @@ export default function SettingsPanel({ open, onClose }: Props) {
   const t = useT()
   const { lang, setLang } = useLang()
   const { theme, setTheme } = useTheme()
+  const push = usePush()
   const navigate = useNavigate()
   const titleId = useId()
   const panel = useRef<HTMLDivElement>(null)
@@ -104,6 +106,33 @@ export default function SettingsPanel({ open, onClose }: Props) {
               ))}
             </div>
           </section>
+
+          {push.state !== 'unsupported' && (
+            <section className="ivs-sp-section" aria-labelledby={`${titleId}-push`}>
+              <div className="ivs-sp-section-head">
+                <Icon name="ri-notification-3-line" size={18} />
+                <h3 id={`${titleId}-push`} className="type-label-sm">
+                  {t('Bildirishnomalar')}
+                </h3>
+              </div>
+              <Switch
+                label={t('Brauzer bildirishnomalari')}
+                sub={t(
+                  push.state === 'denied'
+                    ? "Brauzer sozlamalarida bildirishnomalarga ruxsat berilmagan. Manzil satridagi qulf belgisi orqali yoqing."
+                    : "Sahifa yopiq bo'lsa ham yangi ariza va hujjatlar haqida xabar keladi.",
+                )}
+                checked={push.state === 'on'}
+                disabled={push.busy || push.state === 'loading' || push.state === 'denied'}
+                onChange={(on) => void push.toggle(on)}
+              />
+              {push.error && (
+                <p className="ivs-form-error type-para-sm" role="alert">
+                  {push.error}
+                </p>
+              )}
+            </section>
+          )}
 
           <section className="ivs-sp-section" aria-labelledby={`${titleId}-theme`}>
             <div className="ivs-sp-section-head">

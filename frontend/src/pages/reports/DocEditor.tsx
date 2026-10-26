@@ -1,23 +1,8 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Button, Switch, Widget } from '../../ds'
 import { useT } from '../../i18n'
+import { useRichEdit } from '../../components/richText'
 import type { DocApi } from './doc'
-
-const TOOLS: { cmd: string; icon: string; label: string }[] = [
-  { cmd: 'undo', icon: 'ri-arrow-go-back-line', label: 'Bekor qilish' },
-  { cmd: 'redo', icon: 'ri-arrow-go-forward-line', label: 'Qaytarish' },
-  { cmd: 'bold', icon: 'ri-bold', label: 'Qalin' },
-  { cmd: 'italic', icon: 'ri-italic', label: 'Kursiv' },
-  { cmd: 'underline', icon: 'ri-underline', label: 'Tagiga chizilgan' },
-  { cmd: 'strikeThrough', icon: 'ri-strikethrough', label: 'Ustidan chizilgan' },
-  { cmd: 'justifyLeft', icon: 'ri-align-left', label: 'Chapga' },
-  { cmd: 'justifyCenter', icon: 'ri-align-center', label: 'Markazga' },
-  { cmd: 'justifyRight', icon: 'ri-align-right', label: "O'ngga" },
-  { cmd: 'justifyFull', icon: 'ri-align-justify', label: 'Ikki tomonga' },
-  { cmd: 'insertOrderedList', icon: 'ri-list-ordered', label: "Raqamli ro'yxat" },
-  { cmd: 'insertUnorderedList', icon: 'ri-list-unordered', label: "Ro'yxat" },
-  { cmd: 'removeFormat', icon: 'ri-format-clear', label: 'Formatni tozalash' },
-]
 
 /** Hujjatni chop etish (TinyMCE "print" tugmasi o'rnida) — alohida iframe orqali, faqat hujjat matni. */
 function printHtml(html: string, landscape: boolean) {
@@ -59,10 +44,8 @@ export default function DocEditor({ doc, template, landscape }: DocEditorProps) 
     if (doc.ref.current) doc.ref.current.innerHTML = initial.current
   }, [doc.ref])
 
-  const exec = (cmd: string) => {
-    doc.ref.current?.focus()
-    document.execCommand(cmd)
-  }
+  // TinyMCE (eski sahifalardagi muharrir) doim ko'rinadi; "Qo'lda tahrirlash" yoqilganda tahrirlanadi
+  const { toolbar } = useRichEdit(doc.ref, editing)
 
   return (
     <Widget
@@ -71,21 +54,8 @@ export default function DocEditor({ doc, template, landscape }: DocEditorProps) 
       action={<Switch label={t("Qo'lda tahrirlash")} checked={editing} onChange={setEditing} />}
       className="rep-doc-widget"
     >
+      <div ref={toolbar} className="ivs-rich-toolbar" />
       <div className="rep-doc-toolbar" role="toolbar" aria-label={t('Matnni formatlash')}>
-        {TOOLS.map((tool) => (
-          <Button
-            key={tool.cmd}
-            variant="ghost"
-            size="sm"
-            icon={tool.icon}
-            iconOnly
-            aria-label={t(tool.label)}
-            title={t(tool.label)}
-            disabled={!editing}
-            onMouseDown={(e) => e.preventDefault()}
-            onClick={() => exec(tool.cmd)}
-          />
-        ))}
         <span className="aui-toolbar-grow" />
         <Button variant="ghost" size="sm" icon="ri-printer-line" onClick={() => printHtml(doc.html(), !!landscape)}>
           {t('Chop etish')}
@@ -94,9 +64,7 @@ export default function DocEditor({ doc, template, landscape }: DocEditorProps) 
       <div className="rep-doc-scroll">
         <div
           ref={doc.ref}
-          className={`rep-paper${landscape ? ' is-landscape' : ''}${editing ? ' is-editing' : ''}`}
-          contentEditable={editing}
-          suppressContentEditableWarning
+          className={`rep-paper${landscape ? ' is-landscape' : ''}`}
           role="textbox"
           aria-multiline="true"
           aria-readonly={!editing}

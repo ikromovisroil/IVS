@@ -95,9 +95,7 @@ class MeetingPermissionTests(ZoomTestCase):
         self.adddel_user, self.adddel_emp = make_employee(self.org, perms=[ADD, DELETE])
         self.view_user, self.view_emp = make_employee(self.org, perms=[VIEW])
 
-    def test_no_permission_blocks_page_and_api(self):
-        self.client.force_login(self.none_user)
-        self.assertEqual(self.client.get("/chat/meetings/").status_code, 403)
+    def test_no_permission_blocks_api(self):
         self.assertEqual(self.api(self.none_user).get("/api/v1/meetings/").status_code, 403)
         self.assertEqual(self.create(self.none_user).status_code, 403)
 
@@ -125,12 +123,7 @@ class MeetingPermissionTests(ZoomTestCase):
         item = next(m for m in results if m["id"] == mine["id"])
         self.assertNotIn("start_url", item)
         self.assertFalse(item["can_manage"])
-        self.client.force_login(self.view_user)
-        html = self.client.get("/chat/meetings/").content.decode()
-        self.assertIn("Birov", html)
-        self.assertNotIn("SECRET", html)
-        for forbidden in ("Boshlash", "Nusxalash", "Tugatish", "Yangi Zoom"):
-            self.assertNotIn(forbidden, html)
+        self.assertNotIn("SECRET", str(results))
 
     def test_viewer_cannot_cancel_or_finish_others(self):
         created = self.create(self.add_user).json()
@@ -232,60 +225,6 @@ class MeetingValidationTests(ZoomTestCase):
         second = self.create(self.user, hours=3).json()
         self.assertEqual(second["invitation"], "")
         self.assertTrue(second["join_url"])           # taklif matni bo'lmasa havola qoladi
-
-
-class MeetingWebPageTests(ZoomTestCase):
-    def setUp(self):
-        super().setUp()
-        self.user, self.emp = make_employee(self.org, perms=[ADD, DELETE, VIEW])
-        now = timezone.now()
-        for i in range(25):
-            Meeting.objects.create(
-                organizer=self.emp, title=f"Kelgusi-{i:02d}", start_at=now + timedelta(days=1, hours=i),
-                duration_minutes=30, zoom_id=str(i), join_url="https://zoom.us/j/1", start_url="https://zoom.us/s/1",
-            )
-        for i in range(22):
-            Meeting.objects.create(
-                organizer=self.emp, title=f"Otgan-{i:02d}", start_at=now - timedelta(days=2, hours=i),
-                duration_minutes=30, zoom_id=str(100 + i), join_url="https://zoom.us/j/2",
-            )
-        self.client.force_login(self.user)
-
-    def _count(self, response, prefix):
-        return sum(1 for i in range(40) if f"{prefix}-{i:02d}" in response.content.decode())
-
-    def test_upcoming_tab_paginates_by_20(self):
-        first = self.client.get("/chat/meetings/")
-        self.assertEqual(self._count(first, "Kelgusi"), 20)
-        self.assertEqual(self._count(first, "Otgan"), 0)
-        second = self.client.get("/chat/meetings/", {"page": 2})
-        self.assertEqual(self._count(second, "Kelgusi"), 5)
-        self.assertContains(second, '<th scope="row">21</th>', html=False)
-
-    def test_past_tab_paginates_by_20_and_numbers_continue(self):
-        first = self.client.get("/chat/meetings/", {"tab": "past"})
-        self.assertEqual(self._count(first, "Otgan"), 20)
-        self.assertEqual(self._count(first, "Kelgusi"), 0)
-        second = self.client.get("/chat/meetings/", {"tab": "past", "page": 2})
-        self.assertEqual(self._count(second, "Otgan"), 2)
-        self.assertContains(second, '<th scope="row">21</th>', html=False)
-
-    def test_new_zoom_button_only_on_upcoming_tab(self):
-        button = 'data-bs-target="#meetingModal"'
-        self.assertContains(self.client.get("/chat/meetings/"), button)
-        self.assertNotContains(self.client.get("/chat/meetings/", {"tab": "past"}), button)
-
-    def test_invalid_page_does_not_crash(self):
-        self.assertEqual(self.client.get("/chat/meetings/", {"page": "999"}).status_code, 200)
-        self.assertEqual(self.client.get("/chat/meetings/", {"page": "abc"}).status_code, 200)
-
-    def test_create_via_web_form(self):
-        local = timezone.localtime(self.base + timedelta(days=40)).strftime("%Y-%m-%dT%H:%M")
-        self.client.post("/chat/meetings/create/", {"title": "Veb forma", "start_at": local, "duration": "45", "agenda": "x"})
-        meeting = Meeting.objects.get(title="Veb forma")
-        self.assertEqual(meeting.duration_minutes, 45)
-        self.assertEqual(timezone.localtime(meeting.start_at).strftime("%Y-%m-%dT%H:%M"), local)
-        self.assertEqual(meeting.organizer_id, self.emp.id)
 
 
 class MeetingReminderTests(ZoomTestCase):

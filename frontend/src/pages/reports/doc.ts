@@ -1,5 +1,6 @@
 import { useMemo, useRef } from 'react'
 import type { RefObject } from 'react'
+import { htmlOf } from '../../components/richText'
 
 /**
  * Hujjat matni (eski sahifalardagi TinyMCE o'rnida). Shablon bir marta yoziladi, keyin sahifa uni id bo'yicha
@@ -22,7 +23,7 @@ export function useDoc(): DocApi {
       ref,
       setText: (selector, text) => all(selector).forEach((el) => (el.textContent = text)),
       setHTML: (selector, html) => all(selector).forEach((el) => (el.innerHTML = html)),
-      html: () => ref.current?.innerHTML.trim() ?? '',
+      html: () => htmlOf(ref.current),
     }
   }, [])
 }

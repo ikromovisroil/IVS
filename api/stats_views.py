@@ -10,7 +10,7 @@ from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from main.models import Category, Goal, Group, Order, Region, Technics
+from main.models import Category, Goal, Group, Order, Technics
 
 
 class _StatsBase(APIView):

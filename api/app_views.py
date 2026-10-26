@@ -8,7 +8,6 @@ ANDROID_UPDATE_URL, ANDROID_UPDATE_MESSAGE; API_MAINTENANCE=1 va API_MAINTENANCE
 import re
 
 from django.conf import settings
-from django.http import JsonResponse
 from django.utils import timezone
 from rest_framework import permissions
 from rest_framework.response import Response

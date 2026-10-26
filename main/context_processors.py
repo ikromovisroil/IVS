@@ -175,12 +175,3 @@ def contact_badge_counts(request):
         "contact_badge_count": contact_count,
         "contact_agrement_badge_count": agrement_count,
     }
-
-
-def vapid_context(request):
-    """
-    VAPID public key'ni har bir sahifaga yetkazadi - frontend JS
-    (base.html'dagi push subscription kodi) buni push obunasi
-    yaratishda ishlatadi.
-    """
-    return {"vapid_public_key": getattr(settings, "VAPID_PUBLIC_KEY", "")}

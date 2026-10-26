@@ -2,7 +2,7 @@
 from django.contrib.auth.models import AnonymousUser
 from django.core.cache import cache
 from django.test import RequestFactory, TestCase, override_settings
-from django.urls import reverse
+from rest_framework.test import APIClient
 
 from main.context_processors import (
     contact_badge_counts, invalidate_counts, order_notifications, order_receiver_count,
@@ -60,8 +60,9 @@ class ContextCacheTests(TestCase):
         self._new_order()
         self.assertEqual(self._count(), 1)
         self._new_order()
-        self.client.force_login(self.worker_user)
-        self.client.get(reverse("order_mark_seen"))
+        api = APIClient()
+        api.force_authenticate(self.worker_user)
+        self.assertEqual(api.post("/api/v1/orders/mark-seen/").status_code, 200)       # keshni tozalaydi
         self.assertEqual(self._count(), 2)
 
     @override_settings(CONTEXT_CACHE_SECONDS=30)

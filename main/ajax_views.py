@@ -21,33 +21,6 @@ import io
 from django.core.exceptions import PermissionDenied
 from django.http import FileResponse, JsonResponse
 
-@never_cache
-@require_GET
-@login_required
-def ajax_load_categories(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        raise PermissionDenied("Employee yo'q")
-
-    group_id = request.GET.get("group")
-    qs = Category.objects.none()
-
-    liable_ids = Liable.categorys.through.objects.filter(
-        liable__employee=employee
-    ).values_list("category_id", flat=True)
-
-    if group_id:
-        qs = (
-            Category.objects
-            .filter(id__in=liable_ids, group_id=group_id)
-            .only("id", "name")
-            .order_by("name")
-        )
-
-    return JsonResponse({
-        "results": [{"id": c.id, "name": c.name} for c in qs]
-    })
-
 
 @never_cache
 @require_GET
@@ -85,130 +58,6 @@ def ajax_sender_technics(request):
         })
 
     return JsonResponse({"results": results})
-
-
-@never_cache
-@require_GET
-@login_required
-def order_mark_seen(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        return JsonResponse({"status": "no_employee"}, status=400)
-
-    from .context_processors import invalidate_counts
-    invalidate_counts(employee.id)   # nuqta darhol yangilansin (hisoblagich keshi)
-
-    Order.objects.filter(
-        receiver=employee,
-        goal__organization__type="worker",
-        status__in=["approved", "canceled"],
-        receiver_seen=False,
-    ).update(receiver_seen=True)
-
-    Order.objects.filter(
-        receiver=employee,
-        goal__organization__type="client",
-        status__in=["accepted", "canceled", "rejected"],
-        receiver_seen=False,
-    ).update(receiver_seen=True)
-
-    # Yuboruvchi (sender) — worker
-    Order.objects.filter(
-        sender=employee,
-        goal__organization__type="worker",
-        status__in=["finished", "rejected"],
-        sender_seen=False,
-    ).update(sender_seen=True)
-
-    # Yuboruvchi (sender) — client
-    Order.objects.filter(
-        sender=employee,
-        goal__organization__type="client",
-        status__in=["approved", "rejected"],
-        sender_seen=False,
-    ).update(sender_seen=True)
-
-    # Tasdiqlovchi (user)
-    Order.objects.filter(
-        user=employee,
-        goal__organization__type="client",
-        status="accepted",
-        user_seen=False,
-    ).update(user_seen=True)
-
-    return JsonResponse({"status": "ok"})
-
-
-@never_cache
-@require_GET
-@login_required
-def order_check_new(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        return JsonResponse({"error": "Employee yo‘q"}, status=400)
-
-    order_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
-
-    orders_qs = Order.objects.filter(
-        sender_region=employee.region,
-        goal_id__in=order_goal_ids,
-        goal__organization__type="worker",
-        status="viewed",
-    )
-
-    latest_order = orders_qs.order_by("-id").values("id").first()
-
-    return JsonResponse({
-        "latest_id": latest_order["id"] if latest_order else 0,
-        "count": orders_qs.count(),
-    })
-
-
-@never_cache
-@require_GET
-@login_required
-def order_check_all(request):
-    employee = getattr(request.user, "employee", None)
-    if not employee:
-        return JsonResponse({"error": "Employee yo‘q"}, status=400)
-
-    latest_order = (
-        Order.objects
-        .filter(sender_region=employee.region,goal__organization=employee.organization, status="viewed")
-        .order_by("-id")
-        .values("id")
-        .first()
-    )
-
-    return JsonResponse({
-        "latest_id": latest_order["id"] if latest_order else 0,
-    })
-
-
-@never_cache
-@require_GET
-@login_required
-def get_department_employees(request):
-    emp_id = (request.GET.get("employee_id") or "").strip()
-    if not emp_id.isdigit():
-        return JsonResponse({"employees": []})
-
-    try:
-        receiver = Employee.objects.get(id=emp_id)
-    except Employee.DoesNotExist:
-        return JsonResponse({"employees": []})
-
-    # 🔥 Qaysi bo‘limga tegishli bo‘lsa — o‘sha bo‘lim xodimlari
-    qs = Employee.objects.filter(
-        department=receiver.department, user__is_active=True
-    ).exclude(id=receiver.id)  # Qabul qiluvchining o'zi chiqmasin
-
-    data = [
-        {"id": e.id, "name": f"{e.rank} - {e.full_name}"}
-        for e in qs
-    ]
-
-    return JsonResponse({"employees": data})
 
 
 SELECT_PAGE_SIZE = 20
@@ -267,30 +116,6 @@ def ajax_load_departments(request):
 
     qs = Department.objects.filter(**filters).order_by("id")
 
-    return _select_response(request, qs)
-
-
-@never_cache
-@require_GET
-@login_required
-def ajax_load_directorate(request):
-    dep_id = (request.GET.get("department") or "").strip()
-    if not dep_id or dep_id == "None":
-        return JsonResponse({"results": []})
-
-    qs = Directorate.objects.filter(department_id=dep_id)
-    return _select_response(request, qs)
-
-
-@never_cache
-@require_GET
-@login_required
-def ajax_load_division(request):
-    dir_id = (request.GET.get("directorate") or "").strip()
-    if not dir_id or dir_id == "None":
-        return JsonResponse({"results": []})
-
-    qs = Division.objects.filter(directorate_id=dir_id)
     return _select_response(request, qs)
 
 
@@ -447,7 +272,6 @@ def ajax_employees_worker(request):
     return JsonResponse({"results": data})
 
 
-
 @never_cache
 @require_GET
 @login_required
@@ -527,34 +351,6 @@ def ordermaterial_delete(request, pk):
 
     om.delete()
     return JsonResponse({"status": "ok"})
-
-
-@never_cache
-@require_GET
-@login_required
-def ajax_search_tex(request):
-    query = request.GET.get("q", "").strip()
-
-    if not query:
-        return JsonResponse({"results": []})
-
-    texs = Technics.objects.filter(
-        Q(name__icontains=query) |
-        Q(serial__icontains=query) |
-        Q(inventory__icontains=query)
-    )[:10]
-
-    data = [
-        {
-            "id": t.id,
-            "name": t.name,
-            "serial": t.serial,
-            "inventory": t.inventory,
-        }
-        for t in texs
-    ]
-
-    return JsonResponse({"results": data})
 
 
 @never_cache
@@ -913,7 +709,6 @@ def download_pdf(request):
     return response
 
 
-
 @never_cache
 @require_GET
 @login_required
@@ -1216,91 +1011,6 @@ def ajax_document_preview(request):
         }
 
     return JsonResponse({"contracts": contracts_data})
-
-
-@require_POST
-@login_required
-def add_material_to_cart(request):
-    employee = getattr(request.user, "employee", None)
-
-    if not employee:
-        return JsonResponse({
-            "ok": False,
-            "message": "Employee topilmadi"
-        }, status=403)
-
-    material_id = (request.POST.get("material_id") or "").strip()
-    if not material_id.isdigit():
-        return JsonResponse({"ok": False, "message": "Noto'g'ri material ID"}, status=400)
-
-    material = get_object_or_404(
-        Material,
-        id=material_id
-    )
-
-    cart_item = OrderMaterial.objects.filter(
-        order=None,
-        user=employee,
-        material=material
-    ).first()
-
-    # AGAR BOR BO'LSA O'CHIRAMIZ
-    if cart_item:
-        cart_item.delete()
-
-        return JsonResponse({
-            "ok": True,
-            "action": "removed",
-            "message": "Savatdan olib tashlandi"
-        })
-
-    # AGAR YO'Q BO'LSA QO'SHAMIZ
-    OrderMaterial.objects.create(
-        order=None,
-        user=employee,
-        material=material,
-        number=1
-    )
-
-    return JsonResponse({
-        "ok": True,
-        "action": "added",
-        "message": "Savatga saqlandi"
-    })
-
-
-@require_POST
-@login_required
-def delete_material_from_cart(request):
-    employee = getattr(request.user, "employee", None)
-
-    if not employee:
-        return JsonResponse({
-            "ok": False,
-            "message": "Employee topilmadi"
-        }, status=403)
-
-    item_id = (request.POST.get("item_id") or "").strip()
-
-    if not item_id or not item_id.isdigit():
-        return JsonResponse({
-            "ok": False,
-            "message": "ID kelmadi"
-        }, status=400)
-
-    item = get_object_or_404(
-        OrderMaterial,
-        id=item_id,
-        order__isnull=True,
-        user=employee
-    )
-
-    item.delete()
-
-    return JsonResponse({
-        "ok": True,
-        "message": "Savatdan o‘chirildi"
-    })
 
 
 @require_POST

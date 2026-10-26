@@ -28,7 +28,6 @@ ular qoldirgan Django xabarlari (messages) JSON javobga aylantiriladi.
 """
 import logging
 
-from django.contrib.auth.models import Permission
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Prefetch, Q, Sum

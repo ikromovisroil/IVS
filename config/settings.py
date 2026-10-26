@@ -164,12 +164,6 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
-                "main.context_processors.order_notifications",
-                "main.context_processors.order_receiver_count",
-                "main.context_processors.contact_badge_counts",
-                "main.context_processors.vapid_context",
-                "chat.context_processors.chat_notifications",
-                "core.context_processors.notification_center",
             ],
         },
     },
@@ -213,7 +207,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LOGIN_URL = "/sso/login/"
-LOGIN_REDIRECT_URL = "profil"
+LOGIN_REDIRECT_URL = "/app/"
 LOGOUT_REDIRECT_URL = "/sso/login/"
 
 
@@ -349,9 +343,7 @@ API_MAINTENANCE_MESSAGE = os.getenv("API_MAINTENANCE_MESSAGE", "")
 # =========================================================
 SWAGGER_PUBLIC = os.getenv("SWAGGER_PUBLIC", "0") == "1"
 
-# Yangi React interfeysi (/app/, config/spa.py). Yoqilganda "/" va SSO kirishdan keyingi yo'naltirish /app/ ga boradi;
-# o'chiq bo'lsa eski sahifalar asosiy bo'lib qoladi (/app/ baribir ochiladi).
-SPA_ENABLED = env_bool("SPA_ENABLED", False)
+# Yangi React interfeysi (/app/, config/spa.py): "/" va SSO kirishdan keyingi yo'naltirish shu yerga boradi.
 SPA_URL = "/app/"
 # SSO majburiy (standart). SSO_REQUIRED=0 — vaqtincha: yangi interfeysda login/parol bilan kirish ochiladi
 # (api/spa/auth.py), SSO sozlangan bo'lsa u ham qoladi.
@@ -663,6 +655,7 @@ JAZZMIN_UI_TWEAKS = {
 }
 
 
+# Brauzer push (Web Push, VAPID): kalitlar generate_vapid_keys.py bilan yaratiladi
 VAPID_PRIVATE_KEY_PEM = str(BASE_DIR / "private_key.pem")
 
 VAPID_PUBLIC_KEY = "BDG3vD4zmf8dNsRQRIoqebQKCn_QeJTwiUCO1pJWVoV_SKgOhFVEOX7bPagYoQwBSijel8Nf8q1DrqS7uydo5No"

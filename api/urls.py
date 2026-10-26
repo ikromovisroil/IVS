@@ -8,6 +8,7 @@ from .notification_views import (
     NotificationListView, NotificationReadAllView, NotificationReadView, NotificationUnreadCountView,
 )
 from .auth_views import LoginThrottle
+from .push_views import PushPublicKeyView, PushStatusView, PushSubscribeView, PushUnsubscribeView
 from .stats_views import EmployeeStatsView, TechnicsStatsView
 from .exports import (
     EmployeesExportView, MaterialReportExportView, MaterialsExportView, TechnicsExportView,
@@ -58,6 +59,10 @@ urlpatterns = router.urls + [
     path('notifications/unread-count/', NotificationUnreadCountView.as_view(), name='api_notifications_unread'),
     path('notifications/read-all/', NotificationReadAllView.as_view(), name='api_notifications_read_all'),
     path('notifications/<int:pk>/read/', NotificationReadView.as_view(), name='api_notification_read'),
+    path('push/public-key/', PushPublicKeyView.as_view(), name='api_push_key'),
+    path('push/subscribe/', PushSubscribeView.as_view(), name='api_push_subscribe'),
+    path('push/unsubscribe/', PushUnsubscribeView.as_view(), name='api_push_unsubscribe'),
+    path('push/status/', PushStatusView.as_view(), name='api_push_status'),
     path('meetings/', MeetingListCreateView.as_view(), name='api_meetings'),
     path('meetings/<int:pk>/', MeetingDetailView.as_view(), name='api_meeting_detail'),
     path('meetings/<int:pk>/cancel/', MeetingCancelView.as_view(), name='api_meeting_cancel'),

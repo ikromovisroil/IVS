@@ -72,23 +72,6 @@ class AtmOrderApprovalTests(TestCase):
         order.refresh_from_db()
         return order
 
-    def test_client_confirmer_cannot_approve_atm_order_on_site(self):
-        order = self._finished_order(self.atm_goal)
-        user, _ = make_employee(self.client_org, self.region, perms=["main.confirm_order", "main.change_order"])
-        self.client.force_login(user)
-        self.client.post(reverse("order_agrement_material"), {"order_id": order.id, "action": "approved"})
-        order.refresh_from_db()
-        self.assertEqual(order.status, "finished")
-
-    def test_worker_cannot_confirm_on_site(self):
-        order = self._finished_order(self.atm_goal)
-        user, _ = make_employee(self.worker_org, self.region, perms=["main.confirm_order", "main.change_order"])
-        self.client.force_login(user)
-        response = self.client.post(reverse("order_agrement_material"), {"order_id": order.id, "action": "approved"})
-        self.assertEqual(response.status_code, 403)
-        order.refresh_from_db()
-        self.assertEqual(order.status, "finished")
-
     def test_api_confirm_rejects_atm_order(self):
         order = self._finished_order(self.atm_goal)
         user, _ = make_employee(self.client_org, self.region, perms=["main.confirm_order", "main.change_order"])
@@ -109,55 +92,55 @@ class OrderDecideAndBotRatingTests(TestCase):
         self.barn_goal = make_goal(self.client_org)
         self.sender_user, self.sender = make_employee(self.client_org, self.region)
         _, self.receiver = make_employee(self.worker_org, self.region)
+        self.api = APIClient()
+        self.api.force_authenticate(self.sender_user)
 
     def _order(self, goal, status):
         return Order.objects.create(sender=self.sender, goal=goal, receiver=self.receiver, status=status)
 
+    def _decide(self, order, api=None, **data):
+        with mock.patch("api.views.notify_order_status_change"):
+            return (api or self.api).post(f"/api/v1/orders/{order.id}/decide/", data, format="json")
+
     def test_sender_accepts_with_rating(self):
         order = self._order(self.atm_goal, "finished")
-        self.client.force_login(self.sender_user)
-        with mock.patch("main.order_views.notify_order_status_change"):
-            self.client.post(reverse("order_decide", args=[order.id]), {"action": "accepted", "rating": "5"})
+        self.assertEqual(self._decide(order, action="accepted", rating=5).status_code, 200)
         order.refresh_from_db()
         self.assertEqual((order.status, order.rating), ("accepted", 5))
 
     def test_accept_only_works_for_finished_orders(self):
-        self.client.force_login(self.sender_user)
         for status in ("viewed", "process", "accepted", "canceled", "rejected", "approved"):
             order = self._order(self.atm_goal, status)
-            with mock.patch("main.order_views.notify_order_status_change"):
-                self.client.post(reverse("order_decide", args=[order.id]), {"action": "accepted", "rating": "5"})
+            self.assertEqual(self._decide(order, action="accepted", rating=5).status_code, 400, status)
             order.refresh_from_db()
             self.assertEqual(order.status, status, status)
             self.assertIsNone(order.rating, status)
 
     def test_cancel_only_works_before_completion(self):
-        self.client.force_login(self.sender_user)
         for status in ("viewed", "process", "finished"):
             order = self._order(self.atm_goal, status)
-            with mock.patch("main.order_views.notify_order_status_change"):
-                self.client.post(reverse("order_decide", args=[order.id]), {"action": "canceled"})
+            self.assertEqual(self._decide(order, action="canceled").status_code, 200, status)
             order.refresh_from_db()
             self.assertEqual(order.status, "canceled", status)
         for status in ("accepted", "canceled", "rejected", "approved"):
             order = self._order(self.atm_goal, status)
-            with mock.patch("main.order_views.notify_order_status_change"):
-                self.client.post(reverse("order_decide", args=[order.id]), {"action": "canceled"})
+            self.assertEqual(self._decide(order, action="canceled").status_code, 400, status)
             order.refresh_from_db()
             self.assertEqual(order.status, status, status)
 
     def test_bad_rating_rejected(self):
         order = self._order(self.atm_goal, "finished")
-        self.client.force_login(self.sender_user)
-        self.client.post(reverse("order_decide", args=[order.id]), {"action": "accepted", "rating": "9"})
+        self.assertEqual(self._decide(order, action="accepted", rating=9).status_code, 400)
+        self.assertEqual(self._decide(order, action="accepted").status_code, 400)          # baho majburiy
         order.refresh_from_db()
         self.assertEqual(order.status, "finished")
 
     def test_stranger_cannot_decide(self):
         order = self._order(self.atm_goal, "finished")
         user, _ = make_employee(self.client_org, self.region)
-        self.client.force_login(user)
-        response = self.client.post(reverse("order_decide", args=[order.id]), {"action": "accepted", "rating": "5"})
+        stranger = APIClient()
+        stranger.force_authenticate(user)
+        response = self._decide(order, api=stranger, action="accepted", rating=5)
         self.assertEqual(response.status_code, 403)
         order.refresh_from_db()
         self.assertEqual(order.status, "finished")

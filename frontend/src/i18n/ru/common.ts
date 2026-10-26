@@ -39,6 +39,9 @@ const ru: Record<string, string> = {
   'Ko‘zni kamroq charchatadi': 'Меньше утомляет глаза',
   'Qurilma sozlamasiga ergashadi': 'Как в настройках устройства',
   'Telegram bot': 'Telegram-бот',
+  'Brauzer bildirishnomalari': 'Уведомления в браузере',
+  "Sahifa yopiq bo'lsa ham yangi ariza va hujjatlar haqida xabar keladi.": 'Уведомления о новых заявках и документах приходят, даже если страница закрыта.',
+  'Brauzer sozlamalarida bildirishnomalarga ruxsat berilmagan. Manzil satridagi qulf belgisi orqali yoqing.': 'В настройках браузера уведомления запрещены. Включите их через значок замка в адресной строке.',
   Chiqish: 'Выйти',
 
   // Umumiy tugma va yorliqlar

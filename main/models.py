@@ -7,7 +7,7 @@ import string
 import qrcode
 from io import BytesIO
 from django.core.files import File
-from django.db import models,transaction
+from django.db import models
 from django.urls import reverse
 
 

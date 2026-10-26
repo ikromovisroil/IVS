@@ -4,7 +4,8 @@ import react from '@vitejs/plugin-react'
 // Django (127.0.0.1:8000) shu manzillarni beradi. Proxy Host sarlavhasini o'zgartirmaydi,
 // shuning uchun sessiya cookie'si va CSRF tekshiruvi localhost:5173 uchun ishlaydi.
 const DJANGO = 'http://127.0.0.1:8000'
-const backendPaths = ['/api', '/sso', '/media', '/static', '/ivc_service_admin_panel', '/swagger', '/ws']
+// '/app/sw.js' — brauzer push service worker'i Django'dan beriladi (scope /app/ uchun)
+const backendPaths = ['/api', '/sso', '/media', '/static', '/ivc_service_admin_panel', '/swagger', '/ws', '/app/sw.js']
 
 export default defineConfig(({ command }) => ({
   plugins: [react()],
