@@ -123,3 +123,34 @@ class EmployeeUpdateTests(TestCase):
     def test_names_required(self):
         self.assertEqual(self._update(first_name="").status_code, 400)
         self.assertEqual(self._first_name(), "Eski")
+
+
+class EmployeeRegionScopeTests(TestCase):
+    """Xodimlar ro'yxati: all_region bo'lmasa faqat o'z hududi; all_region bo'lsa tashkilotning hamma hududi."""
+
+    def setUp(self):
+        self.org = make_org("worker")
+        self.r1, self.r2 = make_region("Toshkent"), make_region("Samarqand")
+        _, self.same_region = make_employee(self.org, self.r1, first="Bir", last="Hududdosh")
+        _, self.other_region = make_employee(self.org, self.r2, first="Boshqa", last="Hudud")
+
+    def ids(self, user):
+        r = api_for(user).get(URL, {"page_size": 100})
+        self.assertEqual(r.status_code, 200, r.data)
+        return {e["id"] for e in r.data["results"]}
+
+    def test_region_limited_manager_sees_only_own_region(self):
+        user, me = make_employee(self.org, self.r1, perms=["main.view_employee"], first="Men", last="Menejer")
+        self.assertEqual(self.ids(user), {me.id, self.same_region.id})
+
+    def test_all_region_sees_every_region_of_the_organization(self):
+        user, me = make_employee(self.org, self.r1, perms=["main.view_employee", "main.all_region"], last="Hamma")
+        self.assertEqual(self.ids(user), {me.id, self.same_region.id, self.other_region.id})
+
+    def test_organization_scope_still_applies_with_all_region(self):
+        other_org = make_org("client")
+        _, outsider = make_employee(other_org, self.r1, first="Tashqi", last="Tashkilot")
+        user, me = make_employee(self.org, self.r1, perms=["main.view_employee", "main.all_region"], last="Hamma")
+        self.assertNotIn(outsider.id, self.ids(user))
+        both, me2 = make_employee(self.org, self.r1, perms=["main.view_employee", "main.all_region", "main.all_organization"], last="Admin")
+        self.assertIn(outsider.id, self.ids(both))

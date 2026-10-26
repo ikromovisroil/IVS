@@ -224,7 +224,8 @@ class RankViewSet(viewsets.ReadOnlyModelViewSet):
 class EmployeeViewSet(viewsets.ModelViewSet):
     """
     Saytdagi (main/views.py: employee, employee_create/update/delete) bilan bir xil:
-    Ko'rish — 'view_employee'; 'all_organization' bo'lsa hammasi, aks holda faqat o'z tashkiloti.
+    Ko'rish — 'view_employee'; 'all_organization' bo'lsa hamma tashkilot, aks holda faqat o'z tashkiloti.
+    Hudud — 'all_region' bo'lmasa faqat o'z hududidagi xodimlar.
     Qo'shish — 'add_employee' (User avtomatik yaratiladi, kirish SSO orqali).
     Tahrirlash — 'change_employee' (tashkilot o'zgarmaydi; joylashuv o'zgarsa texnikalar bilan nima qilish
     `technics_action` orqali). O'chirish — 'delete_employee' (o'zini o'chirib bo'lmaydi, User faolsizlanadi).
@@ -252,10 +253,14 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         if self.action == 'list':
             qs = qs.filter(user__is_active=True)   # o'chirilgan (faolsiz) xodimlar ro'yxatda chiqmaydi
 
+        employee = getattr(user, "employee", None)
+        # Hudud: "Barcha hududlar" (all_region) huquqi bo'lmasa — faqat o'z hududidagi xodimlar (RegionViewSet bilan bir xil)
+        if not (user.is_superuser or user.has_perm('main.all_region')) and employee and employee.region_id:
+            qs = qs.filter(region_id=employee.region_id)
+
         if user.is_superuser or user.has_perm('main.all_organization'):
             return qs
 
-        employee = getattr(user, "employee", None)
         if not employee or not employee.organization_id:
             return qs.none()
 
