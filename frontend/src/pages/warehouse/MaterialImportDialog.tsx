@@ -4,7 +4,7 @@ import { Button, Select } from '../../ds'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import Modal from '../../components/Modal'
 import { useToast } from '../../components/toast'
-import { API, ApiError, api } from '../../api/client'
+import { API, api } from '../../api/client'
 import { useT } from '../../i18n'
 import { formatNumber } from '../../lib/format'
 import { errorText, money } from '../technics/util'
@@ -83,7 +83,7 @@ export default function MaterialImportDialog({ onClose }: { onClose: () => void 
     },
     onError: (e) => {
       setResult(null)
-      setError(e instanceof ApiError ? Object.values(e.fieldErrors).join(' ') || e.message : errorText(e))
+      setError(errorText(e) ?? '')
     },
   })
 
