@@ -146,22 +146,22 @@ export function aktTemplate(userName: string, userRank: string): string {
   <div style="text-align:center;"><b>DALOLATNOMA</b></div>
   <div style="text-align:right;"><u id="doc_date">_</u></div>
   <div style="text-align:center;">
-    Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
-    “Axborot texnologiyalari markazi” davlat unitar korxonasining vakillari:
+    Biz, quyida imzo chekuvchilar, “O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
+    Axborot texnologiyalari markazi” davlat unitar korxonasining vakillari:
   </div>
   <div style="text-align:center;"><b><u>${esc(userName)} (${esc(rankCase(userRank))})</u></b></div>
   <div style="text-align:center;font-size:8pt;">(F.I.Sh., ATM mutaxassisining lavozimi)</div>
   ${signRow(
-    `<span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va Moliya vazirligi</span> tashkiloti vakili:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
+    `<span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va Moliya vazirligi</span> tashkiloti xodimi:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
     `<span id="dep_id">Muvofiqlashtirish va axborot-tahlil departamenti</span><br><span>ushbu dalolatnoma quyidagi ishlar bajarilganligi uchun tuzilgan:</span>`,
     'center',
   )}
   <div style="text-align:center;margin-top:12px;">
     <b><u>Quyida ko‘rsatilgan materiallarni o‘rnatish</u></b><br>
-    <span style="text-align:center;font-size:8pt;">(ATM mutaxassislari tomonidan bajarilgan ish turlari bo‘yicha tafsilotlar)</span>
+    <span style="text-align:center;font-size:8pt;">(Mutaxassislar tomonidan bajarilgan ish turlari bo‘yicha tafsilotlar)</span>
   </div>
   <div style="margin-top:10px;">${signRow(
-    '<strong>Iqtisodiyot va Moliya vazirligi huzuridagi ATM tomonidan</strong><br><strong>quyidagi sarf materiallari, ehtiyot qismlar va uskunalar o‘rnatildi:</strong>',
+    '<strong>Qurilmalarga texnik xizmat ko‘rsatish bo‘limi mutaxassislari tomonidan</strong><br><strong>quyidagi sarf materiallari, ehtiyot qismlar va uskunalar o‘rnatildi:</strong>',
     '<strong><span id="date_contract"></span></strong>',
     'center',
   )}</div>
@@ -175,8 +175,8 @@ export function aktTemplate(userName: string, userRank: string): string {
   <div style="text-align:left;"><b>Yaroqsiz ehtiyot qismlar foydalanuvchida qoldirildi.</b></div>
   <div style="text-align:left;">Izoh: o‘rnatilgan ehtiyot qismlar yoki asbob-uskunalarning birlik narxi buxgalteriya hisobi uchun ko‘rsatiladi.</div>
   ${signRow(
-    `<b>Xizmat ko‘rsatuvchi vakili:</b><br><span>${esc(userName)}</span><br><span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>`,
-    `<b>O‘zbekiston Respublikasi <span id="org_id_2">Tashkilot</span> tashkiloti vakili:</b><br><span id="sender_name2">_</span><br><span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>`,
+    `<b>Xizmat ko‘rsatuvchi mutaxassis:</b><br><span>${esc(userName)}</span><br><span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>`,
+    `<b>O‘zbekiston Respublikasi <span id="org_id_2">Tashkilot</span> tashkiloti xodimi:</b><br><span id="sender_name2">_</span><br><span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>`,
     'center',
   )}
 </div>`
