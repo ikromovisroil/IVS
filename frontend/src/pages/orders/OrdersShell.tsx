@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom'
 import Page from '../../layout/Page'
 import PageTabs from '../../components/PageTabs'
 import type { PageTab } from '../../components/PageTabs'
-import { useReceiverPending } from './hooks'
+import { useMarkOrdersSeen, useReceiverPending } from './hooks'
 import { useMe } from '../../auth/me'
 import { ordersTabs } from './tabs'
 
@@ -33,6 +33,7 @@ interface ShellProps {
 /** Har bir ATM arizalari sahifasi: sarlavha, bo'lim tablari, ichki tablar. */
 export default function OrdersShell({ title, subtitle, icon, actions, subTabs, subLabel, children }: ShellProps) {
   const tabs = useTopTabs()
+  useMarkOrdersSeen()
   return (
     <Page icon={icon} title={title} subtitle={subtitle} actions={actions}>
       <PageTabs tabs={tabs} label="Arizalar bo'limlari" />

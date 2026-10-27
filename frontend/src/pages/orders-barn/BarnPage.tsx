@@ -5,6 +5,7 @@ import Page from '../../layout/Page'
 import PageTabs from '../../components/PageTabs'
 import EmptyState from '../../components/EmptyState'
 import { useMe } from '../../auth/me'
+import { useMarkOrdersSeen } from '../orders/hooks'
 import { ordersTabs } from '../orders/tabs'
 import { sectionAllowed } from './access'
 import type { BarnSection } from './access'
@@ -80,6 +81,7 @@ export default function BarnPage({ section, tools, actions, children }: BarnPage
   const navigate = useNavigate()
   const t = useT()
   const tabs = useSubTabs(section)
+  useMarkOrdersSeen()
   const allowed = sectionAllowed(me, section)
   const active = tabs
     .filter((s) => pathname === s.path || pathname.startsWith(s.path + '/'))

@@ -1,4 +1,6 @@
+import { useEffect } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocation } from 'react-router-dom'
 import { api } from '../../api/client'
 import type { Page as ApiPage } from '../../api/client'
 import { useUrlFilters } from '../../lib/useUrlFilters'
@@ -17,6 +19,17 @@ export function useOrderList(role: OrderRole, poll = false) {
     refetchIntervalInBackground: false,
   })
   return { list, page, setPage }
+}
+
+/** "Arizalar" bo'limiga kirilganda yon menyudagi qizil son (o'qilmagan belgilar) o'chadi: /orders/mark-seen/. */
+export function useMarkOrdersSeen() {
+  const qc = useQueryClient()
+  const { pathname } = useLocation()
+  useEffect(() => {
+    api('/orders/mark-seen/', { method: 'POST' })
+      .then(() => qc.invalidateQueries({ queryKey: ['badges', 'orders'] }))
+      .catch(() => {})
+  }, [pathname, qc])
 }
 
 export function useOrderDetail(id: number) {

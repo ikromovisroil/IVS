@@ -1728,29 +1728,8 @@ class OrderViewSet(
     @action(detail=False, methods=['post'], url_path='mark-seen')
     def mark_seen(self, request):
         """Yangi ariza belgilarini o'chirish (saytdagi order_mark_seen)."""
-        employee = self._employee()
-        from main.context_processors import invalidate_counts
-        invalidate_counts(employee.id)   # hisoblagich keshi tozalanadi
-        Order.objects.filter(
-            receiver=employee, goal__organization__type="worker",
-            status__in=["approved", "canceled"], receiver_seen=False,
-        ).update(receiver_seen=True)
-        Order.objects.filter(
-            receiver=employee, goal__organization__type="client",
-            status__in=["accepted", "canceled", "rejected"], receiver_seen=False,
-        ).update(receiver_seen=True)
-        Order.objects.filter(
-            sender=employee, goal__organization__type="worker",
-            status__in=["finished", "rejected"], sender_seen=False,
-        ).update(sender_seen=True)
-        Order.objects.filter(
-            sender=employee, goal__organization__type="client",
-            status__in=["approved", "rejected"], sender_seen=False,
-        ).update(sender_seen=True)
-        Order.objects.filter(
-            user=employee, goal__organization__type="client",
-            status="accepted", user_seen=False,
-        ).update(user_seen=True)
+        from main.context_processors import mark_orders_seen
+        mark_orders_seen(self._employee())
         return Response({"status": "ok"})
 
     @action(detail=False, methods=['get'], url_path='badges')

@@ -37,6 +37,31 @@ def invalidate_counts(employee_id):
     cache.delete_many([f"ctx:{name}:{employee_id}" for name in CACHED_COUNTS])
 
 
+# Xabar beruvchi belgilar: (xodim maydoni, tashkilot turi, holatlar, "ko'rildi" maydoni).
+# Sanash (order_unseen_q) va o'chirish (mark_orders_seen) AYNAN shu ro'yxatdan — ikkalasi farqlanib qolmaydi.
+ORDER_SEEN_RULES = (
+    ("receiver", "worker", ("approved", "canceled"), "receiver_seen"),
+    ("receiver", "client", ("accepted", "canceled", "rejected"), "receiver_seen"),
+    ("sender", "worker", ("finished", "rejected"), "sender_seen"),
+    ("sender", "client", ("approved", "rejected"), "sender_seen"),
+    ("user", "client", ("accepted",), "user_seen"),
+)
+
+
+def order_unseen_q(employee):
+    q = Q(pk__in=[])
+    for who, org_type, statuses, seen in ORDER_SEEN_RULES:
+        q |= Q(**{who: employee, "goal__organization__type": org_type, "status__in": statuses, seen: False})
+    return q
+
+
+def mark_orders_seen(employee):
+    """Xodimning "yangi" belgilarini o'chiradi va hisoblagich keshini tozalaydi."""
+    for who, org_type, statuses, seen in ORDER_SEEN_RULES:
+        Order.objects.filter(**{who: employee, "goal__organization__type": org_type, "status__in": statuses, seen: False}).update(**{seen: True})
+    invalidate_counts(employee.id)
+
+
 @cached_counts("order_notifications")
 def order_notifications(request):
     empty = {"order_notification_count": 0}
@@ -61,18 +86,9 @@ def order_notifications(request):
         barn_goal_ids = OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)
 
     conditions = (
-        Q(receiver=employee, goal__organization__type="worker",
-          status__in=["viewed", "approved", "canceled"], receiver_seen=False) |
-        Q(receiver=employee, goal__organization__type="client",
-          status__in=["viewed", "accepted", "canceled", "rejected"], receiver_seen=False) |
-
-        Q(sender=employee, goal__organization__type="worker",
-          status__in=["finished", "rejected"], sender_seen=False) |
-        Q(sender=employee, goal__organization__type="client",
-          status__in=["approved", "rejected"], sender_seen=False) |
-
-        Q(user=employee, goal__organization__type="client",
-          status="accepted", user_seen=False) |
+        order_unseen_q(employee) |
+        # biriktirilgan, lekin hali qabul qilinmagan arizalar: belgi qabul qilinganda o'chadi (mark-seen emas)
+        Q(receiver=employee, status="viewed", receiver_seen=False) |
 
         # order_receiver: hali receiver tayinlanmagan, worker goal'lariga ruxsatli
         Q(receiver__isnull=True,
