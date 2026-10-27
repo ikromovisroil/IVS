@@ -17,11 +17,14 @@ class OrderMaterialInline(admin.TabularInline):
     extra = 1
     can_delete = False   # ariza materiali o'chirilsa ombor qoldig'i qaytmaydi
     readonly_fields = ("price", "unit_name", "material_name", "material_code")
+    # oddiy <select> hamma material va xodimni har qatorda yuklardi
+    autocomplete_fields = ("material", "user")
 
 
 class DeedConsentInline(admin.TabularInline):
     model = DeedConsent
     extra = 1
+    autocomplete_fields = ("employee",)     # hamma xodimni har qatorda yuklamaslik uchun
 
 
 class DeedFilesInline(admin.TabularInline):
@@ -55,20 +58,23 @@ class DepartmentAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ("id", "code", "inn", "region", "name", "organization")
     list_filter = ("organization", "region")
     search_fields = ("name", "code", "inn", "organization__name")
+    autocomplete_fields = ("organization",)
 
 
 @admin.register(Directorate)
 class DirectorateAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "name", "department")
-    list_filter = ("department", "department__organization")
+    list_filter = ("department__organization",)        # "department" filtri hamma bo'limni yuklardi
     search_fields = ("name", "code", "department__name", "department__organization__name")
+    autocomplete_fields = ("department",)
 
 
 @admin.register(Division)
 class DivisionAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "name", "directorate")
-    list_filter = ("directorate", "directorate__department")
+    list_filter = ("directorate__department__organization",)    # "directorate" filtri hamma boshqarmani yuklardi
     search_fields = ("name", "code", "directorate__name")
+    autocomplete_fields = ("directorate",)
 
 
 class RankCodeInline(admin.TabularInline):
@@ -119,6 +125,7 @@ class UnitAdmin(admin.ModelAdmin):
 class GoalAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
+    autocomplete_fields = ("organization",)
 
 
 @admin.register(StructureCategory)
@@ -259,6 +266,7 @@ class StructureAdmin(admin.ModelAdmin):
 class MaterialCategoryAdmin(admin.ModelAdmin):
     list_display = ("id", "name")
     search_fields = ("name",)
+    autocomplete_fields = ("organization",)
 
 
 @admin.register(Material)
@@ -275,7 +283,7 @@ class MaterialAdmin(admin.ModelAdmin):
         "name", "code",
         "employee__last_name", "employee__first_name"
     )
-    autocomplete_fields = ("employee", "unit")
+    autocomplete_fields = ("employee", "unit", "organization", "category")
 
 
 @admin.register(MaterialUser)
@@ -347,7 +355,7 @@ class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
         "sender__last_name", "sender__first_name",
         "receiver__last_name", "receiver__first_name"
     )
-    autocomplete_fields = ("sender", "receiver", "user")
+    autocomplete_fields = ("sender", "receiver", "user", "technics", "goal")
     inlines = [OrderMaterialInline]
     readonly_fields = (
         "date_creat", "date_edit", "date_process", "date_finished",
@@ -401,7 +409,7 @@ class OrderMaterialAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
         "order__id", "user__first_name",
         "user__last_name", "user__father_name"
     )
-    autocomplete_fields = ("order", "material")
+    autocomplete_fields = ("order", "material", "user")
 
 
 @admin.register(OrderGoal)
@@ -446,8 +454,7 @@ class DeedAdmin(admin.ModelAdmin):
         "user__last_name", "user__first_name",
         "orders__id",
     )
-    autocomplete_fields = ("sender", "receiver", "user")
-    filter_horizontal = ("orders",)
+    autocomplete_fields = ("sender", "receiver", "user", "orders", "organization")      # filter_horizontal barcha arizalarni yuklardi
     readonly_fields = ("code", "date_creat", "date_edit")
     inlines = [DeedConsentInline, DeedFilesInline]
 
@@ -605,6 +612,7 @@ class MaterialMovementAdmin(admin.ModelAdmin):
     list_select_related = ('material', 'user', 'employee')
     list_per_page = 50
     show_full_result_count = False
+    autocomplete_fields = ('material', 'user', 'employee')
     search_fields = [
         'material__name',
         'user__last_name',

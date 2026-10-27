@@ -16,6 +16,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 from django.contrib import admin
+from main.admin_tuning import lighten_admin
 from django.urls import path, include, re_path
 
 API_DESCRIPTION = """
@@ -55,6 +56,8 @@ schema_view = get_schema_view(
     permission_classes=[permissions.AllowAny if getattr(settings, "SWAGGER_PUBLIC", False) else permissions.IsAuthenticated],
     patterns=[path('api/v1/', include('api.urls'))],
 )
+
+lighten_admin()
 
 urlpatterns = [
     # ADMIN PANEL

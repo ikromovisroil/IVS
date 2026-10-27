@@ -40,39 +40,6 @@ def _employee_edit_link(obj):
 
 
 # ---------------------------------------------------------
-# SyncEmployeeLog inline — SyncLog ichida
-# ---------------------------------------------------------
-class SyncEmployeeLogInline(admin.TabularInline):
-    model           = SyncEmployeeLog
-    extra           = 0
-    can_delete      = False
-    readonly_fields = ("pinfl", "full_name", "result_badge", "changes", "error_msg", "edit_link")
-    fields          = ("pinfl", "full_name", "result_badge", "changes", "error_msg", "edit_link")
-    ordering        = ("-date_creat",)
-
-    def result_badge(self, obj):
-        colors = {
-            "updated": "#28a745",
-            "blocked": "#dc3545",
-            "error":   "#ffc107",
-        }
-        color = colors.get(obj.result, "#6c757d")
-        return format_html(
-            '<span style="background:{};color:white;padding:2px 8px;'
-            'border-radius:8px;font-size:12px;">{}</span>',
-            color, obj.get_result_display()
-        )
-    result_badge.short_description = "Natija"
-
-    def edit_link(self, obj):
-        return _employee_edit_link(obj)
-    edit_link.short_description = "Xodimni tahrirlash"
-
-    def has_add_permission(self, request, obj=None):
-        return False
-
-
-# ---------------------------------------------------------
 # SyncLog
 # ---------------------------------------------------------
 @admin.register(SyncLog)
@@ -88,7 +55,15 @@ class SyncLogAdmin(admin.ModelAdmin):
         "skipped", "errors", "duration", "status"
     )
     ordering        = ("-date_creat",)
-    inlines         = [SyncEmployeeLogInline]
+    # Sinxronizatsiyadagi hamma xodim logini inline qilib chizish minglab qatorda sahifani qotirardi: filtrlangan ro'yxatga havola
+    readonly_fields = readonly_fields + ("employee_logs_link",)
+
+    def employee_logs_link(self, obj):
+        if not obj.pk:
+            return "—"
+        url = reverse("admin:core_syncemployeelog_changelist") + f"?sync__id__exact={obj.pk}"
+        return format_html('<a href="{}">Xodimlar bo‘yicha natijalar ({})</a>', url, obj.employee_logs.count())
+    employee_logs_link.short_description = "Xodimlar logi"
 
     def has_add_permission(self, request):
         return False

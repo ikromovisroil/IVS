@@ -1,18 +1,13 @@
 from django.contrib import admin
 
 from django.contrib import messages as dj_messages
+from django.urls import reverse
+from django.utils.html import format_html
 
 from main.admin import NoDeleteAdminMixin
 
 from .models import Conversation, ConversationClear, Meeting, Message, OnlineStatus
 from .services import restore_message
-
-
-class MessageInline(admin.TabularInline):
-    model = Message
-    extra = 0
-    readonly_fields = ("sender", "is_ai", "body", "date_creat", "read_at")
-    can_delete = False
 
 
 @admin.register(Conversation)
@@ -23,9 +18,17 @@ class ConversationAdmin(admin.ModelAdmin):
         "participant_1__last_name", "participant_1__first_name",
         "participant_2__last_name", "participant_2__first_name",
     )
-    autocomplete_fields = ("participant_1", "participant_2")
+    autocomplete_fields = ("participant_1", "participant_2", "participants", "admins", "hidden_for")
     ordering = ("-date_edit", "-id")
-    inlines = [MessageInline]
+    readonly_fields = ("messages_link",)
+
+    # Suhbatdagi hamma xabarni inline qilib chizish minglab qatorda sahifani qotirardi: filtrlangan ro'yxatga havola
+    @admin.display(description="Xabarlar")
+    def messages_link(self, obj):
+        if not obj.pk:
+            return "—"
+        url = reverse("admin:chat_message_changelist") + f"?conversation__id__exact={obj.pk}"
+        return format_html('<a href="{}">{} ta xabar — ro‘yxatni ochish</a>', url, obj.messages.count())
 
 
 @admin.register(Message)
