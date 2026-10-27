@@ -39,7 +39,7 @@ export function SenderArchivePage() {
 export function ExecuteNewPage() {
   return (
     <BarnPage section="execute">
-      <OrdersList role="barn_receiver_new" mode="review" columns={['sender']} actionLabel="Ko'rib chiqish" poll emptyText="Yangi ariza yo‘q" emptyDescription="Omborxonaga kelgan yangi arizalar shu yerda paydo bo‘ladi." />
+      <OrdersList role="barn_receiver_new" mode="review" columns={['sender']} poll emptyText="Yangi ariza yo‘q" emptyDescription="Omborxonaga kelgan yangi arizalar shu yerda paydo bo‘ladi." />
     </BarnPage>
   )
 }
@@ -47,7 +47,7 @@ export function ExecuteNewPage() {
 export function ExecuteActivePage() {
   return (
     <BarnPage section="execute">
-      <OrdersList role="barn_receiver_active" mode="finish" columns={['sender']} actionLabel="Bajarish" emptyText="Jarayondagi ariza yo‘q" emptyDescription="Qabul qilingan arizalar bajarilguncha shu yerda turadi." />
+      <OrdersList role="barn_receiver_active" mode="finish" columns={['sender']} emptyText="Jarayondagi ariza yo‘q" emptyDescription="Qabul qilingan arizalar bajarilguncha shu yerda turadi." />
     </BarnPage>
   )
 }
@@ -64,7 +64,7 @@ export function ExecuteArchivePage() {
 export function ConfirmPage() {
   return (
     <BarnPage section="confirm">
-      <OrdersList role="barn_agrement" mode="confirm" columns={['sender', 'receiver']} actionLabel="Ko'rib chiqish" emptyText="Tasdiqlashni kutayotgan ariza yo'q" emptyDescription="Omborxonachi tayyorlagan arizalar tasdiqlash uchun shu yerda paydo bo'ladi." />
+      <OrdersList role="barn_agrement" mode="confirm" columns={['sender', 'receiver']} emptyText="Tasdiqlashni kutayotgan ariza yo'q" emptyDescription="Omborxonachi tayyorlagan arizalar tasdiqlash uchun shu yerda paydo bo'ladi." />
     </BarnPage>
   )
 }

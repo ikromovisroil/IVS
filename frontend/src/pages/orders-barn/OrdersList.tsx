@@ -1,7 +1,8 @@
 import { useSearchParams } from 'react-router-dom'
-import { Button, CellUser, DataTable, Pagination } from '../../ds'
+import { CellUser, DataTable, Pagination } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import DataState from '../../components/DataState'
+import RowClick from '../../components/RowClick'
 import { useUrlFilters } from '../../lib/useUrlFilters'
 import { avatarColor, initials } from '../../lib/format'
 import { PAGE_SIZE, formatDate, useBarnList } from './api'
@@ -18,8 +19,6 @@ interface Props {
   role: BarnRole
   mode: DetailMode
   columns: ColumnKey[]
-  /** Ko'rish tugmasi matni, o'zbekcha (masalan, "Bajarish") — shu yerda tarjima qilinadi */
-  actionLabel?: string
   poll?: boolean
   emptyText: string
   emptyDescription?: string
@@ -31,7 +30,7 @@ function person(name: string | null, id: number | null, sub?: string) {
 }
 
 /** Arizalar ro'yxati (20 tadan, sahifalash serverda) + tafsilotlar oynasi (?order=<id> — havola bilan ochiladi). */
-export default function OrdersList({ role, mode, columns, actionLabel = "Ko'rish", poll, emptyText, emptyDescription }: Props) {
+export default function OrdersList({ role, mode, columns, poll, emptyText, emptyDescription }: Props) {
   const t = useT()
   const { page, setPage } = useUrlFilters([])
   const [params, setParams] = useSearchParams()
@@ -72,31 +71,17 @@ export default function OrdersList({ role, mode, columns, actionLabel = "Ko'rish
       key: 'status',
       label: t('Holati'),
       width: 150,
-      render: (r) => (
-        <button type="button" className="ob-row-link" onClick={() => open(r.id)} aria-label={t('#{id} ariza tafsilotlari', { id: r.id })}>
-          <OrderStatus status={r.status} label={r.status_display} />
-        </button>
-      ),
+      render: (r) => <OrderStatus status={r.status} label={r.status_display} />,
     },
     { key: 'date', label: t('Yuborilgan sana'), width: 160, render: (r) => <span className="ob-muted">{formatDate(r.date_creat)}</span> },
   )
   if (columns.includes('files')) cols.push({ key: 'files', label: t('Fayllar'), width: 140, render: (r) => <DeedLinks deeds={r.deeds} /> })
-  cols.push({
-    key: 'act',
-    label: '',
-    width: 132,
-    align: 'right',
-    render: (r) => (
-      <Button variant="stroke" size="sm" icon="ri-eye-line" onClick={() => open(r.id)} aria-label={`#${r.id} — ${t(actionLabel)}`}>
-        {t(actionLabel)}
-      </Button>
-    ),
-  })
-
   return (
     <>
       <DataState isPending={list.isPending} isFetching={list.isFetching && !poll} error={list.error} empty={rows.length === 0} emptyText={emptyText} emptyDescription={emptyDescription}>
-        <DataTable rows={rows} columns={cols} getRowId={(r) => r.id} rowHeight={64} minWidth={columns.length > 2 ? 980 : 820} caption={t("Arizalar ro'yxati")} />
+        <RowClick rows={rows} onOpen={(r) => open(r.id)}>
+          <DataTable rows={rows} columns={cols} getRowId={(r) => r.id} rowHeight={64} minWidth={columns.length > 2 ? 900 : 700} caption={t("Arizalar ro'yxati")} />
+        </RowClick>
         {pageCount > 1 && (
           <div className="ivs-pager">
             <Pagination pageCount={pageCount} page={page} onChange={setPage} />

@@ -21,7 +21,7 @@ const ORDERS_TABS: OrdersTab[] = [
   },
   {
     path: '/orders/barn-execute',
-    label: 'Bajarish (omborxona)',
+    label: 'Arizalar holati',
     icon: 'ri-inbox-unarchive-line',
     visible: (me) => orgType(me) === 'client' && can(me, 'main.change_order'),
   },

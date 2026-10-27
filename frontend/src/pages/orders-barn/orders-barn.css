@@ -31,20 +31,6 @@
   color: var(--text-strong-950);
 }
 
-.ob-row-link {
-  display: inline-flex;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  border-radius: var(--radius-6);
-}
-
-.ob-row-link:focus-visible {
-  outline: none;
-  box-shadow: var(--shadow-focus-primary);
-}
-
 /* Ariza tafsilotlari */
 .ob-detail {
   display: flex;
@@ -150,22 +136,7 @@
 .ob-files {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px 12px;
-}
-
-.ob-file {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  line-height: 20px;
-  color: var(--primary-base);
-  text-decoration: none;
-  white-space: nowrap;
-}
-
-.ob-file:hover {
-  text-decoration: underline;
+  gap: 6px;
 }
 
 /* Material tanlash va savat */

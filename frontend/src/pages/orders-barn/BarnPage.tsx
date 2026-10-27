@@ -54,12 +54,12 @@ function useSubTabs(section: BarnSection): SubTab[] {
     ]
   if (section === 'execute')
     return [
-      { path: '/orders/barn-execute', label: 'Arizalar', icon: 'ri-inbox-line', count: fresh.data || undefined },
-      { path: '/orders/barn-execute/active', label: 'Bajarish', icon: 'ri-tools-line' },
+      { path: '/orders/barn-execute', label: 'Yangi arizalar', icon: 'ri-inbox-line', count: fresh.data || undefined },
+      { path: '/orders/barn-execute/active', label: 'Qabul qilingan', icon: 'ri-tools-line' },
       { path: '/orders/barn-execute/archive', label: 'Tarix', icon: 'ri-history-line' },
     ]
   return [
-    { path: '/orders/confirm', label: 'Arizalar', icon: 'ri-checkbox-multiple-line', count: toConfirm.data || undefined },
+    { path: '/orders/confirm', label: 'Yangi arizalar', icon: 'ri-checkbox-multiple-line', count: toConfirm.data || undefined },
     { path: '/orders/confirm/archive', label: 'Tarix', icon: 'ri-history-line' },
   ]
 }

@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Button, DataTable, Icon, TextInput } from '../../ds'
 import type { DataTableColumn } from '../../ds'
+import { openPdf } from '../../lib/pdf'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { api } from '../../api/client'
@@ -491,11 +492,16 @@ export function DeedLinks({ deeds }: { deeds: BarnOrderDetail['deeds'] }) {
   return (
     <div className="ob-files">
       {files.map((d) => (
-        <a key={d.id} className="ob-file" href={mediaPath(d.file) ?? undefined} target="_blank" rel="noopener noreferrer">
-          <Icon name="ri-file-pdf-2-line" size={16} />
-          {t("Ko'rish")}
-          {d.code ? ` · ${d.code}` : ''}
-        </a>
+        <Button
+          key={d.id}
+          variant="stroke"
+          size="sm"
+          icon="ri-file-pdf-2-line"
+          title={d.code ?? undefined}
+          onClick={() => openPdf(mediaPath(d.file) ?? '', d.code ?? t('Hujjat'))}
+        >
+          {files.length > 1 && d.code ? `${t("Ko'rish")} · ${d.code}` : t("Ko'rish")}
+        </Button>
       ))}
     </div>
   )
