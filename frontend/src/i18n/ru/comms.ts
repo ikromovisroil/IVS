@@ -35,6 +35,7 @@ const ru: Record<string, string> = {
   'Xodim topilmadi': 'Сотрудник не найден',
   'Saqlangan xabarlar': 'Избранное',
   'AI Yordamchi': 'AI-помощник',
+  'Savol bering: arizalar va hujjatlar haqida': 'Задайте вопрос: о заявках и документах',
   Guruh: 'Группа',
   "Guruhlar yo'q": 'Групп нет',
   "Suhbatlar yo'q. Yangi suhbat uchun xodimni qidiring.": 'Бесед нет. Чтобы начать беседу, найдите сотрудника.',

@@ -63,7 +63,7 @@ export default function ConversationList({ conversations, loading, error, active
   })
 
   const open = useMutation({
-    mutationFn: (target: number | 'saved') =>
+    mutationFn: (target: number | 'saved' | 'ai') =>
       api<{ conversation_id: number }>('/chat/open/', { method: 'POST', body: JSON.stringify({ target }) }),
     onSuccess: async (r) => {
       setQ('')
@@ -75,7 +75,8 @@ export default function ConversationList({ conversations, loading, error, active
 
   const all = conversations ?? []
   const saved = all.find((c) => c.kind === 'saved')
-  const list = all.filter((c) => c.kind !== 'saved' && (tab === 'group' ? c.kind === 'group' : c.kind !== 'group'))
+  const ai = all.find((c) => c.kind === 'ai')   // AI Yordamchi — hammaga doim ko'rinadi (suhbat birinchi bosishda yaratiladi)
+  const list = all.filter((c) => c.kind !== 'saved' && c.kind !== 'ai' && (tab === 'group' ? c.kind === 'group' : c.kind !== 'group'))
   const unread = (group: boolean) => all.filter((c) => (c.kind === 'group') === group).reduce((s, c) => s + (c.unread_count || 0), 0)
 
   return (
@@ -117,6 +118,31 @@ export default function ConversationList({ conversations, loading, error, active
               <div className="cm-hint">{t('Xodim topilmadi')}</div>
             )}
           </div>
+        )}
+
+        {tab === 'direct' && (
+          <button
+            type="button"
+            className={`cm-item${ai && ai.id === activeId ? ' is-active' : ''}`}
+            disabled={open.isPending}
+            onClick={() => (ai ? onOpen(ai.id) : open.mutate('ai'))}
+          >
+            <ConvAvatar conv={{ id: 0, kind: 'ai', title: t('AI Yordamchi'), other_id: null, online: false }} />
+            <span className="cm-item-body">
+              <span className="cm-item-row">
+                <span className="cm-item-title">{t('AI Yordamchi')}</span>
+                {ai?.last_message_at && <span className="cm-item-time">{fmtListTime(ai.last_message_at)}</span>}
+              </span>
+              <span className="cm-item-row">
+                <span className="cm-item-preview">{ai?.last_message || t('Savol bering: arizalar va hujjatlar haqida')}</span>
+                {!!ai?.unread_count && (
+                  <Badge tone="primary" size="sm">
+                    {ai.unread_count}
+                  </Badge>
+                )}
+              </span>
+            </span>
+          </button>
         )}
 
         {tab === 'direct' && (
