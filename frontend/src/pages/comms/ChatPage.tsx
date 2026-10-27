@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import EmptyState from '../../components/EmptyState'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -38,9 +38,12 @@ export default function ChatPage() {
   })
   const active = convs.data?.find((c) => c.id === activeId)
 
-  // Boshqa turdagi suhbat ochilsa (masalan, guruh) mos yorliq tanlanadi
+  // Boshqa turdagi suhbat ochilsa (masalan, guruh) mos yorliq tanlanadi — har suhbat uchun bir marta,
+  // aks holda foydalanuvchi ochiq suhbat turib yorliqni almashtira olmaydi
+  const syncedId = useRef<number | null>(null)
   useEffect(() => {
-    if (!active || active.kind === 'saved') return
+    if (!active || active.kind === 'saved' || syncedId.current === active.id) return
+    syncedId.current = active.id
     const want: ChatTab = active.kind === 'group' ? 'group' : 'direct'
     if (want !== tab) setParams((p) => (want === 'group' ? p.set('tab', 'group') : p.delete('tab'), p), { replace: true })
   }, [active, tab, setParams])
