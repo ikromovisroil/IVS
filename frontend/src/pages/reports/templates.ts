@@ -27,10 +27,11 @@ const TASDIQLAYMAN_SVOD = `<b>"Tasdiqlayman"<br>
 </b>
 <b id="doc_date">__.__.____ y.</b>`
 
-const COMMON_SIGNERS =
-  signRow("<b>Kelishildi</b><br><b>Boshqarma boshlig‘i</b>", '<b>NARZULLAYEV ANVAR SHUHRAT O‘G‘LI.</b><br>') +
+const CHECK_SIGNERS =
   signRow('<b>Tekshirdi va qabul qildi</b><br><b>Bosh mutaxassis</b>', '<b>YAKUSHINA YELENA ANATOLEVNA.</b><br>') +
   signRow('<b>Kelishildi</b><br><b>Bosh hisobchi</b>', '<b>ERGASHEVA NARGIZA RUSTAMOVNA.</b><br>')
+const COMMON_SIGNERS =
+  signRow("<b>Kelishildi</b><br><b>Boshqarma boshlig‘i</b>", '<b>NARZULLAYEV ANVAR SHUHRAT O‘G‘LI.</b><br>') + CHECK_SIGNERS
 
 // ─── Dalolatnoma (document.html) ───
 export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
@@ -128,7 +129,7 @@ export const REESTR_TEMPLATE = `<div style="font-size:10pt;">
   </div><br>
   <div style="text-align:left;"><b id="blok_summa_soz"> </b></div><br>
   <div style="text-align:left;"><b><span id="date_contract"></span></b></div>
-  ${COMMON_SIGNERS}
+  ${CHECK_SIGNERS}
   <div><table style="border-collapse:collapse;width:100%;">${SIGN_COLS}<tbody id="service_employees_tbody"></tbody></table></div>
 </div>`
 

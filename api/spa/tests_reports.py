@@ -129,6 +129,19 @@ class ReportsApiTests(TestCase):
         item = orgs[0]["regions"][0]["materials"][0]
         self.assertEqual((item["material__name"], item["total_number"], item["total_sum"]), ("Kartrij", 3.0, 300.0))
 
+    def test_reestr_materials_include_executor_and_material_owner(self):
+        self.login(self.worker)
+        today = timezone.localdate()
+        res = self.client.get(f"{URL}data/reestr-materials/", {
+            "organization": self.client_org.id, "region": "all",
+            "date1": (today - timedelta(days=10)).isoformat(), "date2": today.isoformat(),
+        })
+        self.assertEqual(res.status_code, 200)
+        item = res.json()[0]
+        self.assertIn("Ishchi", item["receiver"])      # bajaruvchi
+        self.assertIn("Ishchi", item["owner"])         # materialga moddiy-javobgar (Material.employee)
+        self.assertEqual(item["owner_rank"], "Muhandis")
+
     def test_unknown_data_404(self):
         self.login(self.worker)
         self.assertEqual(self.client.get(f"{URL}data/nope/").status_code, 404)

@@ -784,6 +784,16 @@ def ajax_reestr_materials(request):
                 Coalesce(F("order__receiver__father_name"), Value("")),
                 output_field=CharField(),
             ),
+
+            # Material bo'yicha moddiy-javobgar shaxs (Material.employee)
+            owner_full_name=Concat(
+                Coalesce(F("material__employee__last_name"), Value("")),
+                Value(" "),
+                Coalesce(F("material__employee__first_name"), Value("")),
+                Value(" "),
+                Coalesce(F("material__employee__father_name"), Value("")),
+                output_field=CharField(),
+            ),
         )
         .values(
             "order__id",
@@ -806,6 +816,9 @@ def ajax_reestr_materials(request):
 
             "receiver_full_name",
             "order__receiver__rank__name",
+
+            "owner_full_name",
+            "material__employee__rank__name",
 
             "total_sum",
         )
@@ -841,6 +854,9 @@ def ajax_reestr_materials(request):
 
             "receiver": (item.get("receiver_full_name") or "").strip(),
             "receiver_rank": item.get("order__receiver__rank__name", ""),
+
+            "owner": (item.get("owner_full_name") or "").strip(),
+            "owner_rank": item.get("material__employee__rank__name") or "",
         })
 
     return JsonResponse(data, safe=False)

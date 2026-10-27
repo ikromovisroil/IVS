@@ -31,6 +31,8 @@ interface ReestrItem {
   department: string
   receiver: string
   receiver_rank: string | null
+  owner: string
+  owner_rank: string | null
 }
 
 const td = (s: string) => `<td style="border:1px solid #000;font-size:7pt;text-align:center;">${s}</td>`
@@ -127,17 +129,19 @@ function ReestrPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; 
       }
       doc.setHTML('#materials_tbody', reestrRows(data))
       doc.setText('#blok_summa_soz', amountInWords(data.reduce((sum, it) => sum + (parseFloat(String(it.total_sum ?? 0)) || 0), 0)))
-      // Xizmat ko'rsatgan xodimlar (receiver) — har biri bir marta, joriy foydalanuvchidan tashqari
+      // Qatnashganlar: materialga moddiy-javobgar shaxslar, so'ng bajaruvchilar (receiver) — har biri bir marta, joriy foydalanuvchidan tashqari
       const seen = new Set<string>()
       const me = (meta.employee?.full_name || '').trim()
       if (me) seen.add(me)
       let service = ''
-      data.forEach((it) => {
-        const name = (it.receiver || '').trim()
+      const addPerson = (fullName: string | null, rank: string | null) => {
+        const name = (fullName || '').trim()
         if (!name || seen.has(name)) return
         seen.add(name)
-        service += `<tr><td style="border:1px solid #fff;text-align:left;"><b>${esc(rankCase(it.receiver_rank))}</b><br></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(name)}</b><br></td></tr>`
-      })
+        service += `<tr><td style="border:1px solid #fff;text-align:left;"><b>${esc(rankCase(rank))}</b><br></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(name)}</b><br></td></tr>`
+      }
+      data.forEach((it) => addPerson(it.owner, it.owner_rank))
+      data.forEach((it) => addPerson(it.receiver, it.receiver_rank))
       doc.setHTML('#service_employees_tbody', service)
     } catch (e) {
       doc.setHTML('#materials_tbody', messageRow(15, `${errText(e)}. Batafsil: ${(e as Error).message}`, 'error'))
