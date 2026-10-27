@@ -26,6 +26,7 @@ import { useMaterialEmployees, useMaterialRefs } from './api'
 import type { MaterialAction } from './MaterialDialogs'
 import { MaterialActionDialog, MaterialSummary } from './MaterialDialogs'
 import MaterialForm from './MaterialForm'
+import MaterialImportDialog from './MaterialImportDialog'
 import MaterialTabs from './MaterialTabs'
 import '../technics/technics.css'
 import './warehouse.css'
@@ -47,6 +48,7 @@ export default function MaterialsPage() {
   const qc = useQueryClient()
   const { filters, page, hasFilters, setFilter, setPage } = useUrlFilters(FILTER_KEYS)
   const [formItem, setFormItem] = useState<Material | null | undefined>(undefined)
+  const [importOpen, setImportOpen] = useState(false)
   const [active, setActive] = useState<{ row: Material; dialog: MaterialAction | 'delete' | 'image' | 'detail' } | null>(null)
   const [menu, setMenu] = useState<{ row: Material; anchor: HTMLElement } | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
@@ -143,11 +145,18 @@ export default function MaterialsPage() {
       title="Materiallar"
       subtitle="Moddiy javobgar xodimlardagi materiallar, ularni berish, sarflash va savat."
       actions={
-        can(me, 'main.add_material') && (
-          <Button size="lg" icon="ri-add-line" onClick={() => setFormItem(null)}>
-            {t("Material qo'shish")}
-          </Button>
-        )
+        <>
+          {me.is_superuser && (
+            <Button variant="stroke" size="lg" icon="ri-file-excel-2-line" onClick={() => setImportOpen(true)}>
+              {t('Excel import')}
+            </Button>
+          )}
+          {can(me, 'main.add_material') && (
+            <Button size="lg" icon="ri-add-line" onClick={() => setFormItem(null)}>
+              {t("Material qo'shish")}
+            </Button>
+          )}
+        </>
       }
     >
       <MaterialTabs />
@@ -280,6 +289,7 @@ export default function MaterialsPage() {
         />
       )}
       {formItem !== undefined && <MaterialForm item={formItem} onClose={() => setFormItem(undefined)} />}
+      {importOpen && me.is_superuser && <MaterialImportDialog onClose={() => setImportOpen(false)} />}
     </Page>
   )
 }

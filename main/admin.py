@@ -264,8 +264,9 @@ class StructureAdmin(admin.ModelAdmin):
 
 @admin.register(MaterialCategory)
 class MaterialCategoryAdmin(admin.ModelAdmin):
-    list_display = ("id", "name")
-    search_fields = ("name",)
+    list_display = ("id", "name", "organization")
+    list_filter = ("organization",)
+    search_fields = ("name", "organization__name")
     autocomplete_fields = ("organization",)
 
 

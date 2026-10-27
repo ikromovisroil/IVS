@@ -44,6 +44,7 @@ from rest_framework.views import APIView
 
 from api.permissions import StructurePermission, TechnicsPermission
 from api.serializers import StructureSerializer, TechnicsSerializer
+from api.spa.material_import import MaterialImportOptionsView, MaterialImportTemplateView, MaterialImportView
 from api.spa.people import _MemoryMessages
 from api.views import MaterialViewSet, StructureViewSet, TechnicsViewSet
 from main import ajax_views
@@ -398,6 +399,9 @@ urlpatterns = [
     path("employees/pinfl/", EmployeeByPinflView.as_view(), name="spa_warehouse_employee_pinfl"),
     path("materials/employees/", MaterialEmployeesView.as_view(), name="spa_warehouse_material_employees"),
     path("materials/summary/", MaterialSummaryView.as_view(), name="spa_warehouse_material_summary"),
+    path("materials/import/", MaterialImportView.as_view(), name="spa_warehouse_material_import"),
+    path("materials/import/options/", MaterialImportOptionsView.as_view(), name="spa_warehouse_material_import_options"),
+    path("materials/import/template/", MaterialImportTemplateView.as_view(), name="spa_warehouse_material_import_template"),
     path("materials/basket/", BasketView.as_view(), name="spa_warehouse_basket"),
     path("materials/basket/assign/", BasketAssignView.as_view(), name="spa_warehouse_basket_assign"),
     path("materials/basket/<int:pk>/delete/", BasketDeleteView.as_view(), name="spa_warehouse_basket_delete"),
