@@ -42,12 +42,12 @@ export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
     <span id="dep_name"></span>
     <span id="receiver_rank"></span>
     <b id="receiver_name"></b><span id="receiver_comma"></span>
-    va “O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi
+    va “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
     huzuridagi Axborot texnologiyalari markazi” DUK
     <span id="sender_rank"></span>
     <b id="sender_name"></b>:
     <span id="org_name"></span> hamda
-    O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi
+    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi
     huzuridagi Axborot texnologiyalari markazlari tomonidan
     <b><span id="date_contract"></span></b>
     <span id="dep_id2"></span>
@@ -60,7 +60,7 @@ export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
   <div></div><div></div><div></div>
   ${signRow(
     `<b><span id="org_name"></span> <span id="dep_name"></span> <span id="receiver_rank"></span></b><br><br><b id="receiver_name"></b>`,
-    `<b>“O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK <span id="sender_rank"></span></b><br><br><b id="sender_name"></b>`,
+    `<b>“O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK <span id="sender_rank"></span></b><br><br><b id="sender_name"></b>`,
     'center',
   )}
   <div style="page-break-after:always;"></div>
