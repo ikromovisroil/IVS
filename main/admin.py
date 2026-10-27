@@ -189,14 +189,15 @@ class EmployeeResource(resources.ModelResource):
 @admin.register(Employee)
 class EmployeeAdmin(ExportMixin, admin.ModelAdmin):
     resource_class = EmployeeResource
+    list_select_related = ("user", "organization", "department", "directorate", "division", "rank", "region")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = (
         "id", "full_name", "user", "organization", "department",
         "directorate", "division", "rank", "region", "pinfl", "date_creat"
     )
-    list_filter = (
-        "organization", "department", "directorate", "division",
-        "rank", "region", "date_creat"
-    )
+    # bo'lim/boshqarma/bo'lim-bo'limcha filtrlari yuzlab variantni har safar yuklardi: qidiruv va tashkilot/hudud/lavozim yetarli
+    list_filter = ("organization", "rank", "region", "date_creat")
     search_fields = (
         "last_name", "first_name", "father_name",
         "user__username", "phone", "pinfl"
@@ -219,14 +220,14 @@ class EmployeeAdmin(ExportMixin, admin.ModelAdmin):
 
 @admin.register(Technics)
 class TechnicsAdmin(admin.ModelAdmin):
+    list_select_related = ("group", "category", "employee")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = (
         "id", "group", "category", "employee", "status",
         "name", "inventory", "serial", "is_active", "date_creat"
     )
-    list_filter = (
-        "group", "category", "organization", "region", "department",
-        "directorate", "division", "status", "is_active"
-    )
+    list_filter = ("group", "category", "organization", "region", "status", "is_active")
     search_fields = (
         "name", "inventory", "serial", "mac", "ip", 'year',
         "employee__last_name", "employee__first_name"
@@ -240,6 +241,9 @@ class TechnicsAdmin(admin.ModelAdmin):
 
 @admin.register(Structure)
 class StructureAdmin(admin.ModelAdmin):
+    list_select_related = ("technics", "category")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = (
         "id", "technics", "category", "name", "status",
         "inventory", "serial", "price", "year", "is_active", "date_creat"
@@ -263,7 +267,10 @@ class MaterialAdmin(admin.ModelAdmin):
         "id", "employee", "category", "name", "unit",
         "number", "code", "price", "year", "is_active", "date_creat", "date_edit"
     )
-    list_filter = ("organization", "employee", "category", "unit", "is_active", "date_creat")
+    list_filter = ("organization", "category", "unit", "is_active", "date_creat")
+    list_select_related = ("employee", "category", "unit")
+    list_per_page = 50
+    show_full_result_count = False
     search_fields = (
         "name", "code",
         "employee__last_name", "employee__first_name"
@@ -331,7 +338,9 @@ class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     list_filter = (
         "sender_organization", "sender_region", "status", "goal", "date_creat"
     )
-    list_select_related = ("sender_region", "receiver", "user")
+    list_select_related = ("sender_region", "sender", "receiver", "user")
+    list_per_page = 50
+    show_full_result_count = False
     search_fields = (
         "id",
         "user__last_name", "user__first_name",
@@ -384,6 +393,9 @@ class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
 
 @admin.register(OrderMaterial)
 class OrderMaterialAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+    list_select_related = ("order", "user", "material")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = ("id", "order", "user", "material", "number", "given")
     search_fields = (
         "order__id", "user__first_name",
@@ -416,6 +428,9 @@ class OrderGoalAdmin(admin.ModelAdmin):
 
 @admin.register(Deed)
 class DeedAdmin(admin.ModelAdmin):
+    list_select_related = ("organization", "sender", "receiver", "user", "user__region")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = (
         "id", "organization", "user__region", "code", "sender", "receiver", "user",
         "colored_status_sender", "colored_status_receiver", "status", "orders_list",
@@ -446,7 +461,7 @@ class DeedAdmin(admin.ModelAdmin):
         return super().get_queryset(request).prefetch_related("orders")
 
     def orders_list(self, obj):
-        ids = list(obj.orders.values_list("id", flat=True))
+        ids = [o.id for o in obj.orders.all()]     # prefetch_related("orders") dan: har qator uchun alohida so'rov yo'q
         return ", ".join(str(i) for i in ids) if ids else "—"
     orders_list.short_description = "Arizalar"
 
@@ -496,6 +511,9 @@ class DeedFilesAdmin(admin.ModelAdmin):
 
 @admin.register(DeedConsent)
 class DeedConsentAdmin(admin.ModelAdmin):
+    list_select_related = ("deed", "employee")
+    list_per_page = 50
+    show_full_result_count = False
     list_display = ("id", "deed", "employee", "colored_status", "date_creat")
     list_filter = ("status", "date_creat")
     search_fields = (
@@ -584,6 +602,9 @@ class MaterialMovementAdmin(admin.ModelAdmin):
         'date_creat',
     ]
     list_filter = ['status', 'date_creat']
+    list_select_related = ('material', 'user', 'employee')
+    list_per_page = 50
+    show_full_result_count = False
     search_fields = [
         'material__name',
         'user__last_name',

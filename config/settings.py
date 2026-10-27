@@ -142,7 +142,9 @@ if CHANNELS_REDIS_URL:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels_redis.core.RedisChannelLayer",
-            "CONFIG": {"hosts": [CHANNELS_REDIS_URL]},
+            # redis-py 8 da standart socket_timeout = 5s; channels_redis esa 5s bloklanib kutadi (brpop_timeout) —
+            # ikkalasi bir paytda tugab, bo'sh WebSocket har ~5s da "Timeout reading from redis" bilan uzilardi
+            "CONFIG": {"hosts": [{"address": CHANNELS_REDIS_URL, "socket_timeout": 15, "socket_connect_timeout": 5}]},
         }
     }
 else:
