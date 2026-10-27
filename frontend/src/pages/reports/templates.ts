@@ -20,7 +20,7 @@ const th = (text: string, extra = '', bold = true) =>
 
 const TASDIQLAYMAN_SVOD = `<b>"Tasdiqlayman"<br>
   “O‘zbekiston Respublikasi<br>
-  Iqtisodiyot va Moliya vazirligi huzuridagi<br>
+  Iqtisodiyot va moliya vazirligi huzuridagi<br>
   Axborot texnologiyalari markazi” DUK<br>
   Direktori<br>
   Xujamqulov F.B.<br>
@@ -37,7 +37,7 @@ export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
   <div style="text-align:center;"><b>DALOLATNOMA</b></div>
   <div style="text-align:right;line-height:2;"><span id="doc_date">__.__.____ y.</span></div>
   <div style="text-align:justify; text-indent:1.25cm;">
-    Biz quyida imzo chekuvchilar, O‘zbekiston Respublikasi
+    Biz quyida imzo chekuvchilar,
     <span id="org_name"></span>
     <span id="dep_name"></span>
     <span id="receiver_rank"></span>
@@ -46,7 +46,7 @@ export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
     huzuridagi Axborot texnologiyalari markazi” DUK
     <span id="sender_rank"></span>
     <b id="sender_name"></b>:
-    O‘zbekiston Respublikasi <span id="org_name"></span> hamda
+    <span id="org_name"></span> hamda
     O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi
     huzuridagi Axborot texnologiyalari markazlari tomonidan
     <b><span id="date_contract"></span></b>
@@ -59,7 +59,7 @@ export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
   <div id="liable_page1"></div>
   <div></div><div></div><div></div>
   ${signRow(
-    `<b>O‘zbekiston Respublikasi <span id="org_name"></span> <span id="dep_name"></span> <span id="receiver_rank"></span></b><br><br><b id="receiver_name"></b>`,
+    `<b><span id="org_name"></span> <span id="dep_name"></span> <span id="receiver_rank"></span></b><br><br><b id="receiver_name"></b>`,
     `<b>“O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK <span id="sender_rank"></span></b><br><br><b id="sender_name"></b>`,
     'center',
   )}
@@ -108,7 +108,7 @@ export const REESTR_TEMPLATE = `<div style="font-size:10pt;">
   <div style="text-align:center;"><b>Kompyuter va ofis uskunalariga servis xizmat ko‘rsatish jarayonida foydalanilgan</b></div>
   <div style="text-align:center;"><b>sarf materiallar, ehtiyot qismlar va uskunalar bo‘yicha</b></div>
   <div style="text-align:center;"><b>R E E S T R I</b></div>
-  <div style="text-align:center;"><b>O‘zbekiston Respublikasi <span id="org_id"></span></b></div>
+  <div style="text-align:center;"><b><span id="org_id"></span></b></div>
   <div style="text-align:center;"><b><span id="reg_id"></span></b></div>
   <div style="text-align:center;"><b id="report_period"></b></div>
   <div>
@@ -146,13 +146,13 @@ export function aktTemplate(userName: string, userRank: string): string {
   <div style="text-align:center;"><b>DALOLATNOMA</b></div>
   <div style="text-align:right;"><u id="doc_date">_</u></div>
   <div style="text-align:center;">
-    Biz, quyida imzo chekuvchilar, “O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
+    Biz, quyida imzo chekuvchilar, “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi
     Axborot texnologiyalari markazi” davlat unitar korxonasining vakillari:
   </div>
   <div style="text-align:center;"><b><u>${esc(userName)} (${esc(rankCase(userRank))})</u></b></div>
   <div style="text-align:center;font-size:8pt;">(F.I.Sh., ATM mutaxassisining lavozimi)</div>
   ${signRow(
-    `<span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va Moliya vazirligi</span> tashkiloti xodimi:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
+    `<span><span id="org_id_1">Iqtisodiyot va Moliya vazirligi</span> tashkiloti xodimi:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
     `<span id="dep_id">Muvofiqlashtirish va axborot-tahlil departamenti</span><br><span>ushbu dalolatnoma quyidagi ishlar bajarilganligi uchun tuzilgan:</span>`,
     'center',
   )}
@@ -176,7 +176,7 @@ export function aktTemplate(userName: string, userRank: string): string {
   <div style="text-align:left;">Izoh: o‘rnatilgan ehtiyot qismlar yoki asbob-uskunalarning birlik narxi buxgalteriya hisobi uchun ko‘rsatiladi.</div>
   ${signRow(
     `<b>Xizmat ko‘rsatuvchi mutaxassis:</b><br><span>${esc(userName)}</span><br><span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>`,
-    `<b>O‘zbekiston Respublikasi <span id="org_id_2">Tashkilot</span> tashkiloti xodimi:</b><br><span id="sender_name2">_</span><br><span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>`,
+    `<b><span id="org_id_2">Tashkilot</span> tashkiloti xodimi:</b><br><span id="sender_name2">_</span><br><span style="text-align:center;font-size:8pt;">(F.I.Sh.)</span>`,
     'center',
   )}
 </div>`

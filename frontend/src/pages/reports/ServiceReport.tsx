@@ -42,7 +42,7 @@ function peopleText(list: Owner[]) {
     list
       .map((p) => {
         const unit = (p.unit || '').trim()
-        const person = [rankCase(p.rank, true), initialSurname(p.full_name, true)].filter(Boolean).join(' ')
+        const person = [rankCase(p.rank), initialSurname(p.full_name, true)].filter(Boolean).join(' ')
         return unit && person ? `${unit}, ${person}` : unit || person
       })
       .filter(Boolean),

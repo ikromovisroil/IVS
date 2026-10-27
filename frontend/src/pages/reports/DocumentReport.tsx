@@ -108,7 +108,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
   const senderRank = senderObj?.rank ?? ''
   useEffect(() => {
     doc.setText('#sender_name', senderName)
-    doc.setText('#sender_rank', rankCase(senderRank, true))
+    doc.setText('#sender_rank', rankCase(senderRank))
   }, [doc, senderName, senderRank])
 
   const receiverName = receiverObj?.full_name ?? ''
@@ -117,7 +117,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
     // Tashkilot → tanlangan xodimning lavozimi → ismi (xodim tanlanmaguncha hech narsa chiqmaydi)
     doc.setText('#receiver_name', receiverName)
     doc.setText('#receiver_comma', receiverName ? ',' : '')
-    doc.setText('#receiver_rank', rankCase(receiverRank, true))
+    doc.setText('#receiver_rank', rankCase(receiverRank))
   }, [doc, receiverName, receiverRank])
 
   // buildAgreementTables: imv_block — tashkilot vakili + shu tashkilot kelishuvchilari;
@@ -134,7 +134,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
     })
     const block = (heading: string, rows: string) =>
       rows ? `<div>${heading}</div><div><table style="border-collapse:collapse;width:100%;"><colgroup><col style="width:50%;"><col style="width:50%;"></colgroup><tbody>${rows}</tbody></table></div>` : ''
-    doc.setHTML('#imv_block', block(`<b>O‘zbekiston Respublikasi ${esc(orgName)} ${esc(depName)} vakili:</b>`, imv))
+    doc.setHTML('#imv_block', block(`<b>${esc(orgName)} ${esc(depName)} vakili:</b>`, imv))
     doc.setHTML('#ivs_block', block('<b>O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi ATM vakillari:</b>', ivs))
     // agreementObjs agreementsKey orqali kuzatiladi
     // eslint-disable-next-line react-hooks/exhaustive-deps

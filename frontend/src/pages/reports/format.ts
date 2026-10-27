@@ -171,9 +171,9 @@ export function empLabel(e: { full_name: string; rank?: string }): string {
 
 /**
  * Hujjatdagi lavozim: faqat birinchi harf katta, qolgani kichik ("Direktor Birinchi O'rinbosari" → "Direktor birinchi o'rinbosari").
- * Qisqa bosh harfli so'zlar (ATM, IT, DUK) o'zgarmaydi. inline=true — gap ichida: birinchi harf ham kichik.
+ * Qisqa bosh harfli so'zlar (ATM, IT, DUK) o'zgarmaydi. Hujjatning hamma joyida (gap ichida ham) birinchi harf katta.
  */
-export function rankCase(text: string | null | undefined, inline = false): string {
+export function rankCase(text: string | null | undefined): string {
   const parts = (text || '').trim().split(/(\s+)/)
   let first = true
   return parts
@@ -183,7 +183,7 @@ export function rankCase(text: string | null | undefined, inline = false): strin
       let out = keep ? w : w.toLowerCase()
       if (first) {
         first = false
-        if (!keep && !inline) out = out.charAt(0).toUpperCase() + out.slice(1)
+        if (!keep) out = out.charAt(0).toUpperCase() + out.slice(1)
       }
       return out
     })
