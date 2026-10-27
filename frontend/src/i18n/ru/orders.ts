@@ -4,6 +4,7 @@ const ru: Record<string, string> = {
   'ATMga ariza': 'Заявка в ЦИТ',
   Omborxona: 'Склад',
   Bajarish: 'Исполнение',
+  'Qabul qilingan': 'Принятые',
   'Bajarish (omborxona)': 'Исполнение (склад)',
   "Arizalar bo'limlari": 'Разделы заявок',
   Arizalar: 'Заявки',

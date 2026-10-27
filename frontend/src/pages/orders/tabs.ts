@@ -15,7 +15,7 @@ const ORDERS_TABS: OrdersTab[] = [
   { path: '/orders/barn', label: 'Omborxona', icon: 'ri-store-2-line', visible: (me) => orgType(me) === 'client' },
   {
     path: '/orders/execute',
-    label: 'Bajarish',
+    label: 'Arizalar holati',
     icon: 'ri-tools-line',
     visible: (me) => orgType(me) === 'worker' && can(me, 'main.change_order'),
   },

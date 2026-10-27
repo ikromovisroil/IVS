@@ -27,8 +27,8 @@ function useExecuteTabs(): PageTab[] {
   const badges = useReceiverPending(true)
   const pending = badges.data?.receiver_pending
   return [
-    { path: '/orders/execute', label: 'Arizalar', icon: 'ri-inbox-line', count: pending || undefined },
-    { path: '/orders/execute/active', label: 'Bajarish', icon: 'ri-tools-line' },
+    { path: '/orders/execute', label: 'Yangi arizalar', icon: 'ri-inbox-line', count: pending || undefined },
+    { path: '/orders/execute/active', label: 'Qabul qilingan', icon: 'ri-tools-line' },
     { path: '/orders/execute/archive', label: 'Tarix', icon: 'ri-history-line' },
   ]
 }

@@ -32,7 +32,7 @@ class DeedFilesInline(admin.TabularInline):
 
 class NoDeleteAdminMixin:
     """
-    Tarixiy ma'lumot (ariza, hujjat, xodim, tashkilot, hudud, material harakati...) admin panelda O'CHIRILMAYDI:
+    Tarixiy ma'lumot (ariza, tashkilot, hudud...) admin panelda O'CHIRILMAYDI (material harakati bundan mustasno):
     o'chirish hisobotlarni buzadi va ombor qoldig'ini qaytarmaydi. Xodim uchun "Faolsizlantirish" ishlatiladi.
     """
 
@@ -568,7 +568,10 @@ class MaterialEmployeeAdmin(admin.ModelAdmin):
 
 
 @admin.register(MaterialMovement)
-class MaterialMovementAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+class MaterialMovementAdmin(admin.ModelAdmin):
+    """Material harakati admin panelda o'chiriladi (huquq bo'yicha: superuser yoki 'delete_materialmovement').
+    Diqqat: o'chirish ombor qoldig'ini qaytarmaydi, faqat kirim-chiqim jurnalidan yozuvni olib tashlaydi."""
+
     list_display = [
         'id',
         'status',

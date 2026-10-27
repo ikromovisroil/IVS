@@ -4,7 +4,7 @@ from django.forms.models import model_to_dict
 from django.test import RequestFactory, TestCase
 
 from main.admin import OrderAdmin
-from main.models import Deed, Employee, Material, Order, OrderMaterial
+from main.models import Deed, Employee, Material, MaterialMovement, Order, OrderMaterial
 from main.testing import make_employee, make_goal, make_org, make_region
 
 ADMIN_ORDERS = "/ivc_service_admin_panel/main/order/"
@@ -56,7 +56,7 @@ class OrderAdminTests(TestCase):
 
 
 class AdminDeletePermissionTests(TestCase):
-    """Hujjat va xodim admin panelda o'chiriladi; ariza va material harakati - yo'q."""
+    """Hujjat, xodim va material harakati admin panelda o'chiriladi; ariza - yo'q."""
 
     def setUp(self):
         org = make_org("worker")
@@ -73,3 +73,14 @@ class AdminDeletePermissionTests(TestCase):
 
     def test_order_cannot_be_deleted(self):
         self.assertFalse(self._can_delete(Order))
+
+    def test_material_movement_can_be_deleted_by_superuser(self):
+        self.assertTrue(self._can_delete(MaterialMovement))
+
+    def test_material_movement_delete_needs_permission_for_ordinary_staff(self):
+        staff, _ = make_employee(make_org("worker"), make_region())
+        staff.is_staff = True
+        staff.save()
+        request = RequestFactory().get("/")
+        request.user = staff
+        self.assertFalse(admin.site._registry[MaterialMovement].has_delete_permission(request))
