@@ -1,0 +1,295 @@
+/*
+ * Yorqin mavzu (vivid): ko'k-binafsha gradientlar, rangli soyalar, jonli fon.
+ * Bitta fayl: main.tsx dagi `import './theme-vivid.css'` ni olib tashlash (yoki commitni qaytarish) avvalgi ko'rinishni tiklaydi.
+ */
+:root {
+  --vv-a: #2f6bff;
+  --vv-b: #7a4dff;
+  --vv-c: #18b8f0;
+  --vv-grad: linear-gradient(135deg, var(--vv-a) 0%, var(--vv-b) 100%);
+  --vv-grad-soft: linear-gradient(135deg, rgba(47, 107, 255, 0.1), rgba(122, 77, 255, 0.1));
+  --vv-glow: 0 8px 20px -6px rgba(84, 88, 255, 0.55);
+  --vv-card-shadow: 0 1px 2px rgba(24, 32, 90, 0.04), 0 12px 28px -16px rgba(66, 84, 214, 0.32);
+  --vv-card-shadow-hover: 0 2px 4px rgba(24, 32, 90, 0.06), 0 18px 36px -14px rgba(66, 84, 214, 0.42);
+}
+
+/* ───── Fon: yengil rangli yorug'lik ───── */
+:root:not([data-theme='dark']) .aui-shell .aui-shell-main,
+:root:not([data-theme='dark']) .aui-shell.ivs-bg-gray .aui-shell-main {
+  background:
+    radial-gradient(900px 360px at 92% -120px, rgba(122, 77, 255, 0.16), transparent 70%),
+    radial-gradient(820px 320px at 8% -100px, rgba(47, 107, 255, 0.15), transparent 70%),
+    radial-gradient(700px 300px at 55% 110%, rgba(24, 184, 240, 0.1), transparent 70%),
+    #f4f6fe;
+}
+
+/* ───── Yon panel ───── */
+:root:not([data-theme='dark']) .aui-dside {
+  background: linear-gradient(180deg, #ffffff 0%, #f5f7ff 100%);
+  border-right-color: rgba(84, 98, 220, 0.14);
+}
+
+.aui-dside-logo {
+  background: var(--vv-grad);
+  box-shadow: var(--vv-glow);
+}
+
+.aui-dnav {
+  transition: background 140ms, color 140ms, box-shadow 140ms, transform 140ms;
+}
+
+.aui-dnav .aui-icon {
+  color: #7886e6;
+}
+
+.aui-dnav:hover {
+  background: rgba(84, 98, 255, 0.09);
+  color: #2b43c9;
+}
+
+.aui-dnav:hover .aui-icon {
+  color: #4a5cff;
+}
+
+.aui-dnav.is-active {
+  background: var(--vv-grad);
+  color: #fff;
+  box-shadow: var(--vv-glow);
+}
+
+.aui-dnav.is-active .aui-icon,
+.aui-dnav.is-active > .aui-icon:first-child,
+.aui-dnav.is-active .aui-dnav-chev {
+  color: #fff;
+}
+
+.aui-dnav.is-active::before {
+  display: none;
+}
+
+.aui-dnav-section-label {
+  color: #6f7dd8;
+}
+
+.aui-dnav-badge {
+  background: linear-gradient(135deg, #ff5d73, #ff8a3d);
+  box-shadow: 0 4px 10px -3px rgba(255, 93, 115, 0.6);
+}
+
+/* ───── Tugmalar ───── */
+.aui-btn-primary:not(:disabled) {
+  background: var(--vv-grad);
+  box-shadow: 0 8px 18px -8px rgba(84, 88, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 140ms, box-shadow 140ms, filter 140ms;
+}
+
+.aui-btn-primary:not(:disabled):hover {
+  background: var(--vv-grad);
+  filter: brightness(1.08) saturate(1.08);
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -8px rgba(84, 88, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.aui-btn-primary:not(:disabled):active {
+  transform: translateY(0);
+}
+
+.aui-btn-success:not(:disabled) {
+  background: linear-gradient(135deg, #12b76a, #0ea5a0);
+}
+
+.aui-btn-error:not(:disabled) {
+  background: linear-gradient(135deg, #ff4560, #ff7a45);
+}
+
+/* ───── Sahifa sarlavhasi ───── */
+.aui-phead-icon,
+.aui-shell.ivs-bg-gray .aui-phead-icon {
+  background: var(--vv-grad);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: var(--vv-glow);
+}
+
+.aui-phead-icon .aui-icon,
+.aui-phead-icon i,
+.aui-phead-icon svg {
+  color: #fff;
+}
+
+/* ───── Kartalar ───── */
+.aui-widget {
+  border-color: rgba(88, 104, 220, 0.14);
+  border-radius: 18px;
+  box-shadow: var(--vv-card-shadow);
+  transition: box-shadow 180ms, transform 180ms, border-color 180ms;
+}
+
+.aui-widget-stat:hover,
+a.aui-widget:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--vv-card-shadow-hover);
+  border-color: rgba(88, 104, 255, 0.32);
+}
+
+.aui-widget-icon {
+  color: #5b6cff;
+}
+
+.aui-widget-title {
+  color: #151a3a;
+}
+
+/* Ko'k-binafsha chiziq: kartalarning tepasida nozik aksent */
+.aui-widget-stat {
+  position: relative;
+  overflow: hidden;
+}
+
+.aui-widget-stat::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--vv-a), var(--vv-b), var(--vv-c));
+  opacity: 0.9;
+}
+
+/* ───── Yuqori tablar va segmentlar ───── */
+.ivs-linetabs a.is-active {
+  color: var(--vv-a);
+}
+
+.ivs-linetabs a.is-active > i,
+.ivs-linetabs a.is-active > svg {
+  color: var(--vv-b);
+}
+
+.ivs-linetabs a.is-active::after {
+  height: 3px;
+  border-radius: 3px;
+  background: var(--vv-grad);
+}
+
+.aui-seg-item.is-active {
+  background: var(--vv-grad);
+  color: #fff;
+  box-shadow: 0 6px 14px -6px rgba(84, 88, 255, 0.65);
+}
+
+.aui-seg-item.is-active .aui-seg-count {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ───── Jadval ───── */
+:root:not([data-theme='dark']) .aui-table th {
+  background: linear-gradient(180deg, #f0f3ff, #e9edff);
+  color: #42509a;
+  font-weight: 500;
+}
+
+:root:not([data-theme='dark']) .aui-table tbody tr:hover td {
+  background: rgba(84, 98, 255, 0.06);
+}
+
+:root:not([data-theme='dark']) .aui-shell.ivs-bg-gray .aui-table-wrap:not(.aui-widget .aui-table-wrap) {
+  border-color: rgba(88, 104, 220, 0.14);
+  border-radius: 18px;
+  box-shadow: var(--vv-card-shadow);
+}
+
+/* ───── Maydonlar ───── */
+.aui-input:focus,
+.aui-select-trigger:focus-visible,
+.aui-select.is-open .aui-select-trigger {
+  border-color: var(--vv-a);
+  box-shadow: 0 0 0 4px rgba(47, 107, 255, 0.14);
+}
+
+/* ───── Modal ───── */
+.ivs-modal {
+  border-radius: 22px;
+  box-shadow: 0 30px 70px -24px rgba(36, 44, 130, 0.5);
+}
+
+.ivs-modal-icon {
+  background: var(--vv-grad-soft);
+  color: var(--vv-b);
+}
+
+/* ───── Bosh sahifa kartalari: har biri o'z rangida ───── */
+.ivs-kpi {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(88, 104, 220, 0.14);
+  border-radius: 18px;
+  box-shadow: var(--vv-card-shadow);
+  transition: transform 180ms, box-shadow 180ms, border-color 180ms;
+}
+
+.ivs-kpi::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--kpi-grad, linear-gradient(90deg, var(--vv-a), var(--vv-b)));
+}
+
+.ivs-kpi:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--vv-card-shadow-hover);
+  border-color: rgba(88, 104, 255, 0.34);
+}
+
+.ivs-kpi-icon {
+  border: 0;
+  color: #fff;
+  background: var(--kpi-icon, linear-gradient(135deg, var(--vv-a), var(--vv-b)));
+  box-shadow: 0 8px 16px -8px var(--kpi-shadow, rgba(84, 88, 255, 0.7));
+}
+
+.ivs-kpi-icon .aui-icon,
+.ivs-kpi-icon i {
+  color: #fff;
+}
+
+.ivs-kpis > .ivs-kpi:nth-child(1) {
+  --kpi-grad: linear-gradient(90deg, #2f6bff, #6f4bff);
+  --kpi-icon: linear-gradient(135deg, #2f6bff, #6f4bff);
+}
+
+.ivs-kpis > .ivs-kpi:nth-child(2) {
+  --kpi-grad: linear-gradient(90deg, #12b76a, #18c9a0);
+  --kpi-icon: linear-gradient(135deg, #12b76a, #18c9a0);
+  --kpi-shadow: rgba(18, 183, 106, 0.65);
+}
+
+.ivs-kpis > .ivs-kpi:nth-child(3) {
+  --kpi-grad: linear-gradient(90deg, #ff8a3d, #ffb020);
+  --kpi-icon: linear-gradient(135deg, #ff8a3d, #ffb020);
+  --kpi-shadow: rgba(255, 138, 61, 0.65);
+}
+
+.ivs-kpis > .ivs-kpi:nth-child(4) {
+  --kpi-grad: linear-gradient(90deg, #a855f7, #ec4899);
+  --kpi-icon: linear-gradient(135deg, #a855f7, #ec4899);
+  --kpi-shadow: rgba(168, 85, 247, 0.65);
+}
+
+/* ───── Raqamli ko'rsatkichlar (holatlar qatori): rangli raqamlar ───── */
+.ivs-stat-value {
+  background: var(--vv-stat, linear-gradient(135deg, var(--vv-a), var(--vv-b)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  width: fit-content;
+}
+
+.ivs-stat-value small {
+  -webkit-text-fill-color: var(--text-sub-600);
+}
+
+.aui-stats > :nth-child(2) { --vv-stat: linear-gradient(135deg, #12b76a, #18c9a0); }
+.aui-stats > :nth-child(3) { --vv-stat: linear-gradient(135deg, #18b8f0, #2f6bff); }
+.aui-stats > :nth-child(4) { --vv-stat: linear-gradient(135deg, #ff8a3d, #ffb020); }
+.aui-stats > :nth-child(5) { --vv-stat: linear-gradient(135deg, #ff4560, #ff7a45); }
