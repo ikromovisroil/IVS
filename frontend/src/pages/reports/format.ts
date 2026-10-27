@@ -116,11 +116,11 @@ function numberWords(n: number): string {
   return parts.join(' ')
 }
 
-/** 16980445.02 → "JAMI SO‘Z BILAN: O‘n olti million ... so‘m 02 tiyin" */
+/** 16980445.02 → "Summa=O‘n olti million ... so‘m 02 tiyin" */
 export function amountInWords(total: number): string {
   const cents = Math.max(0, Math.round((Number(total) || 0) * 100))
   const text = numberWords(Math.floor(cents / 100)) + ' so‘m ' + pad(cents % 100) + ' tiyin'
-  return 'JAMI SO‘Z BILAN: ' + text.charAt(0).toUpperCase() + text.slice(1)
+  return 'Summa=' + text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 /** "Ikromov Isroil Ilhom o'g'li" → "Ikromov I.I." (o'g'li/qizi qisqartirilmaydi) */

@@ -152,7 +152,7 @@ export function aktTemplate(userName: string, userRank: string): string {
   <div style="text-align:center;"><b><u>${esc(userName)} (${esc(rankCase(userRank))})</u></b></div>
   <div style="text-align:center;font-size:8pt;">(F.I.Sh., ATM mutaxassisining lavozimi)</div>
   ${signRow(
-    `<span><span id="org_id_1">Iqtisodiyot va Moliya vazirligi</span> tashkiloti xodimi:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
+    `<span><span id="org_id_1">Iqtisodiyot va moliya vazirligi</span> tashkiloti xodimi:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,
     `<span id="dep_id">Muvofiqlashtirish va axborot-tahlil departamenti</span><br><span>ushbu dalolatnoma quyidagi ishlar bajarilganligi uchun tuzilgan:</span>`,
     'center',
   )}
@@ -183,7 +183,7 @@ export function aktTemplate(userName: string, userRank: string): string {
 }
 
 // ─── Sarf materiallar (service.html) ───
-export const DUK_NAME = '“O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK'
+export const DUK_NAME = '“O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi” DUK'
 
 const COMMISSION: [string, string][] = [
   ['Bo‘lim boshlig‘i Bosh buxgalter', 'N. Ergasheva'],
@@ -200,16 +200,16 @@ export function serviceTemplate(year: string | number, quarter: string, regionNa
   return `<div style="font-size:10pt;">
   ${signRow(
     '',
-    `<b>"Tasdiqlayman"<br>“O‘zbekiston Respublikasi<br>Iqtisodiyot va Moliya vazirligi huzuridagi<br>Axborot texnologiyalari markazi” DUK<br>Direktori<br>F. Xujamqulov<br></b><b id="doc_date">__.__.____ y.</b>`,
+    `<b>"Tasdiqlayman"<br>“O‘zbekiston Respublikasi<br>Iqtisodiyot va moliya vazirligi huzuridagi<br>Axborot texnologiyalari markazi” DUK<br>Direktori<br>F. Xujamqulov<br></b><b id="doc_date">__.__.____ y.</b>`,
     'center',
   )}<br><br>
   <div style="text-align:center; font-size:12pt;"><b>
-    O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi infratuzilmasini qo‘llab-quvvatlashda<br>
+    O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi infratuzilmasini qo‘llab-quvvatlashda<br>
     ishning bajarilish jarayonidagi uskuna va materiallarni hisobdan chiqarish bo‘yicha</b></div>
   <div style="text-align:center;"><b>DALOLATNOMA</b></div>
   <div style="text-align:center;"><b><span id="year">${esc(year)}</span>-yil <span id="chorak">${esc(quarter)}</span> - chorak uchun</b></div><br>
   <div style="text-align:justify; text-indent:1.25cm;">
-    Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi Axborot texnologiyalari markazi”
+    Biz quyida imzo chekuvchilar “O‘zbekiston Respublikasi Iqtisodiyot va moliya vazirligi huzuridagi Axborot texnologiyalari markazi”
     DUKning moddiy boyliklarini hisobdan chiqarish bo‘yicha doimiy komissiya raisi: Direktorning o‘rinbosari N. Nazarov, komissiya a’zolari:
     Bo‘lim boshlig‘i Bosh buxgalter N. Ergasheva, bosh buxgalter o‘rinbosari G. Hatamova, boshqarma boshlig‘i A. Narzullayev,
     bo‘lim boshlig‘i I. Xabirov, boshqarma boshlig‘i O. Abduqodirov, boshqarma boshlig‘i U. Muxtorov,
