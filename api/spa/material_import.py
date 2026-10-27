@@ -50,7 +50,7 @@ _UNIT_ALIASES = {
     "метр": "metr", "м": "metr", "метр квадрат": "kv. metr", "кв. метр": "kv. metr", "кв.м": "kv. metr", "м2": "kv. metr",
     "килограмм": "kilogramm", "кг": "kilogramm", "литр": "litr", "л": "litr", "мл": "ml", "км": "km",
     "комплект": "komplekt", "компл": "komplekt", "компл.": "komplekt", "пара": "juft", "рулон": "rulon",
-    "коробка": "quti", "баллон": "ballon", "гкал": "gkal",
+    "коробка": "quti", "пучок": "quti", "баллон": "ballon", "банка": "shisha", "гкал": "gkal",
 }
 
 

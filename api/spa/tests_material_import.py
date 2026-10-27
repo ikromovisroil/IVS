@@ -118,23 +118,23 @@ class MaterialImportTests(TestCase):
         self.assertEqual(res.data["unmatched_units"], [])      # "Пачка" qatori kasr miqdor sababli o'tkazildi
 
     def test_unmatched_unit_is_asked_and_mapped_not_created(self):
-        # ruscha nomlar bazadagi lotincha birliklarga o'zi mos keladi; "Банка" bazada yo'q — so'raladi
-        rows = book(("M", [TEMPLATE, ["Banka", "Банка", "", 100, 2], ["Papka", "Пачка", "", 100, 2],
+        # ruscha nomlar bazadagi lotincha birliklarga o'zi mos keladi; "Бочка" bazada yo'q — so'raladi
+        rows = book(("M", [TEMPLATE, ["Bochka", "Бочка", "", 100, 2], ["Papka", "Пачка", "", 100, 2],
                            ["Qop", "Упаковка", "", 10, 1], ["Taxta", "Метр Квадрат", "", 10, 1]]))
         res = self.post(rows, dry_run="0", unit_map="{}")
-        self.assertEqual(res.data["unmatched_units"], [{"name": "Банка", "count": 1}])
+        self.assertEqual(res.data["unmatched_units"], [{"name": "Бочка", "count": 1}])
         self.assertEqual(Material.objects.get(name="Papka").unit_id, self.pachka.id)
         self.assertEqual(Material.objects.get(name="Qop").unit_id, self.oram.id)
         self.assertEqual(Material.objects.get(name="Taxta").unit_id, self.kv.id)
         # moslama berilmasa — birliksiz yaratiladi, yangi birlik yaratilmaydi
-        self.assertIsNone(Material.objects.get(name="Banka").unit)
+        self.assertIsNone(Material.objects.get(name="Bochka").unit)
         self.assertEqual(Unit.objects.count(), 4)
         # moslama berilsa — tanlangan birlik
         box = Unit.objects.create(name="Quti")
-        res = self.post(book(("M", [TEMPLATE, ["Banka2", "Банка", "", 100, 2]])), dry_run="0",
-                        unit_map=json.dumps({"Банка": box.id}))
+        res = self.post(book(("M", [TEMPLATE, ["Bochka2", "Бочка", "", 100, 2]])), dry_run="0",
+                        unit_map=json.dumps({"Бочка": box.id}))
         self.assertEqual(res.data["unmatched_units"], [])
-        self.assertEqual(Material.objects.get(name="Banka2").unit_id, box.id)
+        self.assertEqual(Material.objects.get(name="Bochka2").unit_id, box.id)
         bad = self.post(book(("M", [TEMPLATE, ["X", "", "", 1, 1]])), unit_map="[1")
         self.assertEqual(bad.status_code, 400)
 
