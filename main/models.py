@@ -660,7 +660,7 @@ class OrderMaterial(MaterialSnapshotMixin, models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, editable=False)
     unit_name = models.CharField(max_length=200, blank=True, default="", editable=False)
     material_name = models.CharField(max_length=300, blank=True, default="", editable=False)
-    material_code = models.CharField(max_length=15, blank=True, default="", editable=False)
+    material_code = models.CharField(max_length=20, blank=True, default="", editable=False)
 
     def save(self, *args, **kwargs):
         filled = self.fill_snapshot() if not self.pk else []
@@ -864,7 +864,7 @@ class MaterialMovement(MaterialSnapshotMixin, models.Model):
     price = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True, editable=False)
     unit_name = models.CharField(max_length=200, blank=True, default="", editable=False)
     material_name = models.CharField(max_length=300, blank=True, default="", editable=False)
-    material_code = models.CharField(max_length=15, blank=True, default="", editable=False)
+    material_code = models.CharField(max_length=20, blank=True, default="", editable=False)
     user_organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', editable=False)
     user_region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, related_name='+', db_index=True, editable=False)
 

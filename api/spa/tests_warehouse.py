@@ -254,6 +254,14 @@ class WarehouseSpaTests(TestCase):
         self.assertLess(numeric.index("100"), numeric.index("20"))
         self.assertLess(numeric.index("20"), numeric.index("3"))
 
+    def test_material_code_up_to_20_chars(self):
+        shop_user, shop, recv, mat = self._materials()
+        grant(shop_user, "main.add_material")
+        r = self.api(shop_user).post("/api/v1/materials/", {"name": "Uzun kodli", "code": "1" * 20, "number": 1, "unit": mat.unit.id}, format="json")
+        self.assertEqual(r.status_code, 201, r.data)
+        r = self.api(shop_user).post("/api/v1/materials/", {"name": "Juda uzun", "code": "1" * 21, "number": 1, "unit": mat.unit.id}, format="json")
+        self.assertEqual(r.status_code, 400)
+
     def test_basket_delete_and_permissions(self):
         shop_user, shop, recv, mat = self._materials()
         mv = MaterialMovement.objects.create(material=mat, user=shop, employee=None, status="assigned", outcome=1)
