@@ -14,6 +14,9 @@ PORT="${PORT:-8080}"
 echo "1/6  Baza zaxirasi -> $BACKUPS/ivs_$STAMP.dump"
 docker compose exec -T db pg_dump -U "${POSTGRES_USER:-ivs}" -Fc "${POSTGRES_DB:-ivs}" > "$BACKUPS/ivs_$STAMP.dump" < /dev/null
 test -s "$BACKUPS/ivs_$STAMP.dump" || { echo "XATO: zaxira bo'sh, to'xtadim."; exit 1; }
+# Disk to'lib ketmasligi uchun faqat oxirgi KEEP ta zaxira qoladi (rollback uchun oxirgisi yetarli)
+KEEP="${IVS_KEEP_BACKUPS:-7}"
+ls -1t "$BACKUPS"/ivs_*.dump 2>/dev/null | tail -n +"$((KEEP + 1))" | while read -r old; do rm -f -- "$old"; done || true
 
 echo "2/6  Qaytish nuqtasi (hozirgi kod va tasvir)"
 git rev-parse HEAD > "$BACKUPS/last_commit"
