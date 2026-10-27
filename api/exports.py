@@ -118,7 +118,9 @@ class MaterialsExportView(_ExportBase):
         ws = wb.active
         ws.title = "Material"
         ws.append(["Xodim", "Material nomi", "Soni", "Narxi", "Summa", "O'lchov birligi", "1C kod"])
-        for m in qs.order_by("-id"):
+        from .views import order_materials_by_code
+
+        for m in order_materials_by_code(qs):
             price = m.price or 0
             ws.append([
                 m.employee.full_name if m.employee_id else "",

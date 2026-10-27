@@ -166,5 +166,26 @@ export function quarterOfDate(iso: string): { year: string; quarter: string } | 
 
 /** Xodim varianti: "F.I.Sh (lavozim)" — eski select2 ro'yxatlari kabi */
 export function empLabel(e: { full_name: string; rank?: string }): string {
-  return e.rank ? `${e.full_name} (${e.rank})` : e.full_name
+  return e.rank ? `${e.full_name} (${rankCase(e.rank)})` : e.full_name
+}
+
+/**
+ * Hujjatdagi lavozim: faqat birinchi harf katta, qolgani kichik ("Direktor Birinchi O'rinbosari" → "Direktor birinchi o'rinbosari").
+ * Qisqa bosh harfli so'zlar (ATM, IT, DUK) o'zgarmaydi. inline=true — gap ichida: birinchi harf ham kichik.
+ */
+export function rankCase(text: string | null | undefined, inline = false): string {
+  const parts = (text || '').trim().split(/(\s+)/)
+  let first = true
+  return parts
+    .map((w) => {
+      if (!w.trim()) return w
+      const keep = /^[A-ZА-Я]{2,4}$/.test(w.replace(/[().,;:]/g, ''))
+      let out = keep ? w : w.toLowerCase()
+      if (first) {
+        first = false
+        if (!keep && !inline) out = out.charAt(0).toUpperCase() + out.slice(1)
+      }
+      return out
+    })
+    .join('')
 }

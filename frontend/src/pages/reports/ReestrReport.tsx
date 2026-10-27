@@ -8,7 +8,7 @@ import type { ReportForm, ReportsMeta } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange } from './format'
+import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange, rankCase } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { REESTR_TEMPLATE, messageRow } from './templates'
@@ -69,7 +69,7 @@ function reestrRows(data: ReestrItem[]): string {
           formatNumber(n(it.material__price)),
           formatNumber(n(it.total_sum)),
           esc(it.sender || ''),
-          esc(it.sender_rank || ''),
+          esc(rankCase(it.sender_rank)),
           esc(it.department || ''),
           esc(it.receiver || ''),
           esc(it.date_finished || ''),
@@ -136,7 +136,7 @@ function ReestrPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; 
         const name = (it.receiver || '').trim()
         if (!name || seen.has(name)) return
         seen.add(name)
-        service += `<tr><td style="border:1px solid #fff;text-align:left;"><b>${esc(it.receiver_rank || '')}</b><br></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(name)}</b><br></td></tr>`
+        service += `<tr><td style="border:1px solid #fff;text-align:left;"><b>${esc(rankCase(it.receiver_rank))}</b><br></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(name)}</b><br></td></tr>`
       })
       doc.setHTML('#service_employees_tbody', service)
     } catch (e) {

@@ -107,6 +107,15 @@ class OrdersSpaTests(TestCase):
         new.refresh_from_db()
         self.assertEqual(new.status, "viewed")
 
+    def test_reject_requires_a_reason(self):
+        new = Order.objects.create(sender=self.sender, goal=self.goal, status="viewed")
+        for body in ({}, {"message": ""}, {"message": "   "}):
+            r = self.post(self.worker_user, new, "reject", body)
+            self.assertEqual(r.status_code, 400, body)
+            self.assertIn("message", r.data)
+        new.refresh_from_db()
+        self.assertEqual(new.status, "viewed")
+
     def test_reject_blocked_after_accept(self):
         self.assertEqual(self.post(self.worker_user, self.order, "reject").status_code, 400)
 

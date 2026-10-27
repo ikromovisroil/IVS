@@ -72,8 +72,7 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
   })
 
   const accept = useMutation({
-    mutationFn: (message: string) =>
-      api(`/orders/${order.id}/accept/`, { method: 'POST', body: JSON.stringify({ ...(assignee ? { receiver: assignee } : {}), message: message || undefined }) }),
+    mutationFn: () => api(`/orders/${order.id}/accept/`, { method: 'POST', body: JSON.stringify(assignee ? { receiver: assignee } : {}) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['orders'] })
       if (assignee) {
@@ -144,10 +143,9 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
                 : t(`#{id} ariza sizga biriktiriladi va "Bajarish" bo'limiga o'tadi.`, { id: order.id })}
             </>
           }
-          reason={{ label: 'Izoh' }}
           confirmLabel="Qabul qilish"
           loading={accept.isPending}
-          onConfirm={(message) => accept.mutate(message)}
+          onConfirm={() => accept.mutate()}
           onClose={() => setConfirm(null)}
         />
       )}
@@ -155,7 +153,7 @@ function AcceptModal({ order, onClose }: { order: Order; onClose: () => void }) 
         <ConfirmDialog
           title="Rad etishni tasdiqlang?"
           message={t('#{id} ariza rad etiladi va muallifga sabab bilan xabar beriladi.', { id: order.id })}
-          reason={{ label: 'Sabab' }}
+          reason={{ label: 'Sabab', required: true }}
           confirmLabel="Rad etish"
           danger
           loading={dismiss.isPending}

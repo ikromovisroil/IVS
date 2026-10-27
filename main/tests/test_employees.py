@@ -154,3 +154,50 @@ class EmployeeRegionScopeTests(TestCase):
         self.assertNotIn(outsider.id, self.ids(user))
         both, me2 = make_employee(self.org, self.r1, perms=["main.view_employee", "main.all_region", "main.all_organization"], last="Admin")
         self.assertIn(outsider.id, self.ids(both))
+
+
+class EmployeeOrganizationChangeTests(TestCase):
+    """Tahrirlashda tashkilotni o'zgartirish: faqat superuser/all_organization; eski bo'lim tozalanadi."""
+
+    def setUp(self):
+        self.org, self.other_org = make_org("worker"), make_org("client")
+        self.region = make_region()
+        self.dep = make_department(self.org, self.region)
+        self.new_dep = make_department(self.other_org, self.region)
+        _, self.target = make_employee(self.org, self.region, self.dep, first="Sardor", last="Ko'chuvchi")
+
+    def patch(self, user, body):
+        return api_for(user).patch(f"{URL}{self.target.id}/", body, format="json")
+
+    def test_all_organization_can_move_employee_to_another_organization(self):
+        admin, _ = make_employee(self.org, self.region, perms=["main.change_employee", "main.view_employee", "main.all_organization"], last="Admin")
+        r = self.patch(admin, {"organization": self.other_org.id})
+        self.assertEqual(r.status_code, 200, r.data)
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.organization_id, self.other_org.id)
+        self.assertIsNone(self.target.department_id)        # eski tashkilotning bo'limi qolmaydi
+
+    def test_move_with_new_department(self):
+        admin, _ = make_employee(self.org, self.region, perms=["main.change_employee", "main.view_employee", "main.all_organization"], last="Admin")
+        r = self.patch(admin, {"organization": self.other_org.id, "department": self.new_dep.id})
+        self.assertEqual(r.status_code, 200, r.data)
+        self.target.refresh_from_db()
+        self.assertEqual((self.target.organization_id, self.target.department_id), (self.other_org.id, self.new_dep.id))
+
+    def test_department_of_wrong_organization_is_rejected(self):
+        admin, _ = make_employee(self.org, self.region, perms=["main.change_employee", "main.view_employee", "main.all_organization"], last="Admin")
+        r = self.patch(admin, {"department": self.new_dep.id})      # tashkilot o'zgartirilmagan, bo'lim boshqasiniki
+        self.assertEqual(r.status_code, 400)
+
+    def test_without_all_organization_cannot_change_organization(self):
+        boss, _ = make_employee(self.org, self.region, perms=["main.change_employee", "main.view_employee"], last="Rahbar")
+        r = self.patch(boss, {"organization": self.other_org.id})
+        self.assertEqual(r.status_code, 400)
+        self.assertIn("organization", r.data)
+        self.target.refresh_from_db()
+        self.assertEqual(self.target.organization_id, self.org.id)
+
+    def test_same_organization_is_a_noop(self):
+        boss, _ = make_employee(self.org, self.region, perms=["main.change_employee", "main.view_employee"], last="Rahbar")
+        r = self.patch(boss, {"organization": self.org.id, "phone": "+998901234567"})
+        self.assertEqual(r.status_code, 200, r.data)

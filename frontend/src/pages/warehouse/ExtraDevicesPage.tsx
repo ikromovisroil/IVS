@@ -19,6 +19,8 @@ import { formatNumber } from '../../lib/format'
 import { useUrlFilters } from '../../lib/useUrlFilters'
 import ActionMenu from '../technics/ActionMenu'
 import TechnicsTabs from '../technics/TechnicsTabs'
+import StatsStrip from '../technics/StatsStrip'
+import type { StatusCounts } from '../technics/StatsStrip'
 import type { MenuAction } from '../technics/ActionMenu'
 import { SPA, toOptions, useRegions } from '../technics/api'
 import { useTechnicsRefs } from '../technics/refs'
@@ -93,6 +95,11 @@ export default function ExtraDevicesPage() {
     queryKey: ['warehouse', 'structures', filters, page],
     queryFn: () => api<ApiPage<Structure>>(`${SPA}/structures/`, { query: { ...filters, page, page_size: PAGE_SIZE } }),
     placeholderData: keepPreviousData,
+    enabled: allowed,
+  })
+  const stats = useQuery({
+    queryKey: ['warehouse', 'structures', 'stats', filters],
+    queryFn: () => api<StatusCounts>(`${SPA}/structures/stats/`, { query: filters }),
     enabled: allowed,
   })
   const remove = useMutation({
@@ -175,6 +182,7 @@ export default function ExtraDevicesPage() {
       }
     >
       <TechnicsTabs />
+      {allowed && <StatsStrip stats={stats.data} totalLabel="Jami qurilmalar" />}
       {!allowed ? (
         <EmptyState icon="ri-lock-line" title="Ruxsat yo'q" description="Bu sahifa uchun ruxsatingiz yo'q (texnikani tahrirlash huquqi kerak)." />
       ) : (

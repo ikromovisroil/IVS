@@ -5,6 +5,7 @@ import { Button, Radio, SegmentedControl, Select, TextInput } from '../../ds'
 import Modal from '../../components/Modal'
 import { useToast } from '../../components/toast'
 import { ApiError, api } from '../../api/client'
+import { can, useMe } from '../../auth/me'
 import { useT } from '../../i18n'
 import { usePeopleRefs, useStructure, toId } from './api'
 import type { EmployeeRow } from './api'
@@ -32,7 +33,10 @@ export default function EmployeeForm({ item, onClose }: Props) {
   const t = useT()
   const toast = useToast()
   const qc = useQueryClient()
+  const me = useMe()
   const refs = usePeopleRefs()
+  // Tahrirlashda tashkilotni faqat "Barcha tashkilotlar" huquqi bor xodim o'zgartira oladi (server ham tekshiradi)
+  const canChangeOrg = can(me, 'main.all_organization')
   const [mode, setMode] = useState<Mode>('manual')
   const [form, setForm] = useState({
     pinfl: item?.pinfl ?? '',
@@ -40,6 +44,7 @@ export default function EmployeeForm({ item, onClose }: Props) {
     last_name: item?.last_name ?? '',
     father_name: item?.father_name ?? '',
     organization: item?.organization ?? null,
+    region: item?.region ?? null, // faqat departamentlarni saralash uchun (xodimning hududi bo'limdan olinadi)
     department: item?.department ?? null,
     directorate: item?.directorate ?? null,
     division: item?.division ?? null,
@@ -49,7 +54,9 @@ export default function EmployeeForm({ item, onClose }: Props) {
   })
   const [errors, setErrors] = useState<Record<string, string>>({})
   // Tahrirlashda departamentlar xodimning tashkiloti va hududi bo'yicha (saytdagidek)
-  const structure = useStructure(form.organization, isEdit ? item.region : null, form.department, form.directorate)
+  const structure = useStructure(form.organization, form.region, form.department, form.directorate)
+  // Departament faqat tashkilot VA hudud tanlangandan keyin chiqadi (tahrirlashda ular xodimniki bilan oldindan to'ldirilgan)
+  const structureReady = !!form.organization && !!form.region
 
   const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm((f) => ({ ...f, [key]: value }))
 
@@ -74,6 +81,7 @@ export default function EmployeeForm({ item, onClose }: Props) {
       if (isEdit) {
         if (form.pinfl.trim()) body.pinfl = form.pinfl.trim()
         body.technics_action = form.technics_action
+        if (form.organization != null && form.organization !== item.organization) body.organization = form.organization
         return api<EmployeeRow>(`/employees/${item.id}/`, { method: 'PATCH', body: JSON.stringify(body) })
       }
       return api<EmployeeRow>('/employees/', {
@@ -108,6 +116,7 @@ export default function EmployeeForm({ item, onClose }: Props) {
     if (!form.first_name.trim()) missing.first_name = t('Ismini kiriting.')
     if (!form.last_name.trim()) missing.last_name = t('Familiyasini kiriting.')
     if (!isEdit && form.organization == null) missing.organization = t('Tashkilotni tanlang.')
+    if (form.region == null) missing.region = t('Hududni tanlang.')   // tashkilot va hudud majburiy (qo'shishda ham, tahrirlashda ham)
     setErrors(missing)
     if (!Object.keys(missing).length) save.mutate()
   }
@@ -184,26 +193,34 @@ export default function EmployeeForm({ item, onClose }: Props) {
             {text('first_name', 'Ismi *', 'Ismi ...')}
             {text('last_name', 'Familiyasi *', 'Familiyasi ...')}
             {text('father_name', 'Otasini Ismi', 'Otasini Ismi ...')}
-            {!isEdit && (
-              <div className="is-wide">
-                <Select
-                  label={t('Tashkilot *')}
-                  placeholder={t('Tanlang...')}
-                  options={refs.organizationOptions}
-                  value={form.organization}
-                  onChange={(v) => setForm((f) => ({ ...f, organization: toId(v), department: null, directorate: null, division: null }))}
-                  error={!!errors.organization}
-                  hint={errors.organization}
-                />
-              </div>
-            )}
+            <>
+              <Select
+                label={t('Tashkilot *')}
+                placeholder={t('Tanlang...')}
+                options={refs.organizationOptions}
+                value={form.organization}
+                disabled={isEdit && !canChangeOrg}
+                onChange={(v) => setForm((f) => ({ ...f, organization: toId(v), department: null, directorate: null, division: null }))}
+                error={!!errors.organization}
+                hint={errors.organization}
+              />
+              <Select
+                label={t('Hudud *')}
+                placeholder={t('Tanlang...')}
+                options={refs.regionOptions}
+                value={form.region}
+                onChange={(v) => setForm((f) => ({ ...f, region: toId(v), department: null, directorate: null, division: null }))}
+                error={!!errors.region}
+                hint={errors.region}
+              />
+            </>
             <Select
               label={t('Departament')}
-              placeholder={t(form.organization ? 'Tanlang...' : 'Avval tashkilotni tanlang')}
-              options={structure.departmentOptions}
+              placeholder={t(structureReady ? 'Tanlang...' : 'Avval tashkilot va hududni tanlang')}
+              options={structureReady ? structure.departmentOptions : []}
               value={form.department}
               onChange={(v) => setForm((f) => ({ ...f, department: toId(v), directorate: null, division: null }))}
-              disabled={!form.organization}
+              disabled={!structureReady}
               error={!!fieldError('department')}
               hint={fieldError('department')}
             />
@@ -242,7 +259,7 @@ export default function EmployeeForm({ item, onClose }: Props) {
                     onChange={() => set('technics_action', a.value)}
                   />
                 ))}
-                <p className="type-para-xs ivs-people-note">{t("Faqat departament/boshqarma/bo'lim haqiqatan o'zgargan holatda qo'llaniladi.")}</p>
+                <p className="type-para-xs ivs-people-note">{t("Faqat tashkilot/departament/boshqarma/bo'lim haqiqatan o'zgargan holatda qo'llaniladi.")}</p>
               </fieldset>
             )}
           </div>

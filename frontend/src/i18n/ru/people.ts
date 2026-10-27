@@ -61,10 +61,12 @@ const ru: Record<string, string> = {
   "Texnikalar bilan (xodim bilan birga ko'chsin)": 'Вместе с техникой (техника переходит вместе с сотрудником)',
   'Texnikalar activ holda departamentda qolsin': 'Техника остаётся активной в департаменте',
   "Texnikalar bo'shatilib skladga qaytarilsin": 'Техника освобождается и возвращается на склад',
-  "Faqat departament/boshqarma/bo'lim haqiqatan o'zgargan holatda qo'llaniladi.":
-    'Применяется, только если департамент/управление/отдел действительно изменились.',
+  "Faqat tashkilot/departament/boshqarma/bo'lim haqiqatan o'zgargan holatda qo'llaniladi.":
+    'Применяется, только если организация/департамент/управление/отдел действительно изменились.',
   'PINFL 14 xonali raqamdan iborat bo‘lishi kerak.': 'ПИНФЛ должен состоять из 14 цифр.',
   'Ismini kiriting.': 'Введите имя.',
+  'Hududni tanlang.': 'Выберите регион.',
+  'Hudud *': 'Регион *',
   'Familiyasini kiriting.': 'Введите фамилию.',
   'Tashkilotni tanlang.': 'Выберите организацию.',
   "Xodim ma'lumotlari yangilandi": 'Данные сотрудника обновлены',

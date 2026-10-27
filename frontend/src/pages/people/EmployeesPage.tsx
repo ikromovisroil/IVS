@@ -31,6 +31,8 @@ export default function EmployeesPage() {
   const qc = useQueryClient()
   const refs = usePeopleRefs()
   const { filters, page, hasFilters, setFilter, setPage } = useUrlFilters(FILTERS)
+  // Departament faqat tashkilot VA hudud tanlangandan keyin chiqadi
+  const structureReady = !!filters.organization && !!filters.region
   const structure = useStructure(filters.organization || null, filters.region || null, filters.department || null, filters.directorate || null)
 
   const [editing, setEditing] = useState<EmployeeRow | null | undefined>(undefined) // null — yangi xodim
@@ -154,11 +156,11 @@ export default function EmployeesPage() {
         <Select placeholder={t('Tashkilot')} options={refs.organizationOptions} value={filters.organization ? Number(filters.organization) : null} onChange={(v) => setLevel('organization', v)} />
         <Select placeholder={t('Hududlar')} options={refs.regionOptions} value={filters.region ? Number(filters.region) : null} onChange={(v) => setLevel('region', v)} />
         <Select
-          placeholder={t('Departament')}
-          options={structure.departmentOptions}
+          placeholder={t(structureReady ? 'Departament' : 'Avval tashkilot va hududni tanlang')}
+          options={structureReady ? structure.departmentOptions : []}
           value={filters.department ? Number(filters.department) : null}
           onChange={(v) => setLevel('department', v)}
-          disabled={!filters.organization}
+          disabled={!structureReady}
         />
         <Select placeholder={t('Boshqarma')} options={structure.directorateOptions} value={filters.directorate ? Number(filters.directorate) : null} onChange={(v) => setLevel('directorate', v)} disabled={!filters.department} />
         <Select placeholder={t("Bo'lim")} options={structure.divisionOptions} value={filters.division ? Number(filters.division) : null} onChange={(v) => setFilter('division', v)} disabled={!filters.directorate} />

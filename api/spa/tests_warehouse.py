@@ -117,6 +117,17 @@ class WarehouseSpaTests(TestCase):
         self.assertEqual(r.data["results"][0]["technics_employee_name"], self.owner.full_name)
         self.assertEqual(r.data["results"][0]["technics_serial"], "SN-1")
 
+    def test_structures_stats_counts_by_status(self):
+        self.assertEqual(self.api(self.viewer_user).get(f"{BASE}/structures/stats/").status_code, 403)
+        user = grant(self.viewer_user, "main.change_technics")
+        r = self.api(user).get(f"{BASE}/structures/stats/")
+        self.assertEqual(r.status_code, 200, r.data)
+        listed = self.api(user).get(f"{BASE}/structures/").data["count"]
+        self.assertEqual(r.data["total"], listed)
+        self.assertEqual(r.data["total"], r.data["active"] + r.data["free"] + r.data["repair"] + r.data["defect"])
+        only_free = self.api(user).get(f"{BASE}/structures/stats/", {"status": "free"}).data
+        self.assertEqual(only_free["total"], only_free["free"])
+
     def test_org_employees(self):
         r = self.api(self.viewer_user).get(f"{BASE}/employees/", {"organization": self.org.id})
         ids = [e["id"] for e in r.json()["results"]]
@@ -226,6 +237,22 @@ class WarehouseSpaTests(TestCase):
         # o'chirilgan (faol emas) materialning kodi bloklamaydi
         Material.objects.filter(pk=mat.pk).update(is_active=False)
         self.assertEqual(c.patch(f"{url}{other.id}/", {"code": "100"}, format="json").status_code, 200)
+
+    def test_material_list_is_ordered_by_1c_code(self):
+        shop_user, shop, recv, mat = self._materials()
+        unit = mat.unit
+        for code in ("20", "3", "100", "", None):
+            Material.objects.create(organization=self.org, employee=shop, unit=unit, name=f"M-{code}", code=code,
+                                    number=1, price=Decimal("1"))
+        r = self.api(shop_user).get("/api/v1/materials/", {"employee": shop.id, "page_size": 50})
+        self.assertEqual(r.status_code, 200, r.data)
+        codes = [m["code"] or "" for m in r.data["results"]]
+        # katta kod tepada (100 > 20 > 3, son bo'yicha), kodsizlar oxirida
+        numeric = [c for c in codes if c]
+        self.assertEqual(numeric, sorted(numeric, key=lambda c: (len(c), c), reverse=True))
+        self.assertEqual(codes[len(numeric):], [""] * (len(codes) - len(numeric)))
+        self.assertLess(numeric.index("100"), numeric.index("20"))
+        self.assertLess(numeric.index("20"), numeric.index("3"))
 
     def test_basket_delete_and_permissions(self):
         shop_user, shop, recv, mat = self._materials()

@@ -112,7 +112,7 @@ class EmployeeCreateSerializer(serializers.ModelSerializer):
 
 
 class EmployeeUpdateSerializer(serializers.ModelSerializer):
-    """Tahrirlash — saytdagi employee_update bilan bir xil (tashkilot o'zgarmaydi)."""
+    """Tahrirlash — saytdagi employee_update bilan bir xil. Tashkilotni faqat superuser/'all_organization' o'zgartira oladi."""
     technics_action = serializers.ChoiceField(
         choices=['with', 'stay', 'release'], required=False, write_only=True,
         help_text="Joylashuv o'zgarsa xodimdagi texnikalar: with — birga ko'chadi, "
@@ -122,13 +122,14 @@ class EmployeeUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Employee
         fields = [
-            'pinfl', 'first_name', 'last_name', 'father_name',
+            'pinfl', 'first_name', 'last_name', 'father_name', 'organization',
             'department', 'directorate', 'division', 'rank', 'phone', 'technics_action',
         ]
         extra_kwargs = {
             'first_name': {'allow_blank': False, 'allow_null': False},
             'last_name': {'allow_blank': False, 'allow_null': False},
             'pinfl': {'allow_blank': False, 'allow_null': False},
+            'organization': {'required': False, 'allow_null': False},
         }
 
     def validate_pinfl(self, value):
@@ -141,6 +142,21 @@ class EmployeeUpdateSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         inst = self.instance
+
+        # Tashkilot o'zgarishi: faqat superuser/'all_organization'; eski bo'lim/boshqarma/bo'linma yangi tashkilotga
+        # tegishli emas — yangi qiymat berilmasa tozalanadi
+        org = attrs.get('organization')
+        if org is not None and org.id == inst.organization_id:
+            attrs.pop('organization')
+            org = None
+        if org is not None:
+            user = getattr(self.context.get('request'), 'user', None)
+            if not (user and (user.is_superuser or user.has_perm('main.all_organization'))):
+                raise serializers.ValidationError({"organization": "Tashkilotni o'zgartirish huquqingiz yo'q"})
+            for key in ('department', 'directorate', 'division'):
+                attrs.setdefault(key, None)
+        organization = org or inst.organization
+
         dep = attrs.get('department', inst.department)
         drt = attrs.get('directorate', inst.directorate)
         div = attrs.get('division', inst.division)
@@ -153,7 +169,7 @@ class EmployeeUpdateSerializer(serializers.ModelSerializer):
         if drt is None and 'directorate' in attrs and div and 'division' not in attrs:
             div = attrs['division'] = None
 
-        _resolve_structure(inst.organization, dep, drt, div)
+        _resolve_structure(organization, dep, drt, div)
         return attrs
 
     def to_representation(self, instance):

@@ -1,4 +1,4 @@
-{# Akt matni: order_receiver_deed.html (textarea#body) va api/spa/orders.py OrderDeedView shu shablondan oladi #}            <div style="font-size:10pt;">
+{% load uz_text %}{# Akt matni: order_receiver_deed.html (textarea#body) va api/spa/orders.py OrderDeedView shu shablondan oladi #}            <div style="font-size:10pt;">
               <div style="text-align:center;">
                 <b>Sarf materiallari, ehtiyot qismlar va uskunalarni o‘rnatish ishlari haqida</b>
               </div>
@@ -18,7 +18,7 @@
               </div>
 
               <div style="text-align:center;">
-                <b><u>{{ order.receiver.full_name }} ({{ order.receiver.rank.name }})</u></b>
+                <b><u>{{ order.receiver.full_name }} ({{ order.receiver.rank.name|rank_case }})</u></b>
               </div>
               <div style="text-align:center;font-size:8pt;">
                 (F.I.Sh., ATM mutaxassisining lavozimi)
@@ -113,7 +113,7 @@
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.number }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.material.unit.name }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.sender.full_name }}</td>
-                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.sender.rank.name }}</td>
+                      <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ order.sender.rank.name|rank_case }}</td>
                       <td style="border:1px solid #000;font-size:8pt;text-align:center;">{{ i.unit_price }}</td>
                     </tr>
                     {% endfor %}

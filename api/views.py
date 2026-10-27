@@ -8,7 +8,8 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema, no_body
 from django.utils import timezone
 from django.contrib.auth.models import Permission
-from django.db.models import Exists, OuterRef, Prefetch, Q
+from django.db.models import Case, Exists, IntegerField, OuterRef, Prefetch, Q, When
+from django.db.models.functions import Length
 from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404
@@ -310,14 +311,14 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         data = serializer.validated_data
         technics_action = data.pop('technics_action', None) or 'release'
         emp = serializer.instance
-        old = (emp.department_id, emp.directorate_id, emp.division_id)
+        old = (emp.organization_id, emp.department_id, emp.directorate_id, emp.division_id)
 
         with transaction.atomic():
             for key in ('father_name', 'phone'):
                 if key in data:
                     data[key] = (data[key] or "").strip() or None
             emp = serializer.save()
-            new = (emp.department_id, emp.directorate_id, emp.division_id)
+            new = (emp.organization_id, emp.department_id, emp.directorate_id, emp.division_id)
             if new == old:
                 return
 
@@ -326,13 +327,13 @@ class EmployeeViewSet(viewsets.ModelViewSet):
                 return
             if technics_action == 'with':
                 technics.update(
-                    employee=emp, department_id=new[0], directorate_id=new[1],
-                    division_id=new[2], status='active',
+                    employee=emp, organization_id=new[0], department_id=new[1], directorate_id=new[2],
+                    division_id=new[3], status='active',
                 )
             elif technics_action == 'stay':
                 technics.update(
-                    employee=None, department_id=old[0], directorate_id=old[1],
-                    division_id=old[2], status='active',
+                    employee=None, department_id=old[1], directorate_id=old[2],
+                    division_id=old[3], status='active',
                 )
             else:
                 technics.update(
@@ -847,6 +848,14 @@ class MaterialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
         return qs.filter(models.Q(organization_id=employee.organization_id) | models.Q(organization__isnull=True))
 
 
+def order_materials_by_code(qs):
+    """1C kodi bo'yicha tartib: katta kod tepada (100 > 20 > 3, raqamli kodlar son bo'yicha), kodsiz materiallar oxirida."""
+    return qs.annotate(
+        _no_code=Case(When(Q(code__isnull=True) | Q(code=""), then=1), default=0, output_field=IntegerField()),
+        _code_len=Length("code"),
+    ).order_by("_no_code", "-_code_len", "-code", "id")
+
+
 class MaterialViewSet(viewsets.ModelViewSet):
     """
     Ko'rish — 'shop_employee': faqat o'z tashkilotidagi va o'zining materiallari.
@@ -921,11 +930,11 @@ class MaterialViewSet(viewsets.ModelViewSet):
         if self.action in ('update', 'partial_update', 'destroy'):
             return org_qs
 
-        # Ro'yxat/ko'rish: saytdagidek faqat soni > 0 va ko'rishga ruxsat berilgan xodimlarniki
-        return org_qs.filter(
+        # Ro'yxat/ko'rish: saytdagidek faqat soni > 0 va ko'rishga ruxsat berilgan xodimlarniki (1C kodi bo'yicha tartiblangan)
+        return order_materials_by_code(org_qs.filter(
             number__gt=0,
             employee_id__in=self._visible_employee_ids(user, employee),
-        )
+        ))
 
 
     @action(detail=False, methods=['get'], url_path='report/employees')
@@ -1963,6 +1972,8 @@ class OrderViewSet(
         serializer = OrderDismissSerializer(data=request.data or {})
         serializer.is_valid(raise_exception=True)
         note = (serializer.validated_data.get('message') or '').strip() or None
+        if not note:
+            raise ValidationError({"message": "Rad etish sababini yozing"})
 
         goal_ids = set(
             OrderGoal.goal.through.objects.filter(ordergoal__employee=employee).values_list("goal_id", flat=True)

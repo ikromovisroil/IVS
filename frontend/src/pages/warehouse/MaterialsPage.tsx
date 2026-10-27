@@ -14,10 +14,12 @@ import type { Page as ApiPage } from '../../api/client'
 import { can, useMe } from '../../auth/me'
 import { useT } from '../../i18n'
 import { formatNumber } from '../../lib/format'
+import RowClick from '../../components/RowClick'
 import { useUrlFilters } from '../../lib/useUrlFilters'
 import ActionMenu from '../technics/ActionMenu'
 import type { MenuAction } from '../technics/ActionMenu'
 import { SPA } from '../technics/api'
+import { Kv } from '../technics/TechnicsDetail'
 import { errorText, money } from '../technics/util'
 import type { Material } from './api'
 import { useMaterialEmployees, useMaterialRefs } from './api'
@@ -30,6 +32,10 @@ import './warehouse.css'
 
 const PAGE_SIZE = 20
 const FILTER_KEYS = ['employee', 'category', 'unit', 'search'] as const
+const NAME_LIMIT = 50
+
+/** Jadvalda nomning dastlabki 50 belgisi; to'liq nom batafsil oynada */
+const shortName = (name: string) => (name.length > NAME_LIMIT ? `${name.slice(0, NAME_LIMIT).trimEnd()}…` : name)
 
 /** "Materiallar" (main/views.py:barn_mat) — moddiy javobgarlar bo'yicha ombordagi materiallar. */
 export default function MaterialsPage() {
@@ -41,7 +47,7 @@ export default function MaterialsPage() {
   const qc = useQueryClient()
   const { filters, page, hasFilters, setFilter, setPage } = useUrlFilters(FILTER_KEYS)
   const [formItem, setFormItem] = useState<Material | null | undefined>(undefined)
-  const [active, setActive] = useState<{ row: Material; dialog: MaterialAction | 'delete' | 'image' } | null>(null)
+  const [active, setActive] = useState<{ row: Material; dialog: MaterialAction | 'delete' | 'image' | 'detail' } | null>(null)
   const [menu, setMenu] = useState<{ row: Material; anchor: HTMLElement } | null>(null)
   const closeMenu = useCallback(() => setMenu(null), [])
   const close = () => setActive(null)
@@ -115,22 +121,8 @@ export default function MaterialsPage() {
       width: '25%',
       render: (r) => (
         <div className="aui-cell-text">
-          <div className="aui-cell-primary">
-            {canBasket(r) ? (
-              <a
-                href="#"
-                className="ivs-link"
-                title={t('Savatga saqlash')}
-                onClick={(e) => {
-                  e.preventDefault()
-                  setActive({ row: r, dialog: 'basket' })
-                }}
-              >
-                {r.name}
-              </a>
-            ) : (
-              r.name
-            )}
+          <div className="aui-cell-primary" title={r.name}>
+            {shortName(r.name)}
           </div>
           <div className="aui-cell-secondary">{[r.category_name, r.employee_name].filter(Boolean).join(' · ') || '—'}</div>
         </div>
@@ -197,15 +189,17 @@ export default function MaterialsPage() {
         empty={rows.length === 0}
         emptyText={hasFilters ? 'Filtrga mos material topilmadi.' : "Ko'rish mumkin bo'lgan material yo'q."}
       >
-        <DataTable
-          rows={rows}
-          columns={columns}
-          getRowId={(r) => r.id}
-          rowHeight={60}
-          minWidth={940}
-          rowActions={(r, e) => setMenu({ row: r, anchor: e.currentTarget as HTMLElement })}
-          caption={t("Materiallar ro'yxati")}
-        />
+        <RowClick rows={rows} onOpen={(r) => setActive({ row: r, dialog: 'detail' })}>
+          <DataTable
+            rows={rows}
+            columns={columns}
+            getRowId={(r) => r.id}
+            rowHeight={60}
+            minWidth={940}
+            rowActions={(r, e) => setMenu({ row: r, anchor: e.currentTarget as HTMLElement })}
+            caption={t("Materiallar ro'yxati")}
+          />
+        </RowClick>
         {pageCount > 1 && (
           <div className="ivs-pager">
             <Pagination pageCount={pageCount} page={page} onChange={setPage} />
@@ -220,6 +214,36 @@ export default function MaterialsPage() {
         })()}
       {active && (active.dialog === 'give' || active.dialog === 'service' || active.dialog === 'basket') && (
         <MaterialActionDialog m={active.row} action={active.dialog} onClose={close} />
+      )}
+      {active?.dialog === 'detail' && (
+        <Modal
+          open
+          onClose={close}
+          icon="ri-archive-line"
+          title="Material ma'lumotlari"
+          width={640}
+          footer={
+            <Button variant="stroke" size="lg" onClick={close}>
+              {t('Yopish')}
+            </Button>
+          }
+        >
+          {active.row.image && <img className="ivs-preview" src={active.row.image} alt={active.row.name} />}
+          <dl className="ivs-kvs">
+            <Kv label="Nomi">{active.row.name}</Kv>
+            <Kv label="Kategoriya">{active.row.category_name || '—'}</Kv>
+            <Kv label="Moddiy javobgar">{active.row.employee_name || '—'}</Kv>
+            <Kv label="Kodi (1C)">
+              <span className="ivs-mono">{active.row.code || '—'}</span>
+            </Kv>
+            <Kv label="Soni">
+              {formatNumber(active.row.number)} {active.row.unit_name || ''}
+            </Kv>
+            <Kv label="Narxi">{money(active.row.price)}</Kv>
+            <Kv label="Umumiy narxi">{money(Number(active.row.price ?? 0) * active.row.number)}</Kv>
+            {active.row.year && <Kv label="Yili">{active.row.year}</Kv>}
+          </dl>
+        </Modal>
       )}
       {active?.dialog === 'image' && active.row.image && (
         <Modal

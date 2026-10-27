@@ -48,6 +48,7 @@ class StructurePermission(permissions.BasePermission):
         'assign': 'main.change_technics',
         'unassign': 'main.change_technics',
         'destroy': 'main.delete_technics',
+        'stats': 'main.change_technics',      # SPA: holatlar bo'yicha sonlar (ro'yxat bilan bir xil huquq)
     }
 
     def has_permission(self, request, view):

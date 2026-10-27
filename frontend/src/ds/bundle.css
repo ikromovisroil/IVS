@@ -140,6 +140,9 @@ textarea.aui-input { resize: vertical; min-height: 72px; }
 .aui-tag i { font-size: 14px; color: var(--icon-soft-400); }
 .aui-tag[data-color] { color: var(--aui-c); background: color-mix(in srgb, var(--aui-c) 8%, transparent); border-color: color-mix(in srgb, var(--aui-c) 19%, transparent); }
 .aui-tag[data-color] i { color: var(--aui-c); }
+/* O'chiriladigan teglar (tanlangan xodimlar): uzun ism-lavozim qatorlarga bo'linadi, kartadan chiqib ketmaydi */
+.aui-tag:has(> .aui-tag-remove) { max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-align: left; align-items: flex-start; }
+.aui-tag:has(> .aui-tag-remove) .aui-tag-remove { flex: none; margin-top: 2px; }
 .aui-tag-remove { width: 16px; height: 16px; border-radius: var(--radius-full); border: none; padding: 0; background: rgba(0,0,0,.06); color: var(--text-sub-600); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; }
 [data-theme="dark"] .aui-tag-remove { background: var(--white-alpha-10); }
 

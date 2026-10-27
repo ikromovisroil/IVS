@@ -3,7 +3,7 @@
 // Hujjatlarning boshlang‘ich HTML matni — eski TinyMCE shablonlaridan (templates/main/*.html, <textarea id="body">)
 // o‘zgarishsiz ko‘chirilgan. Bu PDF va imzolanadigan hujjat MAZMUNI (interfeys emas): ichki inline uslublar
 // (qora/oq chegaralar, jadval fonlari) PDF da aynan shunday chiqishi uchun saqlanadi.
-import { esc } from './format'
+import { esc, rankCase } from './format'
 
 const SIGN_COLS = '<colgroup><col style="width:50%;"><col style="width:50%;"></colgroup>'
 
@@ -149,7 +149,7 @@ export function aktTemplate(userName: string, userRank: string): string {
     Biz, quyida imzo chekuvchilar, O‘zbekiston Respublikasi Iqtisodiyot va Moliya vazirligi huzuridagi
     “Axborot texnologiyalari markazi” davlat unitar korxonasining vakillari:
   </div>
-  <div style="text-align:center;"><b><u>${esc(userName)} (${esc(userRank)})</u></b></div>
+  <div style="text-align:center;"><b><u>${esc(userName)} (${esc(rankCase(userRank))})</u></b></div>
   <div style="text-align:center;font-size:8pt;">(F.I.Sh., ATM mutaxassisining lavozimi)</div>
   ${signRow(
     `<span>O‘zbekiston Respublikasi <span id="org_id_1">Iqtisodiyot va Moliya vazirligi</span> tashkiloti vakili:</span><br><b id="sender_name1"><u>_</u></b><br><span style="text-align:center;font-size:8pt;">(F.I.Sh., lavozimi)</span>`,

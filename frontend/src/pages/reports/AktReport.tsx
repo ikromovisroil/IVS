@@ -8,7 +8,7 @@ import type { ReportForm, ReportsMeta } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { amountInWords, empLabel, esc, formatNumberAkt, monthRange, todayDmy } from './format'
+import { amountInWords, empLabel, esc, formatNumberAkt, monthRange, rankCase, todayDmy } from './format'
 import { FilterCard, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { AKT_HEADER_ROWS, aktTemplate, messageRow } from './templates'
@@ -52,7 +52,7 @@ function aktRows(data: AktItem[]): string {
           formatNumberAkt(it.number),
           esc(it.material__unit__name || '-'),
           esc(it.full_name || '-'),
-          esc(it.rank_name || '-'),
+          esc(it.rank_name ? rankCase(it.rank_name) : '-'),
           formatNumberAkt(it.material__price),
           esc(it.order__id || '-'),
           finished,

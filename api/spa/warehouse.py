@@ -14,6 +14,7 @@ give, service, report). Bu yerda faqat yetishmaganlari:
 * technics/<id>/card/      — QR kod sahifasi (main/views.py:technics_detail) ma'lumotlari: har qanday kirgan xodim.
 * technics/mine/           — "Texnikalarim" (main/views.py:technics_get): o'ziniki yoki boss_employee bo'lsa
                              bo'limdagi texnikalar va texnikasi yo'q xodimlar.
+* structures/stats/ — shu filtrlar bo'yicha holatlar soni.
 * structures/, structures/<id>/ — extra_tex ro'yxati: StructureViewSet bilan bir xil, biriktirilgan texnika egasi bilan.
 * employees/               — biriktirish oynasidagi xodimlar (main/ajax_views.py:ajax_employees_org).
 * employees/pinfl/         — "Xodim qo'shish" (PINFL bo'yicha, main/views.py:employe_create).
@@ -252,6 +253,16 @@ class SpaStructureViewSet(StructureViewSet):
 
     def get_queryset(self):
         return super().get_queryset().select_related("technics__employee")
+
+    @action(detail=False, methods=["get"])
+    def stats(self, request):
+        """Shu filtrlar bo'yicha holatlar soni (ro'yxat bilan bir xil doira va filtrlar)."""
+        qs = self.filter_queryset(self.get_queryset()).order_by()
+        counts = {row["status"]: row["n"] for row in qs.values("status").annotate(n=Count("id"))}
+        return Response({
+            "total": sum(counts.values()),
+            **{s: counts.get(s, 0) for s in ("active", "free", "repair", "defect")},
+        })
 
 
 # ─────────────────────────── xodimlar ───────────────────────────

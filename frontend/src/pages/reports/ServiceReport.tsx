@@ -8,7 +8,7 @@ import type { ReportForm } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { amountInWords, esc, formatMoney, formatNumber, initialSurname, joinWithVa, lowerFirst, monthRange, quarterOfDate, todayDmy } from './format'
+import { amountInWords, esc, formatMoney, formatNumber, initialSurname, joinWithVa, monthRange, quarterOfDate, rankCase, todayDmy } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import type { SvodMaterial, SvodResponse } from './SvodReport'
@@ -42,7 +42,7 @@ function peopleText(list: Owner[]) {
     list
       .map((p) => {
         const unit = (p.unit || '').trim()
-        const person = [lowerFirst(p.rank), initialSurname(p.full_name, true)].filter(Boolean).join(' ')
+        const person = [rankCase(p.rank, true), initialSurname(p.full_name, true)].filter(Boolean).join(' ')
         return unit && person ? `${unit}, ${person}` : unit || person
       })
       .filter(Boolean),
@@ -92,7 +92,7 @@ function ServicePage({ form, doc }: { form: ReportForm; doc: DocApi }) {
               .map(
                 (p) =>
                   `<div><table style="border-collapse:collapse;width:100%;"><colgroup><col style="width:50%;"><col style="width:50%;"></colgroup><tbody><tr>
-                    <td style="border:1px solid #fff;text-align:left;"><b>${esc(p.rank || '')}</b></td>
+                    <td style="border:1px solid #fff;text-align:left;"><b>${esc(rankCase(p.rank))}</b></td>
                     <td style="border:1px solid #fff;text-align:left;"><b>${esc(initialSurname(p.full_name))}</b></td></tr></tbody></table></div>`,
               )
               .join('')

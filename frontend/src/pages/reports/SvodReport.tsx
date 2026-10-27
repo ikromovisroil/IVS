@@ -9,7 +9,7 @@ import type { Emp, ReportForm } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange, todayDmy } from './format'
+import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange, rankCase, todayDmy } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { SVOD_TEMPLATE, messageRow } from './templates'
@@ -139,7 +139,7 @@ function SvodPage({ form, doc }: { form: ReportForm; doc: DocApi }) {
           ? emps
               .map(
                 (e) =>
-                  `<tr><td style="border:1px solid #fff;text-align:left;"><b>Kelishildi</b><br><b>${esc(e.rank || '')}</b></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(e.full_name)}</b><br></td></tr>`,
+                  `<tr><td style="border:1px solid #fff;text-align:left;"><b>Kelishildi</b><br><b>${esc(rankCase(e.rank))}</b></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(e.full_name)}</b><br></td></tr>`,
               )
               .join('')
           : messageRow(2, 'Ariza bajargan xodimlar topilmadi', 'empty', '#fff'),

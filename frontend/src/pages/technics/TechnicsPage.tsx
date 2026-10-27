@@ -14,7 +14,7 @@ import { API, api, withQuery } from '../../api/client'
 import type { Page as ApiPage } from '../../api/client'
 import { can, useMe } from '../../auth/me'
 import { useT } from '../../i18n'
-import { avatarColor, formatNumber, initials } from '../../lib/format'
+import { avatarColor, initials } from '../../lib/format'
 import { useUrlFilters } from '../../lib/useUrlFilters'
 import ActionMenu from './ActionMenu'
 import type { MenuAction } from './ActionMenu'
@@ -27,25 +27,13 @@ import TechnicsForm from './TechnicsForm'
 import TechnicsTabs from './TechnicsTabs'
 import { useTechnicsRefs } from './refs'
 import { useStatusOptions } from './status'
+import StatsStrip from './StatsStrip'
 import './technics.css'
 
 const PAGE_SIZE = 20
 const FILTER_KEYS = ['search', 'group', 'category', 'status', 'organization', 'region', 'department', 'directorate', 'division'] as const
 
 type Dialog = 'detail' | 'edit' | 'assign' | 'attach' | 'detach' | 'delete'
-
-function Stat({ label, value, note }: { label: string; value: number | undefined; note: string }) {
-  const t = useT()
-  return (
-    <div>
-      <div className="ivs-stat-label">{t(label)}</div>
-      <div className="ivs-stat-value">
-        {value === undefined ? '—' : formatNumber(value)}
-        <small>{note}</small>
-      </div>
-    </div>
-  )
-}
 
 /** Har bir uskunaning qo'shimcha qurilmalari ustun ichida alohida qatorlarda (eski jadvaldagidek). */
 function DeviceLines({ r, field }: { r: TechnicsRow; field: 'name' | 'inventory' | 'serial' }) {
@@ -217,7 +205,8 @@ export default function TechnicsPage() {
   // /api/v1/export/technics.xlsx — ro'yxat bilan bir xil doira va filtrlar (qidiruv u yerda F.I.O bo'yicha emas)
   const exportUrl = withQuery(`${API}/export/technics.xlsx`, filters)
 
-  const share = stats.data?.total ? Math.round((stats.data.active * 100) / stats.data.total) : 0
+  // Departament faqat tashkilot VA hudud tanlangandan keyin chiqadi
+  const structureReady = !!n('organization') && !!n('region')
   const selectFilter = (key: (typeof FILTER_KEYS)[number], reset: (typeof FILTER_KEYS)[number][] = []) => (v: string | number | null) =>
     setFilters({ [key]: v, ...Object.fromEntries(reset.map((k) => [k, null])) })
 
@@ -236,13 +225,7 @@ export default function TechnicsPage() {
     >
       <TechnicsTabs />
 
-      <div className="aui-stats aui-stats-5">
-        <Stat label="Jami uskunalar" value={stats.data?.total} note={t('dona')} />
-        <Stat label="Aktiv" value={stats.data?.active} note={t('{n}% jami ichida', { n: share })} />
-        <Stat label="Bo'sh" value={stats.data?.free} note={t('foydalanishga tayyor')} />
-        <Stat label="Ta'mirda" value={stats.data?.repair} note={t("e'tibor talab qiladi")} />
-        <Stat label="Yaroqsiz" value={stats.data?.defect} note={t('hisobdan chiqarish uchun')} />
-      </div>
+      <StatsStrip stats={stats.data} totalLabel="Jami uskunalar" />
 
       <FilterBar
         search={<SearchInput value={filters.search} onChange={(v) => setFilter('search', v)} placeholder="F.I.O, nomi, I/R, S/R, MAC, IP..." />}
@@ -260,10 +243,10 @@ export default function TechnicsPage() {
         <Select placeholder={t('Tashkilot')} options={refs.organizationOptions} value={n('organization')} onChange={selectFilter('organization', ['department', 'directorate', 'division'])} />
         <Select placeholder={t('Hudud')} options={toOptions(regions.data)} value={n('region')} onChange={selectFilter('region', ['department', 'directorate', 'division'])} />
         <Select
-          placeholder={t('Departament')}
-          options={tree.departments}
+          placeholder={t(structureReady ? 'Departament' : 'Avval tashkilot va hududni tanlang')}
+          options={structureReady ? tree.departments : []}
           value={n('department')}
-          disabled={!n('organization')}
+          disabled={!structureReady}
           onChange={selectFilter('department', ['directorate', 'division'])}
         />
         <Select placeholder={t('Boshqarma')} options={tree.directorates} value={n('directorate')} disabled={!n('department')} onChange={selectFilter('directorate', ['division'])} />

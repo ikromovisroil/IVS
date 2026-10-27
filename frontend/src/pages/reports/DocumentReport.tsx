@@ -8,7 +8,7 @@ import type { ReportForm, ReportsMeta } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { esc, isoDate, lowerFirst, quarterOfDate, shortenFullName, todayDmy } from './format'
+import { esc, isoDate, quarterOfDate, rankCase, shortenFullName, todayDmy } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
 import { DOCUMENT_TEMPLATE } from './templates'
@@ -108,7 +108,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
   const senderRank = senderObj?.rank ?? ''
   useEffect(() => {
     doc.setText('#sender_name', senderName)
-    doc.setText('#sender_rank', lowerFirst(senderRank))
+    doc.setText('#sender_rank', rankCase(senderRank, true))
   }, [doc, senderName, senderRank])
 
   const receiverName = receiverObj?.full_name ?? ''
@@ -117,7 +117,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
     // Tashkilot → tanlangan xodimning lavozimi → ismi (xodim tanlanmaguncha hech narsa chiqmaydi)
     doc.setText('#receiver_name', receiverName)
     doc.setText('#receiver_comma', receiverName ? ',' : '')
-    doc.setText('#receiver_rank', lowerFirst(receiverRank))
+    doc.setText('#receiver_rank', rankCase(receiverRank, true))
   }, [doc, receiverName, receiverRank])
 
   // buildAgreementTables: imv_block — tashkilot vakili + shu tashkilot kelishuvchilari;
@@ -125,7 +125,7 @@ function DocumentPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta
   const myRegion = meta.employee?.region_id ?? null
   useEffect(() => {
     const row = (rank: string, name: string) =>
-      `<tr><td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;line-height:2;">${esc(rank)}</td><td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;line-height:2;">${esc(shortenFullName(name))}</td></tr>`
+      `<tr><td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;line-height:2;">${esc(rankCase(rank))}</td><td style="border:1px solid #fff;padding:4px 8px;vertical-align:top;line-height:2;">${esc(shortenFullName(name))}</td></tr>`
     let imv = receiverName ? row(receiverRank, receiverName) : ''
     let ivs = senderName ? row(senderRank, senderName) : ''
     agreementObjs.forEach((e) => {
