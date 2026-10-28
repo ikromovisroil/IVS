@@ -98,6 +98,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "core.middlewares.search_apostrophe.SearchApostropheMiddleware",   # qidiruvda o'/g' -> o‘/g‘
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 
     "core.middlewares.audit.AuditMiddleware",

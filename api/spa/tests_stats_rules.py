@@ -230,7 +230,7 @@ class OrganizationStatsEmployeeModalTests(TestCase):
         self.client.force_login(user)
         data = self._detail().json()
         self.assertEqual(data["kind"], "Omborxonaga")
-        self.assertEqual([i["goal"] for i in data["items"]], ["Qog'oz so'rovi"])
+        self.assertEqual([i["goal"] for i in data["items"]], ["Qog‘oz so‘rovi"])      # saqlashda o'/g' -> o‘/g‘
 
     def test_scope_and_permissions(self):
         _, stranger = make_employee(self.other_org, self.region, first="Begona", last="Xodim")

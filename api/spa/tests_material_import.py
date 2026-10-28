@@ -173,7 +173,7 @@ class MaterialImportTests(TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn(self.owner.id, [e["id"] for e in res.data["employees"]])
         self.assertIn(self.org.id, [o["id"] for o in res.data["organizations"]])
-        self.assertEqual(sorted(u["name"] for u in res.data["units"]), ["Dona", "O'ram", "Pachka", "kv. metr"])
+        self.assertEqual(sorted(u["name"] for u in res.data["units"]), ["Dona", "O‘ram", "Pachka", "kv. metr"])      # saqlashda o' -> o‘
         cat = MaterialCategory.objects.create(name="Mening", organization=self.org)
         MaterialCategory.objects.create(name="Begona", organization=make_org("worker"))
         res = self.api.get(URL + "options/", {"organization": self.org.id})

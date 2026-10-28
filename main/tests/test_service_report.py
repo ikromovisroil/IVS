@@ -45,7 +45,7 @@ class ServiceMaterialsUnitTests(TestCase):
         self._spend(in_division)
         row = self._unit_of(in_division)
         self.assertEqual(row["owner_unit"], self.dept.name)          # doim departament (dep) nomi
-        self.assertEqual(row["rank_name"], "Boshlig'i")
+        self.assertEqual(row["rank_name"], "Boshlig‘i")      # saqlashda g' -> g‘
 
     def test_department_is_returned_for_directorate_and_department_staff(self):
         _, in_directorate = make_employee(self.org, self.region, first="Anvar", last="Narzullayev")
