@@ -257,7 +257,7 @@ function FinishModal({ order, onClose }: { order: Order; onClose: () => void }) 
               onSuccess: () => {
                 toast('Ariza muvaffaqiyatli yakunlandi')
                 setConfirm(false)
-                setState((s) => ({ ...s, rows: [] }))
+                onClose()      // yakunlangach ariza oynasi yopiladi
               },
               onError: (e) => {
                 setConfirm(false)
