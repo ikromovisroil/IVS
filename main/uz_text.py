@@ -1,7 +1,7 @@
 """O'zbekcha matnda o' va g' belgisidan keyingi apostrof yagona ko'rinishga keltiriladi: o‘ va g‘ (U+2018).
 
-Ro'yxatdagi (nom, F.I.Sh. va h.k.) maydonlar saqlashda avtomatik tuzatiladi (main/signals.py), mavjud ma'lumot esa
-`manage.py normalize_apostrophes` bilan. Hujjat matni (HTML) uchun alohida: main/sanitizers.py.
+Ro'yxatdagi (nom, F.I.Sh. va h.k.) maydonlar saqlashda avtomatik tuzatiladi (main/signals.py).
+Hujjat matni (HTML) uchun alohida: main/sanitizers.py.
 """
 import re
 

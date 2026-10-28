@@ -36,6 +36,14 @@
   margin: 0 0 12px;
 }
 
+/* Holat jadvallari modalga sig'sin: uzun tashkilot nomi va izoh keyingi qatorga o'tadi (yon skrollsiz) */
+.msg-status .aui-table td {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
 .msg-sender {
   display: grid;
   grid-template-columns: minmax(200px, 1.4fr) repeat(3, minmax(0, 1fr));

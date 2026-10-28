@@ -80,18 +80,13 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-full);
-  background: var(--bg-weak-50);
-  border: 1px solid var(--stroke-soft-200);
+  /* Kutayotgan ishlar soni — yon menyudagi nishon kabi qizil, faol tabda ham */
+  background: var(--state-error-base);
+  border: 0;
   font-size: 12px;
   line-height: 16px;
-  font-weight: 500;
-  color: var(--text-sub-600);
-}
-
-.ivs-linetabs a.is-active .ivs-linetabs-count {
-  background: var(--primary-alpha-10);
-  border-color: transparent;
-  color: var(--primary-base);
+  font-weight: 600;
+  color: var(--static-white);
 }
 
 /* 2-daraja: ixcham segment, kontent kengligida */

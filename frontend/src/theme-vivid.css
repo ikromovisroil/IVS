@@ -71,9 +71,16 @@
   color: #6f7dd8;
 }
 
-.aui-dnav-badge {
-  background: linear-gradient(135deg, #ff5d73, #ff8a3d);
-  box-shadow: 0 4px 10px -3px rgba(255, 93, 115, 0.6);
+/* Kutayotgan ishlar soni (yon menyu va tablar): aniq qizil, binafsha faol tugmada ham ko'zga tashlansin */
+.aui-dnav-badge,
+.ivs-linetabs-count {
+  background: var(--state-error-base);
+  color: var(--static-white);
+  box-shadow: 0 4px 10px -3px rgba(251, 55, 72, 0.6);
+}
+
+.aui-dnav.is-active .aui-dnav-badge {
+  box-shadow: 0 0 0 2px #fff, 0 4px 10px -3px rgba(251, 55, 72, 0.6);
 }
 
 /* ───── Tugmalar ───── */

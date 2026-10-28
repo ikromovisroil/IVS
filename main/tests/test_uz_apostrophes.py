@@ -1,12 +1,9 @@
-"""o' va g' -> o‘ va g‘: funksiya, saqlashdagi avtomatik tuzatish, eski ma'lumot buyrug'i va qidiruv."""
-from io import StringIO
-
+"""o' va g' -> o‘ va g‘: funksiya, saqlashdagi avtomatik tuzatish va qidiruv."""
 from django.apps import apps
-from django.core.management import call_command
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from main.models import Department, Employee, Organization, Rank, Region
+from main.models import Employee, Organization, Rank, Region
 from main.testing import make_employee, make_org, make_region
 from main.uz_text import NORMALIZED_FIELDS, normalize_og
 
@@ -47,31 +44,10 @@ class SaveNormalizationTests(TestCase):
         self.assertEqual((emp.last_name, emp.first_name, emp.father_name), ("Po‘latov", "Xojiakbar", "Bahodir o‘g‘li"))
 
 
-class CommandAndSearchTests(TestCase):
-    def setUp(self):
-        # eski ma'lumot: saqlashdagi tuzatishni chetlab (update) oddiy apostrof bilan yozilgan
-        self.region = Region.objects.create(name="x")
-        Region.objects.filter(pk=self.region.pk).update(name="Qo'qon viloyati")
-        self.org = make_org("worker")
-        Organization.objects.filter(pk=self.org.pk).update(name="Bo'lim O'zbek")
-
-    def run_cmd(self, *args):
-        out = StringIO()
-        call_command("normalize_apostrophes", *args, stdout=out)
-        return out.getvalue()
-
-    def test_dry_run_changes_nothing_apply_changes(self):
-        text = self.run_cmd()
-        self.assertIn("Region: 1 ta yozuv", text)
-        self.assertEqual(Region.objects.get(pk=self.region.pk).name, "Qo'qon viloyati")
-        self.run_cmd("--apply")
-        self.assertEqual(Region.objects.get(pk=self.region.pk).name, "Qo‘qon viloyati")
-        self.assertEqual(Organization.objects.get(pk=self.org.pk).name, "Bo‘lim O‘zbek")
-        self.assertIn("0 ta yozuv", self.run_cmd())            # ikkinchi marta o'zgartirishga hech narsa qolmaydi
-
+class SearchTests(TestCase):
     def test_search_with_plain_apostrophe_finds_normalized_name(self):
-        Region.objects.filter(pk=self.region.pk).update(name="Qo‘qon viloyati")
-        user, _ = make_employee(self.org, self.region, superuser=True)
+        region = Region.objects.create(name="Qo'qon viloyati")        # saqlashda Qo‘qon bo'ladi
+        user, _ = make_employee(make_org("worker"), region, superuser=True)
         api = APIClient()
         api.force_authenticate(user)
         res = api.get("/api/v1/regions/", {"search": "Qo'qon"})

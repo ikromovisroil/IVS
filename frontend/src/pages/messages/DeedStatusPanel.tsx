@@ -162,14 +162,14 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
 
       <section>
         <h3 className="type-label-md msg-section-title">{t('Imzolovchilar holati')}</h3>
-        <DataTable rows={signers} columns={signerColumns} getRowId={(r) => r.key} rowHeight={60} minWidth={720} caption={t('Imzolovchilar holati')} />
+        <DataTable rows={signers} columns={signerColumns} getRowId={(r) => r.key} rowHeight={60} minWidth={0} caption={t('Imzolovchilar holati')} />
       </section>
 
       {(deed.consents.length > 0 || canAdd) && (
         <section>
           <h3 className="type-label-md msg-section-title">{t('Kelishuvchilar holati')}</h3>
           {deed.consents.length > 0 ? (
-            <DataTable rows={deed.consents} columns={consentColumns} getRowId={(r) => r.id} rowHeight={60} minWidth={720} caption={t('Kelishuvchilar holati')} />
+            <DataTable rows={deed.consents} columns={consentColumns} getRowId={(r) => r.id} rowHeight={60} minWidth={0} caption={t('Kelishuvchilar holati')} />
           ) : (
             <p className="type-para-sm msg-muted">{t("Kelishuvchilar yo'q.")}</p>
           )}
