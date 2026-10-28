@@ -42,16 +42,17 @@ export function formatMonthYearRange(date1: string, date2: string): string {
   return `${y1}-yil ${MONTHS[m1]} - ${y2}-yil ${MONTHS[m2]} oylari uchun`
 }
 
-/** Svod/Reestr/Sarf: 1234567.5 → "1 234 567,50", 15000 → "15 000" */
+/**
+ * Svod/Reestr/Sarf: 1234567.5 → "1 234 567,50", 15000 → "15 000".
+ * Kasr tiyingacha yaxlitlanadi (kesilmaydi): yig'indidagi 25665990.009999998 → "25 665 990,01".
+ */
 export function formatNumber(num: unknown): string {
   if (num === null || num === undefined || num === '' || isNaN(Number(num))) return '0'
-  const s = String(num)
-  if (s.includes('.')) {
-    const [i, f] = s.split('.')
-    const frac = f.length === 1 ? f + '0' : f.substring(0, 2)
-    return i.replace(/\B(?=(\d{3})+(?!\d))/g, ' ') + ',' + frac
-  }
-  return s.replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  const cents = Math.round(Number(num) * 100)
+  const abs = Math.abs(cents)
+  const int = String(Math.floor(abs / 100)).replace(/\B(?=(\d{3})+(?!\d))/g, ' ')
+  const frac = abs % 100
+  return (cents < 0 ? '-' : '') + int + (frac ? ',' + pad(frac) : '')
 }
 
 /** Akt: bo'sh → "-", kasr bo'lsa 2 xona */
