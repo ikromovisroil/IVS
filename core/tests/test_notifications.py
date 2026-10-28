@@ -12,7 +12,7 @@ from core.notifications import mark_read_by_tag, record, safe_url
 from core.tasks import cleanup_old_notifications
 from main.push_views import notify_order_status_change, send_push_notification
 from main.testing import make_employee, make_goal, make_org, make_region
-from main.models import Order
+from main.models import Deed, DeedConsent, Order
 
 
 class RecordTests(TestCase):
@@ -237,3 +237,92 @@ class NewOrderNotificationTests(TestCase):
         self.assertEqual(self.unread(self.a), 2)
         call_command("close_stale_order_notifications", stdout=mock.MagicMock())
         self.assertEqual((self.unread(self.a), self.unread(self.b)), (1, 1))
+
+
+class DeedNotificationClosingTests(TestCase):
+    """Hujjatni imzolash/kelishish — "imzolashga/kelishishga yuborildi" bildirishnomasi sahifaga kirmasdan ham o'chadi."""
+
+    def setUp(self):
+        org, region = make_org("client"), make_region()
+        _, self.signer = make_employee(org, region)
+        _, self.agreer = make_employee(org, region)
+        self.deed = Deed.objects.create(organization=org, sender=self.signer, file="deed/x.pdf")
+        self.consent = DeedConsent.objects.create(deed=self.deed, employee=self.agreer)
+        record(self.signer, "Hujjat imzolashga yuborildi", tag=f"deed-sender-{self.deed.pk}")
+        record(self.agreer, "Hujjat kelishishga yuborildi", tag=f"deed-watcher-{self.deed.pk}")
+
+    def unread(self, emp):
+        return Notification.objects.filter(employee=emp, is_read=False).count()
+
+    def test_signing_closes_signer_notification_only(self):
+        self.deed.status_sender = "approved"
+        self.deed.save(update_fields=["status_sender"])
+        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (0, 1))
+
+    def test_agreeing_closes_watcher_notification(self):
+        self.consent.status = "approved"
+        self.consent.save(update_fields=["status"])
+        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (1, 0))
+
+    def test_pending_deed_keeps_notifications(self):
+        self.deed.save()
+        self.consent.save()
+        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (1, 1))
+
+    def test_rejected_deed_closes_everyone(self):
+        self.deed.status_sender = "rejected"
+        self.deed.save(update_fields=["status_sender"])
+        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (0, 0))
+
+    def test_command_closes_stale_deed_notifications(self):
+        from django.core.management import call_command
+        Deed.objects.filter(pk=self.deed.pk).update(status_sender="approved")                  # signalsiz (eski ma'lumot)
+        DeedConsent.objects.filter(pk=self.consent.pk).update(status="approved")
+        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (1, 1))
+        call_command("close_stale_deed_notifications", "--dry-run", stdout=mock.MagicMock())
+        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (1, 1))
+        call_command("close_stale_deed_notifications", stdout=mock.MagicMock())
+        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (0, 0))
+
+
+class OrderMeetingNotificationClosingTests(TestCase):
+    def setUp(self):
+        self.worker_org = make_org("worker")
+        _, self.sender = make_employee(make_org("client"), make_region())
+
+    def test_orders_seen_closes_status_notifications(self):
+        from main.context_processors import mark_orders_seen
+        record(self.sender, "Ariza holati o'zgardi", tag="order-status-5-finished")
+        record(self.sender, "Chat", tag="chat-1")
+        mark_orders_seen(self.sender)
+        self.assertEqual(list(Notification.objects.filter(employee=self.sender, is_read=False).values_list("tag", flat=True)), ["chat-1"])
+
+    def _meeting(self, **kw):
+        from chat.models import Meeting
+        return Meeting.objects.create(
+            organizer=self.sender, title="Majlis", start_at=timezone.now() + timedelta(minutes=5),
+            zoom_id="1", join_url="https://zoom.us/j/1", **kw,
+        )
+
+    @mock.patch("main.tasks.send_fcm_notification_task.delay")
+    @mock.patch("main.tasks.send_push_notification_task.delay")
+    def test_cancelled_meeting_closes_reminder(self, push, fcm):
+        from chat.meetings import send_due_reminders
+        from chat.models import Meeting
+        m = self._meeting()
+        send_due_reminders()
+        self.assertEqual(Notification.objects.filter(employee=self.sender, is_read=False).count(), 1)
+        m.status = Meeting.STATUS_CANCELLED
+        m.save(update_fields=["status"])
+        self.assertEqual(Notification.objects.filter(employee=self.sender, is_read=False).count(), 0)
+
+    @mock.patch("main.tasks.send_fcm_notification_task.delay")
+    @mock.patch("main.tasks.send_push_notification_task.delay")
+    def test_started_meeting_closes_reminder(self, push, fcm):
+        from chat.meetings import send_due_reminders
+        from chat.models import Meeting
+        m = self._meeting()
+        send_due_reminders()
+        Meeting.objects.filter(pk=m.pk).update(start_at=timezone.now() - timedelta(minutes=1))
+        send_due_reminders()
+        self.assertEqual(Notification.objects.filter(employee=self.sender, is_read=False).count(), 0)

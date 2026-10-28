@@ -59,6 +59,9 @@ def mark_orders_seen(employee):
     """Xodimning "yangi" belgilarini o'chiradi va hisoblagich keshini tozalaydi."""
     for who, org_type, statuses, seen in ORDER_SEEN_RULES:
         Order.objects.filter(**{who: employee, "goal__organization__type": org_type, "status__in": statuses, seen: False}).update(**{seen: True})
+    # Arizalar sahifasi ochildi: "Ariza holati o'zgardi" bildirishnomalari ham o'qilgan bo'ladi
+    from core.notifications import mark_read_by_prefix
+    mark_read_by_prefix(employee, "order-status-")
     invalidate_counts(employee.id)
 
 

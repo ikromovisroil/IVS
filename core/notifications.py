@@ -94,3 +94,10 @@ def mark_read_by_tag(employee, *tags):
     return Notification.objects.filter(employee=employee, tag__in=tags, is_read=False).update(
         is_read=True, date_read=timezone.now(),
     )
+
+
+def mark_read_by_prefix(employee, prefix):
+    """Tag'i `prefix` bilan boshlanadigan o'qilmagan bildirishnomalarni o'qilgan qiladi."""
+    return Notification.objects.filter(employee=employee, tag__startswith=prefix, is_read=False).update(
+        is_read=True, date_read=timezone.now(),
+    )

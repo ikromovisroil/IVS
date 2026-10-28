@@ -185,4 +185,9 @@ def send_due_reminders(minutes_before: int = 10) -> int:
         meeting.reminder_sent = True
         meeting.save(update_fields=["reminder_sent"])
         sent += 1
+    # Boshlanib bo'lgan uchrashuvlar eslatmasi eskirgan — o'qilgan qilinadi
+    from core.signals.notification_signals import close_meeting_reminders
+
+    started = Meeting.objects.filter(reminder_sent=True, start_at__lte=now).values_list("pk", flat=True)
+    close_meeting_reminders(list(started.order_by("-pk")[:200]))
     return sent
