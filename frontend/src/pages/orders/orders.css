@@ -152,6 +152,25 @@
   color: var(--state-faded-base);
 }
 
+/* Baho tanlashdagi yulduzlar katta: bosish oson va ko'zga yaqqol tushadi */
+.ivs-orders-stars.is-input {
+  gap: 8px;
+}
+
+.ivs-orders-stars.is-input .aui-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+}
+
+.ivs-orders-stars.is-input .aui-btn i,
+.ivs-orders-stars.is-input .aui-btn svg,
+.ivs-orders-stars.is-input .aui-btn .aui-icon {
+  font-size: 38px;
+  width: 38px;
+  height: 38px;
+}
+
 .ivs-orders-rating {
   display: flex;
   justify-content: center;
