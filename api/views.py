@@ -77,7 +77,7 @@ class RegionViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ["name"]
 
     def get_queryset(self):
-        qs = Region.objects.all().order_by('name', 'id')
+        qs = Region.objects.all().order_by('id')    # hududlar ro'yxati (selektlar) ID bo'yicha
         user = self.request.user
 
         if user.is_superuser or user.has_perm("main.all_region"):
