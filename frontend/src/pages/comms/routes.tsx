@@ -1,4 +1,5 @@
 import { lazy } from 'react'
+import { Navigate } from 'react-router-dom'
 import type { AppRoute } from '../../routes'
 
 // Sahifalar kerak bo'lganda yuklanadi (App.tsx dagi Suspense) — boshlang'ich JS kichrayadi
@@ -10,6 +11,9 @@ const MeetingsPage = lazy(() => import('./MeetingsPage'))
 export const routes: AppRoute[] = [
   { path: '/chat', element: <ChatPage /> },
   { path: '/chat/:id', element: <ChatPage /> },
-  { path: '/meetings', element: <MeetingsPage /> },
-  { path: '/meetings/past', element: <MeetingsPage /> },
+  // Zoom 1, Zoom 2, ... — har biri alohida host; eski manzillar Zoom 1 ga yo'naltiriladi
+  { path: '/meetings', element: <Navigate to="/meetings/1" replace /> },
+  { path: '/meetings/past', element: <Navigate to="/meetings/1/past" replace /> },
+  { path: '/meetings/:host', element: <MeetingsPage /> },
+  { path: '/meetings/:host/past', element: <MeetingsPage /> },
 ]

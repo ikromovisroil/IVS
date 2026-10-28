@@ -69,7 +69,7 @@ class MeetingAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     Zoom uchrashuvlari: faqat ko'rish. Yaratish/bekor qilish/tugatish sayt orqali (Zoom bilan bog'liq),
     admin panelda o'zgartirsak Zoom'dagi uchrashuv bilan nomuvofiqlik bo'lib qoladi.
     """
-    list_display = ("id", "title", "organizer", "start_at", "end_at", "duration_minutes", "status")
+    list_display = ("id", "title", "host", "organizer", "start_at", "end_at", "duration_minutes", "status")
     list_filter = ("status",)
     search_fields = ("title", "organizer__last_name", "organizer__first_name", "zoom_id")
     ordering = ("-start_at",)

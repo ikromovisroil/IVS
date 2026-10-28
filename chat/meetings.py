@@ -35,16 +35,17 @@ def buffer_minutes() -> int:
     return max(int(getattr(settings, "MEETING_BUFFER_MINUTES", 10) or 0), 0)
 
 
-def find_conflict(start_at, duration_minutes, exclude_pk=None):
+def find_conflict(start_at, duration_minutes, host=1, exclude_pk=None):
     """
-    Shu vaqt oralig'i (tanaffus bilan) boshqa uchrashuv bilan to'qnashadimi. Hamma uchrashuv bitta Zoom host akkauntida
-    o'tadi, bir host bir vaqtda bitta uchrashuv o'tkaza oladi, shuning uchun vaqt hamma xodimlar uchun umumiy.
+    Shu vaqt oralig'i (tanaffus bilan) shu Zoom host'dagi boshqa uchrashuv bilan to'qnashadimi. Bir host bir vaqtda bitta
+    uchrashuv o'tkaza oladi, shuning uchun vaqt shu host (Zoom 1, Zoom 2, ...) bo'yicha hamma xodimlar uchun umumiy.
     Ketma-ket uchrashuvlar orasida kamida `MEETING_BUFFER_MINUTES` (standart 10) daqiqa tanaffus bo'lishi kerak.
     Erta tugatilgan uchrashuv haqiqiy tugash vaqtigacha band hisoblanadi.
     """
     buf = timedelta(minutes=buffer_minutes())
     end_at = start_at + timedelta(minutes=int(duration_minutes))
     candidates = Meeting.objects.filter(
+        host=host,
         status__in=[Meeting.STATUS_SCHEDULED, Meeting.STATUS_FINISHED],
         start_at__lt=end_at + buf,
         start_at__gt=start_at - timedelta(minutes=MAX_DURATION) - buf,
@@ -65,7 +66,7 @@ def _conflict_message(other) -> str:
             f"Iltimos, undan keyingi vaqtni tanlang: {free_from:%H:%M} dan boshlab{note}.")
 
 
-def create_meeting(organizer: Employee, title, start_at, duration_minutes, agenda="") -> Meeting:
+def create_meeting(organizer: Employee, title, start_at, duration_minutes, agenda="", host=1) -> Meeting:
     if not organizer.user.has_perm("chat.add_meeting"):
         raise MeetingError("Uchrashuv yaratish huquqingiz yo'q")
     title = (title or "").strip()
@@ -85,14 +86,20 @@ def create_meeting(organizer: Employee, title, start_at, duration_minutes, agend
         raise MeetingError(f"Davomiyligi {MIN_DURATION}–{MAX_DURATION} daqiqa orasida bo'lsin")
     if not zoom.zoom_enabled():
         raise MeetingError("Zoom hali sozlanmagan. Administrator bilan bog'laning.")
+    try:
+        host = int(host or 1)
+    except (TypeError, ValueError):
+        raise MeetingError("Zoom tanlanmagan")
+    if not (1 <= host <= len(zoom.zoom_hosts())):
+        raise MeetingError("Bunday Zoom mavjud emas")
 
-    # Bir vaqtda ikkita uchrashuv bo'lmaydi (bitta Zoom host): avval tekshiramiz (Zoom'ga murojaatdan oldin)
-    conflict = find_conflict(start_at, duration_minutes)
+    # Bir vaqtda ikkita uchrashuv bo'lmaydi (bitta Zoom host'da): avval tekshiramiz (Zoom'ga murojaatdan oldin)
+    conflict = find_conflict(start_at, duration_minutes, host)
     if conflict:
         raise MeetingError(_conflict_message(conflict))
 
     try:
-        info = zoom.create_meeting(title, start_at.astimezone(dt_timezone.utc), duration_minutes, agenda)
+        info = zoom.create_meeting(title, start_at.astimezone(dt_timezone.utc), duration_minutes, agenda, host_slot=host)
     except zoom.ZoomError as exc:
         raise MeetingError(str(exc))
 
@@ -100,7 +107,7 @@ def create_meeting(organizer: Employee, title, start_at, duration_minutes, agend
 
     with transaction.atomic():
         # Zoom javobini kutgan paytda boshqa odam shu vaqtni band qilgan bo'lishi mumkin: qayta tekshiruv
-        conflict = find_conflict(start_at, duration_minutes)
+        conflict = find_conflict(start_at, duration_minutes, host)
         if conflict:
             try:
                 zoom.delete_meeting(info["id"])
@@ -108,7 +115,7 @@ def create_meeting(organizer: Employee, title, start_at, duration_minutes, agend
                 logger.exception("Ortiqcha Zoom uchrashuvi o'chirilmadi (zoom_id=%s)", info["id"])
             raise MeetingError(_conflict_message(conflict))
         meeting = Meeting.objects.create(
-            organizer=organizer, title=title, agenda=(agenda or "").strip(), start_at=start_at,
+            organizer=organizer, host=host, title=title, agenda=(agenda or "").strip(), start_at=start_at,
             duration_minutes=duration_minutes, zoom_id=info["id"], join_url=info["join_url"],
             start_url=info["start_url"], password=info["password"], invitation=invitation,
         )

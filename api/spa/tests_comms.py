@@ -25,8 +25,8 @@ class CommsSpaTests(TestCase):
     def test_zoom_disabled(self):
         r = self._api(["chat.view_meeting"]).get(URL)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.data, {"zoom_enabled": False})
+        self.assertEqual(r.data, {"zoom_enabled": False, "hosts": [{"id": 1, "name": "Zoom 1"}]})
 
     @override_settings(ZOOM_ACCOUNT_ID="a", ZOOM_CLIENT_ID="b", ZOOM_CLIENT_SECRET="c")
     def test_zoom_enabled(self):
-        self.assertEqual(self._api(["chat.add_meeting"]).get(URL).data, {"zoom_enabled": True})
+        self.assertEqual(self._api(["chat.add_meeting"]).get(URL).data, {"zoom_enabled": True, "hosts": [{"id": 1, "name": "Zoom 1"}]})

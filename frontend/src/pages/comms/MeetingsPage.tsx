@@ -3,7 +3,7 @@ import EmptyState from '../../components/EmptyState'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useLocation, useSearchParams } from 'react-router-dom'
+import { Navigate, useLocation, useSearchParams } from 'react-router-dom'
 import { Button, CellUser, DataTable, Icon, Pagination, StatusChip, TextInput, Textarea } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import Page from '../../layout/Page'
@@ -25,6 +25,7 @@ interface Meeting {
   duration_minutes: number
   status: 'scheduled' | 'cancelled' | 'finished'
   ended_at: string | null
+  host: number
   organizer: { id: number; name: string }
   join_url: string
   password: string
@@ -35,10 +36,17 @@ interface Meeting {
 }
 
 const PAGE_SIZE = 20
-const TABS = [
-  { path: '/meetings', label: 'Rejalashtirilgan Zoomlar', icon: 'ri-calendar-schedule-line' },
-  { path: '/meetings/past', label: "O'tgan va bekor qilinganlar", icon: 'ri-history-line' },
-]
+
+interface MeetingsConfig {
+  zoom_enabled: boolean
+  hosts: { id: number; name: string }[]
+}
+
+/** /meetings/:host(/past) — host (Zoom 1, 2, ...) va "o'tgan" ekanini manzildan oladi. */
+function parseRoute(pathname: string): { host: number; past: boolean } {
+  const m = /^\/meetings(?:\/(\d+))?(\/past)?\/?$/.exec(pathname)
+  return { host: m?.[1] ? Number(m[1]) : 1, past: !!m?.[2] }
+}
 
 const pad = (n: number) => String(n).padStart(2, '0')
 function fmtDateTime(d: Date): string {
@@ -65,7 +73,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-function MeetingForm({ zoomEnabled, onClose }: { zoomEnabled: boolean; onClose: () => void }) {
+function MeetingForm({ zoomEnabled, host, hostName, onClose }: { zoomEnabled: boolean; host: number; hostName: string; onClose: () => void }) {
   const t = useT()
   const qc = useQueryClient()
   const toast = useToast()
@@ -79,7 +87,7 @@ function MeetingForm({ zoomEnabled, onClose }: { zoomEnabled: boolean; onClose: 
     mutationFn: () =>
       api<Meeting>('/meetings/', {
         method: 'POST',
-        body: JSON.stringify({ ...form, title: form.title.trim(), duration_minutes: Number(form.duration_minutes) }),
+        body: JSON.stringify({ ...form, host, title: form.title.trim(), duration_minutes: Number(form.duration_minutes) }),
       }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['meetings'] })
@@ -104,7 +112,7 @@ function MeetingForm({ zoomEnabled, onClose }: { zoomEnabled: boolean; onClose: 
       open
       onClose={onClose}
       icon="ri-video-add-line"
-      title="Yangi Zoom"
+      title={`${t('Yangi Zoom')} · ${hostName}`}
       subtitle="Taklif matnini ishtirokchilarga o'zingiz yuborasiz (Nusxalash)."
       width={560}
       footer={
@@ -159,7 +167,7 @@ export default function MeetingsPage() {
   const toast = useToast()
   const qc = useQueryClient()
   const { pathname } = useLocation()
-  const past = pathname.startsWith('/meetings/past')
+  const { host, past } = parseRoute(pathname)
   const [params, setParams] = useSearchParams()
   const page = Math.max(1, Number(params.get('page') ?? 1) || 1)
   const [creating, setCreating] = useState(false)
@@ -168,10 +176,12 @@ export default function MeetingsPage() {
   const canAdd = can(me, 'chat.add_meeting')
   const canDelete = can(me, 'chat.delete_meeting')
 
-  const config = useQuery({ queryKey: ['meetings', 'config'], queryFn: () => api<{ zoom_enabled: boolean }>('/spa/comms/meetings/config/') })
+  const config = useQuery({ queryKey: ['meetings', 'config'], queryFn: () => api<MeetingsConfig>('/spa/comms/meetings/config/') })
+  const hosts = config.data?.hosts ?? []
+  const hostName = hosts.find((h) => h.id === host)?.name ?? `Zoom ${host}`
   const list = useQuery({
-    queryKey: ['meetings', past ? 'past' : 'upcoming'],
-    queryFn: () => api<{ results: Meeting[] }>('/meetings/', { query: { scope: past ? 'past' : 'upcoming' } }).then((d) => d.results),
+    queryKey: ['meetings', host, past ? 'past' : 'upcoming'],
+    queryFn: () => api<{ results: Meeting[] }>('/meetings/', { query: { scope: past ? 'past' : 'upcoming', host } }).then((d) => d.results),
     refetchInterval: 60000, // "boshlangan" holati va ro'yxat vaqt o'tishi bilan o'zgaradi
   })
 
@@ -304,6 +314,9 @@ export default function MeetingsPage() {
     },
   ]
 
+  // Mavjud bo'lmagan Zoom raqami (masalan, /meetings/7) — birinchisiga
+  if (config.data && hosts.length && !hosts.some((h) => h.id === host)) return <Navigate to="/meetings/1" replace />
+
   return (
     <Page
       icon="ri-video-chat-line"
@@ -318,7 +331,16 @@ export default function MeetingsPage() {
         )
       }
     >
-      <PageTabs tabs={TABS} label="Zoom uchrashuvlari" />
+      {/* Tepada: Zoom 1, Zoom 2, ... (hostlar); pastda: rejalashtirilgan / o'tgan */}
+      <PageTabs tabs={hosts.map((h) => ({ path: `/meetings/${h.id}`, label: h.name, icon: 'ri-video-chat-line' }))} label="Zoom hostlari" />
+      <PageTabs
+        variant="segment"
+        label="Zoom uchrashuvlari"
+        tabs={[
+          { path: `/meetings/${host}`, label: 'Rejalashtirilgan Zoomlar', icon: 'ri-calendar-schedule-line' },
+          { path: `/meetings/${host}/past`, label: "O'tgan va bekor qilinganlar", icon: 'ri-history-line' },
+        ]}
+      />
 
       {!past && canAdd && config.data && !config.data.zoom_enabled && (
         <div className="cm-warning type-para-sm" role="status">
@@ -355,7 +377,7 @@ export default function MeetingsPage() {
         </div>
       )}
 
-      {creating && <MeetingForm zoomEnabled={!!config.data?.zoom_enabled} onClose={() => setCreating(false)} />}
+      {creating && <MeetingForm zoomEnabled={!!config.data?.zoom_enabled} host={host} hostName={hostName} onClose={() => setCreating(false)} />}
       {confirm && (
         <ConfirmDialog
           title={confirm.kind === 'finish' ? 'Zoomni tugatish' : "Zoomni o'chirish"}

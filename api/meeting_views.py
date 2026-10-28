@@ -1,8 +1,8 @@
 """
 Zoom uchrashuvlari (Android). Sayt bilan bir xil servis (chat/meetings.py).
 
-  GET  /api/v1/meetings/?scope=upcoming|past|all   — men yaratgan uchrashuvlar
-  POST /api/v1/meetings/                           — yaratish {title, start_at, duration_minutes, agenda?}
+  GET  /api/v1/meetings/?scope=upcoming|past|all&host=1   — men yaratgan uchrashuvlar (host — Zoom 1, 2, ...; ixtiyoriy)
+  POST /api/v1/meetings/                           — yaratish {title, start_at, duration_minutes, agenda?, host? (standart 1)}
   GET  /api/v1/meetings/{id}/                      — bitta uchrashuv
   POST /api/v1/meetings/{id}/cancel/               — bekor qilish (faqat tashkilotchi)
 """
@@ -40,6 +40,7 @@ def meeting_json(meeting, me):
         "start_at": meeting.start_at.isoformat(),
         "duration_minutes": meeting.duration_minutes,
         "status": meeting.status,
+        "host": meeting.host,
         "ended_at": meeting.ended_at.isoformat() if meeting.ended_at else None,
         "organizer": {"id": meeting.organizer_id, "name": meeting.organizer.full_name},
         "join_url": meeting.join_url,
@@ -65,7 +66,11 @@ class MeetingListCreateView(APIView):
         if scope not in ("upcoming", "past", "all"):
             raise ValidationError({"scope": "upcoming, past yoki all"})
         now = timezone.now()
-        items = list(meetings_for(me))
+        queryset = meetings_for(me)
+        host = (request.query_params.get("host") or "").strip()
+        if host.isdigit():
+            queryset = queryset.filter(host=int(host))
+        items = list(queryset)
         def is_upcoming(m):
             return m.status == Meeting.STATUS_SCHEDULED and m.start_at + timedelta(minutes=m.duration_minutes) >= now
         if scope == "upcoming":
@@ -81,6 +86,7 @@ class MeetingListCreateView(APIView):
             "start_at": openapi.Schema(type=openapi.TYPE_STRING, description="ISO sana-vaqt, masalan 2026-10-15T15:00:00+05:00"),
             "duration_minutes": openapi.Schema(type=openapi.TYPE_INTEGER, description="15–480, standart 30"),
             "agenda": openapi.Schema(type=openapi.TYPE_STRING),
+            "host": openapi.Schema(type=openapi.TYPE_INTEGER, description="Zoom raqami (1 = Zoom 1), standart 1"),
         },
     ))
     def post(self, request):
@@ -93,6 +99,7 @@ class MeetingListCreateView(APIView):
                 start_at=parse_local_datetime(str(data.get("start_at") or "")),
                 duration_minutes=data.get("duration_minutes") or 30,
                 agenda=data.get("agenda") or "",
+                host=data.get("host") or 1,
             )
         except MeetingError as exc:
             if not request.user.has_perm("chat.add_meeting"):

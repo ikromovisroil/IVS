@@ -146,6 +146,8 @@ class Meeting(models.Model):
     ]
 
     organizer = models.ForeignKey(Employee, on_delete=models.PROTECT, related_name="meetings_organized", db_index=True)
+    # Qaysi Zoom host'da o'tadi: 1 = Zoom 1, 2 = Zoom 2 ... (settings.ZOOM_HOSTS ro'yxatidagi o'rni)
+    host = models.PositiveSmallIntegerField(default=1, db_index=True)
     title = models.CharField(max_length=200)
     agenda = models.TextField(blank=True, default="")
     start_at = models.DateTimeField(db_index=True)

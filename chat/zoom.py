@@ -4,6 +4,7 @@ Zoom integratsiyasi (Server-to-Server OAuth). Zoom Marketplace'da "Server-to-Ser
 
     ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, ZOOM_CLIENT_SECRET  (majburiy)
     ZOOM_HOST      — uchrashuvlar yaratiladigan Zoom foydalanuvchi (email yoki "me"; standart "me")
+    ZOOM_HOSTS     — bir nechta host: vergul bilan email'lar (Zoom 1, Zoom 2, ...). Bo'sh bo'lsa faqat ZOOM_HOST
     ZOOM_TIMEZONE  — standart "Asia/Tashkent"
 
 Sozlanmagan bo'lsa (`zoom_enabled()` False) uchrashuv yaratilmaydi, foydalanuvchiga tushunarli xabar chiqadi.
@@ -24,6 +25,12 @@ TIMEOUT = 15
 
 class ZoomError(Exception):
     """Zoom bilan ishlashdagi xato (foydalanuvchiga ko'rsatilishi mumkin bo'lgan matn bilan)."""
+
+
+def zoom_hosts() -> list:
+    """Zoom host'lar ro'yxati (1-raqamdan boshlab: Zoom 1 = birinchisi). ZOOM_HOSTS bo'sh bo'lsa — bitta (ZOOM_HOST)."""
+    raw = [h.strip() for h in (getattr(settings, "ZOOM_HOSTS", "") or "").split(",") if h.strip()]
+    return raw or [(getattr(settings, "ZOOM_HOST", "") or "me")]
 
 
 def zoom_enabled() -> bool:
@@ -69,9 +76,10 @@ def _request(method: str, path: str, **kwargs):
     return resp
 
 
-def create_meeting(topic: str, start_at_utc, duration_minutes: int, agenda: str = "") -> dict:
-    """Uchrashuv yaratadi. Qaytaradi: {"id", "join_url", "start_url", "password"}."""
-    host = getattr(settings, "ZOOM_HOST", "") or "me"
+def create_meeting(topic: str, start_at_utc, duration_minutes: int, agenda: str = "", host_slot: int = 1) -> dict:
+    """Uchrashuv yaratadi (host_slot — 1 dan: Zoom 1, Zoom 2, ...). Qaytaradi: {"id", "join_url", "start_url", "password"}."""
+    hosts = zoom_hosts()
+    host = hosts[host_slot - 1] if 1 <= host_slot <= len(hosts) else hosts[0]
     waiting_room = bool(getattr(settings, "ZOOM_WAITING_ROOM", False))
     payload = {
         "topic": topic[:200],

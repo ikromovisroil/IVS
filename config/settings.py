@@ -323,6 +323,9 @@ ZOOM_ACCOUNT_ID = os.getenv("ZOOM_ACCOUNT_ID", "")
 ZOOM_CLIENT_ID = os.getenv("ZOOM_CLIENT_ID", "")
 ZOOM_CLIENT_SECRET = os.getenv("ZOOM_CLIENT_SECRET", "")
 ZOOM_HOST = os.getenv("ZOOM_HOST", "me")
+# Bir nechta Zoom host (Zoom 1, Zoom 2, ...): vergul bilan email'lar. Bo'sh bo'lsa — faqat ZOOM_HOST (bitta host).
+# Hamma hostlar bitta Zoom akkauntdagi litsenziyali foydalanuvchilar; har biri o'z vaqtida alohida uchrashuv o'tkazadi.
+ZOOM_HOSTS = os.getenv("ZOOM_HOSTS", "")
 ZOOM_TIMEZONE = os.getenv("ZOOM_TIMEZONE", "Asia/Tashkent")
 # 1 bo'lsa kutish xonasi yoqiladi (tashkilotchi har bir kiruvchini qabul qiladi). Standart 0: havola bilan hamma darhol kiradi
 ZOOM_WAITING_ROOM = os.getenv("ZOOM_WAITING_ROOM", "0") == "1"

@@ -246,3 +246,67 @@ class MeetingReminderTests(ZoomTestCase):
         self.assertEqual(push.call_args.args[0].id, organizer.id)
         soon.refresh_from_db()
         self.assertTrue(soon.reminder_sent)
+
+
+@override_settings(ZOOM_HOSTS="one@x.uz,two@x.uz,three@x.uz")
+class MultiHostTests(ZoomTestCase):
+    """Bir nechta Zoom (Zoom 1, 2, 3): har host o'z vaqtida alohida uchrashuv o'tkazadi."""
+
+    def setUp(self):
+        super().setUp()
+        self.user, self.emp = make_employee(self.org, perms=[ADD, DELETE, VIEW])
+        self.posted_urls = []
+        original = self.zoom.request
+
+        def spy(method, url, **kwargs):
+            if method == "POST":
+                self.posted_urls.append(url)
+            return original(method, url, **kwargs)
+
+        patcher = mock.patch("chat.zoom.requests.request", side_effect=spy)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def make(self, host, hours=0, **extra):
+        data = {"title": f"Zoom {host}", "start_at": self.at(hours), "duration_minutes": 60, "host": host, **extra}
+        return self.api(self.user).post("/api/v1/meetings/", data, format="json")
+
+    def test_same_time_on_different_hosts_is_allowed(self):
+        self.assertEqual(self.make(1).status_code, 201)
+        self.assertEqual(self.make(2).status_code, 201)
+        self.assertEqual(self.make(3).status_code, 201)
+        self.assertEqual(sorted(Meeting.objects.values_list("host", flat=True)), [1, 2, 3])
+        # har host uchun Zoom'ga o'z email'i bilan so'rov ketdi
+        hosts_used = [u.split("/users/")[1].split("/")[0] for u in self.posted_urls]
+        self.assertEqual(hosts_used, ["one@x.uz", "two@x.uz", "three@x.uz"])
+
+    def test_same_time_on_same_host_is_rejected(self):
+        self.assertEqual(self.make(2).status_code, 201)
+        response = self.make(2)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Meeting.objects.filter(host=2).count(), 1)
+
+    def test_host_defaults_to_first_and_validates_range(self):
+        response = self.api(self.user).post("/api/v1/meetings/", {
+            "title": "Standart", "start_at": self.at(5), "duration_minutes": 60}, format="json")
+        self.assertEqual((response.status_code, response.json()["host"]), (201, 1))
+        self.assertEqual(self.make(4, hours=8).status_code, 400)       # 4-Zoom yo'q
+        self.assertEqual(self.make("x", hours=9).status_code, 400)
+
+    def test_list_filtered_by_host(self):
+        self.make(1, hours=0, title="A")
+        self.make(2, hours=0, title="B")
+        api = self.api(self.user)
+        titles = lambda host: [m["title"] for m in api.get("/api/v1/meetings/", {"host": host}).json()["results"]]
+        self.assertEqual(titles(1), ["A"])
+        self.assertEqual(titles(2), ["B"])
+        self.assertEqual(len(api.get("/api/v1/meetings/").json()["results"]), 2)
+
+    def test_spa_config_lists_hosts(self):
+        data = self.api(self.user).get("/api/v1/spa/comms/meetings/config/").json()
+        self.assertEqual(data["hosts"], [{"id": 1, "name": "Zoom 1"}, {"id": 2, "name": "Zoom 2"}, {"id": 3, "name": "Zoom 3"}])
+
+    @override_settings(ZOOM_HOSTS="")
+    def test_single_host_when_not_configured(self):
+        data = self.api(self.user).get("/api/v1/spa/comms/meetings/config/").json()
+        self.assertEqual(data["hosts"], [{"id": 1, "name": "Zoom 1"}])

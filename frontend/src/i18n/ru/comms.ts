@@ -201,6 +201,9 @@ const ru: Record<string, string> = {
   "Zoom'ga kirib bo'lmadi (sozlamalarni tekshiring).": 'Не удалось войти в Zoom (проверьте настройки).',
   "Zoom uchrashuvni yarata olmadi. Birozdan keyin qayta urinib ko'ring.": 'Zoom не смог создать встречу. Повторите попытку чуть позже.',
   'Zoom uchrashuvni bekor qila olmadi.': 'Zoom не смог отменить встречу.',
+  'Zoom hostlari': 'Аккаунты Zoom',
+  'Bunday Zoom mavjud emas': 'Такого Zoom не существует',
+  'Zoom tanlanmagan': 'Zoom не выбран',
 }
 
 export default ru
