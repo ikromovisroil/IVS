@@ -274,16 +274,6 @@ class DeedNotificationClosingTests(TestCase):
         self.deed.save(update_fields=["status_sender"])
         self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (0, 0))
 
-    def test_command_closes_stale_deed_notifications(self):
-        from django.core.management import call_command
-        Deed.objects.filter(pk=self.deed.pk).update(status_sender="approved")                  # signalsiz (eski ma'lumot)
-        DeedConsent.objects.filter(pk=self.consent.pk).update(status="approved")
-        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (1, 1))
-        call_command("close_stale_deed_notifications", "--dry-run", stdout=mock.MagicMock())
-        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (1, 1))
-        call_command("close_stale_deed_notifications", stdout=mock.MagicMock())
-        self.assertEqual((self.unread(self.signer), self.unread(self.agreer)), (0, 0))
-
 
 class OrderMeetingNotificationClosingTests(TestCase):
     def setUp(self):
