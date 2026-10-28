@@ -27,11 +27,18 @@ const TASDIQLAYMAN_SVOD = `<b>"Tasdiqlayman"<br>
 </b>
 <b id="doc_date">__.__.____ y.</b>`
 
+/** Hujjatlarda qattiq yozilgan imzolovchilar: ular ro'yxat pastida (javobgar/bajaruvchi sifatida) takrorlanmasligi kerak. */
+const SIGNER_CHECK = 'Yakushina Yelena Anatolevna'
+const SIGNER_ACCOUNTANT = 'Ergasheva Nargiza Rustamovna'
+const SIGNER_HEAD = 'Narzullayev Anvar Shuhrat o‘g‘li'
+export const FIXED_SIGNERS = [SIGNER_CHECK, SIGNER_ACCOUNTANT, SIGNER_HEAD]
+
 const CHECK_SIGNERS =
-  signRow('<b>Tekshirdi va qabul qildi</b><br><b>Bosh mutaxassis</b>', '<b>YAKUSHINA YELENA ANATOLEVNA.</b><br>') +
-  signRow('<b>Kelishildi</b><br><b>Bosh hisobchi</b>', '<b>ERGASHEVA NARGIZA RUSTAMOVNA.</b><br>')
+  signRow('<b>Tekshirdi va qabul qildi</b><br><b>Bosh mutaxassis</b>', `<b>${SIGNER_CHECK}.</b><br>`) +
+  signRow('<b>Kelishildi</b><br><b>Bosh hisobchi</b>', `<b>${SIGNER_ACCOUNTANT}.</b><br>`)
+// Yakuniy hisobot (Svod): Bosh mutaxassis, Bosh hisobchi, oxirida "Kelishildi" yozuvisiz Boshqarma boshlig'i
 const COMMON_SIGNERS =
-  signRow("<b>Kelishildi</b><br><b>Boshqarma boshlig‘i</b>", '<b>NARZULLAYEV ANVAR SHUHRAT O‘G‘LI.</b><br>') + CHECK_SIGNERS
+  CHECK_SIGNERS + signRow('<b>Boshqarma boshlig‘i</b>', `<b>${SIGNER_HEAD}.</b><br>`)
 
 // ─── Dalolatnoma (document.html) ───
 export const DOCUMENT_TEMPLATE = `<div style="font-size:10pt;">
@@ -129,7 +136,7 @@ export const REESTR_TEMPLATE = `<div style="font-size:10pt;">
   </div><br>
   <div style="text-align:left;"><b id="blok_summa_soz"> </b></div><br>
   <div style="text-align:left;"><b><span id="date_contract"></span></b></div>
-  ${CHECK_SIGNERS}
+  ${COMMON_SIGNERS}
   <div><table style="border-collapse:collapse;width:100%;">${SIGN_COLS}<tbody id="service_employees_tbody"></tbody></table></div>
 </div>`
 

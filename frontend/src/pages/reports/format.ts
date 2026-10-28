@@ -79,6 +79,11 @@ export function normalizeApostrophesHtml(html: string): string {
   return html.replace(/(<[^>]*>)|([^<]+)/g, (_, tag: string | undefined, txt: string | undefined) => (tag ? tag : normalizeApostrophes(txt ?? '')))
 }
 
+/** Ismlarni taqqoslash uchun kalit: katta-kichik harf, apostrof turlari, nuqta va ortiqcha bo'shliqlar hisobga olinmaydi. */
+export function nameKey(name: string | null | undefined): string {
+  return (name || '').toLowerCase().replace(/['‘’ʻʼ`´.]/g, '').replace(/\s+/g, ' ').trim()
+}
+
 /** Pul: doim 2 xonali tiyin — 15000 → "15 000,00" */
 export function formatMoney(num: unknown): string {
   const n = Number(num)

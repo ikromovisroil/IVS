@@ -8,10 +8,10 @@ import type { ReportForm, ReportsMeta } from './api'
 import DocEditor from './DocEditor'
 import { useDoc } from './doc'
 import type { DocApi } from './doc'
-import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange, rankCase } from './format'
+import { amountInWords, esc, formatMonthYearRange, formatNumber, monthRange, nameKey, rankCase } from './format'
 import { FilterCard, MultiPicker, ReportGrid, ReportShell, SignCard } from './shared'
 import { empOptions, toId } from './options'
-import { REESTR_TEMPLATE, messageRow } from './templates'
+import { FIXED_SIGNERS, REESTR_TEMPLATE, messageRow } from './templates'
 
 // templates/main/reestr.html — "Reestr" (main.views.reestr_get / reest_post, ajax_reestr_materials)
 
@@ -130,14 +130,16 @@ function ReestrPage({ form, meta, doc }: { form: ReportForm; meta: ReportsMeta; 
       doc.setHTML('#materials_tbody', reestrRows(data))
       doc.setText('#blok_summa_soz', amountInWords(data.reduce((sum, it) => sum + (parseFloat(String(it.total_sum ?? 0)) || 0), 0)))
       // Qatnashganlar: materialga moddiy-javobgar shaxslar, so'ng bajaruvchilar (receiver) — har biri bir marta, joriy foydalanuvchidan tashqari
-      const seen = new Set<string>()
-      const me = (meta.employee?.full_name || '').trim()
+      // Yuqorida qattiq yozilgan imzolovchilar (Yakushina, Ergasheva, Narzullayev) ham qayta chiqmaydi
+      const seen = new Set<string>(FIXED_SIGNERS.map(nameKey))
+      const me = nameKey(meta.employee?.full_name)
       if (me) seen.add(me)
       let service = ''
       const addPerson = (fullName: string | null, rank: string | null) => {
         const name = (fullName || '').trim()
-        if (!name || seen.has(name)) return
-        seen.add(name)
+        const key = nameKey(name)
+        if (!key || seen.has(key)) return
+        seen.add(key)
         service += `<tr><td style="border:1px solid #fff;text-align:left;"><b>${esc(rankCase(rank))}</b><br></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(name)}</b><br></td></tr>`
       }
       data.forEach((it) => addPerson(it.owner, it.owner_rank))
