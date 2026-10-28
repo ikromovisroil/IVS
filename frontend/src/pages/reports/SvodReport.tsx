@@ -139,7 +139,7 @@ function SvodPage({ form, doc }: { form: ReportForm; doc: DocApi }) {
           ? emps
               .map(
                 (e) =>
-                  `<tr><td style="border:1px solid #fff;text-align:left;"><b>Kelishildi</b><br><b>${esc(rankCase(e.rank))}</b></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(e.full_name)}</b><br></td></tr>`,
+                  `<tr><td style="border:1px solid #fff;text-align:left;"><b>${esc(rankCase(e.rank))}</b><br></td><td style="border:1px solid #fff;text-align:left;"><b>${esc(e.full_name)}</b><br></td></tr>`,
               )
               .join('')
           : messageRow(2, 'Ariza bajargan xodimlar topilmadi', 'empty', '#fff'),
