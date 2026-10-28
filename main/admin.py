@@ -15,7 +15,7 @@ from import_export.admin import ExportMixin
 class OrderMaterialInline(admin.TabularInline):
     model = OrderMaterial
     extra = 1
-    can_delete = False   # ariza materiali o'chirilsa ombor qoldig'i qaytmaydi
+    # Arizadan material o'chirilganda ombor qoldig'i QAYTMAYDI (ataylab: admin tuzatish uchun, qoldiq va jurnalga tegmaydi)
     readonly_fields = ("price", "unit_name", "material_name", "material_code")
     # oddiy <select> hamma material va xodimni har qatorda yuklardi
     autocomplete_fields = ("material", "user")
@@ -401,7 +401,8 @@ class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
 
 
 @admin.register(OrderMaterial)
-class OrderMaterialAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
+class OrderMaterialAdmin(admin.ModelAdmin):
+    """Arizaga biriktirilgan material: o'chirsa bo'ladi, lekin ombor qoldig'i qaytmaydi (django 'delete_ordermaterial' ruxsati bilan)."""
     list_select_related = ("order", "user", "material")
     list_per_page = 50
     show_full_result_count = False

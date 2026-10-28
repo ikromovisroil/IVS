@@ -102,3 +102,22 @@ class AdminChangelistQueriesTests(TestCase):
         page = self.client.get(f"/ivc_service_admin_panel/core/synclog/{log.pk}/change/")
         self.assertEqual(page.status_code, 200)
         self.assertIn(f"sync__id__exact={log.pk}", page.content.decode())
+
+    def test_order_material_can_be_deleted_without_returning_stock(self):
+        from main.models import Material, OrderMaterial
+        _, s = make_employee(self.client_org, self.region)
+        material = Material.objects.create(name="Kartrij", organization=self.worker, employee=s, number=7)
+        order = Order.objects.create(sender=s, goal=self.goal, status="viewed")
+        om = OrderMaterial.objects.create(order=order, material=material, number=3)
+        # alohida sahifadan o'chirish
+        url = f"/ivc_service_admin_panel/main/ordermaterial/{om.pk}/delete/"
+        self.assertEqual(self.client.get(url).status_code, 200)
+        self.assertEqual(self.client.post(url, {"post": "yes"}).status_code, 302)
+        self.assertFalse(OrderMaterial.objects.filter(pk=om.pk).exists())
+        material.refresh_from_db()
+        self.assertEqual(material.number, 7)         # ombor qoldig'i o'zgarmadi (qaytmadi)
+        self.assertFalse(Order.objects.filter(pk=order.pk).values_list("status", flat=True).first() != "viewed")
+        # ariza ichidagi qatordan o'chirish ham mumkin: o'chirish katagi bor
+        om2 = OrderMaterial.objects.create(order=order, material=material, number=2)
+        page = self.client.get(f"/ivc_service_admin_panel/main/order/{order.pk}/change/").content.decode()
+        self.assertIn("DELETE", page)
