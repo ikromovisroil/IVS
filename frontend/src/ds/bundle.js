@@ -380,7 +380,7 @@
         return h('button', { key: String(it.value), type: 'button', role: 'tab', 'aria-selected': on ? 'true' : 'false',
           className: cx('aui-seg-item', on && 'is-active'),
           onClick: function () { if (!ctrl) inner[1](it.value); if (props.onChange) props.onChange(it.value); } },
-          anyIcon(it.icon, 16), it.label, it.count != null ? h('span', { className: 'aui-seg-count' }, '(' + it.count + ')') : null);
+          anyIcon(it.icon, 16), it.label, it.count != null ? h('span', { className: 'aui-seg-count' }, String(it.count)) : null);
       }));
   }
 

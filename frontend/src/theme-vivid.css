@@ -184,8 +184,10 @@ a.aui-widget:hover {
   box-shadow: 0 6px 14px -6px rgba(84, 88, 255, 0.65);
 }
 
+/* Segmentdagi sonlar (Yangi arizalar 2 ...): aniq qizil, faol (binafsha) tugmada ham */
 .aui-seg-item.is-active .aui-seg-count {
-  color: rgba(255, 255, 255, 0.85);
+  color: #fff;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 /* ───── Jadval ───── */

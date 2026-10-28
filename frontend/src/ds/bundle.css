@@ -234,7 +234,7 @@ i.aui-icon::before { line-height: 1; }
 .aui-seg-item { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 28px; padding: 0 8px; border: 0; border-radius: var(--radius-6); background: transparent; font: inherit; font-size: 14px; line-height: 20px; font-weight: 500; color: var(--text-soft-400); cursor: pointer; transition: background 140ms, color 140ms, box-shadow 140ms; white-space: nowrap; }
 .aui-seg-item:hover { color: var(--text-sub-600); }
 .aui-seg-item.is-active { background: var(--bg-white-0); color: var(--text-strong-950); box-shadow: var(--shadow-custom-xs); }
-.aui-seg-count { color: var(--text-soft-400); font-weight: 400; }
+.aui-seg-count { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; box-sizing: border-box; padding: 0 6px; margin-left: 6px; border-radius: var(--radius-full); background: var(--state-error-base); color: var(--static-white); font-size: 12px; line-height: 16px; font-weight: 600; }
 .aui-seg-boxed { padding: 0; gap: 0; background: var(--bg-white-0); border: 1px solid var(--stroke-soft-200); border-radius: var(--radius-8); overflow: hidden; }
 .aui-seg-boxed .aui-seg-item { height: 24px; font-size: 12px; line-height: 16px; border-radius: 0; color: var(--text-sub-600); }
 .aui-seg-boxed .aui-seg-item + .aui-seg-item { border-left: 1px solid var(--stroke-soft-200); }
