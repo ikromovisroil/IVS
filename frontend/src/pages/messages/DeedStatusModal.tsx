@@ -19,7 +19,7 @@ export default function DeedStatusModal({ id, onClose }: { id: number; onClose: 
       icon="ri-file-text-line"
       title="Dalolatnoma holati"
       subtitle={deed.data ? `${t(deed.data.status_display)} #${deed.data.code ?? deed.data.id}` : undefined}
-      width={960}
+      width={1120}
       footer={
         <>
           <Button variant="stroke" size="lg" icon="ri-external-link-line" onClick={() => navigate(`/messages/deed/${id}`)}>
