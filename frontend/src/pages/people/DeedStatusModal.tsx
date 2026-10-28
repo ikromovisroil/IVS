@@ -98,7 +98,7 @@ export default function DeedStatusModal({ deed, canToggle, onClose }: { deed: De
       icon="ri-file-text-line"
       title={t('Dalolatnoma holati #{code}', { code: deed.code ?? deed.id })}
       subtitle={`${deed.status_display} · ${formatDateTime(deed.date_creat)}`}
-      width={960}
+      width={1120}
       footer={
         <Button variant="stroke" size="lg" onClick={onClose}>
           {t('Yopish')}
