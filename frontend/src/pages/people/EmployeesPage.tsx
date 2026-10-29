@@ -96,9 +96,9 @@ export default function EmployeesPage() {
       width: '28%',
       render: (r) => <CellUser name={r.full_name || '—'} sub={r.department_name || r.organization_name || undefined} initials={initials(r.full_name || '?')} color={avatarColor(r.id)} />,
     },
-    { key: 'rank', label: t('Lavozimi'), width: '22%', render: (r) => <span className="ivs-people-wrap">{r.rank_name || '—'}</span> },
-    { key: 'pinfl', label: t('PINFL'), width: '14%', render: (r) => <span className="ivs-people-mono">{r.pinfl || '—'}</span> },
-    { key: 'phone', label: t('Telefon'), width: '14%', render: (r) => r.phone || '—' },
+    { key: 'rank', label: t('Lavozimi'), width: '22%', render: (r) => <span className="ivs-people-wrap">{r.rank_name || ''}</span> },
+    { key: 'pinfl', label: t('PINFL'), width: '14%', render: (r) => <span className="ivs-people-mono">{r.pinfl || ''}</span> },
+    { key: 'phone', label: t('Telefon'), width: '14%', render: (r) => r.phone || '' },
     { key: 'status', label: t('Holati'), render: () => <StatusChip status="active">{t('Faol')}</StatusChip> },
     {
       key: 'actions',

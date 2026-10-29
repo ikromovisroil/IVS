@@ -53,7 +53,7 @@ export function orderColumns(opts: {
       label: t('Ariza maqsadi'),
       render: (r) => (
         <div className="aui-cell-text">
-          <div className="aui-cell-primary">{r.goal_name || '—'}</div>
+          <div className="aui-cell-primary">{r.goal_name || ''}</div>
           {r.message_sender && <div className="aui-cell-secondary ivs-orders-clip">{r.message_sender}</div>}
         </div>
       ),

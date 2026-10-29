@@ -272,7 +272,7 @@ export default function DashboardPage() {
         r.sender ? (
           <CellUser name={r.sender.name} sub={r.sender.organization || r.sender.rank || undefined} initials={initials(r.sender.name)} color={avatarColor(r.sender.id)} />
         ) : (
-          '—'
+          null
         ),
     },
     {
@@ -280,7 +280,7 @@ export default function DashboardPage() {
       label: t('Ariza maqsadi'),
       render: (r) => (
         <div className="aui-cell-text">
-          <div className="aui-cell-primary is-regular">{r.goal || '—'}</div>
+          <div className="aui-cell-primary is-regular">{r.goal || ''}</div>
           <div className="aui-cell-secondary">{r.receiver ? t('Ijrochi: {name}', { name: r.receiver }) : t('Ijrochi biriktirilmagan')}</div>
         </div>
       ),

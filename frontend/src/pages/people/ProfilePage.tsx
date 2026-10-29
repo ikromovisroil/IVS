@@ -14,7 +14,7 @@ function Row({ label, value, mono }: { label: string; value: string | null | und
   return (
     <div className="ivs-people-row">
       <dt>{t(label)}</dt>
-      <dd className={mono ? 'ivs-people-mono' : undefined}>{value || '—'}</dd>
+      <dd className={mono ? 'ivs-people-mono' : undefined}>{value || ''}</dd>
     </div>
   )
 }

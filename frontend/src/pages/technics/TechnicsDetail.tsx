@@ -94,19 +94,19 @@ export default function TechnicsDetail({ t: item }: { t: TechnicsRow }) {
           <i className="ri-information-line" aria-hidden /> {t("Umumiy ma'lumot")}
         </h3>
         <dl className="ivs-kvs">
-          <Kv label="Xodim">{item.employee_name || '—'}</Kv>
-          <Kv label="Lavozim">{item.employee_rank || '—'}</Kv>
+          <Kv label="Xodim">{item.employee_name || ''}</Kv>
+          <Kv label="Lavozim">{item.employee_rank || ''}</Kv>
           <Kv label="Tashkilot">
-            {item.organization_name || '—'}
+            {item.organization_name || ''}
             {place.map((p) => (
               <div key={p} className="ivs-muted">
                 {p}
               </div>
             ))}
           </Kv>
-          <Kv label="Turi">{item.group_name || '—'}</Kv>
-          <Kv label="Kategoriya">{item.category_name || '—'}</Kv>
-          <Kv label="Nomi">{item.name || '—'}</Kv>
+          <Kv label="Turi">{item.group_name || ''}</Kv>
+          <Kv label="Kategoriya">{item.category_name || ''}</Kv>
+          <Kv label="Nomi">{item.name || ''}</Kv>
           {item.parametr && <Kv label="Parametr">{item.parametr}</Kv>}
           {item.inventory && <Kv label="Inventar">{item.inventory}</Kv>}
           {item.serial && <Kv label="Serial">{item.serial}</Kv>}
@@ -119,7 +119,7 @@ export default function TechnicsDetail({ t: item }: { t: TechnicsRow }) {
             <StatusTag status={item.status} label={item.status_display} />
           </Kv>
           <Kv label="Tarmoq qurilmasi">{item.is_online ? <Badge tone="sky" size="sm" icon="ri-router-line">{t('Ha')}</Badge> : t("Yo'q")}</Kv>
-          <Kv label="Hududi">{item.region_name || '—'}</Kv>
+          <Kv label="Hududi">{item.region_name || ''}</Kv>
         </dl>
       </section>
       <DevicesBlock devices={item.extra_devices} />
@@ -138,13 +138,13 @@ export function TechnicsCardView({ c }: { c: TechnicsCard }) {
           <i className="ri-information-line" aria-hidden /> {t("Asosiy ma'lumotlar")}
         </h3>
         <dl className="ivs-kvs">
-          <Kv label="Kategoriya">{c.category_name || '—'}</Kv>
-          <Kv label="Parametr">{c.parametr || '—'}</Kv>
-          <Kv label="Inventar">{c.inventory || '—'}</Kv>
-          <Kv label="Serial">{c.serial || '—'}</Kv>
-          <Kv label="MAC">{c.mac || '—'}</Kv>
-          <Kv label="IP">{c.ip || '—'}</Kv>
-          <Kv label="Xodim">{c.employee_name || '—'}</Kv>
+          <Kv label="Kategoriya">{c.category_name || ''}</Kv>
+          <Kv label="Parametr">{c.parametr || ''}</Kv>
+          <Kv label="Inventar">{c.inventory || ''}</Kv>
+          <Kv label="Serial">{c.serial || ''}</Kv>
+          <Kv label="MAC">{c.mac || ''}</Kv>
+          <Kv label="IP">{c.ip || ''}</Kv>
+          <Kv label="Xodim">{c.employee_name || ''}</Kv>
           <Kv label="Holati">
             <StatusTag status={c.status} label={c.status_display} />
           </Kv>

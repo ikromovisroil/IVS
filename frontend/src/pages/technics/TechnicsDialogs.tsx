@@ -29,7 +29,7 @@ export function TechnicsSummary({ t: item }: { t: TechnicsRow }) {
     <div className="ivs-summary">
       <div className="type-label-sm">{item.name}</div>
       <div className="type-para-xs ivs-muted">
-        {[item.parametr, item.inventory && t('I/R: {v}', { v: item.inventory }), item.serial && t('S/R: {v}', { v: item.serial })].filter(Boolean).join(' · ') || '—'}
+        {[item.parametr, item.inventory && t('I/R: {v}', { v: item.inventory }), item.serial && t('S/R: {v}', { v: item.serial })].filter(Boolean).join(' · ') || ''}
       </div>
     </div>
   )

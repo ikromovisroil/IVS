@@ -315,7 +315,7 @@ export function ExecuteArchivePage() {
     person: 'sender',
     onOpen: setOpen,
     t,
-    extra: [{ key: 'rating', label: t('Baho'), width: 80, render: (r) => (r.rating ? `${r.rating}/5 ★` : '—') }],
+    extra: [{ key: 'rating', label: t('Baho'), width: 80, render: (r) => (r.rating ? `${r.rating}/5 ★` : null) }],
     tail: [
       {
         key: 'deed',

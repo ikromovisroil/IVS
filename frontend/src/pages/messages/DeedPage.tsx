@@ -26,15 +26,15 @@ function Summary({ deed }: { deed: Deed | PublicDeed }) {
       </div>
       <div className="msg-kv">
         <span>{t('Hujjat kodi')}</span>
-        <b className="ivs-mono">{deed.code || '—'}</b>
+        <b className="ivs-mono">{deed.code || ''}</b>
       </div>
       <div className="msg-kv">
         <span>{t('Tashkilot')}</span>
-        <b>{deed.organization_name || '—'}</b>
+        <b>{deed.organization_name || ''}</b>
       </div>
       <div className="msg-kv">
         <span>{t('Hudud')}</span>
-        <b>{deed.user_info?.region_name || '—'}</b>
+        <b>{deed.user_info?.region_name || ''}</b>
       </div>
       <div className="msg-kv">
         <span>{t('Yuborilgan sana')}</span>

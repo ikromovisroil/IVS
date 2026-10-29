@@ -80,9 +80,9 @@ export default function FilesPage() {
       render: (r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary" title={r.organization_name ?? undefined}>
-            {r.organization_name || '—'}
+            {r.organization_name || ''}
           </div>
-          <div className="aui-cell-secondary">{r.region_name || '—'}</div>
+          <div className="aui-cell-secondary">{r.region_name || ''}</div>
         </div>
       ),
     },
@@ -93,7 +93,7 @@ export default function FilesPage() {
       render: (r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary">{r.status_display}</div>
-          <div className="aui-cell-secondary ivs-people-mono">{r.code || '—'}</div>
+          <div className="aui-cell-secondary ivs-people-mono">{r.code || ''}</div>
         </div>
       ),
     },
@@ -104,7 +104,7 @@ export default function FilesPage() {
       render: (r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary is-regular" title={r.user?.full_name}>
-            {r.user?.full_name || '—'}
+            {r.user?.full_name || ''}
           </div>
         </div>
       ),
@@ -116,7 +116,7 @@ export default function FilesPage() {
       render: (r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary" title={r.sender?.full_name}>
-            {r.sender?.full_name || '—'}
+            {r.sender?.full_name || ''}
           </div>
           {r.receiver && (
             <div className="aui-cell-primary" title={r.receiver.full_name}>
@@ -154,7 +154,6 @@ export default function FilesPage() {
               {t('{n} ta', { n: r.attachments_count })}
             </Button>
           )}
-          {!r.file_url && !r.attachments_count && '—'}
         </div>
       ),
     },

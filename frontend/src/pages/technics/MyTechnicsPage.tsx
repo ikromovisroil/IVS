@@ -108,10 +108,10 @@ export default function MyTechnicsPage() {
       render: (r) =>
         r.kind === 'tex' ? (
           <div className="ivs-mono">
-            {r.tex.inventory || '—'}
+            {r.tex.inventory || ''}
             <div className="ivs-device-lines">
               {r.tex.extra_devices.map((d) => (
-                <div key={d.id}>{d.inventory || '—'}</div>
+                <div key={d.id}>{d.inventory || ''}</div>
               ))}
             </div>
           </div>
@@ -124,10 +124,10 @@ export default function MyTechnicsPage() {
       render: (r) =>
         r.kind === 'tex' ? (
           <div className="ivs-mono">
-            {r.tex.serial || '—'}
+            {r.tex.serial || ''}
             <div className="ivs-device-lines">
               {r.tex.extra_devices.map((d) => (
-                <div key={d.id}>{d.serial || '—'}</div>
+                <div key={d.id}>{d.serial || ''}</div>
               ))}
             </div>
           </div>

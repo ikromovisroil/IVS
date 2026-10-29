@@ -25,7 +25,7 @@ interface Props {
 }
 
 function person(name: string | null, id: number | null, sub?: string) {
-  if (!name) return <span className="ob-muted">—</span>
+  if (!name) return null
   return <CellUser name={name} sub={sub} initials={initials(name)} color={avatarColor(id ?? name)} size={32} />
 }
 
@@ -58,7 +58,7 @@ export default function OrdersList({ role, mode, columns, poll, emptyText, empty
       render: (r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary ob-id">#{r.id}</div>
-          <div className="aui-cell-secondary">{r.goal_name || '—'}</div>
+          <div className="aui-cell-secondary">{r.goal_name || ''}</div>
         </div>
       ),
     },

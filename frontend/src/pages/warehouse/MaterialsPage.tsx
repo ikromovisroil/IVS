@@ -126,15 +126,15 @@ export default function MaterialsPage() {
           <div className="aui-cell-primary" title={r.name}>
             {shortName(r.name)}
           </div>
-          <div className="aui-cell-secondary">{[r.category_name, r.employee_name].filter(Boolean).join(' · ') || '—'}</div>
+          <div className="aui-cell-secondary">{[r.category_name, r.employee_name].filter(Boolean).join(' · ') || ''}</div>
         </div>
       ),
     },
     { key: 'price', label: t('Narxi'), width: '11%', align: 'right', render: (r) => money(r.price) },
     { key: 'sum', label: t('Umumiy narxi'), width: '13%', align: 'right', render: (r) => <b>{money(Number(r.price ?? 0) * r.number)}</b> },
     { key: 'number', label: t('Soni'), width: '8%', align: 'right', render: (r) => formatNumber(r.number) },
-    { key: 'unit', label: t('Birligi'), width: '9%', render: (r) => r.unit_name || '—' },
-    { key: 'code', label: t('Kodi'), render: (r) => <span className="ivs-mono">{r.code || '—'}</span> },
+    { key: 'unit', label: t('Birligi'), width: '9%', render: (r) => r.unit_name || '' },
+    { key: 'code', label: t('Kodi'), render: (r) => <span className="ivs-mono">{r.code || ''}</span> },
   ]
 
   const n = (k: (typeof FILTER_KEYS)[number]) => (filters[k] ? Number(filters[k]) : null)
@@ -240,10 +240,10 @@ export default function MaterialsPage() {
           {active.row.image && <img className="ivs-preview" src={active.row.image} alt={active.row.name} />}
           <dl className="ivs-kvs">
             <Kv label="Nomi">{active.row.name}</Kv>
-            <Kv label="Kategoriya">{active.row.category_name || '—'}</Kv>
-            <Kv label="Moddiy javobgar">{active.row.employee_name || '—'}</Kv>
+            <Kv label="Kategoriya">{active.row.category_name || ''}</Kv>
+            <Kv label="Moddiy javobgar">{active.row.employee_name || ''}</Kv>
             <Kv label="Kodi (1C)">
-              <span className="ivs-mono">{active.row.code || '—'}</span>
+              <span className="ivs-mono">{active.row.code || ''}</span>
             </Kv>
             <Kv label="Soni">
               {formatNumber(active.row.number)} {active.row.unit_name || ''}

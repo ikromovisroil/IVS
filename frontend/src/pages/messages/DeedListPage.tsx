@@ -80,7 +80,7 @@ export default function DeedListPage({ box }: { box: Box }) {
       render: (r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary">{t(r.status_display)}</div>
-          <div className="aui-cell-secondary ivs-mono">{r.code || '—'}</div>
+          <div className="aui-cell-secondary ivs-mono">{r.code || ''}</div>
         </div>
       ),
     },
@@ -89,8 +89,8 @@ export default function DeedListPage({ box }: { box: Box }) {
       label: t('Tashkilot / Hudud'),
       render: (r) => (
         <div className="aui-cell-text">
-          <div className="aui-cell-primary">{r.organization_name || '—'}</div>
-          <div className="aui-cell-secondary">{r.user_info?.region_name || '—'}</div>
+          <div className="aui-cell-primary">{r.organization_name || ''}</div>
+          <div className="aui-cell-secondary">{r.user_info?.region_name || ''}</div>
         </div>
       ),
     },
@@ -104,7 +104,7 @@ export default function DeedListPage({ box }: { box: Box }) {
       label: t('Imzolovchi'),
       render: (r) => (
         <div className="aui-cell-text">
-          <div className="aui-cell-primary">{r.sender_info?.full_name || '—'}</div>
+          <div className="aui-cell-primary">{r.sender_info?.full_name || ''}</div>
           {r.receiver_info && <div className="aui-cell-primary">{r.receiver_info.full_name}</div>}
         </div>
       ),
@@ -134,7 +134,7 @@ export default function DeedListPage({ box }: { box: Box }) {
               {t("Ko'rish")}
             </Button>
           ) : (
-            '—'
+            null
           )}
           {r.attachments.length > 0 && (
             <Button
@@ -180,7 +180,7 @@ export default function DeedListPage({ box }: { box: Box }) {
               {t('Tasdiqlang')}
             </Button>
           ) : (
-            '—'
+            null
           )
         }
         return r.my_consent_id ? (
@@ -188,7 +188,7 @@ export default function DeedListPage({ box }: { box: Box }) {
             {t('Kelishish')}
           </Button>
         ) : (
-          '—'
+          null
         )
       },
     })

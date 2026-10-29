@@ -86,13 +86,13 @@ export default function MovementsPage() {
               {r.name}
             </a>
           </div>
-          <div className="aui-cell-secondary">{r.category || '—'}</div>
+          <div className="aui-cell-secondary">{r.category || ''}</div>
         </div>
       ),
     },
-    { key: 'code', label: t('Kodi'), width: '9%', render: (r) => <span className="ivs-mono">{r.code || '—'}</span> },
+    { key: 'code', label: t('Kodi'), width: '9%', render: (r) => <span className="ivs-mono">{r.code || ''}</span> },
     { key: 'price', label: t('Narxi'), width: '10%', align: 'right', render: (r) => money(r.price) },
-    { key: 'unit', label: t('Birligi'), width: '7%', render: (r) => r.unit || '—' },
+    { key: 'unit', label: t('Birligi'), width: '7%', render: (r) => r.unit || '' },
     { key: 'initial', label: t("Boshlang'ich"), width: '10%', align: 'right', render: (r) => formatNumber(r.initial_balance) },
     { key: 'income', label: t('Kirim'), width: '11%', align: 'right', render: (r) => <Pair count={r.income} sum={r.income_sum} /> },
     { key: 'outcome', label: t('Chiqim'), width: '11%', align: 'right', render: (r) => <Pair count={r.outcome} sum={r.outcome_sum} /> },
@@ -154,8 +154,8 @@ export default function MovementsPage() {
               columns={[
                 { key: 'i', label: t('T/r'), width: '6%', render: (m) => m.i + 1 },
                 { key: 'date', label: t('Sana'), width: '17%', render: (m) => dateTime.format(new Date(m.date)) },
-                { key: 'user', label: t('Kimdan'), width: '20%', render: (m) => m.user || '—' },
-                { key: 'employee', label: t('Kimga'), width: '20%', render: (m) => m.employee || '—' },
+                { key: 'user', label: t('Kimdan'), width: '20%', render: (m) => m.user || '' },
+                { key: 'employee', label: t('Kimga'), width: '20%', render: (m) => m.employee || '' },
                 { key: 'income', label: t('Kirim'), width: '9%', align: 'right', render: (m) => m.income ?? 0 },
                 { key: 'outcome', label: t('Chiqim'), width: '9%', align: 'right', render: (m) => m.outcome ?? 0 },
                 { key: 'status', label: t('Holati'), render: (m) => <span title={m.body || undefined}>{lang === 'ru' && MOVEMENT_STATUS[m.status] ? t(MOVEMENT_STATUS[m.status]) : m.status_display}</span> },

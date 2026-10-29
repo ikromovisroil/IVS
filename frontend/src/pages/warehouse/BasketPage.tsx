@@ -145,8 +145,8 @@ export default function BasketPage() {
     { key: 'price', label: t('Narxi'), width: '12%', align: 'right', render: (r) => money(r.price) },
     { key: 'sum', label: t('Umumiy narxi'), width: '14%', align: 'right', render: (r) => <b>{money(r.total_sum)}</b> },
     { key: 'number', label: t('Soni'), width: '8%', align: 'right', render: (r) => formatNumber(r.number) },
-    { key: 'unit', label: t('Birligi'), width: '9%', render: (r) => r.unit_name || '—' },
-    { key: 'code', label: t('Kodi'), width: '11%', render: (r) => <span className="ivs-mono">{r.code || '—'}</span> },
+    { key: 'unit', label: t('Birligi'), width: '9%', render: (r) => r.unit_name || '' },
+    { key: 'code', label: t('Kodi'), width: '11%', render: (r) => <span className="ivs-mono">{r.code || ''}</span> },
     {
       key: 'act',
       label: t('Amal'),

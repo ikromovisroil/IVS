@@ -41,7 +41,7 @@ function DeviceLines({ r, field }: { r: TechnicsRow; field: 'name' | 'inventory'
   return (
     <div className="ivs-device-lines">
       {r.extra_devices.map((d) => (
-        <div key={d.id}>{field === 'name' ? `${d.category_name ?? ''}${d.category_name ? ' / ' : ''}${d.name}` : d[field] || '—'}</div>
+        <div key={d.id}>{field === 'name' ? `${d.category_name ?? ''}${d.category_name ? ' / ' : ''}${d.name}` : d[field] || ''}</div>
       ))}
     </div>
   )
@@ -182,7 +182,7 @@ export default function TechnicsPage() {
       width: '12%',
       render: (r) => (
         <div className="ivs-mono">
-          {r.inventory || '—'}
+          {r.inventory || ''}
           <DeviceLines r={r} field="inventory" />
         </div>
       ),
@@ -193,12 +193,12 @@ export default function TechnicsPage() {
       width: '13%',
       render: (r) => (
         <div className="ivs-mono">
-          {r.serial || '—'}
+          {r.serial || ''}
           <DeviceLines r={r} field="serial" />
         </div>
       ),
     },
-    { key: 'address', label: t('Joylashuvi'), width: '12%', render: (r) => <span className="type-para-xs">{r.address || '—'}</span> },
+    { key: 'address', label: t('Joylashuvi'), width: '12%', render: (r) => <span className="type-para-xs">{r.address || ''}</span> },
     { key: 'status', label: t('Holati'), render: (r) => <StatusTag status={r.status} label={r.status_display} /> },
   ]
 

@@ -21,7 +21,7 @@ function Row({ icon, label, children }: { icon: string; label: string; children:
 }
 
 function PersonName({ p }: { p: Person | null }) {
-  if (!p) return <>—</>
+  if (!p) return null
   return (
     <>
       {p.full_name} {p.rank && <span className="ivs-orders-muted">{p.rank}</span>}
@@ -31,7 +31,7 @@ function PersonName({ p }: { p: Person | null }) {
 
 function Place({ p }: { p: Person | null }) {
   const parts = p ? [p.organization, p.department, p.directorate, p.division].filter(Boolean) : []
-  if (!parts.length) return <>—</>
+  if (!parts.length) return null
   return (
     <span className="ivs-orders-lines">
       {parts.map((x) => (
@@ -131,13 +131,13 @@ export default function OrderDetailModal({ id, onClose, footer, children, materi
               </Row>
             )}
             <Row icon="ri-focus-3-line" label="Ariza maqsadi">
-              {o.goal_name || '—'}
+              {o.goal_name || ''}
             </Row>
             <Row icon="ri-building-line" label="Tashkilot">
               <Place p={o.sender_info} />
             </Row>
             <Row icon="ri-phone-line" label="Telefon raqami">
-              {o.sender_info?.phone || '—'}
+              {o.sender_info?.phone || ''}
             </Row>
             {o.technics_name && (
               <Row icon="ri-cpu-line" label="Xizmat ko'rsatilgan texnika">
@@ -161,7 +161,7 @@ export default function OrderDetailModal({ id, onClose, footer, children, materi
                   <Place p={o.receiver_info} />
                 </Row>
                 <Row icon="ri-phone-line" label="Telefon raqami">
-                  {o.receiver_info.phone || '—'}
+                  {o.receiver_info.phone || ''}
                 </Row>
                 {o.message_receiver && (
                   <Row icon="ri-chat-3-line" label="Qo'shimcha ma'lumot">

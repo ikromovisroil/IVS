@@ -230,7 +230,7 @@ export default function MeetingsPage() {
       render: (m) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary">{m.title}</div>
-          <div className="aui-cell-secondary">{m.agenda || '—'}</div>
+          <div className="aui-cell-secondary">{m.agenda || ''}</div>
         </div>
       ),
     },
@@ -255,7 +255,7 @@ export default function MeetingsPage() {
       label: t('Amallar'),
       width: 170,
       render: (m) => {
-        if (!m.is_organizer) return <span className="cm-muted">—</span>
+        if (!m.is_organizer) return null
         const running = new Date(m.start_at).getTime() <= now
         return (
           <div className="cm-actions">

@@ -27,14 +27,14 @@ interface PartyRow {
 // F.I.O ostida lavozim — joy tejash uchun bitta ustunda ikki qator
 const base: DataTableColumn<PartyRow>[] = [
   { key: 'n', label: 'T/R', width: 52, render: (r) => r.n },
-  { key: 'org', label: 'Tashkilot', width: '32%', render: (r) => <span className="ivs-people-wrap">{r.person?.organization_name || '—'}</span> },
+  { key: 'org', label: 'Tashkilot', width: '32%', render: (r) => <span className="ivs-people-wrap">{r.person?.organization_name || ''}</span> },
   {
     key: 'fio',
     label: 'F.I.O',
     width: '30%',
     render: (r) => (
       <span className="ivs-people-wrap" style={{ display: 'block' }}>
-        {r.person?.full_name || '—'}
+        {r.person?.full_name || ''}
         {r.person?.rank_name && <span style={{ display: 'block', color: 'var(--text-sub-600)' }}>{r.person.rank_name}</span>}
       </span>
     ),
@@ -69,7 +69,7 @@ function Table({ rows, withStatus, caption }: { rows: PartyRow[]; withStatus?: b
           {r.date && <span className="type-para-xs ivs-people-note" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(r.date)}</span>}
         </div>
       ) : (
-        '—'
+        null
       ),
   }
   const columns = withStatus ? [...tr(base), statusColT, ...tr([msgCol])] : [...tr(base), ...tr([dateCol, msgCol])]

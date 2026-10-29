@@ -61,7 +61,7 @@ export default function BasketPage() {
         </div>
       ),
     },
-    { key: 'unit', label: t('Birligi'), width: 100, render: (r) => r.unit_name || '—' },
+    { key: 'unit', label: t('Birligi'), width: 100, render: (r) => r.unit_name || '' },
     {
       key: 'number',
       label: t('Soni'),

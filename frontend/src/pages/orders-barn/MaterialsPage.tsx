@@ -49,11 +49,11 @@ export default function MaterialsPage() {
       render: (r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary">{r.name}</div>
-          <div className="aui-cell-secondary">{r.category_name || '—'}</div>
+          <div className="aui-cell-secondary">{r.category_name || ''}</div>
         </div>
       ),
     },
-    { key: 'unit', label: t('Birligi'), width: 100, render: (r) => r.unit_name || '—' },
+    { key: 'unit', label: t('Birligi'), width: 100, render: (r) => r.unit_name || '' },
     {
       key: 'state',
       label: t('Xolati'),

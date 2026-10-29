@@ -265,7 +265,7 @@ function DetailBody({ order, mode, onClose }: { order: BarnOrderDetail; mode: De
   const columns: DataTableColumn<Om>[] = [
     { key: 'n', label: t('T/r'), width: 56, render: (m) => order.materials.indexOf(m) + 1 },
     { key: 'name', label: t('Material nomi'), render: (m) => <span className="aui-cell-primary">{m.material_name}</span> },
-    { key: 'unit', label: t('Birligi'), width: 88, render: (m) => m.unit_name || '—' },
+    { key: 'unit', label: t('Birligi'), width: 88, render: (m) => m.unit_name || '' },
     { key: 'number', label: t("So'ralgan"), width: 96, align: 'right', render: (m) => formatNumber(m.number) },
     editable
       ? {
@@ -284,11 +284,11 @@ function DetailBody({ order, mode, onClose }: { order: BarnOrderDetail; mode: De
             />
           ),
         }
-      : { key: 'given', label: t('Berildi'), width: 96, align: 'right', render: (m) => (m.given ? formatNumber(m.given) : '—') },
+      : { key: 'given', label: t('Berildi'), width: 96, align: 'right', render: (m) => (m.given ? formatNumber(m.given) : null) },
     ...(mode === 'finish' && editable
-      ? [{ key: 'stock', label: t('Omborda'), width: 96, align: 'right' as const, render: (m: Om) => (m.stock == null ? '—' : formatNumber(m.stock)) }]
+      ? [{ key: 'stock', label: t('Omborda'), width: 96, align: 'right' as const, render: (m: Om) => (m.stock == null ? null : formatNumber(m.stock)) }]
       : []),
-    { key: 'price', label: t('Narxi'), width: 112, align: 'right', render: (m) => (m.price == null ? '—' : formatNumber(Number(m.price))) },
+    { key: 'price', label: t('Narxi'), width: 112, align: 'right', render: (m) => (m.price == null ? null : formatNumber(Number(m.price))) },
     ...(canDelete
       ? [
           {
@@ -341,7 +341,7 @@ function DetailBody({ order, mode, onClose }: { order: BarnOrderDetail; mode: De
                 <OrderStatus status={order.status} label={order.status_display} />
               </Row>
               <Row label="Ariza maqsadi" icon="ri-focus-3-line">
-                {order.goal_name || '—'}
+                {order.goal_name || ''}
               </Row>
               <Row label="Ro'yxatga olingan sana" icon="ri-calendar-event-line">
                 {formatDate(order.date_creat)}
@@ -476,10 +476,10 @@ function PersonRows({ person, title, icon }: { person: Person | null; title: str
         <span className="type-label-sm">{person.full_name}</span> {person.rank && <span className="ob-muted">{person.rank}</span>}
       </Row>
       <Row label="Tashkilot" icon="ri-building-line">
-        {org.length ? org.map((o) => <div key={o}>{o}</div>) : '—'}
+        {org.length ? org.map((o) => <div key={o}>{o}</div>) : null}
       </Row>
       <Row label="Telefon raqami" icon="ri-phone-line">
-        {person.phone ? <a href={`tel:${person.phone.replace(/\s/g, '')}`}>{person.phone}</a> : '—'}
+        {person.phone ? <a href={`tel:${person.phone.replace(/\s/g, '')}`}>{person.phone}</a> : null}
       </Row>
     </>
   )
@@ -488,7 +488,7 @@ function PersonRows({ person, title, icon }: { person: Person | null; title: str
 export function DeedLinks({ deeds }: { deeds: BarnOrderDetail['deeds'] }) {
   const t = useT()
   const files = deeds.filter((d) => d.file)
-  if (!files.length) return <span className="ob-muted">—</span>
+  if (!files.length) return null
   return (
     <div className="ob-files">
       {files.map((d) => (

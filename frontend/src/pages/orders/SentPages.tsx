@@ -148,7 +148,7 @@ function SentList({ role, onBehalf = false }: { role: OrderRole; onBehalf?: bool
           ]
         : []),
       ...(archive
-        ? [{ key: 'rating', label: t('Baho'), width: 80, render: (r: Order) => (r.rating ? `${r.rating}/5 ★` : '—') }]
+        ? [{ key: 'rating', label: t('Baho'), width: 80, render: (r: Order) => (r.rating ? `${r.rating}/5 ★` : null) }]
         : []),
     ],
   })

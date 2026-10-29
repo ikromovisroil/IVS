@@ -27,7 +27,7 @@ interface SignerRow {
 function Person({ p, name }: { p: DeedPerson | null; name?: string | null }) {
   const full = p?.full_name ?? name
   // Shaxs ko'rsatilmagan (masalan, tizim yaratgan talabnoma) — bo'sh avatar emas, oddiy chiziqcha
-  if (!full) return <span className="type-para-sm">—</span>
+  if (!full) return null
   return <CellUser name={full} sub={p?.rank_name || undefined} initials={initials(full)} color={avatarColor(p?.id ?? full)} />
 }
 
@@ -99,7 +99,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
 
   const signerColumns: DataTableColumn<SignerRow>[] = [
     { key: 'n', label: t('T/R'), width: 56, render: (r) => r.n },
-    { key: 'org', label: t('Tashkilot'), width: '32%', render: (r) => r.person?.organization_name || '—' },
+    { key: 'org', label: t('Tashkilot'), width: '32%', render: (r) => r.person?.organization_name || '' },
     { key: 'fio', label: t('F.I.O'), width: '30%', render: (r) => <Person p={r.person} /> },
     {
       key: 'status',
@@ -129,7 +129,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
 
   const consentColumns: DataTableColumn<DeedConsent>[] = [
     { key: 'n', label: t('T/R'), width: 56, render: (r) => deed.consents.indexOf(r) + 1 },
-    { key: 'org', label: t('Tashkilot'), width: '32%', render: (r) => r.employee_organization || '—' },
+    { key: 'org', label: t('Tashkilot'), width: '32%', render: (r) => r.employee_organization || '' },
     {
       key: 'fio',
       label: t('F.I.O'),
@@ -168,7 +168,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
           <Person p={sender} />
           <div className="msg-kv">
             <span>{t('Tashkilot')}</span>
-            <b>{sender?.organization_name || '—'}</b>
+            <b>{sender?.organization_name || ''}</b>
           </div>
           <div className="msg-kv">
             <span>{t('Sana')}</span>
@@ -176,7 +176,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
           </div>
           <div className="msg-kv">
             <span>{t('Izoh')}</span>
-            <b>{deed.message_user || '—'}</b>
+            <b>{deed.message_user || ''}</b>
           </div>
         </div>
       </section>

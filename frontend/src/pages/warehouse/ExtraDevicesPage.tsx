@@ -46,18 +46,18 @@ function StructureDetail({ s }: { s: Structure }) {
           <i className="ri-information-line" aria-hidden /> {t("Umumiy ma'lumot")}
         </h3>
         <dl className="ivs-kvs">
-          <Kv label="Xodim">{s.technics_employee_name || '—'}</Kv>
+          <Kv label="Xodim">{s.technics_employee_name || ''}</Kv>
           <Kv label="Texnika">
             {s.technics ? (
               <Link to={`/technics/${s.technics}`} className="ivs-link">
                 {[s.technics_name, s.technics_serial || '—', s.technics_inventory || '—'].join(' / ')}
               </Link>
             ) : (
-              '—'
+              null
             )}
           </Kv>
-          <Kv label="Tashkilot">{s.organization_name || '—'}</Kv>
-          <Kv label="Nomi">{[s.category_name, s.name].filter(Boolean).join(' ') || '—'}</Kv>
+          <Kv label="Tashkilot">{s.organization_name || ''}</Kv>
+          <Kv label="Nomi">{[s.category_name, s.name].filter(Boolean).join(' ') || ''}</Kv>
           {s.parametr && <Kv label="Parametr">{s.parametr}</Kv>}
           {s.inventory && <Kv label="Inventar">{s.inventory}</Kv>}
           {s.serial && <Kv label="Serial">{s.serial}</Kv>}
@@ -66,7 +66,7 @@ function StructureDetail({ s }: { s: Structure }) {
           <Kv label="Holati">
             <StatusTag status={s.status} label={s.status_display} />
           </Kv>
-          <Kv label="Hududi">{s.region_name || '—'}</Kv>
+          <Kv label="Hududi">{s.region_name || ''}</Kv>
         </dl>
       </section>
     </div>
@@ -143,13 +143,13 @@ export default function ExtraDevicesPage() {
               {r.name}
             </a>
           </div>
-          <div className="aui-cell-secondary">{[r.category_name, r.parametr].filter(Boolean).join(' · ') || '—'}</div>
+          <div className="aui-cell-secondary">{[r.category_name, r.parametr].filter(Boolean).join(' · ') || ''}</div>
         </div>
       ),
     },
-    { key: 'inventory', label: t('I/N'), width: '13%', render: (r) => <span className="ivs-mono">{r.inventory || '—'}</span> },
-    { key: 'serial', label: t('S/N'), width: '13%', render: (r) => <span className="ivs-mono">{r.serial || '—'}</span> },
-    { key: 'year', label: t('Yili'), width: '7%', render: (r) => r.year || '—' },
+    { key: 'inventory', label: t('I/N'), width: '13%', render: (r) => <span className="ivs-mono">{r.inventory || ''}</span> },
+    { key: 'serial', label: t('S/N'), width: '13%', render: (r) => <span className="ivs-mono">{r.serial || ''}</span> },
+    { key: 'year', label: t('Yili'), width: '7%', render: (r) => r.year || '' },
     {
       key: 'technics',
       label: t('Texnika'),
@@ -161,7 +161,7 @@ export default function ExtraDevicesPage() {
             <div className="aui-cell-secondary">{r.technics_employee_name || t('Biriktirilmagan#ombor')}</div>
           </div>
         ) : (
-          <span className="ivs-muted">—</span>
+          null
         ),
     },
     { key: 'status', label: t('Holati'), render: (r) => <StatusTag status={r.status} label={r.status_display} /> },

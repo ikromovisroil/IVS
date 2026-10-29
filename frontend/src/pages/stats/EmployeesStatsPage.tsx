@@ -185,7 +185,7 @@ export default function EmployeesStatsPage() {
             {r.avg_rating.toFixed(1)} <Icon name="ri-star-fill" size={16} />
           </span>
         ) : (
-          "—"
+          null
         ),
     },
   ];
