@@ -24,7 +24,7 @@ interface PartyRow {
   message: string | null
 }
 
-// F.I.O ostida lavozim, Sana ostida vaqt — joy tejash uchun bitta ustunda ikki qator
+// F.I.O ostida lavozim — joy tejash uchun bitta ustunda ikki qator
 const base: DataTableColumn<PartyRow>[] = [
   { key: 'n', label: 'T/R', width: 52, render: (r) => r.n },
   { key: 'org', label: 'Tashkilot', width: '32%', render: (r) => <span className="ivs-people-wrap">{r.person?.organization_name || '—'}</span> },
@@ -40,40 +40,40 @@ const base: DataTableColumn<PartyRow>[] = [
     ),
   },
 ]
-const tail: DataTableColumn<PartyRow>[] = [
-  { key: 'date', label: 'Sana', width: 110, render: (r) => (r.date ? <DateTimeStack text={formatDateTime(r.date)} /> : null) },
-  { key: 'msg', label: 'Izoh', render: (r) => <span className="ivs-people-wrap ivs-people-note ivs-people-comment">{r.message}</span> },
-]
-const statusCol: DataTableColumn<PartyRow> = {
-  key: 'status',
-  label: 'Holati',
-  width: 120,
-  render: (r) =>
-    r.status ? (
-      <Badge tone={SIGN[r.status].tone} size="sm">
-        {r.statusLabel ?? SIGN[r.status].label}
-      </Badge>
-    ) : (
-      '—'
-    ),
+const dateCol: DataTableColumn<PartyRow> = {
+  key: 'date',
+  label: 'Sana',
+  width: 110,
+  render: (r) => (r.date ? <DateTimeStack text={formatDateTime(r.date)} /> : null),
+}
+const msgCol: DataTableColumn<PartyRow> = {
+  key: 'msg',
+  label: 'Izoh',
+  render: (r) => <span className="ivs-people-wrap ivs-people-note ivs-people-comment">{r.message}</span>,
 }
 
 function Table({ rows, withStatus, caption }: { rows: PartyRow[]; withStatus?: boolean; caption: string }) {
   const t = useT()
   const tr = (cols: DataTableColumn<PartyRow>[]) => cols.map((c) => ({ ...c, label: t(String(c.label)) }))
+  // Holati va sana bitta ustunda: tepada belgi, ostida sana va vaqt (joy tejaladi)
   const statusColT: DataTableColumn<PartyRow> = {
-    ...statusCol,
-    label: t(String(statusCol.label)),
+    key: 'status',
+    label: t('Holati / Sana'),
+    width: 160,
     render: (r) =>
       r.status ? (
-        <Badge tone={SIGN[r.status].tone} size="sm">
-          {t(r.statusLabel ?? SIGN[r.status].label)}
-        </Badge>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+          <Badge tone={SIGN[r.status].tone} size="sm">
+            {t(r.statusLabel ?? SIGN[r.status].label)}
+          </Badge>
+          {r.date && <span className="type-para-xs ivs-people-note" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(r.date)}</span>}
+        </div>
       ) : (
         '—'
       ),
   }
-  return <DataTable rows={rows} columns={withStatus ? [...tr(base), statusColT, ...tr(tail)] : [...tr(base), ...tr(tail)]} getRowId={(r) => r.n} rowHeight={52} minWidth={720} caption={t(caption)} />
+  const columns = withStatus ? [...tr(base), statusColT, ...tr([msgCol])] : [...tr(base), ...tr([dateCol, msgCol])]
+  return <DataTable rows={rows} columns={columns} getRowId={(r) => r.n} rowHeight={52} minWidth={720} caption={t(caption)} />
 }
 
 /** "Dalolatnoma holati #kod" oynasi (saytdagi files.html → modalcondition). */

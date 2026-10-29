@@ -60,6 +60,7 @@ const ru: Record<string, string> = {
   'Ilovalarni yuklab olish ({n} ta fayl)': 'Скачать приложения (файлов: {n})',
   '{n} ta': '{n} шт.',
   Holati: 'Статус',
+  'Holati / Sana': 'Статус / Дата',
   'Dalolatnoma holati': 'Статус документа',
   Amallar: 'Действия',
   Tahrirlash: 'Редактировать',

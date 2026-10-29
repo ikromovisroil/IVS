@@ -21,6 +21,7 @@ const ru: Record<string, string> = {
   PINFL: 'ПИНФЛ',
   Telefon: 'Телефон',
   Holati: 'Статус',
+  'Holati / Sana': 'Статус / Дата',
   Ruxsatlar: 'Права',
   Tahrirlash: 'Редактировать',
   "O'chirish": 'Удалить',

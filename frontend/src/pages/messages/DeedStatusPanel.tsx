@@ -1,9 +1,9 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Button, CellUser, DataTable, StatusChip, Switch } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import ConfirmDialog from '../../components/ConfirmDialog'
-import DateTimeStack from '../../components/DateTimeStack'
 import { useToast } from '../../components/toast'
 import { api } from '../../api/client'
 import type { Page as ApiPage } from '../../api/client'
@@ -29,6 +29,16 @@ function Person({ p, name }: { p: DeedPerson | null; name?: string | null }) {
   // Shaxs ko'rsatilmagan (masalan, tizim yaratgan talabnoma) — bo'sh avatar emas, oddiy chiziqcha
   if (!full) return <span className="type-para-sm">—</span>
   return <CellUser name={full} sub={p?.rank_name || undefined} initials={initials(full)} color={avatarColor(p?.id ?? full)} />
+}
+
+/** Holat belgisi, ostida (bo'lsa) sana va vaqt — alohida "Sana" ustuni joy olmasin. */
+function StatusDate({ chip, date }: { chip: ReactNode; date: string | null | undefined }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+      {chip}
+      {date && <span className="type-para-xs msg-note" style={{ whiteSpace: 'nowrap' }}>{formatDateTime(date)}</span>}
+    </div>
+  )
 }
 
 const note = (s: string | null | undefined) => (s ? <span className="msg-note msg-comment">{s}</span> : null)
@@ -91,8 +101,12 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
     { key: 'n', label: t('T/R'), width: 56, render: (r) => r.n },
     { key: 'org', label: t('Tashkilot'), width: '32%', render: (r) => r.person?.organization_name || '—' },
     { key: 'fio', label: t('F.I.O'), width: '30%', render: (r) => <Person p={r.person} /> },
-    { key: 'status', label: t('Holati'), width: 130, render: (r) => <StatusChip status={SIGN_STATUS[r.status].chip}>{t(SIGN_STATUS[r.status].label)}</StatusChip> },
-    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' || !r.date ? null : <DateTimeStack text={formatDateTime(r.date)} />) },
+    {
+      key: 'status',
+      label: t('Holati / Sana'),
+      width: 160,
+      render: (r) => <StatusDate chip={<StatusChip status={SIGN_STATUS[r.status].chip}>{t(SIGN_STATUS[r.status].label)}</StatusChip>} date={r.status === 'viewed' ? null : r.date} />,
+    },
     { key: 'msg', label: t('Izoh'), render: (r) => note(r.message) },
   ]
   if (manage) {
@@ -124,8 +138,12 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
         <CellUser name={r.employee_name || '—'} sub={r.employee_rank || undefined} initials={initials(r.employee_name || '?')} color={avatarColor(r.employee ?? 0)} />
       ),
     },
-    { key: 'status', label: t('Holati'), width: 130, render: (r) => <StatusChip status={CONSENT_STATUS[r.status].chip}>{t(CONSENT_STATUS[r.status].label)}</StatusChip> },
-    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' || !r.date_edit ? null : <DateTimeStack text={formatDateTime(r.date_edit)} />) },
+    {
+      key: 'status',
+      label: t('Holati / Sana'),
+      width: 160,
+      render: (r) => <StatusDate chip={<StatusChip status={CONSENT_STATUS[r.status].chip}>{t(CONSENT_STATUS[r.status].label)}</StatusChip>} date={r.status === 'viewed' ? null : r.date_edit} />,
+    },
     { key: 'msg', label: t('Izoh'), render: (r) => note(r.message) },
   ]
   if (manage) {
