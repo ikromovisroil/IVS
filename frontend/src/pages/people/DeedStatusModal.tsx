@@ -41,8 +41,8 @@ const base: DataTableColumn<PartyRow>[] = [
   },
 ]
 const tail: DataTableColumn<PartyRow>[] = [
-  { key: 'date', label: 'Sana', width: 110, render: (r) => <DateTimeStack text={formatDateTime(r.date)} /> },
-  { key: 'msg', label: 'Izoh', render: (r) => <span className="ivs-people-wrap ivs-people-note ivs-people-comment">{r.message || '—'}</span> },
+  { key: 'date', label: 'Sana', width: 110, render: (r) => (r.date ? <DateTimeStack text={formatDateTime(r.date)} /> : null) },
+  { key: 'msg', label: 'Izoh', render: (r) => <span className="ivs-people-wrap ivs-people-note ivs-people-comment">{r.message}</span> },
 ]
 const statusCol: DataTableColumn<PartyRow> = {
   key: 'status',

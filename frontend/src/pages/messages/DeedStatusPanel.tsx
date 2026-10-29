@@ -31,7 +31,7 @@ function Person({ p, name }: { p: DeedPerson | null; name?: string | null }) {
   return <CellUser name={full} sub={p?.rank_name || undefined} initials={initials(full)} color={avatarColor(p?.id ?? full)} />
 }
 
-const note = (s: string | null | undefined) => <span className="msg-note msg-comment">{s || '—'}</span>
+const note = (s: string | null | undefined) => (s ? <span className="msg-note msg-comment">{s}</span> : null)
 
 /**
  * "Dalolatnoma holati" (contact*.html dagi holat oynasi va deed_status sahifasi): jo'natuvchi, imzolovchilar va
@@ -89,17 +89,18 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
 
   const signerColumns: DataTableColumn<SignerRow>[] = [
     { key: 'n', label: t('T/R'), width: 56, render: (r) => r.n },
+    { key: 'org', label: t('Tashkilot'), width: '32%', render: (r) => r.person?.organization_name || '—' },
     { key: 'fio', label: t('F.I.O'), width: '30%', render: (r) => <Person p={r.person} /> },
-    { key: 'org', label: t('Tashkilot'), render: (r) => r.person?.organization_name || '—' },
     { key: 'status', label: t('Holati'), width: 130, render: (r) => <StatusChip status={SIGN_STATUS[r.status].chip}>{t(SIGN_STATUS[r.status].label)}</StatusChip> },
-    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' ? '—' : <DateTimeStack text={formatDateTime(r.date)} />) },
+    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' || !r.date ? null : <DateTimeStack text={formatDateTime(r.date)} />) },
     { key: 'msg', label: t('Izoh'), render: (r) => note(r.message) },
   ]
   if (manage) {
     signerColumns.push({
       key: 'can',
-      label: t('Qo‘shish huquqi'),
-      width: 120,
+      label: t('Amallar'),
+      width: 80,
+      align: 'right',
       render: (r) => (
         <Switch
           aria-label={t("Yoqilsa, imzolovchi ham kelishuvchi qo'sha oladi")}
@@ -114,6 +115,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
 
   const consentColumns: DataTableColumn<DeedConsent>[] = [
     { key: 'n', label: t('T/R'), width: 56, render: (r) => deed.consents.indexOf(r) + 1 },
+    { key: 'org', label: t('Tashkilot'), width: '32%', render: (r) => r.employee_organization || '—' },
     {
       key: 'fio',
       label: t('F.I.O'),
@@ -122,9 +124,8 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
         <CellUser name={r.employee_name || '—'} sub={r.employee_rank || undefined} initials={initials(r.employee_name || '?')} color={avatarColor(r.employee ?? 0)} />
       ),
     },
-    { key: 'org', label: t('Tashkilot'), render: (r) => r.employee_organization || '—' },
     { key: 'status', label: t('Holati'), width: 130, render: (r) => <StatusChip status={CONSENT_STATUS[r.status].chip}>{t(CONSENT_STATUS[r.status].label)}</StatusChip> },
-    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' ? '—' : <DateTimeStack text={formatDateTime(r.date_edit)} />) },
+    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' || !r.date_edit ? null : <DateTimeStack text={formatDateTime(r.date_edit)} />) },
     { key: 'msg', label: t('Izoh'), render: (r) => note(r.message) },
   ]
   if (manage) {
@@ -132,6 +133,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
       key: 'rm',
       label: '',
       width: 56,
+      align: 'right',
       render: (r) =>
         r.status === 'viewed' && (
           <Button variant="ghost" size="sm" icon="ri-delete-bin-line" iconOnly aria-label={t('Olib tashlash')} title={t('Olib tashlash')} onClick={() => setRemoving(r)} />
