@@ -30,7 +30,7 @@ function Person({ p, name }: { p: DeedPerson | null; name?: string | null }) {
   return <CellUser name={full} sub={p?.rank_name || undefined} initials={initials(full)} color={avatarColor(p?.id ?? full)} />
 }
 
-const note = (s: string | null | undefined) => <span className="msg-note">{s || '—'}</span>
+const note = (s: string | null | undefined) => <span className="msg-note msg-comment">{s || '—'}</span>
 
 /**
  * "Dalolatnoma holati" (contact*.html dagi holat oynasi va deed_status sahifasi): jo'natuvchi, imzolovchilar va

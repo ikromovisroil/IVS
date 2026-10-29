@@ -28,6 +28,12 @@
   overflow-wrap: anywhere;
 }
 
+/* Jadvaldagi izoh: "anywhere" ustunni 1-2 harfgacha siqib qo'ymasin */
+.ivs-people-comment {
+  display: block;
+  min-width: 220px;
+}
+
 .ivs-people-actions {
   display: flex;
   align-items: center;

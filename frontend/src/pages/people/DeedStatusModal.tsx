@@ -31,7 +31,7 @@ const base: DataTableColumn<PartyRow>[] = [
 ]
 const tail: DataTableColumn<PartyRow>[] = [
   { key: 'date', label: 'Sana', width: 140, render: (r) => formatDateTime(r.date) },
-  { key: 'msg', label: 'Izoh', render: (r) => <span className="ivs-people-wrap ivs-people-note">{r.message || '—'}</span> },
+  { key: 'msg', label: 'Izoh', render: (r) => <span className="ivs-people-wrap ivs-people-note ivs-people-comment">{r.message || '—'}</span> },
 ]
 const statusCol: DataTableColumn<PartyRow> = {
   key: 'status',
