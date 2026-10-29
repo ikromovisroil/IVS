@@ -1213,6 +1213,13 @@ def _visible_perm_fields(target_employee, current_employee):
     if target_org_type != "worker":
         visible.discard("report_employee")
 
+    # Mijoz (worker bo'lmagan tashkilot) xodimiga materialni sarflash va Zoom (uchrashuv) ruxsatlari berilmaydi
+    if target_org_type != "worker":
+        visible.discard("material_service")
+        visible.discard("view_meeting")
+        visible.discard("add_meeting")
+        visible.discard("delete_meeting")
+
     return visible
 
 
