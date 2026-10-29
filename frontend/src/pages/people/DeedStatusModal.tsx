@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Badge, Button, DataTable, Switch } from '../../ds'
 import type { BadgeProps, DataTableColumn } from '../../ds'
+import DateTimeStack from '../../components/DateTimeStack'
 import Modal from '../../components/Modal'
 import { useToast } from '../../components/toast'
 import { api } from '../../api/client'
@@ -23,14 +24,24 @@ interface PartyRow {
   message: string | null
 }
 
+// F.I.O ostida lavozim, Sana ostida vaqt — joy tejash uchun bitta ustunda ikki qator
 const base: DataTableColumn<PartyRow>[] = [
   { key: 'n', label: 'T/R', width: 52, render: (r) => r.n },
-  { key: 'org', label: 'Tashkilot', width: '24%', render: (r) => <span className="ivs-people-wrap">{r.person?.organization_name || '—'}</span> },
-  { key: 'fio', label: 'F.I.O', width: '24%', render: (r) => <span className="ivs-people-wrap">{r.person?.full_name || '—'}</span> },
-  { key: 'rank', label: 'Lavozim', width: '18%', render: (r) => <span className="ivs-people-wrap">{r.person?.rank_name || '—'}</span> },
+  { key: 'org', label: 'Tashkilot', width: '32%', render: (r) => <span className="ivs-people-wrap">{r.person?.organization_name || '—'}</span> },
+  {
+    key: 'fio',
+    label: 'F.I.O',
+    width: '30%',
+    render: (r) => (
+      <span className="ivs-people-wrap" style={{ display: 'block' }}>
+        {r.person?.full_name || '—'}
+        {r.person?.rank_name && <span style={{ display: 'block', color: 'var(--text-sub-600)' }}>{r.person.rank_name}</span>}
+      </span>
+    ),
+  },
 ]
 const tail: DataTableColumn<PartyRow>[] = [
-  { key: 'date', label: 'Sana', width: 140, render: (r) => formatDateTime(r.date) },
+  { key: 'date', label: 'Sana', width: 110, render: (r) => <DateTimeStack text={formatDateTime(r.date)} /> },
   { key: 'msg', label: 'Izoh', render: (r) => <span className="ivs-people-wrap ivs-people-note ivs-people-comment">{r.message || '—'}</span> },
 ]
 const statusCol: DataTableColumn<PartyRow> = {

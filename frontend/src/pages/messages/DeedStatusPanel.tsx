@@ -3,6 +3,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { Button, CellUser, DataTable, StatusChip, Switch } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import ConfirmDialog from '../../components/ConfirmDialog'
+import DateTimeStack from '../../components/DateTimeStack'
 import { useToast } from '../../components/toast'
 import { api } from '../../api/client'
 import type { Page as ApiPage } from '../../api/client'
@@ -91,7 +92,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
     { key: 'fio', label: t('F.I.O'), width: '30%', render: (r) => <Person p={r.person} /> },
     { key: 'org', label: t('Tashkilot'), render: (r) => r.person?.organization_name || '—' },
     { key: 'status', label: t('Holati'), width: 130, render: (r) => <StatusChip status={SIGN_STATUS[r.status].chip}>{t(SIGN_STATUS[r.status].label)}</StatusChip> },
-    { key: 'date', label: t('Sana'), width: 140, render: (r) => (r.status === 'viewed' ? '—' : formatDateTime(r.date)) },
+    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' ? '—' : <DateTimeStack text={formatDateTime(r.date)} />) },
     { key: 'msg', label: t('Izoh'), render: (r) => note(r.message) },
   ]
   if (manage) {
@@ -123,7 +124,7 @@ export default function DeedStatusPanel({ deed, readOnly = false }: { deed: Deed
     },
     { key: 'org', label: t('Tashkilot'), render: (r) => r.employee_organization || '—' },
     { key: 'status', label: t('Holati'), width: 130, render: (r) => <StatusChip status={CONSENT_STATUS[r.status].chip}>{t(CONSENT_STATUS[r.status].label)}</StatusChip> },
-    { key: 'date', label: t('Sana'), width: 140, render: (r) => (r.status === 'viewed' ? '—' : formatDateTime(r.date_edit)) },
+    { key: 'date', label: t('Sana'), width: 110, render: (r) => (r.status === 'viewed' ? '—' : <DateTimeStack text={formatDateTime(r.date_edit)} />) },
     { key: 'msg', label: t('Izoh'), render: (r) => note(r.message) },
   ]
   if (manage) {
