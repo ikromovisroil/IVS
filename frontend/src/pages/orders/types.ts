@@ -39,7 +39,7 @@ export interface Order {
   date_canceled: string | null
   date_rejected: string | null
   materials: OrderMaterial[]
-  deeds: { id: number; code: string | null; file: string | null }[]
+  deeds: { id: number; code: string | null; file: string | null; rejected: boolean }[]
 }
 
 export interface Person {

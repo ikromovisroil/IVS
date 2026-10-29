@@ -213,3 +213,42 @@ class OrdersSpaTests(TestCase):
         self.assertEqual(r.status_code, 400)
         self.assertIn("body", r.data)
         self.assertFalse(Deed.objects.exists())
+
+    # ---------- aktni qayta yuborish ----------
+
+    def _act(self, **status):
+        deed = Deed.objects.create(
+            organization=self.client_org, sender=self.stranger, user=self.worker, body="<p>akt</p>", status="act", **status,
+        )
+        deed.orders.set([self.order.id])
+        return deed
+
+    def _post_deed(self):
+        enc = base64.b64encode(b"<p>akt</p>").decode()
+        return client(self.worker_user).post(f"{BASE}/{self.order.id}/deed/", {"sender": self.stranger.id, "body_encoded": enc}, format="json")
+
+    def test_order_deeds_report_rejected_flag(self):
+        pending, rejected = self._act(), self._act(status_receiver="rejected")
+        r = client(self.worker_user).get(f"{BASE}/{self.order.id}/")
+        self.assertEqual(r.status_code, 200)
+        flags = {d["id"]: d["rejected"] for d in r.data["deeds"]}
+        self.assertEqual(flags, {pending.id: False, rejected.id: True})
+
+    def test_deed_post_blocked_while_act_is_pending_or_signed(self):
+        for status in ({}, {"status_sender": "approved"}):
+            deed = self._act(**status)
+            r = self._post_deed()
+            self.assertEqual(r.status_code, 400, status)
+            self.assertIn("allaqachon", r.data["detail"])
+            deed.delete()
+
+    @mock.patch("api.spa.orders.notify_deed_sender")
+    @mock.patch("main.order_views.add_text_watermark_pdf_bytes", side_effect=lambda b, t: b)
+    @mock.patch("main.order_views.deed_to_pdf_bytes", return_value=b"%PDF-1.4 test")
+    def test_deed_can_be_resent_after_rejection(self, pdf, wm, notify):
+        for status in ({"status_sender": "rejected"}, {"status_receiver": "rejected"}):
+            rejected = self._act(**status)
+            r = self._post_deed()
+            self.assertEqual(r.status_code, 201, (status, r.data))
+            rejected.delete()
+            Deed.objects.filter(pk=r.data["id"]).delete()

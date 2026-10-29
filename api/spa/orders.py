@@ -20,6 +20,7 @@ import binascii
 import html as html_lib
 import logging
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.template.loader import render_to_string
 from django.urls import path
@@ -206,6 +207,10 @@ class OrderDeedView(APIView):
     def post(self, request, pk):
         """order_receiver_deed_post: {"sender": id, "message": str?, "body_encoded": base64(utf-8 HTML)}"""
         employee, order = _deed_order(request, pk)
+        # Faqat rad etilgan akt qayta yuboriladi; imzolanayotgan yoki imzolangan akt bor bo'lsa — ikkinchisi yaratilmaydi
+        active = order.deeds.filter(status="act").exclude(Q(status_sender="rejected") | Q(status_receiver="rejected"))
+        if active.exists():
+            raise ValidationError({"detail": "Bu ariza uchun akt allaqachon imzolashga yuborilgan"})
         sender_id = str(request.data.get("sender") or "").strip()
         message = (request.data.get("message") or "").strip() or None
 

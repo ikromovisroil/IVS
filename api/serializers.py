@@ -562,7 +562,12 @@ class OrderSerializer(serializers.ModelSerializer):
             url = None
             if d.file:
                 url = request.build_absolute_uri(d.file.url) if request else d.file.url
-            out.append({'id': d.id, 'code': d.code, 'file': url})
+            out.append({
+                'id': d.id, 'code': d.code, 'file': url,
+                'status_sender': d.status_sender, 'status_receiver': d.status_receiver,
+                # Imzolovchi rad etgan akt: ijrochi uni qayta yubora oladi
+                'rejected': 'rejected' in (d.status_sender, d.status_receiver),
+            })
         return out
 
 

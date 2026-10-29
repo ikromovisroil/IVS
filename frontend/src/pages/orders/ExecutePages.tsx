@@ -321,22 +321,32 @@ export function ExecuteArchivePage() {
         key: 'deed',
         label: t('Imzolashga yuborish'),
         width: 210,
-        render: (r) =>
-          r.deeds.length ? (
-            r.deeds[0].file ? (
-              <Button variant="stroke" size="sm" icon="ri-file-pdf-2-line" onClick={() => openPdf(r.deeds[0].file!, t('Yuborilgan'))}>
+        render: (r) => {
+          // Rad etilgan akt hisobga olinmaydi: faqat imzolanayotgan/imzolangan akt "Yuborilgan" bo'ladi
+          const sent = r.deeds.find((d) => !d.rejected)
+          if (sent) {
+            return sent.file ? (
+              <Button variant="stroke" size="sm" icon="ri-file-pdf-2-line" onClick={() => openPdf(sent.file!, t('Yuborilgan'))}>
                 {t('Yuborilgan')}
               </Button>
             ) : (
               <StatusChip status="completed">{t('Yuborilgan')}</StatusChip>
             )
-          ) : r.materials.length ? (
-            <Button variant="success" size="sm" icon="ri-send-plane-fill" onClick={() => navigate(`/orders/execute/archive/${r.id}/deed`)}>
-              {t('Yuborish')}
+          }
+          if (!r.materials.length) return <span className="type-para-sm ivs-orders-muted">{t('Mavjud emas')}</span>
+          const resend = r.deeds.length > 0
+          return (
+            <Button
+              variant="success"
+              size="sm"
+              icon={resend ? 'ri-refresh-line' : 'ri-send-plane-fill'}
+              title={resend ? t('Akt rad etilgan — qayta yuborishingiz mumkin') : undefined}
+              onClick={() => navigate(`/orders/execute/archive/${r.id}/deed`)}
+            >
+              {resend ? t('Qayta yuborish') : t('Yuborish')}
             </Button>
-          ) : (
-            <span className="type-para-sm ivs-orders-muted">{t('Mavjud emas')}</span>
-          ),
+          )
+        },
       },
     ],
   })

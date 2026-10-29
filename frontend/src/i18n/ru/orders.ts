@@ -36,6 +36,8 @@ const ru: Record<string, string> = {
   Baho: 'Оценка',
   Yuborilgan: 'Отправлено',
   Yuborish: 'Отправить',
+  'Qayta yuborish': 'Отправить повторно',
+  'Akt rad etilgan — qayta yuborishingiz mumkin': 'Акт отклонён — можно отправить повторно',
   'Mavjud emas': 'Нет',
   "Ma'lumot topilmadi": 'Данные не найдены',
   'ATMga yuborilgan arizalar': 'Заявки, отправленные в ЦИТ',
