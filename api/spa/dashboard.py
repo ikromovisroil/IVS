@@ -1,11 +1,12 @@
 """
-Bosh sahifa (React: /dashboard) — umumiy ko'rinish. Superuser — butun tizim; "Statistikani ko'rish" (status_employee)
-huquqi borlar — o'z ko'rish doirasida (`all_organization` / `all_region` bo'lmasa o'z tashkiloti va hududi).
+Bosh sahifa (React: /dashboard) — umumiy ko'rinish. Superuser yoki "Statistikani ko'rish" (status_employee) huquqi bor
+xodim uchun; standart — O'Z TASHKILOTI doirasida (superuser ham). ?scope=all — barcha tashkilotlar (faqat superuser va
+`all_organization` huquqi bor xizmat tashkiloti xodimi); hudud — `all_region` bo'lmasa o'z hududi.
 
 * overview/?days=7|30|90 — davr ko'rsatkichlari (oldingi teng davr bilan solishtirib), arizalar dinamikasi,
   holatlar, texnika holati, eng faol ijrochilar, ariza turlari, so'nggi arizalar va hujjatlar.
 
-Rejimlar (javobdagi scope.mode): "all" — superuser; "worker" — xizmat ko'rsatuvchi tashkilot xodimi (ATM arizalari);
+Rejimlar (javobdagi scope.mode): "all" — barcha tashkilotlar; "worker" — xizmat ko'rsatuvchi tashkilot xodimi (ATM arizalari);
 "client" — mijoz tashkiloti xodimi: faqat o'z tashkilotining OMBORXONA arizalari (ATM arizalari emas) va materiallar.
 Texnika bloki 'view_technics', materiallar bloki 'view_material' huquqi bo'lsa chiqadi (aks holda null).
 """
@@ -37,31 +38,38 @@ class CanSeeDashboard(permissions.BasePermission):
 
 
 class Scope:
-    """Ko'rish doirasi: tashkilot/hudud (None — cheklanmagan) va rejim (all | worker | client)."""
+    """
+    Ko'rish doirasi. Standart — xodimning O'Z TASHKILOTI (superuser ham); "Barcha tashkilotlar" (?scope=all) faqat
+    superuser yoki `all_organization` huquqi bor xizmat tashkiloti xodimi uchun. Hudud: `all_region` bo'lmasa o'z hududi.
+    Rejim: "all" — barcha tashkilotlar; "worker" — xizmat tashkiloti (ATM arizalari); "client" — mijoz tashkiloti
+    (faqat o'z omborxona arizalari va materiallari).
+    """
 
-    def __init__(self, user):
+    def __init__(self, user, want_all=False):
         self.user = user
-        self.employee = None
-        self.mode = "all"
-        self.org = None
-        self.region = None
-        self.region_limited = False
-        if user.is_superuser:
-            return
         emp = getattr(user, "employee", None)
-        if not emp:
+        if not emp and not user.is_superuser:
             raise PermissionDenied("Employee yo'q")
         self.employee = emp
-        client = bool(emp.organization_id and emp.organization.type != "worker")
-        self.mode = "client" if client else "worker"
-        # Mijoz hech qachon o'z tashkilotidan tashqarini ko'rmaydi; xizmat tashkiloti — all_organization bo'lsa hammasi
-        if client or not user.has_perm("main.all_organization"):
-            if not emp.organization_id:
+        has_org = bool(emp and emp.organization_id)
+        client = bool(has_org and emp.organization.type != "worker")
+        # Mijoz hech qachon o'z tashkilotidan tashqarini ko'rmaydi
+        self.can_widen = not client and (user.is_superuser or user.has_perm("main.all_organization"))
+        self.widened = bool(want_all and self.can_widen)
+
+        self.org = None
+        if not self.widened:
+            if has_org:
+                self.org = emp.organization_id
+            elif not user.is_superuser:
                 raise PermissionDenied("Tashkilot ko'rsatilmagan")
-            self.org = emp.organization_id
+        self.mode = "all" if self.org is None else ("client" if client else "worker")
+
+        self.region = None
+        self.region_limited = False
         if not user.has_perm("main.all_region"):
             self.region_limited = True
-            self.region = emp.region_id
+            self.region = emp.region_id if emp else None
 
     @property
     def barn(self):
@@ -82,31 +90,28 @@ class Scope:
 
     def orders(self):
         qs = Order.objects.all()
-        if self.mode == "all":
-            return qs
         if self.barn:
             # Mijoz: faqat o'z tashkilotining omborxona (material) arizalari
             return qs.filter(self.employees_q("sender__"), goal__organization__type="client")
-        # Xizmat tashkiloti: o'z tashkiloti/hududi yuborgan yoki ijro etgan arizalar
         if self.unlimited:
             return qs
+        # Xizmat tashkiloti: o'z tashkiloti/hududi yuborgan yoki ijro etgan arizalar
         return qs.filter(self.employees_q("sender__") | self.employees_q("receiver__"))
 
     def deeds(self):
         qs = Deed.objects.all()
-        if self.mode == "all" or self.unlimited:
+        if self.unlimited:
             return qs
         return qs.filter(self.employees_q("user__") | self.employees_q("sender__") | self.employees_q("receiver__"))
 
     def technics(self):
         """Texnikalar ro'yxati bilan bir xil doira (TechnicsViewSet): view_technics, Liable kategoriyalari, tashkilot/hudud."""
-        qs = Technics.objects.filter(is_active=True)
-        if self.mode == "all":
-            return qs
         if not self.user.has_perm("main.view_technics"):
             return None
-        liable_ids = Liable.categorys.through.objects.filter(liable__employee=self.employee).values_list("category_id", flat=True)
-        qs = qs.filter(category_id__in=liable_ids)
+        qs = Technics.objects.filter(is_active=True)
+        if not self.user.is_superuser and self.employee:
+            liable_ids = Liable.categorys.through.objects.filter(liable__employee=self.employee).values_list("category_id", flat=True)
+            qs = qs.filter(category_id__in=liable_ids)
         if self.org is not None:
             qs = qs.filter(organization_id=self.org)
         if self.region_limited:
@@ -115,22 +120,25 @@ class Scope:
 
     def materials(self):
         """Materiallar ro'yxati bilan bir xil doira (MaterialViewSet): view_material, o'z tashkiloti, ruxsat etilgan xodimlar."""
-        qs = Material.objects.filter(is_active=True)
-        if self.mode == "all":
-            return qs
         if not self.user.has_perm("main.view_material"):
             return None
+        qs = Material.objects.filter(is_active=True)
+        if self.org is None:
+            return qs
         from api.views import MaterialViewSet
 
         ids = MaterialViewSet()._visible_employee_ids(self.user, self.employee)
-        return qs.filter(organization_id=self.employee.organization_id, employee_id__in=ids)
+        return qs.filter(organization_id=self.org, employee_id__in=ids)
 
     def label(self):
         org = Organization.objects.filter(pk=self.org).values_list("name", flat=True).first() if self.org is not None else None
         region = None
         if self.region_limited and self.region is not None:
             region = Region.objects.filter(pk=self.region).values_list("name", flat=True).first()
-        return {"mode": self.mode, "organization": org, "region": region, "barn": self.barn}
+        return {
+            "mode": self.mode, "organization": org, "region": region, "barn": self.barn,
+            "can_widen": self.can_widen, "widened": self.widened,
+        }
 
 
 def _deed_pending_q():
@@ -162,7 +170,7 @@ class OverviewView(APIView):
         if days not in PERIODS:
             days = 30
 
-        scope = Scope(request.user)
+        scope = Scope(request.user, request.query_params.get("scope") == "all")
         now = timezone.now()
         today = timezone.localdate()
         start = now - timedelta(days=days)
@@ -249,9 +257,7 @@ class OverviewView(APIView):
                 ],
             }
 
-        employees_qs = Employee.objects.filter(user__is_active=True)
-        if scope.mode != "all":
-            employees_qs = employees_qs.filter(scope.employees_q())
+        employees_qs = Employee.objects.filter(user__is_active=True).filter(scope.employees_q())
 
         return Response({
             "scope": scope.label(),
@@ -270,6 +276,9 @@ class OverviewView(APIView):
                 "viewed": status_counts.get("viewed", 0),
                 "process": status_counts.get("process", 0),
                 "done": sum(status_counts.get(s, 0) for s in DONE),
+                # done ning tarkibi: tayyorlandi (tasdiq kutilmoqda) va tasdiqlangan (tasdiqlandi / qabul qilindi)
+                "finished": status_counts.get("finished", 0),
+                "approved": status_counts.get("approved", 0) + status_counts.get("accepted", 0),
                 "closed": sum(status_counts.get(s, 0) for s in CLOSED),
             },
             "technics_status": {s: tech_status.get(s, 0) for s in ("active", "free", "repair", "defect")} if technics is not None else None,

@@ -51,7 +51,7 @@ class DashboardOverviewTests(TestCase):
         self.assertEqual(d["kpis"]["orders_new"], {"value": 2, "prev": 1})
         self.assertEqual(d["kpis"]["orders_done"]["value"], 1)
         self.assertEqual(d["kpis"]["avg_hours"]["value"], 4.0)
-        self.assertEqual(d["orders_status"], {"viewed": 1, "process": 0, "done": 1, "closed": 0})
+        self.assertEqual(d["orders_status"], {"viewed": 1, "process": 0, "done": 1, "finished": 1, "approved": 0, "closed": 0})
         self.assertEqual(d["technics_status"], {"active": 1, "free": 0, "repair": 1, "defect": 0})
         self.assertEqual(d["technics_groups"], [{"name": "Turi ko'rsatilmagan", "count": 2}])
         self.assertEqual(d["top_executors"][0]["done"], 1)
@@ -106,10 +106,10 @@ class DashboardScopeTests(TestCase):
                                            number=5, price=100)
         Material.objects.create(name="Boshqa", organization=self.other_client, employee=self.oc, number=9, price=1)
 
-    def get(self, user):
+    def get(self, user, **params):
         c = APIClient()
         c.force_authenticate(user)
-        return c.get(URL)
+        return c.get(URL, params)
 
     def _ids(self, r):
         return {o["id"] for o in r.json()["recent_orders"]}
@@ -131,11 +131,40 @@ class DashboardScopeTests(TestCase):
         self.assertIsNone(d["materials"])
         self.assertIsNone(d["totals"]["technics"])
 
-    def test_all_organization_and_region_see_everything(self):
+    def test_all_organization_defaults_to_own_and_widens_on_request(self):
         from main.testing import grant
         user = grant(self.boss_user, "main.all_organization", "main.all_region")
+        everything = {o.id for o in (self.o_atm_own, self.o_atm_client, self.o_barn, self.o_barn_other, self.o_barn_far)}
         r = self.get(user)
-        self.assertEqual(self._ids(r), {o.id for o in (self.o_atm_own, self.o_atm_client, self.o_barn, self.o_barn_other, self.o_barn_far)})
+        self.assertEqual(self._ids(r), {self.o_atm_own.id})            # standart — o'z tashkiloti
+        self.assertTrue(r.json()["scope"]["can_widen"])
+        r = self.get(user, scope="all")
+        self.assertEqual(self._ids(r), everything)
+        self.assertEqual(r.json()["scope"]["mode"], "all")
+
+    def test_scope_all_ignored_without_permission(self):
+        r = self.get(self.boss_user, scope="all")                       # all_organization yo'q
+        self.assertEqual(self._ids(r), {self.o_atm_own.id})
+        self.assertFalse(r.json()["scope"]["can_widen"])
+
+    def test_superuser_defaults_to_own_organization(self):
+        from main.testing import make_employee
+        su, _ = make_employee(self.atm, self.region, superuser=True, last="Super")
+        r = self.get(su)
+        self.assertEqual(self._ids(r), {self.o_atm_own.id})
+        self.assertEqual(r.json()["scope"]["organization"], self.atm.name)
+        r = self.get(su, scope="all")
+        self.assertEqual(len(self._ids(r)), 5)
+
+    def test_client_superuser_cannot_widen(self):
+        from main.testing import make_employee
+        su, _ = make_employee(self.client_org, self.region, superuser=True, last="SuperMijoz")
+        r = self.get(su, scope="all")
+        d = r.json()
+        self.assertEqual(d["scope"]["mode"], "client")
+        self.assertFalse(d["scope"]["can_widen"])
+        # superuserda all_region bor — hudud cheklanmaydi, lekin tashkilot doirasi faqat o'zi (boshqa mijoz yo'q)
+        self.assertEqual(self._ids(r), {self.o_barn.id, self.o_barn_far.id})
 
     def test_all_region_alone_keeps_organization_limit(self):
         from main.testing import grant

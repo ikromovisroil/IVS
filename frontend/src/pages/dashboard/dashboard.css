@@ -712,6 +712,36 @@
   text-align: right;
 }
 
+/* Eng ko'p qolgan materiallar: tepada nomi va soni (bir qatorda), ostida chiziq — uzun nom va birliklar sig'adi */
+.ivs-dash-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 12px;
+}
+
+.ivs-dash-mat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.ivs-dash-mat-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+}
+
+.ivs-dash-mat-qty {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--text-strong-950);
+}
+
 .ivs-dash-deed-stats.is-two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }

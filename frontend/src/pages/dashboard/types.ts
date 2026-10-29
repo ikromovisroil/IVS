@@ -8,8 +8,8 @@ export interface Person {
 }
 
 export interface Overview {
-  /** Ko'rish doirasi: all — superuser, worker — xizmat tashkiloti (ATM arizalari), client — mijoz (omborxona arizalari) */
-  scope: { mode: 'all' | 'worker' | 'client'; organization: string | null; region: string | null; barn: boolean }
+  /** Ko'rish doirasi (standart — o'z tashkiloti): all — barcha tashkilotlar, worker — xizmat tashkiloti (ATM arizalari), client — mijoz (omborxona arizalari) */
+  scope: { mode: 'all' | 'worker' | 'client'; organization: string | null; region: string | null; barn: boolean; can_widen: boolean; widened: boolean }
   period: { days: number; start: string; end: string; bucket_days: number }
   kpis: {
     orders_new: { value: number; prev: number }
@@ -18,7 +18,7 @@ export interface Overview {
     deeds_pending: { value: number; stale: number }
   }
   trend: { date: string; created: number; done: number }[]
-  orders_status: { viewed: number; process: number; done: number; closed: number }
+  orders_status: { viewed: number; process: number; done: number; finished: number; approved: number; closed: number }
   /** null — 'Texnikalarni ko'rish' huquqi yo'q */
   technics_status: { active: number; free: number; repair: number; defect: number } | null
   technics_groups: { name: string; count: number }[] | null

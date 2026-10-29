@@ -38,6 +38,7 @@ const C = {
   viewed: 'var(--state-information-base)',
   process: 'var(--state-warning-base)',
   closed: 'var(--state-faded-base)',
+  finished: 'var(--state-feature-base)',
   repair: 'var(--state-warning-base)',
   defect: 'var(--state-error-base)',
 }
@@ -146,12 +147,14 @@ export default function DashboardPage() {
   const t = useT()
   const { lang } = useLang()
   const navigate = useNavigate()
-  const { filters, setFilter } = useUrlFilters(['days'] as const)
+  const { filters, setFilter } = useUrlFilters(['days', 'scope'] as const)
   const days = PERIODS.includes(filters.days) ? filters.days : '30'
+  // Standart — o'z tashkiloti; "Barcha tashkilotlar" faqat huquqi borlarga (server tekshiradi)
+  const wantAll = filters.scope === 'all'
 
   const q = useQuery({
-    queryKey: ['dashboard', days],
-    queryFn: () => api<Overview>('/spa/dashboard/overview/', { query: { days } }),
+    queryKey: ['dashboard', days, wantAll],
+    queryFn: () => api<Overview>('/spa/dashboard/overview/', { query: { days, scope: wantAll ? 'all' : '' } }),
     placeholderData: keepPreviousData,
     refetchInterval: 5 * 60 * 1000,
   })
@@ -218,12 +221,25 @@ export default function DashboardPage() {
         <h2 className="type-label-lg">{t("Umumiy ko'rsatkichlar")}</h2>
         {d && <p className="type-para-xs ivs-dash-muted">{totalParts.join(' · ')}</p>}
       </div>
-      <SegmentedControl
-        aria-label={t('Davr')}
-        items={PERIODS.map((p) => ({ value: p, label: t('{n} kun', { n: p }) }))}
-        value={days}
-        onChange={(v) => setFilter('days', v === '30' ? '' : String(v))}
-      />
+      <div className="ivs-dash-tools">
+        {d?.scope.can_widen && (
+          <SegmentedControl
+            aria-label={t("Ko'rish doirasi")}
+            items={[
+              { value: 'own', label: t('Tashkilotim') },
+              { value: 'all', label: t('Barcha tashkilotlar') },
+            ]}
+            value={d.scope.widened ? 'all' : 'own'}
+            onChange={(v) => setFilter('scope', v === 'all' ? 'all' : '')}
+          />
+        )}
+        <SegmentedControl
+          aria-label={t('Davr')}
+          items={PERIODS.map((p) => ({ value: p, label: t('{n} kun', { n: p }) }))}
+          value={days}
+          onChange={(v) => setFilter('days', v === '30' ? '' : String(v))}
+        />
+      </div>
     </div>
   )
 
@@ -262,7 +278,8 @@ export default function DashboardPage() {
   const os = d.orders_status
   const osTotal = os.viewed + os.process + os.done + os.closed
   const osParts: Part[] = [
-    { key: 'done', label: t('Bajarilgan'), value: os.done, color: C.done },
+    { key: 'approved', label: t('Tasdiqlangan'), value: os.approved, color: C.done },
+    { key: 'finished', label: t('Tayyorlandi (tasdiq kutilmoqda)'), value: os.finished, color: C.finished },
     { key: 'process', label: t('Jarayonda'), value: os.process, color: C.process },
     { key: 'viewed', label: t('Yangi#plural'), value: os.viewed, color: C.viewed },
     { key: 'closed', label: t('Bekor / rad etilgan'), value: os.closed, color: C.closed },
@@ -527,16 +544,18 @@ export default function DashboardPage() {
                   <div className="ivs-dash-sub-head">
                     <span className="type-label-sm">{t('Eng ko‘p qolgan materiallar')}</span>
                   </div>
-                  <ul className="ivs-dash-goals is-compact">
+                  <ul className="ivs-dash-goals">
                     {mats.top.map((m) => (
-                      <li key={m.id}>
-                        <span className="ivs-dash-group-row">
-                          <span className="type-para-sm ivs-dash-goal-name">{m.name}</span>
-                          <ProgressBar value={m.number} max={matMax} label={`${m.name}: ${m.number}`} />
-                          <span className="type-label-sm ivs-dash-group-count">
-                            {formatNumber(m.number)} {m.unit || ''}
+                      <li key={m.id} className="ivs-dash-mat">
+                        <span className="ivs-dash-mat-head">
+                          <span className="type-para-sm ivs-dash-goal-name" title={m.name}>
+                            {m.name}
+                          </span>
+                          <span className="type-label-sm ivs-dash-mat-qty">
+                            {formatNumber(m.number)} <span className="ivs-dash-muted">{m.unit || ''}</span>
                           </span>
                         </span>
+                        <ProgressBar value={m.number} max={matMax} label={`${m.name}: ${m.number}`} />
                       </li>
                     ))}
                   </ul>
