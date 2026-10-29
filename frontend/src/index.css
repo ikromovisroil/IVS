@@ -350,6 +350,17 @@ body {
   color: var(--icon-sub-600);
 }
 
+/* Uzun ism-familya chevron tugmasi tagiga o'tib ketmasin: 2 qatorgacha, undan ortig'i "…" (to'liq ism title'da) */
+.aui-dside-user .aui-dside-name {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  white-space: normal;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+
 /* Yig'ilgan (rail) holatda faqat avatar */
 .aui-dside.is-collapsed .aui-dside-user[role='button']::after {
   display: none;
