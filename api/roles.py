@@ -1,6 +1,6 @@
 """
 Xodimga ruxsat (rol) berish — saytdagi employee_permission (main/views.py) qoidalari bilan bir xil:
- * 'permission_employee' (ko'rish va o'zgartirish) va 'change_employee' (o'zgartirish) huquqlari;
+ * 'permission_employee' huquqi (ko'rish va o'zgartirish uchun bir xil; 'change_employee' kerak emas);
  * faqat o'z tashkiloti xodimi (all_organization bo'lsa — hammasi);
  * nishon xodim tashkiloti va so'rovchi tashkiloti turiga qarab ayrim ruxsatlar ko'rinmaydi/berilmaydi;
  * SUPER ruxsatlarni (all_organization, all_region, permission_employee, all_material_employee) faqat o'zida bor odam bera oladi;
@@ -250,7 +250,5 @@ def check_access(request, target_org_id, current_emp, writing):
     user = request.user
     if not user.has_perm("main.permission_employee"):
         raise PermissionDenied("Ruxsatlarni boshqarish huquqi yo'q")
-    if writing and not user.has_perm("main.change_employee"):
-        raise PermissionDenied("Sizga ruxsat yo'q")
     if not user.has_perm("main.all_organization") and target_org_id != current_emp.organization_id:
         raise PermissionDenied("Boshqa tashkilot xodimini o'zgartira olmaysiz")

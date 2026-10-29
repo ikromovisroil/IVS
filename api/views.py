@@ -345,8 +345,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
         """
         Xodim ruxsatlari (saytdagi "ruxsatlar" oynasi): GET — joriy holat va tanlash variantlari;
         PUT {"permissions": {"add_order": true, ...}, "goals": [id], "categories": [id], "contracts": [id],
-        "material_categories": [id]} — faqat yuborilgan kalitlar o'zgaradi. 'permission_employee' (PUT uchun
-        qo'shimcha 'change_employee') kerak.
+        "material_categories": [id]} — faqat yuborilgan kalitlar o'zgaradi. 'permission_employee' kerak.
         """
         from . import roles
 

@@ -36,6 +36,15 @@ class ClientRolesTests(TestCase):
         editable = {p["key"] for p in r.data["permissions"] if p["editable"]}
         self.assertTrue(CLIENT_HIDDEN <= editable)
 
+    def test_permission_employee_alone_can_save(self):
+        only_user, _ = make_employee(self.client_org, self.region, perms=["main.permission_employee"], last="Faqat")
+        c = APIClient()
+        c.force_login(only_user)
+        r = c.put(f"/api/v1/employees/{self.client_emp.id}/permissions/",
+                  {"permissions": {"view_material": True}}, format="json")
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertTrue(r.data["permissions"][[p["key"] for p in r.data["permissions"]].index("view_material")]["granted"])
+
     def test_cannot_grant_service_or_zoom_to_client(self):
         c = APIClient()
         c.force_login(self.admin_user)
