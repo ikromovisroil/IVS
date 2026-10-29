@@ -179,7 +179,7 @@ export default function MaterialsPage() {
       </div>
 
       <FilterBar
-        search={<SearchInput value={filters.search} onChange={(v) => setFilter('search', v)} placeholder="Nomi, 1C kodi..." />}
+        search={<SearchInput value={filters.search} onChange={(v) => setFilter('search', v)} placeholder="Nomi, kodi..." />}
         actions={
           <Button variant="stroke" icon="ri-file-excel-2-line" onClick={() => window.location.assign(withQuery(`${API}/export/materials.xlsx`, filters))}>
             {t('Excel')}
@@ -242,7 +242,7 @@ export default function MaterialsPage() {
             <Kv label="Nomi">{active.row.name}</Kv>
             <Kv label="Kategoriya">{active.row.category_name || ''}</Kv>
             <Kv label="Moddiy javobgar">{active.row.employee_name || ''}</Kv>
-            <Kv label="Kodi (1C)">
+            <Kv label="Kodi">
               <span className="ivs-mono">{active.row.code || ''}</span>
             </Kv>
             <Kv label="Soni">

@@ -117,7 +117,7 @@ class MaterialsExportView(_ExportBase):
         wb = Workbook()
         ws = wb.active
         ws.title = "Material"
-        ws.append(["Xodim", "Material nomi", "Soni", "Narxi", "Summa", "O'lchov birligi", "1C kod"])
+        ws.append(["Xodim", "Material nomi", "Soni", "Narxi", "Summa", "O'lchov birligi", "Kod"])
         from .views import order_materials_by_code
 
         for m in order_materials_by_code(qs):

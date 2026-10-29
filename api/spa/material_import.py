@@ -216,7 +216,7 @@ class _Importer:
         if len(row["name"]) > 300:
             return self.issue(row, "Nomi 300 belgidan uzun")
         if len(row["code"]) > 20:
-            return self.issue(row, "1C kodi 20 belgidan uzun")
+            return self.issue(row, "Kod 20 belgidan uzun")
         qty = int(qty)
         price = (price or Decimal("0")).quantize(Decimal("0.01"))
 

@@ -105,7 +105,7 @@ export default function MovementsPage() {
     <Page icon="ri-arrow-left-right-line" title="Kirim - chiqim" subtitle="Materiallar harakati: davr boshidagi qoldiq, kirim, chiqim va joriy qoldiq.">
       <MaterialTabs />
       <FilterBar
-        search={<SearchInput value={filters.name} onChange={(v) => setFilter('name', v)} placeholder="Nomi, 1C kodi..." />}
+        search={<SearchInput value={filters.name} onChange={(v) => setFilter('name', v)} placeholder="Nomi, kodi..." />}
         actions={
           <Button variant="stroke" icon="ri-file-excel-2-line" disabled={!employee} onClick={() => window.location.assign(exportUrl)}>
             {t('Excel')}

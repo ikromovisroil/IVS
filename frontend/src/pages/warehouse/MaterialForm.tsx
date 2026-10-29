@@ -118,7 +118,7 @@ export default function MaterialForm({ item, onClose }: Props) {
           />
           <Select label={t('Birligi *')} placeholder={t('Tanlang...')} options={refs.unitOptions} value={form.unit} onChange={(v) => set('unit', num(v))} error={!!errors.unit} hint={errors.unit} />
           <div className="is-wide">{text('name', 'Nomi *', 'Masalan: UTP Cat6 kabel')}</div>
-          {text('code', 'Kodi (1C) *', '100234')}
+          {text('code', 'Kodi *', '100234')}
           {text('number', 'Soni *', '0', 'numeric')}
           {text('price', isEdit ? 'Narxi' : 'Narxi *', '0', 'decimal')}
           {text('year', 'Yili', '2025', 'numeric')}

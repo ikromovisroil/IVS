@@ -424,7 +424,7 @@ class MaterialCreateUpdateSerializer(serializers.ModelSerializer):
             found = duplicate.first() if owner_id else None
             if found:
                 raise serializers.ValidationError(
-                    {"code": f"Bu 1C kodi ({code}) xodimda allaqachon mavjud: «{found.name}». Bitta kod bitta materialga tegishli."}
+                    {"code": f"Bu kod ({code}) xodimda allaqachon mavjud: «{found.name}». Bitta kod bitta materialga tegishli."}
                 )
         return attrs
 
