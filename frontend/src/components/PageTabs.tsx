@@ -6,6 +6,8 @@ import './PageTabs.css'
 export interface PageTab {
   /** To'liq yo'l: "/orders/sent" */
   path: string
+  /** Bosilganda ochiladigan sahifa (bo'sh bo'lsa — path): tab bo'limning boshqa sahifasidan boshlansin desak */
+  to?: string
   label: string
   icon?: string
   count?: number
@@ -59,7 +61,7 @@ export default function PageTabs({ tabs, label, variant = 'line' }: PageTabsProp
           return (
             <li key={tab.path}>
               {/* end: faollikni o'zimiz hisoblaymiz (eng uzun mos yo'l), NavLink'niki emas */}
-              <NavLink to={tab.path} end className={on ? 'is-active' : undefined} aria-current={on ? 'page' : undefined}>
+              <NavLink to={tab.to ?? tab.path} end className={on ? 'is-active' : undefined} aria-current={on ? 'page' : undefined}>
                 {tab.icon && <Icon name={tab.icon} size={18} />}
                 <span>{t(tab.label)}</span>
                 {tab.count != null && tab.count > 0 && <span className="ivs-linetabs-count">{tab.count}</span>}

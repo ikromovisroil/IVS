@@ -12,7 +12,8 @@ const orgType = (me: Me) => me.organization_type
 
 const ORDERS_TABS: OrdersTab[] = [
   { path: '/orders/sent', label: 'ATMga ariza', icon: 'ri-send-plane-line', visible: () => true },
-  { path: '/orders/barn', label: 'Omborxona', icon: 'ri-store-2-line', visible: (me) => orgType(me) === 'client' },
+  // Omborxona materiallar ro'yxatidan ochiladi (arizalar — shu bo'limning "Arizalar" sahifasida)
+  { path: '/orders/barn', to: '/orders/barn/new', label: 'Omborxona', icon: 'ri-store-2-line', visible: (me) => orgType(me) === 'client' },
   {
     path: '/orders/execute',
     label: 'Arizalar holati',

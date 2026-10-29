@@ -59,6 +59,8 @@ const ru: Record<string, string> = {
   Faol: 'Активен',
   Tugagan: 'Нет в наличии',
   'Savatga saqlash': 'В корзину',
+  'Savatda: {n}': 'В корзине: {n}',
+  "Soni kamida 1 bo'lishi kerak.": 'Количество должно быть не менее 1.',
   Saqlangan: 'В корзине',
   'Nomi ...': 'Наименование ...',
   'Qidiruvga mos material topilmadi.': 'Материалы по запросу не найдены.',

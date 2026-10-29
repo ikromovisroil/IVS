@@ -51,6 +51,21 @@ class BarnSpaTests(TestCase):
         self.assertEqual(self._toggle(foreign).status_code, 400)
         self.assertFalse(OrderMaterial.objects.filter(order__isnull=True).exists())
 
+    def test_cart_add_saves_number_and_updates_existing(self):
+        r = self.api.post(f"{BASE}/cart/add/", {"material": self.mat.id, "number": 4}, format="json")
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertEqual([(i["material"], i["number"]) for i in self.api.get(f"{BASE}/cart/").data], [(self.mat.id, 4)])
+        self.api.post(f"{BASE}/cart/add/", {"material": self.mat.id, "number": 7}, format="json")
+        self.assertEqual(OrderMaterial.objects.filter(order__isnull=True, user=self.emp).count(), 1)
+        self.assertEqual(OrderMaterial.objects.get(order__isnull=True, user=self.emp).number, 7)
+
+    def test_cart_add_validates_number_and_material(self):
+        for bad in (0, -1, "x", None, 1.5):
+            r = self.api.post(f"{BASE}/cart/add/", {"material": self.mat.id, "number": bad}, format="json")
+            self.assertEqual(r.status_code, 400, bad)
+        self.assertEqual(self.api.post(f"{BASE}/cart/add/", {"material": self.hidden.id, "number": 1}, format="json").status_code, 400)
+        self.assertFalse(OrderMaterial.objects.filter(order__isnull=True).exists())
+
     def test_cart_delete_only_own_items(self):
         self._toggle(self.mat)
         item = OrderMaterial.objects.get(order__isnull=True, user=self.emp)

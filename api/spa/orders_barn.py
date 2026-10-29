@@ -9,6 +9,7 @@ Ro'yxatlar va holat o'zgarishlari mavjud /api/v1/orders/ da (?role=barn_*, /acce
   POST   order-materials/<id>/delete/    — arizadagi materialni o'chirish (main.ajax_views.ordermaterial_delete)
   GET    cart/                           — savat (OrderMaterial, order=None) — eski order_sender_basket_barn
   POST   cart/toggle/  {material}        — savatga qo'shish / olib tashlash — eski add_material_to_cart
+  POST   cart/add/  {material, number}   — savatga berilgan soni bilan saqlash (bor bo'lsa soni yangilanadi)
   DELETE cart/<id>/                      — savatdan o'chirish — eski delete_material_from_cart
   POST   cart/submit/  {goal, body, numbers: {item_id: son}} — savatdan ariza yaratish — eski create_order_sender_from
 """
@@ -157,6 +158,39 @@ class CartToggleView(APIView):
         return Response({"action": "added", "in_cart": True, "message": "Savatga saqlandi"})
 
 
+class CartAddView(APIView):
+    """Materialni savatga berilgan soni bilan saqlash (savatda bo'lsa — sonini yangilaydi). Faqat ruxsat etilgan materiallar."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        employee = _client_employee(request)
+        try:
+            material_id = int(request.data.get("material"))
+        except (TypeError, ValueError):
+            raise ValidationError({"material": "Noto'g'ri material ID"})
+        raw = request.data.get("number")
+        try:
+            if isinstance(raw, (bool, float)) and not (isinstance(raw, float) and raw.is_integer()):
+                raise ValueError
+            number = int(raw)
+        except (TypeError, ValueError):
+            raise ValidationError({"number": "Soni butun son bo'lishi kerak"})
+        if number < 1:
+            raise ValidationError({"number": "Soni kamida 1 bo'lishi kerak"})
+        material = _selectable_materials(employee).filter(pk=material_id).first()
+        if not material:
+            raise ValidationError({"material": "Material topilmadi yoki sizga ruxsat etilmagan"})
+
+        item = OrderMaterial.objects.filter(order=None, user=employee, material=material).first()
+        if item:
+            item.number = number
+            item.save(update_fields=["number"])
+        else:
+            OrderMaterial.objects.create(order=None, user=employee, material=material, number=number)
+        return Response({"in_cart": True, "number": number, "message": "Savatga saqlandi"})
+
+
 class CartItemView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -226,6 +260,7 @@ urlpatterns = [
     path("order-materials/<int:pk>/delete/", OrderMaterialDeleteView.as_view(), name="spa_barn_om_delete"),
     path("cart/", CartView.as_view(), name="spa_barn_cart"),
     path("cart/toggle/", CartToggleView.as_view(), name="spa_barn_cart_toggle"),
+    path("cart/add/", CartAddView.as_view(), name="spa_barn_cart_add"),
     path("cart/submit/", CartSubmitView.as_view(), name="spa_barn_cart_submit"),
     path("cart/<int:pk>/", CartItemView.as_view(), name="spa_barn_cart_item"),
 ]

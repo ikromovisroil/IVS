@@ -83,6 +83,10 @@ export interface SelectableMaterial {
   name: string
   unit_name: string | null
   category_name: string | null
+  employee_name: string | null
+  code: string | null
+  price: string | null
+  year: number | string | null
   number: number
   image: string | null
 }
