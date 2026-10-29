@@ -265,6 +265,27 @@ Saytdagi "Hujjatlar" (`files`) sahifasi: **filtr bilan hamma hujjat** (kirgan ha
 - `GET /api/deed-registry/{id}/` — bitta hujjat; `GET /api/deed-registry/{id}/attachments/download/` — ilovalar (fayl yoki ZIP).
 - Hujjat matni (`body`) va amal bayroqlari (`can_*`) berilmaydi; imzo/kelishuvchi holatlari va PDF (`file`) beriladi.
 
+### 9.2 Hisobotlar: Dalolatnoma, Svod, Reestr, Akt, Sarf — `/api/v1/spa/reports/`
+
+Saytdagi "Hisobotlar" bilan **bir xil oqim** (`Authorization: Bearer` bilan ishlaydi). Server faqat ma'lumot beradi va PDF/hujjat yaratadi;
+hujjat **matnini (HTML shablon, jadval qatorlari, jami summalar)** ilova o'zi yig'adi — saytdagi `frontend/src/pages/reports/` (`templates.ts`,
+`*Report.tsx`) kabi. Hisobotlar faqat xizmat ko'rsatuvchi (worker) tashkilot xodimlariga ochiq (mijozga `403`).
+Turlar (`kind`): `document`, `svod`, `reestr`, `akt`, `service`.
+
+1. `GET /spa/reports/` — qaysi hisobotlar ochiq: `{"reports": {"svod": true, ...}, "employee": {...}}`.
+2. `GET /spa/reports/<kind>/form/` — dropdownlar: `organizations`, `regions`, `senders` (imzolovchilar), `agreements` (kelishuvchilar).
+3. `GET /spa/reports/data/<nom>/?...` — filtr bo'yicha **JSON**: `svod-materials`, `reestr-materials`, `akt-materials`, `service-materials`,
+   `document-preview`, `departments`, `signatories`, `negotiators`, `agreements`. Svod: `organizations[]`, `region`, `date1`, `date2`;
+   Reestr: `organization`, `region`, `date1`, `date2`.
+4. Ilova hujjat HTML'ini yig'adi. **Narx va summalarni tiyingacha yaxlitlang** (`Math.round(x*100)/100`); ro'yxatdagi `total_sum` ni o'zini ishlating.
+5. Natija: PDF ko'rish — `POST /spa/reports/pdf/` (`body_html`, `orientation`: `Portrait`/`Landscape`, `filename`) → PDF fayl;
+   imzolashga yuborish — `POST /spa/reports/<kind>/submit/` (`multipart`: `body_encoded` — HTML **base64 (UTF-8)**, `sender`, `receiver`,
+   `agreements[]`, `message`, `attachments`, hamda filtrlar: `organizations[]`/`organization`, `region`, `date1`, `date2`).
+   Muvaffaqiyat — `201 {"detail": ...}`, xato — `400 {"detail": "..."}`. Server HTML'ni tozalaydi, PDF va hujjat (`Deed`) yaratadi.
+
+Eslatma: bu endpointlar saytning o'zi uchun yozilgan, maydonlari kelajakda o'zgarishi mumkin — o'zgarsa shu bo'lim yangilanadi.
+Hujjat shablonlari (HTML) hozircha sayt kodida (`frontend/src/pages/reports/templates.ts`); backend jamoadan nusxa so'rang.
+
 ## 10. Arizalar — `/api/orders/`
 
 Ikki xil ariza. Qaysi biri ekani **ariza turi (`goal`) tashkilotining turiga** bog'liq.
@@ -424,7 +445,7 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 ## 13. Hozircha API'da YO'Q narsalar
 
 - Hujjatni **imzolash/tasdiqlash** (Face ID) — alohida integratsiya.
-- Akt/Svod/Reestr/Talabnoma maxsus oqimlari (materiallarni avtomatik aniqlash). (Material arizasi qabul qilinganda akt avtomatik yaratiladi.)
+- Akt/Svod/Reestr/Talabnoma uchun **serverda tayyor hujjat yig'ish** (hujjat matnini ilova yig'adi, 9.2-bo'lim). (Material arizasi qabul qilinganda akt avtomatik yaratiladi.)
 
 ---
 

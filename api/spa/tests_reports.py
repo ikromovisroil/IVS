@@ -175,3 +175,24 @@ class ReportsApiTests(TestCase):
     def test_submit_forbidden(self):
         self.login(self.client_user)
         self.assertEqual(self.client.post(f"{URL}document/submit/", {}).status_code, 403)
+
+    # ── Android: sessiyasiz, faqat JWT (Authorization: Bearer) ──
+    def test_bearer_token_flow_for_android(self):
+        from rest_framework_simplejwt.tokens import AccessToken
+
+        auth = {"HTTP_AUTHORIZATION": f"Bearer {AccessToken.for_user(self.worker.user)}"}
+        today = timezone.localdate()
+        self.assertTrue(self.client.get(URL, **auth).json()["reports"]["svod"])
+        self.assertEqual(self.client.get(f"{URL}svod/form/", **auth).status_code, 200)
+        res = self.client.get(f"{URL}data/svod-materials/", {
+            "organizations[]": [self.client_org.id], "region": "all",
+            "date1": (today - timedelta(days=10)).isoformat(), "date2": today.isoformat(),
+        }, **auth)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.json()["organizations"][0]["regions"][0]["materials"][0]["total_sum"], 300.0)
+        body = base64.b64encode("<div>Yakuniy hisobot</div>".encode()).decode()
+        res = self.client.post(f"{URL}svod/submit/", {
+            "organizations[]": [self.client_org.id], "sender": self.boss.id, "body_encoded": body,
+        }, **auth)
+        self.assertEqual(res.status_code, 201, res.content)
+        self.assertEqual(Deed.objects.get().status, "svod")

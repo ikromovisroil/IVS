@@ -2,7 +2,7 @@
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
 from core.models import AuditLog
-from core.request_context import get_current_employee, mark_signal_logged
+from core.request_context import get_current_employee, get_current_request_info, mark_signal_logged
 from main.models import Order, Deed
 
 
@@ -18,13 +18,16 @@ def write_log(instance, action):
             or getattr(instance, "employee", None)
             or getattr(instance, "user", None)
         )
+        request = get_current_request_info()
         AuditLog.objects.create(
             employee=employee,
             action=action,
             model=instance.__class__.__name__,
             object_id=instance.pk,
-            path="",
-            method="",
+            path=request.get("path", ""),
+            method=request.get("method", ""),
+            ip=request.get("ip"),
+            user_agent=request.get("user_agent", ""),
             description=f"{action} {instance.__class__.__name__} #{instance.pk}",
         )
         mark_signal_logged()

@@ -1,7 +1,7 @@
 # core/middlewares/audit.py
 from core.models import AuditLog
 from core.request_context import (
-    set_current_employee, was_signal_logged, get_client_ip, clear,
+    set_current_employee, set_current_request, was_signal_logged, get_client_ip, clear,
 )
 
 SKIP_PATHS = (
@@ -18,6 +18,7 @@ class AuditMiddleware:
     def __call__(self, request):
         employee = getattr(request.user, "employee", None) if request.user.is_authenticated else None
         set_current_employee(employee)
+        set_current_request(request)
 
         try:
             response = self.get_response(request)
