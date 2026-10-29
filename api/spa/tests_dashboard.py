@@ -67,3 +67,99 @@ class DashboardOverviewTests(TestCase):
         self.assertEqual(len(weekly["trend"]), 13)  # 13 hafta — 90 kunlik KPI davrini to'liq qamraydi
         self.assertEqual(self.get(self.admin, days="abc").json()["period"]["days"], 30)
         self.assertEqual(self.get(self.admin, days=365).json()["period"]["days"], 30)
+
+
+class DashboardScopeTests(TestCase):
+    """status_employee huquqi bor xodim — o'z ko'rish doirasida; mijoz — faqat o'z omborxona arizalari va materiallari."""
+
+    def setUp(self):
+        from main.models import Material, MaterialCategory, MaterialEmployee
+        from main.testing import make_employee, make_goal, make_org, make_region
+
+        self.region = make_region()
+        self.region2 = make_region()
+        self.atm = make_org("worker")
+        self.client_org = make_org("client")
+        self.other_client = make_org("client")
+        self.atm_goal = make_goal(self.atm)
+        self.barn_goal = make_goal(self.client_org)
+        self.other_barn_goal = make_goal(self.other_client)
+
+        self.boss_user, self.boss = make_employee(self.atm, self.region, perms=["main.status_employee"], last="Boss")
+        self.exec_user, self.executor = make_employee(self.atm, self.region, last="Ijrochi")
+        self.cl_user, self.cl = make_employee(self.client_org, self.region, perms=["main.status_employee"], last="Mijoz")
+        self.cl2_user, self.cl2 = make_employee(self.client_org, self.region, last="Mijoz2")
+        self.oc_user, self.oc = make_employee(self.other_client, self.region, last="Begona")
+        self.far_user, self.far = make_employee(self.client_org, self.region2, last="Uzoq")
+
+        # ATM arizalari (maqsad — ATM tashkiloti) va omborxona arizalari
+        self.o_atm_own = Order.objects.create(goal=self.atm_goal, sender=self.boss, receiver=self.executor, status="viewed")
+        self.o_atm_client = Order.objects.create(goal=self.atm_goal, sender=self.cl, status="viewed")
+        self.o_barn = Order.objects.create(goal=self.barn_goal, sender=self.cl2, status="viewed")
+        self.o_barn_other = Order.objects.create(goal=self.other_barn_goal, sender=self.oc, status="viewed")
+        self.o_barn_far = Order.objects.create(goal=self.barn_goal, sender=self.far, status="viewed")
+
+        cat = MaterialCategory.objects.create(name="Kans", organization=self.client_org)
+        self.keeper_user, self.keeper = make_employee(self.client_org, self.region, perms=["main.shop_employee"], last="Omborchi")
+        MaterialEmployee.objects.create(employee=self.cl).category.set([cat])
+        self.mat = Material.objects.create(name="Qog'oz", organization=self.client_org, category=cat, employee=self.keeper,
+                                           number=5, price=100)
+        Material.objects.create(name="Boshqa", organization=self.other_client, employee=self.oc, number=9, price=1)
+
+    def get(self, user):
+        c = APIClient()
+        c.force_authenticate(user)
+        return c.get(URL)
+
+    def _ids(self, r):
+        return {o["id"] for o in r.json()["recent_orders"]}
+
+    def test_without_stats_permission_forbidden(self):
+        self.assertEqual(self.get(self.exec_user).status_code, 403)
+        self.assertEqual(self.get(self.cl2_user).status_code, 403)
+
+    def test_worker_sees_only_own_org_and_region(self):
+        r = self.get(self.boss_user)
+        self.assertEqual(r.status_code, 200, r.content)
+        d = r.json()
+        self.assertEqual(d["scope"]["mode"], "worker")
+        # o'z tashkiloti yuborgan/ijro etgan ariza; mijozlarniki ko'rinmaydi
+        self.assertEqual(self._ids(r), {self.o_atm_own.id})
+        self.assertEqual(d["totals"]["organizations"], 1)
+        # view_technics/view_material yo'q — bloklar yashirin
+        self.assertIsNone(d["technics_status"])
+        self.assertIsNone(d["materials"])
+        self.assertIsNone(d["totals"]["technics"])
+
+    def test_all_organization_and_region_see_everything(self):
+        from main.testing import grant
+        user = grant(self.boss_user, "main.all_organization", "main.all_region")
+        r = self.get(user)
+        self.assertEqual(self._ids(r), {o.id for o in (self.o_atm_own, self.o_atm_client, self.o_barn, self.o_barn_other, self.o_barn_far)})
+
+    def test_all_region_alone_keeps_organization_limit(self):
+        from main.testing import grant
+        r = self.get(grant(self.boss_user, "main.all_region"))
+        self.assertEqual(self._ids(r), {self.o_atm_own.id})
+
+    def test_client_sees_only_own_barn_orders(self):
+        from main.testing import grant
+        user = grant(self.cl_user, "main.all_organization", "main.view_material")   # all_organization mijozga ta'sir qilmaydi
+        r = self.get(user)
+        d = r.json()
+        self.assertEqual(d["scope"]["mode"], "client")
+        self.assertEqual(d["scope"]["barn"], True)
+        # ATM arizasi (o_atm_client), boshqa tashkilot va boshqa hudud arizalari ko'rinmaydi
+        self.assertEqual(self._ids(r), {self.o_barn.id})
+        self.assertEqual(d["totals"]["organizations"], 1)
+        self.assertEqual(d["orders_status"]["viewed"], 1)
+
+    def test_client_materials_block_follows_view_material(self):
+        self.assertIsNone(self.get(self.cl_user).json()["materials"])
+        from main.testing import grant
+        d = self.get(grant(self.cl_user, "main.view_material", "main.all_material_employee")).json()
+        self.assertEqual(d["materials"]["items"], 1)
+        self.assertEqual(float(d["materials"]["total_sum"]), 500.0)
+        self.mat.refresh_from_db()   # saqlashda nomdagi tutuq belgisi normallashtiriladi
+        self.assertEqual([m["name"] for m in d["materials"]["top"]], [self.mat.name])
+        self.assertEqual(d["totals"]["materials"], 1)   # boshqa tashkilot materiali kirmaydi

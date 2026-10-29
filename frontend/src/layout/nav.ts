@@ -22,7 +22,8 @@ export const NAV: NavSection[] = [
   {
     label: 'Asosiy',
     items: [
-      { path: '/dashboard', label: 'Bosh sahifa', icon: 'ri-layout-grid-line', visible: (me) => me.is_superuser },
+      // Superuser — butun tizim; "Statistikani ko'rish" huquqi bor xodim — o'z ko'rish doirasida (serverda cheklanadi)
+      { path: '/dashboard', label: 'Bosh sahifa', icon: 'ri-layout-grid-line', visible: (me) => can(me, 'main.status_employee') },
       { path: '/orders', label: 'Arizalar', icon: 'ri-file-list-3-line', legacy: '/order/sender/' },
       { path: '/messages', label: 'Xabarlar', icon: 'ri-mail-line', legacy: '/contact/user/' },
       {

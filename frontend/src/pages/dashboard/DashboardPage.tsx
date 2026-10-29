@@ -18,7 +18,7 @@ import {
 import type { DataTableColumn, StatusChipProps } from '../../ds'
 import Page from '../../layout/Page'
 import { api } from '../../api/client'
-import { useMe } from '../../auth/me'
+import { can, useMe } from '../../auth/me'
 import { useLang, useT } from '../../i18n'
 import { useUrlFilters } from '../../lib/useUrlFilters'
 import { avatarColor, formatNumber, initials } from '../../lib/format'
@@ -165,37 +165,58 @@ export default function DashboardPage() {
   const prevLabel = t('oldingi {n} kunga nisbatan', { n: days })
   const lastDays = t("so'nggi {n} kunda", { n: days })
 
+  const scope = d?.scope
+  const barn = !!scope?.barn
+  // Mijoz — omborxona arizalari; qolganlar — ATM arizalari
+  const ordersPath = barn ? '/orders/barn' : '/orders/execute'
+  const ordersArchivePath = barn ? '/orders/barn/archive' : '/orders/execute/archive'
+  const scopeText =
+    scope && scope.mode !== 'all'
+      ? [scope.organization, scope.region].filter(Boolean).join(' · ') || t('Sizning doirangiz')
+      : t("Tizim bo'yicha umumiy ko'rinish")
+
   const header = {
     avatar: { initials: initials(fullName), color: avatarColor(me.employee?.id ?? me.username), name: fullName },
     title: t('Xush kelibsiz, {name}', { name: firstName }),
-    subtitle: `${longDate(new Date(), lang)} · ${t("Tizim bo'yicha umumiy ko'rinish")}`,
+    subtitle: `${longDate(new Date(), lang)} · ${barn ? `${t('Omborxona bo‘yicha ko‘rinish')} · ` : ''}${scopeText}`,
   }
 
+  const canReports = !barn && (me.is_superuser || can(me, 'main.report_employee') || can(me, 'main.shop_employee'))
+  const canExecute = !barn && can(me, 'main.change_order')
   const actions = (
     <>
-      <Button variant="stroke" size="lg" icon="ri-bar-chart-box-line" onClick={() => navigate('/reports')}>
-        {t('Hisobotlar')}
-      </Button>
-      <Button size="lg" icon="ri-tools-line" onClick={() => navigate('/orders/execute')}>
-        {t('Arizalarni bajarish')}
-      </Button>
+      {canReports && (
+        <Button variant="stroke" size="lg" icon="ri-bar-chart-box-line" onClick={() => navigate('/reports')}>
+          {t('Hisobotlar')}
+        </Button>
+      )}
+      {canExecute && (
+        <Button size="lg" icon="ri-tools-line" onClick={() => navigate('/orders/execute')}>
+          {t('Arizalarni bajarish')}
+        </Button>
+      )}
+      {barn && (
+        <Button size="lg" icon="ri-store-2-line" onClick={() => navigate('/orders/barn/new')}>
+          {t('Omborxonaga ariza')}
+        </Button>
+      )}
     </>
   )
+
+  const totalParts = d
+    ? [
+        t('{n} xodim', { n: formatNumber(d.totals.employees) }),
+        d.totals.organizations > 1 ? t('{n} tashkilot', { n: formatNumber(d.totals.organizations) }) : null,
+        d.totals.technics != null ? t('{n} texnika', { n: formatNumber(d.totals.technics) }) : null,
+        d.totals.materials != null ? t('{n} material', { n: formatNumber(d.totals.materials) }) : null,
+      ].filter(Boolean)
+    : []
 
   const toolbar = (
     <div className="ivs-dash-head">
       <div>
         <h2 className="type-label-lg">{t("Umumiy ko'rsatkichlar")}</h2>
-        {d && (
-          <p className="type-para-xs ivs-dash-muted">
-            {t('{e} xodim · {o} tashkilot · {t} texnika · {m} material', {
-              e: formatNumber(d.totals.employees),
-              o: formatNumber(d.totals.organizations),
-              t: formatNumber(d.totals.technics),
-              m: formatNumber(d.totals.materials),
-            })}
-          </p>
-        )}
+        {d && <p className="type-para-xs ivs-dash-muted">{totalParts.join(' · ')}</p>}
       </div>
       <SegmentedControl
         aria-label={t('Davr')}
@@ -247,14 +268,19 @@ export default function DashboardPage() {
     { key: 'closed', label: t('Bekor / rad etilgan'), value: os.closed, color: C.closed },
   ]
   const ts = d.technics_status
-  const tsTotal = ts.active + ts.free + ts.repair + ts.defect
-  const tsParts: Part[] = [
-    { key: 'active', label: t('Aktiv'), value: ts.active, color: C.done },
-    { key: 'free', label: t("Bo'sh"), value: ts.free, color: C.viewed },
-    { key: 'repair', label: t("Ta'mirda"), value: ts.repair, color: C.repair },
-    { key: 'defect', label: t('Yaroqsiz'), value: ts.defect, color: C.defect },
-  ]
-  const groupMax = Math.max(1, ...d.technics_groups.map((g) => g.count))
+  const tsTotal = ts ? ts.active + ts.free + ts.repair + ts.defect : 0
+  const tsParts: Part[] = ts
+    ? [
+        { key: 'active', label: t('Aktiv'), value: ts.active, color: C.done },
+        { key: 'free', label: t("Bo'sh"), value: ts.free, color: C.viewed },
+        { key: 'repair', label: t("Ta'mirda"), value: ts.repair, color: C.repair },
+        { key: 'defect', label: t('Yaroqsiz'), value: ts.defect, color: C.defect },
+      ]
+    : []
+  const techGroups = d.technics_groups ?? []
+  const groupMax = Math.max(1, ...techGroups.map((g) => g.count))
+  const mats = d.materials
+  const matMax = Math.max(1, ...(mats?.top ?? []).map((m) => m.number))
   const execMax = Math.max(1, ...d.top_executors.map((x) => x.done))
   const execTotal = Math.max(1, d.top_executors.reduce((a, x) => a + x.done, 0))
   const goalMax = Math.max(1, ...d.top_goals.map((g) => g.count))
@@ -304,9 +330,9 @@ export default function DashboardPage() {
       <div className={q.isFetching ? 'ivs-dash ivs-loading' : 'ivs-dash'}>
         <div className="ivs-kpis">
           <KpiCard
-            to="/orders/execute"
+            to={ordersPath}
             icon="ri-file-add-line"
-            label={t('Yangi arizalar')}
+            label={barn ? t('Yangi omborxona arizalari') : t('Yangi arizalar')}
             value={formatNumber(k.orders_new.value)}
             delta={change(k.orders_new.value, k.orders_new.prev)}
             note={change(k.orders_new.value, k.orders_new.prev) ? prevLabel : lastDays}
@@ -315,9 +341,9 @@ export default function DashboardPage() {
             sparkColor={C.created}
           />
           <KpiCard
-            to="/orders/execute/archive"
+            to={ordersArchivePath}
             icon="ri-checkbox-circle-line"
-            label={t('Bajarilgan arizalar')}
+            label={barn ? t('Bajarilgan omborxona arizalari') : t('Bajarilgan arizalar')}
             value={formatNumber(k.orders_done.value)}
             delta={change(k.orders_done.value, k.orders_done.prev)}
             note={change(k.orders_done.value, k.orders_done.prev) ? prevLabel : lastDays}
@@ -389,7 +415,7 @@ export default function DashboardPage() {
             )}
           </Widget>
 
-          <Widget icon="ri-donut-chart-line" title={t('Arizalar holati')} action={{ label: t('Barchasi'), onClick: () => navigate('/orders/execute') }}>
+          <Widget icon="ri-donut-chart-line" title={t('Arizalar holati')} action={{ label: t('Barchasi'), onClick: () => navigate(ordersPath) }}>
             {osTotal ? (
               <div className="ivs-dash-gauge">
                 <Donut parts={osParts} active={osActive} onActive={setOsActive} caption={t('Jami arizalar')} />
@@ -417,6 +443,7 @@ export default function DashboardPage() {
             )}
           </Widget>
 
+          {ts && (
           <Widget icon="ri-computer-line" title={t('Texnika holati')} action={{ label: t("Ro'yxat"), onClick: () => navigate('/technics') }}>
             <div className="ivs-dash-big">
               <strong className="type-h4">{formatNumber(tsTotal)}</strong>
@@ -447,14 +474,14 @@ export default function DashboardPage() {
                     </li>
                   ))}
                 </ul>
-                {d.technics_groups.length > 0 && (
+                {techGroups.length > 0 && (
                   <div className="ivs-dash-sub">
                     <div className="ivs-dash-sub-head">
                       <span className="type-label-sm">{t("Turlar bo'yicha")}</span>
-                      <span className="type-para-xs ivs-dash-muted">{t('{n} ta guruh', { n: d.technics_groups.length })}</span>
+                      <span className="type-para-xs ivs-dash-muted">{t('{n} ta guruh', { n: techGroups.length })}</span>
                     </div>
                     <ul className="ivs-dash-goals is-compact">
-                      {d.technics_groups.map((g) => (
+                      {techGroups.map((g) => (
                         <li key={g.name}>
                           <HoverTip
                             content={
@@ -477,6 +504,48 @@ export default function DashboardPage() {
               <div className="ivs-empty">{t("Texnika yo'q")}</div>
             )}
           </Widget>
+          )}
+
+          {mats && (
+            <Widget icon="ri-archive-line" title={t('Omborxona materiallari')} action={{ label: t("Ro'yxat"), onClick: () => navigate('/materials') }}>
+              <div className="ivs-dash-big">
+                <strong className="type-h4">{formatNumber(mats.items)}</strong>
+                <span className="type-para-sm ivs-dash-muted">{t('xil material omborda bor')}</span>
+              </div>
+              <div className="ivs-dash-deed-stats is-two">
+                <div>
+                  <span className="type-para-xs ivs-dash-muted">{t('Umumiy qiymati')}</span>
+                  <strong className="type-h5">{formatNumber(Math.round(Number(mats.total_sum)))}</strong>
+                </div>
+                <div>
+                  <span className="type-para-xs ivs-dash-muted">{t('Tugagan')}</span>
+                  <strong className="type-h5">{formatNumber(mats.empty)}</strong>
+                </div>
+              </div>
+              {mats.top.length > 0 ? (
+                <div className="ivs-dash-sub">
+                  <div className="ivs-dash-sub-head">
+                    <span className="type-label-sm">{t('Eng ko‘p qolgan materiallar')}</span>
+                  </div>
+                  <ul className="ivs-dash-goals is-compact">
+                    {mats.top.map((m) => (
+                      <li key={m.id}>
+                        <span className="ivs-dash-group-row">
+                          <span className="type-para-sm ivs-dash-goal-name">{m.name}</span>
+                          <ProgressBar value={m.number} max={matMax} label={`${m.name}: ${m.number}`} />
+                          <span className="type-label-sm ivs-dash-group-count">
+                            {formatNumber(m.number)} {m.unit || ''}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div className="ivs-empty">{t("Omborda material yo'q")}</div>
+              )}
+            </Widget>
+          )}
 
           <Widget icon="ri-medal-line" title={t('Eng faol ijrochilar')} action={{ label: t('Statistika'), onClick: () => navigate('/stats/employees') }}>
             {d.top_executors.length ? (
@@ -560,7 +629,7 @@ export default function DashboardPage() {
             icon="ri-time-line"
             title={t("So'nggi arizalar")}
             divider={false}
-            action={{ label: t('Barchasi'), iconRight: 'ri-arrow-right-s-line', onClick: () => navigate('/orders/execute') }}
+            action={{ label: t('Barchasi'), iconRight: 'ri-arrow-right-s-line', onClick: () => navigate(ordersPath) }}
           >
             <DataTable rows={d.recent_orders} columns={recentColumns} getRowId={(r) => r.id} rowHeight={68} minWidth={640} caption={t("So'nggi arizalar")} />
           </Widget>

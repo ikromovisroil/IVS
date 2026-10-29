@@ -8,6 +8,8 @@ export interface Person {
 }
 
 export interface Overview {
+  /** Ko'rish doirasi: all — superuser, worker — xizmat tashkiloti (ATM arizalari), client — mijoz (omborxona arizalari) */
+  scope: { mode: 'all' | 'worker' | 'client'; organization: string | null; region: string | null; barn: boolean }
   period: { days: number; start: string; end: string; bucket_days: number }
   kpis: {
     orders_new: { value: number; prev: number }
@@ -17,8 +19,11 @@ export interface Overview {
   }
   trend: { date: string; created: number; done: number }[]
   orders_status: { viewed: number; process: number; done: number; closed: number }
-  technics_status: { active: number; free: number; repair: number; defect: number }
-  technics_groups: { name: string; count: number }[]
+  /** null — 'Texnikalarni ko'rish' huquqi yo'q */
+  technics_status: { active: number; free: number; repair: number; defect: number } | null
+  technics_groups: { name: string; count: number }[] | null
+  /** null — 'Materiallarni ko'rish' huquqi yo'q */
+  materials: { items: number; empty: number; total_sum: string; top: { id: number; name: string; unit: string | null; number: number }[] } | null
   top_executors: (Person & { done: number; rating: number | null })[]
   top_goals: { name: string; barn: boolean; count: number }[]
   recent_orders: {
@@ -36,5 +41,5 @@ export interface Overview {
     rejected: number
     recent: { id: number; kind: string; kind_display: string; code: string | null; signer: string | null; author: string | null; date: string }[]
   }
-  totals: { employees: number; organizations: number; technics: number; materials: number }
+  totals: { employees: number; organizations: number; technics: number | null; materials: number | null }
 }
