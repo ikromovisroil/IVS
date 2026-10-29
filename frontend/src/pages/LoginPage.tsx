@@ -129,7 +129,9 @@ export default function LoginPage() {
               {t('Tizimga kirish')}
             </h1>
             <p className="type-para-md">
-              {passwordLogin ? t('Davom etish uchun login va parolingizni kiriting.') : t('Davom etish uchun tashkilotingiz hisobi orqali kiring.')}
+              {passwordLogin && !ssoOn
+                ? t('Davom etish uchun login va parolingizni kiriting.')
+                : t('Davom etish uchun tashkilotingiz hisobi orqali kiring.')}
             </p>
           </div>
 
@@ -140,13 +142,13 @@ export default function LoginPage() {
               <div className="ivs-auth-skeleton" aria-busy="true" />
             ) : passwordLogin ? (
               <>
-                <PasswordForm />
                 {ssoOn && (
                   <>
+                    {ssoButton('primary')}
                     <div className="ivs-auth-or type-subhead-2xs">{t('yoki')}</div>
-                    {ssoButton('stroke')}
                   </>
                 )}
+                <PasswordForm />
               </>
             ) : (
               <>
