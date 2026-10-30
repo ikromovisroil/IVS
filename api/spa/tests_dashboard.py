@@ -131,19 +131,15 @@ class DashboardScopeTests(TestCase):
         self.assertIsNone(d["materials"])
         self.assertIsNone(d["totals"]["technics"])
 
-    def test_all_organization_defaults_to_own_and_widens_on_request(self):
+    def test_all_organization_does_not_widen(self):
         from main.testing import grant
         user = grant(self.boss_user, "main.all_organization", "main.all_region")
-        everything = {o.id for o in (self.o_atm_own, self.o_atm_client, self.o_barn, self.o_barn_other, self.o_barn_far)}
-        r = self.get(user)
-        self.assertEqual(self._ids(r), {self.o_atm_own.id})            # standart — o'z tashkiloti
-        self.assertTrue(r.json()["scope"]["can_widen"])
-        r = self.get(user, scope="all")
-        self.assertEqual(self._ids(r), everything)
-        self.assertEqual(r.json()["scope"]["mode"], "all")
+        r = self.get(user, scope="all")                                 # "Barcha tashkilotlar" faqat superuser uchun
+        self.assertEqual(self._ids(r), {self.o_atm_own.id})
+        self.assertFalse(r.json()["scope"]["can_widen"])
 
     def test_scope_all_ignored_without_permission(self):
-        r = self.get(self.boss_user, scope="all")                       # all_organization yo'q
+        r = self.get(self.boss_user, scope="all")
         self.assertEqual(self._ids(r), {self.o_atm_own.id})
         self.assertFalse(r.json()["scope"]["can_widen"])
 
@@ -152,6 +148,7 @@ class DashboardScopeTests(TestCase):
         su, _ = make_employee(self.atm, self.region, superuser=True, last="Super")
         r = self.get(su)
         self.assertEqual(self._ids(r), {self.o_atm_own.id})
+        self.assertTrue(r.json()["scope"]["can_widen"])
         self.assertEqual(r.json()["scope"]["organization"], self.atm.name)
         r = self.get(su, scope="all")
         self.assertEqual(len(self._ids(r)), 5)

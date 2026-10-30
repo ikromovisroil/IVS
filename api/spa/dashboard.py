@@ -1,7 +1,6 @@
 """
 Bosh sahifa (React: /dashboard) — umumiy ko'rinish. Superuser yoki "Statistikani ko'rish" (status_employee) huquqi bor
-xodim uchun; standart — O'Z TASHKILOTI doirasida (superuser ham). ?scope=all — barcha tashkilotlar (faqat superuser va
-`all_organization` huquqi bor xizmat tashkiloti xodimi); hudud — `all_region` bo'lmasa o'z hududi.
+xodim uchun; standart — O'Z TASHKILOTI doirasida (superuser ham). ?scope=all — barcha tashkilotlar (faqat superuser); hudud — `all_region` bo'lmasa o'z hududi.
 
 * overview/?days=7|30|90 — davr ko'rsatkichlari (oldingi teng davr bilan solishtirib), arizalar dinamikasi,
   holatlar, texnika holati, eng faol ijrochilar, ariza turlari, so'nggi arizalar va hujjatlar.
@@ -40,7 +39,7 @@ class CanSeeDashboard(permissions.BasePermission):
 class Scope:
     """
     Ko'rish doirasi. Standart — xodimning O'Z TASHKILOTI (superuser ham); "Barcha tashkilotlar" (?scope=all) faqat
-    superuser yoki `all_organization` huquqi bor xizmat tashkiloti xodimi uchun. Hudud: `all_region` bo'lmasa o'z hududi.
+    faqat superuser uchun. Hudud: `all_region` bo'lmasa o'z hududi.
     Rejim: "all" — barcha tashkilotlar; "worker" — xizmat tashkiloti (ATM arizalari); "client" — mijoz tashkiloti
     (faqat o'z omborxona arizalari va materiallari).
     """
@@ -54,7 +53,7 @@ class Scope:
         has_org = bool(emp and emp.organization_id)
         client = bool(has_org and emp.organization.type != "worker")
         # Mijoz hech qachon o'z tashkilotidan tashqarini ko'rmaydi
-        self.can_widen = not client and (user.is_superuser or user.has_perm("main.all_organization"))
+        self.can_widen = not client and user.is_superuser
         self.widened = bool(want_all and self.can_widen)
 
         self.org = None
