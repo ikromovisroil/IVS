@@ -78,8 +78,6 @@ export default function LoginPage() {
   })
   const passwordLogin = !!config.data?.password_login
   const ssoOn = !!config.data?.sso_enabled
-  // SSO majburiy, lekin sozlanmagan — faqat shunda ogohlantirish va admin orqali kirish
-  const ssoBroken = config.data?.password_login === false && !ssoOn
 
   const ssoButton = (variant: 'primary' | 'stroke') => (
     <Button
@@ -151,29 +149,7 @@ export default function LoginPage() {
                 <PasswordForm />
               </>
             ) : (
-              <>
-                {ssoButton('primary')}
-                {ssoBroken && (
-                  <>
-                    <div className="ivs-auth-alert" role="status">
-                      <Icon name="ri-error-warning-fill" size={20} />
-                      <p className="type-para-sm">
-                        {t('SSO sozlanmagan: serverning .env faylida SSO_AUTH_URL va SSO_CLIENT_ID ko‘rsatilmagan.')}
-                      </p>
-                    </div>
-                    <div className="ivs-auth-or type-subhead-2xs">{t('yoki')}</div>
-                    <Button
-                      size="xl"
-                      variant="stroke"
-                      icon="ri-admin-line"
-                      style={{ width: '100%' }}
-                      onClick={() => window.location.assign('/ivc_service_admin_panel/login/?next=/app/')}
-                    >
-                      {t('Admin hisobi bilan kirish')}
-                    </Button>
-                  </>
-                )}
-              </>
+              ssoButton('primary')
             )}
           </div>
 

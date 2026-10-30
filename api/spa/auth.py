@@ -2,8 +2,8 @@
 Kirish sahifasi uchun (tizimga kirishdan oldin ochiladi):
 
 * config/ — SSO sozlanganmi (.env: SSO_AUTH_URL, SSO_CLIENT_ID) va login/parol bilan kirish ochiqmi
-  (.env: SSO_REQUIRED=0). Shu so'rov csrftoken cookie'sini ham o'rnatadi.
-* login/  — login/parol bilan sessiyaga kirish; faqat SSO_REQUIRED=0 bo'lganda.
+  (.env: SSO_REQUIRED=0, yoki SSO umuman sozlanmagan — masalan test server). Shu so'rov csrftoken cookie'sini ham o'rnatadi.
+* login/  — login/parol bilan sessiyaga kirish; SSO_REQUIRED=0 yoki SSO sozlanmagan bo'lganda.
 """
 from django.conf import settings
 from django.contrib.auth import authenticate, login
@@ -21,6 +21,11 @@ def _sso_configured() -> bool:
     return bool(settings.SSO_AUTH_URL and settings.SSO_CLIENT_ID)
 
 
+def _password_login_open() -> bool:
+    """SSO majburiy bo'lsa ham, u sozlanmagan bo'lsa (kirishning boshqa yo'li yo'q) login/parol ochiq."""
+    return not settings.SSO_REQUIRED or not _sso_configured()
+
+
 @method_decorator(ensure_csrf_cookie, name="dispatch")
 class AuthConfigView(APIView):
     authentication_classes = []
@@ -29,7 +34,7 @@ class AuthConfigView(APIView):
     def get(self, request):
         return Response({
             "sso_enabled": _sso_configured(),
-            "password_login": not settings.SSO_REQUIRED,
+            "password_login": _password_login_open(),
         })
 
 
@@ -45,7 +50,7 @@ class LoginView(APIView):
     throttle_classes = [LoginThrottle]
 
     def post(self, request):
-        if settings.SSO_REQUIRED:
+        if not _password_login_open():
             return Response({"detail": "Kirish faqat SSO orqali."}, status=status.HTTP_403_FORBIDDEN)
 
         ser = LoginSerializer(data=request.data)

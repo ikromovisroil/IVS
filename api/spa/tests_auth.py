@@ -8,11 +8,15 @@ LOGIN = "/api/v1/spa/auth/login/"
 
 class AuthConfigTests(TestCase):
     @override_settings(SSO_AUTH_URL=None, SSO_CLIENT_ID=None, SSO_REQUIRED=True)
-    def test_sso_disabled_without_settings(self):
+    def test_sso_not_configured_opens_password_login(self):
         r = APIClient().get(CONFIG)
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(r.json(), {"sso_enabled": False, "password_login": False})
+        self.assertEqual(r.json(), {"sso_enabled": False, "password_login": True})
         self.assertIn("csrftoken", r.cookies)
+
+    @override_settings(SSO_AUTH_URL="https://sso.example/auth", SSO_CLIENT_ID="ivs", SSO_REQUIRED=True)
+    def test_sso_required_and_configured_closes_password_login(self):
+        self.assertEqual(APIClient().get(CONFIG).json(), {"sso_enabled": True, "password_login": False})
 
     @override_settings(SSO_AUTH_URL="https://sso.example/auth", SSO_CLIENT_ID="ivs", SSO_REQUIRED=False)
     def test_sso_enabled_and_password_login(self):
@@ -34,7 +38,7 @@ class PasswordLoginTests(TestCase):
     def post(self, data):
         return self.c.post(LOGIN, data, format="json", HTTP_X_CSRFTOKEN=self.csrf)
 
-    @override_settings(SSO_REQUIRED=True)
+    @override_settings(SSO_REQUIRED=True, SSO_AUTH_URL="https://sso.example/auth", SSO_CLIENT_ID="ivs")
     def test_forbidden_while_sso_required(self):
         self.assertEqual(self.post({"username": "ali", "password": "Parol12345!"}).status_code, 403)
 
