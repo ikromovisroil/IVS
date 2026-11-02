@@ -1,5 +1,5 @@
 """
-FaceID bilan hujjatni tasdiqlash (veb va Android):
+FaceID bilan hujjatni tasdiqlash (faqat mobil ilovalar: Android va iOS; veb'da E-IMZO qoladi):
 
 * GET  faceid/config/            — FaceID yoqilganmi: {"enabled": bool}
 * POST faceid/sessions/          — {"deed_id", "message"?}: sessiya yaratadi, ilova SDK uchun session_id/sdk_token/nonce/challenges qaytaradi

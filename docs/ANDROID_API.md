@@ -289,6 +289,7 @@ Hujjat shablonlari (HTML) hozircha sayt kodida (`frontend/src/pages/reports/temp
 ### 9.3 FaceID bilan hujjatni tasdiqlash — `/api/v1/faceid/...`
 
 Imzolovchi (`sender`) yoki qabul qiluvchi (`receiver`) hujjatni **yuz tekshiruvi (FaceID)** bilan tasdiqlaydi (kelishuvchilar hozircha E-IMZO bilan).
+FaceID **faqat mobil ilovalarda** (Android va iOS); veb'da tasdiqlash E-IMZO orqali qoladi.
 Yuzni suratga olish ilovadagi **FaceID SDK** ishi, server esa natijani tekshirib hujjatni tasdiqlaydi. `client_secret` va boshqa kalitlar ilovada bo'lmaydi.
 
 1. `GET /faceid/config/` → `{"enabled": true|false}` — `false` bo'lsa FaceID tugmasini ko'rsatmang (E-IMZO qoladi).
@@ -461,7 +462,7 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 
 ## 13. Hozircha API'da YO'Q narsalar
 
-- Hujjatni **E-IMZO bilan** imzolash. FaceID bilan tasdiqlash — 9.3-bo'lim (server tayyor; ilovada SDK ulanadi).
+- Hujjatni **E-IMZO bilan** imzolash. FaceID bilan tasdiqlash — 9.3-bo'lim (server tayyor; ilovada FaceID SDK ulanadi, faqat Android/iOS).
 - Akt/Svod/Reestr/Talabnoma uchun **serverda tayyor hujjat yig'ish** (hujjat matnini ilova yig'adi, 9.2-bo'lim). (Material arizasi qabul qilinganda akt avtomatik yaratiladi.)
 
 ---
