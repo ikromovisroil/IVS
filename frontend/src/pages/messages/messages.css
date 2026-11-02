@@ -104,6 +104,65 @@
   color: var(--text-sub-600);
 }
 
+.msg-method-list {
+  display: grid;
+  gap: 12px;
+}
+
+.msg-method {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 16px;
+  background: var(--bg-white-0);
+  color: var(--text-strong-950);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.msg-method:hover:not(:disabled) {
+  border-color: var(--primary-base);
+  background: var(--bg-weak-50);
+}
+
+.msg-method:focus-visible {
+  outline: 2px solid var(--primary-base);
+  outline-offset: 2px;
+}
+
+.msg-method:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.msg-method-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--bg-weak-50);
+  color: var(--primary-base);
+}
+
+.msg-method-text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.msg-method-text .type-para-xs {
+  color: var(--text-sub-600);
+}
+
 .msg-add {
   display: flex;
   align-items: flex-end;

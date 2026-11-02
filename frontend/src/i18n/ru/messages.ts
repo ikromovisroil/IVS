@@ -109,6 +109,13 @@ const ru: Record<string, string> = {
   'Dalolatnoma #{code}': 'Документ №{code}',
   "Hujjat ma'lumoti va imzolash holati.": 'Сведения о документе и статус подписания.',
   Orqaga: 'Назад',
+  'Tasdiqlash usulini tanlang': 'Выберите способ подтверждения',
+  "Tasdiqlangandan so'ng hujjat yuridik kuchga ega bo'ladi va rasmiylashtiriladi. Tasdiqlash usulini keyingi oynada tanlaysiz.":
+    'После подтверждения документ приобретает юридическую силу и оформляется. Способ подтверждения вы выберете в следующем окне.',
+  'Elektron raqamli imzo (USB-token yoki kalit)': 'Электронная цифровая подпись (USB-токен или ключ)',
+  'Yuzni tekshirish orqali tasdiqlash': 'Подтверждение по проверке лица',
+  'FaceID hozircha yoqilmagan': 'FaceID пока не включён',
+  'Veb-versiyada tez orada. Mobil ilovada mavjud': 'В веб-версии скоро. Доступно в мобильном приложении',
   'Dalolatnoma kodi: {code}': 'Код документа: {code}',
   'Dalolatnoma holati.': 'Статус документа.',
   Batafsil: 'Подробнее',

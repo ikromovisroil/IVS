@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { useLocation } from 'react-router-dom'
-import { Button, Textarea } from '../../ds'
+import { Button, Icon, Textarea } from '../../ds'
 import Modal from '../../components/Modal'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import { useToast } from '../../components/toast'
@@ -15,15 +15,71 @@ interface Props {
   onClose: () => void
 }
 
+/** FaceID veb SDK ulanmaguncha veb-versiyada FaceID tanlab bo'lmaydi (mobil ilovada ishlaydi). SDK ulangach true qilinadi. */
+const FACEID_WEB_READY = false
+
+/** "Tasdiqlash" bosilgach: tasdiqlash usuli tanlanadi — E-IMZO yoki FaceID. */
+function SignMethodDialog({ deed, loading, onEimzo, onBack }: { deed: Deed; loading: boolean; onEimzo: () => void; onBack: () => void }) {
+  const t = useT()
+  const config = useQuery({
+    queryKey: ['faceid', 'config'],
+    queryFn: () => api<{ enabled: boolean }>('/faceid/config/'),
+    staleTime: 60_000,
+  })
+  const faceEnabled = !!config.data?.enabled
+  const faceReady = faceEnabled && FACEID_WEB_READY
+  const faceHint = !faceEnabled ? t('FaceID hozircha yoqilmagan') : t('Veb-versiyada tez orada. Mobil ilovada mavjud')
+
+  return (
+    <Modal
+      open
+      onClose={onBack}
+      icon="ri-shield-check-line"
+      title="Tasdiqlash usulini tanlang"
+      subtitle={`${t(deed.status_display)} #${deed.code ?? deed.id}`}
+      width={520}
+      footer={
+        <Button variant="stroke" size="lg" icon="ri-arrow-left-line" disabled={loading} onClick={onBack}>
+          {t('Orqaga')}
+        </Button>
+      }
+    >
+      <div className="msg-method-list">
+        <button type="button" className="msg-method" disabled={loading} onClick={onEimzo}>
+          <span className="msg-method-icon">
+            <Icon name="ri-quill-pen-line" size={24} />
+          </span>
+          <span className="msg-method-text">
+            <span className="type-label-md">E-IMZO</span>
+            <span className="type-para-xs">{t('Elektron raqamli imzo (USB-token yoki kalit)')}</span>
+          </span>
+          <Icon name="ri-arrow-right-s-line" size={20} />
+        </button>
+        <button type="button" className="msg-method" disabled={!faceReady || loading}>
+          <span className="msg-method-icon">
+            <Icon name="ri-user-smile-line" size={24} />
+          </span>
+          <span className="msg-method-text">
+            <span className="type-label-md">FaceID</span>
+            <span className="type-para-xs">{faceReady ? t('Yuzni tekshirish orqali tasdiqlash') : faceHint}</span>
+          </span>
+          <Icon name="ri-arrow-right-s-line" size={20} />
+        </button>
+      </div>
+    </Modal>
+  )
+}
+
 
 /**
  * "Tasdiqlang" (contact.html, deed_action): izoh + Rad etish / Tasdiqlash.
- * Tasdiqlash E-IMZO orqali: server sessiyaga imzolash ma'lumotini yozadi, brauzer /sso/start/approve/ ga o'tadi,
- * imzolangach main/sso_views.py:eimzo_return shu sahifaga qaytaradi.
+ * "Tasdiqlash" bosilgach usul tanlanadi (E-IMZO yoki FaceID). E-IMZO: server sessiyaga imzolash ma'lumotini yozadi,
+ * brauzer /sso/start/approve/ ga o'tadi, imzolangach main/sso_views.py:eimzo_return shu sahifaga qaytaradi.
  */
 export function SignDialog({ deed, onClose }: Props) {
   const [message, setMessage] = useState('')
   const [confirmReject, setConfirmReject] = useState(false)
+  const [choosing, setChoosing] = useState(false)
   const { pathname } = useLocation()
   const t = useT()
   const toast = useToast()
@@ -52,6 +108,10 @@ export function SignDialog({ deed, onClose }: Props) {
     onError: (e) => toast(e.message, 'error'),
   })
 
+  if (choosing) {
+    return <SignMethodDialog deed={deed} loading={approve.isPending} onEimzo={() => approve.mutate()} onBack={() => setChoosing(false)} />
+  }
+
   return (
     <>
       <Modal
@@ -66,17 +126,17 @@ export function SignDialog({ deed, onClose }: Props) {
             <Button variant="stroke" size="lg" icon="ri-close-line" onClick={onClose}>
               {t('Yopish')}
             </Button>
-            <Button variant="error-lighter" size="lg" icon="ri-close-circle-line" disabled={approve.isPending} onClick={() => setConfirmReject(true)}>
+            <Button variant="error-lighter" size="lg" icon="ri-close-circle-line" onClick={() => setConfirmReject(true)}>
               {t('Rad etish')}
             </Button>
-            <Button size="lg" icon="ri-checkbox-circle-line" loading={approve.isPending} onClick={() => approve.mutate()}>
+            <Button size="lg" icon="ri-checkbox-circle-line" onClick={() => setChoosing(true)}>
               {t('Tasdiqlash')}
             </Button>
           </>
         }
       >
         <p className="type-para-sm msg-info">
-          {t("Tasdiqlangandan so'ng hujjat yuridik kuchga ega bo'ladi va rasmiylashtiriladi. Tasdiqlash E-IMZO orqali amalga oshiriladi.")}
+          {t("Tasdiqlangandan so'ng hujjat yuridik kuchga ega bo'ladi va rasmiylashtiriladi. Tasdiqlash usulini keyingi oynada tanlaysiz.")}
         </p>
         <Textarea label={t('Izoh')} placeholder={t('Izoh yozing...')} rows={4} value={message} onChange={(e) => setMessage(e.target.value)} />
       </Modal>
