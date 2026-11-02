@@ -65,7 +65,7 @@ class DepartmentAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
 class DirectorateAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "organization_name", "region_name", "department", "name")
     list_select_related = ("department__organization", "department__region")
-    list_filter = ("department__organization",)        # "department" filtri hamma bo'limni yuklardi
+    list_filter = ("department__organization", "department__region")        # "department" filtri hamma bo'limni yuklardi
     search_fields = ("name", "code", "department__name", "department__organization__name", "department__region__name")
     autocomplete_fields = ("department",)
 
@@ -82,7 +82,7 @@ class DirectorateAdmin(admin.ModelAdmin):
 class DivisionAdmin(admin.ModelAdmin):
     list_display = ("id", "code", "organization_name", "region_name", "department_name", "directorate", "name")
     list_select_related = ("directorate__department__organization", "directorate__department__region")
-    list_filter = ("directorate__department__organization",)    # "directorate" filtri hamma boshqarmani yuklardi
+    list_filter = ("directorate__department__organization", "directorate__department__region")    # "directorate" filtri hamma boshqarmani yuklardi
     search_fields = ("name", "code", "directorate__name", "directorate__department__name",
                      "directorate__department__organization__name", "directorate__department__region__name")
     autocomplete_fields = ("directorate",)
