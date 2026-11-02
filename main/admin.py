@@ -63,8 +63,8 @@ class DepartmentAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
 
 @admin.register(Directorate)
 class DirectorateAdmin(admin.ModelAdmin):
-    list_display = ("id", "code", "organization_name", "department", "name")
-    list_select_related = ("department__organization",)
+    list_display = ("id", "code", "organization_name", "region_name", "department", "name")
+    list_select_related = ("department__organization", "department__region")
     list_filter = ("department__organization",)        # "department" filtri hamma bo'limni yuklardi
     search_fields = ("name", "code", "department__name", "department__organization__name")
     autocomplete_fields = ("department",)
@@ -73,11 +73,15 @@ class DirectorateAdmin(admin.ModelAdmin):
     def organization_name(self, obj):
         return obj.department.organization if obj.department_id else None
 
+    @admin.display(description="Hudud", ordering="department__region__name")
+    def region_name(self, obj):
+        return obj.department.region if obj.department_id else None
+
 
 @admin.register(Division)
 class DivisionAdmin(admin.ModelAdmin):
-    list_display = ("id", "code", "organization_name", "department_name", "directorate", "name")
-    list_select_related = ("directorate__department__organization",)
+    list_display = ("id", "code", "organization_name", "region_name", "department_name", "directorate", "name")
+    list_select_related = ("directorate__department__organization", "directorate__department__region")
     list_filter = ("directorate__department__organization",)    # "directorate" filtri hamma boshqarmani yuklardi
     search_fields = ("name", "code", "directorate__name")
     autocomplete_fields = ("directorate",)
@@ -90,6 +94,11 @@ class DivisionAdmin(admin.ModelAdmin):
     def organization_name(self, obj):
         department = self.department_name(obj)
         return department.organization if department else None
+
+    @admin.display(description="Hudud", ordering="directorate__department__region__name")
+    def region_name(self, obj):
+        department = self.department_name(obj)
+        return department.region if department else None
 
 
 class RankCodeInline(admin.TabularInline):
