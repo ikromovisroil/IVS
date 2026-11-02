@@ -897,3 +897,36 @@ class MaterialMovement(MaterialSnapshotMixin, models.Model):
         verbose_name = "Material harakati"
         verbose_name_plural = "Material harakatlari"
         ordering = ['-date_creat']
+
+
+class FaceIDSession(models.Model):
+    """Hujjatni FaceID bilan tasdiqlash sessiyasi. Yuz rasmi saqlanmaydi, faqat natija (o'xshashlik, tirikligi)."""
+    STATUS_CHOICES = [
+        ('pending', 'Kutilmoqda'),
+        ('processing', 'Ishlanmoqda'),
+        ('approved', 'Tasdiqlandi'),
+        ('failed', "O'tmadi"),
+        ('expired', "Muddati tugadi"),
+    ]
+
+    employee = models.ForeignKey(Employee, on_delete=models.CASCADE, related_name='faceid_sessions', db_index=True)
+    deed = models.ForeignKey(Deed, on_delete=models.CASCADE, related_name='faceid_sessions', db_index=True)
+    role = models.CharField(max_length=10, choices=[('sender', 'Imzolovchi'), ('receiver', 'Qabul qiluvchi')])
+    message = models.TextField(blank=True, default='')
+    session_id = models.CharField(max_length=64, unique=True)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='pending', db_index=True)
+    failure_reason = models.CharField(max_length=50, blank=True, default='')
+    similarity = models.FloatField(null=True, blank=True)
+    liveness_score = models.FloatField(null=True, blank=True)
+    expires_at = models.DateTimeField()
+    date_creat = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"FaceID {self.session_id[:8]} | {self.employee} | {self.get_status_display()}"
+
+    class Meta:
+        db_table = 'faceid_session'
+        verbose_name = "FaceID sessiyasi"
+        verbose_name_plural = "FaceID sessiyalari"
+        ordering = ['-date_creat']

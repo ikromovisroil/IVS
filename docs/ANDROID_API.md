@@ -286,6 +286,23 @@ Turlar (`kind`): `document`, `svod`, `reestr`, `akt`, `service`.
 Eslatma: bu endpointlar saytning o'zi uchun yozilgan, maydonlari kelajakda o'zgarishi mumkin — o'zgarsa shu bo'lim yangilanadi.
 Hujjat shablonlari (HTML) hozircha sayt kodida (`frontend/src/pages/reports/templates.ts`); backend jamoadan nusxa so'rang.
 
+### 9.3 FaceID bilan hujjatni tasdiqlash — `/api/v1/faceid/...`
+
+Imzolovchi (`sender`) yoki qabul qiluvchi (`receiver`) hujjatni **yuz tekshiruvi (FaceID)** bilan tasdiqlaydi (kelishuvchilar hozircha E-IMZO bilan).
+Yuzni suratga olish ilovadagi **FaceID SDK** ishi, server esa natijani tekshirib hujjatni tasdiqlaydi. `client_secret` va boshqa kalitlar ilovada bo'lmaydi.
+
+1. `GET /faceid/config/` → `{"enabled": true|false}` — `false` bo'lsa FaceID tugmasini ko'rsatmang (E-IMZO qoladi).
+2. `POST /faceid/sessions/` `{"deed_id": 12, "message": "izoh (ixtiyoriy)"}` → `201`:
+   `{"id", "session_id", "sdk_token", "nonce", "challenges": [...], "expires_at"}` — buni **o'zgartirmasdan SDK'ga bering**.
+   Shartlar: xodim shu hujjatning imzolovchisi, holati `viewed`; xodimda PINFL va tug'ilgan sana bor (SSO orqali kirganda o'zi to'ladi, aks holda `400`).
+   Xatolar: `503` (FaceID yoqilmagan), `404 IDENTITY_NOT_FOUND`, `429` (ko'p urinish), `502` (FaceID/davlat xizmati vaqtincha ishlamayapti). Daqiqasiga 10 ta.
+3. SDK yuzni tekshiradi. Natija serverga **webhook** orqali keladi; ilova esa holatni so'raydi:
+   `GET /faceid/sessions/<id>/` (har 2–3 soniyada) → `{"status": "pending|processing|approved|failed|expired", "failure_reason", "message", "retry", "deed": {"status_sender", "status_receiver"}}`.
+   - `approved` — hujjat tasdiqlandi (hujjatni qayta yuklang: `GET /deeds/{id}/`).
+   - `failed`/`expired` — `message` ni foydalanuvchiga ko'rsating; `retry: true` bo'lsa yangi sessiya bilan qayta urinish mumkin, `false` bo'lsa E-IMZO'ga yo'naltiring.
+   - Sessiya 10 daqiqa amal qiladi, har sessiyada SDK 3 martagacha urinadi.
+4. Qaror faqat serverda: ilova "o'tdi" desa ham, hujjat shunchaki shu bilan tasdiqlanmaydi.
+
 ## 10. Arizalar — `/api/orders/`
 
 Ikki xil ariza. Qaysi biri ekani **ariza turi (`goal`) tashkilotining turiga** bog'liq.
@@ -444,7 +461,7 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 
 ## 13. Hozircha API'da YO'Q narsalar
 
-- Hujjatni **imzolash/tasdiqlash** (Face ID) — alohida integratsiya.
+- Hujjatni **E-IMZO bilan** imzolash. FaceID bilan tasdiqlash — 9.3-bo'lim (server tayyor; ilovada SDK ulanadi).
 - Akt/Svod/Reestr/Talabnoma uchun **serverda tayyor hujjat yig'ish** (hujjat matnini ilova yig'adi, 9.2-bo'lim). (Material arizasi qabul qilinganda akt avtomatik yaratiladi.)
 
 ---

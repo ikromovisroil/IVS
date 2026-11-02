@@ -10,6 +10,14 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 
+@shared_task
+def process_faceid_result(record_id, callback_code):
+    """FaceID webhook (session.passed) natijasini fonda ishlash: webhook 5 soniyadan tez javob berishi kerak."""
+    from .faceid import finish_session
+
+    finish_session(record_id, callback_code)
+
+
 # =========================================================
 # KONSTANTALAR
 # =========================================================

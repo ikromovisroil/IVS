@@ -425,6 +425,16 @@ MOBILE_SSO_REDIRECT_URIS = [x.strip() for x in os.getenv("MOBILE_SSO_REDIRECT_UR
 EIMZO_RETURN_URL = os.getenv("EIMZO_RETURN_URL")
 # Imzolash sessiyasi amal qilish muddati (soniya) va qaytishda `doc` majburiyligi (provayder qaytarishi tasdiqlangach "1" qiling)
 EIMZO_PENDING_TTL = int(os.getenv("EIMZO_PENDING_TTL", "900"))
+
+# FaceID (hujjatni yuz tekshiruvi bilan tasdiqlash). Kalitlar FaceID jamoasidan; faqat serverning .env faylida (gitga yozilmaydi).
+# To'rttasi ham berilsa yoqiladi. Webhook manzili standart: SITE_BASE_URL + /api/v1/faceid/webhook/ (kerak bo'lsa FACEID_WEBHOOK_URL).
+FACEID_HOST = os.getenv("FACEID_HOST", "").rstrip("/")
+FACEID_CLIENT_ID = os.getenv("FACEID_CLIENT_ID", "")
+FACEID_CLIENT_SECRET = os.getenv("FACEID_CLIENT_SECRET", "")
+FACEID_WEBHOOK_SECRET = os.getenv("FACEID_WEBHOOK_SECRET", "")
+FACEID_WEBHOOK_URL = os.getenv("FACEID_WEBHOOK_URL", "")
+FACEID_WEBHOOK_MAX_AGE = int(os.getenv("FACEID_WEBHOOK_MAX_AGE", "300"))
+FACEID_ENABLED = bool(FACEID_HOST and FACEID_CLIENT_ID and FACEID_CLIENT_SECRET and FACEID_WEBHOOK_SECRET)
 EIMZO_REQUIRE_DOC = os.getenv("EIMZO_REQUIRE_DOC", "0") == "1"
 
 GATEWAY_BASE_URL = os.getenv("GATEWAY_BASE_URL")

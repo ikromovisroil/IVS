@@ -10,6 +10,9 @@ from .notification_views import (
 from .auth_views import LoginThrottle
 from .push_views import PushPublicKeyView, PushStatusView, PushSubscribeView, PushUnsubscribeView
 from .stats_views import EmployeeStatsView, TechnicsStatsView
+from .faceid_views import (
+    FaceIDConfigView, FaceIDSessionCreateView, FaceIDSessionDetailView, FaceIDWebhookView,
+)
 from .exports import (
     EmployeesExportView, MaterialReportExportView, MaterialsExportView, TechnicsExportView,
 )
@@ -80,6 +83,10 @@ urlpatterns = router.urls + [
     path('auth/logout/', LogoutView.as_view(), name='api_logout'),
     path('devices/', DeviceRegisterView.as_view(), name='api_device_register'),
     path('devices/unregister/', DeviceUnregisterView.as_view(), name='api_device_unregister'),
+    path('faceid/config/', FaceIDConfigView.as_view(), name='api_faceid_config'),
+    path('faceid/sessions/', FaceIDSessionCreateView.as_view(), name='api_faceid_session_create'),
+    path('faceid/sessions/<int:pk>/', FaceIDSessionDetailView.as_view(), name='api_faceid_session_detail'),
+    path('faceid/webhook/', FaceIDWebhookView.as_view(), name='api_faceid_webhook'),
     path('chat/conversations/', chat.ConversationsView.as_view(), name='api_chat_conversations'),
     path('chat/contacts/', chat.ContactsView.as_view(), name='api_chat_contacts'),
     path('chat/open/', chat.OpenConversationView.as_view(), name='api_chat_open'),
