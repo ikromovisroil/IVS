@@ -161,7 +161,12 @@ class Employee(models.Model):
     rank = models.ForeignKey(Rank, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     phone = models.CharField(max_length=50, null=True, blank=True)
-    pinfl = models.CharField(max_length=20, null=True, blank=True, db_index=True)
+    # OneID (id_token) dan har kirishda yangilanadi; API'da ko'rsatilmaydi (shaxsiy ma'lumot)
+    sso_phone = models.CharField(max_length=50, null=True, blank=True)
+    pinfl = models.CharField(max_length=14, null=True, blank=True, db_index=True)
+    passport = models.CharField(max_length=9, null=True, blank=True, db_index=True)
+    birth_date = models.DateField(null=True, blank=True)
+
     telegram_chat = models.BigIntegerField(
         null=True, blank=True, unique=True, db_index=True,
         verbose_name="Telegram chat ID",

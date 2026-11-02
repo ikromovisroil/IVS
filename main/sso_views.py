@@ -322,6 +322,8 @@ def sso_exchange(request):
                 status=403
             )
 
+        sync_employee_from_claims(employee, user_data)
+
         mobile_login = request.session.get("MOBILE_LOGIN")
         auth_login(request, employee.user)
         request.session.pop("SSO_FLOW", None)

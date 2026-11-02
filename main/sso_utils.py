@@ -17,6 +17,45 @@ def decode_jwt(token: str) -> dict:
         return {}
 
 
+def sync_employee_from_claims(employee, claims: dict) -> None:
+    """
+    OneID id_token dagi shaxsiy ma'lumotni xodimga yozadi: birth_date, doc_serial_number (pasport), phone_number.
+    Faqat BO'SH maydonlar to'ldiriladi (mavjud qiymat o'zgarmaydi). Noto'g'ri qiymat yozilmaydi.
+    Xato kirishga to'sqinlik qilmaydi.
+    """
+    import logging
+    import re
+    from datetime import date
+
+    try:
+        changed = []
+
+        raw_birth = str(claims.get("birth_date") or "").strip()[:10]
+        if raw_birth:
+            try:
+                birth = date.fromisoformat(raw_birth)
+            except ValueError:
+                birth = None
+            if birth and not employee.birth_date:
+                employee.birth_date = birth
+                changed.append("birth_date")
+
+        passport = str(claims.get("doc_serial_number") or "").strip().upper()
+        if re.fullmatch(r"[A-Z]{2}[0-9]{7}", passport) and not employee.passport:
+            employee.passport = passport
+            changed.append("passport")
+
+        phone = str(claims.get("phone_number") or "").strip()[:50]
+        if phone and not employee.sso_phone:
+            employee.sso_phone = phone
+            changed.append("sso_phone")
+
+        if changed:
+            employee.save(update_fields=changed)
+    except Exception:
+        logging.getLogger(__name__).exception("OneID ma'lumotini xodimga yozib bo'lmadi (employee=%s)", getattr(employee, "pk", None))
+
+
 def _get_base_url(request, local_path: str, settings_key: str) -> str:
     host = request.get_host()
     if "localhost" in host or "127.0.0.1" in host:

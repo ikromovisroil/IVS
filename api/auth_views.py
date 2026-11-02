@@ -180,7 +180,7 @@ class SsoCodeLoginView(APIView):
     def post(self, request):
         from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
         from main.models import Employee
-        from main.sso_utils import decode_jwt
+        from main.sso_utils import decode_jwt, sync_employee_from_claims
         from main.sso_views import exchange_code_for_token
 
         allowed = getattr(settings, "MOBILE_SSO_REDIRECT_URIS", [])
@@ -200,7 +200,8 @@ class SsoCodeLoginView(APIView):
         except DjangoPermissionDenied:
             return Response({"detail": "SSO kodi qabul qilinmadi yoki muddati o'tgan"}, status=status.HTTP_400_BAD_REQUEST)
 
-        pinfl = str((decode_jwt(token_data.get("id_token") or "") or {}).get("pinfl") or "").strip()
+        claims = decode_jwt(token_data.get("id_token") or "") or {}
+        pinfl = str(claims.get("pinfl") or "").strip()
         if not pinfl:
             return Response({"detail": "SSO javobida PINFL topilmadi"}, status=status.HTTP_403_FORBIDDEN)
 
@@ -210,6 +211,7 @@ class SsoCodeLoginView(APIView):
         if not employee.user.is_active:
             return Response({"detail": "Foydalanuvchi bloklangan"}, status=status.HTTP_403_FORBIDDEN)
 
+        sync_employee_from_claims(employee, claims)
         return _token_response(employee.user)
 
 
