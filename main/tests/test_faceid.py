@@ -159,6 +159,34 @@ class FaceIDFlowTests(TestCase):
         self.deed.refresh_from_db()
         self.assertEqual(self.deed.status_sender, "viewed")
 
+    def test_transient_faceid_error_keeps_session_pending(self):
+        self.create_session()
+        payload = {"event": "session.passed", "session_id": "sess-1", "callback_code": "cb1"}
+        down = faceid.FaceIDError("x", code="FACEID_UNREACHABLE", http_status=502)
+        with mock.patch("main.faceid.get_data", side_effect=down),              mock.patch.object(process_faceid_result, "delay", side_effect=faceid.finish_session):
+            self.post_webhook(payload)
+        rec = FaceIDSession.objects.get(session_id="sess-1")
+        self.assertEqual((rec.status, rec.failure_reason), ("pending", ""))        # holat so'rovi qayta urinadi
+        with mock.patch("main.faceid.get_session", return_value={"status": "passed", "callback_code": "cb1"}),              mock.patch("main.faceid.get_data", return_value=self.data()),              mock.patch("main.deed_signing.finalize_pdf"):
+            body = self.c.get(f"/api/v1/faceid/sessions/{rec.id}/").json()
+        self.assertEqual(body["status"], "approved")
+
+    def test_permanent_faceid_error_fails_session(self):
+        self.create_session()
+        payload = {"event": "session.passed", "session_id": "sess-1", "callback_code": "cb1"}
+        gone = faceid.FaceIDError("x", code="CODE_EXPIRED", http_status=410)
+        with mock.patch("main.faceid.get_data", side_effect=gone),              mock.patch.object(process_faceid_result, "delay", side_effect=faceid.finish_session):
+            self.post_webhook(payload)
+        rec = FaceIDSession.objects.get(session_id="sess-1")
+        self.assertEqual((rec.status, rec.failure_reason), ("failed", "CODE_EXPIRED"))
+
+    def test_poll_failed_state_has_generic_reason(self):
+        self.create_session()
+        rec = FaceIDSession.objects.get(session_id="sess-1")
+        with mock.patch("main.faceid.get_session", return_value={"status": "failed"}):
+            body = self.c.get(f"/api/v1/faceid/sessions/{rec.id}/").json()
+        self.assertEqual((body["status"], body["failure_reason"]), ("failed", "FAILED"))
+
     def test_other_sessions_result_is_rejected(self):
         self.passed_webhook(session_id="boshqa")
         self.deed.refresh_from_db()

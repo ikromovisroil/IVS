@@ -133,8 +133,9 @@ def _access_token(force=False) -> str:
 
 def _call(method: str, path: str, **kwargs):
     """Token bilan so'rov; INVALID_TOKEN (401) kelsa tokenni yangilab bir marta qaytaradi."""
+    extra_headers = kwargs.pop("headers", {})
     for attempt in (0, 1):
-        headers = {"Authorization": f"Bearer {_access_token(force=bool(attempt))}", **kwargs.pop("headers", {})}
+        headers = {"Authorization": f"Bearer {_access_token(force=bool(attempt))}", **extra_headers}
         try:
             response = requests.request(method, _url(path), headers=headers, timeout=TIMEOUT, **kwargs)
         except requests.RequestException:
@@ -212,7 +213,11 @@ def finish_session(record_id: int, callback_code: str) -> None:
     try:
         data = get_data(callback_code)
     except FaceIDError as e:
-        mark_failed(record.session_id, e.code)
+        if e.http_status >= 500 or e.http_status == 429:
+            # Vaqtinchalik xato: kod hali amal qiladi, sessiya kutilmoqda holatiga qaytadi (holat so'rovi qayta urinadi)
+            FaceIDSession.objects.filter(pk=record_id, status="processing").update(status="pending")
+        else:
+            mark_failed(record.session_id, e.code)
         return
 
     verification = data.get("verification") or {}
@@ -253,7 +258,8 @@ def refresh_from_faceid(record) -> None:
     if state == "passed" and info.get("callback_code"):
         finish_session(record.pk, info["callback_code"])
     elif state in ("failed", "cancelled", "expired"):
-        mark_failed(record.session_id, {"failed": "FACE_MISMATCH", "cancelled": "SESSION_CANCELLED"}.get(state, "SESSION_EXPIRED"),
+        # Holat javobida muvaffaqiyatsizlik sababi yo'q (faqat webhook'da bor): umumiy sabab yoziladi
+        mark_failed(record.session_id, {"failed": "FAILED", "cancelled": "SESSION_CANCELLED"}.get(state, "SESSION_EXPIRED"),
                     status="expired" if state == "expired" else "failed")
 
 
