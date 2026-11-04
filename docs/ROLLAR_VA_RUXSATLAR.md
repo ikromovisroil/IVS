@@ -5,7 +5,7 @@ Bu hujjat uch savolga javob beradi:
 2. Tizimda **qanday funksiyalar bor** va ularning qaysilari mobil API'da bor.
 3. Ilova ekran va tugmalarni qanday qurishi kerak.
 
-Aniq endpoint maydonlari — `ANDROID_API.md` va Swagger (`/swagger/`).
+Aniq endpoint maydonlari — `MOBILE_API.md` va Swagger (`/swagger/`).
 
 ---
 

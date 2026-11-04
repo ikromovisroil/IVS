@@ -1,7 +1,6 @@
 # IMV API — mobil ilovalar (Android va iOS) uchun qo'llanma
 
 Bu hujjat **mobil ilovaga kiradigan funksiyalar** uchun. Android va iOS uchun **bir xil API**; farqli joylar 13-bo'limda.
-Eski `ANDROID_API.md` — serverning to'liq API ro'yxati (Swagger'dan), mobilga kirmaydigan endpointlar ham shu yerda.
 Interaktiv hujjat: `https://<server>/swagger/` (saytga kirgan holatda ochiladi). Ruxsatlarning to'liq tavsifi: `ROLLAR_VA_RUXSATLAR.md`.
 
 Asosiy manzil: **`https://<server>/api/v1/`**. Quyida qisqalik uchun `/api/...` yoziladi — ularni `/api/v1/...` deb o'qing.
