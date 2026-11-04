@@ -94,7 +94,7 @@ Har bir ruxsat uchun: **Nima** — ma'nosi; **Qayerda** — sayt ekrani va API; 
 - **Kimga kerak:** hujjatlar bo'yicha mas'ul, rahbar.
 - **Kimga beriladi:** faqat `worker`.
 
-> Imzolash va kelishish uchun alohida ruxsat yo'q: hujjatda imzolovchi (`sender`/`receiver`) yoki kelishuvchi qilib tanlangan xodim o'zi javob beradi. Mobil API'da imzolash (Face ID) hozircha yo'q.
+> Imzolash va kelishish uchun alohida ruxsat yo'q: hujjatda imzolovchi (`sender`/`receiver`) yoki kelishuvchi qilib tanlangan xodim o'zi javob beradi. Imzolash mobil ilovalarda FaceID orqali (`MOBILE_API.md`, 8-bo'lim), veb'da E-IMZO orqali; kelishuvchi imzolamaydi, oddiy "kelishish" qiladi.
 
 ### 3.3 Ko'rish doirasi (SUPER)
 
@@ -246,7 +246,7 @@ Belgilar: **✅** mobil API'da bor, **⚠️** qisman, **❌** hozircha yo'q.
 | 13 | Material kirim-chiqim hisoboti va harakatlar | omborxonachi | `view_material` | ✅ |
 | 14 | Excel eksport (xodimlar, texnika, material, hisobot) | tegishli ruxsat bilan | `view_*` | ✅ |
 | 15 | Hujjatlar: yaratish, ro'yxat, rad etish, kelishuvchilar, ilovalar | hammaga (yaratish — `add_deed`) | `add_deed`, `change_deed` | ⚠️ imzolash/tasdiqlash yo'q |
-| 16 | Hujjatni **imzolash** (Face ID / E-imzo) | imzolovchi | — | ❌ alohida integratsiya |
+| 16 | Hujjatni **imzolash** (FaceID mobilda / E-IMZO veb'da) | imzolovchi | — | ✅ FaceID (faqat Android/iOS) |
 | 17 | Hujjatlar reyestri (filtr bilan hammasini qidirish) | hamma | — | ✅ |
 | 18 | Hisobotlar: Dalolatnoma, Svod, Reestr, Akt, Sarf | `worker` | 4-bo'limdagi shartlar | ⚠️ matnni ilova yig'adi, PDF va yuborish serverda |
 | 19 | Statistika (xodimlar, texnika) | rahbar | `status_employee` | ✅ |

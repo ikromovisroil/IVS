@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .app_views import AppConfigView
+from .scan_views import ScanView
 from .meeting_views import MeetingCancelView, MeetingDetailView, MeetingFinishView, MeetingListCreateView
 from .notification_views import (
     NotificationListView, NotificationReadAllView, NotificationReadView, NotificationUnreadCountView,
@@ -83,6 +84,7 @@ urlpatterns = router.urls + [
     path('auth/logout/', LogoutView.as_view(), name='api_logout'),
     path('devices/', DeviceRegisterView.as_view(), name='api_device_register'),
     path('devices/unregister/', DeviceUnregisterView.as_view(), name='api_device_unregister'),
+    path('scan/', ScanView.as_view(), name='api_scan'),
     path('faceid/config/', FaceIDConfigView.as_view(), name='api_faceid_config'),
     path('faceid/sessions/', FaceIDSessionCreateView.as_view(), name='api_faceid_session_create'),
     path('faceid/sessions/<int:pk>/', FaceIDSessionDetailView.as_view(), name='api_faceid_session_detail'),

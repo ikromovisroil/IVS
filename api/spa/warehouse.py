@@ -134,6 +134,25 @@ class _TechnicsPerm(permissions.BasePermission):
         return TechnicsPermission().has_permission(request, view)
 
 
+def technics_card(tex):
+    """QR kod sahifasi (main/views.py:technics_detail) ma'lumotlari; mobil skaner (api/scan_views.py) ham shuni ishlatadi."""
+    return {
+        "id": tex.id,
+        "name": tex.name,
+        "category_name": tex.category.name if tex.category_id else None,
+        "parametr": tex.parametr,
+        "inventory": tex.inventory,
+        "serial": tex.serial,
+        "mac": tex.mac,
+        "ip": tex.ip,
+        "employee_name": tex.employee.full_name if tex.employee_id else None,
+        "status": tex.status,
+        "status_display": tex.get_status_display(),
+        "qr_code": tex.qr_code.url if tex.qr_code else None,
+        "extra_devices": [_device(x) for x in tex.active_structures],
+    }
+
+
 def _with_devices(qs):
     return qs.select_related("employee__rank").prefetch_related(None).prefetch_related(
         Prefetch(
@@ -182,21 +201,7 @@ class SpaTechnicsViewSet(TechnicsViewSet):
     def card(self, request, pk=None):
         """main/views.py:technics_detail (QR kod sahifasi) — faol uskunaning asosiy ma'lumotlari."""
         tex = get_object_or_404(_with_devices(Technics.objects.select_related("category", "employee")), pk=pk, is_active=True)
-        return Response({
-            "id": tex.id,
-            "name": tex.name,
-            "category_name": tex.category.name if tex.category_id else None,
-            "parametr": tex.parametr,
-            "inventory": tex.inventory,
-            "serial": tex.serial,
-            "mac": tex.mac,
-            "ip": tex.ip,
-            "employee_name": tex.employee.full_name if tex.employee_id else None,
-            "status": tex.status,
-            "status_display": tex.get_status_display(),
-            "qr_code": tex.qr_code.url if tex.qr_code else None,
-            "extra_devices": [_device(x) for x in tex.active_structures],
-        })
+        return Response(technics_card(tex))
 
     @action(detail=False, methods=["get"])
     def mine(self, request):

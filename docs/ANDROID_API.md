@@ -1,4 +1,7 @@
-# IMV API — Android ilova uchun qo'llanma
+# IMV API — to'liq qo'llanma (Android uchun)
+
+> **Mobil ilovalar (Android va iOS) uchun asosiy hujjat — [MOBILE_API.md](MOBILE_API.md).** U mobilga kiradigan funksiyalarni, kim nimani ko'rishini va platforma farqlarini beradi.
+> Bu fayl esa serverning **to'liq** API tavsifi: mobilga kirmaydigan endpointlar (hisobotlar, statistika, hujjat yaratish va boshqalar) ham shu yerda.
 
 Interaktiv hujjat (Swagger): `https://<server>/swagger/` (saytga kirgan holatda ochiladi). Bu fayl — qoidalar va oqimlar;
 aniq maydonlar va javoblar Swagger'da.
@@ -44,7 +47,7 @@ Quyida shu variantning qadamlari:
 7. Chiqish: `POST /api/auth/logout/` `{"refresh": "..."}` (Bearer bilan) → `204`.
 
 Kirish natijalari: tizimda yo'q foydalanuvchi — brauzerda `403` ("Siz tizimda ro'yxatda yo'qsiz"); bloklangan — token berilmaydi.
-**Imzolash (Face ID)** hozircha API'da yo'q — alohida integratsiya qilinadi.
+**Imzolash (FaceID)** — 9.3-bo'lim.
 
 ## 2. Foydalanuvchi kimligi — `GET /api/me/`
 
@@ -185,6 +188,7 @@ Doira: tashkilot va hudud (`all_organization`/`all_region`).
 - **Biriktirish** `POST /{id}/assign/`: `{"employee": id}` — xodimga (bo'lim/boshqarma/bo'linma xodimdan olinadi, holat `active`);
   yoki `{"department": id, "directorate": id, "division": id}` — strukturaga (butun zanjirni yuboring); `{}` — bo'shatiladi.
   **Bo'shatish** — `POST /{id}/unassign/`. `GET /{id}/qr/` — QR rasm (PNG).
+- **QR skaner (mobil):** `POST /api/scan/ {"text": "<QR matni>"}` — texnika yoki hujjat QR'ini taniydi va ma'lumot qaytaradi (`can_edit` — tahrirlash/biriktirish huquqi). Batafsil: [MOBILE_API.md](MOBILE_API.md), 9.4-bo'lim.
 - **O'chirish** — `DELETE` (texnika arxivlanadi, ro'yxatda ko'rinmaydi).
 
 ### 6.1 Statistika — texnika — `/api/stats/technics/`
@@ -248,7 +252,7 @@ Javobdagi tayyor bayroqlar (interfeys uchun): `can_edit`, `can_reject`, `can_man
   `receiver` faqat `status=document` uchun va faqat "worker" tashkilot xodimi; `attachments` (10 tagacha), `agreements` (kelishuvchi xodimlar ID ro'yxati).
   Yaratuvchi — doim so'rov egasi.
 - **Tahrirlash** `PATCH` (`sender`, `receiver`, `body`, `agreements`): faqat yaratuvchi, `user_edit` yoqilgan va hali hech kim javob bermagan paytda; PDF qayta yaratiladi.
-- **Rad etish** `POST /{id}/reject/ {"message"}` — imzolovchi/qabul qiluvchi. (Tasdiqlash/imzolash — keyingi bosqich, Face ID.)
+- **Rad etish** `POST /{id}/reject/ {"message"}` — imzolovchi/qabul qiluvchi. (Imzolash — FaceID, 9.3-bo'lim.)
 - **Kelishuvchilar:** `POST /{id}/consents/ {"employees": [id]}` qo'shish; `GET /{id}/consent-candidates/?search=` nomzodlar;
   `DELETE /api/deed-consents/{id}/` olib tashlash (faqat yaratuvchi, faqat javob bermaganini); kelishuvchi javobi:
   `POST /api/deed-consents/{id}/approve/` yoki `/reject/` (rad etishda `message` majburiy).
@@ -288,7 +292,7 @@ Hujjat shablonlari (HTML) hozircha sayt kodida (`frontend/src/pages/reports/temp
 
 ### 9.3 FaceID bilan hujjatni tasdiqlash — `/api/v1/faceid/...`
 
-Imzolovchi (`sender`) yoki qabul qiluvchi (`receiver`) hujjatni **yuz tekshiruvi (FaceID)** bilan tasdiqlaydi (kelishuvchilar hozircha E-IMZO bilan).
+Imzolovchi (`sender`) yoki qabul qiluvchi (`receiver`) hujjatni **yuz tekshiruvi (FaceID)** bilan tasdiqlaydi (kelishuvchi imzolamaydi, u oddiy "kelishish" qiladi: `deed-consents/{id}/approve/`).
 FaceID **faqat mobil ilovalarda** (Android va iOS); veb'da tasdiqlash E-IMZO orqali qoladi.
 Yuzni suratga olish ilovadagi **FaceID SDK** ishi, server esa natijani tekshirib hujjatni tasdiqlaydi. `client_secret` va boshqa kalitlar ilovada bo'lmaydi.
 
@@ -462,7 +466,7 @@ Project settings → Service accounts → Generate new private key), ixtiyoriy `
 
 ## 13. Hozircha API'da YO'Q narsalar
 
-- Hujjatni **E-IMZO bilan** imzolash. FaceID bilan tasdiqlash — 9.3-bo'lim (server tayyor; ilovada FaceID SDK ulanadi, faqat Android/iOS).
+- Hujjatni **E-IMZO bilan** imzolash (faqat veb'da). FaceID bilan tasdiqlash — 9.3-bo'lim (server tayyor; ilovada FaceID SDK ulanadi, faqat Android/iOS).
 - Akt/Svod/Reestr/Talabnoma uchun **serverda tayyor hujjat yig'ish** (hujjat matnini ilova yig'adi, 9.2-bo'lim). (Material arizasi qabul qilinganda akt avtomatik yaratiladi.)
 
 ---
