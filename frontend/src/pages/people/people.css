@@ -18,6 +18,12 @@
   color: var(--text-sub-600);
 }
 
+.ivs-people-phones {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .ivs-people-note {
   margin: 0;
   color: var(--text-sub-600);

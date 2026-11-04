@@ -98,7 +98,21 @@ export default function EmployeesPage() {
     },
     { key: 'rank', label: t('Lavozimi'), width: '22%', render: (r) => <span className="ivs-people-wrap">{r.rank_name || ''}</span> },
     { key: 'pinfl', label: t('PINFL'), width: '14%', render: (r) => <span className="ivs-people-mono">{r.pinfl || ''}</span> },
-    { key: 'phone', label: t('Telefon'), width: '14%', render: (r) => r.phone || '' },
+    {
+      key: 'phone',
+      label: t('Telefon'),
+      width: '16%',
+      render: (r) => {
+        // Yuqorida ichki raqam, pastda OneID'dan kelgani (ism va lavozim kabi ikki qator)
+        const [top, bottom] = r.phone ? [r.phone, r.sso_phone] : [r.sso_phone, null]
+        return (
+          <div className="ivs-people-phones">
+            <span className="aui-cell-primary">{top || ''}</span>
+            {bottom && <span className="aui-cell-secondary" title={t('OneID telefoni')}>{bottom}</span>}
+          </div>
+        )
+      },
+    },
     { key: 'status', label: t('Holati'), render: () => <StatusChip status="active">{t('Faol')}</StatusChip> },
     {
       key: 'actions',

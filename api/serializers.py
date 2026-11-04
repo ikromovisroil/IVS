@@ -54,10 +54,10 @@ class EmployeeSerializer(serializers.ModelSerializer):
             'directorate', 'division',
             'region', 'region_name',
             'rank', 'rank_name',
-            'phone', 'pinfl',
+            'phone', 'sso_phone', 'pinfl',
             'date_creat', 'date_edit',
         ]
-        read_only_fields = ['pinfl']
+        read_only_fields = ['pinfl', 'sso_phone']
 
 
 def _resolve_structure(organization, department, directorate, division):

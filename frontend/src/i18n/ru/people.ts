@@ -20,6 +20,7 @@ const ru: Record<string, string> = {
   Lavozim: 'Должность',
   PINFL: 'ПИНФЛ',
   Telefon: 'Телефон',
+  'OneID telefoni': 'Телефон OneID',
   Holati: 'Статус',
   'Holati / Sana': 'Статус / Дата',
   Ruxsatlar: 'Права',

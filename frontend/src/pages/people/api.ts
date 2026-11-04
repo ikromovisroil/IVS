@@ -24,6 +24,7 @@ export interface EmployeeRow {
   rank: number | null
   rank_name: string | null
   phone: string | null
+  sso_phone: string | null
   pinfl: string | null
 }
 

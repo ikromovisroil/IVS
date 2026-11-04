@@ -1,3 +1,4 @@
+import json
 from datetime import date
 
 from django.test import TestCase
@@ -60,7 +61,7 @@ class SyncEmployeeFromClaimsTests(TestCase):
 
 
 class PersonalDataNotExposedTests(TestCase):
-    def test_not_in_employee_api(self):
+    def test_sso_phone_is_shown_but_other_personal_data_is_not(self):
         org, region = make_org("worker"), make_region()
         viewer_user, _ = make_employee(org, region)
         grant(viewer_user, "main.view_employee")
@@ -69,6 +70,8 @@ class PersonalDataNotExposedTests(TestCase):
 
         client = APIClient()
         client.force_authenticate(viewer_user)
-        body = client.get(f"/api/v1/employees/{target.id}/").content.decode()
-        for secret in ("AB1234567", "+998901112233", "1990-05-15", "birth_date", "passport", "sso_phone"):
+        data = client.get(f"/api/v1/employees/{target.id}/").json()
+        self.assertEqual(data["sso_phone"], "+998901112233")        # jadvalda ikkala raqam ko'rinadi
+        body = json.dumps(data)
+        for secret in ("AB1234567", "1990-05-15", "birth_date", "passport"):
             self.assertNotIn(secret, body)
