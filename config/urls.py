@@ -20,7 +20,7 @@ from main.admin_tuning import lighten_admin
 from django.urls import path, include, re_path
 
 API_DESCRIPTION = """
-**IMV API (Android va iOS uchun)** — qo'llanma: `docs/MOBILE_API.md`.
+**IVC API (Android va iOS uchun)** — qo'llanma: `docs/MOBILE_API.md`.
 
 ### Kirish (SSO)
 Ikki variant: **A** — SSO hujjatidagi standart oqim: `POST /api/auth/sso/token/ {code, code_verifier, redirect_uri}` (ilovaning redirect_uri si SSO'da ro'yxatdan o'tgan bo'lishi kerak); **B** — quyidagi brauzer orqali oqim (qo'shimcha ro'yxatdan o'tkazish kerak emas).
@@ -48,7 +48,7 @@ Fayllar (rasm, PDF) — `multipart/form-data`.
 # Swagger faqat tizimga kirgan foydalanuvchiga (SWAGGER_PUBLIC=1 bo'lsa hamma uchun ochiq)
 schema_view = get_schema_view(
     openapi.Info(
-        title="IMV API Documentation",
+        title="IVC API Documentation",
         default_version="v1",
         description=API_DESCRIPTION,
     ),

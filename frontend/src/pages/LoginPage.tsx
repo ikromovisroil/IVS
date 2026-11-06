@@ -100,7 +100,7 @@ export default function LoginPage() {
             <span className="ivs-auth-brand-logo">
               <Icon name="ri-server-fill" size={20} />
             </span>
-            <span className="type-label-md">IVS</span>
+            <span className="type-label-md">IVC</span>
           </div>
           <div className="ivs-auth-tools">
             <SegmentedControl
@@ -162,7 +162,7 @@ export default function LoginPage() {
         </section>
 
         <footer className="ivs-auth-foot type-para-xs">
-          <span>© {new Date().getFullYear()} IVS</span>
+          <span>© {new Date().getFullYear()} IVC</span>
           <span>{t("Texnik va tarmoq xizmatlarini qo'llab-quvvatlash platformasi")}</span>
         </footer>
       </main>

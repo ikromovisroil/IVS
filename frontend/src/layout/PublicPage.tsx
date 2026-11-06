@@ -21,7 +21,7 @@ export default function PublicPage({ icon, title, subtitle, actions, children }:
           <Icon name="ri-server-fill" size={20} />
         </span>
         <span>
-          <span className="type-label-md">IVS</span>
+          <span className="type-label-md">IVC</span>
           <span className="type-para-xs ivs-public-muted">{t('Texnik xizmat platformasi')}</span>
         </span>
       </header>

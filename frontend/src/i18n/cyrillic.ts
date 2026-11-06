@@ -9,7 +9,7 @@ const APOS ="['ʻʼ‘’`´]"
 
 // Brend/texnik nomlar: kirillga o'tmaydi
 const PROTECTED = [
-  'IVS', 'ATM', 'PDF', 'Excel', 'Word', 'Zoom', 'Telegram', 'E-IMZO', 'MAC', 'IP', 'SMS', 'QR', 'ID', 'URL', 'API',
+  'IVC', 'ATM', 'PDF', 'Excel', 'Word', 'Zoom', 'Telegram', 'E-IMZO', 'MAC', 'IP', 'SMS', 'QR', 'ID', 'URL', 'API',
   'Gateway', 'Android', 'iOS', 'Windows', 'Google', 'Chrome', 'Claude', 'OneID', 'ERI',
 ]
 

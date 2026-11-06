@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# IVS: Django (ASGI/daphne) + Celery + Telegram bot + yangi React interfeysi (/app/) — bitta image, har xil buyruq bilan.
+# IVC: Django (ASGI/daphne) + Celery + Telegram bot + yangi React interfeysi (/app/) — bitta image, har xil buyruq bilan.
 
 # ─── 1) Frontend (React/Vite) build: natija /build/static/spa (vite.config.ts: outDir ../static/spa) ───
 FROM node:22-alpine AS frontend

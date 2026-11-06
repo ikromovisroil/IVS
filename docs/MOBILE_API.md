@@ -1,4 +1,4 @@
-# IMV API — mobil ilovalar (Android va iOS) uchun qo'llanma
+# IVC API — mobil ilovalar (Android va iOS) uchun qo'llanma
 
 Bu hujjat **mobil ilovaga kiradigan funksiyalar** uchun. Android va iOS uchun **bir xil API**; farqli joylar 13-bo'limda.
 Interaktiv hujjat: `https://<server>/swagger/` (saytga kirgan holatda ochiladi). Ruxsatlarning to'liq tavsifi: `ROLLAR_VA_RUXSATLAR.md`.
@@ -441,7 +441,7 @@ Veb'dagi "Qurilmalar" sahifasi. Qurilma — texnikaga biriktiriladigan qo'shimch
 ### 9.3 Materiallar — `/api/materials/`
 Ruxsat: `view_material`. Ko'rinish: o'z tashkilotining faol, soni 0 dan ko'p materiallari; `all_material_employee` bo'lsa moddiy javobgar xodimlarniki,
 aks holda o'zi va unga biriktirilgan xodimlarniki.
-- `GET /api/materials/` — ro'yxat: nomi, kategoriya, soni (qoldiq), birlik, narxi, rasmi; filtr: `employee`, `category`, `unit`, `search`.
+- `GET /api/materials/` — ro'yxat: nomi, kategoriya, soni (qoldiq), birlik, narxi, rasmi; filtr: `employee`, `category`, `unit`; `search` — nomi, kodi yoki narxi bo'yicha (narx boshidan: `1500`, `1500,50`).
 - `GET /api/materials/{id}/` — tafsilot.
 
 **Materialni boshqarish** (mobilda bor; har amalga o'z ruxsati kerak):
@@ -469,7 +469,7 @@ Ilova kamera bilan QR'ni o'qiydi va **matnini** yuboradi: `{"text": "https://<se
 | Texnika | qurilmaga yopishtirilgan QR | `https://<server>/technics/<id>/` | `technics` |
 | Hujjat | hujjat PDF'ining pastidagi QR | `https://<server>/deed/status/<kod>/<id>/` | `deed` |
 
-Boshqa QR (begona domen, boshqa matn) — `400 {"detail": "Bu QR kod IMV tizimiga tegishli emas", "type": "unknown"}`: ilova "Bu IMV QR kodi emas" deb ko'rsatsin.
+Boshqa QR (begona domen, boshqa matn) — `400 {"detail": "Bu QR kod IVC tizimiga tegishli emas", "type": "unknown"}`: ilova "Bu IVC QR kodi emas" deb ko'rsatsin.
 Topilmasa (o'chirilgan texnika, noto'g'ri kod) — `404`.
 
 **Texnika** — kartani **har qanday kirgan xodim** ko'ra oladi:

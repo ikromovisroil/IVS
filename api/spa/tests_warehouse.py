@@ -238,6 +238,27 @@ class WarehouseSpaTests(TestCase):
         Material.objects.filter(pk=mat.pk).update(is_active=False)
         self.assertEqual(c.patch(f"{url}{other.id}/", {"code": "100"}, format="json").status_code, 200)
 
+    def test_material_search_by_name_code_and_price(self):
+        shop_user, shop, recv, mat = self._materials()
+        c = self.api(shop_user)
+
+        def found(text):
+            r = c.get("/api/v1/materials/", {"search": text, "page_size": 50})
+            self.assertEqual(r.status_code, 200, r.data)
+            return sorted(m["name"] for m in r.data["results"])
+
+        self.assertEqual(found("kab"), ["Kabel"])      # nomi
+        self.assertEqual(found("200"), ["Toner"])      # kodi
+        self.assertEqual(found("1500"), ["Kabel"])     # narxi
+        self.assertEqual(found("15"), ["Kabel"])       # narxning boshi
+        self.assertEqual(found("1500,00"), ["Kabel"])  # vergul bilan
+        self.assertEqual(found("100"), ["Kabel", "Toner"])  # Kabel kodi, Toner narxi
+        self.assertEqual(found("kabel 1500"), ["Kabel"])    # so'zlar birgalikda
+        self.assertEqual(found("kabel 100.0"), [])
+        self.assertEqual(found("999"), [])
+        r = c.get(f"{BASE}/materials/summary/", {"search": "1500"})  # jami ham shu qidiruvdan
+        self.assertEqual(r.data["count"], 1)
+
     def test_material_list_is_ordered_by_1c_code(self):
         shop_user, shop, recv, mat = self._materials()
         unit = mat.unit

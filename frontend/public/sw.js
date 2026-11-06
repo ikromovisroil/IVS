@@ -1,4 +1,4 @@
-/* IVS: brauzer push (Web Push) service worker. Django uni /app/sw.js manzilidan beradi (config/spa.py). */
+/* IVC: brauzer push (Web Push) service worker. Django uni /app/sw.js manzilidan beradi (config/spa.py). */
 
 self.addEventListener('install', () => self.skipWaiting())
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()))
@@ -18,7 +18,7 @@ self.addEventListener('push', (event) => {
   }
   // Bir xil tag eski bildirishnomani jim almashtiradi — server har bir hodisaga yangi tag beradi
   if (data.tag) options.tag = data.tag
-  event.waitUntil(self.registration.showNotification(data.title || 'IVS', options))
+  event.waitUntil(self.registration.showNotification(data.title || 'IVC', options))
 })
 
 // Faqat shu saytning /app/ ostidagi manzillari ochiladi (boshqa manzil bo'lsa bosh sahifa)

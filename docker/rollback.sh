@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# IVS: oxirgi update.sh dan oldingi holatga qaytish (kod va tasvir). Ma'lumotlar bazasi o'zgarmaydi.
+# IVC: oxirgi update.sh dan oldingi holatga qaytish (kod va tasvir). Ma'lumotlar bazasi o'zgarmaydi.
 # Migratsiya sxemani o'zgartirgan bo'lsa, bazani zaxiradan tiklash kerak (oxirida buyruq chiqadi).
 set -euo pipefail
 

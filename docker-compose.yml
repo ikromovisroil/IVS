@@ -1,4 +1,4 @@
-# IVS — Docker Compose.  Ishga tushirish:  cp .env.docker.example .env  (to'ldiring)  →  docker compose up -d --build
+# IVC — Docker Compose.  Ishga tushirish:  cp .env.docker.example .env  (to'ldiring)  →  docker compose up -d --build
 # Servislar: db (Postgres), redis, web (daphne), worker + beat (Celery), bot (Telegram), nginx (80-port).
 name: ivs
 

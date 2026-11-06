@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# IVS: serverda xavfsiz yangilash — zaxira → yangi kod → qurish → ishga tushirish → tekshirish.
+# IVC: serverda xavfsiz yangilash — zaxira → yangi kod → qurish → ishga tushirish → tekshirish.
 # Ishga tushirish (loyiha papkasida):  bash docker/update.sh
 # Muammo bo'lsa:                        bash docker/rollback.sh
 set -euo pipefail

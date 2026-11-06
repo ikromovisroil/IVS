@@ -523,7 +523,7 @@
 .type-docs-label { font-family: var(--font-sans); font-size: 18px; line-height: 32px; font-weight: 500; letter-spacing: -0.015em; }
 .type-docs-para { font-family: var(--font-sans); font-size: 18px; line-height: 32px; font-weight: 400; letter-spacing: -0.015em; }
 
-/* Fonts: only the weights IVS uses are shipped (the design system carries all 30 faces). */
+/* Fonts: only the weights IVC uses are shipped (the design system carries all 30 faces). */
 @font-face { font-family: "Inter"; src: url("fonts/Inter_28pt-Regular.ttf") format("truetype"); font-weight: 400; font-style: normal; font-display: swap; }
 @font-face { font-family: "Inter"; src: url("fonts/Inter_28pt-Medium.ttf") format("truetype"); font-weight: 500; font-style: normal; font-display: swap; }
 @font-face { font-family: "Inter"; src: url("fonts/Inter_28pt-SemiBold.ttf") format("truetype"); font-weight: 600; font-style: normal; font-display: swap; }

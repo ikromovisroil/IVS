@@ -1,4 +1,4 @@
-# IVS — yangi interfeys (React + AlignUI)
+# IVC — yangi interfeys (React + AlignUI)
 
 React 19 + Vite + TypeScript. Dizayn: Claude Design'dagi "AlignUI Design System"
 (`src/ds/` — tokenlar, shriftlar va komponentlar to'plami o'zgarishsiz ko'chirilgan).

@@ -1,4 +1,4 @@
-# IVS — Docker bilan ishga tushirish
+# IVC — Docker bilan ishga tushirish
 
 Bitta image (`Dockerfile`) ichida: Django (ASGI, `daphne`), Celery, Telegram bot va yangi React interfeysi (`/app/`).
 `docker-compose.yml` servislari: `db` (Postgres 16), `redis`, `web`, `worker`, `beat`, `bot`, `nginx`.

@@ -27,7 +27,7 @@ from .views import TechnicsViewSet, _visible_deeds
 
 TECHNICS_PATH = re.compile(r"^/technics/(\d+)/?$")
 DEED_PATH = re.compile(r"^/deed/status/([A-Za-z0-9]+)/(\d+)/?$")
-UNKNOWN = "Bu QR kod IMV tizimiga tegishli emas"
+UNKNOWN = "Bu QR kod IVC tizimiga tegishli emas"
 
 
 class ScanThrottle(UserRateThrottle):

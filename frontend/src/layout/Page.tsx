@@ -124,7 +124,7 @@ export default function Page({ title, subtitle, icon, avatar, background = 'gray
         header={header}
         mobileHeader={{ search: false, notifications: false }}
         sidebar={{
-          brand: { name: 'IVS', sub: t('Texnik xizmat platformasi'), icon: 'ri-server-fill' },
+          brand: { name: 'IVC', sub: t('Texnik xizmat platformasi'), icon: 'ri-server-fill' },
           sections,
           footerItems: SIDEBAR_FOOTER.map<DashboardNavItem>((it) => ({
             icon: it.icon,

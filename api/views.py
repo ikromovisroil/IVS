@@ -1,5 +1,6 @@
 import html
 import logging
+import re
 from datetime import datetime
 from decimal import Decimal
 from django.utils.dateparse import parse_date
@@ -8,8 +9,8 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema, no_body
 from django.utils import timezone
 from django.contrib.auth.models import Permission
-from django.db.models import Case, Exists, IntegerField, OuterRef, Prefetch, Q, When
-from django.db.models.functions import Length
+from django.db.models import CharField, Case, Exists, IntegerField, OuterRef, Prefetch, Q, When
+from django.db.models.functions import Cast, Length
 from django.db import DatabaseError, transaction
 from django.db.models import F
 from django.shortcuts import get_object_or_404
@@ -855,6 +856,24 @@ def order_materials_by_code(qs):
     ).order_by("_no_code", "-_code_len", "-code", "id")
 
 
+class MaterialSearchFilter(SearchFilter):
+    """Qidiruv: har so'z nomi, kodi yoki narxining boshi bo'yicha ("12500" → 12500.00; vergul ham nuqta o'rnida)."""
+
+    def filter_queryset(self, request, queryset, view):
+        text = (request.query_params.get(self.search_param) or "").strip()[:120]
+        words = text.split()
+        if not words:
+            return queryset
+        queryset = queryset.annotate(price_text=Cast('price', CharField()))
+        for w in words:
+            num = w.replace(',', '.')
+            cond = Q(name__icontains=w) | Q(code__icontains=w) | Q(price_text__startswith=num)
+            if re.fullmatch(r'\d{1,10}(\.\d{1,2})?', num):
+                cond |= Q(price=Decimal(num))  # "1500,00" ham "1500" ga teng (bazaga bog'liq matn shaklidan qat'i nazar)
+            queryset = queryset.filter(cond)
+        return queryset
+
+
 class MaterialViewSet(viewsets.ModelViewSet):
     """
     Ko'rish — 'shop_employee': faqat o'z tashkilotidagi va o'zining materiallari.
@@ -872,9 +891,9 @@ class MaterialViewSet(viewsets.ModelViewSet):
     ).filter(is_active=True)
     permission_classes = [MaterialPermission]
     pagination_class = StandardResultsPagination
-    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filter_backends = [DjangoFilterBackend, MaterialSearchFilter]
     filterset_fields = ["category", "unit", "employee"]
-    search_fields = ["name", "code"]
+    search_fields = ["name", "code", "price"]
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):

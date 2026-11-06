@@ -84,7 +84,7 @@ def mobile_login_complete(request):
     html = (
         '<!doctype html><html lang="uz"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1">'
-        '<title>IVS</title></head><body style="font-family:sans-serif;text-align:center;padding:48px 16px">'
+        '<title>IVC</title></head><body style="font-family:sans-serif;text-align:center;padding:48px 16px">'
         '<p>Ilovaga qaytilmoqda...</p>'
         f'<p><a href="{app_url}" style="font-size:18px">Ilovani ochish</a></p>'
         f'<script>window.location.replace("{app_url}");</script>'

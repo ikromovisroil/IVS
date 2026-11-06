@@ -204,6 +204,7 @@ const ru: Record<string, string> = {
   "so'm": 'сум',
   'Umumiy narxi': 'Общая стоимость',
   'Nomi, kodi...': 'Наименование, код...',
+  'Nomi, kodi, narxi...': 'Наименование, код, цена...',
   'Filtrga mos material topilmadi.': 'Материалы по заданным фильтрам не найдены.',
   "Ko'rish mumkin bo'lgan material yo'q.": 'Нет доступных для просмотра материалов.',
   "Materiallar ro'yxati": 'Список материалов',

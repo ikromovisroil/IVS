@@ -71,7 +71,7 @@ class ReportsApiTests(TestCase):
         self.assertFalse(any(self.client.get(URL).json()["reports"].values()))
 
     def test_client_org_never_sees_reports_even_with_permissions(self):
-        """Hisobotlar faqat worker (ATM/IVS) tashkilot xodimlariga: mijozga ruxsatlar berilgan bo'lsa ham yopiq."""
+        """Hisobotlar faqat worker (ATM/IVC) tashkilot xodimlariga: mijozga ruxsatlar berilgan bo'lsa ham yopiq."""
         perms = ("main.shop_employee", "main.report_employee", "main.change_order", "main.material_service")
         privileged = make_emp(self.client_org, self.region, last="Ruxsatli", perms=perms)
         self.login(privileged)

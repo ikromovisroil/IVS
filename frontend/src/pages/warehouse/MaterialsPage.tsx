@@ -179,7 +179,7 @@ export default function MaterialsPage() {
       </div>
 
       <FilterBar
-        search={<SearchInput value={filters.search} onChange={(v) => setFilter('search', v)} placeholder="Nomi, kodi..." />}
+        search={<SearchInput value={filters.search} onChange={(v) => setFilter('search', v)} placeholder="Nomi, kodi, narxi..." />}
         actions={
           <Button variant="stroke" icon="ri-file-excel-2-line" onClick={() => window.location.assign(withQuery(`${API}/export/materials.xlsx`, filters))}>
             {t('Excel')}
