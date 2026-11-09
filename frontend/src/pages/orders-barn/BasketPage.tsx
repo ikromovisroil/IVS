@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Button, DataTable, Select, TextInput, Textarea } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import DataState from '../../components/DataState'
+import ConfirmDialog from '../../components/ConfirmDialog'
 import Modal from '../../components/Modal'
 import { ApiError, api } from '../../api/client'
 import { useMe } from '../../auth/me'
@@ -31,7 +32,12 @@ export default function BasketPage() {
 
   const numberOf = (it: CartItem) => edited[it.id] ?? String(it.number)
 
-  const remove = useBarnMutation((it: CartItem) => api(`${SPA}/cart/${it.id}/`, { method: 'DELETE' }), (it) => t("«{name}» savatdan o'chirildi", { name: it.name }))
+  const [removing, setRemoving] = useState<CartItem | null>(null)
+  const remove = useBarnMutation(
+    (it: CartItem) => api(`${SPA}/cart/${it.id}/`, { method: 'DELETE' }),
+    (it) => t("«{name}» savatdan o'chirildi", { name: it.name }),
+    () => setRemoving(null),
+  )
 
   /** Sonlarni tekshiradi (kamida 1, butun son) va {item_id: son} qaytaradi. */
   const numbers = () => {
@@ -88,8 +94,7 @@ export default function BasketPage() {
           variant="error-lighter"
           size="sm"
           icon="ri-delete-bin-line"
-          loading={remove.isPending && remove.variables?.id === r.id}
-          onClick={() => remove.mutate(r)}
+          onClick={() => setRemoving(r)}
           aria-label={t("{name} — o'chirish", { name: r.name })}
         >
           {t("O'chirish")}
@@ -133,6 +138,22 @@ export default function BasketPage() {
         )}
       </DataState>
       {creating && <CreateOrderModal numbers={numbers} onClose={() => setCreating(false)} />}
+      {removing && (
+        <ConfirmDialog
+          title="Savatdan o'chirish"
+          danger
+          confirmLabel="O'chirish"
+          loading={remove.isPending}
+          message={
+            <>
+              <b>{removing.name}</b> — {numberOf(removing)} {removing.unit_name || ''}
+              <p>{t("Ushbu materialni savatdan o'chirishni tasdiqlaysizmi?")}</p>
+            </>
+          }
+          onConfirm={() => remove.mutate(removing)}
+          onClose={() => setRemoving(null)}
+        />
+      )}
     </BarnPage>
   )
 }

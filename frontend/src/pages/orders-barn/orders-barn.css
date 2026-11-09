@@ -191,6 +191,81 @@
   background: var(--bg-weak-50);
 }
 
+/* Material kartalari (karta ko'rinishi): rasm tepada, nom va holat pastda; butun karta bosiladi */
+.ob-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.ob-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-12);
+  background: var(--bg-white-0);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 140ms, box-shadow 140ms;
+}
+
+.ob-card:hover {
+  border-color: var(--primary-base);
+  box-shadow: var(--shadow-custom-xs);
+}
+
+.ob-card-media {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-8);
+  background: var(--bg-weak-50);
+  color: var(--text-soft-400);
+  overflow: hidden;
+}
+
+.ob-card-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ob-card-name {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 40px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  color: var(--text-strong-950);
+}
+
+.ob-card:hover .ob-card-name {
+  color: var(--primary-base);
+}
+
+.ob-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.ob-card-price {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-base);
+}
+
 .ob-row-link {
   display: flex;
   flex-direction: column;

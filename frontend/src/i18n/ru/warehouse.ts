@@ -231,6 +231,12 @@ const ru: Record<string, string> = {
   'Sonini kiriting.': 'Введите количество.',
   'Narxini kiriting.': 'Введите цену.',
   'Yangi rasm tanlansa, eskisi almashtiriladi.': 'При выборе нового изображения старое будет заменено.',
+  'JPG yoki PNG, 5 MB gacha. Tavsiya: 800×600 px (4:3), material markazda, fon oq yoki shaffof.':
+    'JPG или PNG, до 5 МБ. Рекомендуется 800×600 px (4:3), материал по центру, фон белый или прозрачный.',
+  'Rasm kichik ({w}×{h} px), xira ko‘rinishi mumkin. Kamida 800×600 px tavsiya etiladi.':
+    'Изображение маленькое ({w}×{h} px), может выглядеть размытым. Рекомендуется не менее 800×600 px.',
+  'Rasm juda cho‘zilgan ({w}×{h} px): kartada bo‘sh joy ko‘p qoladi, jadvalda kesilishi mumkin. 4:3 ga yaqin rasm tanlang.':
+    'Изображение слишком вытянуто ({w}×{h} px): в карточке останется много пустого места, в таблице может обрезаться. Выберите изображение, близкое к 4:3.',
   'Material tahrirlandi': 'Материал изменён',
   "Material qo'shildi": 'Материал добавлен',
   'Mavjud: {n}': 'В наличии: {n}',

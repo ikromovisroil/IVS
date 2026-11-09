@@ -3,6 +3,9 @@ const ru: Record<string, string> = {
   // Bo'lim qobig'i (BarnPage)
   "Arizalar bo'limlari": 'Разделы заявок',
   "Bo'lim sahifalari": 'Страницы раздела',
+  "Ko'rinish": 'Вид',
+  'Karta ko‘rinishi': 'Карточки',
+  'Jadval ko‘rinishi': 'Таблица',
   Tarix: 'История',
   Material: 'Материалы',
   Savat: 'Корзина',

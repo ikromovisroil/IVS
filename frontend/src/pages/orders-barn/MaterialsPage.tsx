@@ -1,17 +1,18 @@
 import { useState } from 'react'
 import type { FormEvent, MouseEvent } from 'react'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
 import { Badge, Button, DataTable, Icon, Pagination, StatusChip, TextInput } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import DataState from '../../components/DataState'
 import Modal from '../../components/Modal'
 import SearchInput from '../../components/SearchInput'
+import ViewToggle from '../../components/ViewToggle'
 import { api } from '../../api/client'
 import type { Page as ApiPage } from '../../api/client'
 import { useMe } from '../../auth/me'
 import { formatNumber } from '../../lib/format'
 import { useUrlFilters } from '../../lib/useUrlFilters'
+import { useViewMode } from '../../lib/useViewMode'
 import { money } from '../technics/util'
 import { sectionAllowed } from './access'
 import { PAGE_SIZE, SPA, mediaPath, useBarnMutation, useCart } from './api'
@@ -24,7 +25,6 @@ import { useT } from '../../i18n'
 export default function MaterialsPage() {
   const me = useMe()
   const t = useT()
-  const navigate = useNavigate()
   const allowed = sectionAllowed(me, 'sender')
   const { filters, page, setFilter, setPage, hasFilters } = useUrlFilters(['name'])
 
@@ -37,6 +37,7 @@ export default function MaterialsPage() {
   const cart = useCart(allowed)
 
   const [active, setActive] = useState<SelectableMaterial | null>(null)
+  const [view, setView] = useViewMode('barn-materials')
 
   const rows = list.data?.results ?? []
   const pageCount = Math.max(1, Math.ceil((list.data?.count ?? 0) / PAGE_SIZE))
@@ -79,10 +80,7 @@ export default function MaterialsPage() {
       tools={
         <>
           <SearchInput value={filters.name} onChange={(v) => setFilter('name', v)} placeholder="Nomi ..." style={{ minWidth: 220, flex: '1 1 240px', maxWidth: 360 }} />
-          <Button icon="ri-shopping-basket-2-line" onClick={() => navigate('/orders/barn/basket')}>
-            {t('Savat')}
-            {cart.data?.length ? ` (${cart.data.length})` : ''}
-          </Button>
+          <ViewToggle value={view} onChange={setView} />
         </>
       }
     >
@@ -94,9 +92,17 @@ export default function MaterialsPage() {
         emptyText={hasFilters ? 'Qidiruvga mos material topilmadi' : "Sizga ruxsat etilgan material yo'q"}
         emptyDescription={hasFilters ? 'Boshqa nom bilan qidirib ko‘ring.' : 'Material kategoriyalari omborxona tomonidan biriktiriladi.'}
       >
-        <div className="ob-clickable" onClick={openRow}>
-          <DataTable rows={rows} columns={columns} getRowId={(r) => r.id} rowHeight={64} minWidth={760} caption={t('Omborxonadagi materiallar')} />
-        </div>
+        {view === 'cards' ? (
+          <div className="ob-cards">
+            {rows.map((r) => (
+              <MaterialCard key={r.id} material={r} onOpen={() => setActive(r)} />
+            ))}
+          </div>
+        ) : (
+          <div className="ob-clickable" onClick={openRow}>
+            <DataTable rows={rows} columns={columns} getRowId={(r) => r.id} rowHeight={64} minWidth={760} caption={t('Omborxonadagi materiallar')} />
+          </div>
+        )}
         {pageCount > 1 && (
           <div className="ivs-pager">
             <Pagination pageCount={pageCount} page={page} onChange={setPage} />
@@ -105,6 +111,25 @@ export default function MaterialsPage() {
       </DataState>
       {active && <MaterialModal material={active} inCart={(cart.data ?? []).find((c) => c.material === active.id)} onClose={() => setActive(null)} />}
     </BarnPage>
+  )
+}
+
+/** Karta ko'rinishidagi material: rasm, nom, kategoriya, holat va narx; bosilsa to'liq ma'lumot ochiladi. */
+function MaterialCard({ material: m, onOpen }: { material: SelectableMaterial; onOpen: () => void }) {
+  const t = useT()
+  const image = mediaPath(m.image)
+  return (
+    <button type="button" className="ob-card" onClick={onOpen}>
+      <span className="ob-card-media">{image ? <img src={image} alt="" loading="lazy" /> : <Icon name="ri-image-line" size={40} />}</span>
+      <span className="ob-card-name" title={m.name}>
+        {m.name}
+      </span>
+      <span className="aui-cell-secondary">{[m.category_name, m.unit_name].filter(Boolean).join(' · ')}</span>
+      <span className="ob-card-foot">
+        {m.number > 0 ? <StatusChip status="active">{t('Faol')}</StatusChip> : <StatusChip status="failed">{t('Tugagan')}</StatusChip>}
+        {m.price && Number(m.price) > 0 ? <span className="ob-card-price">{money(m.price)}</span> : null}
+      </span>
+    </button>
   )
 }
 

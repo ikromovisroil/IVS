@@ -7,6 +7,7 @@ import Modal from '../../components/Modal'
 import { useToast } from '../../components/toast'
 import { ApiError, api } from '../../api/client'
 import { useT } from '../../i18n'
+import { readImageSize } from '../../lib/imageSize'
 import type { Material } from './api'
 import { useMaterialRefs } from './api'
 
@@ -35,7 +36,25 @@ export default function MaterialForm({ item, onClose }: Props) {
     year: item?.year ?? '',
   })
   const [image, setImage] = useState<File | null>(null)
+  const [imageWarn, setImageWarn] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  // Rasm kichik yoki juda cho'zilgan bo'lsa ogohlantiriladi (yuklashga to'sqinlik qilmaydi)
+  const pickImage = (fs: File[]) => {
+    const file = fs[0] ?? null
+    setImage(file)
+    setImageWarn('')
+    if (!file) return
+    readImageSize(file).then((size) => {
+      if (!size) return
+      const { width, height } = size
+      const ratio = width / height
+      if (Math.min(width, height) < 400)
+        setImageWarn(t('Rasm kichik ({w}×{h} px), xira ko‘rinishi mumkin. Kamida 800×600 px tavsiya etiladi.', { w: width, h: height }))
+      else if (ratio < 0.75 || ratio > 1.9)
+        setImageWarn(t('Rasm juda cho‘zilgan ({w}×{h} px): kartada bo‘sh joy ko‘p qoladi, jadvalda kesilishi mumkin. 4:3 ga yaqin rasm tanlang.', { w: width, h: height }))
+    })
+  }
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }))
 
   const save = useMutation({
@@ -128,9 +147,16 @@ export default function MaterialForm({ item, onClose }: Props) {
               accept="image/jpeg,image/png"
               maxSizeMB={5}
               files={image ? [image] : []}
-              onChange={(fs) => setImage(fs[0] ?? null)}
+              onChange={pickImage}
+              description={t('JPG yoki PNG, 5 MB gacha. Tavsiya: 800×600 px (4:3), material markazda, fon oq yoki shaffof.')}
               error={errors.image || false}
-              hint={isEdit && item.image ? 'Yangi rasm tanlansa, eskisi almashtiriladi.' : undefined}
+              hint={
+                imageWarn ? (
+                  <span style={{ color: 'var(--state-warning-base)' }}>{imageWarn}</span>
+                ) : isEdit && item.image ? (
+                  'Yangi rasm tanlansa, eskisi almashtiriladi.'
+                ) : undefined
+              }
             />
           </div>
         </div>

@@ -35,6 +35,19 @@ body {
   margin-top: 16px;
 }
 
+/* Jadval / karta almashtirgichi (ViewToggle): faol tugma asosiy rangda */
+.ivs-viewtoggle .aui-seg-item {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  flex: none;
+}
+
+.ivs-viewtoggle .aui-seg-item.is-active {
+  background: var(--primary-base);
+  color: var(--static-white);
+}
+
 .ivs-tabs {
   margin-bottom: 20px;
   overflow-x: auto;
