@@ -292,7 +292,7 @@ export default function TechnicsPage() {
         isPending={list.isPending}
         isFetching={list.isFetching}
         error={list.error}
-        empty={rows.length === 0}
+        empty={tableRows.length === 0}
         emptyText={hasFilters ? 'Filtrga mos uskuna topilmadi.' : "Hozircha uskuna yo'q."}
       >
         <DataTable
