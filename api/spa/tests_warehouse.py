@@ -66,6 +66,23 @@ class WarehouseSpaTests(TestCase):
         self.assertEqual(row["extra_devices"][0]["category_name"], "Monitor")
         self.assertEqual(row["employee_name"], self.owner.full_name)
 
+    def test_list_includes_employees_without_technics(self):
+        r = self.api(self.viewer_user).get(f"{BASE}/technics/")
+        without = [e["id"] for e in r.data["employees_without_technics"]]
+        self.assertIn(self.plain.id, without)
+        self.assertIn(self.viewer.id, without)
+        self.assertNotIn(self.owner.id, without)  # faol texnikasi bor
+        # begona tashkilot xodimi ko'rinmaydi
+        _, foreign = make_employee(self.other_org, self.region, last="Begona")
+        self.assertNotIn(foreign.id, without)
+        # texnikaga oid filtr/qidiruv yoki keyingi sahifa bo'lsa — ro'yxat chiqmaydi
+        self.assertEqual(self.api(self.viewer_user).get(f"{BASE}/technics/", {"status": "free"}).data["employees_without_technics"], [])
+        r = self.api(self.viewer_user).get(f"{BASE}/technics/", {"page_size": 1})
+        self.assertNotIn("employees_without_technics", r.data)
+        # qidiruv xodim F.I.O bo'yicha
+        r = self.api(self.viewer_user).get(f"{BASE}/technics/", {"search": "oddiy"})
+        self.assertEqual([e["id"] for e in r.data["employees_without_technics"]], [self.plain.id])
+
     def test_search_by_employee_name(self):
         r = self.api(self.viewer_user).get(f"{BASE}/technics/", {"search": "egasi sardor"})
         self.assertEqual([x["id"] for x in r.data["results"]], [self.t1.id])

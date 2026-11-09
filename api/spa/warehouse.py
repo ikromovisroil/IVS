@@ -8,7 +8,8 @@ give, service, report). Bu yerda faqat yetishmaganlari:
 
 * technics/                — barn_tex ro'yxati: TechnicsViewSet bilan bir xil doira va filtrlar, lekin qidiruv
                              xodim F.I.O bo'yicha ham (saytdagidek), tartib xodim bo'yicha (jadvalda guruhlash uchun),
-                             xodim lavozimi va qo'shimcha qurilmalarning kategoriyasi bilan.
+                             xodim lavozimi va qo'shimcha qurilmalarning kategoriyasi bilan. Oxirgi sahifada
+                             "employees_without_technics" — texnikasi yo'q xodimlar (texnikaga oid filtr bo'lmasa).
 * technics/stats/          — shu filtrlar bo'yicha holatlar soni.
 * technics/<id>/           — bitta uskuna (xuddi shu maydonlar).
 * technics/<id>/card/      — QR kod sahifasi (main/views.py:technics_detail) ma'lumotlari: har qanday kirgan xodim.
@@ -31,7 +32,7 @@ import logging
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Count, DecimalField, ExpressionWrapper, F, Prefetch, Q, Sum
+from django.db.models import Count, DecimalField, Exists, ExpressionWrapper, F, OuterRef, Prefetch, Q, Sum
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 from django.urls import path
@@ -186,6 +187,40 @@ class SpaTechnicsViewSet(TechnicsViewSet):
                 | Q(serial__icontains=w) | Q(mac__icontains=w) | Q(ip__icontains=w)
             )
         return qs
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+        # Texnikasi yo'q xodimlar — oxirgi sahifada (Texnikalarim bilan bir xil)
+        if isinstance(response.data, dict) and response.data.get("next") is None:
+            response.data["employees_without_technics"] = self._employees_without_technics()
+        return response
+
+    def _employees_without_technics(self, limit=500):
+        """Ko'rish doirasi va tuzilma filtrlaridagi xodimlar, faol texnikasi yo'qlari. Texnikaga oid filtr/qidiruv bo'lsa — bo'sh."""
+        params = self.request.query_params
+        if any(params.get(k) for k in ("group", "category", "status", "employee")):
+            return []
+        user = self.request.user
+        me = getattr(user, "employee", None)
+        qs = Employee.objects.filter(user__is_active=True).select_related("rank")
+        if not user.is_superuser:
+            if not me:
+                return []
+            if not user.has_perm("main.all_region"):
+                qs = qs.filter(region_id=me.region_id)
+            if not user.has_perm("main.all_organization"):
+                qs = qs.filter(organization_id=me.organization_id)
+        for key in ("organization", "region", "department", "directorate", "division"):
+            value = params.get(key)
+            if value and value.isdigit():
+                qs = qs.filter(**{f"{key}_id": int(value)})
+        for w in (params.get("search") or "").strip()[:120].split():
+            qs = qs.filter(Q(last_name__icontains=w) | Q(first_name__icontains=w) | Q(father_name__icontains=w))
+        qs = qs.exclude(Exists(Technics.objects.filter(employee_id=OuterRef("pk"), is_active=True)))
+        return [
+            {"id": e.id, "full_name": e.full_name, "rank_name": e.rank.name if e.rank_id else None}
+            for e in qs.order_by("last_name", "first_name")[:limit]
+        ]
 
     @action(detail=False, methods=["get"])
     def stats(self, request):

@@ -81,6 +81,11 @@
   font-style: normal;
 }
 
+/* Texnikasi yo'q xodimlar qatorlarida amallar menyusi yo'q */
+.aui-table tr:has(.ivs-noact) .aui-row-menu {
+  visibility: hidden;
+}
+
 /* Qator menyusi (ActionMenu) */
 .ivs-menu {
   position: fixed;

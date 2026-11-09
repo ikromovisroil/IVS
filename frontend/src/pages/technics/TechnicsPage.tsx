@@ -1,5 +1,6 @@
 import FilterBar from '../../components/FilterBar'
 import { useCallback, useMemo, useState } from 'react'
+import type { ReactNode } from 'react'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { Badge, Button, CellUser, DataTable, Pagination, Select } from '../../ds'
@@ -18,7 +19,7 @@ import { avatarColor, initials } from '../../lib/format'
 import { useUrlFilters } from '../../lib/useUrlFilters'
 import ActionMenu from './ActionMenu'
 import type { MenuAction } from './ActionMenu'
-import type { TechnicsRow, TechnicsStats } from './api'
+import type { MyTechnics, TechnicsRow, TechnicsStats } from './api'
 import { SPA, toOptions, useOrgTree, useRegions } from './api'
 import { AssignDialog, AttachDeviceDialog, DetachDeviceDialog } from './TechnicsDialogs'
 import { errorText } from './util'
@@ -34,6 +35,12 @@ const PAGE_SIZE = 20
 const FILTER_KEYS = ['search', 'group', 'category', 'status', 'organization', 'region', 'department', 'directorate', 'division'] as const
 
 type Dialog = 'detail' | 'edit' | 'assign' | 'attach' | 'detach' | 'delete'
+
+/** Jadval qatori: uskuna, "Texnikasi yo'q xodimlar" sarlavhasi yoki texnikasi yo'q xodim */
+type Row =
+  | { kind: 'tex'; id: string; tex: TechnicsRow }
+  | { kind: 'head'; id: string }
+  | { kind: 'emp'; id: string; n: number; emp: MyTechnics['employees_without_technics'][number] }
 
 /** Har bir uskunaning qo'shimcha qurilmalari ustun ichida alohida qatorlarda (eski jadvaldagidek). */
 function DeviceLines({ r, field }: { r: TechnicsRow; field: 'name' | 'inventory' | 'serial' }) {
@@ -81,7 +88,7 @@ export default function TechnicsPage() {
   // Biriktirish/tahrirlashdan keyin oyna yangi ma'lumot bilan qolishi uchun qator ro'yxatdan qayta olinadi
   const list = useQuery({
     queryKey: ['technics', 'list', filters, page],
-    queryFn: () => api<ApiPage<TechnicsRow>>(`${SPA}/technics/`, { query: { ...filters, page, page_size: PAGE_SIZE } }),
+    queryFn: () => api<ApiPage<TechnicsRow> & Partial<Pick<MyTechnics, 'employees_without_technics'>>>(`${SPA}/technics/`, { query: { ...filters, page, page_size: PAGE_SIZE } }),
     placeholderData: keepPreviousData,
   })
   const stats = useQuery({
@@ -118,6 +125,18 @@ export default function TechnicsPage() {
     return first
   }, [rows])
 
+  // Texnikasi yo'q xodimlar — faqat oxirgi sahifada (backend shunda yuboradi)
+  const tableRows = useMemo<Row[]>(() => {
+    const out: Row[] = rows.map((r) => ({ kind: 'tex', id: `t${r.id}`, tex: r }))
+    const without = list.data?.employees_without_technics ?? []
+    if (without.length) {
+      out.push({ kind: 'head', id: 'head' })
+      const base = (page - 1) * PAGE_SIZE + groups.size
+      without.forEach((e, i) => out.push({ kind: 'emp', id: `e${e.id}`, n: base + i + 1, emp: e }))
+    }
+    return out
+  }, [rows, list.data, page, groups])
+
   const actionsFor = (r: TechnicsRow): MenuAction[] => {
     const open = (dialog: Dialog) => () => setActive({ row: r, dialog })
     const out: MenuAction[] = [{ label: 'Tafsilot', icon: 'ri-information-line', onClick: open('detail') }]
@@ -134,24 +153,40 @@ export default function TechnicsPage() {
     return out
   }
 
-  const columns: DataTableColumn<TechnicsRow>[] = [
-    { key: 'n', label: t('T/r'), width: '5%', render: (r) => (groups.has(r.id) ? (page - 1) * PAGE_SIZE + (groups.get(r.id) ?? 0) : '') },
+  // Faqat uskuna qatorlari uchun chiziladigan ustun (qolgan qatorlarda bo'sh)
+  const tex = (fn: (r: TechnicsRow) => ReactNode) => (row: Row) => (row.kind === 'tex' ? fn(row.tex) : null)
+
+  const columns: DataTableColumn<Row>[] = [
+    {
+      key: 'n',
+      label: t('T/r'),
+      width: '5%',
+      render: (row) => (row.kind === 'emp' ? row.n : row.kind === 'tex' && groups.has(row.tex.id) ? (page - 1) * PAGE_SIZE + (groups.get(row.tex.id) ?? 0) : ''),
+    },
     {
       key: 'employee_name',
       label: t('F.I.O'),
       width: '21%',
-      render: (r) =>
-        !groups.has(r.id) ? null : r.employee_name ? (
+      render: (row) => {
+        if (row.kind === 'head') return <span className="type-label-sm ivs-muted ivs-noact">{t("Texnikasi yo'q xodimlar")}</span>
+        if (row.kind === 'emp') {
+          const { emp } = row
+          return <CellUser name={emp.full_name} sub={emp.rank_name ? `"${emp.rank_name}"` : undefined} initials={initials(emp.full_name)} color={avatarColor(emp.id)} />
+        }
+        const r = row.tex
+        return !groups.has(r.id) ? null : r.employee_name ? (
           <CellUser name={r.employee_name} sub={r.employee_rank ? `"${r.employee_rank}"` : r.department_name || undefined} initials={initials(r.employee_name)} color={avatarColor(r.employee ?? 0)} />
         ) : (
           <CellUser name={t('Biriktirilmagan#ombor')} sub={r.department_name || r.directorate_name || r.division_name || t('Omborxonada')} initials="—" color="gray" />
-        ),
+        )
+      },
     },
     {
       key: 'name',
       label: t('Texnika nomi'),
       width: '25%',
-      render: (r) => (
+      render: (row) =>
+        row.kind === 'emp' ? <span className="ivs-muted ivs-noact">{t('Texnika biriktirilmagan')}</span> : tex((r) => (
         <div className="aui-cell-text">
           <div className="aui-cell-primary">
             <Link
@@ -174,32 +209,32 @@ export default function TechnicsPage() {
           <div className="aui-cell-secondary">{r.parametr || r.category_name}</div>
           <DeviceLines r={r} field="name" />
         </div>
-      ),
+      ))(row),
     },
     {
       key: 'inventory',
       label: t('I/R'),
       width: '12%',
-      render: (r) => (
+      render: tex((r) => (
         <div className="ivs-mono">
           {r.inventory || ''}
           <DeviceLines r={r} field="inventory" />
         </div>
-      ),
+      )),
     },
     {
       key: 'serial',
       label: t('S/R'),
       width: '13%',
-      render: (r) => (
+      render: tex((r) => (
         <div className="ivs-mono">
           {r.serial || ''}
           <DeviceLines r={r} field="serial" />
         </div>
-      ),
+      )),
     },
-    { key: 'address', label: t('Joylashuvi'), width: '12%', render: (r) => <span className="type-para-xs">{r.address || ''}</span> },
-    { key: 'status', label: t('Holati'), render: (r) => <StatusTag status={r.status} label={r.status_display} /> },
+    { key: 'address', label: t('Joylashuvi'), width: '12%', render: tex((r) => <span className="type-para-xs">{r.address || ''}</span>) },
+    { key: 'status', label: t('Holati'), render: tex((r) => <StatusTag status={r.status} label={r.status_display} />) },
   ]
 
   // /api/v1/export/technics.xlsx — ro'yxat bilan bir xil doira va filtrlar (qidiruv u yerda F.I.O bo'yicha emas)
@@ -261,12 +296,12 @@ export default function TechnicsPage() {
         emptyText={hasFilters ? 'Filtrga mos uskuna topilmadi.' : "Hozircha uskuna yo'q."}
       >
         <DataTable
-          rows={rows}
+          rows={tableRows}
           columns={columns}
           getRowId={(r) => r.id}
           rowHeight={64}
           minWidth={1040}
-          rowActions={(r, e) => setMenu({ row: r, anchor: e.currentTarget as HTMLElement })}
+          rowActions={(r, e) => r.kind === 'tex' && setMenu({ row: r.tex, anchor: e.currentTarget as HTMLElement })}
           caption={t("Texnika va uskunalar ro'yxati")}
         />
         {pageCount > 1 && (
