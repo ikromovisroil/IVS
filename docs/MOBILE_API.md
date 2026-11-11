@@ -39,6 +39,74 @@ So'rov va javoblar JSON (fayllar — `multipart/form-data`), vaqtlar — ISO 860
 
 Server tomonida bu endpointlar o'z holicha qoladi (veb ishlatadi); mobil ularni **chaqirmaydi**.
 
+### 1.3 Pastki menyu (bottom navigation)
+
+Ilovaning pastki paneli 5 ta bo'limdan iborat. **O'rtadagi tugma — QR skaner** (avval "Yangi ariza" edi).
+
+| № | Tugma | Nima ochadi | API | Ruxsat |
+|---|---|---|---|---|
+| 1 | Bosh sahifa | Bosh ekran (qisqa ko'rinish: faol arizalar, kutayotgan hujjatlar) | 7, 8 | — |
+| 2 | Arizalar | Yuqorida bo'lim tablari (1.4) + **"+" tugmasi (Yangi ariza)** | 7 | tablar `organization_type` va ruxsatga qarab |
+| 3 | **Skaner** (o'rtada, ajratib ko'rsatiladi) | Kamera ochiladi, QR o'qiladi | `POST /api/scan/` (9.4) | kerak emas |
+| 4 | Xabarlar | Hujjatlar (imzolash, kelishish, reyestr) | 8 | — |
+| 5 | Menyu | Qolgan bo'limlar: Ombor, Xodimlar, Chat, Bildirishnomalar, Profil | 9, 10, 11, 12, 4 | ruxsatga qarab |
+
+**"Yangi ariza" qayerda.** Pastki menyudan olib tashlandi, lekin yo'qolmaydi:
+- Arizalar ekranining o'ng pastki burchagida suzuvchi **"+"** tugmasi;
+- Arizalar ro'yxati bo'sh bo'lsa — markazda "Ariza yaratish" tugmasi.
+"+" **ochiq tabga qarab** ishlaydi: "ATMga ariza" tabida — ATM arizasi (`POST /api/orders/`, 7.1; turlari `/me/` dagi `orders.send_goals`); "Omborxona" tabida — material arizasi (7.4; turlari `orders.material_goals`). Alohida tur tanlash oynasi kerak emas.
+
+**Skaner tugmasi:**
+- Ruxsat talab qilinmaydi: texnika kartasini va hujjat holatini hamma kirgan xodim ko'radi. Tahrirlash, biriktirish va bo'shatish tugmalari faqat javobda `can_edit: true` bo'lganda chiqadi (9.4).
+- Birinchi bosishda Android `CAMERA` ruxsati so'raladi. Rad etilsa — tushuntirish va "Sozlamalarga o'tish" tugmasi.
+- Bitta QR o'qilgach kamera to'xtaydi (server chegarasi — daqiqasiga 60 ta so'rov).
+- Natijalar: texnika → texnika kartasi; hujjat → hujjat holati (`can_open: true` bo'lsa to'liq ochiladi); `400 unknown` → "Bu IVC QR kodi emas"; `404` → "Topilmadi".
+- Qora fon ustida chiroq (fonar) tugmasi va "Galereyadan tanlash" bo'lishi tavsiya etiladi (ixtiyoriy).
+
+**Qizil raqamlar (badge):**
+- Xabarlar — o'qilmagan bildirishnomalar (`GET /api/notifications/unread-count/`, 12.1);
+- Menyu → Chat — `GET /api/chat/unread-count/`;
+- Arizalar — `GET /api/orders/badges/` (7.3).
+
+Tugmalar **bir odamga bir nechta ruxsat** berilganda ham o'zgarmaydi: 5 ta tugma hamma uchun bir xil, farq faqat ichki ekranlardagi bo'limlarda (2.5-bo'lim).
+
+### 1.4 "Arizalar" ekrani: tablar (vebdagidek)
+
+Ekran tepasida tablar. Qaysilari ko'rinishi vebdagi "Arizalar" bo'limi bilan bir xil (`frontend/src/pages/orders/tabs.ts`); shart — `/me/` dagi `organization_type` va ruxsatlar:
+
+| Tab | Kimga ko'rinadi | Nima |
+|---|---|---|
+| **ATMga ariza** | hammaga (ATM xodimi ham, mijoz ham) | O'z arizalari: yuborish, kuzatish, baho bilan qabul qilish, bekor qilish (7.1) |
+| **Omborxona** | faqat `organization_type = "client"` | Material tanlab omborxonaga ariza berish va kuzatish (7.4) |
+| **Arizalar holati** (ATM) | `worker` va `change_order` | Yangi, qabul qilingan, arxiv — bajarish (7.2) |
+| **Arizalar holati** (omborxona) | `client` va `change_order` | Omborxonachi: arizani qabul qilish, rad etish, material berish (7.5) |
+| **Tasdiqlash** | `client` va `confirm_order` | Berilgan materiallarni tasdiqlash (7.6) |
+
+Natija:
+- **ATM xodimi** (`worker`): "ATMga ariza" (+ ruxsati bo'lsa "Arizalar holati"). **Omborxona tabi yo'q.**
+- **Mijoz xodimi** (`client`): "ATMga ariza" **va** "Omborxona" (+ ruxsatiga qarab "Arizalar holati", "Tasdiqlash").
+- Tab bitta bo'lsa, tab paneli ko'rsatilmaydi — to'g'ridan-to'g'ri ro'yxat ochiladi.
+- Omborxona tabi `organization_type` bo'yicha chiqadi. Agar `orders.material_goals` bo'sh bo'lsa (tashkilotga ariza turi biriktirilmagan), tab ko'rinadi, lekin "+" o'rniga "Ariza turlari sozlanmagan, administratorga murojaat qiling" yozuvi chiqadi.
+
+### 1.5 "Menyu" ekrani (ruxsatga qarab)
+
+"Menyu" da faqat **mobilda mavjud** bo'limlar chiqadi, har biri ruxsatiga qarab (`/me/` → `permissions`, `main.<nom>`). Ruxsati yo'q bo'limni **yashiring**; server baribir `403` qaytaradi.
+
+| Element | Ko'rinish sharti | Bo'lim |
+|---|---|---|
+| Texnikalarim | hammaga | 9.1 |
+| Texnikalar (ombor) | `view_technics` | 9.1 |
+| Qurilmalar | `change_technics` | 9.2 |
+| Materiallar | `view_material` | 9.3 |
+| Xodimlar | `view_employee` | 10 |
+| Chat | hammaga | 11 |
+| Bildirishnomalar | hammaga | 12.1 |
+| Profil, Chiqish | hammaga | 4, 3 |
+
+Menyu'da **yo'q** (boshqa joyda): Hujjatlar — "Xabarlar" tabida; Arizalar va Omborxona — "Arizalar" tabida (1.4); QR skaner — pastki menyu o'rtasida (1.3). Statistika, hisobotlar va ruxsat berish mobilda umuman yo'q (1.2).
+
+Ichki ekranlardagi amallar ham ruxsatga qarab: "+" tugmasi (`add_*`), tahrirlash (`change_*`), o'chirish (`delete_*`) — 2.5-bo'lim. Ruxsati kam xodimda Menyu qisqa bo'ladi (Texnikalarim, Chat, Bildirishnomalar, Profil) — bu normal.
+
 ---
 
 ## 2. Kim nimani ko'radi
@@ -272,7 +340,7 @@ Mijoz tashkiloti xodimi bajara olmaydi. Ko'rish doirasi: o'z hududi va `execute_
 ### 7.4 Material arizasi (mijoz → o'z omborxonasi)
 
 **Faqat mijoz (`client`) xodimi uchun.** Mijoz o'z tashkilotining omborxonasidan material so'raydi: materiallarni tanlab ariza yuboradi, holatini kuzatadi, olgach qabul qiladi.
-Ilova bu bo'limni (menyuda "Omborxona") `/me/` dagi `orders.can_create_material_order: true` bo'lsagina ko'rsatsin; ATM xodimida u yo'q.
+Ilova bu bo'limni ("Arizalar" ekranidagi "Omborxona" tabi, 1.4) `organization_type = "client"` bo'lganda ko'rsatadi (vebdagidek); ATM xodimida u yo'q. Ariza **yuborish** uchun `orders.can_create_material_order: true` (ya'ni `material_goals` bo'sh emas) bo'lishi kerak.
 
 **Ariza yuborish** — savatni ilova **qurilmada o'zi saqlaydi** va bitta so'rovda yuboradi:
 1. `GET /api/orders/selectable-materials/?search=` — o'z tashkilotining faol materiallari (faqat unga ruxsat etilgan kategoriyalar).
@@ -460,6 +528,8 @@ aks holda o'zi va unga biriktirilgan xodimlarniki.
 - Qo'shish oynasidagi ro'yxatlar (6-bo'lim): `material-categories`, `units`. O'chirishdan oldin **tasdiq oynasi** bo'lsin.
 
 ### 9.4 QR skaner — `POST /api/scan/`
+
+Skaner ilovaning pastki menyusida **o'rtadagi tugma** (1.3).
 
 Ilova kamera bilan QR'ni o'qiydi va **matnini** yuboradi: `{"text": "https://<server>/technics/12/"}`. Server matnni tanib, tegishli ma'lumotni qaytaradi
 (saytdagi QR sahifalari bilan bir xil ma'lumot). Faqat o'z domenimizdagi havolalar qabul qilinadi. Daqiqasiga 60 ta so'rov.
