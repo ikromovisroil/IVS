@@ -77,8 +77,8 @@ def _direct_keys(user):
 
 
 def _options(current_emp, target):
-    is_client = bool(current_emp.organization and current_emp.organization.type != "worker")
-    goals = Goal.objects.filter(organization=current_emp.organization) if is_client else Goal.objects.all()
+    # Ariza turlari ("ariza bajarish"): faqat RUXSAT BERILAYOTGAN xodimning o'z tashkilotidagilari (tahrirlovchi superuser bo'lsa ham)
+    goals = Goal.objects.filter(organization=target.organization) if target.organization_id else Goal.objects.none()
     mat_cats = MaterialCategory.objects.filter(organization=target.organization) if target.organization_id else MaterialCategory.objects.none()
     return {
         "goals": goals.order_by("name", "id"),
@@ -122,6 +122,7 @@ def state(request_user, current_emp, target):
         })
     opts = _options(current_emp, target)
     sel = _selected(target)
+    sel["goals"] = sorted(set(sel["goals"]) & set(_ids(opts["goals"])))     # boshqa tashkilot turlari ko'rinmaydi
     target_is_worker = target.organization_id and target.organization.type == "worker"
     return {
         "employee": {
@@ -210,8 +211,9 @@ def apply(request, current_emp, target, data):
     contracts = _validated_ids(data, "contracts", opts["contracts"])
     mats = _validated_ids(data, "material_categories", opts["material_categories"])
 
-    # Ariza turlari: faqat "ariza bajarish" bor bo'lsa
-    new_goals = (goals if goals is not None else set(sel["goals"])) if final.get("change_order") else set()
+    # Ariza turlari: faqat "ariza bajarish" bor bo'lsa; faqat xodimning o'z tashkiloti turlari
+    own_goal_ids = set(_ids(opts["goals"]))
+    new_goals = ((goals if goals is not None else set(sel["goals"])) & own_goal_ids) if final.get("change_order") else set()
     OrderGoal.objects.filter(employee=target).delete()
     if new_goals:
         OrderGoal.objects.create(employee=target).goal.set(new_goals)
