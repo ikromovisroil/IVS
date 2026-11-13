@@ -24,7 +24,9 @@ class PeopleSpaTests(TestCase):
         self.org = make_org("worker")
         self.other = make_org("client")
         self.region = make_region()
-        self.user, self.emp = make_employee(org=self.org, region=self.region, first="Aziz", last="Karimov")
+        # Eski testlar keng ko'lamni sinaydi: all_organization bilan (ko'lam cheklovi — DeedScopeTests)
+        self.user, self.emp = make_employee(org=self.org, region=self.region, first="Aziz", last="Karimov",
+                                            perms=("main.all_organization",))
         self.client = APIClient()
         self.client.force_authenticate(self.user)
 
@@ -159,3 +161,83 @@ class PeopleSpaTests(TestCase):
             r = c.post(url, {"pinfl": "99999999999999"}, format="json")
         self.assertEqual((r.status_code, r.data["detail"]), (400, "Gatewayda ish joyi topilmadi"))
         self.assertFalse(Employee.objects.filter(pinfl="99999999999999").exists())
+
+
+@override_settings(MEDIA_ROOT=MEDIA)
+class DeedScopeTests(TestCase):
+    """"Hujjatlar": all_organization yo'q xodimga faqat imzolovchisi/kelishuvchisi o'z tashkilotidan bo'lgan hujjatlar."""
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        shutil.rmtree(MEDIA, ignore_errors=True)
+
+    def setUp(self):
+        self.mine = make_org("client")
+        self.other = make_org("client")
+        self.r1, self.r2 = make_region(), make_region()
+        self.user, self.emp = make_employee(org=self.mine, region=self.r1)
+        _, self.mate = make_employee(org=self.mine, region=self.r1)
+        _, self.alien = make_employee(org=self.other, region=self.r2)
+        self.client = APIClient()
+        self.client.force_authenticate(self.user)
+
+    def _deed(self, **kw):
+        d = Deed(user=kw.pop("user", self.alien), **kw)
+        d.file.save("t.pdf", ContentFile(b"%PDF-1.4"), save=False)
+        d.save()
+        return d
+
+    def _ids(self, **params):
+        params.setdefault("status", "act")
+        r = self.client.get("/api/v1/spa/people/files/", params)
+        self.assertEqual(r.status_code, 200)
+        return {x["id"] for x in r.data["results"]}
+
+    def test_only_deeds_with_signer_or_consenter_from_my_org(self):
+        by_sender = self._deed(status="act", sender=self.mate)
+        by_receiver = self._deed(status="act", sender=self.alien, receiver=self.mate)
+        by_consent = self._deed(status="act", sender=self.alien)
+        DeedConsent.objects.create(deed=by_consent, employee=self.mate)
+        foreign = self._deed(status="act", sender=self.alien)
+        DeedConsent.objects.create(deed=foreign, employee=self.alien)
+        # hujjat tashkiloti yoki yaratuvchisi o'z tashkilotimdan bo'lsa ham, imzolovchi/kelishuvchi begona bo'lsa — chiqmaydi
+        own_org_only = self._deed(status="act", sender=self.alien, organization=self.mine, user=self.mate)
+        self.assertEqual(self._ids(), {by_sender.id, by_receiver.id, by_consent.id})
+        self.assertNotIn(foreign.id, self._ids(organization=self.other.id))
+        self.assertNotIn(own_org_only.id, self._ids())
+
+    def test_all_organization_sees_everything(self):
+        foreign = self._deed(status="act", sender=self.alien)
+        user, _ = make_employee(org=self.mine, region=self.r1, perms=("main.all_organization",))
+        c = APIClient()
+        c.force_authenticate(user)
+        r = c.get("/api/v1/spa/people/files/", {"status": "act"})
+        self.assertIn(foreign.id, {x["id"] for x in r.data["results"]})
+
+    def test_filters_limited_to_own_org_and_region(self):
+        r = self.client.get("/api/v1/spa/people/files/filters/")
+        self.assertEqual([o["id"] for o in r.data["organizations"]], [self.mine.id])
+        self.assertEqual([x["id"] for x in r.data["regions"]], [self.r1.id])
+
+    def test_filters_all_region_widens_regions_only(self):
+        user, _ = make_employee(org=self.mine, region=self.r1, perms=("main.all_region",))
+        c = APIClient()
+        c.force_authenticate(user)
+        r = c.get("/api/v1/spa/people/files/filters/")
+        self.assertEqual([o["id"] for o in r.data["organizations"]], [self.mine.id])
+        self.assertIn(self.r2.id, {x["id"] for x in r.data["regions"]})
+
+    def test_attachments_hidden_outside_scope(self):
+        d = self._deed(status="act", sender=self.alien)
+        DeedFiles.objects.create(deed=d, file=ContentFile(b"x", name="a.pdf"))
+        self.assertEqual(self.client.get(f"/api/v1/spa/people/files/{d.id}/attachments/").status_code, 404)
+
+    def test_mobile_registry_scoped(self):
+        mine = self._deed(status="act", sender=self.mate)
+        foreign = self._deed(status="act", sender=self.alien)
+        r = self.client.get("/api/v1/deed-registry/", {"status": "act"})
+        self.assertEqual(r.status_code, 200)
+        ids = {x["id"] for x in r.data["results"]}
+        self.assertEqual(ids, {mine.id})
+        self.assertEqual(self.client.get(f"/api/v1/deed-registry/{foreign.id}/").status_code, 404)

@@ -30,8 +30,9 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from main.models import Deed, DeedConsent, Organization, Region
+from main.models import Deed, DeedConsent
 
+from ..deed_scope import allowed_organizations, allowed_regions, scope_deeds
 from ..pagination import StandardResultsPagination
 
 logger = logging.getLogger(__name__)
@@ -223,23 +224,23 @@ def _deed_json(d):
 
 
 class FilesFiltersView(APIView):
-    """Saytdagi "Hujjatlar" sahifasi kabi: barcha tashkilotlar va hududlar (sahifa hamma xodimga ochiq)."""
+    """"Hujjatlar" sahifasi filtrlari: xodimga ruxsat etilgan tashkilot va hududlar (api/deed_scope.py)."""
 
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         _employee(request)
         return Response({
-            "organizations": list(Organization.objects.order_by("id").values("id", "name")),
-            "regions": list(Region.objects.order_by("id").values("id", "name")),
+            "organizations": list(allowed_organizations(request.user).order_by("id").values("id", "name")),
+            "regions": list(allowed_regions(request.user).order_by("id").values("id", "name")),
             "statuses": [{"value": k, "label": v} for k, v in DEED_STATUSES.items()],
         })
 
 
 class FilesView(APIView):
     """
-    "Hujjatlar" qidiruvi — main/views.py: files() bilan bir xil: xodim profili bo'lgan har kim; hech bir filtr
-    berilmasa bo'sh ro'yxat. Filtrlar: name (F.I.O / kod / ariza raqami), organization, region, status (hujjat turi),
+    "Hujjatlar" qidiruvi: xodim profili bo'lgan har kim, lekin faqat imzolovchisi yoki kelishuvchisi o'z tashkilotidan
+    bo'lgan hujjatlar (`all_organization` bo'lsa hammasi — api/deed_scope.py); hech bir filtr berilmasa bo'sh ro'yxat. Filtrlar: name (F.I.O / kod / ariza raqami), organization, region, status (hujjat turi),
     overall (holati: approved | rejected | pending), date1, date2.
     """
 
@@ -274,6 +275,7 @@ class FilesView(APIView):
                 )
                 .order_by("-id")
             )
+            qs = scope_deeds(qs, request.user)
             if name:
                 person = Q()
                 for term in name.split():
@@ -340,6 +342,8 @@ class FileAttachmentsView(APIView):
     def get(self, request, pk):
         from main.views import deed_attachments
 
+        if not scope_deeds(Deed.objects.filter(pk=pk), request.user).exists():
+            return Response({"detail": "Ilova fayllar topilmadi"}, status=404)
         response, msgs = _call_legacy(request, deed_attachments, method="GET", pk=pk)
         if isinstance(response, HttpResponseRedirect):
             return Response({"detail": msgs[-1][1] if msgs else "Ilova fayllar topilmadi"}, status=404)

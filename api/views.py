@@ -40,6 +40,7 @@ from .serializers import *
 from .permissions import *
 from .material_report import allowed_report_employees, build_report, parse_period
 from .pagination import *
+from .deed_scope import scope_deeds
 
 # `import *` lar (main.models) Django'ning ValidationError/PermissionDenied nomlarini almashtirib yuborgani uchun
 # DRF variantlari ENG OXIRIDA import qilinadi (aks holda 400 o'rniga 500 xato chiqadi).
@@ -2772,7 +2773,8 @@ class DeedViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Upd
 
 class DeedRegistryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     """
-    Hujjatlar reyestri — saytdagi "files" sahifasi: filtr bilan HAMMA hujjat (kirgan har bir xodim ko'ra oladi).
+    Hujjatlar reyestri — saytdagi "files" sahifasi: filtr bilan hujjatlar; faqat imzolovchisi yoki kelishuvchisi o'z
+    tashkilotidan bo'lganlari (`all_organization` bo'lsa hammasi — api/deed_scope.py).
     Ro'yxat uchun kamida bitta filtr kerak: name (kod, F.I.O yoki ariza raqami), organization, region (hujjat yaratilgan paytdagi hudud),
     status (hujjat turi), date1, date2 (YYYY-MM-DD, yaratilgan sana). Hujjat matni (body) berilmaydi.
     Ilovalar: GET /api/deed-registry/{id}/attachments/download/.
@@ -2790,6 +2792,7 @@ class DeedRegistryViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
             Prefetch("deedconsent_set", queryset=DeedConsent.objects.select_related(
                 "employee", "employee__organization", "employee__rank")),
         ).order_by("-id")
+        qs = scope_deeds(qs, self.request.user)
         if self.action != "list":
             return qs
 

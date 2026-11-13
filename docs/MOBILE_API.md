@@ -201,7 +201,7 @@ Bog'liqlik: `view_*` olib tashlansa, unga bog'liq ruxsatlar ham olinadi (`view_t
 | Kirish, profil (`/me/`), versiya tekshiruvi | — |
 | **Ariza yuborish**, o'z arizalarini kuzatish, baho bilan qabul qilish, bekor qilish | ariza turi `/me/` dagi `orders.send_goals` ro'yxatida bo'lishi kerak |
 | **Omborxonaga material arizasi** (faqat mijoz): materiallarni tanlab yuborish, kuzatish, qabul qilish | ariza turi `orders.material_goals` ro'yxatida; ATM xodimiga yo'q |
-| **Hujjatlarni qidirish** (reyestr, faqat o'qish): filtr bilan hamma hujjat | kamida bitta filtr kerak; ishtirokchi bo'lish shart emas (8.5) |
+| **Hujjatlarni qidirish** (reyestr, faqat o'qish): filtr bilan, imzolovchisi/kelishuvchisi o'z tashkilotidan bo'lgan hujjatlar | kamida bitta filtr kerak; ishtirokchi bo'lish shart emas; `all_organization` — hamma tashkilot (8.5) |
 | **Hujjatlar:** o'zi ishtirok etganini ko'rish, **FaceID bilan imzolash**, **kelishish**, rad etish | faqat o'zi yaratuvchi, imzolovchi, qabul qiluvchi yoki kelishuvchi bo'lgan hujjat |
 | **Texnikalarim** (`GET /spa/warehouse/technics/mine/`) | o'ziga biriktirilgan texnikalar (`boss_employee` bo'lsa kengroq) |
 | **QR skaner:** texnika kartasi va hujjat holati | hujjat PDF'i va to'liq ochish faqat ishtirokchiga |
@@ -436,8 +436,11 @@ Kelishuvchi uchun imzo emas, oddiy **kelishish** (veb'da ham tasdiq oynasi, E-IM
 `POST /api/deeds/{id}/reject/ {"message": "..."}`.
 
 ### 8.5 Hujjatlarni qidirish (reyestr) — `/api/deed-registry/`
-Veb'dagi **"Hujjatlar"** sahifasi ("Dalolatnoma, akt, reestr va hisobotlarni qidirish"). Ro'yxatdan farqi: bu yerda **ishtirokchi bo'lish shart emas** —
-kirgan har bir xodim filtr bilan hamma hujjatni qidira oladi. Faqat o'qish, ruxsat kerak emas.
+Veb'dagi **"Hujjatlar"** sahifasi ("Dalolatnoma, akt, reestr va hisobotlarni qidirish"). Ro'yxatdan farqi: bu yerda **ishtirokchi bo'lish shart emas**,
+lekin faqat **imzolovchisi, qabul qiluvchisi yoki kelishuvchisi xodimning o'z tashkilotidan** bo'lgan hujjatlar chiqadi.
+`all_organization` ruxsati bor xodim hamma tashkilotning hujjatlarini ko'radi. Faqat o'qish.
+- **Tanlov ro'yxatlari:** tashkilot — `GET /api/organizations/` (o'z tashkiloti, `all_organization` bo'lsa hammasi); hudud — `GET /api/regions/` (o'z hududi, `all_region` bo'lsa hammasi).
+- Ruxsat etilmagan hujjat `GET /api/deed-registry/{id}/` va ilovalarda `404` beradi.
 - `GET /api/deed-registry/` — **kamida bitta filtr shart** (aks holda `400`):
   - `name` — hujjat kodi, ishtirokchining F.I.O si (bir necha so'z mumkin) yoki ariza raqami;
   - `organization` — tashkilot ID; `region` — yaratuvchi hududi ID;
