@@ -19,7 +19,7 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.deed_scope import allowed_organizations, allowed_regions, sees_all_regions
+from api.deed_scope import allowed_organizations, allowed_regions, sees_all_organizations, sees_all_regions
 from api.spa.people import _MemoryMessages
 from main import ajax_views, views as main_views
 from main.models import Department, Employee
@@ -169,8 +169,9 @@ class ReportFormView(APIView):
             # document_get: emp_bos_sender
             data["senders"] = _emps(Employee.objects.filter(Q(department_id=283) | Q(department_id=298, region=emp.region)))
         elif kind == "svod":
-            # Xizmat ko'rsatuvchi (ATM) tashkilot Svodga kirmaydi
-            data["organizations"] = _orgs(orgs.exclude(type="worker"))
+            # Hamma tashkilotni ko'ra oladigan foydalanuvchiga xizmat ko'rsatuvchi (ATM) tashkilot Svodga kirmaydi;
+            # ko'rolmasa — faqat o'z tashkiloti (ro'yxat bo'sh qolmasin)
+            data["organizations"] = _orgs(orgs.exclude(type="worker") if sees_all_organizations(user) else orgs)
             data["regions"] = _regions(user)
             data["senders"] = _emps(Employee.objects.filter(department_id=283))
             data["agreements"] = _emps(Employee.objects.filter(organization_id=4))

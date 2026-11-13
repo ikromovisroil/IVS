@@ -153,7 +153,8 @@ class ReportsApiTests(TestCase):
             data = self.client.get(f"{URL}{kind}/form/").json()
             self.assertEqual([o["id"] for o in data["organizations"]], [self.atm.id], kind)
             self.assertEqual([r["id"] for r in data["regions"]], [self.region.id], kind)
-        self.assertEqual(self.client.get(f"{URL}svod/form/").json()["organizations"], [])  # ATM Svodga kirmaydi
+        # Svod: hamma tashkilotni ko'rolmasa ham ro'yxat bo'sh qolmaydi — o'z tashkiloti
+        self.assertEqual([o["id"] for o in self.client.get(f"{URL}svod/form/").json()["organizations"]], [self.atm.id])
 
         self.login(self.worker)  # all_organization bor, all_region yo'q
         data = self.client.get(f"{URL}reestr/form/").json()
