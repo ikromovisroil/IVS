@@ -38,7 +38,8 @@ class ReportsApiTests(TestCase):
         cls.rank = Rank.objects.create(name="Muhandis")
 
         cls.worker = make_emp(cls.atm, cls.region, rank=cls.rank, last="Ishchi",
-                              perms=("main.shop_employee", "main.change_order", "main.material_service"))
+                              perms=("main.shop_employee", "main.change_order", "main.material_service",
+                                     "main.all_organization"))
         cls.boss = make_emp(cls.atm, cls.region, dep=cls.dep283, rank=cls.rank, last="Rahbar")
         cls.client_user = make_emp(cls.client_org, cls.region, last="Mijoz")
 
@@ -120,7 +121,7 @@ class ReportsApiTests(TestCase):
         self.login(self.worker)
         today = timezone.localdate()
         res = self.client.get(f"{URL}data/svod-materials/", {
-            "organizations[]": [self.client_org.id], "region": "all",
+            "organizations[]": [self.client_org.id], "region": self.region.id,
             "date1": (today - timedelta(days=10)).isoformat(), "date2": today.isoformat(),
         })
         self.assertEqual(res.status_code, 200)
@@ -133,7 +134,7 @@ class ReportsApiTests(TestCase):
         self.login(self.worker)
         today = timezone.localdate()
         res = self.client.get(f"{URL}data/reestr-materials/", {
-            "organization": self.client_org.id, "region": "all",
+            "organization": self.client_org.id, "region": self.region.id,
             "date1": (today - timedelta(days=10)).isoformat(), "date2": today.isoformat(),
         })
         self.assertEqual(res.status_code, 200)
@@ -141,6 +142,54 @@ class ReportsApiTests(TestCase):
         self.assertIn("Ishchi", item["receiver"])      # bajaruvchi
         self.assertIn("Ishchi", item["owner"])         # materialga moddiy-javobgar (Material.employee)
         self.assertEqual(item["owner_rank"], "Muhandis")
+
+    # ── Ko'rish doirasi: tashkilot — all_organization, hudud — all_region ──
+    def test_lists_follow_scope_permissions(self):
+        """'Barcha tashkilotlar' yo'q — faqat o'z tashkiloti; 'Barcha hududlar' yo'q — faqat o'z hududi."""
+        other_region = Region.objects.create(name="Samarqand")
+        limited = make_emp(self.atm, self.region, last="Cheklangan", perms=("main.shop_employee", "main.change_order"))
+        self.login(limited)
+        for kind in ("reestr", "akt"):
+            data = self.client.get(f"{URL}{kind}/form/").json()
+            self.assertEqual([o["id"] for o in data["organizations"]], [self.atm.id], kind)
+            self.assertEqual([r["id"] for r in data["regions"]], [self.region.id], kind)
+        self.assertEqual(self.client.get(f"{URL}svod/form/").json()["organizations"], [])  # ATM Svodga kirmaydi
+
+        self.login(self.worker)  # all_organization bor, all_region yo'q
+        data = self.client.get(f"{URL}reestr/form/").json()
+        self.assertEqual({o["id"] for o in data["organizations"]}, {self.atm.id, self.client_org.id})
+        self.assertEqual([r["id"] for r in data["regions"]], [self.region.id])
+        self.assertNotIn(other_region.id, [r["id"] for r in data["regions"]])
+
+    def test_data_and_submit_reject_out_of_scope(self):
+        other_region = Region.objects.create(name="Samarqand")
+        other_dep = Department.objects.create(name="Boshqa", organization=self.client_org, region=other_region)
+        limited = make_emp(self.atm, self.region, last="Cheklangan", perms=("main.shop_employee", "main.change_order"))
+        today = timezone.localdate()
+        dates = {"date1": (today - timedelta(days=10)).isoformat(), "date2": today.isoformat()}
+
+        self.login(limited)
+        # boshqa tashkilot
+        self.assertEqual(self.client.get(f"{URL}data/svod-materials/", {"organizations[]": [self.client_org.id], **dates}).status_code, 403)
+        self.assertEqual(self.client.get(f"{URL}data/reestr-materials/", {"organization": self.client_org.id, **dates}).status_code, 403)
+        self.assertEqual(self.client.get(f"{URL}data/departments/", {"organization": self.client_org.id}).status_code, 403)
+        self.assertEqual(self.client.post(f"{URL}svod/submit/", {"organizations[]": [self.client_org.id]}).status_code, 403)
+        # o'z tashkiloti — ruxsat
+        self.assertEqual(self.client.get(f"{URL}data/departments/", {"organization": self.atm.id}).status_code, 200)
+
+        self.login(self.worker)  # all_organization bor, all_region yo'q
+        for region in ("all", other_region.id):
+            res = self.client.get(f"{URL}data/svod-materials/", {"organizations[]": [self.client_org.id], "region": region, **dates})
+            self.assertEqual(res.status_code, 403, region)
+        self.assertEqual(self.client.get(f"{URL}data/departments/", {"organization": self.client_org.id, "all_regions": "1"}).status_code, 403)
+        self.assertEqual(self.client.get(f"{URL}data/akt-materials/", {"organization": self.client_org.id, "department": other_dep.id, **dates}).status_code, 403)
+
+        # Barcha hududlar ruxsati bilan — boshqa hudud ham ochiq
+        full = make_emp(self.atm, self.region, last="Toliq",
+                        perms=("main.shop_employee", "main.all_organization", "main.all_region"))
+        self.login(full)
+        self.assertEqual(self.client.get(f"{URL}data/svod-materials/", {"organizations[]": [self.client_org.id], "region": "all", **dates}).status_code, 200)
+        self.assertEqual(self.client.get(f"{URL}data/departments/", {"organization": self.client_org.id, "region": other_region.id}).status_code, 200)
 
     def test_unknown_data_404(self):
         self.login(self.worker)
@@ -185,7 +234,7 @@ class ReportsApiTests(TestCase):
         self.assertTrue(self.client.get(URL, **auth).json()["reports"]["svod"])
         self.assertEqual(self.client.get(f"{URL}svod/form/", **auth).status_code, 200)
         res = self.client.get(f"{URL}data/svod-materials/", {
-            "organizations[]": [self.client_org.id], "region": "all",
+            "organizations[]": [self.client_org.id], "region": self.region.id,
             "date1": (today - timedelta(days=10)).isoformat(), "date2": today.isoformat(),
         }, **auth)
         self.assertEqual(res.status_code, 200)

@@ -15,7 +15,10 @@ class AjaxLoadDepartmentsTests(TestCase):
         self.dep_z = Department.objects.create(name="Zzz dep", organization=self.org, region=self.region1)
         self.dep_a = Department.objects.create(name="Aaa dep", organization=self.org, region=self.region1)
         self.dep_other = Department.objects.create(name="Boshqa hudud dep", organization=self.org, region=self.region2)
-        user, _ = make_employee(make_org("worker"), self.region1, perms=["main.shop_employee"])      # hisobot ruxsati kerak
+        self.worker_org = make_org("worker")
+        # hisobot ruxsati + ko'rish doirasi (boshqa tashkilot va hududlar)
+        user, _ = make_employee(self.worker_org, self.region1,
+                                perms=["main.shop_employee", "main.all_organization", "main.all_region"])
         self.api = APIClient()
         self.api.force_authenticate(user)
         self.url = "/api/v1/spa/reports/data/departments/"
@@ -42,3 +45,16 @@ class AjaxLoadDepartmentsTests(TestCase):
     def test_default_order_is_by_name(self):
         params = {"organization": self.org.id, "region": self.region1.id, "page": 1}
         self.assertEqual(self._ids(params), [self.dep_a.id, self.dep_z.id])
+
+    def test_scope_without_all_permissions(self):
+        """'Barcha tashkilotlar' / 'Barcha hududlar' yo'q — boshqa tashkilot va boshqa hudud yopiq."""
+        user, _ = make_employee(self.worker_org, self.region1, perms=["main.shop_employee"])
+        api = APIClient()
+        api.force_authenticate(user)
+        self.assertEqual(api.get(self.url, {"organization": self.org.id}).status_code, 403)
+        own_dep = Department.objects.create(name="O'z dep", organization=self.worker_org, region=self.region1)
+        Department.objects.create(name="O'z, boshqa hudud", organization=self.worker_org, region=self.region2)
+        res = api.get(self.url, {"organization": self.worker_org.id})
+        self.assertEqual([int(i["id"]) for i in res.json()["results"]], [own_dep.id])
+        self.assertEqual(api.get(self.url, {"organization": self.worker_org.id, "all_regions": "1"}).status_code, 403)
+        self.assertEqual(api.get(self.url, {"organization": self.worker_org.id, "region": self.region2.id}).status_code, 403)

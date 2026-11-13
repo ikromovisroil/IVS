@@ -30,10 +30,11 @@ from rest_framework.views import APIView
 
 from main import ajax_views
 from main.html_pdf import HtmlPdfError
-from main.models import Employee, Goal, Order, Organization
+from main.models import Employee, Goal, Order
 from main.order_views import ORDER_DEED_BODY_TEMPLATE, create_order_act, order_deed_context, order_deed_queryset
 from main.push_views import notify_deed_sender
 from main.sanitizers import sanitize_deed_body
+from api.deed_scope import allowed_organizations
 from api.serializers import OrderSerializer
 from api.views import OrderViewSet
 
@@ -101,13 +102,13 @@ class GoalsView(APIView):
 
 
 class OrganizationsView(APIView):
-    """order_sender_user: barcha tashkilotlar ('add_order')."""
+    """order_sender_user: tashkilotlar ('add_order'); `all_organization` bo'lmasa faqat o'z tashkiloti."""
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         _employee(request)
         _require(request, "main.add_order")
-        return Response(list(Organization.objects.order_by("id").values("id", "name")))
+        return Response(list(allowed_organizations(request.user).order_by("id").values("id", "name")))
 
 
 class OrganizationEmployeesView(APIView):
@@ -116,6 +117,8 @@ class OrganizationEmployeesView(APIView):
 
     def get(self, request, pk):
         _require(request, "main.add_order")
+        if not allowed_organizations(request.user).filter(pk=pk).exists():
+            raise PermissionDenied("Bu tashkilot bo'yicha ruxsat yo'q")
         return ajax_views.ajax_employees_org_user_region(_legacy(request, organization=str(pk)))
 
 

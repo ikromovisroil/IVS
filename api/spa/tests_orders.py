@@ -49,7 +49,13 @@ class OrdersSpaTests(TestCase):
     def test_organizations_and_employees_require_add_order(self):
         self.assertEqual(client(self.sender_user).get(f"{BASE}/organizations/").status_code, 403)
         self.assertEqual(client(self.sender_user).get(f"{BASE}/organizations/{self.client_org.id}/employees/").status_code, 403)
-        user, _ = make_employee(self.atm, self.region, perms=["main.add_order"])
+        # 'Barcha tashkilotlar' yo'q — faqat o'z tashkiloti, boshqasining xodimlari yopiq
+        limited, _ = make_employee(self.atm, self.region, perms=["main.add_order"])
+        r = client(limited).get(f"{BASE}/organizations/")
+        self.assertEqual([o["id"] for o in r.data], [self.atm.id])
+        self.assertEqual(client(limited).get(f"{BASE}/organizations/{self.client_org.id}/employees/").status_code, 403)
+
+        user, _ = make_employee(self.atm, self.region, perms=["main.add_order", "main.all_organization"])
         r = client(user).get(f"{BASE}/organizations/")
         self.assertEqual(r.status_code, 200)
         self.assertIn(self.client_org.id, [o["id"] for o in r.data])

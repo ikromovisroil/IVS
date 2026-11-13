@@ -19,9 +19,10 @@ from rest_framework.exceptions import NotFound, PermissionDenied
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from api.deed_scope import allowed_organizations, allowed_regions, sees_all_regions
 from api.spa.people import _MemoryMessages
 from main import ajax_views, views as main_views
-from main.models import Employee, Organization, Region
+from main.models import Department, Employee
 
 KINDS = ("document", "svod", "reestr", "akt", "service")
 
@@ -86,11 +87,48 @@ def _orgs(qs):
     return list(qs.only("id", "name", "contract").order_by("id").values("id", "name", "contract"))
 
 
-def _regions(user, emp):
-    qs = Region.objects.only("id", "name").order_by("id")
-    if not user.has_perm("main.all_region"):
-        qs = qs.filter(id=emp.region_id)
-    return list(qs.values("id", "name"))
+def _regions(user):
+    return list(allowed_regions(user).only("id", "name").order_by("id").values("id", "name"))
+
+
+# ─── Ko'rish doirasi: tashkilot — `all_organization`, hudud — `all_region` (api/deed_scope.py bilan bir xil) ───
+
+def _ids(params, *keys):
+    if not hasattr(params, "getlist"):          # JSON tana (oddiy dict)
+        return [str(v).strip() for k in keys for v in (params.get(k) if isinstance(params.get(k), list) else [params.get(k)])
+                if v not in (None, "") and str(v).strip()]
+    out = []
+    for key in keys:
+        out += [v.strip() for v in params.getlist(key) if v and v.strip()]
+    return out
+
+
+def check_scope(user, params):
+    """So'rovdagi tashkilot / hudud / departament foydalanuvchi ko'ra oladigan doirada bo'lmasa — 403.
+    Ro'yxatlar shu doira bilan cheklangan; bu tekshiruv qo'lda o'zgartirilgan so'rovlarga qarshi."""
+    org_ids = _ids(params, "organization", "organizations[]", "organizations")
+    if org_ids:
+        allowed = {str(pk) for pk in allowed_organizations(user).values_list("id", flat=True)}
+        if any(i not in allowed for i in org_ids):
+            raise PermissionDenied("Bu tashkilot bo'yicha ruxsat yo'q")
+
+    all_regions = sees_all_regions(user)
+    region_ids = _ids(params, "region")
+    if not all_regions:
+        if params.get("all_regions") == "1" or "all" in region_ids:
+            raise PermissionDenied("Barcha hududlar bo'yicha ruxsat yo'q")
+        emp = _employee(user)
+        if any(i != str(emp.region_id) for i in region_ids):
+            raise PermissionDenied("Bu hudud bo'yicha ruxsat yo'q")
+
+    dep_ids = _ids(params, "department")
+    if dep_ids:
+        deps = Department.objects.filter(pk__in=[i for i in dep_ids if i.isdigit()],
+                                         organization__in=allowed_organizations(user))
+        if not all_regions:
+            deps = deps.filter(region_id=_employee(user).region_id)
+        if deps.count() != len(set(dep_ids)):
+            raise PermissionDenied("Bu departament bo'yicha ruxsat yo'q")
 
 
 class ReportsMetaView(APIView):
@@ -123,27 +161,28 @@ class ReportFormView(APIView):
             "has_full_region": user.has_perm("main.all_region"),
             "user_region": emp.region_id,
         }
+        orgs = allowed_organizations(user)
 
         if kind == "document":
-            data["organizations"] = _orgs(Organization.objects.all())
-            data["regions"] = _regions(user, emp)
+            data["organizations"] = _orgs(orgs)
+            data["regions"] = _regions(user)
             # document_get: emp_bos_sender
             data["senders"] = _emps(Employee.objects.filter(Q(department_id=283) | Q(department_id=298, region=emp.region)))
         elif kind == "svod":
             # Xizmat ko'rsatuvchi (ATM) tashkilot Svodga kirmaydi
-            data["organizations"] = _orgs(Organization.objects.exclude(type="worker"))
-            data["regions"] = _regions(user, emp)
+            data["organizations"] = _orgs(orgs.exclude(type="worker"))
+            data["regions"] = _regions(user)
             data["senders"] = _emps(Employee.objects.filter(department_id=283))
             data["agreements"] = _emps(Employee.objects.filter(organization_id=4))
         elif kind == "reestr":
-            data["organizations"] = _orgs(Organization.objects.all())
-            data["regions"] = _regions(user, emp)
+            data["organizations"] = _orgs(orgs)
+            data["regions"] = _regions(user)
             own = _emps(Employee.objects.filter(organization_id=emp.organization_id))
             data["senders"] = own
             data["agreements"] = own
         elif kind == "akt":
-            data["organizations"] = _orgs(Organization.objects.all())
-            data["regions"] = _regions(user, emp)
+            data["organizations"] = _orgs(orgs)
+            data["regions"] = _regions(user)
         elif kind == "service":
             workers = _emps(Employee.objects.filter(organization__type="worker"))
             data["senders"] = workers
@@ -193,6 +232,9 @@ class ReportDataView(APIView):
             _check(request.user, kind)
         elif not any(allowed_reports(request.user).values()):
             raise PermissionDenied("Ruxsat yo'q")
+        # Sarf materiallar (service_mode) tashkilot va hududni o'zi majburan xodimnikiga qo'yadi
+        if request.query_params.get("service_mode") != "1":
+            check_scope(request.user, request.query_params)
         return fn(request._request)
 
 
@@ -221,6 +263,8 @@ class ReportSubmitView(APIView):
 
     def post(self, request, kind):
         _check(request.user, kind)
+        if kind != "service":
+            check_scope(request.user, request.data)
         raw = request._request
         # Faqat shu view qo'shgan xabarlar: sessiyadagi eski (o'qilmagan) xabarlar natijaga aralashmaydi va o'chmaydi
         storage = _MemoryMessages(raw)
