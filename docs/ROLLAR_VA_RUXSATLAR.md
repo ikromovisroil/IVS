@@ -255,7 +255,7 @@ Belgilar: **✅** mobil API'da bor, **⚠️** qisman, **❌** hozircha yo'q.
 | 22 | Xodimga rol (ruxsat) berish | administrator | `permission_employee` | ✅ |
 | 23 | Chat: shaxsiy, guruh, saqlangan xabarlar, fayl | hamma | — | ✅ (REST + WebSocket) |
 | 24 | AI yordamchi (chatda) | hamma | — | ⚠️ hozir tayyor matn qaytaradi, haqiqiy AI ulanmagan |
-| 25 | Zoom uchrashuvlari | `worker` | `add_/view_/delete_meeting` | ✅ |
+| 25 | Zoom uchrashuvlari | hamma tashkilot | `add_/view_/delete_meeting` | ✅ |
 | 26 | Bildirishnomalar markazi | hamma | — | ✅ |
 | 27 | Push (FCM): ariza, hujjat, chat | hamma | — | ✅ |
 | 28 | Ma'lumotnomalar (tashkilot, hudud, lavozim, ariza turlari, birliklar...) | hamma | — | ✅ faqat o'qish |
@@ -292,4 +292,4 @@ Bular tayyor paket emas, qo'lda yig'iladigan to'plamlar:
 4. Tugmalar: yozish amallari (qo'shish, tahrirlash, o'chirish) uchun tegishli `add_*`, `change_*`, `delete_*` bo'yicha ko'rsating yoki yashiring.
 5. Rol berish oynasida `editable=false` katakchalarni yashiring; `PUT` javobidagi `ignored` ni foydalanuvchiga ko'rsating.
 6. `403` kelsa "Ruxsat yo'q" deb ko'rsating, `401` bo'lsa tokenni yangilang.
-7. Mijoz va ATM xodimining ko'rinishi turlicha: mijozga `add_order`, `material_service`, Zoom, hisobotlar ko'rsatilmaydi.
+7. Mijoz va ATM xodimining ko'rinishi turlicha: mijozga `add_order`, `material_service`, hisobotlar ko'rsatilmaydi.
