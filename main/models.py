@@ -419,11 +419,93 @@ class Unit(models.Model):
 
 
 class MaterialCategory(models.Model):
+    """Material kategoriyasi. `parent` — ichki kategoriya uchun (daraxt, ko'pi bilan MAX_DEPTH daraja)."""
+    MAX_DEPTH = 3
+
     organization = models.ForeignKey(Organization, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    # PROTECT: ichki kategoriyasi bor kategoriyani o'chirib bo'lmaydi (materiallar kategoriyasiz qolib ketmasin)
+    parent = models.ForeignKey("self", null=True, blank=True, on_delete=models.PROTECT, related_name="children")
     name = models.CharField(max_length=200)
 
     def __str__(self):
-        return self.name
+        return f"{self.parent.name} / {self.name}" if self.parent_id else self.name
+
+    def _ancestor_ids(self):
+        """Ota, bobo, ... (yaqinidan uzog'iga)."""
+        chain, cur = [], self.parent
+        while cur is not None and cur.pk not in chain and len(chain) <= self.MAX_DEPTH + 1:
+            chain.append(cur.pk)
+            cur = cur.parent
+        return chain
+
+    def _height_below(self):
+        """Shu kategoriya ostidagi darajalar soni (bolasi yo'q — 0)."""
+        height, frontier = 0, {self.pk} if self.pk else set()
+        while frontier:
+            frontier = set(MaterialCategory.objects.filter(parent_id__in=frontier).values_list("id", flat=True))
+            if frontier:
+                height += 1
+            if height > self.MAX_DEPTH:
+                break
+        return height
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if not self.parent_id:
+            return
+        chain = self._ancestor_ids()
+        if self.pk and (self.pk == self.parent_id or self.pk in chain):
+            raise ValidationError({"parent": "Kategoriya o'zining ichki kategoriyasi ichiga o'tmaydi"})
+        if len(chain) + 1 + self._height_below() > self.MAX_DEPTH:
+            raise ValidationError({"parent": f"Ichma-ich kategoriyalar ko'pi bilan {self.MAX_DEPTH} daraja bo'lishi mumkin"})
+        if self.organization_id != self.parent.organization_id:
+            raise ValidationError({"parent": "Ota kategoriya shu tashkilotniki bo'lishi kerak"})
+
+    @staticmethod
+    def subtree_ids(ids):
+        """Berilgan kategoriyalar va ularning barcha ichki (avlod) kategoriyalari."""
+        result = set(ids)
+        frontier = set(ids)
+        while frontier:
+            frontier = set(MaterialCategory.objects.filter(parent_id__in=frontier).values_list("id", flat=True)) - result
+            result |= frontier
+        return result
+
+    @staticmethod
+    def allowed_ids(employee):
+        """Xodimga ruxsat etilgan kategoriyalar: belgilanganlar + ularning barcha ichki kategoriyalari (ota berilsa, bolalari ham)."""
+        direct = set(
+            MaterialEmployee.category.through.objects.filter(materialemployee__employee=employee)
+            .values_list("materialcategory_id", flat=True)
+        )
+        return MaterialCategory.subtree_ids(direct) if direct else direct
+
+    @staticmethod
+    def tree_for(employee):
+        """
+        "Katalog" menyusi: xodimga ruxsat etilgan kategoriyalar daraxti (ichma-ich).
+        [{"id", "name", "selectable", "children": [...]}]; ota o'zi ruxsat etilmagan bo'lsa ham (faqat ichkisi
+        berilgan) sarlavha sifatida chiqadi, lekin `selectable` False.
+        """
+        allowed = MaterialCategory.allowed_ids(employee)
+        if not allowed:
+            return []
+        by_id = {c.id: c for c in MaterialCategory.objects.order_by("name", "id")}
+        visible = set()
+        for cid in allowed:
+            cur = by_id.get(cid)
+            while cur is not None and cur.id not in visible:
+                visible.add(cur.id)
+                cur = by_id.get(cur.parent_id)
+        kids = {}
+        for c in by_id.values():
+            if c.id in visible and c.parent_id in by_id:
+                kids.setdefault(c.parent_id, []).append(c)
+
+        def node(c):
+            return {"id": c.id, "name": c.name, "selectable": c.id in allowed, "children": [node(k) for k in kids.get(c.id, [])]}
+
+        return [node(c) for c in by_id.values() if c.id in visible and c.parent_id not in by_id]
 
     class Meta:
         db_table = 'materialcategory'

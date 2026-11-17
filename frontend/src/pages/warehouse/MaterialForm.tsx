@@ -1,3 +1,4 @@
+import CategoryTreeSelect from '../../components/CategoryTreeSelect'
 import FileUpload from '../../components/FileUpload'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
@@ -126,10 +127,10 @@ export default function MaterialForm({ item, onClose }: Props) {
           </p>
         )}
         <div className="ivs-form-grid">
-          <Select
+          <CategoryTreeSelect
             label={isEdit ? t('Kategoriya') : t('Kategoriya *')}
             placeholder={t('Tanlang...')}
-            options={refs.categoryOptions}
+            items={refs.categoryTree}
             value={form.category}
             onChange={(v) => set('category', num(v))}
             error={!!errors.category}

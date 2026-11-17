@@ -51,6 +51,85 @@ class BarnSpaTests(TestCase):
         self.assertEqual(self._toggle(foreign).status_code, 400)
         self.assertFalse(OrderMaterial.objects.filter(order__isnull=True).exists())
 
+    def test_parent_category_grants_children_but_not_vice_versa(self):
+        """Ota kategoriya berilsa ichki kategoriyalari ham ruxsat etiladi; ichki berilsa ota ochilmaydi."""
+        child = MaterialCategory.objects.create(name="Ruchkalar", organization=self.org, parent=self.cat)
+        child_mat = Material.objects.create(name="Shariqli ruchka", organization=self.org, category=child, number=3)
+        self.assertEqual(self._toggle(child_mat).status_code, 200)         # ota (self.cat) berilgan
+
+        MaterialEmployee.objects.filter(employee=self.emp).delete()
+        MaterialEmployee.objects.create(employee=self.emp).category.set([child])
+        self.assertEqual(self._toggle(self.mat).status_code, 400)          # faqat ichki berilgan — ota yopiq
+        self.assertEqual(MaterialCategory.allowed_ids(self.emp), {child.id})
+
+    def test_catalog_tree_and_category_filter(self):
+        child = MaterialCategory.objects.create(name="Ruchkalar", organization=self.org, parent=self.cat)
+        child_mat = Material.objects.create(name="Shariqli ruchka", organization=self.org, category=child, number=3)
+        tree = self.api.get("/api/v1/orders/selectable-categories/").data
+        self.assertEqual(tree, [{"id": self.cat.id, "name": "Kanselyariya", "selectable": True, "children": [
+            {"id": child.id, "name": "Ruchkalar", "selectable": True, "children": []}]}])         # "Boshqa" ruxsat etilmagan — ko'rinmaydi
+
+        def ids(**q):
+            return {m["id"] for m in self.api.get("/api/v1/orders/selectable-materials/", q).data["results"]}
+        self.assertEqual(ids(), {self.mat.id, self.mat2.id, child_mat.id})
+        self.assertEqual(ids(category=self.cat.id), {self.mat.id, self.mat2.id, child_mat.id})     # ota — ichkisi bilan
+        self.assertEqual(ids(category=child.id), {child_mat.id})
+        self.assertEqual(ids(category=self.hidden_cat.id), set())                                 # ruxsatsiz kategoriya filtrdan ham o'tmaydi
+
+        # Faqat ichki berilsa: ota sarlavha sifatida chiqadi, lekin tanlab bo'lmaydi
+        MaterialEmployee.objects.filter(employee=self.emp).delete()
+        MaterialEmployee.objects.create(employee=self.emp).category.set([child])
+        tree = self.api.get("/api/v1/orders/selectable-categories/").data
+        self.assertEqual([(n["id"], n["selectable"], [c["id"] for c in n["children"]]) for n in tree],
+                         [(self.cat.id, False, [child.id])])
+
+    def test_deep_category_tree(self):
+        """Ichma-ich kategoriyalar: avlodlari ham ruxsatga, filtrga va katalogga kiradi."""
+        mid = MaterialCategory.objects.create(name="Qalamlar", organization=self.org, parent=self.cat)
+        leaf = MaterialCategory.objects.create(name="Rangli qalamlar", organization=self.org, parent=mid)
+        leaf_mat = Material.objects.create(name="Rangli qalam 12", organization=self.org, category=leaf, number=2)
+        self.assertEqual(self._toggle(leaf_mat).status_code, 200)                                 # bobo berilgan — nevara ham ruxsat etilgan
+        tree = self.api.get("/api/v1/orders/selectable-categories/").data
+        self.assertEqual(tree[0]["children"][0]["children"][0]["id"], leaf.id)
+
+        def ids(cat):
+            return {m["id"] for m in self.api.get("/api/v1/orders/selectable-materials/", {"category": cat.id}).data["results"]}
+        self.assertEqual(ids(mid), {leaf_mat.id})
+        self.assertIn(leaf_mat.id, ids(self.cat))
+        self.assertEqual(MaterialCategory.subtree_ids([self.cat.id]), {self.cat.id, mid.id, leaf.id})
+
+        MaterialEmployee.objects.filter(employee=self.emp).delete()
+        MaterialEmployee.objects.create(employee=self.emp).category.set([leaf])                   # faqat eng ichkisi: zanjir sarlavha bo'lib chiqadi
+        tree = self.api.get("/api/v1/orders/selectable-categories/").data
+        self.assertEqual([(tree[0]["selectable"], tree[0]["children"][0]["selectable"], tree[0]["children"][0]["children"][0]["selectable"])],
+                         [(False, False, True)])
+
+    def test_category_parent_rules(self):
+        from django.core.exceptions import ValidationError
+        child = MaterialCategory(name="Ichki", organization=self.org, parent=self.cat)
+        child.full_clean()
+        child.save()
+        grand = MaterialCategory(name="3-daraja", organization=self.org, parent=child)            # ichma-ich bo'ladi
+        grand.full_clean()
+        grand.save()
+        with self.assertRaises(ValidationError):                                                  # boshqa tashkilot
+            MaterialCategory(name="Begona", organization=self.other_org, parent=self.cat).full_clean()
+        self.cat.parent = grand                                                                   # o'z avlodi ichiga o'tmaydi (aylana)
+        with self.assertRaises(ValidationError):
+            self.cat.full_clean()
+        self.cat.parent = self.hidden_cat                                                         # ostidagilari bilan 4 daraja bo'lib qoladi
+        with self.assertRaises(ValidationError):
+            self.cat.full_clean()
+        self.cat.parent = None
+        child.parent = self.hidden_cat                                                            # ostidagisi bilan 3 daraja — mumkin
+        child.full_clean()
+        child.parent = self.cat
+        with self.assertRaises(ValidationError):                                                  # 4-daraja yaratib bo'lmaydi
+            MaterialCategory(name="4-daraja", organization=self.org, parent=grand).full_clean()
+        from django.db.models import ProtectedError
+        with self.assertRaises(ProtectedError):                                                   # ichkisi bor — o'chmaydi
+            self.cat.delete()
+
     def test_cart_add_saves_number_and_updates_existing(self):
         r = self.api.post(f"{BASE}/cart/add/", {"material": self.mat.id, "number": 4}, format="json")
         self.assertEqual(r.status_code, 200, r.data)

@@ -1,6 +1,23 @@
 // Ruscha lug'at: warehouse bo'limi. Kalit — o'zbekcha matn (kodda t('...') ichidagi bilan aynan bir xil).
 // pages/technics (texnika, texnikalarim) va pages/warehouse (qo'shimcha qurilmalar, materiallar, savat, kirim-chiqim).
 const ru: Record<string, string> = {
+  'Material kategoriyalari': 'Категории материалов',
+  'Ichki': 'Вложенных',
+  '(umumiy)': '(общая)',
+  'Hammasini yopish': 'Свернуть все',
+  'Hammasini ochish': 'Раскрыть все',
+  'Yo‘q (asosiy kategoriya)': 'Нет (основная категория)',
+  'Ota kategoriya': 'Родительская категория',
+  '«{name}» kategoriyasini o‘chirasizmi?': 'Удалить категорию «{name}»?',
+  "Kategoriya qo'shildi": 'Категория добавлена',
+  'Kategoriya saqlandi': 'Категория сохранена',
+  "Kategoriya o'chirildi": 'Категория удалена',
+  "Kategoriyani o'chirish": 'Удалить категорию',
+  'Kategoriyani tahrirlash': 'Редактировать категорию',
+  "Ichki kategoriya qo'shish": 'Добавить вложенную категорию',
+  "Kategoriya qo'shish": 'Добавить категорию',
+  'Kategoriyalar': 'Категории',
+  "Ichki kategoriyalarni ko'rsatish": 'Показать вложенные категории',
   // Bo'limlar va tablar
   'Texnika va uskunalar': 'Техника и оборудование',
   Texnikalarim: 'Моя техника',

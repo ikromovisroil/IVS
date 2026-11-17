@@ -17,8 +17,9 @@ import { money } from '../technics/util'
 import { sectionAllowed } from './access'
 import { PAGE_SIZE, SPA, mediaPath, useBarnMutation, useCart } from './api'
 import BarnPage from './BarnPage'
+import CatalogMenu from './CatalogMenu'
 import MaterialImage from './MaterialImage'
-import type { CartItem, SelectableMaterial } from './types'
+import type { CartItem, CatalogNode, SelectableMaterial } from './types'
 import { useT } from '../../i18n'
 
 /** Material tanlash — order_sender_material_barn: o'z tashkiloti omborxonasidagi ruxsat etilgan materiallar; qatorni bosib to'liq ma'lumot ochiladi va soni bilan savatga saqlanadi. */
@@ -26,13 +27,20 @@ export default function MaterialsPage() {
   const me = useMe()
   const t = useT()
   const allowed = sectionAllowed(me, 'sender')
-  const { filters, page, setFilter, setPage, hasFilters } = useUrlFilters(['name'])
+  const { filters, page, setFilter, setPage, hasFilters } = useUrlFilters(['name', 'category'])
 
   const list = useQuery({
-    queryKey: ['orders-barn', 'materials', filters.name, page],
-    queryFn: () => api<ApiPage<SelectableMaterial>>('/orders/selectable-materials/', { query: { search: filters.name, page, page_size: PAGE_SIZE } }),
+    queryKey: ['orders-barn', 'materials', filters.name, filters.category, page],
+    queryFn: () =>
+      api<ApiPage<SelectableMaterial>>('/orders/selectable-materials/', { query: { search: filters.name, category: filters.category, page, page_size: PAGE_SIZE } }),
     placeholderData: keepPreviousData,
     enabled: allowed,
+  })
+  const catalog = useQuery({
+    queryKey: ['orders-barn', 'catalog'],
+    queryFn: () => api<CatalogNode[]>('/orders/selectable-categories/'),
+    enabled: allowed,
+    staleTime: 60_000,
   })
   const cart = useCart(allowed)
 
@@ -79,6 +87,7 @@ export default function MaterialsPage() {
       section="sender"
       tools={
         <>
+          <CatalogMenu tree={catalog.data ?? []} value={filters.category} onChange={(v) => setFilter('category', v)} />
           <SearchInput value={filters.name} onChange={(v) => setFilter('name', v)} placeholder="Nomi ..." style={{ minWidth: 220, flex: '1 1 240px', maxWidth: 360 }} />
           <ViewToggle value={view} onChange={setView} />
         </>
@@ -90,7 +99,7 @@ export default function MaterialsPage() {
         error={list.error}
         empty={rows.length === 0}
         emptyText={hasFilters ? 'Qidiruvga mos material topilmadi' : "Sizga ruxsat etilgan material yo'q"}
-        emptyDescription={hasFilters ? 'Boshqa nom bilan qidirib ko‘ring.' : 'Material kategoriyalari omborxona tomonidan biriktiriladi.'}
+        emptyDescription={hasFilters ? 'Boshqa nom yoki kategoriya bilan qidirib ko‘ring.' : 'Material kategoriyalari omborxona tomonidan biriktiriladi.'}
       >
         {view === 'cards' ? (
           <div className="ob-cards">

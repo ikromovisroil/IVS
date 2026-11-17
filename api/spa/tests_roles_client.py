@@ -2,7 +2,7 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 
-from main.models import OrderGoal
+from main.models import MaterialCategory, MaterialEmployee, OrderGoal
 from main.testing import make_employee, make_goal, make_org, make_region
 
 ZOOM = {"view_meeting", "add_meeting", "delete_meeting"}
@@ -102,3 +102,34 @@ class GoalOptionsTests(TestCase):
         self.assertEqual(r.status_code, 200, r.data)
         ids = set(OrderGoal.goal.through.objects.filter(ordergoal__employee=self.worker).values_list("goal_id", flat=True))
         self.assertEqual(ids, {self.g_atm.id})          # boshqa tashkilot turi saqlanib qolmaydi
+
+
+class MaterialCategoryOptionsTests(TestCase):
+    """"Ruxsat etilgan material kategoriyasi": faqat asosiy (ota) kategoriyalar; ota berilsa ichkilari ham ruxsat etiladi."""
+
+    def setUp(self):
+        self.region = make_region()
+        self.org = make_org("client")
+        self.admin_user, _ = make_employee(self.org, self.region, perms=ADMIN_PERMS, last="Admin")
+        self.user, self.emp = make_employee(self.org, self.region, last="Mijoz")
+        self.root = MaterialCategory.objects.create(organization=self.org, name="Kanselyariya")
+        self.child = MaterialCategory.objects.create(organization=self.org, name="Ruchkalar", parent=self.root)
+        self.grand = MaterialCategory.objects.create(organization=self.org, name="Shariqli", parent=self.child)
+        self.other_root = MaterialCategory.objects.create(organization=self.org, name="Kompyuter")
+        self.c = APIClient()
+        self.c.force_login(self.admin_user)
+        self.url = f"/api/v1/employees/{self.emp.id}/permissions/"
+
+    def test_only_root_categories_listed_and_grant_covers_descendants(self):
+        r = self.c.get(self.url)
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertEqual({o["id"] for o in r.data["material_categories"]["options"]}, {self.root.id, self.other_root.id})
+
+        r = self.c.put(self.url, {"material_categories": [self.root.id]}, format="json")
+        self.assertEqual(r.status_code, 200, r.data)
+        self.assertEqual(MaterialCategory.allowed_ids(self.emp), {self.root.id, self.child.id, self.grand.id})
+
+    def test_previously_granted_child_stays_visible(self):
+        MaterialEmployee.objects.create(employee=self.emp).category.set([self.child])
+        ids = {o["id"] for o in self.c.get(self.url).data["material_categories"]["options"]}
+        self.assertEqual(ids, {self.root.id, self.other_root.id, self.child.id})

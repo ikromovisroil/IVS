@@ -91,6 +91,14 @@ export interface SelectableMaterial {
   image: string | null
 }
 
+/** /api/v1/orders/selectable-categories/ — "Katalog" daraxti */
+export interface CatalogNode {
+  id: number
+  name: string
+  selectable: boolean
+  children: CatalogNode[]
+}
+
 export interface GoalRef {
   id: number
   name: string

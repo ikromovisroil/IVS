@@ -21,6 +21,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+import django_filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter
 from django.http import FileResponse
@@ -875,6 +876,18 @@ class MaterialSearchFilter(SearchFilter):
         return queryset
 
 
+class MaterialFilter(django_filters.FilterSet):
+    """?category= — kategoriya yoki (ota bo'lsa) uning ichki kategoriyalari."""
+    category = django_filters.NumberFilter(method="filter_category")
+
+    class Meta:
+        model = Material
+        fields = ["category", "unit", "employee"]
+
+    def filter_category(self, qs, name, value):
+        return qs.filter(category_id__in=MaterialCategory.subtree_ids([value]))
+
+
 class MaterialViewSet(viewsets.ModelViewSet):
     """
     Ko'rish — 'shop_employee': faqat o'z tashkilotidagi va o'zining materiallari.
@@ -893,7 +906,7 @@ class MaterialViewSet(viewsets.ModelViewSet):
     permission_classes = [MaterialPermission]
     pagination_class = StandardResultsPagination
     filter_backends = [DjangoFilterBackend, MaterialSearchFilter]
-    filterset_fields = ["category", "unit", "employee"]
+    filterset_class = MaterialFilter
     search_fields = ["name", "code", "price"]
 
     def get_serializer_class(self):
@@ -1786,9 +1799,7 @@ class OrderViewSet(
         if len(ids) != len(set(ids)):
             raise ValidationError({"materials": "Bir xil material bir necha marta kiritildi"})
 
-        category_ids = MaterialEmployee.category.through.objects.filter(
-            materialemployee__employee=employee
-        ).values_list("materialcategory_id", flat=True)
+        category_ids = MaterialCategory.allowed_ids(employee)
         allowed = {
             m.id: m for m in Material.objects.filter(
                 id__in=ids, organization=employee.organization, is_active=True, category_id__in=category_ids,
@@ -1822,9 +1833,7 @@ class OrderViewSet(
         employee = self._employee()
         if getattr(employee.organization, "type", None) == "worker":
             raise PermissionDenied("Sizga ruxsat yo'q")
-        category_ids = MaterialEmployee.category.through.objects.filter(
-            materialemployee__employee=employee
-        ).values_list("materialcategory_id", flat=True)
+        category_ids = MaterialCategory.allowed_ids(employee)
         qs = (
             Material.objects.filter(organization=employee.organization, is_active=True, category_id__in=category_ids)
             .select_related("organization", "unit", "category").order_by("-id")
@@ -1832,10 +1841,22 @@ class OrderViewSet(
         term = (request.query_params.get('search') or '').strip()
         if term:
             qs = qs.filter(name__icontains=term)
+        # Katalogdan tanlangan kategoriya: o'zi va ichki kategoriyalari (ruxsat etilganlari doirasida)
+        cat = (request.query_params.get('category') or '').strip()
+        if cat.isdigit():
+            qs = qs.filter(category_id__in=MaterialCategory.subtree_ids([int(cat)]))
         page = self.paginate_queryset(qs)
         return self.get_paginated_response(
             MaterialSerializer(page, many=True, context=self.get_serializer_context()).data
         )
+
+    @action(detail=False, methods=['get'], url_path='selectable-categories')
+    def selectable_categories(self, request):
+        """Material tanlashdagi "Katalog": ruxsat etilgan kategoriyalar daraxti (kategoriya → ichki kategoriyalar)."""
+        employee = self._employee()
+        if getattr(employee.organization, "type", None) == "worker":
+            raise PermissionDenied("Sizga ruxsat yo'q")
+        return Response(MaterialCategory.tree_for(employee))
 
     # =====================================================================
     # MATERIAL ARIZASI (omborxona, client tashkilot) — saytdagi order_*_barn / order_agrement bilan bir xil.

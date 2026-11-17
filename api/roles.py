@@ -10,6 +10,7 @@ Farqi: o'zgartirish qisman bo'lishi mumkin (faqat yuborilgan kalitlar), va yubor
 """
 from django.contrib.auth.models import Permission
 from django.db import transaction
+from django.db.models import Q
 from rest_framework.exceptions import PermissionDenied, ValidationError
 
 from core.models import AuditLog
@@ -79,7 +80,13 @@ def _direct_keys(user):
 def _options(current_emp, target):
     # Ariza turlari ("ariza bajarish"): faqat RUXSAT BERILAYOTGAN xodimning o'z tashkilotidagilari (tahrirlovchi superuser bo'lsa ham)
     goals = Goal.objects.filter(organization=target.organization) if target.organization_id else Goal.objects.none()
-    mat_cats = MaterialCategory.objects.filter(organization=target.organization) if target.organization_id else MaterialCategory.objects.none()
+    # Material kategoriyalari: faqat asosiy (ota) kategoriyalar — ota berilsa ichkilari ham ruxsat etiladi (MaterialCategory.allowed_ids).
+    # Ilgari bevosita berilgan ichki kategoriya bo'lsa, u ham ko'rinib turadi (jimgina yo'qolmasin).
+    if target.organization_id:
+        already = MaterialEmployee.category.through.objects.filter(materialemployee__employee=target).values_list("materialcategory_id", flat=True)
+        mat_cats = MaterialCategory.objects.filter(organization=target.organization).filter(Q(parent__isnull=True) | Q(id__in=already))
+    else:
+        mat_cats = MaterialCategory.objects.none()
     return {
         "goals": goals.order_by("name", "id"),
         "categories": Category.objects.select_related("group").order_by("name", "id"),
@@ -123,6 +130,7 @@ def state(request_user, current_emp, target):
     opts = _options(current_emp, target)
     sel = _selected(target)
     sel["goals"] = sorted(set(sel["goals"]) & set(_ids(opts["goals"])))     # boshqa tashkilot turlari ko'rinmaydi
+    sel["material_categories"] = sorted(set(sel["material_categories"]) & set(_ids(opts["material_categories"])))   # ko'rinmaydigan (boshqa tashkilot) kategoriyalar sanalmaydi
     target_is_worker = target.organization_id and target.organization.type == "worker"
     return {
         "employee": {

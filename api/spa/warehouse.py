@@ -21,6 +21,8 @@ give, service, report). Bu yerda faqat yetishmaganlari:
 * employees/pinfl/         — "Xodim qo'shish" (PINFL bo'yicha, main/views.py:employe_create).
 * materials/employees/     — barn_mat dagi "Xodim" ro'yxati (MaterialViewSet doirasi bilan bir xil).
 * materials/summary/       — materiallar soni va umumiy narxi (shu filtrlar bo'yicha).
+* materials/categories/    — "Kategoriyalar" tabi: GET daraxt uchun ro'yxat, POST qo'shish (add_material).
+* materials/categories/<id>/ — PATCH tahrirlash (change_material), DELETE o'chirish (delete_material).
 * materials/basket/        — "Savat" (mat_arxiv): GET ro'yxat, POST savatga qo'shish (mat_post).
 * materials/basket/assign/ — savatni xodimga biriktirish (mat_arxiv_post).
 * materials/basket/<id>/delete/ — savatdan o'chirish (mat_arxiv_delete).
@@ -31,6 +33,7 @@ ular qoldirgan Django xabarlari (messages) JSON javobga aylantiriladi.
 import logging
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.core.paginator import Paginator
 from django.db.models import Count, DecimalField, Exists, ExpressionWrapper, F, OuterRef, Prefetch, Q, Sum
 from django.http import QueryDict
@@ -38,7 +41,7 @@ from django.shortcuts import get_object_or_404
 from django.urls import path
 from rest_framework import permissions, serializers
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 from rest_framework.routers import SimpleRouter
 from rest_framework.views import APIView
@@ -50,7 +53,7 @@ from api.spa.people import _MemoryMessages
 from api.views import MaterialViewSet, StructureViewSet, TechnicsViewSet
 from main import ajax_views
 from main import views as legacy
-from main.models import Employee, MaterialMovement, Structure, Technics
+from main.models import Employee, MaterialCategory, MaterialMovement, Structure, Technics
 
 logger = logging.getLogger(__name__)
 
@@ -430,6 +433,110 @@ class BasketDeleteView(APIView):
         return _bridge(request, legacy.mat_arxiv_delete, {}, pk)
 
 
+class MaterialCategoriesView(APIView):
+    """
+    "Kategoriyalar" tabi. GET — o'z tashkiloti (va umumiy) kategoriyalari tekis ro'yxat (parent bilan; daraxtni frontend quradi),
+    POST {name, parent?} — o'z tashkilotida yangi kategoriya (ko'pi bilan MaterialCategory.MAX_DEPTH daraja).
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        _require(request, "main.view_material")
+        employee = _employee(request)
+        qs = (
+            MaterialCategory.objects.filter(Q(organization_id=employee.organization_id) | Q(organization__isnull=True))
+            .annotate(
+                materials=Count("material", filter=Q(material__is_active=True), distinct=True),
+                kids=Count("children", distinct=True),
+            )
+            .order_by("name", "id")
+        )
+        user = request.user
+        return Response({
+            "max_depth": MaterialCategory.MAX_DEPTH,
+            "can_add": user.has_perm("main.add_material"),
+            "can_change": user.has_perm("main.change_material"),
+            "can_delete": user.has_perm("main.delete_material"),
+            "results": [
+                {
+                    "id": c.id, "name": c.name, "parent": c.parent_id, "materials": c.materials, "children": c.kids,
+                    "editable": c.organization_id is not None and c.organization_id == employee.organization_id,
+                }
+                for c in qs
+            ],
+        })
+
+    def post(self, request):
+        _require(request, "main.add_material")
+        employee = _employee(request)
+        if not employee.organization_id:
+            raise PermissionDenied("Tashkilotingiz yo'q.")
+        obj = MaterialCategory(organization_id=employee.organization_id)
+        _fill_category(obj, request.data, employee)
+        obj.save()
+        return Response({"id": obj.id, "name": obj.name, "parent": obj.parent_id}, status=201)
+
+
+class MaterialCategoryDetailView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def _get(self, request, pk):
+        employee = _employee(request)
+        if not employee.organization_id:
+            raise PermissionDenied("Tashkilotingiz yo'q.")
+        return employee, get_object_or_404(MaterialCategory, pk=pk, organization_id=employee.organization_id)
+
+    def patch(self, request, pk):
+        _require(request, "main.change_material")
+        employee, obj = self._get(request, pk)
+        _fill_category(obj, request.data, employee)
+        obj.save()
+        return Response({"id": obj.id, "name": obj.name, "parent": obj.parent_id})
+
+    put = patch
+
+    def delete(self, request, pk):
+        _require(request, "main.delete_material")
+        _, obj = self._get(request, pk)
+        if obj.children.exists():
+            raise ValidationError({"detail": "Avval ichki kategoriyalarini o'chiring yoki boshqa kategoriyaga ko'chiring."})
+        count = obj.material_set.filter(is_active=True).count()
+        if count:
+            raise ValidationError({"detail": f"Bu kategoriyada {count} ta material bor. Avval ularni boshqa kategoriyaga o'tkazing."})
+        obj.delete()
+        return Response(status=204)
+
+
+def _fill_category(obj, data, employee):
+    """Nomi va ota kategoriyani qo'yib, qoidalarni (daraja, tashkilot, aylana) tekshiradi."""
+    if "name" in data or obj.pk is None:
+        name = " ".join(str(data.get("name") or "").split())
+        if not name:
+            raise ValidationError({"name": "Nomini kiriting."})
+        if len(name) > 200:
+            raise ValidationError({"name": "Nomi 200 belgidan oshmasin."})
+        obj.name = name
+    if "parent" in data:
+        parent_id = data.get("parent")
+        if parent_id in (None, "", 0, "0"):
+            obj.parent = None
+        else:
+            try:
+                obj.parent = MaterialCategory.objects.get(pk=int(parent_id), organization_id=employee.organization_id)
+            except (ValueError, TypeError, MaterialCategory.DoesNotExist):
+                raise ValidationError({"parent": "Ota kategoriya topilmadi."})
+    twin = MaterialCategory.objects.filter(
+        organization_id=obj.organization_id, parent_id=obj.parent_id, name__iexact=obj.name,
+    ).exclude(pk=obj.pk)
+    if twin.exists():
+        raise ValidationError({"name": "Bu nomli kategoriya shu joyda allaqachon bor."})
+    try:
+        obj.clean()
+    except DjangoValidationError as e:
+        raise ValidationError(e.message_dict if hasattr(e, "error_dict") else {"detail": e.messages})
+
+
 router = SimpleRouter()
 router.register("technics", SpaTechnicsViewSet, basename="spa-warehouse-technics")
 router.register("structures", SpaStructureViewSet, basename="spa-warehouse-structures")
@@ -442,6 +549,8 @@ urlpatterns = [
     path("materials/import/", MaterialImportView.as_view(), name="spa_warehouse_material_import"),
     path("materials/import/options/", MaterialImportOptionsView.as_view(), name="spa_warehouse_material_import_options"),
     path("materials/import/template/", MaterialImportTemplateView.as_view(), name="spa_warehouse_material_import_template"),
+    path("materials/categories/", MaterialCategoriesView.as_view(), name="spa_warehouse_material_categories"),
+    path("materials/categories/<int:pk>/", MaterialCategoryDetailView.as_view(), name="spa_warehouse_material_category"),
     path("materials/basket/", BasketView.as_view(), name="spa_warehouse_basket"),
     path("materials/basket/assign/", BasketAssignView.as_view(), name="spa_warehouse_basket_assign"),
     path("materials/basket/<int:pk>/delete/", BasketDeleteView.as_view(), name="spa_warehouse_basket_delete"),

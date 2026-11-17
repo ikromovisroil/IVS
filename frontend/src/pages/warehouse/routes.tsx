@@ -2,6 +2,7 @@ import { lazy } from 'react'
 import type { AppRoute } from '../../routes'
 
 // Sahifalar kerak bo'lganda yuklanadi (App.tsx dagi Suspense) — boshlang'ich JS kichrayadi
+const CategoriesPage = lazy(() => import('./CategoriesPage'))
 const BasketPage = lazy(() => import('./BasketPage'))
 const ExtraDevicesPage = lazy(() => import('./ExtraDevicesPage'))
 const MaterialsPage = lazy(() => import('./MaterialsPage'))
@@ -14,4 +15,5 @@ export const routes: AppRoute[] = [
   { path: '/materials', element: <MaterialsPage /> },
   { path: '/materials/basket', element: <BasketPage /> },
   { path: '/materials/movements', element: <MovementsPage /> },
+  { path: '/materials/categories', element: <CategoriesPage /> },
 ]

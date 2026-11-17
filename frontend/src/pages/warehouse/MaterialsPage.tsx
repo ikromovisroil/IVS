@@ -4,6 +4,7 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import { Avatar, Button, DataTable, Pagination, Select } from '../../ds'
 import type { DataTableColumn } from '../../ds'
 import Page from '../../layout/Page'
+import CategoryTreeSelect from '../../components/CategoryTreeSelect'
 import ConfirmDialog from '../../components/ConfirmDialog'
 import DataState from '../../components/DataState'
 import Modal from '../../components/Modal'
@@ -187,7 +188,7 @@ export default function MaterialsPage() {
         }
       >
         <Select placeholder={t('Xodim')} options={employees.options} value={n('employee')} onChange={(v) => setFilter('employee', v)} />
-        <Select placeholder={t('Kategoriya')} options={refs.categoryOptions} value={n('category')} onChange={(v) => setFilter('category', v)} />
+        <CategoryTreeSelect items={refs.categoryTree} value={n('category')} onChange={(v) => setFilter('category', v)} />
         <Select placeholder={t('Birligi')} options={refs.unitOptions} value={n('unit')} onChange={(v) => setFilter('unit', v)} />
       </FilterBar>
 

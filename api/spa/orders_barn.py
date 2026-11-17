@@ -26,7 +26,7 @@ from api.serializers import OrderSerializer
 from api.views import OrderViewSet
 from main.ajax_views import ordermaterial_delete
 from main.order_views import CartEmptyError, create_order_from_cart
-from main.models import Employee, Goal, Material, MaterialEmployee, OrderMaterial
+from main.models import Employee, Goal, Material, MaterialCategory, OrderMaterial
 from main.push_views import notify_eligible_employees_new_order
 
 
@@ -42,9 +42,7 @@ def _client_employee(request):
 
 def _selectable_materials(employee):
     """Mijoz tanlay oladigan materiallar — order_sender_material_barn / orders/selectable-materials bilan bir xil."""
-    category_ids = MaterialEmployee.category.through.objects.filter(
-        materialemployee__employee=employee
-    ).values_list("materialcategory_id", flat=True)
+    category_ids = MaterialCategory.allowed_ids(employee)
     return Material.objects.filter(organization=employee.organization, is_active=True, category_id__in=category_ids)
 
 

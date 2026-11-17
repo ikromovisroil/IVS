@@ -202,6 +202,73 @@ class WarehouseSpaTests(TestCase):
         r = c.post(f"{BASE}/materials/basket/assign/", {"employee": recv.id}, format="json")
         self.assertEqual(r.status_code, 400)
 
+    def test_material_categories_crud(self):
+        manager_user, _ = make_employee(self.org, self.region, last="Menejer", perms=[
+            "main.view_material", "main.add_material", "main.change_material", "main.delete_material"])
+        viewer_user, _ = make_employee(self.org, self.region, last="Faqat", perms=["main.view_material"])
+        mgr, view = self.api(manager_user), self.api(viewer_user)
+        URL = f"{BASE}/materials/categories/"
+
+        # qo'shish: faqat add_material; ichma-ich 3 darajagacha
+        self.assertEqual(view.post(URL, {"name": "A"}, format="json").status_code, 403)
+        a = mgr.post(URL, {"name": "Kompyuter"}, format="json")
+        self.assertEqual(a.status_code, 201, a.data)
+        b = mgr.post(URL, {"name": "Kabel", "parent": a.data["id"]}, format="json")
+        c = mgr.post(URL, {"name": "UTP", "parent": b.data["id"]}, format="json")
+        self.assertEqual((b.status_code, c.status_code), (201, 201))
+        self.assertEqual(mgr.post(URL, {"name": "4-daraja", "parent": c.data["id"]}, format="json").status_code, 400)
+        self.assertEqual(mgr.post(URL, {"name": "kompyuter"}, format="json").status_code, 400)          # bir xil nom (katta-kichik harf farqsiz)
+        self.assertEqual(mgr.post(URL, {"name": " "}, format="json").status_code, 400)
+        foreign = MaterialCategory.objects.create(organization=self.other_org, name="Begona")
+        self.assertEqual(mgr.post(URL, {"name": "X", "parent": foreign.id}, format="json").status_code, 400)
+
+        # ro'yxat: o'z tashkiloti, daraxt uchun parent bilan; boshqa tashkilot ko'rinmaydi
+        data = view.get(URL).data
+        names = {r["name"]: r for r in data["results"]}
+        self.assertNotIn("Begona", names)
+        self.assertEqual(names["UTP"]["parent"], b.data["id"])
+        self.assertEqual((names["Kompyuter"]["children"], names["Kompyuter"]["editable"]), (1, True))
+        self.assertEqual((data["can_add"], data["can_change"], data["can_delete"]), (False, False, False))
+
+        # tahrirlash: nomi, ko'chirish, aylana yo'q
+        d = f"{URL}{b.data['id']}/"
+        self.assertEqual(view.patch(d, {"name": "Z"}, format="json").status_code, 403)
+        self.assertEqual(mgr.patch(d, {"name": "Kabellar"}, format="json").status_code, 200)
+        self.assertEqual(MaterialCategory.objects.get(pk=b.data["id"]).name, "Kabellar")
+        self.assertEqual(mgr.patch(f"{URL}{a.data['id']}/", {"parent": c.data["id"]}, format="json").status_code, 400)   # o'z avlodi ichiga
+        self.assertEqual(mgr.patch(f"{URL}{foreign.id}/", {"name": "Hack"}, format="json").status_code, 404)             # boshqa tashkilot
+
+        # o'chirish: ichkisi yoki materiali bor bo'lsa mumkin emas
+        self.assertEqual(view.delete(d).status_code, 403)
+        self.assertEqual(mgr.delete(d).status_code, 400)                                  # ichki kategoriyasi bor
+        unit = Unit.objects.create(name="dona")
+        m = Material.objects.create(organization=self.org, category_id=c.data["id"], name="UTP kabel", unit=unit, number=1)
+        r = mgr.delete(f"{URL}{c.data['id']}/")
+        self.assertEqual(r.status_code, 400)                                              # materiali bor
+        self.assertIn("1 ta material", str(r.data))
+        m.category = None
+        m.save()
+        self.assertEqual(mgr.delete(f"{URL}{c.data['id']}/").status_code, 204)
+        self.assertEqual(mgr.delete(d).status_code, 204)
+
+    def test_materials_category_filter_includes_children(self):
+        shop_user, shop, recv, mat = self._materials()
+        root = MaterialCategory.objects.create(organization=self.org, name="Kompyuter")
+        child = MaterialCategory.objects.create(organization=self.org, name="Kabellar", parent=root)
+        other = MaterialCategory.objects.create(organization=self.org, name="Boshqa")
+        mat.category = child
+        mat.save()
+        Material.objects.filter(employee=shop).exclude(pk=mat.pk).update(category=other)
+        c = self.api(shop_user)
+
+        def codes(cat):
+            r = c.get("/api/v1/materials/", {"employee": shop.id, "category": cat.id, "page_size": 50})
+            self.assertEqual(r.status_code, 200, r.data)
+            return [m["id"] for m in r.data["results"]]
+        self.assertEqual(codes(child), [mat.id])
+        self.assertEqual(codes(root), [mat.id])             # ota — ichki kategoriyasi bilan
+        self.assertNotIn(mat.id, codes(other))
+
     def test_basket_assign_copies_category_to_receiver(self):
         shop_user, shop, recv, mat = self._materials()
         cat = MaterialCategory.objects.create(organization=self.org, name="Kabellar")

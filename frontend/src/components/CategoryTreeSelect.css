@@ -1,0 +1,52 @@
+/* Kategoriya daraxti: asosiy qatorlar, o'ngda "+" va ochilganda biroz o'ngga/pastga siljigan ichki kategoriyalar */
+.ivs-cat-list {
+  max-height: 320px;
+}
+
+.ivs-cat-row {
+  padding: 0 6px 0 0;
+}
+
+.ivs-cat-name {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 0 8px 10px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ivs-cat-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: 6px;
+  background: var(--bg-white-0);
+  color: var(--text-sub-600);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.ivs-cat-toggle:hover {
+  border-color: var(--primary-base);
+  color: var(--primary-base);
+}
+
+.ivs-cat-children {
+  margin: 2px 0 4px 18px;
+  padding: 0 0 0 8px;
+  border-left: 2px solid var(--stroke-soft-200);
+  list-style: none;
+}
+
+.ivs-cat-row.is-child {
+  font-weight: 400;
+  font-size: 12.5px;
+}

@@ -176,7 +176,10 @@ const ru: Record<string, string> = {
   'Omborxonaga kelgan yangi arizalar shu yerda paydo bo‘ladi.': 'Здесь появятся новые заявки, поступившие на склад.',
   "Omborxonachi tayyorlagan arizalar tasdiqlash uchun shu yerda paydo bo'ladi.": 'Здесь появятся заявки, подготовленные кладовщиком, для подтверждения.',
   'Qidiruvga mos material topilmadi': 'По запросу материалы не найдены',
-  'Boshqa nom bilan qidirib ko‘ring.': 'Попробуйте поискать по другому названию.',
+  'Boshqa nom yoki kategoriya bilan qidirib ko‘ring.': 'Попробуйте другое название или категорию.',
+  'Katalog': 'Каталог',
+  'Barcha materiallar': 'Все материалы',
+  "Ichki kategoriyalar yo'q": 'Вложенных категорий нет',
   "Sizga ruxsat etilgan material yo'q": 'Нет доступных вам материалов',
   'Material kategoriyalari omborxona tomonidan biriktiriladi.': 'Категории материалов назначаются складом.',
 }

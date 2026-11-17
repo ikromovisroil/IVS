@@ -367,7 +367,7 @@ class UnitSerializer(serializers.ModelSerializer):
 class MaterialCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = MaterialCategory
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'parent']
 
 
 class MaterialSerializer(serializers.ModelSerializer):

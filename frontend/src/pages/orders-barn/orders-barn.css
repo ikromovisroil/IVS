@@ -433,3 +433,194 @@
 .ob-mono {
   font-family: var(--font-mono, 'DM Mono', monospace);
 }
+
+/* "Katalog": kategoriyalar menyusi (chapda kategoriyalar, o'ngda ichki kategoriyalar) */
+.ob-catalog {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ob-catalog-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--radius-10);
+  background: var(--primary-lighter);
+  color: var(--primary-base);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 140ms;
+}
+
+.ob-catalog-btn.is-selected {
+  background: var(--primary-base);
+  color: var(--static-white);
+}
+
+.ob-catalog-btn:hover,
+.ob-catalog-btn.is-open {
+  background: var(--primary-light);
+}
+
+.ob-catalog-btn.is-selected:hover,
+.ob-catalog-btn.is-selected.is-open {
+  background: var(--primary-dark);
+}
+
+.ob-catalog-panel {
+  position: fixed;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  grid-template-rows: minmax(0, 1fr);
+  min-height: 320px;
+  overflow: hidden;
+  border: 1px solid var(--stroke-soft-200);
+  border-radius: var(--radius-16);
+  background: var(--bg-white-0);
+  box-shadow: 0 16px 40px rgba(14, 18, 27, 0.16);
+}
+
+.ob-catalog-roots {
+  margin: 0;
+  padding: 8px;
+  list-style: none;
+  overflow-y: auto;
+  border-right: 1px solid var(--stroke-soft-200);
+}
+
+.ob-catalog-roots button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius-8);
+  background: transparent;
+  color: var(--text-strong-950);
+  font: inherit;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ob-catalog-roots button svg,
+.ob-catalog-roots button i {
+  color: var(--text-soft-400);
+}
+
+.ob-catalog-roots button:hover,
+.ob-catalog-roots button.is-active {
+  background: var(--bg-weak-50);
+}
+
+.ob-catalog-sub {
+  padding: 20px 24px;
+  overflow-y: auto;
+}
+
+.ob-catalog-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-strong-950);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.ob-catalog-title.is-static {
+  cursor: default;
+}
+
+button.ob-catalog-title:hover {
+  color: var(--primary-base);
+}
+
+.ob-catalog-children {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  column-width: 240px;
+  column-gap: 40px;
+}
+
+.ob-catalog-children li {
+  break-inside: avoid;
+}
+
+.ob-catalog-children button {
+  display: block;
+  width: 100%;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-sub-600);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ob-catalog-children button:hover,
+.ob-catalog-children button.is-active {
+  color: var(--primary-base);
+}
+
+.ob-catalog-children .is-group,
+.ob-catalog-group {
+  color: var(--text-strong-950);
+  font-weight: 600;
+}
+
+.ob-catalog-group {
+  display: block;
+  padding: 8px 0;
+}
+
+.ob-catalog-children.is-nested {
+  columns: 1;
+  margin-left: 14px;
+  padding-left: 10px;
+  border-left: 2px solid var(--stroke-soft-200);
+}
+
+.ob-catalog-children li.has-kids {
+  break-inside: avoid;
+}
+
+.ob-catalog-empty {
+  margin: 0;
+  color: var(--text-sub-600);
+}
+
+@media (max-width: 720px) {
+  .ob-catalog-panel {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    overflow-y: auto;
+  }
+
+  .ob-catalog-roots {
+    border-right: 0;
+    border-bottom: 1px solid var(--stroke-soft-200);
+    overflow: visible;
+  }
+
+  .ob-catalog-children {
+    columns: 1;
+  }
+}

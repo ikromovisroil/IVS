@@ -113,7 +113,8 @@ export function useStructureCategories() {
 export function useMaterialRefs() {
   const units = useQuery({ queryKey: ['warehouse', 'units'], queryFn: () => apiAll<Named>('/units/'), staleTime: DAY })
   const categories = useQuery({ queryKey: ['warehouse', 'material-categories'], queryFn: () => apiAll<Named>('/material-categories/'), staleTime: DAY })
-  return { unitOptions: toOptions(units.data), categoryOptions: toOptions(categories.data) }
+  const categoryTree = (categories.data ?? []).map((c) => ({ id: c.id, name: c.name, parent: (c as Named & { parent?: number | null }).parent ?? null }))
+  return { unitOptions: toOptions(units.data), categoryOptions: toOptions(categories.data), categoryTree }
 }
 
 /** barn_mat dagi "Xodim" (moddiy javobgarlar) — materiallar ro'yxati va biriktirish uchun */
