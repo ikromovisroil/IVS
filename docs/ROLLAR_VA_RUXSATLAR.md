@@ -138,6 +138,12 @@ Har bir ruxsat uchun: **Nima** — ma'nosi; **Qayerda** — sayt ekrani va API; 
 - **Kimga kerak:** omborxonachi.
 - **Kimga beriladi:** hammaga; `view_material` bo'lishi shart.
 
+**Material kategoriyalari** (alohida ruxsat yo'q — materialnikiga bog'liq)
+- **Daraxt:** kategoriya ichida ichki kategoriya (ko'pi bilan 3 daraja: kategoriya → ichki → eng ichki). Ichkisi yoki materiali bor kategoriya o'chirilmaydi.
+- **Qayerda:** Materiallar → "Kategoriyalar" tabi (`/spa/warehouse/materials/categories/`); material qo'shish/tahrirlash oynasi va jadval filtrida daraxt tanlagich; omborxonada "Katalog".
+- **Ruxsatlar:** ko'rish — `view_material`; qo'shish — `add_material`; tahrirlash/ko'chirish — `change_material`; o'chirish — `delete_material`. Faqat o'z tashkilotining kategoriyalari o'zgaradi (umumiy, tashkilotsizlari faqat ko'rinadi).
+- **Xodimga ruxsat ("Ruxsat etilgan material kategoriyasi"):** rol berish oynasida faqat asosiy (ota) kategoriyalar chiqadi. Ota berilsa, uning barcha ichki va eng ichki kategoriyalari ham ruxsat etiladi (omborxonada shu materiallarni ko'radi). Faqat ichkisi berilsa, ota ruxsat etilmaydi.
+
 **`material_service` — Materiallarni sarflash**
 - **Nima:** materialni sarflash (ombordan chiqim).
 - **Qayerda:** `POST /materials/service/`; "Sarf" hisoboti; "Hisobotlar" menyusi.

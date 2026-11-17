@@ -343,7 +343,11 @@ Mijoz tashkiloti xodimi bajara olmaydi. Ko'rish doirasi: o'z hududi va `execute_
 Ilova bu bo'limni ("Arizalar" ekranidagi "Omborxona" tabi, 1.4) `organization_type = "client"` bo'lganda ko'rsatadi (vebdagidek); ATM xodimida u yo'q. Ariza **yuborish** uchun `orders.can_create_material_order: true` (ya'ni `material_goals` bo'sh emas) bo'lishi kerak.
 
 **Ariza yuborish** — savatni ilova **qurilmada o'zi saqlaydi** va bitta so'rovda yuboradi:
-1. `GET /api/orders/selectable-materials/?search=` — o'z tashkilotining faol materiallari (faqat unga ruxsat etilgan kategoriyalar).
+1. `GET /api/orders/selectable-materials/?search=&category=` — o'z tashkilotining faol materiallari (faqat unga ruxsat etilgan kategoriyalar).
+   `category` — kategoriya yoki uning **barcha ichki kategoriyalari** bo'yicha filtr (ruxsat etilganlar doirasida).
+   **Katalog** (kategoriyalar daraxti, vebdagi "Katalog" tugmasi): `GET /api/orders/selectable-categories/` →
+   `[{"id", "name", "selectable", "children": [ ...shu tuzilma, ichma-ich... ]}]`. `selectable: false` — faqat sarlavha (ota o'zi ruxsat etilmagan,
+   lekin ichkisi etilgan): uni bosib filtrlab bo'lmaydi.
 2. `POST /api/orders/` `{"goal": <material_goals dan>, "message_sender": "...", "materials": [{"material_id": 3, "number": 2}]}`.
    Qoidalar: savat bo'sh bo'lmasin, material takrorlanmasin, soni 1 dan kam bo'lmasin; `goal` — `/me/` dagi `orders.material_goals` ro'yxatidan. Ombordan hali ayirilmaydi.
    ATM xodimi yubora olmaydi.
@@ -512,7 +516,7 @@ Veb'dagi "Qurilmalar" sahifasi. Qurilma — texnikaga biriktiriladigan qo'shimch
 ### 9.3 Materiallar — `/api/materials/`
 Ruxsat: `view_material`. Ko'rinish: o'z tashkilotining faol, soni 0 dan ko'p materiallari; `all_material_employee` bo'lsa moddiy javobgar xodimlarniki,
 aks holda o'zi va unga biriktirilgan xodimlarniki.
-- `GET /api/materials/` — ro'yxat: nomi, kategoriya, soni (qoldiq), birlik, narxi, rasmi; filtr: `employee`, `category`, `unit`; `search` — nomi, kodi yoki narxi bo'yicha (narx boshidan: `1500`, `1500,50`).
+- `GET /api/materials/` — ro'yxat: nomi, kategoriya, soni (qoldiq), birlik, narxi, rasmi; filtr: `employee`, `category` (ota bo'lsa — ichki kategoriyalari bilan), `unit`; `search` — nomi, kodi yoki narxi bo'yicha (narx boshidan: `1500`, `1500,50`).
 - `GET /api/materials/{id}/` — tafsilot.
 
 **Materialni boshqarish** (mobilda bor; har amalga o'z ruxsati kerak):
@@ -529,6 +533,25 @@ aks holda o'zi va unga biriktirilgan xodimlarniki.
   Xodimlar ro'yxati: `GET /api/spa/warehouse/employees/?organization=<id>&region=<id>` → `{"results": [{"id", "text"}]}`.
 - **Sarflash qoidalari:** faqat o'z tashkiloti; material egasi, unga biriktirilgan xodim yoki `all_material_employee` bo'lgan xodim sarflay oladi. `material_service` ruxsati **faqat `worker`** xodimiga beriladi (mijozda yo'q).
 - Qo'shish oynasidagi ro'yxatlar (6-bo'lim): `material-categories`, `units`. O'chirishdan oldin **tasdiq oynasi** bo'lsin.
+
+**Material kategoriyalari — daraxt (ichma-ich, ko'pi bilan 3 daraja).** Kategoriya ichida ichki kategoriya, uning ichida yana bittasi bo'lishi mumkin.
+
+- **Ro'yxat:** `GET /api/material-categories/` — har kategoriyada `parent` (ota `id` yoki `null`). Daraxtni ilova o'zi quradi.
+- **Tanlagich** (material qo'shish/tahrirlash, filtr): ro'yxatda faqat asosiy (`parent = null`) kategoriyalar; ichkisi borida **"+"** — bosilsa ichkilari biroz o'ngda va pastda chiqadi (har darajada shunday). Qidiruv yozilganda "Ota / Ichki / Eng ichki" ko'rinishida tekis ro'yxat.
+- **Filtr:** ota kategoriyani tanlash ichkilarini ham qamrab oladi (`GET /api/materials/?category=<id>`).
+- **Xodimga ruxsat:** ota kategoriya berilsa, uning barcha ichkilari ham ruxsat etiladi; faqat ichkisi berilsa, ota ruxsat etilmaydi.
+
+**Kategoriyalarni boshqarish** ("Materiallar" ichidagi alohida "Kategoriyalar" ekrani; mobil ham chaqira oladi). Ruxsatlar materialnikiga bog'liq:
+
+| Amal | So'rov | Ruxsat |
+|---|---|---|
+| **Ro'yxat** | `GET /api/spa/warehouse/materials/categories/` → `{"max_depth": 3, "can_add", "can_change", "can_delete", "results": [{"id", "name", "parent", "materials", "children", "editable"}]}` — o'z tashkiloti va umumiy kategoriyalar; `materials` — faol materiallar soni, `children` — ichkilari soni | `view_material` |
+| **Qo'shish** | `POST /api/spa/warehouse/materials/categories/ {"name": "...", "parent": <id yoki null>}` → `201` | `add_material` |
+| **Tahrirlash / ko'chirish** | `PATCH /api/spa/warehouse/materials/categories/{id}/ {"name": "...", "parent": <id yoki null>}` | `change_material` |
+| **O'chirish** | `DELETE /api/spa/warehouse/materials/categories/{id}/` → `204` | `delete_material` |
+
+- Tugmalarni `can_add` / `can_change` / `can_delete` bayroqlariga qarab ko'rsating. `editable: false` (umumiy kategoriya) — o'zgartirib bo'lmaydi. 3-darajadagi kategoriyada "ichki qo'shish" tugmasi bo'lmasin (`max_depth`).
+- **Xatolar (`400`, matni `detail` yoki maydon nomida):** nom bo'sh; shu joyda bir xil nom bor; 3 darajadan oshadi; kategoriyani o'z ichkisi ichiga ko'chirib bo'lmaydi (aylana); ota boshqa tashkilotniki; o'chirishda ichki kategoriyasi bor yoki "Bu kategoriyada N ta material bor". Matnni foydalanuvchiga o'zgartirmasdan ko'rsating.
 
 ### 9.4 QR skaner — `POST /api/scan/`
 
