@@ -38,3 +38,20 @@ class SearchScopeTests(TestCase):
         c.force_login(user)
         r = c.get("/api/v1/employees/", {"search": "Begona"})
         self.assertEqual(r.data["count"], 1)
+
+
+class MaterialCategoryScopeTests(TestCase):
+    """/material-categories/ — superuser va all_organization bo'lsa ham faqat o'z tashkiloti (materiallar ham shunday)."""
+
+    def test_only_own_organization(self):
+        from main.models import MaterialCategory
+        region = make_region()
+        mine, other = make_org("client"), make_org("client")
+        a = MaterialCategory.objects.create(organization=mine, name="Meniki")
+        MaterialCategory.objects.create(organization=other, name="Begona")
+        for kw in ({"perms": ["main.all_organization"]}, {"superuser": True}):
+            user, _ = make_employee(mine, region, **kw)
+            c = APIClient()
+            c.force_login(user)
+            r = c.get("/api/v1/material-categories/", {"page_size": 50})
+            self.assertEqual([x["id"] for x in r.data["results"]], [a.id], kw)

@@ -832,7 +832,8 @@ class UnitViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class MaterialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    """Faqat KO'RISH: material kategoriyalari — o'z tashkilotiniki (yoki umumiy); 'all_organization' bo'lsa hammasi."""
+    """Faqat KO'RISH: material kategoriyalari — har doim faqat o'z tashkilotiniki (yoki umumiy). Materiallar ham faqat
+    o'z tashkilotiniki bo'lgani uchun 'all_organization' bo'lsa ham boshqa tashkilot kategoriyalari chiqmaydi."""
     serializer_class = MaterialCategorySerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = StandardResultsPagination
@@ -841,10 +842,7 @@ class MaterialCategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = MaterialCategory.objects.order_by('name', 'id')
-        user = self.request.user
-        if user.is_superuser or user.has_perm("main.all_organization"):
-            return qs
-        employee = getattr(user, "employee", None)
+        employee = getattr(self.request.user, "employee", None)
         if not employee or not employee.organization_id:
             return qs.none()
         return qs.filter(models.Q(organization_id=employee.organization_id) | models.Q(organization__isnull=True))
