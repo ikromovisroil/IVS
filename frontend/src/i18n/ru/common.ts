@@ -39,6 +39,7 @@ const ru: Record<string, string> = {
   'Ko‘zni kamroq charchatadi': 'Меньше утомляет глаза',
   'Qurilma sozlamasiga ergashadi': 'Как в настройках устройства',
   'Telegram bot': 'Telegram-бот',
+  'Mobil ilova': 'Мобильное приложение',
   'Yangi tabda ochish': 'Открыть в новой вкладке',
   'PDF yuklanmoqda…': 'Загрузка PDF…',
   "PDF'ni ochib bo'lmadi. Yuklab olib ko'ring.": 'Не удалось открыть PDF. Попробуйте скачать.',

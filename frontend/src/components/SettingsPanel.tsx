@@ -16,6 +16,9 @@ const THEMES: { value: Theme; label: string; hint: string }[] = [
   { value: 'system', label: 'Tizim#mavzu', hint: 'Qurilma sozlamasiga ergashadi' },
 ]
 
+const APP_STORE_URL = 'https://apps.apple.com/uz/app/report-imv/id6476650353'
+const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=uz.imv.crm.crm_imv'
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -170,6 +173,15 @@ export default function SettingsPanel({ open, onClose }: Props) {
         </div>
 
         <footer className="ivs-sp-foot">
+          <span className="ivs-sp-foot-title type-para-xs ivs-sp-muted">{t('Mobil ilova')}</span>
+          <a className="ivs-sp-link" href={APP_STORE_URL} target="_blank" rel="noopener noreferrer">
+            <Icon name="ri-apple-line" size={18} />
+            App Store
+          </a>
+          <a className="ivs-sp-link" href={PLAY_STORE_URL} target="_blank" rel="noopener noreferrer">
+            <Icon name="ri-google-play-line" size={18} />
+            Google Play
+          </a>
           <a className="ivs-sp-link" href="https://t.me/report_yatm_bot" target="_blank" rel="noopener noreferrer">
             <Icon name="ri-telegram-line" size={18} />
             {t('Telegram bot')}
