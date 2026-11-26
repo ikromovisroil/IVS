@@ -112,6 +112,11 @@ def build_overlay_pdf_bytes(page_w: float, page_h: float, text: str, qr_link: st
 # ==========================================================
 # 3) PDF ga imzo urish
 # ==========================================================
+def _sign_label(method: str) -> str:
+    """PDF yozuvidagi imzo usuli; bo'sh qiymat — eski (E-IMZO) imzolar."""
+    return "Face ID" if method == "faceid" else "ERI"
+
+
 def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -> bool:
     try:
         deed = Deed.objects.select_related("sender", "receiver").get(id=deed_id)
@@ -156,13 +161,9 @@ def sign_pdf_inplace(pdf_path: str, request, approver_name: str, deed_id: int) -
         if deed.date_receiver else ""
     )
     if deed.status != "petition":
+        text = f"REPORT.YATM.UZ tizimi orqali {_sign_label(deed.sign_method_sender)} bilan {deed.sender.full_name} tomonidan {date_sender_fmt} da tasdiqlandi"
         if deed.receiver_id:
-            text = (
-                f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.sender.full_name} tomonidan {date_sender_fmt} da tasdiqlandi\n"
-                f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.receiver.full_name} tomonidan {date_receiver_fmt} da tasdiqlandi"
-            )
-        else:
-            text = f"REPORT.YATM.UZ tizimi orqali ERI bilan {deed.sender.full_name} tomonidan {date_sender_fmt} da tasdiqlandi"
+            text += f"\nREPORT.YATM.UZ tizimi orqali {_sign_label(deed.sign_method_receiver)} bilan {deed.receiver.full_name} tomonidan {date_receiver_fmt} da tasdiqlandi"
     else:
         if deed.receiver_id:
             text = (

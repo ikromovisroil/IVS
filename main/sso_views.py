@@ -427,13 +427,15 @@ def eimzo_return(request):
                         deed.status_sender  = "approved"
                         deed.message_sender = message or ""
                         deed.date_sender    = now
-                        deed.save(update_fields=["status_sender", "message_sender", "date_sender"])
+                        deed.sign_method_sender = "eri"
+                        deed.save(update_fields=["status_sender", "message_sender", "date_sender", "sign_method_sender"])
                 else:
                     if deed.status_receiver != "approved":
                         deed.status_receiver  = "approved"
                         deed.message_receiver = message or ""
                         deed.date_receiver    = now
-                        deed.save(update_fields=["status_receiver", "message_receiver", "date_receiver"])
+                        deed.sign_method_receiver = "eri"
+                        deed.save(update_fields=["status_receiver", "message_receiver", "date_receiver", "sign_method_receiver"])
 
                 is_final = (
                     (deed.receiver_id is None and deed.status_sender == "approved")

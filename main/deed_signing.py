@@ -53,10 +53,12 @@ def approve_as_signer(deed_id: int, employee, role: str, message: str = "") -> b
             now = timezone.now()
             if role == "sender":
                 deed.status_sender, deed.message_sender, deed.date_sender = "approved", message or "", now
-                deed.save(update_fields=["status_sender", "message_sender", "date_sender"])
+                deed.sign_method_sender = "faceid"
+                deed.save(update_fields=["status_sender", "message_sender", "date_sender", "sign_method_sender"])
             else:
                 deed.status_receiver, deed.message_receiver, deed.date_receiver = "approved", message or "", now
-                deed.save(update_fields=["status_receiver", "message_receiver", "date_receiver"])
+                deed.sign_method_receiver = "faceid"
+                deed.save(update_fields=["status_receiver", "message_receiver", "date_receiver", "sign_method_receiver"])
         else:
             return False   # allaqachon tasdiqlangan: PDF qayta yig'ilmaydi
 

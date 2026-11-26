@@ -143,6 +143,7 @@ class FaceIDFlowTests(TestCase):
         rec = FaceIDSession.objects.get(session_id="sess-1")
         self.assertEqual(self.deed.status_sender, "approved")
         self.assertEqual(self.deed.message_sender, "ok")
+        self.assertEqual((self.deed.sign_method_sender, self.deed.sign_method_receiver), ("faceid", ""))
         self.assertEqual((rec.status, rec.similarity), ("approved", 0.8))
         fin.assert_called_once()                                   # qabul qiluvchi yo'q: imzo to'liq, PDF yig'iladi
 

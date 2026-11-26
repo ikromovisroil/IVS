@@ -818,6 +818,11 @@ class Deed(models.Model):
     ], default='viewed', db_index=True)
     date_receiver = models.DateTimeField(null=True, blank=True)
 
+    # Imzolovchi qaysi usulda tasdiqlagan (PDF dagi yozuv uchun). Bo'sh — bu maydondan oldingi imzolar (E-IMZO).
+    SIGN_METHODS = [('eri', 'ERI'), ('faceid', 'Face ID')]
+    sign_method_sender = models.CharField(max_length=10, choices=SIGN_METHODS, blank=True, default="", editable=False)
+    sign_method_receiver = models.CharField(max_length=10, choices=SIGN_METHODS, blank=True, default="", editable=False)
+
     # Yaratuvchi belgilasa, imzolovchi (sender/receiver) ham kelishuvchi qo'sha oladi
     sender_can_add_consent = models.BooleanField(default=False)
     receiver_can_add_consent = models.BooleanField(default=False)
