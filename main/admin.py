@@ -368,10 +368,10 @@ class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
         return ", ".join(ids) if ids else "-"
     list_display = (
         "id", "sender_region", "sender", "receiver", "user",
-        "colored_status", "material_ids", "rating", "date_creat"
+        "colored_status", "material_ids", "rating", "device_type", "date_creat"
     )
     list_filter = (
-        "sender_organization", "sender_region", "status", "goal", "date_creat"
+        "sender_organization", "sender_region", "status", "goal", "device_type", "date_creat"
     )
     list_select_related = ("sender_region", "sender", "receiver", "user")
     list_per_page = 50
@@ -386,7 +386,7 @@ class OrderAdmin(NoDeleteAdminMixin, admin.ModelAdmin):
     inlines = [OrderMaterialInline]
     readonly_fields = (
         "date_creat", "date_edit", "date_process", "date_finished",
-        "date_approved", "date_accepted", "date_canceled", "date_rejected",
+        "date_approved", "date_accepted", "date_canceled", "date_rejected", "device_type",
     )
 
     def get_form(self, request, obj=None, **kwargs):
@@ -470,10 +470,10 @@ class DeedAdmin(admin.ModelAdmin):
     list_display = (
         "id", "organization", "user__region", "code", "sender", "receiver", "user",
         "colored_status_sender", "colored_status_receiver", "status", "orders_list",
-        "date_creat"
+        "device_type", "date_creat"
     )
     list_filter = (
-        "status_sender", "status_receiver", "status", "date_creat"
+        "status_sender", "status_receiver", "status", "device_type", "date_creat"
     )
     search_fields = (
         "code", "body", "message_sender", "message_receiver", "message_user",
@@ -483,7 +483,7 @@ class DeedAdmin(admin.ModelAdmin):
         "orders__id",
     )
     autocomplete_fields = ("sender", "receiver", "user", "orders", "organization")      # filter_horizontal barcha arizalarni yuklardi
-    readonly_fields = ("code", "date_creat", "date_edit")
+    readonly_fields = ("code", "date_creat", "date_edit", "device_type")
     inlines = [DeedConsentInline, DeedFilesInline]
 
     STATUS_COLORS = {

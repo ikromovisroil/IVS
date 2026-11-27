@@ -68,7 +68,15 @@ Qo'lda: `git pull && docker compose up -d --build`.
 - **VAPID (brauzer push) maxfiy kaliti** image ichiga kirmaydi: `private_key.pem` konteynerga faqat o'qish uchun ulanadi
   (`VAPID_PRIVATE_KEY_FILE=/run/secrets/vapid_private.pem`). Boshqa joydan berish uchun `.env` da `VAPID_PRIVATE_KEY_PATH`.
   Kalit fayli bo'lmasa Docker o'rniga papka yaratadi va push ishlamaydi.
-- **Firebase (Android FCM)** fayli: volume orqali ulab, `.env` da `FIREBASE_CREDENTIALS_FILE` yo'lini bering.
+- **Firebase (mobil push, FCM)** service account JSON fayli. Firebase Console → Project settings → Service accounts →
+  *Generate new private key*. Yoqish:
+  1. Faylni serverda loyiha papkasiga `firebase.json` nomi bilan qo'ying (git'ga ham, image'ga ham tushmaydi).
+  2. Konteyner foydalanuvchisi o'qiy olsin: `sudo chown 1000 firebase.json && sudo chmod 400 firebase.json`.
+  3. `.env` ga: `FIREBASE_CREDENTIALS_PATH=./firebase.json`
+  4. `docker compose up -d`
+  5. Tekshirish: `docker compose exec web python -c "import os; print(os.path.getsize('/run/secrets/firebase.json'))"` — 0 dan katta son chiqsin.
+     Push natijasi `worker` logida: `docker compose logs worker | grep FCM`.
+  iOS'ga yetib borishi uchun Firebase Console → Project settings → Cloud Messaging bo'limiga **APNs kaliti** yuklanishi shart.
 - `.env` git'ga tushmaydi va image'ga kirmaydi (`.dockerignore`).
 
 ## Muhim eslatmalar

@@ -299,9 +299,23 @@ Kirgandan keyin darhol, keyin ilova ochilganda va token yangilanganda chaqirilad
 - **Ilova ochilganda (kirishdan oldin)** `GET /api/v1/app/config/?platform=android|ios&version=1.0.3` (token kerak emas):
   `{"api_version", "server_time", "app": {"current_version", "latest_version", "min_version", "update_available", "force_update", "update_url", "message"}, "maintenance": {"enabled", "message"}}`.
   `force_update: true` — ilova ishlashni to'xtatib, `update_url` ga yo'naltirsin; `update_available` — yangilash tavsiya etiladi.
-- Har so'rovga `X-App-Version: 1.0.3` sarlavhasini qo'shing. Versiya `min_version` dan eski bo'lsa server **426** `{"code": "upgrade_required", "detail", "min_version", "update_url"}` qaytaradi.
+- Har so'rovga `X-App-Version: 1.0.3` sarlavhasini qo'shing. Android versiyasi `min_version` dan eski bo'lsa server **426** `{"code": "upgrade_required", "detail", "min_version", "update_url"}` qaytaradi (`X-Device-Type: ios` bo'lsa bu tekshiruv hozircha qo'llanmaydi).
 - Texnik ishlar paytida so'rovlar **503** `{"code": "maintenance", "detail"}` (+ `Retry-After`) qaytaradi.
 - Barcha javoblarda `X-API-Version: 1` bor.
+
+### 5.2 Qurilma turi (majburiy sarlavhalar)
+Ilova **barcha** so'rovlarga (login va token so'rovlari ham) ikkita sarlavha qo'shadi — HTTP mijoz sozlamasida (interceptor) bir marta yoziladi:
+
+```
+X-Device-Type: ios        # yoki android
+X-App-Version: 1.0.3
+```
+
+- Server qurilma turini **login**, **ariza yaratish** va **hujjat yaratish** paytida saqlaydi (statistika uchun); server xatosi (5xx) logida qurilma turi va versiya yoziladi.
+- Push qurilmasini ro'yxatga olishda (`POST /api/devices/`) platforma ham shu sarlavhadan olinadi. Alohida maydon yuborish shart emas.
+- Alohida API yo'q, so'rov tanasi o'zgarmaydi. Saytdan kelgan so'rovlar o'zi `web` deb yoziladi.
+- Sarlavha yuborilmasa so'rov ishlayveradi, lekin qurilma turi bo'sh qoladi (push qurilmasi `android` deb yoziladi).
+- Qiymatlar: `ios`, `android` (katta-kichik harf farqi yo'q). Boshqa qiymat e'tiborga olinmaydi.
 
 ---
 
@@ -702,6 +716,9 @@ Server yangi ariza, ariza holati, hujjat imzo/kelishuv kutayotgani va yangi chat
    (`201` yangi, `200` yangilandi). Token yangilanganda yana yuboring. Qurilma boshqa xodimga o'tsa, token yangi xodimga ko'chiriladi.
 2. Chiqishda: `POST /api/auth/logout/ {"refresh": "...", "fcm_token": "<token>"}` (yoki faqat tokenni o'chirish: `POST /api/devices/unregister/ {"token": "..."}`).
 3. Bildirishnoma kelganda ma'lumotni `GET /api/orders/{id}/`, `/api/deeds/{id}/`, `/api/chat/conversations/` orqali yangilang.
+4. **iOS:** `X-Device-Type: ios` sarlavhasi majburiy (5.2) — server shunga qarab iOS xabarini yuboradi: ovoz va ilova
+   belgisidagi son (`badge` = o'qilmagan bildirishnomalar soni). Foydalanuvchi o'qiganda belgini ilova o'zi yangilaydi
+   (`GET /api/notifications/unread-count/`).
 
 **Xabar tarkibi:** `notification` (`title`, `body`) va navigatsiya uchun `data` (barcha qiymatlar satr):
 
@@ -725,7 +742,7 @@ Server yangi ariza, ariza holati, hujjat imzo/kelishuv kutayotgani va yangi chat
 |---|---|---|
 | Brauzer orqali kirish (B variant) | Chrome Custom Tab, `intent-filter` (`ivsapp://auth`) | `ASWebAuthenticationSession`, URL scheme `ivsapp` |
 | Tokenlarni saqlash | Keystore / EncryptedSharedPreferences | Keychain |
-| Push | FCM; bildirishnoma kanali ID **`ivs_default`** (server shu kanalga yuboradi) | FCM orqali APNs (Firebase iOS SDK); **serverda iOS sozlamalari hali yo'q — 14-bo'limga qarang** |
+| Push | FCM; bildirishnoma kanali ID **`ivs_default`** (server shu kanalga yuboradi) | FCM orqali APNs (Firebase iOS SDK); Firebase'ga APNs kaliti ulanishi shart |
 | FaceID SDK | FaceID jamoasining Android SDK'si | iOS SDK'si hali chiqmagan (FaceID jamoasi bilan kelishiladi) |
 | `app/config` | `platform=android` | `platform=ios` |
 
@@ -734,7 +751,7 @@ Server yangi ariza, ariza holati, hujjat imzo/kelishuv kutayotgani va yangi chat
 ## 14. Hali bajarilishi kerak bo'lgan ishlar
 
 **Server tomonida (iOS chiqishidan oldin):**
-1. **Push — iOS:** server FCM xabariga hozir faqat `android` bloki (`channel_id`) qo'shadi. iOS uchun `apns` bloki (ovoz, badge, ustuvorlik) kerak; Firebase'da APNs kaliti ulanishi shart. Qurilmalar jadvalida `platform` maydoni yo'q — iOS/Android ajratish uchun qo'shish tavsiya etiladi.
+1. **Push — iOS:** server tomoni tayyor (12.2); Firebase Console'ga **APNs kaliti** yuklanishi va haqiqiy iPhone'da sinov kerak.
 2. **Ilova versiyasi:** `ANDROID_MIN_VERSION`, `ANDROID_LATEST_VERSION`, `ANDROID_UPDATE_URL` sozlamalari **bitta** to'plam; iOS uchun alohida versiya va App Store havolasi hozircha yo'q.
 
 **FaceID:**

@@ -10,6 +10,7 @@ from io import BytesIO
 from django.core.files import File
 from django.db import models
 from django.urls import reverse
+from core.device import DEVICE_CHOICES, current_device
 
 
 # Organizator.
@@ -603,6 +604,8 @@ class Order(models.Model):
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
+    # Ariza qaysi qurilmadan yaratilgan (core/device.py); bo'sh — aniqlanmagan yoki bu maydondan oldingi yozuv
+    device_type = models.CharField("Qurilma", max_length=10, choices=DEVICE_CHOICES, blank=True, default="", db_index=True, editable=False)
 
     date_process = models.DateTimeField(null=True, blank=True)
     date_finished = models.DateTimeField(null=True, blank=True)
@@ -613,6 +616,9 @@ class Order(models.Model):
 
     def save(self, *args, **kwargs):
         update_fields = kwargs.get("update_fields", None)
+
+        if not self.pk and not self.device_type:
+            self.device_type = current_device()[0]
 
         now = timezone.now()
 
@@ -846,6 +852,8 @@ class Deed(models.Model):
 
     date_creat = models.DateTimeField(auto_now_add=True)
     date_edit = models.DateTimeField(auto_now=True)
+    # Hujjat qaysi qurilmadan yaratilgan (core/device.py); bo'sh — aniqlanmagan yoki bu maydondan oldingi yozuv
+    device_type = models.CharField("Qurilma", max_length=10, choices=DEVICE_CHOICES, blank=True, default="", db_index=True, editable=False)
 
     # "Surat": hujjat yaratilgan paytdagi hudud (yaratuvchi, bo'lmasa imzolovchi hududi). Xodim keyin ko'chsa ham
     # hujjatlar qidiruvidagi hudud filtri o'zgarmaydi. (Tashkilot `organization` maydonida allaqachon saqlanadi.)
@@ -867,6 +875,9 @@ class Deed(models.Model):
                 if not Deed.objects.filter(code=new_code).exists():
                     self.code = new_code
                     break
+
+        if not self.pk and not self.device_type:
+            self.device_type = current_device()[0]
 
         if not self.pk and not self.user_region_id:
             creator = self.user or self.sender

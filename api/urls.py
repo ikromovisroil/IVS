@@ -20,7 +20,7 @@ from .exports import (
 from .views import *
 from . import chat_views as chat
 from .auth_views import (
-    DeviceRegisterView, DeviceUnregisterView, LogoutView, MobileLoginExchangeView, SsoCodeLoginView, mobile_login_complete, mobile_login_start,
+    DeviceRegisterView, DeviceUnregisterView, LoginAuditTokenSerializer, LogoutView, MobileLoginExchangeView, SsoCodeLoginView, mobile_login_complete, mobile_login_start,
 )
 
 router = DefaultRouter()
@@ -71,7 +71,7 @@ urlpatterns = router.urls + [
     path('meetings/<int:pk>/', MeetingDetailView.as_view(), name='api_meeting_detail'),
     path('meetings/<int:pk>/cancel/', MeetingCancelView.as_view(), name='api_meeting_cancel'),
     path('meetings/<int:pk>/finish/', MeetingFinishView.as_view(), name='api_meeting_finish'),
-    path('token/', TokenObtainPairView.as_view(throttle_classes=[LoginThrottle]), name='token_obtain_pair'),
+    path('token/', TokenObtainPairView.as_view(serializer_class=LoginAuditTokenSerializer, throttle_classes=[LoginThrottle]), name='token_obtain_pair'),
     path('token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('export/employees.xlsx', EmployeesExportView.as_view(), name='api_export_employees'),
     path('export/material-report.xlsx', MaterialReportExportView.as_view(), name='api_export_material_report'),

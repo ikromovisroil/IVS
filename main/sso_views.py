@@ -325,6 +325,7 @@ def sso_exchange(request):
         sync_employee_from_claims(employee, user_data)
 
         mobile_login = request.session.get("MOBILE_LOGIN")
+        request.mobile_login_flow = bool(mobile_login)
         auth_login(request, employee.user)
         request.session.pop("SSO_FLOW", None)
         # Android ilovadan boshlangan kirish: brauzerni ilovaga qaytaramiz (api/auth_views.py)

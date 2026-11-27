@@ -20,11 +20,13 @@ x-app: &app
     CACHE_REDIS_URL: redis://redis:6379/2
     LOG_DIR: /app/logs
     VAPID_PRIVATE_KEY_FILE: /run/secrets/vapid_private.pem
+    FIREBASE_CREDENTIALS_FILE: ${FIREBASE_CREDENTIALS_FILE:-/run/secrets/firebase.json}
   volumes:
     - media:/app/media
     - media_private:/app/media_private     # chatda o'chirilgan fayllar (CHAT_PRIVATE_ROOT)
     - logs:/app/logs
     - ${VAPID_PRIVATE_KEY_PATH:-./private_key.pem}:/run/secrets/vapid_private.pem:ro
+    - ${FIREBASE_CREDENTIALS_PATH:-/dev/null}:/run/secrets/firebase.json:ro   # mobil push; berilmasa FCM o'chiq
   depends_on:
     db:
       condition: service_healthy

@@ -2,7 +2,8 @@
 /api/ so'rovlari uchun qo'riqchi:
  * javobga `X-API-Version` sarlavhasi qo'shadi;
  * texnik ishlar (API_MAINTENANCE=1) paytida 503 qaytaradi;
- * ilova `X-App-Version: 1.0.3` yuborsa va u ANDROID_MIN_VERSION dan eski bo'lsa — 426 (majburiy yangilash).
+ * Android ilova `X-App-Version: 1.0.3` yuborsa va u ANDROID_MIN_VERSION dan eski bo'lsa — 426 (majburiy yangilash);
+   `X-Device-Type: ios` bo'lsa bu tekshiruv qo'llanmaydi.
 Sarlavha yuborilmasa (brauzer, Swagger) cheklov qo'llanmaydi. `app/config/` har doim ochiq.
 """
 from django.conf import settings
@@ -37,7 +38,8 @@ class ApiGuardMiddleware:
                 return resp
 
             version = (request.headers.get("X-App-Version") or "").strip()
-            if version:
+            # ANDROID_MIN_VERSION faqat Android uchun: iOS versiya raqami u bilan solishtirilmaydi
+            if version and (request.headers.get("X-Device-Type") or "").strip().lower() != "ios":
                 force, _ = app_status(version)
                 if force:
                     resp = JsonResponse({

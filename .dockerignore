@@ -24,6 +24,8 @@ staticfiles
 # Maxfiy kalitlar — image ichiga kirmaydi (Docker'da volume/secret orqali beriladi)
 private_key.pem
 public_key.pem
+firebase*.json
+*firebase-adminsdk*.json
 
 # Frontend: kutubxonalar va build image ichida (Dockerfile 1-bosqichi) qayta yaratiladi
 frontend/node_modules

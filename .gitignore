@@ -164,6 +164,10 @@ Thumbs.db
 Desktop.ini
 private_key.pem.bak
 
+# Firebase service account kaliti (mobil push)
+firebase*.json
+*firebase-adminsdk*.json
+
 # ===============================
 # Claude Code vaqtinchalik/scratch fayllar
 # ===============================

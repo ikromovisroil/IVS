@@ -6,12 +6,12 @@ from .models import *
 
 @admin.register(AuditLog)
 class AuditLogAdmin(admin.ModelAdmin):
-    list_display    = ("date_creat", "employee", "action", "model", "object_id", "method", "ip")
-    list_filter     = ("action", "model", "method", "date_creat")
+    list_display    = ("date_creat", "employee", "action", "model", "object_id", "method", "ip", "device_type", "app_version")
+    list_filter     = ("action", "device_type", "model", "method", "date_creat")
     search_fields   = ("employee__first_name", "employee__last_name", "path", "description")
     readonly_fields = (
         "employee", "action", "model", "object_id",
-        "path", "method", "ip", "user_agent", "description", "date_creat"
+        "path", "method", "ip", "user_agent", "device_type", "app_version", "description", "date_creat"
     )
     ordering = ("-date_creat",)
 

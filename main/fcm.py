@@ -1,10 +1,12 @@
 """
-FCM (Firebase Cloud Messaging, HTTP v1) orqali Android push-xabarlar.
+FCM (Firebase Cloud Messaging, HTTP v1) orqali mobil ilovaga (Android va iOS) push-xabarlar.
 
 Sozlash (serverda):
   FIREBASE_CREDENTIALS_FILE=/path/to/firebase-service-account.json   (Firebase Console -> Project settings -> Service accounts)
   FIREBASE_PROJECT_ID=...   (ixtiyoriy; bo'lmasa JSON ichidan olinadi)
   pip install google-auth
+  Docker'da: .env ga faqat FIREBASE_CREDENTIALS_PATH=<serverdagi JSON fayl> beriladi (docs/DOCKER.md).
+  iOS uchun qo'shimcha: Firebase Console -> Cloud Messaging ga APNs kaliti yuklanishi shart.
 Sozlanmagan bo'lsa FCM butunlay o'chiq turadi (hech narsa yuborilmaydi, xato ham bermaydi).
 
 Bildirishnoma mazmuni mavjud push (web-push) bilan bir xil: title, body, url, tag. Qo'shimcha ravishda `data`
@@ -46,7 +48,8 @@ def credentials_path() -> str:
 
 def fcm_enabled() -> bool:
     path = credentials_path()
-    return bool(path) and os.path.exists(path)
+    # isfile va bo'sh emasligi: Docker'da fayl berilmasa o'rniga /dev/null ulanadi (yoki papka paydo bo'ladi)
+    return bool(path) and os.path.isfile(path) and os.path.getsize(path) > 0
 
 
 def _access_token():
@@ -88,9 +91,25 @@ def _error_reason(response) -> str:
         return ""
 
 
+def _android_block(tag) -> dict:
+    return {
+        "priority": "HIGH",
+        "notification": {"channel_id": ANDROID_CHANNEL_ID, **({"tag": tag} if tag else {})},
+    }
+
+
+def _apns_block(tag, badge) -> dict:
+    """iOS: ovoz, ilova belgisidagi o'qilmaganlar soni; bir xil tag eski bildirishnomani almashtiradi."""
+    headers = {"apns-priority": "10", "apns-push-type": "alert"}
+    if tag:
+        headers["apns-collapse-id"] = tag[:64]   # APNs cheklovi: 64 bayt
+    return {"headers": headers, "payload": {"aps": {"sound": "default", "badge": badge}}}
+
+
 def send_to_employee(employee_id, title, body, url="/", tag=None) -> dict:
-    """Xodimning barcha faol Android qurilmalariga yuboradi. {"sent": n, "removed": n} qaytaradi."""
+    """Xodimning barcha faol mobil qurilmalariga yuboradi. {"sent": n, "removed": n} qaytaradi."""
     from core.models import MobileDevice
+    from core.notifications import unread_count
 
     result = {"sent": 0, "removed": 0}
     if not fcm_enabled():
@@ -103,19 +122,18 @@ def send_to_employee(employee_id, title, body, url="/", tag=None) -> dict:
     endpoint = f"https://fcm.googleapis.com/v1/projects/{project_id}/messages:send"
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     data = build_data(title, body, url, tag)
+    badge = unread_count(employee_id) if any(d.platform == "ios" for d in devices) else 0
 
     dead_ids = []
     transient = False
     for dev in devices:
+        platform = {"apns": _apns_block(tag, badge)} if dev.platform == "ios" else {"android": _android_block(tag)}
         message = {
             "message": {
                 "token": dev.token,
                 "notification": {"title": title or "", "body": body or ""},
                 "data": data,
-                "android": {
-                    "priority": "HIGH",
-                    "notification": {"channel_id": ANDROID_CHANNEL_ID, **({"tag": tag} if tag else {})},
-                },
+                **platform,
             }
         }
         try:

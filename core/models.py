@@ -1,6 +1,7 @@
 # core/models.py
 from django.db import models
 from django.utils import timezone
+from core.device import DEVICE_CHOICES, current_device
 from main.models import Employee
 
 
@@ -21,7 +22,14 @@ class AuditLog(models.Model):
     ip          = models.GenericIPAddressField(null=True, blank=True)
     user_agent  = models.TextField(blank=True, default="")
     description = models.TextField(blank=True, default="")
+    device_type = models.CharField("Qurilma", max_length=10, choices=DEVICE_CHOICES, blank=True, default="", db_index=True)
+    app_version = models.CharField("Ilova versiyasi", max_length=30, blank=True, default="")
     date_creat  = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.pk and not self.device_type:
+            self.device_type, self.app_version = current_device()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.action} {self.model}#{self.object_id} by {self.employee}"
@@ -112,7 +120,7 @@ class PushSubscription(models.Model):
 
 class MobileDevice(models.Model):
     """
-    Mobil ilova (Android) qurilmasi — FCM push uchun token.
+    Mobil ilova (Android yoki iOS) qurilmasi — FCM push uchun token.
     Bitta xodimda bir nechta qurilma bo'lishi mumkin; token yagona (qurilma boshqa xodimga o'tsa, qayta biriktiriladi).
     """
     PLATFORM_CHOICES = [("android", "Android"), ("ios", "iOS")]

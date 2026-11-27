@@ -30,7 +30,10 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from core.signals.auth_audit import record_login
 
 from .serializers import EmployeeSerializer
 
@@ -78,6 +81,7 @@ def mobile_login_complete(request):
         salt=CODE_SALT,
     )
     # Brauzer sessiyasi ilovaga kerak emas — yopamiz (JWT beriladi).
+    request.mobile_login_flow = True
     auth_logout(request)
     app_url = escape(f"{mobile_app_redirect()}?code={code}")
     # Maxsus sxema (ivsapp://) ga Django redirect qilmaydi; sahifa avtomatik ochadi, tugma zaxira uchun.
@@ -93,7 +97,8 @@ def mobile_login_complete(request):
     return HttpResponse(html)
 
 
-def _token_response(user):
+def _token_response(request, user):
+    record_login(request, user, "Mobil login")
     refresh = RefreshToken.for_user(user)
     employee = getattr(user, "employee", None)
     return Response({
@@ -106,6 +111,15 @@ def _token_response(user):
 class LoginThrottle(AnonRateThrottle):
     """Login/parol bilan kirish (faqat admin hisoblari) — brute-force dan himoya."""
     rate = "30/min"
+
+
+class LoginAuditTokenSerializer(TokenObtainPairSerializer):
+    """/api/token/ (login/parol bilan JWT) — muvaffaqiyatli kirish ham audit jurnaliga yoziladi."""
+
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        record_login(self.context["request"], self.user, "Login/parol (JWT)")
+        return data
 
 
 class MobileExchangeThrottle(AnonRateThrottle):
@@ -138,7 +152,7 @@ class MobileLoginExchangeView(APIView):
         if not user:
             return Response({"detail": "Foydalanuvchi topilmadi yoki bloklangan"}, status=status.HTTP_403_FORBIDDEN)
 
-        return _token_response(user)
+        return _token_response(request, user)
 
 
 class LogoutView(APIView):
@@ -212,14 +226,15 @@ class SsoCodeLoginView(APIView):
             return Response({"detail": "Foydalanuvchi bloklangan"}, status=status.HTTP_403_FORBIDDEN)
 
         sync_employee_from_claims(employee, claims)
-        return _token_response(employee.user)
+        return _token_response(request, employee.user)
 
 
 class DeviceRegisterView(APIView):
     """
     POST /api/devices/ {"token": "<FCM token>", "device_name": "...", "app_version": "..."}  -> {"id", "created"}
 
-    Android ilova kirgandan keyin (va FCM token yangilanganda — onNewToken) chaqiradi.
+    Mobil ilova kirgandan keyin (va FCM token yangilanganda — onNewToken) chaqiradi.
+    Platforma `X-Device-Type` sarlavhasidan olinadi (ios), yuborilmasa — android.
     Token yagona: boshqa xodimga biriktirilgan bo'lsa (qurilma qo'ldan-qo'lga o'tgan) joriy xodimga ko'chiriladi.
     """
 
@@ -240,7 +255,7 @@ class DeviceRegisterView(APIView):
             token=token,
             defaults={
                 "employee": employee,
-                "platform": "android",
+                "platform": "ios" if request.headers.get("X-Device-Type", "").strip().lower() == "ios" else "android",
                 "device_name": str(request.data.get("device_name") or "")[:100],
                 "app_version": str(request.data.get("app_version") or "")[:30],
                 "is_active": True,

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 def send_push_notification(employee, title, body, url="/", tag=None):
     """
-    Xodimga bildirishnoma: bildirishnomalar markazi tarixiga yozadi, brauzer push (Web Push) va Android (FCM) ga yuboradi.
+    Xodimga bildirishnoma: bildirishnomalar markazi tarixiga yozadi, brauzer push (Web Push) va mobil ilovaga (FCM) yuboradi.
 
     tag — brauzerda bir xil hodisani guruhlash uchun: bir xil tag bilan kelgan yangi bildirishnoma eskisini JIM
     almashtiradi, shuning uchun har bir HAQIQIY hodisa (ariza, hujjat) uchun UNIKAL tag berish shart.
@@ -26,7 +26,7 @@ def send_push_notification(employee, title, body, url="/", tag=None):
     record(employee, title, body, url, tag)
 
     send_push_notification_task.delay(employee.id, title, body, url, tag)
-    # Android (FCM): sozlanmagan bo'lsa navbatga qo'yilmaydi
+    # Mobil (FCM): sozlanmagan bo'lsa navbatga qo'yilmaydi
     if fcm_enabled():
         send_fcm_notification_task.delay(employee.id, title, body, url, tag)
 

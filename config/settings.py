@@ -90,6 +90,7 @@ MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
+    "core.middlewares.device.DeviceMiddleware",   # X-Device-Type / X-App-Version, 5xx logida qurilma
 
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",   # FIX: CommonMiddleware'dan OLDIN bo'lishi kerak
@@ -311,7 +312,7 @@ REST_FRAMEWORK = {
 
 
 # =========================================================
-# FCM (Android push): service account JSON fayl yo'li; bo'sh bo'lsa FCM o'chiq
+# FCM (mobil push): service account JSON fayl yo'li; bo'sh bo'lsa FCM o'chiq
 # =========================================================
 FIREBASE_CREDENTIALS_FILE = os.getenv("FIREBASE_CREDENTIALS_FILE", "")
 FIREBASE_PROJECT_ID = os.getenv("FIREBASE_PROJECT_ID", "")

@@ -422,11 +422,11 @@ def send_push_notification_task(self, employee_id, title, body, url="/", tag=Non
 
 
 # =========================================================
-# PUSH BILDIRISHNOMA (Android, FCM) - orqa fonda yuborish
+# PUSH BILDIRISHNOMA (mobil: Android va iOS, FCM) - orqa fonda yuborish
 # =========================================================
 @shared_task(bind=True, max_retries=3, default_retry_delay=30)
 def send_fcm_notification_task(self, employee_id, title, body, url="/", tag=None):
-    """Android (FCM) push, orqa fonda."""
+    """Mobil (FCM) push, orqa fonda."""
     from .fcm import FcmTransientError, send_to_employee
 
     try:
